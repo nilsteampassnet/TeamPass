@@ -149,17 +149,19 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 {
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || "0";
-    
+
     // case where we should stop listing the items
     if ($("#items_listing_should_stop").val() === "1") {
         me.data('requestRunning', false);
         $("#items_listing_should_stop").val("0");
         return false;
-    } 
+    }
 
     if (stop_listing_current_folder === 1) {
         me.data('requestRunning', false);
         $("#new_listing_characteristics").val(groupe_id+","+restricted+","+start+",0");
+    } else {
+        $("#new_listing_characteristics").val("");
     }
 
     // prevent launch of similar query in case of doubleclick
@@ -3208,7 +3210,11 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
     else start = 0;
 
-    ListerItems(first_group,'', start);
+    // load list of items
+    if (first_group !== "") {
+        ListerItems(first_group,'', start);
+    }
+
     //Load item if needed and display items list
     if ($("#open_id").val() != "") {
         AfficherDetailsItem($("#open_id").val());
@@ -3593,8 +3599,9 @@ function proceed_list_update(stop_proceeding)
 {
     stop_proceeding = stop_proceeding || "";
 
-    if (stop_proceeding === "1" || $("#new_listing_characteristics").val() === "") {
+    if (stop_proceeding === "1" || ($("#new_listing_characteristics").val() !== "" && $("#query_next_start").val() !== "end")) {
         var tmp = $("#new_listing_characteristics").val().split(',');
+        $("#new_listing_characteristics").val("");
         ListerItems(tmp[0], tmp[1], tmp[2], tmp[3]);
         return false;
     }

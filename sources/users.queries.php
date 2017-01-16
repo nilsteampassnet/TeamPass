@@ -1430,20 +1430,28 @@ if (!empty($_POST['type'])) {
             $arrData['denied_folders'] = array_filter(explode(';', $rowUser['groupes_interdits']));
 
             // refine folders based upon roles
+            db::debugmode(true);
             $rows = DB::query(
                 "SELECT folder_id, type
                 FROM ".prefix_table("roles_values")."
-                WHERE role_id IN %ls",
+                WHERE role_id IN %ls
+                ORDER BY folder_id ASC",
                 $arrData['functions']
             );
             foreach ($rows as $record) {
                 $bFound = false;
                 $x = 0;
+                echo "> ".$record['folder_id']." | ";
                 foreach($arrFolders as $fld) {
+                    echo "   -".$fld['id']." ".$fld['type']." , ";
                     if ($fld['id'] === $record['folder_id']) {
-                        if ($record['type'] === "W" && $fld['type'] !== $record['type'] && $fld['type'] !== "W") {
+                        echo evaluate_folder_acces_level($fld['type'], $arrFolders[$x]['type'])." ;; ";
+                        /*if ($record['type'] === "W" && $fld['type'] !== $record['type'] && $fld['type'] !== "W") {
                             $arrFolders[$x]['type'] = "W";
-                        }
+                        } else if ($record['type'] === "ND" && $fld['type'] !== $record['type'] && $fld['type'] !== "W") {
+                            $arrFolders[$x]['type'] = "W";
+                        }*/
+                        $arrFolders[$x]['type'] = evaluate_folder_acces_level($fld['type'], $arrFolders[$x]['type']);
                         $bFound = true;
                         break;
                     }
@@ -1453,7 +1461,7 @@ if (!empty($_POST['type'])) {
                     array_push($arrFolders, array("id" => $record['folder_id'] , "type" => $record['type']));
                 }
             }
-
+//print_r($arrFolders);
             $tree_desc = $tree->getDescendants();
             foreach ($tree_desc as $t) {
                 foreach($arrFolders as $fld) {
@@ -1726,5 +1734,37 @@ elseif (isset($_POST['newadmin'])) {
         echo "Oui";
     } else {
         echo "Non";
+    }
+}
+
+function evaluate_folder_acces_level($new_val, $existing_val) {
+    $levels = array(
+        "W" => 4,
+        "ND" => 3,
+        "NE" => 3,
+        "NDNE" => 2,
+        "R" => 1
+    );
+
+    if (empty($existing_va)) {
+        $current_level_points = 0;
+    } else {
+        $current_level_points = $levels[$existing_val];
+    }
+    $new_level_points = $levels[$new_val];
+
+    // check if new is > to current one (always keep the highest level)
+    if (
+        ($new_val === "ND" && $existing_val === "NE")
+        ||
+        ($new_val === "NE" && $existing_val === "ND")
+    ) {
+        return "NDNE";
+    } else {
+        if ($current_level_points > $new_level_points) {
+            return  $existing_val;
+        } else {
+            return  $new_val;
+        }
     }
 }

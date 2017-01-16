@@ -394,7 +394,7 @@ function recursiveTree($nodeId)
                     ', "parent":"'.(empty($last_visible_parent) ? $parent : $last_visible_parent).'"'.
                     ', "text":"'.str_replace('"', '&quot;', $text).'"'.
                     ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
-                    ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')"}'.
+                    ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0, 1)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')"}'.
                 '}';
             } else if ($show_but_block == true) {
                 $ret_json .= (!empty($ret_json) ? ", " : "") . '{'.
