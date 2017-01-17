@@ -14,7 +14,13 @@
  */
 global $LANG;
 $LANG = array (
+    'copy_folder' => 'Copy folder',
+    'copy_folder_info' => 'This feature permits to copy the content of a folder including sub-folders and items. All of those will be duplicated with exactely same names and rights.',
     'mass_operation' => 'Mass operation on Items',
+    'copy_folder_source' => 'Folder to be copied',
+    'new_folder_name' => 'New folder name',
+    'copy_folder_destination' => 'Destination folder',
+    'error_source_and_destination_are_equal' => 'Source and Destination cannot be the same!',
     'move_items' => 'Move selected Items',
     'must_select_items' => 'You must select items!',
     'delete_items' => 'Delete selected Items',

@@ -2659,6 +2659,107 @@ $(function() {
         }
     });
     //<=
+
+
+    //=> COPY OF FOLDER
+    $("#div_copy_folder").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 500,
+        height: 320,
+        title: "<?php echo $LANG['copy_folder'];?>",
+        open: function(event,ui) {
+            $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+
+            // get list of folders
+                $.post(
+                    "sources/folders.queries.php",
+                    {
+                        type    : "get_list_of_folders",
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#div_loading").hide();
+
+                        //display to user
+                        $("#copy_folder_source_id, #copy_folder_destination_id").append(data[0].list_folders);
+                    },
+                    "json"
+                );
+        },
+        buttons: {
+            "<?php echo $LANG['save_button'];?>": function() {
+                //Do some checks
+                if ($("#copy_folder_source_id").val() === "" || $("#copy_folder_destination_id").val() === "" || $("#new_folder_name").val() === "") {
+                    $("#div_copy_folder_msg")
+                        .html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_must_enter_all_fields'];?>')
+                        .addClass("ui-state-error")
+                        .show().delay(2000).fadeOut(1000);
+                        return false;
+                }
+
+                if ($("#copy_folder_source_id").val() === $("#copy_folder_destination_id").val()) {
+                    $("#div_copy_folder_msg")
+                        .html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_source_and_destination_are_equal'];?>')
+                        .addClass("ui-state-error")
+                        .show().delay(2000).fadeOut(1000);
+                        return false;
+                }
+
+
+                $("#div_copy_folder_msg")
+                    .html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>')
+                    .addClass("ui-state-highlight")
+                    .show();
+
+                /*
+                if ($("#move_folder_id").val() == "0") {
+                    $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>");
+                    $("#move_rep_show_error").show();
+                } else {
+                    $("#move_folder_loader").show();
+                    $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", true);
+
+                    //prepare data
+                    var data = '{"source_folder_id":"' + $('#hid_cat').val() + '", ' +
+                    '"target_folder_id":"' + $('#move_folder_id').val() + '"}';
+
+                    //Send query
+                    $.post(
+                        "sources/items.queries.php",
+                        {
+                            type    : "move_folder",
+                            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                            key        : "<?php echo $_SESSION['key'];?>"
+                        },
+                        function(data) {
+                            //check if format error
+                            if (data[0].error == "") {
+                                $("#div_move_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                                ListerItems($('#hid_cat').val(), "", 0);
+                                $("#move_folder_loader").hide();
+                                refreshTree();
+                                $("#div_move_folder").dialog("close");
+                            } else {
+                                $("#move_rep_show_error").html(data[0].error).show();
+                            }
+                            $("#move_folder_loader").hide();
+                        },
+                        "json"
+                   );
+                }
+                */
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#div_copy_folder_msg").html("").hide();
+                $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                $(this).dialog('close');
+            }
+        }
+    });
+    //<=
+
     //=> DELETE A GROUP
     $("#div_supprimer_rep").dialog({
         bgiframe: true,

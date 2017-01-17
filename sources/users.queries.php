@@ -1738,7 +1738,7 @@ function evaluate_folder_acces_level($new_val, $existing_val) {
         "R" => 1
     );
 
-    if (empty($existing_va)) {
+    if (empty($existing_val)) {
         $current_level_points = 0;
     } else {
         $current_level_points = $levels[$existing_val];

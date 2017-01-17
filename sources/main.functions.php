@@ -687,6 +687,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 
         // Clean array
         $listAllowedFolders = array_filter(array_unique($allowedFolders));
+
         // Exclude all PF
         $_SESSION['forbiden_pfs'] = array();
 

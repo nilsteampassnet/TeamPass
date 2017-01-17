@@ -146,6 +146,7 @@ echo '
                         <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
+                        <li onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
@@ -826,13 +827,32 @@ echo '
         <p>'.$LANG['folder_will_be_moved_below'].'</p>
         <div>
         <select id="move_folder_id" style="width:250px; padding:3px;" class="ui-widget-content">
-            <option value="0">-choisir-</option>
         </select>
         </div>
     </div>
     <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
+</div>';
+// Formulaire COPY FOLDER
+echo '
+<div id="div_copy_folder" style="display:none;">
+    <div id="div_copy_folder_info" class="ui-widget-content ui-state-highlight ui-corner-all" style="padding:5px;"><span class="fa fa-info-circle fa-2x"></span>&nbsp;'.$LANG['copy_folder_info'].'</div>
+
+    <div style="margin:10px 0 0 0;">
+        <label style="float:left; width:150px;">'.$LANG['copy_folder_source'].'</label>
+        <select id="copy_folder_source_id" style="width:300px; padding:3px;" class="ui-widget-content"></select>
+    </div>
+    <div style="margin:10px 0 0 0;">
+        <label style="float:left; width:150px;">'.$LANG['new_folder_name'].'</label>
+        <input type="text" id="new_folder_name" style="width:290px; padding:3px;" class="ui-widget-content">
+    </div>
+    <div style="margin:10px 0 0 0;">
+        <label style="float:left; width:150px;">'.$LANG['copy_folder_destination'].'</label>
+        <select id="copy_folder_destination_id" style="width:300px; padding:3px;" class="ui-widget-content"></select>
+    </div>
+
+    <div id="div_copy_folder_msg" style="text-align:center;padding:5px;display:none; margin-top:10px; font-size:14px;" class="ui-corner-all"></div>
 </div>';
 // Formulaire SUPPRIMER REPERTORIE
 echo '

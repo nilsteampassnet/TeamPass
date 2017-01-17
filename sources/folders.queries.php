@@ -830,7 +830,7 @@ if (isset($_POST['newtitle'])) {
             $arrFolders = [];
             foreach ($folders as $t) {
                 if (in_array($t->id, $_SESSION['groupes_visibles'])) {
-                    if (!is_numeric($t->title)) {                       
+                    if (!is_numeric($t->title)) {
                         $ident = "&nbsp;&nbsp;";
                         for ($x=1; $x<$t->nlevel; $x++) {
                             $ident .= "&nbsp;&nbsp;";
