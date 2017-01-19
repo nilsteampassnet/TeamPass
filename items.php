@@ -224,10 +224,10 @@ echo '
                                         <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
                                         <li id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</li>
                                         <li id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</li>
-                                        <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>
-                                        <li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>
+                                        <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>',
+                                        (isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1) ? '<li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>' : '', '
                                         ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
-                                        <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['link_copy'].'</li>' : '', '
+                                        <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</li>' : '', '
                                         ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 && isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] !== "1"? '
                                         <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
                                     </ul>
@@ -842,10 +842,6 @@ echo '
     <div style="margin:10px 0 0 0;">
         <label style="float:left; width:150px;">'.$LANG['copy_folder_source'].'</label>
         <select id="copy_folder_source_id" style="width:300px; padding:3px;" class="ui-widget-content"></select>
-    </div>
-    <div style="margin:10px 0 0 0;">
-        <label style="float:left; width:150px;">'.$LANG['new_folder_name'].'</label>
-        <input type="text" id="new_folder_name" style="width:290px; padding:3px;" class="ui-widget-content">
     </div>
     <div style="margin:10px 0 0 0;">
         <label style="float:left; width:150px;">'.$LANG['copy_folder_destination'].'</label>

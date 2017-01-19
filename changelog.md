@@ -5,6 +5,8 @@ Last changes
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented
  NEW   Custom Fields data can be encrytped or not in database
+ NEW   Folder copy feature
+ NEW   Mass move or delete operation on Items
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties
@@ -16,6 +18,9 @@ Last changes
  FIX   "Find" feature:
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
+ #     Copy folders
+ #1621 New option: OTV can be disabled
+ #     New option: create Item without password
  #1620 Direct copy password from seach results and large folders
  #1616 Cannot show password with IE11
  #1614 Generate personal folders sets regular root folders also as personal

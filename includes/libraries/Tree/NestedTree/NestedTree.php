@@ -49,7 +49,7 @@ class NestedTree
     public function getFields()
     {
         return array($this->fields['id'], $this->fields['parent'], $this->fields['sort'],
-                     'nleft', 'nright', 'nlevel', 'personal_folder');
+                     'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation');
     }
 
     /**

@@ -873,6 +873,47 @@ if (isset($_POST['type'])) {
                             }
                         }
                     }
+
+                    // send email to user that whant to be notified
+                    if ($dataItem['notification'] !== null && !empty($dataItem['notification'])) {
+                        $users_to_be_notified = array_filter(explode(";", $dataItem['notification']));
+
+                        // perform query to get emails
+                        $users_email = DB::QUERY(
+                            "SELECT id, email
+                            FROM ".prefix_table("users")."
+                            WHERE id IN %li",
+                            $users_to_be_notified
+                        );
+
+                        // build emails list
+                        $mailing = "";
+                        foreach ($users_email as $record) {
+                            if (empty($mailing)) {
+                                $mailing = $record['email'];
+                            } else {
+                                $mailing = ",".$record['email'];
+                            }
+                        }
+
+                        // send email
+                        DB::insert(
+                            prefix_table('emails'),
+                            array(
+                                'timestamp' => time(),
+                                'subject' => $LANG['email_subject_item_updated'],
+                                'body' =>
+                                    str_replace(
+                                        array("#item_label#", "#item_category#", "#item_id#", "#url#"),
+                                        array($label, $dataReceived['categorie'], $dataReceived['id'], $_SESSION['settings']['cpassman_url']),
+                                        $LANG['email_body_item_updated']
+                                    ),
+                                'receivers' => $mailing,
+                                'status' => ''
+                               )
+                        );
+                    }
+
                     // Prepare some stuff to return
                     $arrData = array(
                         "files" => $files,//str_replace('"', '&quot;', $files),
@@ -1091,16 +1132,38 @@ if (isset($_POST['type'])) {
             $arrData = array();
             // return ID
             $arrData['id'] = $_POST['id'];
+
             // Check if item is deleted
-            DB::query("SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s", $_POST['id'], "at_delete");
-            $dataDeleted = DB::count();
-            $dataRestored = DB::query("SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s", $_POST['id'], "at_restored");
-            $dataRestored = DB::count();
-            if ($dataDeleted != 0 && $dataDeleted > $dataRestored) {
-                // This item is deleted => exit
-                echo prepareExchangedData(array('show_detail_option' => 2), "encode");
-                break;
-            }
+            // taking into account that item can be restored.
+            // so if restoration timestamp is higher than the deletion one
+            // then we can show it
+                $item_deleted = DB::queryFirstRow(
+                    "SELECT *
+                    FROM ".prefix_table("log_items")."
+                    WHERE id_item = %i AND action = %s
+                    ORDER BY date DESC
+                    LIMIT 0, 1",
+                    $_POST['id'],
+                    "at_delete"
+                );
+                $dataDeleted = DB::count();
+
+                $item_restored = DB::queryFirstRow(
+                    "SELECT *
+                    FROM ".prefix_table("log_items")."
+                    WHERE id_item = %i AND action = %s
+                    ORDER BY date DESC
+                    LIMIT 0, 1",
+                    $_POST['id'],
+                    "at_restored"
+                );
+
+                if ($dataDeleted != 0 && intval($item_deleted['date']) > intval($item_restored['date'])) {
+                    // This item is deleted => exit
+                    echo prepareExchangedData(array('show_detail_option' => 2), "encode");
+                    break;
+                }
+
             // Get all informations for this item
             $dataItem = DB::queryfirstrow(
                 "SELECT *
@@ -1453,7 +1516,7 @@ if (isset($_POST['type'])) {
                 $arrData['restricted_to'] = $listOfRestricted;
             }
             $arrData['timestamp'] = time();
-            // print_r($arrData);
+            //print_r($arrData);
             // Encrypt data to return
             echo prepareExchangedData($arrData, "encode");
             break;
@@ -2923,12 +2986,12 @@ if (isset($_POST['type'])) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             } else {
-                if ($_POST['notify_type'] == "on_show") {
+                if ($_POST['notify_type'] === "on_show") {
                     // Check if values already exist
                     $data = DB::queryfirstrow("SELECT notification FROM ".prefix_table("items")." WHERE id = %i", $_POST['item_id']);
                     $notifiedUsers = explode(';', $data['notification']);
                     // User is not in actual notification list
-                    if ($_POST['status'] == true && !in_array($_POST['user_id'], $notifiedUsers)) {
+                    if ($_POST['status'] === "true" && !in_array($_POST['user_id'], $notifiedUsers)) {
                         // User is not in actual notification list and wants to be notified
                         DB::update(
                             prefix_table("items"),

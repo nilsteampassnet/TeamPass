@@ -404,6 +404,14 @@ mysqli_query(
     "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `tags` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
 
+// add new admin setting "otv_is_enabled"
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'otv_is_enabled', '0')"
+    );
+}
+
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

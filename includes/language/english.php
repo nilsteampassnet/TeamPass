@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'otv_is_enabled' => 'User can propose One-Time-View links',
+    'notify_me_on_change' => 'Notify me on change',
     'copy_folder' => 'Copy folder',
     'copy_folder_info' => 'This feature permits to copy the content of a folder including sub-folders and items. All of those will be duplicated with exactely same names and rights.',
     'mass_operation' => 'Mass operation on Items',
@@ -229,7 +231,7 @@ $LANG = array (
     'admin_email_test_body' => 'This is a test email sent to verify email server configuration. If you are reading this, congratulations!',
     'admin_email_result_ok' => 'Email sent to #email# ... check your inbox.',
     'admin_email_result_nok' => 'Email test unsuccessful. Verify your settings (did you set your user account email address?) ',
-    'email_subject_item_updated' => 'Password has been updated',
+    'email_subject_item_updated' => 'Notification on item change',
     'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
     'email_bodyalt_item_updated' => 'Password for #item_label# has been updated.',
     'admin_email_send_backlog' => '#nb_emails# unsent emails - send now',

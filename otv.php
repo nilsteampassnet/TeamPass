@@ -41,6 +41,10 @@ if (
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
+    if (!isset($_SESSION['settings']['otv_is_enabled']) || $_SESSION['settings']['otv_is_enabled'] === "0") {
+        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;One-Time-View is not allowed!</div>';
+    }
+
     // check session validity
     $data = DB::queryfirstrow(
         "SELECT id, timestamp, code, item_id FROM ".prefix_table("otv")."

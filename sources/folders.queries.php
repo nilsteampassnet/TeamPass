@@ -845,5 +845,267 @@ if (isset($_POST['newtitle'])) {
             echo '[ { "error" : "" , "list_folders" : "'.implode(";", $arrFolders).'" } ]';
 
             break;
+
+        case "copy_folder":
+            // Check KEY and rights
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+            //Prepare variables
+            $source_folder_id = htmlspecialchars_decode($dataReceived['source_folder_id']);
+            $target_folder_id = htmlspecialchars_decode($dataReceived['target_folder_id']);
+
+            //Load Tree
+            $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+
+            // get info about target folder
+            $nodeTarget = $tree->getNode($target_folder_id);
+
+            // get list of all folders
+            $nodeDescendants = $tree->getDescendants($source_folder_id, true, false, false);
+            $parentId = "";
+            $tabNodes = [];
+            foreach ($nodeDescendants as $node) {
+                // step1 - copy folder
+
+                // get info about current node
+                $nodeInfo = $tree->getNode($node->id);
+
+                // get complexity of current node
+                $nodeComplexity = DB::queryfirstrow("SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %i AND type= %s", $nodeInfo->id, 'complex');
+
+                // prepare parent Id
+                if (empty($parentId)) {
+                    $parentId = $target_folder_id;
+                } else {
+                    $parentId = $tabNodes[$nodeInfo->parent_id];
+                }
+
+                //create folder
+                DB::insert(
+                    prefix_table("nested_tree"),
+                    array(
+                        'parent_id' => $parentId,
+                        'title' => $nodeInfo->title,
+                        'personal_folder' => $nodeInfo->personal_folder,
+                        'renewal_period' => $nodeInfo->renewal_period,
+                        'bloquer_creation' => $nodeInfo->bloquer_creation,
+                        'bloquer_modification' => $nodeInfo->bloquer_modification
+                   )
+                );
+                $newFolderId = DB::insertId();
+
+                // add to correspondance matrix
+                $tabNodes[$nodeInfo->id] = $newFolderId;
+
+                //Add complexity
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => 'complex',
+                        'intitule' => $newFolderId,
+                        'valeur' => $nodeComplexity['valeur']
+                    )
+                );
+
+                // add new folder id in SESSION
+                array_push($_SESSION['groupes_visibles'], $newFolderId);
+                if ($nodeInfo->personal_folder == 1) {
+                    array_push($_SESSION['personal_folders'], $newFolderId);
+                }
+
+
+                if (
+                    $nodeInfo->personal_folder != 1
+                    && isset($_SESSION['settings']['subfolder_rights_as_parent'])
+                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                    && $_SESSION['is_admin'] !== 0
+                ){
+                    //Get user's rights
+                    @identifyUserRights(
+                        $_SESSION['groupes_visibles'].';'.$newFolderId,
+                        $_SESSION['groupes_interdits'],
+                        $_SESSION['is_admin'],
+                        $_SESSION['fonction_id'],
+                        true
+                    );
+
+                    //add access to this new folder
+                    foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                        if (!empty($role)) {
+                            DB::insert(
+                                prefix_table("roles_values"),
+                                array(
+                                    'role_id' => $role,
+                                    'folder_id' => $newFolderId,
+                                    'type' => "W"
+                                )
+                            );
+                        }
+                    }
+                }
+
+                //If it is a subfolder, then give access to it for all roles that allows the parent folder
+                $rows = DB::query(
+                    "SELECT role_id, type
+                    FROM ".prefix_table("roles_values")."
+                    WHERE folder_id = %i",
+                    $nodeInfo->id
+                );
+                foreach ($rows as $record) {
+                    //add access to this subfolder
+                    DB::insert(
+                        prefix_table("roles_values"),
+                        array(
+                            'role_id' => $record['role_id'],
+                            'folder_id' => $newFolderId,
+                            'type' => $record['type']
+                        )
+                    );
+                }
+
+                // if parent folder has Custom Fields Categories then add to this child one too
+                $rows = DB::query("SELECT id_category FROM ".prefix_table("categories_folders")." WHERE id_folder = %i", $nodeInfo->id);
+                foreach ($rows as $record) {
+                    //add CF Category to this subfolder
+                    DB::insert(
+                        prefix_table("categories_folders"),
+                        array(
+                            'id_category' => $record['id_category'],
+                            'id_folder' => $newFolderId
+                        )
+                    );
+                }
+
+
+                // step2 - copy items
+
+                $rows = DB::query(
+                    "SELECT *
+                    FROM ".prefix_table("items")."
+                    WHERE id_tree = %i",
+                    $nodeInfo->id
+                );
+                foreach ($rows as $record) {
+                    // check if item is deleted
+                    // if it is then don't copy it
+                    $item_deleted = DB::queryFirstRow(
+                        "SELECT *
+                        FROM ".prefix_table("log_items")."
+                        WHERE id_item = %i AND action = %s
+                        ORDER BY date DESC
+                        LIMIT 0, 1",
+                        $record['id'],
+                        "at_delete"
+                    );
+                    $dataDeleted = DB::count();
+
+                    $item_restored = DB::queryFirstRow(
+                        "SELECT *
+                        FROM ".prefix_table("log_items")."
+                        WHERE id_item = %i AND action = %s
+                        ORDER BY date DESC
+                        LIMIT 0, 1",
+                        $record['id'],
+                        "at_restored"
+                    );
+
+                    if ($dataDeleted === "0" || intval($item_deleted['date']) < intval($item_restored['date'])) {
+
+                        // decrypt and re-encrypt password
+                        $decrypt = cryption(
+                            $record['pw'],
+                            "",
+                            "decrypt"
+                        );
+                        $originalRecord = cryption(
+                            $decrypt['string'],
+                            "",
+                            "encrypt"
+                        );
+
+                        // insert the new record and get the new auto_increment id
+                        DB::insert(
+                            prefix_table("items"),
+                            array(
+                                'label' => "duplicate",
+                                'id_tree' => $newFolderId,
+                                'pw' => $originalRecord['string'],
+                                'pw_iv' => '',
+                                'perso' => 0,
+                                'viewed_no' => 0
+                            )
+                        );
+                        $newItemId = DB::insertId();
+
+                        // generate the query to update the new record with the previous values
+                        $aSet = array();
+                        foreach ($record as $key => $value) {
+                            if (
+                                $key !== "id" && $key !== "key" && $key !== "id_tree"
+                                && $key !== "viewed_no" && $key !== "pw" && $key !== "pw_iv"
+                                && $key !== "perso"
+                            ) {
+                                array_push($aSet, array($key => $value));
+                            }
+                        }
+                        DB::update(
+                            prefix_table("items"),
+                            $aSet,
+                            "id = %i",
+                            $newItemId
+                        );
+
+                        // Add attached itms
+                        $rows = DB::query(
+                            "SELECT * FROM ".prefix_table("files")." WHERE id_item=%i",
+                            $newItemId
+                        );
+                        foreach ($rows as $record) {
+                            DB::insert(
+                                prefix_table('files'),
+                                array(
+                                    'id_item' => $newID,
+                                    'name' => $record['name'],
+                                    'size' => $record['size'],
+                                    'extension' => $record['extension'],
+                                    'type' => $record['type'],
+                                    'file' => $record['file']
+                                   )
+                            );
+                        }
+                        // Add this duplicate in logs
+                        logItems($newItemId, $record['label'], $_SESSION['user_id'], 'at_creation', $_SESSION['login']);
+                        // Add the fact that item has been copied in logs
+                        logItems($newItemId, $record['label'], $_SESSION['user_id'], 'at_copy', $_SESSION['login']);
+                    }
+                }
+            }
+
+
+            // rebuild tree
+            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+            $tree->rebuild();
+
+            // reload cache table
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+            updateCacheTable("reload", "");
+
+            echo '[ { "error" : "" } ]';
+
+            break;
     }
 }

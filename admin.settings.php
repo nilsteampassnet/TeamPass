@@ -631,6 +631,14 @@ echo '
                     </td><td>
                     <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 </td></tr>';
+// OTV - otv_is_enabled
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['otv_is_enabled'].'</label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="otv_is_enabled" data-toggle-on="', isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="otv_is_enabled_input" name="otv_is_enabled_input" value="', isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1 ? '1' : '0', '" />
+                </td></tr>';
 // Expired time for OTV - otv_expiration_period
 echo '
                 <tr><td>

@@ -420,7 +420,8 @@ global \$SETTINGS;
                             array('admin','syslog_host','localhost'),
                             array('admin','syslog_port','514'),
                             array('admin','manager_move_item','0'),
-                            array('admin','create_item_without_password','0')
+                            array('admin','create_item_without_password','0'),
+                            array('admin','otv_is_enabled','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
