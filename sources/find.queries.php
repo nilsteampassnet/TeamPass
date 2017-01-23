@@ -459,8 +459,9 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare new line
-        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'
-        "><i class="fa fa-key mi-yellow"></i>&nbsp;'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
+        $sOutput .= '<li class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search">'.
+            '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
+            '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
@@ -473,11 +474,11 @@ if (!isset($_GET['type'])) {
         // set folder
         $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(mb_substr(cleanString($record['folder']), 0, 65))).'</span>';
 
-        $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+        $sOutput .= '</span><span style="float:right;margin:2px 10px 0px 0px;">';
 
         // prepare login mini icon
         if (!empty($record['login'])) {
-            $sOutput .= '<i class="fa fa-user fa-lg mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+            $sOutput .= '<i class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
         }
 
         // prepare pwd copy if enabled
@@ -505,16 +506,16 @@ if (!isset($_GET['type'])) {
             // test charset => may cause a json error if is not utf8
             $pw = $pw['string'];
             if (isUTF8($pw)) {
-                $sOutput .= '<i class="fa fa-lock fa-lg mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                $sOutput .= '<i class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
             }
         }
 
 
-        // Prepare make Favorite small icon 
+        // Prepare make Favorite small icon
         if (in_array($record['id'], $_SESSION['favourites'])) {
-            $sOutput .= '<i class="fa fa-star fa-lg mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" title="'.$LANG['item_menu_del_from_fav'].'"></i>';
+            $sOutput .= '<i class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" title="'.$LANG['item_menu_del_from_fav'].'"></i>';
         } else {
-            $sOutput .= '<i class="fa fa-star-o fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" title="'.$LANG['item_menu_add_to_fav'].'"></i>';
+            $sOutput .= '<i class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" title="'.$LANG['item_menu_add_to_fav'].'"></i>';
         }
 
         $sOutput .= '</li>';

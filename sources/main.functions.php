@@ -360,6 +360,7 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     } else {
         $path = $_SESSION['settings']['cpassman_dir'] . '/includes/libraries/Encryption/Encryption/';
     }
+
     require_once $path.'Crypto.php';
     require_once $path.'Encoding.php';
     require_once $path.'DerivedKeys.php';
@@ -390,6 +391,15 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
         $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
     }
     catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+        $err = $ex;
+    }
+    catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+        $err = $ex;
+    }
+    catch (Defuse\Crypto\Exception\CryptoException $ex) {
+        $err = $ex;
+    }
+    catch (Defuse\Crypto\Exception\IOException $ex) {
         $err = $ex;
     }
 

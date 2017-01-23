@@ -266,7 +266,6 @@ function rest_delete () {
 
 function rest_get () {
     global $api_version;
-    $_SESSION['user_id'] = "'api'";
 
     if(!@count($GLOBALS['request'])==0){
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
@@ -281,6 +280,14 @@ function rest_get () {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
         $category_query = "";
+
+        // define the API user through the LABEL of apikey
+        $api_info = DB::queryFirstRow(
+            "SELECT label
+            FROM ".prefix_table("api")."
+            WHERE value = %s",
+            $GLOBALS['apikey']
+        );
 
         if ($GLOBALS['request'][0] == "read") {
             if($GLOBALS['request'][1] == "folder") {
@@ -331,7 +338,11 @@ function rest_get () {
                     $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                     $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
                     $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
-                    $crypt_pw = cryption($data['pw'], "", "decrypt");
+                    $crypt_pw = cryption(
+                        $data['pw'],
+                        "",
+                        "decrypt"
+                    );
                     $json[$x]['pw'] = $crypt_pw['string'];
                     $json[$x]['folder_id'] = $data['id_tree'];
                     $json[$x]['path'] = $path;
@@ -661,8 +672,12 @@ function rest_get () {
                     } else {
                         $itemExists = 0;
                     }
-                    if ($itemExists == 0) {
-                        $encrypt = cryption($item_pwd, "", "encrypt");
+                    if ($itemExists === 0) {
+                        $encrypt = cryption(
+                            $item_pwd,
+                            "",
+                            "encrypt"
+                        );
                         if (empty($encrypt['string'])) {
                             rest_error ('PASSWORDEMPTY');
                         }
@@ -695,7 +710,8 @@ function rest_get () {
                                     "id_item" => $newID,
                                     "date" => time(),
                                     "id_user" => API_USER_ID,
-                                    "action" => "at_creation"
+                                    "action" => "at_creation",
+                                    "description" => $api['label']
                                 )
                             );
 
@@ -1262,7 +1278,11 @@ function rest_get () {
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                                    $crypt_pw = cryption($data['pw'], "", "decrypt");
+                                    $crypt_pw = cryption(
+                                        $data['pw'],
+                                        "",
+                                        "decrypt"
+                                    );
                                     $json[$data['id']]['pw'] = $crypt_pw['string'];
                                 }
                             }
@@ -1371,11 +1391,19 @@ function rest_get () {
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
                                     $json[$data['id']]['login'] =  mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                                     if ($data['perso'] === "0") {
-                                        $crypt_pw = cryption($data['pw'], "", "decrypt");
+                                        $crypt_pw = cryption(
+                                            $data['pw'],
+                                            "",
+                                            "decrypt"
+                                        );
                                     } else if (empty($user_saltkey)) {
                                         $crypt_pw['string'] = "no_psk";
                                     } else {
-                                        $crypt_pw = cryption($data['pw'], $user_saltkey, "decrypt");
+                                        $crypt_pw = cryption(
+                                            $data['pw'],
+                                            $user_saltkey,
+                                            "decrypt"
+                                        );
                                     }
                                     $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
                                     $json[$data['id']]['perso'] = $data['perso'];
@@ -1474,7 +1502,11 @@ function rest_get () {
                             }
 
                             // encrypt password
-                            $encrypt = cryption($GLOBALS['request'][2], "", "encrypt");
+                            $encrypt = cryption(
+                                $GLOBALS['request'][2],
+                                "",
+                                "encrypt"
+                            );
 
                             // is there a protocol?
                             if (isset($GLOBALS['request'][7]) || empty($GLOBALS['request'][7])) {
@@ -1642,7 +1674,11 @@ function rest_get () {
 
                         // now we continue
                         // encrypt password
-                        $encrypt = cryption(urldecode($tpc_param[1]), $salt, "encrypt");
+                        $encrypt = cryption(
+                            urldecode($tpc_param[1]),
+                            $salt,
+                            "encrypt"
+                        );
 
                         // is there a label?
                         if (empty($tpc_param[3])) {

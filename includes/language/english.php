@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'click_to_edit' => 'Click to edit',
     'otv_is_enabled' => 'User can propose One-Time-View links',
     'notify_me_on_change' => 'Notify me on change',
     'copy_folder' => 'Copy folder',

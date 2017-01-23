@@ -427,6 +427,10 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         });
                     }
 
+                    // show correct fodler in Tree
+                    $("#jstree").jstree("deselect_all");
+                    $('#jstree').jstree("select_node", "#li_"+groupe_id);
+
                     proceed_list_update(stop_listing_current_folder);
                 }
                 //Delete data
@@ -2223,15 +2227,23 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
 /*
 * builds the folders tree
 */
-function refreshTree(node_to_select, do_refresh)
+function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
 {
     do_refresh = do_refresh || ""
     node_to_select = node_to_select || "";
+    refresh_visible_folders = refresh_visible_folders || 1;
+
+    if (refresh_visible_folders !== 1) {
+        $("#jstree").jstree("deselect_all");
+        $('#jstree').jstree("select_node", "#li_"+groupe_id);
+        return false;
+    }
 
     if (do_refresh !== "0") {
         $('#jstree').jstree(true).refresh();
     }
-    if (node_to_select != "") {
+
+    if (node_to_select !== "") {
         $("#hid_cat").val(node_to_select);
         $("#jstree").jstree("deselect_all");
 
@@ -2241,7 +2253,10 @@ function refreshTree(node_to_select, do_refresh)
         }).jstree(true).refresh();
 
     }
-    refreshVisibleFolders();
+
+    if (refresh_visible_folders === 1) {
+        refreshVisibleFolders();
+    }
 }
 
 /*

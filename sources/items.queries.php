@@ -1132,6 +1132,8 @@ if (isset($_POST['type'])) {
             $arrData = array();
             // return ID
             $arrData['id'] = $_POST['id'];
+            $arrData['id_user'] = "9999999";
+            $arrData['author'] = "API";
 
             // Check if item is deleted
             // taking into account that item can be restored.
@@ -1192,6 +1194,7 @@ if (isset($_POST['type'])) {
                         $arrData['notification_status'] = false;
                     }
                 }
+
                 // Get restriction list for users
                 if (in_array($record['id'], $listRest)) {
                     $listeRestriction .= $record['login'].";";
@@ -1201,6 +1204,14 @@ if (isset($_POST['type'])) {
                     $listNotification .= $record['login'].";";
                     $listNotificationEmails .= $record['email'].",";
                 }
+            }
+
+            // manage case of API user
+            if (empty($dataItem['l.description'])) {
+                $arrData['author'] = "API [".$dataItem['description']."]";
+                $arrData['id_user'] = API_USER_ID;
+                $arrData['author_email'] = "";
+                $arrData['notification_status'] = false;
             }
 
             /*
@@ -3579,8 +3590,8 @@ if (isset($_POST['type'])) {
                     }
                 }
                 // imported via API
-                if ($record['login'] == "") {
-                    $record['login'] = $LANG['imported_via_api'];
+                if (empty($record['login'])) {
+                    $record['login'] = $LANG['imported_via_api']." [".$record['raison']."]";
                 }
 
                 if (!empty($reason[1]) || $record['action'] == "at_copy" || $record['action'] == "at_creation" || $record['action'] == "at_manual" || $record['action'] == "at_modification" || $record['action'] == "at_delete" || $record['action'] == "at_restored") {
@@ -3600,7 +3611,7 @@ if (isset($_POST['type'])) {
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
                         '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format'].' '.$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
                         '<tr style="border-bottom:3px solid #C9C9C9;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
-                        '<td style="">'.(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '<td style="">'.(!empty($record['raison'] && $record['action'] !== "at_creation") ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
                         '</tr>'.
                         '<tr></tr>';
                 }

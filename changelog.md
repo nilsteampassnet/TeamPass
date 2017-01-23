@@ -19,6 +19,7 @@ Last changes
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
  #     Copy folders
+ #1624 Error 500 while importing item with API (with PHP < 7)
  #1621 New option: OTV can be disabled
  #     New option: create Item without password
  #1620 Direct copy password from seach results and large folders
