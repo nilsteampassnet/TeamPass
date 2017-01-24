@@ -690,7 +690,7 @@ function rest_get () {
                                     "label" => $item_label,
                                     "description" => $item_desc,
                                     'pw' => $encrypt['string'],
-                                    'pw_iv' => $encrypt['iv'],
+                                    'pw_iv' => '',
                                     "email" => $item_email,
                                     "url" => $item_url,
                                     "id_tree" => intval($item_folder_id),
@@ -711,7 +711,7 @@ function rest_get () {
                                     "date" => time(),
                                     "id_user" => API_USER_ID,
                                     "action" => "at_creation",
-                                    "description" => $api['label']
+                                    "raison" => $api_info['label']
                                 )
                             );
 
@@ -1030,7 +1030,11 @@ function rest_get () {
                         $counter = DB::count();
                         if ($counter > 0) {
                             // encrypt pwd
-                            $encrypt = cryption($params[1], "", "encrypt");
+                            $encrypt = cryption(
+                                $params[1],
+                                "",
+                                "encrypt"
+                            );
                             if (empty($encrypt['string'])) {
                                 rest_error ('PASSWORDEMPTY');
                             }
@@ -1043,7 +1047,7 @@ function rest_get () {
                                         "label" => $params[0],
                                         "description" => $params[2],
                                         'pw' => $encrypt['string'],
-                                        'pw_iv' => $encrypt['iv'],
+                                        'pw_iv' => '',
                                         "email" => $params[5],
                                         "url" => $params[6],
                                         "id_tree" => intval($params[3]),
@@ -1522,7 +1526,7 @@ function rest_get () {
                                     'label' => "Credentials for ".urldecode($GLOBALS['request'][3]),
                                     'description' => "Imported with Teampass-Connect",
                                     'pw' => $encrypt['string'],
-                                    'pw_iv' => $encrypt['iv'],
+                                    'pw_iv' => "",
                                     'email' => "",
                                     'url' => urldecode($GLOBALS['request'][3]),
                                     'id_tree' => $tpc_folder_id,

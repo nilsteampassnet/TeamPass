@@ -242,9 +242,9 @@ final class Core
     public static function ensureFunctionExists($name)
     {
         // manage specific case of random_bytes
-        if ($name === "random_bytes(length)") {
+        if ($name === "random_bytes") {
             // random_bytes is a PHP7 new function required
-            require_once('../misc/random_compat/random.php');
+            require_once(substr(realpath(dirname(__FILE__)),0, strpos(realpath(dirname(__FILE__)), "\Encryption\Encryption")).'/misc/random_compat/random.php');
         }
         if (! \function_exists($name)) {
             throw new Ex\EnvironmentIsBrokenException();
