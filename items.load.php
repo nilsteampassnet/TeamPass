@@ -3096,24 +3096,21 @@ $(function() {
         title: "<?php echo $LANG['suggest_password_change'];?>",
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
-                $("#div_suggest_change_wait").show();
+                $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show();
+
+                // prepare changes
+                var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '"}';
+
                 $.post(
-                    "sources/items.queries.php",
+                    "sources/suggestion.queries.php",
                     {
-                        type    : "send_email",
+                        type    : "suggest_item_change",
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
                         id      : $("#id_item").val(),
-                        receipt    : $("#item_share_email").val(),
-                        cat      : "share_this_item",
-                        key        : "<?php echo $_SESSION['key'];?>"
+                        key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
-                        $("#div_item_share_status").html("").hide();
-                        if (data[0].error == "") {
-                            $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']);?>").show();
-                        } else {
-                            $("#div_item_share_error").html(data[0].message).show();
-                        }
-                        $("#div_suggest_change_wait").hide();
+                        $("#div_suggest_change_wait").html("<?php echo $LANG['suggestion_done'];?>").show(1).delay(2000).fadeOut(1000);
                     },
                     "json"
                );
@@ -3127,7 +3124,7 @@ $(function() {
             .html(
                 '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['label'];?></label><input type="text" id="label_change" value="'+$("#hid_label").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
                 '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['pw'];?></label><input type="text" id="pwd_change" value="" class="input_text_60 ui-widget-content ui-corner-all">' +
-                '&nbsp;<i class="fa fa-info-circle fa-lg tip" title="sdsd"></i>' +
+                '&nbsp;<i class="fa fa-info-circle fa-lg tip" title="<?php echo $LANG['suggest_change_password_blank'];?>"></i>' +
                 '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['index_login'];?></label><input type="text" id="login_change" value="'+$("#hid_login").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
                 '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['email'];?></label><input type="text" id="email_change" value="'+$("#hid_email").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
                 '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['url'];?></label><input type="text" id="url_change" value="'+$("#hid_url").val()+'" class="input_text_60 ui-widget-content ui-corner-all">'

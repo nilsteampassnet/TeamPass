@@ -47,7 +47,7 @@ if (empty($_SESSION['favourites'])) {
             );
             if (!empty($data['label'])) {
                 echo '
-                    <tr class="ligne'.($cpt%2).'">
+                    <tr class="ligne'.($cpt%2).'" id="row-'.$data['id'].'">
                         <td>
                             <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;

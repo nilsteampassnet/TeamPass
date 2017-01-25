@@ -938,7 +938,7 @@ echo '
 <div id="div_suggest_change" style="display:none;">
     <div style="padding:5px; text-align:center;" class="ui-corner-all ui-state-default"><i class="fa fa-info-circle fa-lg"></i>&nbsp;'.$LANG['suggest_password_change_intro'].'</div>
     <div style=" margin-top:10px;" id="div_suggest_change_html"></div>
-    <div id="div_suggest_change_wait" style="margin-top:10; padding:5px; display:none;" class="ui-state-focus ui-corner-all"><i class="fa fa-cog fa-spin fa-2x"></i></div>
+    <div id="div_suggest_change_wait" style="margin-top:10; padding:5px; display:none;" class="ui-state-focus ui-corner-all"></div>
 </div><br />';
 
 // Off line mode

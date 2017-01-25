@@ -1155,7 +1155,8 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                            id    : $("#detele_fav_id").val()
                         },
                         function(data) {
-                            document.form_favourites.submit();
+                            $("#row-" + $("#detele_fav_id").val()).remove();
+                            $("#div_delete_fav").dialog("close");
                         }
                    );
                 },
