@@ -3086,6 +3086,57 @@ $(function() {
         }
     });
     //<=
+    //=> SHOW SHARE DIALOG
+    $("#div_suggest_change").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 400,
+        height: 350,
+        title: "<?php echo $LANG['suggest_password_change'];?>",
+        buttons: {
+            "<?php echo $LANG['ok'];?>": function() {
+                $("#div_suggest_change_wait").show();
+                $.post(
+                    "sources/items.queries.php",
+                    {
+                        type    : "send_email",
+                        id      : $("#id_item").val(),
+                        receipt    : $("#item_share_email").val(),
+                        cat      : "share_this_item",
+                        key        : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        $("#div_item_share_status").html("").hide();
+                        if (data[0].error == "") {
+                            $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']);?>").show();
+                        } else {
+                            $("#div_item_share_error").html(data[0].message).show();
+                        }
+                        $("#div_suggest_change_wait").hide();
+                    },
+                    "json"
+               );
+            },
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog('close');
+            }
+        },
+        open: function(event,ui) {
+            $("#div_suggest_change_html")
+            .html(
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['label'];?></label><input type="text" id="label_change" value="'+$("#hid_label").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['pw'];?></label><input type="text" id="pwd_change" value="" class="input_text_60 ui-widget-content ui-corner-all">' +
+                '&nbsp;<i class="fa fa-info-circle fa-lg tip" title="sdsd"></i>' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['index_login'];?></label><input type="text" id="login_change" value="'+$("#hid_login").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['email'];?></label><input type="text" id="email_change" value="'+$("#hid_email").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['url'];?></label><input type="text" id="url_change" value="'+$("#hid_url").val()+'" class="input_text_60 ui-widget-content ui-corner-all">'
+            )
+            .show();
+            $(".tip").tooltipster({multiple: true});
+        }
+    });
+    //<=
 
     // => ATTACHMENTS INIT
     var uploader_attachments = new plupload.Uploader({

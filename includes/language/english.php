@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'suggest_password_change' => 'Suggest a password change',
+    'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
     'click_to_edit' => 'Click to edit',
     'otv_is_enabled' => 'User can propose One-Time-View links',
     'notify_me_on_change' => 'Notify me on change',
