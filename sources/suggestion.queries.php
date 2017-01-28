@@ -298,5 +298,113 @@ if (!empty($_POST['type'])) {
 
             echo '[ { "status" : "ok" , "complexity" : "'.$data['valeur'].'" , "complexity_text" : "'.$complexity.'" } ]';
         break;
+
+        case "get_item_change_detail":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            $data = DB::queryfirstrow(
+                "SELECT * FROM ".$pre."items_change WHERE id = %i",
+                $_POST['id']
+            );
+            $tmp = cryption($data['pwd'], "", "decrypt");
+            $data['pw'] = $tmp['string'];
+
+
+            $data_current = DB::queryfirstrow(
+                "SELECT * FROM ".$pre."items WHERE id = %i",
+                $_POST['id']
+            );
+            $tmp = cryption($data_current['pw'], "", "decrypt");
+            $data_current['pw'] = $tmp['string'];
+
+            $html = '
+            <table width="100%">
+            <thead><th>Field</th><th>Current</th><th>Proposal</th><th>Confirm</th></thead>
+            <tbody>
+            <tr>
+            <td>'.$LANG['label'].'</td>
+            <td>'.$data_current['label'].'</td>
+            ';
+            if (!empty($data['label'])) {
+                $html .= '<td style="text-align:center;">
+                <input type="text" id="label_change" value="'.$data['label'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
+                </td>
+                <td style="text-align:center;" id="confirm_label"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_label-check"></span></td>';
+            } else {
+                $html .= '<td></td><td></td>';
+            }
+            $html .= '
+            </tr>
+            <tr border-bottom="1px #009888 solid" margin-bottom="3px;">
+            <td>'.$LANG['pw'].'</td>
+            <td>'.$data_current['pw'].'</td>';
+            if (!empty($data['pw'])) {
+                $html .= '<td style="text-align:center;">
+                <input type="text" id="pw_change" value="'.$data['pw'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
+                </td>
+                <td style="text-align:center;" id="confirm_pw"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_pw-check"></span></td>';
+            } else {
+                $html .= '<td></td><td></td>';
+            }
+            $html .= '
+            </tr>
+            <tr>
+            <td>'.$LANG['index_login'].'</td>
+            <td>'.$data_current['login'].'</td>';
+            if (!empty($data['login'])) {
+                $html .= '<td style="text-align:center;">
+                <input type="text" id="login_change" value="'.$data['login'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
+                </td>
+                <td style="text-align:center;" id="confirm_login"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_login-check"></span></td>';
+            } else {
+                $html .= '<td></td><td></td>';
+            }
+            $html .= '
+            </tr>
+            <tr>
+            <td>'.$LANG['email'].'</td>
+            <td>'.$data_current['email'].'</td>';
+            if (!empty($data['email'])) {
+                $html .= '<td style="text-align:center;">
+                <input type="text" id="email_change" value="'.$data['email'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
+                </td>
+                <td style="text-align:center;" id="confirm_email"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_email-check"></span></td>';
+            } else {
+                $html .= '<td></td><td></td>';
+            }
+            $html .= '
+            </tr>
+            <tr>
+            <td>'.$LANG['url'].'</td>
+            <td>'.$data_current['url'].'</td>';
+            if (!empty($data['url'])) {
+                $html .= '
+                <td style="text-align:center;"><input type="text" id="url_change" value="'.$data['url'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
+                </td>
+                <td style="text-align:center;" id="confirm_url"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_url-check"></span></td>';
+            } else {
+                $html .= '<td></td><td></td>';
+            }
+            $html .= '
+            </tr>
+            </tbody>
+            </table>
+
+            <div style="margin-top:15px;">
+            <label class="form_label_100" style="padding:4px;">'.$LANG['comment'].'</label><input type="text" id="comment_change" value="'.$data['comment'].'" class="input_text_80 ui-widget-content ui-corner-all">
+            </div>';
+
+            echo prepareExchangedData(
+                array(
+                    "html" => $html,
+                    "error" => ""
+                ),
+                "encode"
+            );
+        break;
     }
 }

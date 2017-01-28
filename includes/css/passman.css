@@ -141,6 +141,12 @@ width:60%;
 padding: 4px;
 }
 
+.input_text_80 {
+margin-bottom:10px;
+width:80%;
+padding: 4px;
+}
+
 .label_cpm{
 display:block;
 }

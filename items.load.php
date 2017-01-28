@@ -3091,18 +3091,18 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 400,
-        height: 350,
+        width: 750,
+        height: 450,
         title: "<?php echo $LANG['suggest_password_change'];?>",
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
                 $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show();
 
                 // prepare changes
-                var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '"}';
+                var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '", "folder":"' + $("#hid_cat").val() + '", "comment":"' + $("#comment_change").val() + '", "item_id":"' + $("#id_item").val() + '"}';
 
                 $.post(
-                    "sources/suggestion.queries.php",
+                    "sources/items.queries.php",
                     {
                         type    : "suggest_item_change",
                         data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
@@ -3110,7 +3110,9 @@ $(function() {
                         key     : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
-                        $("#div_suggest_change_wait").html("<?php echo $LANG['suggestion_done'];?>").show(1).delay(2000).fadeOut(1000);
+                        if (data[0].error === "") {
+                            $("#div_suggest_change_wait").html("<?php echo $LANG['suggestion_done'];?>").show(1).delay(2000).fadeOut(1000);
+                        }
                     },
                     "json"
                );
@@ -3122,12 +3124,14 @@ $(function() {
         open: function(event,ui) {
             $("#div_suggest_change_html")
             .html(
-                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['label'];?></label><input type="text" id="label_change" value="'+$("#hid_label").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
-                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['pw'];?></label><input type="text" id="pwd_change" value="" class="input_text_60 ui-widget-content ui-corner-all">' +
-                '&nbsp;<i class="fa fa-info-circle fa-lg tip" title="<?php echo $LANG['suggest_change_password_blank'];?>"></i>' +
-                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['index_login'];?></label><input type="text" id="login_change" value="'+$("#hid_login").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
-                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['email'];?></label><input type="text" id="email_change" value="'+$("#hid_email").val()+'" class="input_text_60 ui-widget-content ui-corner-all">' +
-                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['url'];?></label><input type="text" id="url_change" value="'+$("#hid_url").val()+'" class="input_text_60 ui-widget-content ui-corner-all">'
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['label'];?></label><input type="text" id="label_change" value="'+$("#hid_label").val()+'" class="input_text_80 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['pw'];?></label><input type="text" id="pwd_change" value="" class="input_text_80 ui-widget-content ui-corner-all">' +
+                '&nbsp;<i class="fa fa-info-circle fa-lg tip" title="<?php echo addslashes($LANG['suggest_change_password_blank']);?>"></i>' +
+                //'<label class="form_label_100" style="padding:4px;"><?php echo $LANG['description'];?></label><textarea id="description_change_change" class="input_text_80 ui-widget-content ui-corner-all">'+$("#hid_desc").val()+'</textarea>' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['index_login'];?></label><input type="text" id="login_change" value="'+$("#hid_login").val()+'" class="input_text_80 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['email'];?></label><input type="text" id="email_change" value="'+$("#hid_email").val()+'" class="input_text_80 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['url'];?></label><input type="text" id="url_change" value="'+$("#hid_url").val()+'" class="input_text_80 ui-widget-content ui-corner-all">' +
+                '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['comment'];?></label><input type="text" id="comment_change" value="" class="input_text_80 ui-widget-content ui-corner-all">'
             )
             .show();
             $(".tip").tooltipster({multiple: true});

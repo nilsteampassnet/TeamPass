@@ -14,8 +14,15 @@
  */
 global $LANG;
 $LANG = array (
+    'show_suggestions' => 'New suggestions',
+    'show_changes' => 'Change proposals',
     'suggest_password_change' => 'Suggest a password change',
     'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
+    'suggestion_done' => 'Suggestion has been stored.',
+    'suggest_change_password_blank' => 'Leave this field empty if you DON\'T want to suggest a password change',
+    'item_id' => 'Item ID',
+    'approve' => 'Approve',
+    'reject' => 'Reject',
     'click_to_edit' => 'Click to edit',
     'otv_is_enabled' => 'User can propose One-Time-View links',
     'notify_me_on_change' => 'Notify me on change',

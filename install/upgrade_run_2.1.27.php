@@ -413,5 +413,25 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 }
 
 
+// add new field for items_change
+mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."items_change` (
+    `id` tinyint(10) NOT NULL AUTO_INCREMENT,
+    `item_id` tinyint(12) NOT NULL,
+    `label` varchar(255) NOT NULL DEFAULT 'none',
+    `pwd` text NOT NULL,
+    `login` varchar(255) NOT NULL DEFAULT 'none',
+    `email` varchar(255) NOT NULL DEFAULT 'none',
+    `url` varchar(255) NOT NULL DEFAULT 'none',
+    `description` text NOT NULL,
+    `comment` text NOT NULL,
+    `folder_id` tinyint(12) NOT NULL,
+    `user_id` tinyint(12) NOT NULL,
+    `timestamp` tinyint(12) NOT NULL,
+    PRIMARY KEY (`id`)
+    ) CHARSET=utf8;"
+);
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

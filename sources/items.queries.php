@@ -3628,6 +3628,79 @@ if (isset($_POST['type'])) {
 
             break;
 
+        case "suggest_item_change":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+            // decrypt and retrieve data in JSON format
+            $data_received = prepareExchangedData($_POST['data'], "decode");
+
+            // prepare variables
+            $label = htmlspecialchars_decode($data_received['label']);
+            $pwd = htmlspecialchars_decode($data_received['pwd']);
+            $login = htmlspecialchars_decode($data_received['login']);
+            $email = htmlspecialchars_decode($data_received['email']);
+            $url = htmlspecialchars_decode($data_received['url']);
+            $folder = htmlspecialchars_decode($data_received['folder']);
+            //$description = htmlspecialchars_decode($data_received['description']);
+            $comment = htmlspecialchars_decode($data_received['comment']);
+            $item_id = htmlspecialchars_decode($data_received['item_id']);
+
+            if (empty($pwd)) {
+                $encrypt['string'] = "";
+            } else {
+                $encrypt = cryption($pwd, "", "encrypt");
+            }
+
+            // query
+            DB::insert(
+                prefix_table("items_change"),
+                array(
+                    'item_id' => $item_id,
+                    'label' => $label,
+                    'pwd' => $encrypt['string'],
+                    'login' => $login,
+                    'email' => $email,
+                    'url' => $url,
+                    'description' => "",
+                    'comment' => $comment,
+                    'folder_id' => $folder,
+                    'user_id' => $_SESSION['user_id'],
+                    'timestamp' => time()
+                )
+            );
+            $newID = DB::insertId();
+
+            // get some info to add to the notification email
+            $resp_user = DB::queryfirstrow(
+                "SELECT login FROM ".prefix_table("users")." WHERE id = %i",
+                $_SESSION['user_id']
+            );
+            $resp_folder = DB::queryfirstrow(
+                "SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i",
+                $folder
+            );
+
+            // notify Managers
+            $rows = DB::query(
+                "SELECT email
+                FROM ".prefix_table("users")."
+                WHERE `gestionnaire` = %i AND `email` IS NOT NULL",
+                1
+            );
+            foreach ($rows as $record) {
+                sendEmail(
+                    $LANG['suggestion_notify_subject'],
+                    str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $LANG['suggestion_notify_body']),
+                    $record['email']
+                );
+            }
+
+            echo '[ { "error" : "" } ]';
+        break;
+
     }
 }
 // Build the QUERY in case of GET
