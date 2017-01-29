@@ -200,7 +200,7 @@ echo '
 echo '
         <div id="item_details_ok">
             <input type="hidden" id="id_categorie" value="" />
-            <input type="text" id="id_item" value="" />
+            <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
             <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
 

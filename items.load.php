@@ -1181,8 +1181,9 @@ function SupprimerFolder()
 
 function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload, id_tree)
 {
+    console.log(id+"--"+("#request_ongoing").val());
     // If a request is already launched, then kill new.
-    if ($("#request_ongoing").val() != "") {
+    if ($("#request_ongoing").val() !== "") {
         request.abort();
         return;
     }
@@ -3373,8 +3374,9 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     }
 
     //Load item if needed and display items list
-    if ($("#open_id").val() != "") {
-        AfficherDetailsItem($("#open_id").val());
+    if ($("#open_id").val() !== "") {console.log(">> open "+$("#open_id").val());
+        AfficherDetailsItem($("#open_id").val(), "", "", "", "", "", "", "");
+console.log(">> suite1");
         //refreshTree($("#hid_cat").val(), "0");
         $("#open_item_by_get").val("");
     }

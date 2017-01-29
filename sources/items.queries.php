@@ -1263,6 +1263,7 @@ if (isset($_POST['type'])) {
                 );
                 $arrData['edit_item_salt_key'] = 0;
             }
+            
             $pw = @$pw['string'];
             if (!isUTF8($pw)) {
                 $pw = '';

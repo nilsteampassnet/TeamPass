@@ -7,6 +7,7 @@ Last changes
  NEW   Custom Fields data can be encrytped or not in database
  NEW   Folder copy feature
  NEW   Mass move or delete operation on Items
+ NEW   Item change proposal
  IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
  IMP   Language selection is now in User Profile (Default language is used on authentication page)
  IMP   User creation dialogbox improved with all user properties

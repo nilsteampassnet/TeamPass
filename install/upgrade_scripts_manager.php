@@ -21,9 +21,9 @@ $_SESSION['CPM'] = 1;
 $scripts_list = array(
     array('upgrade_run_db_original.php', ""),
 	array('upgrade_run_2.1.26.php', ""),
-	array('upgrade_run_2.1.27.php', ""),
     array('upgrade_run_encryption_pwd.php', ""),
     array('upgrade_run_encryption_suggestions.php', ""),
+	array('upgrade_run_2.1.27.php', ""),
     array('upgrade_run_defuse_for_pwds.php', ""),
     array('upgrade_run_defuse_for_categories.php', ""),
     array('upgrade_run_defuse_for_custfields.php', ""),

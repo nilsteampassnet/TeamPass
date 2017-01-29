@@ -291,10 +291,20 @@ if (isset($_POST['type'])) {
             }
 
             if (!isset($_SESSION['encrypt_key']) || empty($_SESSION['encrypt_key'])) {
-                $okEncryptKey = false;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
-                    ' could not be recovered &nbsp;&nbsp;'.
-                    '<img src=\"images/minus-circle.png\"></span><br />';
+                // check if 2.1.27 already installed
+                $defuse_file = substr($_SESSION['sk_file'], 0, strrpos($_SESSION['sk_file'], "/"))."/teampass-seckey.txt";
+                if (file_exists($defuse_file)) {
+                    $okEncryptKey = true;
+                    $_SESSION['tp_defuse_installed'] = true;
+                    $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Defuse encryption key is defined&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                        '</span><br />';
+                } else {
+                    $okEncryptKey = false;
+                    $_SESSION['tp_defuse_installed'] = false;
+                    $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
+                        ' could not be recovered &nbsp;&nbsp;'.
+                        '<img src=\"images/minus-circle.png\"></span><br />';
+                    }
             } else {
                 $okEncryptKey = true;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is <b>'.

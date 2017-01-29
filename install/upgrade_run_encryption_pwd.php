@@ -19,6 +19,13 @@ error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
+// if already defused then current instance of Teampss has already been updated to 2.1.27
+if (isset($_SESSION['tp_defuse_installed']) && $_SESSION['tp_defuse_installed'] === true) {
+    echo '[{"finish":"1" , "next":"" , "error":""}]';
+    return false;
+}
+
+
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 if (!file_exists("../includes/config/settings.php")) {
@@ -45,6 +52,7 @@ $dbTmp = mysqli_connect(
     $_SESSION['db_bdd'],
     $_SESSION['db_port']
 );
+
 
 fputs($dbgDuo, "\n\nSELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']."\n");
@@ -73,13 +81,14 @@ if (!$rows) {
 
 while ($data = mysqli_fetch_array($rows)) {
     fputs($dbgDuo, "\n\n-----\nItem : ".$data['id']);
+
     // check if pw encrypted with protocol #3
     if (!empty($data['pw_iv'])) {
         $pw = cryption_phpCrypt($data['pw'], SALT, $data['pw_iv'], "decrypt");
         // nothing to do - last encryption protocol (#3) used
         fputs($dbgDuo, "\nItem is correctly encrypted");
     } else {
-        if (!empty($data['pw'])) {
+        if (!empty($data['pw']) && substr($data['pw'], 0, 3) !== "def") {
             // check if pw encrypted with protocol #2
             $pw = decrypt($data['pw']);
             if (empty($pw)) {
@@ -88,15 +97,6 @@ while ($data = mysqli_fetch_array($rows)) {
             }
 
             // get key for this pw
-            $resData = mysqli_query($dbTmp,
-                "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
-                WHERE `sql_table` = 'items' AND id = ".$data['id']
-            );
-            if (!$resData) {
-                echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
-                exit();
-            }
-
             $resData = mysqli_query($dbTmp,
                 "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
                 WHERE `sql_table` = 'items' AND id = ".$data['id']

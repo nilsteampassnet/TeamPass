@@ -129,6 +129,24 @@ $dbTmp = mysqli_connect(
 	$_SESSION['db_port']
 );
 
+// 2.1.27 check with DEFUSE
+// check if library defuse already on-going here
+// if yes, then don't execute re-encryption
+$exists = false;
+$columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['tbl_prefix']."items");
+while ($c = mysqli_fetch_assoc( $columns)) {
+    if ($c['Field'] === "encryption_type") {
+        $exists = true;
+    }
+}
+if ($exists) {
+    // no need to convert
+    $_SESSION['tp_defuse_installed'] = true;
+} else {
+    $_SESSION['tp_defuse_installed'] = false;
+}
+
+
 ## Populate table MISC
 $val = array(
 	array('admin', 'max_latest_items', '10',0),

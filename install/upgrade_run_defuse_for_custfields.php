@@ -21,6 +21,12 @@ error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
+// if already defused
+if (isset($_SESSION['tp_defuse_installed']) && $_SESSION['tp_defuse_installed'] === true) {
+    echo '[{"finish":"1" , "next":"" , "error":""}]';
+    return false;
+}
+
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';

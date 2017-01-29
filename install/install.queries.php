@@ -815,7 +815,7 @@ global \$SETTINGS;
                             `comment` text NOT NULL,
                             `folder_id` tinyint(12) NOT NULL,
                             `user_id` tinyint(12) NOT NULL,
-                            `timestamp` tinyint(12) NOT NULL,
+                            `timestamp` varchar(50) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

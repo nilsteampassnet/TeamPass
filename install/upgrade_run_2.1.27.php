@@ -132,6 +132,36 @@ $dbTmp = mysqli_connect(
     $_SESSION['db_port']
 );
 
+// 2.1.27 introduce new encryption protocol with DEFUSE library.
+// Now evaluate if current instance has already this version
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'teampass_version'"));
+if (count($tmp[0]) === 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_version', '".$k['version']."')"
+    );
+} else {
+    mysqli_query($dbTmp,
+        "UPDATE `".$_SESSION['tbl_prefix']."misc`
+        SET `valeur` = '".$k['version']."'
+        WHERE intitule = 'teampass_version' AND type = 'admin'"
+    );
+}
+
+// check if library defuse already on-going here
+// if yes, then don't execute re-encryption
+$exists = false;
+$columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['tbl_prefix']."items");
+while ($c = mysqli_fetch_assoc( $columns)) {
+    if ($c['Field'] === "encryption_type") {
+        $exists = true;
+    }
+}
+if ($exists) {
+    // no need to convert
+    $_SESSION['tp_defuse_installed'] = true;
+} else {
+    $_SESSION['tp_defuse_installed'] = false;
+}
 
 
 // alter table Items
@@ -264,89 +294,86 @@ if ($res === false) {
 
 
 //-- generate new DEFUSE key
-$filename = "../includes/config/settings.php";
-$settingsFile = file($filename);
-while (list($key,$val) = each($settingsFile)) {
-    if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
-    }
-}
-
-copy(
-    SECUREPATH."/teampass-seckey.txt",
-    SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
-);
-$new_salt = defuse_generate_key();
-file_put_contents(
-    SECUREPATH."/teampass-seckey.txt",
-    $new_salt
-);
-$_SESSION['new_salt'] = $new_salt;
-
-// update sk.php file
-copy(
-    $_SESSION['sk_file'],
-    $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
-);
-$data = file($_SESSION['sk_file']); // reads an array of lines
-function replace_a_line($data) {
-    global $new_salt;
-    if (stristr($data, "@define('SALT'")) {
-        return "";
-    }
-    return $data;
-}
-$data = array_map('replace_a_line', $data);
-file_put_contents($_SESSION['sk_file'], implode('', $data));
-//--
-
-
-// add field encryption_type to LOG_ITEMS table
-mysqli_query($dbTmp,
-    "INSERT INTO `".$_SESSION['tbl_prefix']."misc`
-    VALUES ('admin', 'encryption_type', 'not_set')"
-);
-
-//-- users need to perform re-encryption of their personal pwds
-$result = mysqli_query(
-    $dbTmp,
-    "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type='admin' AND intitule='encryption_type'"
-);
-$row = mysqli_fetch_assoc($result);
-if ($row['valeur'] !== "defuse") {
-    $result = mysqli_query(
-        $dbTmp,
-        "SELECT id FROM `".$_SESSION['tbl_prefix']."users`"
-    );
-    while($row_user = mysqli_fetch_assoc($result)) {
-        $result_items = mysqli_query(
-            $dbTmp,
-            "SELECT i.id AS item_id
-            FROM `".$_SESSION['tbl_prefix']."nested_tree` AS n
-            INNER JOIN `".$_SESSION['tbl_prefix']."items` AS i ON (i.id_tree = n.id)
-            WHERE n.title = ".$row_user['id']
-        );
-        if (mysqli_num_rows($result_items) > 0) {
-            mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."users`
-                SET `upgrade_needed` = '1'
-                WHERE id = ".$row_user['id']
-            );
-        } else {
-            mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."users`
-                SET `upgrade_needed` = '0'
-                WHERE id = ".$row_user['id']
-            );
+if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed'] === false) {
+    $filename = "../includes/config/settings.php";
+    $settingsFile = file($filename);
+    while (list($key,$val) = each($settingsFile)) {
+        if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
+            $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
         }
     }
 
-    mysqli_query($dbTmp,
-        "UPDATE `".$_SESSION['tbl_prefix']."misc`
-        SET `valeur` = 'defuse'
-        WHERE `type`='admin' AND `initule`='encryption_type'"
+    copy(
+        SECUREPATH."/teampass-seckey.txt",
+        SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".rand(10000)
     );
+    $new_salt = defuse_generate_key();
+    file_put_contents(
+        SECUREPATH."/teampass-seckey.txt",
+        $new_salt
+    );
+    $_SESSION['new_salt'] = $new_salt;
+
+    // update sk.php file
+    copy(
+        $_SESSION['sk_file'],
+        $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".rand(10000)
+    );
+    $data = file($_SESSION['sk_file']); // reads an array of lines
+    function replace_a_line($data) {
+        global $new_salt;
+        if (stristr($data, "@define('SALT'")) {
+            return "";
+        }
+        return $data;
+    }
+    $data = array_map('replace_a_line', $data);
+    file_put_contents($_SESSION['sk_file'], implode('', $data));
+
+    //
+    //
+    //-- users need to perform re-encryption of their personal pwds
+    $result = mysqli_query(
+        $dbTmp,
+        "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type='admin' AND intitule='encryption_type'"
+    );
+    $row = mysqli_fetch_assoc($result);
+    if ($row['valeur'] !== "defuse") {
+        $result = mysqli_query(
+            $dbTmp,
+            "SELECT id FROM `".$_SESSION['tbl_prefix']."users`"
+        );
+        while($row_user = mysqli_fetch_assoc($result)) {
+            $result_items = mysqli_query(
+                $dbTmp,
+                "SELECT i.id AS item_id
+                FROM `".$_SESSION['tbl_prefix']."nested_tree` AS n
+                INNER JOIN `".$_SESSION['tbl_prefix']."items` AS i ON (i.id_tree = n.id)
+                WHERE n.title = ".$row_user['id']
+            );
+            if (mysqli_num_rows($result_items) > 0) {
+                mysqli_query($dbTmp,
+                    "UPDATE `".$_SESSION['tbl_prefix']."users`
+                    SET `upgrade_needed` = '1'
+                    WHERE id = ".$row_user['id']
+                );
+            } else {
+                mysqli_query($dbTmp,
+                    "UPDATE `".$_SESSION['tbl_prefix']."users`
+                    SET `upgrade_needed` = '0'
+                    WHERE id = ".$row_user['id']
+                );
+            }
+        }
+
+        mysqli_query($dbTmp,
+            "UPDATE `".$_SESSION['tbl_prefix']."misc`
+            SET `valeur` = 'defuse'
+            WHERE `type`='admin' AND `initule`='encryption_type'"
+        );
+    }
 }
+//--
 
 
 // add field encrypted_psk to Users table
@@ -428,7 +455,7 @@ mysqli_query(
     `comment` text NOT NULL,
     `folder_id` tinyint(12) NOT NULL,
     `user_id` tinyint(12) NOT NULL,
-    `timestamp` tinyint(12) NOT NULL,
+    `timestamp` varchar(50) NOT NULL DEFAULT 'none',
     PRIMARY KEY (`id`)
     ) CHARSET=utf8;"
 );
