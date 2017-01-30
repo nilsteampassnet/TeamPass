@@ -807,7 +807,7 @@ global \$SETTINGS;
                             `id` tinyint(10) NOT NULL AUTO_INCREMENT,
                             `item_id` tinyint(12) NOT NULL,
                             `label` varchar(255) NOT NULL DEFAULT 'none',
-                            `pwd` text NOT NULL,
+                            `pw` text NOT NULL,
                             `login` varchar(255) NOT NULL DEFAULT 'none',
                             `email` varchar(255) NOT NULL DEFAULT 'none',
                             `url` varchar(255) NOT NULL DEFAULT 'none',

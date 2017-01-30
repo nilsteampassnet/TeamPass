@@ -203,7 +203,7 @@ if (isset($_SESSION['login'])) {
     ) {
         echo '
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'suggestion\')">
-                    <i class="fa fa-lightbulb-o fa-2x tip" title="'.$LANG['suggestion_menu'].'"></i>
+                    <i class="fa fa-lightbulb-o fa-2x tip" id="menu_icon_suggestions" title="'.$LANG['suggestion_menu'].'"></i>
                 </a>';
     }
     // Admin menu

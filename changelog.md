@@ -20,6 +20,9 @@ Last changes
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
  #     Copy folders
+ #1628 URL link to specific item does not work
+ #1627 Improved label preview length
+ #1625 Request to add/change password
  #1624 Error 500 while importing item with API (with PHP < 7)
  #1621 New option: OTV can be disabled
  #     New option: create Item without password

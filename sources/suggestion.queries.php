@@ -310,13 +310,13 @@ if (!empty($_POST['type'])) {
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
                 $_POST['id']
             );
-            $tmp = cryption($data['pwd'], "", "decrypt");
+            $tmp = cryption($data['pw'], "", "decrypt");
             $data['pw'] = $tmp['string'];
 
 
             $data_current = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items WHERE id = %i",
-                $_POST['id']
+                $data['item_id']
             );
             $tmp = cryption($data_current['pw'], "", "decrypt");
             $data_current['pw'] = $tmp['string'];
@@ -329,11 +329,11 @@ if (!empty($_POST['type'])) {
             <td>'.$LANG['label'].'</td>
             <td>'.$data_current['label'].'</td>
             ';
-            if (!empty($data['label'])) {
+            if (!empty($data['label']) && $data['label'] !== $data_current['label']) {
                 $html .= '<td style="text-align:center;">
                 <input type="text" id="label_change" value="'.$data['label'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
                 </td>
-                <td style="text-align:center;" id="confirm_label"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_label-check"></span></td>';
+                <td style="text-align:center;" id="confirm_label"><span class="fa fa-check mi-green fa-lg confirm_change tip" id="confirm_label-check" style="cursor:pointer;" title="'.addslashes($LANG['Dont_update_with_this_data']).'"></span></td>';
             } else {
                 $html .= '<td></td><td></td>';
             }
@@ -342,11 +342,11 @@ if (!empty($_POST['type'])) {
             <tr border-bottom="1px #009888 solid" margin-bottom="3px;">
             <td>'.$LANG['pw'].'</td>
             <td>'.$data_current['pw'].'</td>';
-            if (!empty($data['pw'])) {
+            if (!empty($data['pw']) && $data['pw'] !== $data_current['pw']) {
                 $html .= '<td style="text-align:center;">
                 <input type="text" id="pw_change" value="'.$data['pw'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
                 </td>
-                <td style="text-align:center;" id="confirm_pw"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_pw-check"></span></td>';
+                <td style="text-align:center;" id="confirm_pw"><span class="fa fa-check mi-green fa-lg confirm_change tip" id="confirm_pw-check" style="cursor:pointer;" title="'.addslashes($LANG['Dont_update_with_this_data']).'"></span></td>';
             } else {
                 $html .= '<td></td><td></td>';
             }
@@ -355,11 +355,11 @@ if (!empty($_POST['type'])) {
             <tr>
             <td>'.$LANG['index_login'].'</td>
             <td>'.$data_current['login'].'</td>';
-            if (!empty($data['login'])) {
+            if (!empty($data['login']) && $data['login'] !== $data_current['login']) {
                 $html .= '<td style="text-align:center;">
                 <input type="text" id="login_change" value="'.$data['login'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
                 </td>
-                <td style="text-align:center;" id="confirm_login"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_login-check"></span></td>';
+                <td style="text-align:center;" id="confirm_login"><span class="fa fa-check mi-green fa-lg confirm_change tip" id="confirm_login-check" style="cursor:pointer;" title="'.addslashes($LANG['Dont_update_with_this_data']).'"></span></td>';
             } else {
                 $html .= '<td></td><td></td>';
             }
@@ -368,11 +368,11 @@ if (!empty($_POST['type'])) {
             <tr>
             <td>'.$LANG['email'].'</td>
             <td>'.$data_current['email'].'</td>';
-            if (!empty($data['email'])) {
+            if (!empty($data['email']) && $data['email'] !== $data_current['email']) {
                 $html .= '<td style="text-align:center;">
                 <input type="text" id="email_change" value="'.$data['email'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
                 </td>
-                <td style="text-align:center;" id="confirm_email"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_email-check"></span></td>';
+                <td style="text-align:center;" id="confirm_email"><span class="fa fa-check mi-green fa-lg confirm_change tip" id="confirm_email-check" style="cursor:pointer;" title="'.addslashes($LANG['Dont_update_with_this_data']).'"></span></td>';
             } else {
                 $html .= '<td></td><td></td>';
             }
@@ -381,11 +381,11 @@ if (!empty($_POST['type'])) {
             <tr>
             <td>'.$LANG['url'].'</td>
             <td>'.$data_current['url'].'</td>';
-            if (!empty($data['url'])) {
+            if (!empty($data['url']) && $data['url'] !== $data_current['url']) {
                 $html .= '
                 <td style="text-align:center;"><input type="text" id="url_change" value="'.$data['url'].'" class="ui-widget-content ui-corner-all" style="width:95%; padding:1px;">
                 </td>
-                <td style="text-align:center;" id="confirm_url"><span class="fa fa-check mi-green fa-lg confirm_change" id="confirm_url-check"></span></td>';
+                <td style="text-align:center;" id="confirm_url"><span class="fa fa-check mi-green fa-lg confirm_change tip" id="confirm_url-check" style="cursor:pointer;" title="'.addslashes($LANG['Dont_update_with_this_data']).'"></span></td>';
             } else {
                 $html .= '<td></td><td></td>';
             }
@@ -396,7 +396,9 @@ if (!empty($_POST['type'])) {
 
             <div style="margin-top:15px;">
             <label class="form_label_100" style="padding:4px;">'.$LANG['comment'].'</label><input type="text" id="comment_change" value="'.$data['comment'].'" class="input_text_80 ui-widget-content ui-corner-all">
-            </div>';
+            </div>
+
+            <div id="suggestion_view_wait" class="ui-widget-content ui-state-focus ui-corner-all" style="margin-top:15px; padding:10px; text-align:center; font-size:16px; display:none;"></div>';
 
             echo prepareExchangedData(
                 array(
@@ -405,6 +407,93 @@ if (!empty($_POST['type'])) {
                 ),
                 "encode"
             );
+        break;
+
+
+        case "approve_item_change":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // read changes proposal
+            $data = DB::queryfirstrow(
+                "SELECT * FROM ".$pre."items_change WHERE id = %i",
+                $_POST['id']
+            );
+
+            // read current item
+            $current_item = DB::queryfirstrow(
+                "SELECT * FROM ".$pre."items WHERE id = %i",
+                $data['item_id']
+            );
+
+            // get author login
+            $author = DB::queryfirstrow(
+                "SELECT login FROM ".$pre."users WHERE id = %i",
+                $data['user_id']
+            );
+
+            // prepare query
+            $fields_array = array();
+            $fields_to_update = explode(";", $_POST['data']);
+            foreach ($fields_to_update as $field) {
+                if (!empty($field)) {
+                    $fields_array[$field] = $data[$field];
+                }
+            }
+
+            // update item
+            DB::update(
+                prefix_table("items"),
+                $fields_array,
+                "id = %i",
+                $data['item_id']
+            );
+
+            // Log all modifications done
+            foreach ($fields_to_update as $field) {
+                if (!empty($field)) {
+                    if ($field !== "pw") {
+                        logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$current_item[$field].' => '.$data[$field]);
+                    } else if ($field === "description") {
+                        logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field);
+                    } else {
+                        $oldPwClear = cryption(
+                            $current_item['pw'],
+                            "",
+                            "decrypt"
+                        );
+                        logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$oldPwClear);
+                    }
+                }
+            }
+
+            // delete change proposal
+            DB::delete(
+                $pre."items_change",
+                "id = %i",
+                $_POST['id']
+            );
+
+        break;
+
+
+        case "reject_item_change":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // delete change proposal
+            DB::delete(
+                $pre."items_change",
+                "id = %i",
+                $_POST['id']
+            );
+
         break;
     }
 }

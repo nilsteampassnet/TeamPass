@@ -469,6 +469,7 @@ if (isset($_POST['newtitle'])) {
                         && isset($_SESSION['settings']['subfolder_rights_as_parent'])
                         && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                         && $_SESSION['is_admin'] !== 0
+                        || ($isPersonal != 1 && $parentId === "0")
                     ){
                         //Get user's rights
                         @identifyUserRights(

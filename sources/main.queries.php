@@ -1035,4 +1035,27 @@ switch ($_POST['type']) {
 
         echo json_encode($array);
         break;
+
+    /**
+     * Check if suggestions are existing
+     */
+    case "is_existings_suggestions":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if ($_SESSION['user_manager'] === "1" || $_SESSION['is_admin'] === "1") {
+            $count = 0;
+            DB::query("SELECT * FROM ".$pre."items_change");
+            $count += DB::count();
+            DB::query("SELECT * FROM ".$pre."suggestion");
+            $count += DB::count();
+
+            echo '[ { "error" : "" , "count" : "'.$count.'"} ]';
+        } else {
+            echo '[ { "error" : "no" , "count" : ""} ]';
+        }
+
+        break;
 }

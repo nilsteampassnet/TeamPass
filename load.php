@@ -1172,6 +1172,34 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         $("#detele_fav_id").val(id);
         OpenDialogBox("div_delete_fav");
     }';
+} else if (isset($_GET['page'])) {
+    // simulate a CRON activity (only 4 secs after page loading)
+    // check for existing suggestions / changes
+    $htmlHeaders .= '
+    setTimeout(
+        function() {
+            $.post(
+                "sources/main.queries.php",
+                {
+                    type    : "is_existings_suggestions",
+                    key     : "'.$_SESSION['key'].'"
+                },
+                function(data) {
+                    //check if format error
+                    if (data[0].error === "" && data[0].count > 0) {
+                        $("#menu_icon_suggestions").addClass("mi-red");
+
+                        setInterval(function(){blink()}, 700);
+                        function blink() {
+                            $("#menu_icon_suggestions").fadeTo(100, 0.1).fadeTo(200, 1.0);
+                        }
+                    }
+                },
+                "json"
+            );
+        },
+        4000
+    );';
 }
 
 $htmlHeaders .= '

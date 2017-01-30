@@ -100,12 +100,12 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
     <input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />
     <input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />
-    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
     <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
@@ -151,7 +151,7 @@ echo '
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
                     </ul>
-               	</li>
+                </li>
             </ul>
         </div>
         <div style="margin:3px 0px 10px 18px;font-weight:bold;">
@@ -233,7 +233,7 @@ echo '
                                         ', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '
                                         <li onclick="OpenDialog(\'div_suggest_change\', \'false\')"><i class="fa fa-random fa-fw"></i>&nbsp; '.$LANG['suggest_password_change'].'</li>' : '', '
                                     </ul>
-                               	</li>
+                                </li>
                             </ul>
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
@@ -415,7 +415,7 @@ echo '
 // Line for FOLDERS
 echo '
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:200px"><option style="display: none;"></option></select>';
+            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:250px; padding:3px;" class="ui-widget-content"><option style="display: none;"></option></select>';
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
@@ -597,7 +597,7 @@ echo '
 echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:200px;"><option style="display: none;"></option></select>
+            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:250px; padding:3px;" class="ui-widget-content"><option style="display: none;"></option></select>
             </div>';
 // Line for LOGIN
 echo '
@@ -766,24 +766,23 @@ echo '
     <table>
         <tr>
             <td>'.$LANG['label'].' : </td>
-            <td><input type="text" size="20" id="new_rep_titre" /></td>
+            <td><input type="text" id="new_rep_titre" style="width:242px; padding:3px;" class="ui-widget-content" /></td>
         </tr>
         <tr>
             <td>'.$LANG['sub_group_of'].' : </td>
-            <td><select id="new_rep_groupe"><option style="display: none;"></option>
-                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
-                '<option value="0">---</option>' : '', '' .'
+            <td><select id="new_rep_groupe" style="width:250px; padding:3px;" class="ui-widget-content">
+                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '
             </select></td>
         </tr>
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
-            <td><select id="new_rep_complexite">';
+            <td><select id="new_rep_complexite" style="width:250px; padding:3px;" class="ui-widget-content">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
             </select>
-           	</td>
+            </td>
         </tr>';
 echo '
     </table>
@@ -798,23 +797,22 @@ echo '
     <table>
         <tr>
             <td>'.$LANG['new_label'].' : </td>
-            <td><input type="text" size="20" id="edit_folder_title" /></td>
+            <td><input type="text" id="edit_folder_title" style="width:242px; padding:3px;" class="ui-widget-content" /></td>
         </tr>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
-            <td><select id="edit_folder_folder">
-                <option value="0">-choisir-</option></select></td>
+            <td><select id="edit_folder_folder" style="width:250px; padding:3px;" class="ui-widget-content"></select></td>
         </tr>
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
-            <td><select id="edit_folder_complexity">
+            <td><select id="edit_folder_complexity" style="width:250px; padding:3px;" class="ui-widget-content">
                 <option value="">---</option>';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
             </select>
-	        </td>
+            </td>
         </tr>
     </table>
     <div id="edit_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -858,8 +856,7 @@ echo '
     <table>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
-            <td><select id="delete_rep_groupe" onclick="">
-                <option value="0">-choisir-</option>
+            <td><select id="delete_rep_groupe" style="width:250px; padding:3px;" class="ui-widget-content">
             </select></td>
         </tr>
         <tr>
@@ -900,7 +897,7 @@ echo '
     <div>'.$LANG['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
-            ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
+            ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '' .
         '</select>
     </div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>

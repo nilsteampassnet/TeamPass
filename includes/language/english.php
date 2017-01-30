@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'show_suggestions' => 'New suggestions',
     'show_changes' => 'Change proposals',
     'suggest_password_change' => 'Suggest a password change',

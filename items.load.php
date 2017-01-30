@@ -1077,7 +1077,7 @@ function AddNewFolder()
 {
     if ($("#new_rep_titre").val() == "") {
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_label']);?>").show();
-    } else if ($("#new_rep_groupe").val() == "0") {
+    } else if ($("#new_rep_groupe").val() === "") {
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']);?>").show();
     } else if ($("#new_rep_complexite").val() == "") {
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']);?>").show();
@@ -1181,12 +1181,14 @@ function SupprimerFolder()
 
 function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload, id_tree)
 {
-    console.log(id+"--"+("#request_ongoing").val());
     // If a request is already launched, then kill new.
     if ($("#request_ongoing").val() !== "") {
         request.abort();
         return;
     }
+    id_tree = id_tree || "";
+    salt_key_required = salt_key_required || 0;
+    id_tree = id_tree || "";
     id_tree = id_tree || "";
 
     // Store status query running
@@ -2275,17 +2277,14 @@ function refreshVisibleFolders()
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
             //check if format error
             if (data.error == "") {
-                // clear list (except the entries with value = 0)
-                $('#new_rep_groupe option[value!="0"]').remove();
-                $('#edit_folder_folder option[value!="0"]').remove();
-                $('#move_folder_id option[value!="0"]').remove();
-                $('#delete_rep_groupe option[value!="0"]').remove();
-                $('#copy_in_folder option[value!="0"]').remove();
-
                 // append new list
                 $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
                 $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
                 $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
+
+                // remove ROOT option if exists
+                $('#edit_folder_folder option[value="0"]').remove();
+                $('#delete_rep_groupe option[value="0"]').remove();
             }
         }
    );
@@ -2483,7 +2482,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 350,
+        width: 490,
         height: 280,
         title: "<?php echo $LANG['item_menu_edi_rep'];?>",
         buttons: {
@@ -3112,7 +3111,13 @@ $(function() {
                     },
                     function(data) {
                         if (data[0].error === "") {
-                            $("#div_suggest_change_wait").html("<?php echo $LANG['suggestion_done'];?>").show(1).delay(2000).fadeOut(1000);
+                            $("#div_suggest_change_wait").html("<?php echo $LANG['suggestion_done'];?>").show(1).delay(1500).fadeOut(1000);
+                            setTimeout(
+                                function() {
+                                    $("#div_suggest_change").dialog("close");
+                                },
+                                500
+                            );
                         }
                     },
                     "json"
@@ -3374,9 +3379,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     }
 
     //Load item if needed and display items list
-    if ($("#open_id").val() !== "") {console.log(">> open "+$("#open_id").val());
-        AfficherDetailsItem($("#open_id").val(), "", "", "", "", "", "", "");
-console.log(">> suite1");
+    if ($("#open_id").val() !== "") {
+        AfficherDetailsItem($("#open_id").val());
         //refreshTree($("#hid_cat").val(), "0");
         $("#open_item_by_get").val("");
     }

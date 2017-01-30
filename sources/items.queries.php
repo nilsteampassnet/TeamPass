@@ -1263,7 +1263,7 @@ if (isset($_POST['type'])) {
                 );
                 $arrData['edit_item_salt_key'] = 0;
             }
-            
+
             $pw = @$pw['string'];
             if (!isUTF8($pw)) {
                 $pw = '';
@@ -2203,16 +2203,26 @@ if (isset($_POST['type'])) {
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr(stripslashes(handleBackslash($record['label'])), 0, 65);
-                        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
-                            $tempo = explode("<br />", $record['description']);
-                            if (count($tempo) == 1) {
-                                $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($record['description']), 0, 30))).']</font>';
-                            } else {
-                                $html .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(substr(cleanString($tempo[0]), 0, 30))).']</font>';
-                            }
+
+                            // manage text to show
+                        $label = stripslashes(handleBackslash($record['label']));
+                        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === "1") {
+                            $desc = explode("<br>", $record['description']);
+                            $desc = strip_tags(stripslashes(cleanString($desc[0])));
+                        } else {
+                            $desc = "";
+                        }
+                        if (strlen($label) >= 95 || $desc === "") {
+                            $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr($label, 0, 100);
+                        } else if (strlen($label) < 95 && strlen($label) > 65) {
+                            $item_text = substr($label, 0, 65);
+                            $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$item_text.'&nbsp;<font size="1px">['.substr($desc, 0, 95 - strlen($label)).']</font>';
+                        } else if (strlen($label) <= 65) {
+                            $item_text = substr($label, 0, 65);
+                            $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$item_text.'&nbsp;<font size="1px">['.substr($desc, 0, 95 - strlen($label)).']</font>';
                         }
                         $html .= '</a>';
+
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($need_sk == true && isset($_SESSION['user_settings']['session_psk'])) {
@@ -3409,6 +3419,9 @@ if (isset($_POST['type'])) {
 
             // Build list of visible folders
             $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
+            if (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) {
+                $selectVisibleFoldersOptions = '<option value="0">'.$LANG['root'].'</option>';
+            }
 
             if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
                 && $k['admin_full_right'] == true) || !isset($k['admin_full_right'])) {
@@ -3661,7 +3674,7 @@ if (isset($_POST['type'])) {
                 array(
                     'item_id' => $item_id,
                     'label' => $label,
-                    'pwd' => $encrypt['string'],
+                    'pw' => $encrypt['string'],
                     'login' => $login,
                     'email' => $email,
                     'url' => $url,

@@ -200,6 +200,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                     });
                     oTable2.fnDraw(false);
                 }
+                $('#tabs').tooltipster({multiple: true});
             }
         });
 
@@ -345,32 +346,57 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             title: "<?php echo $LANG['suggestion_delete_confirm'];?>",
             buttons: {
                 "<?php echo $LANG['approve'];?>": function() {
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
+
+                    // select fields to update
+                    var fields_to_update = "";
+                    if ($("#confirm_label-check").length !== 0) fields_to_update += "label;";
+                    if ($("#confirm_pw-check").length !== 0) fields_to_update += "pw;";
+                    if ($("#confirm_login-check").length !== 0) fields_to_update += "login;";
+                    if ($("#confirm_url-check").length !== 0) fields_to_update += "url;";
+                    if ($("#confirm_email-check").length !== 0) fields_to_update += "email;";
+
                     $.post(
                         "sources/suggestion.queries.php",
                         {
-                            type    : "delete_suggestion",
+                            type    : "approve_item_change",
                             id      : $("#suggestion_id").val(),
+                            data    : fields_to_update,
                             key     : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
-                            $("#div_suggestion_view").dialog("close");
+                            $("#suggestion_view_wait").html("<?php echo $LANG['alert_message_done'];?>");
                             oTable = $("#t_change").dataTable();
                             oTable.fnDraw();
+                            setTimeout(
+                                function() {
+                                    $("#div_suggestion_view").dialog("close");
+                                },
+                                1500
+                            );
                         }
                     )
                 },
                 "<?php echo $LANG['reject'];?>": function() {
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
                     $.post(
                         "sources/suggestion.queries.php",
                         {
-                            type    : "delete_suggestion",
+                            type    : "reject_item_change",
                             id      : $("#suggestion_id").val(),
                             key     : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
-                            $("#div_suggestion_view").dialog("close");
+
+                            $("#suggestion_view_wait").html("<?php echo $LANG['alert_message_done'];?>");
                             oTable = $("#t_change").dataTable();
                             oTable.fnDraw();
+                            setTimeout(
+                                function() {
+                                    $("#div_suggestion_view").dialog("close");
+                                },
+                                1500
+                            );
                         }
                     )
                 },
@@ -405,7 +431,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                                 console.log($(this).attr("id"));
                                 var tmp = $(this).attr("id").split('-');
                                 $("#"+tmp[0]).html('<span class="fa fa-close mi-red fa-lg"></span>');
-                                tmp = tmp[0].split('_');console.log(tmp[1]+"_change");
+                                tmp = tmp[0].split('_');
                                 $("#"+tmp[1]+"_change").val("").remove();
                             });
                         }
