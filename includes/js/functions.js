@@ -200,6 +200,15 @@ function IsValidEmail(email){
     return filter.test(email);
 }
 
+/**
+*   Checks if URL has expected format
+**/
+function validateURL(textval) {
+    var urlregex = new RegExp(
+        "^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
+    return urlregex.test(textval);
+}
+
 
 function split( val ) {
     return val.split( / \s*/ );

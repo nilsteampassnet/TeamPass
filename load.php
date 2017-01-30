@@ -1172,7 +1172,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         $("#detele_fav_id").val(id);
         OpenDialogBox("div_delete_fav");
     }';
-} else if (isset($_GET['page'])) {
+} else if (isset($_GET['page']) && isset($_SESSION['user_id'])) {
     // simulate a CRON activity (only 4 secs after page loading)
     // check for existing suggestions / changes
     $htmlHeaders .= '

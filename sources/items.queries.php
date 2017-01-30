@@ -1656,13 +1656,17 @@ if (isset($_POST['type'])) {
                 );
             }
 
+            // has this item a change proposal
+            DB::query("SELECT * FROM ".$pre."items_change WHERE item_id = %i", $_POST['id']);
+
             echo prepareExchangedData(
                 array(
                     "history" => htmlspecialchars($history, ENT_QUOTES, 'UTF-8'),
                     "history_of_pwds" => htmlspecialchars($historyOfPws, ENT_QUOTES, 'UTF-8'),
                     "favourite" => $favourite,
                     "files_edit" => $filesEdit,
-                    "files_id" => $files_id
+                    "files_id" => $files_id,
+                    "has_change_proposal" => DB::count()
                 ),
                 "encode"
             );

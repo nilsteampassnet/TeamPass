@@ -1639,9 +1639,16 @@ function showDetailsStep2(id, param)
                 $("#menu_button_del_fav").attr("disabled","disabled");
             }
 
+            // set indicator if item has change proposal
+            if (data.has_change_proposal !== 0) {
+                $("#item_extra_info").prepend('<i class="fa fa-lightbulb-o fa-sm mi-yellow tip" title="<?php echo $LANG['item_has_change_proposal'];?>" onclick=""></i>&nbsp;');
+            }
+
             $(param).prop("disabled", false);
             $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
             $("#div_loading").hide();
+
+            $(".tip").tooltipster({multiple: true});
 
             // refresh
             refreshListLastSeenItems();
@@ -3096,7 +3103,17 @@ $(function() {
         title: "<?php echo $LANG['suggest_password_change'];?>",
         buttons: {
             "<?php echo $LANG['ok'];?>": function() {
-                $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show();
+                $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show().removeClass("ui-state-error");
+
+                // do checks
+                if (!IsValidEmail($("#email_change").val())) {
+                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo $LANG['email_format_is_not_correct'];?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                    return false;
+                }
+                if (!validateURL($("#url_change").val())) {
+                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo $LANG['url_format_is_not_correct'];?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                    return false;
+                }
 
                 // prepare changes
                 var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '", "folder":"' + $("#hid_cat").val() + '", "comment":"' + $("#comment_change").val() + '", "item_id":"' + $("#id_item").val() + '"}';

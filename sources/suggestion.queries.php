@@ -470,6 +470,9 @@ if (!empty($_POST['type'])) {
                 }
             }
 
+            // Update CACHE table
+            updateCacheTable("update_value", $data['item_id']);
+
             // delete change proposal
             DB::delete(
                 $pre."items_change",

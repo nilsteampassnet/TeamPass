@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'email_format_is_not_correct' => 'Email format is not correct',
+    'url_format_is_not_correct' => 'URL format is not correct',
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'show_suggestions' => 'New suggestions',
     'show_changes' => 'Change proposals',
@@ -21,6 +23,7 @@ $LANG = array (
     'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
     'suggestion_done' => 'Suggestion has been stored.',
     'suggest_change_password_blank' => 'Leave this field empty if you DON\'T want to suggest a password change',
+    'item_has_change_proposal' => 'Change proposal available for this item',
     'item_id' => 'Item ID',
     'approve' => 'Approve',
     'reject' => 'Reject',
