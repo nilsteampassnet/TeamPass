@@ -562,7 +562,7 @@ echo '
     </div>';
 echo '
     </form>
-    <div style="display:none; padding:5px;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:5px; margin-top:5px; text-align:center;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 
 /***************************

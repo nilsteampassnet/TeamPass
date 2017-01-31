@@ -293,6 +293,8 @@ if ($res === false) {
 }
 
 
+
+
 //-- generate new DEFUSE key
 if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed'] === false) {
     $filename = "../includes/config/settings.php";
@@ -305,7 +307,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
 
     copy(
         SECUREPATH."/teampass-seckey.txt",
-        SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".rand(10000)
+        SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".time()
     );
     $new_salt = defuse_generate_key();
     file_put_contents(
@@ -317,7 +319,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
     // update sk.php file
     copy(
         $_SESSION['sk_file'],
-        $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".rand(10000)
+        $_SESSION['sk_file'].'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".time()
     );
     $data = file($_SESSION['sk_file']); // reads an array of lines
     function replace_a_line($data) {
@@ -430,6 +432,13 @@ mysqli_query(
     $dbTmp,
     "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `tags` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
+
+// alter table MISC
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`);"
+);
+
 
 // add new admin setting "otv_is_enabled"
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));

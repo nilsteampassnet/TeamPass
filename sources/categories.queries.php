@@ -254,19 +254,15 @@ if (isset($_POST['type'])) {
                 if ($_POST['encrypt'] === "0") {
                     $encrypt = cryption(
                         $recordF['data'],
-                        SALT,
-                        $recordF['data_iv'],
+                        "",
                         "decrypt"
                     );
-                    $iv = "";
                 } else {
                     $encrypt = cryption(
                         $recordF['data'],
-                        SALT,
                         "",
                         "encrypt"
                     );
-                    $iv = $encrypt['iv'];
                 }
 
                 // store in DB
@@ -274,7 +270,7 @@ if (isset($_POST['type'])) {
                     prefix_table("categories_items"),
                     array(
                         'data' => $encrypt['string'],
-                        'data_iv' => $iv
+                        'data_iv' => ""
                        ),
                     "id = %i",
                     $recordF['id']
