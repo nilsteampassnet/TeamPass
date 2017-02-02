@@ -487,6 +487,7 @@ $LANG['settings_send_stats'].'
                         <div class="toggle toggle-modern" id="send_stats" data-toggle-on="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="send_stats_input" name="send_stats_input" value="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '1' : '0', '" />
                     </td>
                 </tr>';
+
 // Enable GET TP Information
 echo '
                     <tr><td>

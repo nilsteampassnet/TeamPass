@@ -70,6 +70,11 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
+} else if (isset($_GET['page']) && $_GET['page'] == "manage_main") {
+    $htmlHeaders .= '
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
+        <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
+        <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>';
 } else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
@@ -1124,13 +1129,136 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$LANG['admin_info'].'</span>"+data[0].output+"</ul>");
                 }
-                console.log("ending");
             },
             "json"
        );
     }
+
+    /*
+    * get statistics values
+    */
+    function showStatsValues() {
+        // send query
+        $.post(
+                "sources/admin.queries.php",
+            {
+                type   : "get_values_for_statistics",
+                key    : "'.$_SESSION['key'].'"
+            },
+            function(data) {
+                //decrypt data
+                try {
+                    data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                } catch (e) {
+                    // error
+                    $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
+
+                    return;
+                }
+                if (data.error === "") {
+                    $("#value_items").html(parseInt(data.items_public_perso) + parseInt(data.items_public));
+                    $("#value_country").html("");
+                    $("#value_folders").html(parseInt(data.counter_folders_perso) + parseInt(data.folders_public));
+                    $("#value_items_shared").html(parseInt(data.items_public));
+                    $("#value_folders_shared").html(parseInt(data.folders_public));
+                    $("#value_php").html(data.phpversion);
+                    $("#value_users").html(data.users);
+                    $("#value_admin").html(data.admins);
+                    $("#value_manager").html(data.managers);
+                    $("#value_ro").html(data.ro);
+                    $("#value_teampassv").html(data.tpv);
+                    $("#value_api").html(data.api);
+                    $("#value_duo").html(data.duo);
+                    $("#value_kb").html(data.kb);
+                    $("#value_pf").html(data.pf);
+                    $("#value_ldap").html(data.ldap);
+                    $("#value_agses").html(data.agses);
+                    $("#value_suggestion").html(data.suggestion);
+                    $("#value_api").html(data.api);
+                    $("#value_customfields").html(data.customfields);
+                    $("#value_syslog").html(data.syslog);
+                    $("#value_2fa").html(data.twofa);
+                    $("#value_https").html(data.sts);
+                    $("#value_mysql").html(data.mysqlversion);
+                    var langs = "";
+                    $.each(data.langs, function( index, value ) {
+                      if (value > 0) {
+                        if (langs === "") langs = index+":"+value;
+                        else langs += ";"+index+":"+value;
+                      }
+                    });
+                    $("#value_languages").html(langs);
+                }
+            }
+        );
+    }
+
     //Load function on page load
-    $(function() {console.log("starting");
+    $(function() {
+        showStatsValues();
+
+        $(".toggle").toggles({
+            drag: true, // allow dragging the toggle between positions
+            click: true, // allow clicking on the toggle
+            text: {
+                on: "'.$LANG['yes'].'", // text for the ON position
+                off: "'.$LANG['no'].'" // and off
+            },
+            on: true, // is the toggle ON on init
+            easing: "swing", // animation transition easing function
+            animate: 250, // animation time (ms)
+            width: 50, // width used if not set in css
+            height: 20, // height if not set in css
+            type: "compact" // if this is set to select then the select style toggle will be used
+        });
+        $(".toggle").on("toggle", function(e, active) {
+            if (active) {
+                $("#send_stats_input").val(1);
+            } else {
+                $("#send_stats_input").val(0);
+            }
+
+            // store in DB
+            var data = {"field":"send_stats", "value":$(\'#send_stats_input\').val()};
+            console.log(data);
+            $.post(
+                "sources/admin.queries.php",
+                {
+                    type    : "save_option_change",
+                    data     : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'"),
+                    key     : "'.$_SESSION['key'].'"
+                },
+                function(data) {
+                    //decrypt data
+                    try {
+                        data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                    } catch (e) {
+                        // error
+                        $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
+
+                        return;
+                    }
+                    console.log(data);
+                    if (data.error == "") {
+                        $("#send_stats").after(\'<span class="fa fa-check fa-lg mi-green new_check" style="float:left;margin:-18px 0 0 56px;"></span>\');
+                        $(".new_check").fadeOut(2000);
+                        setTimeout("$(\'.new_check\').remove()", 2100);
+                    }
+                }
+            );
+        });
+
+
+
+        $(".stat_option").change(function(){
+            var myid = $(this).attr("id").split("_");
+            if (this.checked) {
+                $("#value_"+myid[1]).show();
+            } else {
+                $("#value_"+myid[1]).hide();
+            }
+        })
+
         LoadCPMInfo();
     });';
 } else if (isset($_GET['page']) && $_GET['page'] == "favourites") {

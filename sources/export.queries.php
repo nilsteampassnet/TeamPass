@@ -171,6 +171,16 @@ switch ($_POST['type']) {
                                 'tags' => $arr_tags
                             )
                         );
+
+                        // log
+                        logItems(
+                            $record['id'],
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_export',
+                            $_SESSION['login'],
+                            'pdf'
+                        );
                     }
                 }
                 $id_managed = $record['id'];
@@ -389,6 +399,16 @@ switch ($_POST['type']) {
                                 'tags' => implode(" ", $arr_tags)
                             );
                             $i++;
+
+                            // log
+                            logItems(
+                                $record['id'],
+                                $record['label'],
+                                $_SESSION['user_id'],
+                                'at_export',
+                                $_SESSION['login'],
+                                'csv'
+                            );
                         }
                     }
                     $id_managed = $record['id'];
@@ -423,7 +443,7 @@ switch ($_POST['type']) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 // count elements to display
                 $result = DB::query(
-                    "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso
+                    "SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
@@ -452,6 +472,16 @@ switch ($_POST['type']) {
                     ) {
                         array_push($idsList, $record['id']);
                         $objNumber++;
+
+                        // log
+                        logItems(
+                            $record['id'],
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_export',
+                            $_SESSION['login'],
+                            'html'
+                        );
                     }
                 }
             }

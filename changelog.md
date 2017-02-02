@@ -1,6 +1,3 @@
-Last changes
-
-
 2.1.27
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented

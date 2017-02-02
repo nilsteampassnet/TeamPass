@@ -25,6 +25,7 @@ $scripts_list = array(
     array('upgrade_run_encryption_suggestions.php', ""),
 	array('upgrade_run_2.1.27.php', ""),
     array('upgrade_run_defuse_for_pwds.php', ""),
+    array('upgrade_run_defuse_for_logs.php', ""),
     array('upgrade_run_defuse_for_categories.php', ""),
     array('upgrade_run_defuse_for_custfields.php', ""),
 	array('upgrade_run_final.php', "")
