@@ -52,6 +52,7 @@ $LANG = array (
     'characteristic' => 'Characteristic',
     'usage_example' => 'Usage example',
     'current_value' => 'Current value',
+    'save_statistics_choice' => 'Save your settings',
     'communication_means' => 'Communication means',
     'email_format_is_not_correct' => 'Email format is not correct',
     'url_format_is_not_correct' => 'URL format is not correct',

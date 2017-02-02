@@ -121,12 +121,12 @@ if (
                         maintenance = 0;
                     }
                     var data = "type="+step+
-                    "&db_host="+document.getElementById("db_host").value+
+                    /*"&db_host="+document.getElementById("db_host").value+
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
                     "&db_port="+(document.getElementById("db_port").value)+
-                    "&db_bdd="+document.getElementById("db_bdd").value+
+                    "&db_bdd="+document.getElementById("db_bdd").value+*/
                     "&no_maintenance_mode="+maintenance;
                 } else
                 if (step == "step3") {
@@ -301,20 +301,7 @@ if (
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 
-if (isset($_POST['db_host'])) {
-    $_SESSION['db_host'] = $_POST['db_host'];
-    $_SESSION['db_bdd'] = $_POST['db_bdd'];
-    $_SESSION['db_login'] = $_POST['db_login'];
-    $_SESSION['db_pw'] = $_POST['db_pw'];
-    $_SESSION['db_port'] = $_POST['db_port'];
-    $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
-    //$_SESSION['session_start'] = $_POST['session_start'];
-    if (isset($_POST['send_stats'])) {
-        $_SESSION['send_stats'] = $_POST['send_stats'];
-    } else {
-        $_SESSION['send_stats'] = "";
-    }
-}
+
 if (isset($_POST['root_url'])) {
     $_SESSION['fullurl'] = $_POST['root_url'];
 }
@@ -413,13 +400,31 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE 2
     echo '
                      <h3>Step 2</h3>
-                     <fieldset><legend>DataBase Informations</legend>
-                     <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" value="'.$_SESSION['server'].'" /><br />
-                     <label for="db_db">DataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
-                     <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
-                     <label for="db_pw">Password :</label><input type="text" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
-                     <label for="db_port">Port :</label><input type="text" id="db_port" name="db_port" class="step" value="',isset($_SESSION['port']) ? $_SESSION['port'] : "3306",'" /><br />
-                     <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
+                     <fieldset><legend>DataBase Informations</legend>';
+
+                     // check if all database  info are available
+                     if (
+                        isset($_SESSION['server']) && !empty($_SESSION['server'])
+                        && isset($_SESSION['database']) && !empty($_SESSION['database'])
+                        && isset($_SESSION['user']) && !empty($_SESSION['user'])
+                        && isset($_SESSION['pass'])
+                        && isset($_SESSION['port']) && !empty($_SESSION['port'])
+                        && isset($_SESSION['pre'])
+                    ) {
+                        echo '
+                        <div style="">
+                        The database information has been retreived from the settings file.<br>
+                        If you need to change them, please edit file `/includes/config/settings.php` and relaunch the upgrade process.
+                        </div>';
+                     } else {
+                        echo '
+                        <div style="">
+                        The database information has not been retreived from the settings file.<br>
+                        You need to adapt the file `/includes/config/settings.php` and relaunch the upgrade process.
+                        </div>';
+                     }
+
+                     echo '
                      </fieldset>
 
                      <fieldset><legend>Maintenance Mode</legend>

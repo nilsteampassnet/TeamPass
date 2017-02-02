@@ -1291,7 +1291,7 @@ switch ($_POST['type']) {
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
         $type = "admin";
-echo ">".$dataReceived;
+
         // Check if setting is already in DB. If NO then insert, if YES then update.
         $data = DB::query(
             "SELECT * FROM ".prefix_table("misc")."
@@ -1520,5 +1520,74 @@ echo ">".$dataReceived;
             "encode"
         );
 
+        break;
+
+        case "save_sending_statistics":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // send statistics
+        if (!is_null($_POST['status'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_stats");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "send_stats",
+                        'valeur' => $_POST['status']
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => $_POST['status']
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "send_stats"
+                );
+            }
+            $_SESSION['settings']['send_stats'] = $_POST['status'];
+        } else {
+            $_SESSION['settings']['send_stats'] = "0";
+        }
+
+        // send statistics items
+        if (!is_null($_POST['list'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "send_statistics_items",
+                        'valeur' => $_POST['list']
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => $_POST['list']
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "send_statistics_items"
+                );
+            }
+            $_SESSION['settings']['send_statistics_items'] = $_POST['list'];
+        } else {
+            $_SESSION['settings']['send_statistics_items'] = "";
+        }
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
         break;
 }

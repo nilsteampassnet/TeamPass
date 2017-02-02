@@ -438,6 +438,10 @@ mysqli_query(
     $dbTmp,
     "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`);"
 );
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` CHANGE valeur valeur VARCHAR(500) NOT NULL DEFAULT 'none'"
+);
 
 
 // add new admin setting "otv_is_enabled"

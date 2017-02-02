@@ -96,7 +96,7 @@ function tableExists($tablename, $database = false)
     $res = mysqli_query($dbTmp,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
-        WHERE table_schema = '".$_SESSION['db_bdd']."'
+        WHERE table_schema = '".$_SESSION['database']."'
         AND table_name = '$tablename'"
     );
 
@@ -331,24 +331,23 @@ if (isset($_POST['type'])) {
             //decrypt the password
             // AES Counter Mode implementation
             require_once 'libs/aesctr.php';
-            $dbPassword = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
-
+            
             // connexion
             if (
                 mysqli_connect(
-                    $_POST['db_host'],
-                    $_POST['db_login'],
-                    $dbPassword,
-                    $_POST['db_bdd'],
-                    $_POST['db_port']
+                    $_SESSION['server'],
+                    $_SESSION['user'],
+                    $_SESSION['pass'],
+                    $_SESSION['database'],
+                    $_SESSION['port']
                 )
             ) {
                 $dbTmp = mysqli_connect(
-                    $_POST['db_host'],
-                    $_POST['db_login'],
-                    $dbPassword,
-                    $_POST['db_bdd'],
-                    $_POST['db_port']
+                    $_SESSION['server'],
+                    $_SESSION['user'],
+                    $_SESSION['pass'],
+                    $_SESSION['database'],
+                    $_SESSION['port']
                 );
                 $res = "Connection is successful";
                 echo 'document.getElementById("but_next").disabled = "";';
@@ -406,18 +405,18 @@ if (isset($_POST['type'])) {
             #==========================
         case "step3":
             mysqli_connect(
-                $_SESSION['db_host'],
-                $_SESSION['db_login'],
-                $_SESSION['db_pw'],
-                $_SESSION['db_bdd'],
-                $_SESSION['db_port']
+                $_SESSION['server'],
+                $_SESSION['user'],
+                $_SESSION['pass'],
+                $_SESSION['database'],
+                $_SESSION['port']
             );
             $dbTmp = mysqli_connect(
-                $_SESSION['db_host'],
-                $_SESSION['db_login'],
-                $_SESSION['db_pw'],
-                $_SESSION['db_bdd'],
-                $_SESSION['db_port']
+                $_SESSION['server'],
+                $_SESSION['user'],
+                $_SESSION['pass'],
+                $_SESSION['database'],
+                $_SESSION['port']
             );
             $status = "";
 
@@ -436,20 +435,20 @@ if (isset($_POST['type'])) {
 
             //convert database
             mysqli_query($dbTmp,
-                "ALTER DATABASE `".$_SESSION['db_bdd']."`
+                "ALTER DATABASE `".$_SESSION['database']."`
                 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
             );
 
             //convert tables
-            $res = mysqli_query($dbTmp,"SHOW TABLES FROM `".$_SESSION['db_bdd']."`");
+            $res = mysqli_query($dbTmp,"SHOW TABLES FROM `".$_SESSION['database']."`");
             while ($table = mysqli_fetch_row($res)) {
                 if (substr($table[0], 0, 4) != "old_") {
                     mysqli_query($dbTmp,
-                        "ALTER TABLE ".$_SESSION['db_bdd'].".`{$table[0]}`
+                        "ALTER TABLE ".$_SESSION['database'].".`{$table[0]}`
                         CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
                     mysqli_query($dbTmp,
-                        "ALTER TABLE".$_SESSION['db_bdd'].".`{$table[0]}`
+                        "ALTER TABLE".$_SESSION['database'].".`{$table[0]}`
                         DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
                 }
@@ -542,12 +541,12 @@ global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPa
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"". $_SESSION['db_host'] ."\";
-\$user = \"". $_SESSION['db_login'] ."\";
-\$pass = \"". str_replace("$", "\\$", $_SESSION['db_pw']) ."\";
-\$database = \"". $_SESSION['db_bdd'] ."\";
-\$port = ". $_SESSION['db_port'] .";
-\$pre = \"". $_SESSION['tbl_prefix'] ."\";
+\$server = \"". $_SESSION['server'] ."\";
+\$user = \"". $_SESSION['user'] ."\";
+\$pass = \"". str_replace("$", "\\$", $_SESSION['pass']) ."\";
+\$database = \"". $_SESSION['database'] ."\";
+\$port = ". $_SESSION['port'] .";
+\$pre = \"". $_SESSION['pre'] ."\";
 \$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
@@ -645,7 +644,7 @@ require_once \"".$skFile."\";
 
             $mtables = array(); 
    
-            $mysqli = new mysqli($_POST['db_host'], $_POST['db_login'], $_POST['db_pw'], $_POST['db_bdd'], $_POST['db_port']);
+            $mysqli = new mysqli($_SESSION['server'], $_SESSION['user'], $_SESSION['pass'], $_SESSION['database'], $_SESSION['port']);
             if ($mysqli->connect_error) {
                 die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
             }

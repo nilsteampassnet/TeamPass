@@ -1195,6 +1195,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
 
     //Load function on page load
     $(function() {
+        $("#but_save_send_stat").button();
         showStatsValues();
 
         $(".toggle").toggles({
@@ -1217,39 +1218,39 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
             } else {
                 $("#send_stats_input").val(0);
             }
+        });
 
+        $("#but_save_send_stat").click(function() {
+            var list = "";
+            $(".stat_option:checked").each(function() {
+                list += $(this).attr("id")+";";
+            });
             // store in DB
-            var data = {"field":"send_stats", "value":$(\'#send_stats_input\').val()};
-            console.log(data);
             $.post(
                 "sources/admin.queries.php",
                 {
-                    type    : "save_option_change",
-                    data     : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'"),
+                    type    : "save_sending_statistics",
+                    list    : list,
+                    status  : $("#send_stats_input").val(),
                     key     : "'.$_SESSION['key'].'"
                 },
                 function(data) {
-                    //decrypt data
-                    try {
-                        data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
-                    } catch (e) {
-                        // error
-                        $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
+                    if (data[0].error === "" && data[0].result === "Done") {
+                        $("#but_save_send_stat").val("'.$LANG['alert_message_done'].'");
+                        setTimeout(
+                            function() {
+                                $("#but_save_send_stat").val("'.$LANG['save_statistics_choice'].'");
+                            },
+                            2000
+                        );
 
-                        return;
                     }
-                    console.log(data);
-                    if (data.error == "") {
-                        $("#send_stats").after(\'<span class="fa fa-check fa-lg mi-green new_check" style="float:left;margin:-18px 0 0 56px;"></span>\');
-                        $(".new_check").fadeOut(2000);
-                        setTimeout("$(\'.new_check\').remove()", 2100);
-                    }
-                }
+                },
+                "json"
             );
         });
 
-
-
+        // manage checkbox
         $(".stat_option").change(function(){
             var myid = $(this).attr("id").split("_");
             if (this.checked) {

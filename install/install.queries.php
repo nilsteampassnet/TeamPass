@@ -293,7 +293,7 @@ if (isset($_POST['type'])) {
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
-                            `valeur` varchar(100) NOT NULL
+                            `valeur` varchar(500) NOT NULL
                             ) CHARSET=utf8;"
                         );
 
