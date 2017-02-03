@@ -28,10 +28,12 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_main")) {
     exit();
 }
 
+// get current statistics items
+$statistics_items = array();
 if (isset($_SESSION['settings']['send_statistics_items'])) {
     $statistics_items = array_filter(explode(";", $_SESSION['settings']['send_statistics_items']));
 }
-print_r($statistics_items);
+
 echo '
 <div class="title ui-widget-content ui-corner-all">'.$LANG['thku'].'</div>
 
@@ -60,7 +62,7 @@ echo '
                 <tbody>
                 <tr style="border-bottom:1px;">
                     <td width="350px">
-                    <input type="checkbox" id="stat_country" style="margin-right:15px;" ',in_array("stat_country", $statistics_items) ? "checked" : "",' class="stat_option"><label for="stat_country"><b>'.$LANG['country'].'</b></label>
+                    <input type="checkbox" id="stat_country" style="margin-right:15px;" ',in_array("stat_country", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",' class="stat_option"><label for="stat_country"><b>'.$LANG['country'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['country_statistics'].'</i>
@@ -71,7 +73,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_users" style="margin-right:15px;" ',in_array("stat_users", $statistics_items) ? "checked" : "",'  class="stat_option" class="stat_option"><label for="stat_users"><b>'.$LANG['users'].'</b></label>
+                    <input type="checkbox" id="stat_users" style="margin-right:15px;" ',in_array("stat_users", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option" class="stat_option"><label for="stat_users"><b>'.$LANG['users'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['users_statistics'].'</i>
@@ -82,7 +84,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_items" style="margin-right:15px;" ',in_array("stat_items", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_items"><b>'.$LANG['items_all'].'</b></label>
+                    <input type="checkbox" id="stat_items" style="margin-right:15px;" ',in_array("stat_items", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_items"><b>'.$LANG['items_all'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['items_statistics'].'</i>
@@ -93,7 +95,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_items_shared" style="margin-right:15px;" ',in_array("stat_items_shared", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_items_shared"><b>'.$LANG['items_shared'].'</b></label>
+                    <input type="checkbox" id="stat_items_shared" style="margin-right:15px;" ',in_array("stat_items_shared", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_items_shared"><b>'.$LANG['items_shared'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -103,7 +105,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_folders" style="margin-right:15px;" ',in_array("stat_folders", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_folders"><b>'.$LANG['folders_all'].'</b></label>
+                    <input type="checkbox" id="stat_folders" style="margin-right:15px;" ',in_array("stat_folders", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_folders"><b>'.$LANG['folders_all'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['folders_statistics'].'</i>
@@ -114,7 +116,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_folders_shared" style="margin-right:15px;" ',in_array("stat_folders_shared", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_folders_shared"><b>'.$LANG['folders_shared'].'</b></label>
+                    <input type="checkbox" id="stat_folders_shared" style="margin-right:15px;" ',in_array("stat_folders_shared", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_folders_shared"><b>'.$LANG['folders_shared'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -124,7 +126,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_admins" style="margin-right:15px;" ',in_array("stat_admins", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_admins"><b>'.$LANG['administrators_number'].'</b></label>
+                    <input type="checkbox" id="stat_admins" style="margin-right:15px;" ',in_array("stat_admins", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_admins"><b>'.$LANG['administrators_number'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['administrators_number_statistics'].'</i>
@@ -135,7 +137,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_managers" style="margin-right:15px;" ',in_array("stat_managers", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_managers"><b>'.$LANG['managers_number'].'</b></label>
+                    <input type="checkbox" id="stat_managers" style="margin-right:15px;" ',in_array("stat_managers", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_managers"><b>'.$LANG['managers_number'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['managers_number_statistics'].'</i>
@@ -146,7 +148,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_ro" style="margin-right:15px;" ',in_array("stat_ro", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_ro"><b>'.$LANG['readonly_number'].'</b></label>
+                    <input type="checkbox" id="stat_ro" style="margin-right:15px;" ',in_array("stat_ro", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_ro"><b>'.$LANG['readonly_number'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['readonly_number_statistics'].'</i>
@@ -157,7 +159,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_mysqlversion" style="margin-right:15px;" ',in_array("stat_mysqlversion", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_mysqlversion"><b>'.$LANG['mysql_version'].'</b></label>
+                    <input type="checkbox" id="stat_mysqlversion" style="margin-right:15px;" ',in_array("stat_mysqlversion", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_mysqlversion"><b>'.$LANG['mysql_version'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -167,7 +169,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_phpversion" style="margin-right:15px;" ',in_array("stat_phpversion", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_phpversion"><b>'.$LANG['php_version'].'</b></label>
+                    <input type="checkbox" id="stat_phpversion" style="margin-right:15px;" ',in_array("stat_phpversion", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_phpversion"><b>'.$LANG['php_version'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -177,7 +179,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_teampassversion" style="margin-right:15px;" ',in_array("stat_teampassversion", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_teampassversion"><b>'.$LANG['teampass_version'].'</b></label>
+                    <input type="checkbox" id="stat_teampassversion" style="margin-right:15px;" ',in_array("stat_teampassversion", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_teampassversion"><b>'.$LANG['teampass_version'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -187,7 +189,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_languages" style="margin-right:15px;" ',in_array("stat_languages", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_languages"><b>'.$LANG['languages_used'].'</b></label>
+                    <input type="checkbox" id="stat_languages" style="margin-right:15px;" ',in_array("stat_languages", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_languages"><b>'.$LANG['languages_used'].'</b></label>
                     </td>
                     <td>
                     <i>'.$LANG['languages_statistics'].'</i>
@@ -198,7 +200,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_kb" style="margin-right:15px;" ',in_array("stat_kb", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_kb"><b>'.$LANG['kb_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_kb" style="margin-right:15px;" ',in_array("stat_kb", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_kb"><b>'.$LANG['kb_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -208,7 +210,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_suggestion" style="margin-right:15px;" ',in_array("stat_suggestion", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_suggestion"><b>'.$LANG['suggestion_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_suggestion" style="margin-right:15px;" ',in_array("stat_suggestion", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_suggestion"><b>'.$LANG['suggestion_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -218,7 +220,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_customfields" style="margin-right:15px;" ',in_array("stat_customfields", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_customfields"><b>'.$LANG['customfields_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_customfields" style="margin-right:15px;" ',in_array("stat_customfields", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_customfields"><b>'.$LANG['customfields_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -228,7 +230,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_api" style="margin-right:15px;" ',in_array("stat_api", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_api"><b>'.$LANG['api_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_api" style="margin-right:15px;" ',in_array("stat_api", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_api"><b>'.$LANG['api_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -238,7 +240,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_2fa" style="margin-right:15px;" ',in_array("stat_2fa", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_2fa"><b>'.$LANG['2fa_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_2fa" style="margin-right:15px;" ',in_array("stat_2fa", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_2fa"><b>'.$LANG['2fa_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -248,7 +250,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_agses" style="margin-right:15px;" ',in_array("stat_agses", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_agses"><b>'.$LANG['agses_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_agses" style="margin-right:15px;" ',in_array("stat_agses", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_agses"><b>'.$LANG['agses_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -258,7 +260,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_duo" style="margin-right:15px;" ',in_array("stat_duo", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_duo"><b>'.$LANG['duo_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_duo" style="margin-right:15px;" ',in_array("stat_duo", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_duo"><b>'.$LANG['duo_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -268,7 +270,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_ldap" style="margin-right:15px;" ',in_array("stat_ldap", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_ldap"><b>'.$LANG['ldap_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_ldap" style="margin-right:15px;" ',in_array("stat_ldap", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_ldap"><b>'.$LANG['ldap_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -278,7 +280,7 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_syslog" style="margin-right:15px;" ',in_array("stat_syslog", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_syslog"><b>'.$LANG['syslog_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_syslog" style="margin-right:15px;" ',in_array("stat_syslog", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_syslog"><b>'.$LANG['syslog_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
@@ -288,12 +290,32 @@ echo '
                 </tr>
                 <tr>
                     <td>
-                    <input type="checkbox" id="stat_stricthttps" style="margin-right:15px;" ',in_array("stat_stricthttps", $statistics_items) ? "checked" : "",'  class="stat_option"><label for="stat_stricthttps"><b>'.$LANG['stricthttps_option_enabled'].'</b></label>
+                    <input type="checkbox" id="stat_stricthttps" style="margin-right:15px;" ',in_array("stat_stricthttps", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_stricthttps"><b>'.$LANG['stricthttps_option_enabled'].'</b></label>
                     </td>
                     <td>
                     </td>
                     <td>
                         <div class="spin_wait" id="value_https" style="text-align:center;"><span class="fa fa-cog fa-spin "></span></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                    <input type="checkbox" id="stat_fav" style="margin-right:15px;" ',in_array("stat_fav", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_fav"><b>'.$LANG['favourites_option_enabled'].'</b></label>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                        <div class="spin_wait" id="value_fav" style="text-align:center;"><span class="fa fa-cog fa-spin "></span></div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                    <input type="checkbox" id="stat_pf" style="margin-right:15px;" ',in_array("stat_pf", $statistics_items) || count($statistics_items) === 0 ? "checked" : "",'  class="stat_option"><label for="stat_pf"><b>'.$LANG['personalfolders_option_enabled'].'</b></label>
+                    </td>
+                    <td>
+                    </td>
+                    <td>
+                        <div class="spin_wait" id="value_pf" style="text-align:center;"><span class="fa fa-cog fa-spin "></span></div>
                     </td>
                 </tr>
                 </tbody>

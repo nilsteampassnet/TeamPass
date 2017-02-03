@@ -1428,95 +1428,9 @@ switch ($_POST['type']) {
             break;
         }
 
-        DB::query(
-            "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
-            0
-        );
-        $counter_folders = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
-            1
-        );
-        $counter_folders_perso = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("items")." WHERE perso = %i",
-            0
-        );
-        $counter_items = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("items")." WHERE perso = %i",
-            1
-        );
-        $counter_items_perso = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("users").""
-        );
-        $counter_users = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("users")." WHERE admin = %i",
-            1
-        );
-        $admins = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("users")." WHERE gestionnaire = %i",
-            1
-        );
-        $managers = DB::count();
-
-        DB::query(
-            "SELECT id FROM ".prefix_table("users")." WHERE read_only = %i",
-            1
-        );
-        $ro = DB::count();
-
-        // list the languages
-        $usedLang = [];
-        $tp_languages = DB::query(
-            "SELECT name FROM ".prefix_table("languages")
-        );
-        foreach ($tp_languages as $tp_language) {
-            DB::query(
-                "SELECT * FROM ".prefix_table("users")." WHERE user_language = %s",
-                $tp_language['name']
-            );
-            $usedLang[$tp_language['name']] = round((DB::count() * 100 / $counter_users), 0);
-        }
-
         // Encrypt data to return
         echo prepareExchangedData(
-            array(
-                "error" => "",
-                "phpversion" => phpversion(),
-                "folders_public" => $counter_folders,
-                "counter_folders_perso" => $counter_folders_perso,
-                "items_public" => $counter_items,
-                "items_public_perso" => $counter_items_perso,
-                "users" => $counter_users,
-                "admins" => $admins,
-                "managers" => $managers,
-                "ro" => $ro,
-                "kb" => $_SESSION['settings']['enable_kb'],
-                "pf" => $_SESSION['settings']['enable_pf_feature'],
-                "fav" => $_SESSION['settings']['enable_favourites'],
-                "tpv" => $_SESSION['settings']['cpassman_version'],
-                "ldap" => $_SESSION['settings']['ldap_mode'],
-                "agses" => $_SESSION['settings']['agses_authentication_enabled'],
-                "duo" => $_SESSION['settings']['duo'],
-                "suggestion" => $_SESSION['settings']['enable_suggestion'],
-                "api" => $_SESSION['settings']['api'],
-                "customfields" => $_SESSION['settings']['item_extra_fields'],
-                "syslog" => $_SESSION['settings']['syslog_enable'],
-                "twofa" => $_SESSION['settings']['google_authentication'],
-                "sts" => $_SESSION['settings']['enable_sts'],
-                "mysqlversion" => DB::serverVersion(),
-                "langs" => $usedLang
-            ),
+            getStatisticsData(),
             "encode"
         );
 

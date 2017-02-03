@@ -1017,60 +1017,139 @@ function teampassStats()
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    // Prepare stats to be sent
-    // Count no FOLDERS
-    DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
-    $dataFolders = DB::count();
-    // Count no USERS
-    $dataUsers = DB::query("SELECT * FROM ".$pre."users");
-    $dataUsers = DB::count();
-    // Count no ITEMS
-    $dataItems = DB::query("SELECT * FROM ".$pre."items");
-    $dataItems = DB::count();
-    // Get info about installation
-    $dataSystem = array();
-    $rows = DB::query(
-        "SELECT valeur,intitule FROM ".$pre."misc
-        WHERE type = %s
-        AND intitule IN %ls",
-        'admin', array('enable_pf_feature','log_connections','cpassman_version')
-    );
-    foreach ($rows as $record) {
-        if ($record['intitule'] == 'enable_pf_feature') {
-            $dataSystem['enable_pf_feature'] = $record['valeur'];
-        } elseif ($record['intitule'] == 'cpassman_version') {
-            $dataSystem['cpassman_version'] = $record['valeur'];
-        } elseif ($record['intitule'] == 'log_connections') {
-            $dataSystem['log_connections'] = $record['valeur'];
-        }
-    }
-    // Get the actual stats.
-    $statsToSend = array(
-        'uid' => md5(SALT),
-        'time_added' => time(),
-        'users' => $dataUsers[0],
-        'folders' => $dataFolders[0],
-        'items' => $dataItems[0],
-        'cpm_version' => $dataSystem['cpassman_version'],
-        'enable_pf_feature' => $dataSystem['enable_pf_feature'],
-        'log_connections' => $dataSystem['log_connections'],
-       );
-    // Encode all the data, for security.
-    foreach ($statsToSend as $k => $v) {
-        $statsToSend[$k] = urlencode($k).'='.urlencode($v);
-    }
-    // Turn this into the query string!
-    $statsToSend = implode('&', $statsToSend);
+    if (isset($_SESSION['settings']['send_statistics_items'])) {
+        $statsToSend = "";
 
-    fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".$statsToSend, 'r');
-    // update the actual time
-    DB::update(
-        $pre."misc",
-        array(
-            'valeur' => time()
-        ),
-        "type = %s AND intitule = %s",
-        'admin', 'send_stats_time'
+        // get statistics data
+        $stats_data = getStatisticsData();
+
+        // get statistics items to share
+        foreach (array_filter(explode(";", $_SESSION['settings']['send_statistics_items'])) as $data) {
+            if (empty($statsToSend)) {
+                $statsToSend = $data."=".($stats_data[$data]);
+            } else {
+                if ($data === "stat_languages") {
+                    $tmp = "";
+                    foreach ($stats_data[$data] as $key => $value) {
+                        if (empty($tmp)) {
+                            $tmp = $key."-".$value;
+                        } else {
+                            $tmp .= ",".$key."-".$value;
+                        }
+                    }
+                    $statsToSend .= "&".$data."=".($tmp);
+                } else {
+                    $statsToSend .= "&".$data."=".($stats_data[$data]);
+                }
+            }
+        }
+
+        echo base64_encode($statsToSend);
+
+        //fopen("http://www.teampass.net/files/cpm_stats/collect_stats.php?".base64_encode($statsToSend), 'r');
+        // update the actual time
+        DB::update(
+            $pre."misc",
+            array(
+                'valeur' => time()
+            ),
+            "type = %s AND intitule = %s",
+            'admin', 'send_stats_time'
+        );
+    }
+}
+
+/*
+*
+*/
+function getStatisticsData() {
+     DB::query(
+        "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
+        0
+    );
+    $counter_folders = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
+        1
+    );
+    $counter_folders_perso = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("items")." WHERE perso = %i",
+        0
+    );
+    $counter_items = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("items")." WHERE perso = %i",
+        1
+    );
+    $counter_items_perso = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("users").""
+    );
+    $counter_users = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("users")." WHERE admin = %i",
+        1
+    );
+    $admins = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("users")." WHERE gestionnaire = %i",
+        1
+    );
+    $managers = DB::count();
+
+    DB::query(
+        "SELECT id FROM ".prefix_table("users")." WHERE read_only = %i",
+        1
+    );
+    $ro = DB::count();
+
+    // list the languages
+    $usedLang = [];
+    $tp_languages = DB::query(
+        "SELECT name FROM ".prefix_table("languages")
+    );
+    foreach ($tp_languages as $tp_language) {
+        DB::query(
+            "SELECT * FROM ".prefix_table("users")." WHERE user_language = %s",
+            $tp_language['name']
+        );
+        $usedLang[$tp_language['name']] = round((DB::count() * 100 / $counter_users), 0);
+    }
+
+    return array(
+        "error" => "",
+        "stat_phpversion" => phpversion(),
+        "stat_folders" => $counter_folders,
+        "stat_folders_shared" => intval($counter_folders) - intval($counter_folders_perso),
+        "stat_items" => $counter_items,
+        "stat_items_shared" => intval($counter_items) - intval($counter_items_perso),
+        "stat_users" => $counter_users,
+        "stat_admins" => $admins,
+        "stat_managers" => $managers,
+        "stat_ro" => $ro,
+        "stat_kb" => $_SESSION['settings']['enable_kb'],
+        "stat_pf" => $_SESSION['settings']['enable_pf_feature'],
+        "stat_fav" => $_SESSION['settings']['enable_favourites'],
+        "stat_teampassversion" => $_SESSION['settings']['cpassman_version'],
+        "stat_ldap" => $_SESSION['settings']['ldap_mode'],
+        "stat_agses" => $_SESSION['settings']['agses_authentication_enabled'],
+        "stat_duo" => $_SESSION['settings']['duo'],
+        "stat_suggestion" => $_SESSION['settings']['enable_suggestion'],
+        "stat_api" => $_SESSION['settings']['api'],
+        "stat_customfields" => $_SESSION['settings']['item_extra_fields'],
+        "stat_syslog" => $_SESSION['settings']['syslog_enable'],
+        "stat_2fa" => $_SESSION['settings']['google_authentication'],
+        "stat_stricthttps" => $_SESSION['settings']['enable_sts'],
+        "stat_mysqlversion" => DB::serverVersion(),
+        "stat_languages" => $usedLang,
+        "stat_country" => ""
     );
 }
 
