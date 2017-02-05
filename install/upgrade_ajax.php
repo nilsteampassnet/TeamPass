@@ -137,7 +137,7 @@ if (isset($_POST['type'])) {
             );
             foreach ($tab as $elem) {
                 // try to create it if not existing
-                if(!is_dir($elem)) {
+                if(substr($elem, -1) === '/' && !is_dir($elem)) {
                     mkdir($elem);
                 }
                 // check if writable

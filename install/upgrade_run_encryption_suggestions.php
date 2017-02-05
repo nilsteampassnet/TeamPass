@@ -46,18 +46,18 @@ $finish = false;
 $next = ($_POST['nb']+$_POST['start']);
 
 $dbTmp = mysqli_connect(
-    $_SESSION['db_host'],
-    $_SESSION['db_login'],
-    $_SESSION['db_pw'],
-    $_SESSION['db_bdd'],
-    $_SESSION['db_port']
+    $_SESSION['server'],
+    $_SESSION['user'],
+    $_SESSION['pass'],
+    $_SESSION['database'],
+    $_SESSION['port']
 );
 
 fputs($dbgDuo, "\nStarting suggestion.\n\n");
 // decrypt passwords in suggestion table
 $resData = mysqli_query($dbTmp,
     "SELECT id, pw, pw_iv
-    FROM ".$_SESSION['tbl_prefix']."suggestion"
+    FROM ".$_SESSION['pre']."suggestion"
 );
 if (!$resData) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
@@ -78,7 +78,7 @@ while ($record = mysqli_fetch_array($resData)) {echo decrypt($record['pw'])." ";
 
         // store Password
         mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['tbl_prefix']."suggestion
+            "UPDATE ".$_SESSION['pre']."suggestion
             SET pw = '".$encrypt['string']."', pw_iv = '".$encrypt['iv']."'
             WHERE id =".$record['id']
         );

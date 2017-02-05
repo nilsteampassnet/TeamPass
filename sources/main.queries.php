@@ -753,6 +753,11 @@ switch ($_POST['type']) {
      * Send emails not sent
      */
     case "send_waiting_emails":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
         if (isset($_SESSION['settings']['enable_send_email_on_user_login'])
             && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
             && isset($_SESSION['key'])
@@ -1056,6 +1061,66 @@ switch ($_POST['type']) {
         } else {
             echo '[ { "error" : "no" , "count" : ""} ]';
         }
+
+        break;
+
+    /**
+     * Check if suggestions are existing
+     */
+    case "sending_statistics":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if (isset($_SESSION['settings']['send_statistics_items'])) {
+            $statsToSend = "";
+
+            // get statistics data
+            $stats_data = getStatisticsData();
+
+
+            // get statistics items to share
+            $statsToSend = [];
+            $statsToSend['ip'] = $_SERVER['SERVER_ADDR'];
+            $statsToSend['timestamp'] = time();
+            foreach (array_filter(explode(";", $_SESSION['settings']['send_statistics_items'])) as $data) {
+                if ($data === "stat_languages") {
+                    $tmp = "";
+                    foreach ($stats_data[$data] as $key => $value) {
+                        if (empty($tmp)) {
+                            $tmp = $key."-".$value;
+                        } else {
+                            $tmp .= ",".$key."-".$value;
+                        }
+                    }
+                    $statsToSend[$data] = $tmp;
+                } else {
+                    $statsToSend[$data] = $stats_data[$data];
+                }
+            }
+
+            // connect to Teampass Statistics database
+            $link2 = new MeekroDB(
+                "db4free.net",
+                "tp_statistics",
+                "VNWrC6jW7oarthN57k",
+                "tp_statistics",
+                "3306",
+                "utf8"
+            );
+            $link2->insert(
+                "tp_statistics",
+                $statsToSend
+            );
+
+            //permits to test only once by session
+            $_SESSION['temporary']['send_stats_done'] = true;
+            $_SESSION['settings']['send_stats_time'] = time();
+        }
+
+
+        echo '[ { "error" : "no" , "count" : ""} ]';
 
         break;
 }

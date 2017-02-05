@@ -50,7 +50,6 @@ $LANG = array (
     'stricthttps_option_enabled' => 'Strict HTTPS option enabled',
     'favourites_option_enabled' => 'Favourites option enabled',
     'personalfolders_option_enabled' => 'Personal Folders option enabled',
-    'statistics_query_format' => 'Query that will be sent to Teampass server',
     'characteristic' => 'Characteristic',
     'usage_example' => 'Usage example',
     'current_value' => 'Current value',

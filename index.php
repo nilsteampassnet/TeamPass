@@ -313,6 +313,21 @@ echo '
         <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
         <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
 
+// SENDING STATISTICS?
+if (
+    isset($_SESSION['settings']['send_stats'])
+    && $_SESSION['settings']['send_stats'] == 1
+    && isset($_SESSION['settings']['send_stats_time'])
+    && !isset($_SESSION['temporary']['send_stats_done'])
+    && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) <= time()
+) {
+    echo '
+        <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
+} else {
+    echo '
+    <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
+}
+
 echo '
     <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
 // MESSAGE BOX

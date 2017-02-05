@@ -430,21 +430,6 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
 }
 
 /*
-* CHECK IF SENDING ANONYMOUS STATS
-*/
-if (
-    isset($_SESSION['settings']['send_stats'])
-    && $_SESSION['settings']['send_stats'] == 1
-    && isset($_SESSION['settings']['send_stats_time'])
-    && !isset($_SESSION['temporary']['send_stats_done'])
-) {
-    if (($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) <= time()) {
-        teampassStats();
-        $_SESSION['temporary']['send_stats_done'] = true;   //permits to test only once by session
-    }
-}
-
-/*
 **
 */
 $_SESSION['temporary']['user_can_printout'] = false;

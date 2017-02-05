@@ -37,18 +37,19 @@ $_SESSION['settings']['loaded'] = "";
 $finish = false;
 $next = ($_POST['nb'] + $_POST['start']);
 
+
 $dbTmp = mysqli_connect(
-    $_SESSION['db_host'],
-    $_SESSION['db_login'],
-    $_SESSION['db_pw'],
-    $_SESSION['db_bdd'],
-    $_SESSION['db_port']
+    $_SESSION['server'],
+    $_SESSION['user'],
+    $_SESSION['pass'],
+    $_SESSION['database'],
+    $_SESSION['port']
 );
 
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT * FROM ".$_SESSION['tbl_prefix']."log_items
+    "SELECT * FROM ".$_SESSION['pre']."log_items
     WHERE raison_iv IS NOT NULL"
 );
 if (!$rows) {
@@ -60,7 +61,7 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."log_items
+    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['pre']."log_items
     WHERE raison_iv IS NOT NULL
     LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
@@ -89,7 +90,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
         // store Password
         mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['tbl_prefix']."categories_items
+            "UPDATE ".$_SESSION['pre']."categories_items
             SET raison = '".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
             WHERE id_item = ".$data['id_item']
         );

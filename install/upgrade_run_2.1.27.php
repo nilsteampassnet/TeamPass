@@ -108,7 +108,7 @@ require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 
 //Build tree
 $tree = new Tree\NestedTree\NestedTree(
-    $_SESSION['tbl_prefix'].'nested_tree',
+    $_SESSION['pre'].'nested_tree',
     'id',
     'parent_id',
     'title'
@@ -116,32 +116,24 @@ $tree = new Tree\NestedTree\NestedTree(
 
 // dataBase
 $res = "";
-
-mysqli_connect(
-    $_SESSION['db_host'],
-    $_SESSION['db_login'],
-    $_SESSION['db_pw'],
-    $_SESSION['db_bdd'],
-    $_SESSION['db_port']
-);
 $dbTmp = mysqli_connect(
-    $_SESSION['db_host'],
-    $_SESSION['db_login'],
-    $_SESSION['db_pw'],
-    $_SESSION['db_bdd'],
-    $_SESSION['db_port']
+    $_SESSION['server'],
+    $_SESSION['user'],
+    $_SESSION['pass'],
+    $_SESSION['database'],
+    $_SESSION['port']
 );
 
 // 2.1.27 introduce new encryption protocol with DEFUSE library.
 // Now evaluate if current instance has already this version
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'teampass_version'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'teampass_version'"));
 if (count($tmp[0]) === 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_version', '".$k['version']."')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_version', '".$k['version']."')"
     );
 } else {
     mysqli_query($dbTmp,
-        "UPDATE `".$_SESSION['tbl_prefix']."misc`
+        "UPDATE `".$_SESSION['pre']."misc`
         SET `valeur` = '".$k['version']."'
         WHERE intitule = 'teampass_version' AND type = 'admin'"
     );
@@ -149,39 +141,32 @@ if (count($tmp[0]) === 0 || empty($tmp[0])) {
 
 // check if library defuse already on-going here
 // if yes, then don't execute re-encryption
-$exists = false;
-$columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['tbl_prefix']."items");
+$_SESSION['tp_defuse_installed'] = false;
+$columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['pre']."items");
 while ($c = mysqli_fetch_assoc( $columns)) {
     if ($c['Field'] === "encryption_type") {
-        $exists = true;
+        $_SESSION['tp_defuse_installed'] = true;
     }
 }
-if ($exists) {
-    // no need to convert
-    $_SESSION['tp_defuse_installed'] = true;
-} else {
-    $_SESSION['tp_defuse_installed'] = false;
-}
-
 
 // alter table Items
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 // alter table misc to add an index
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "ALTER TABLE `".$_SESSION['pre']."misc` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
 );
 
 // alter table misc to add an index
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "ALTER TABLE `".$_SESSION['pre']."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
 );
 
 // add field agses-usercardid to Users table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."users",
+    $_SESSION['pre']."users",
     "agses-usercardid",
     "VARCHAR(12) NOT NULL DEFAULT '0'"
 );
@@ -194,7 +179,7 @@ if ($res === false) {
 
 // add field encrypted_data to Categories table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."categories",
+    $_SESSION['pre']."categories",
     "encrypted_data",
     "TINYINT(1) NOT NULL DEFAULT '1'"
 );
@@ -206,24 +191,24 @@ if ($res === false) {
 
 
 // alter table USERS - user_language
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY user_language VARCHAR(50) NOT NULL DEFAULT '0'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."users` MODIFY user_language VARCHAR(50) NOT NULL DEFAULT '0'");
 
 // alter table USERS - just ensure correct naming of IsAdministratedByRole
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` CHANGE IsAdministratedByRole isAdministratedByRole tinyint(5) NOT NULL DEFAULT '0'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."users` CHANGE IsAdministratedByRole isAdministratedByRole tinyint(5) NOT NULL DEFAULT '0'");
 
 // alter table OTV
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."otv` CHANGE originator originator int(12) NOT NULL DEFAULT '0'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."otv` CHANGE originator originator int(12) NOT NULL DEFAULT '0'");
 
 // do clean of users table
 $fieldsToUpdate = ['groupes_visibles', 'fonction_id', 'groupes_interdits'];
-$result = mysqli_query($dbTmp, "SELECT id, groupes_visibles, fonction_id, groupes_interdits FROM `".$_SESSION['tbl_prefix']."users`");
+$result = mysqli_query($dbTmp, "SELECT id, groupes_visibles, fonction_id, groupes_interdits FROM `".$_SESSION['pre']."users`");
 while($row = mysqli_fetch_assoc($result)) {
     // check if field contains , instead of ;
     foreach($fieldsToUpdate as $field) {
         $tmp = cleanFields($row[$field]);
         if ($tmp !== $row[$field]) {
             mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."users`
+                "UPDATE `".$_SESSION['pre']."users`
                 SET `".$field."` = '".$tmp."'
                 WHERE id = '".$row['id']."'"
             );
@@ -237,7 +222,7 @@ mysqli_free_result($result);
 
 // add field encrypted_data to CATEGORIES table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."categories",
+    $_SESSION['pre']."categories",
     "encrypted_data",
     "TINYINT(1) NOT NULL DEFAULT '1'"
 );
@@ -248,7 +233,7 @@ if ($res === false) {
 }
 
 mysqli_query($dbTmp,
-    "UPDATE `".$_SESSION['tbl_prefix']."misc`
+    "UPDATE `".$_SESSION['pre']."misc`
     SET `valeur` = 'maintenance_mode'
     WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
 );
@@ -256,7 +241,7 @@ mysqli_query($dbTmp,
 
 // add field encryption_type to ITEMS table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."items",
+    $_SESSION['pre']."items",
     "encryption_type",
     "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
 );
@@ -269,7 +254,7 @@ if ($res === false) {
 
 // add field encryption_type to categories_items table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."categories_items",
+    $_SESSION['pre']."categories_items",
     "encryption_type",
     "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
 );
@@ -282,7 +267,7 @@ if ($res === false) {
 
 // add field encryption_type to LOG_ITEMS table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."log_items",
+    $_SESSION['pre']."log_items",
     "encryption_type",
     "VARCHAR(20) NOT NULL DEFAULT 'not_set'"
 );
@@ -337,31 +322,31 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
     //-- users need to perform re-encryption of their personal pwds
     $result = mysqli_query(
         $dbTmp,
-        "SELECT valeur FROM `".$_SESSION['tbl_prefix']."misc` WHERE type='admin' AND intitule='encryption_type'"
+        "SELECT valeur FROM `".$_SESSION['pre']."misc` WHERE type='admin' AND intitule='encryption_type'"
     );
     $row = mysqli_fetch_assoc($result);
     if ($row['valeur'] !== "defuse") {
         $result = mysqli_query(
             $dbTmp,
-            "SELECT id FROM `".$_SESSION['tbl_prefix']."users`"
+            "SELECT id FROM `".$_SESSION['pre']."users`"
         );
         while($row_user = mysqli_fetch_assoc($result)) {
             $result_items = mysqli_query(
                 $dbTmp,
                 "SELECT i.id AS item_id
-                FROM `".$_SESSION['tbl_prefix']."nested_tree` AS n
-                INNER JOIN `".$_SESSION['tbl_prefix']."items` AS i ON (i.id_tree = n.id)
+                FROM `".$_SESSION['pre']."nested_tree` AS n
+                INNER JOIN `".$_SESSION['pre']."items` AS i ON (i.id_tree = n.id)
                 WHERE n.title = ".$row_user['id']
             );
             if (mysqli_num_rows($result_items) > 0) {
                 mysqli_query($dbTmp,
-                    "UPDATE `".$_SESSION['tbl_prefix']."users`
+                    "UPDATE `".$_SESSION['pre']."users`
                     SET `upgrade_needed` = '1'
                     WHERE id = ".$row_user['id']
                 );
             } else {
                 mysqli_query($dbTmp,
-                    "UPDATE `".$_SESSION['tbl_prefix']."users`
+                    "UPDATE `".$_SESSION['pre']."users`
                     SET `upgrade_needed` = '0'
                     WHERE id = ".$row_user['id']
                 );
@@ -369,7 +354,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
         }
 
         mysqli_query($dbTmp,
-            "UPDATE `".$_SESSION['tbl_prefix']."misc`
+            "UPDATE `".$_SESSION['pre']."misc`
             SET `valeur` = 'defuse'
             WHERE `type`='admin' AND `initule`='encryption_type'"
         );
@@ -380,7 +365,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
 
 // add field encrypted_psk to Users table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."users",
+    $_SESSION['pre']."users",
     "encrypted_psk",
     "TEXT NOT NULL"
 );
@@ -392,18 +377,18 @@ if ($res === false) {
 
 
 // add new admin setting "manager_move_item"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'manager_move_item'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'manager_move_item'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'manager_move_item', '0')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'manager_move_item', '0')"
     );
 }
 
 // add new admin setting "create_item_without_password"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'create_item_without_password'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'create_item_without_password'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'create_item_without_password', '0')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'create_item_without_password', '0')"
     );
 }
 
@@ -411,44 +396,44 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 // alter table USERS to add a new field "ga_temporary_code"
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
+    "ALTER TABLE `".$_SESSION['pre']."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
 );
 
 
 // alter table EXPORT to add a new fields
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `email` VARCHAR(500) NOT NULL DEFAULT 'none';"
+    "ALTER TABLE `".$_SESSION['pre']."export` ADD `email` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `url` VARCHAR(500) NOT NULL DEFAULT 'none';"
+    "ALTER TABLE `".$_SESSION['pre']."export` ADD `url` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `kbs` VARCHAR(500) NOT NULL DEFAULT 'none';"
+    "ALTER TABLE `".$_SESSION['pre']."export` ADD `kbs` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."export` ADD `tags` VARCHAR(500) NOT NULL DEFAULT 'none';"
+    "ALTER TABLE `".$_SESSION['pre']."export` ADD `tags` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
 
 // alter table MISC
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`);"
+    "ALTER TABLE `".$_SESSION['pre']."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`);"
 );
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['tbl_prefix']."misc` CHANGE valeur valeur VARCHAR(500) NOT NULL DEFAULT 'none'"
+    "ALTER TABLE `".$_SESSION['pre']."misc` CHANGE valeur valeur VARCHAR(500) NOT NULL DEFAULT 'none'"
 );
 
 
 // add new admin setting "otv_is_enabled"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'otv_is_enabled', '0')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'otv_is_enabled', '0')"
     );
 }
 
@@ -456,7 +441,7 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 // add new field for items_change
 mysqli_query(
     $dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."items_change` (
+    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."items_change` (
     `id` tinyint(10) NOT NULL AUTO_INCREMENT,
     `item_id` tinyint(12) NOT NULL,
     `label` varchar(255) NOT NULL DEFAULT 'none',

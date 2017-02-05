@@ -164,6 +164,7 @@ class MeekroDB {
     if (!($mysql instanceof MySQLi)) {
       if (! $this->port) $this->port = ini_get('mysqli.default_port');
       $this->current_db = $this->dbName;
+      
       $mysql = new mysqli($this->host, $this->user, $this->password, $this->dbName, $this->port);
 
       if ($mysql->connect_error) {

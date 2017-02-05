@@ -3106,11 +3106,11 @@ $(function() {
                 $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show().removeClass("ui-state-error");
 
                 // do checks
-                if (!IsValidEmail($("#email_change").val())) {
+                if (!IsValidEmail($("#email_change").val()) && $("#email_change").val() !== "") {
                     $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo $LANG['email_format_is_not_correct'];?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
                     return false;
                 }
-                if (!validateURL($("#url_change").val())) {
+                if (!validateURL($("#url_change").val()) && $("#url_change").val() !== "") {
                     $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo $LANG['url_format_is_not_correct'];?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
                     return false;
                 }
@@ -3667,10 +3667,21 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     //Simulate a CRON activity (only 8 secs after page loading)
     setTimeout(
         function() {
+            // send email
             $.post(
                 "sources/main.queries.php",
                 {
-                    type : "send_waiting_emails"
+                    type : "send_waiting_emails",
+                    key     : "<?php echo $_SESSION['key'];?>"
+                }
+            );
+
+            // send statistics
+            $.post(
+                "sources/main.queries.php",
+                {
+                    type : "sending_statistics",
+                    key     : "<?php echo $_SESSION['key'];?>"
                 }
             );
         },
