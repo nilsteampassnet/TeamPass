@@ -35,6 +35,7 @@ $(function() {
         alert('Paste option is disabled !!');
         e.preventDefault();
     });
+
 });
 
 function CheckPage()
@@ -66,7 +67,11 @@ function CheckPage()
     if (step == "3") {
         if ($("#db_host").val() == "" || $("#db_db").val() == "" || $("#db_login").val() == "" || $("#db_port").val() == "") {
             error = "Paths need to be filled in!";
-        } else {
+        }
+	else if ($("#db_pw").val().indexOf('"') > -1){
+	    error = "Double quotes in password not allowed!";
+	}
+	 else {
             data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'", "abspath":"'+$("#hid_abspath").val()+'", "url_path":"'+$("#hid_url_path").val()+'"}';
             tasks = ["connection*test"];
             multiple = "";
