@@ -3435,7 +3435,7 @@ $("#id_pw").mousedown(function(event) {
      showPwdContinuous();
 }).mouseup(function(event) {
      mouseStillDown = false;
-}).mousemove(function(event) {
+}).mouseleave(function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(){
