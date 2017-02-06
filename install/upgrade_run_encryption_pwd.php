@@ -79,7 +79,7 @@ while ($data = mysqli_fetch_array($rows)) {
         // nothing to do - last encryption protocol (#3) used
         fputs($dbgDuo, "\nItem is correctly encrypted");
     } else {
-        if (!empty($data['pw_iv'])) {
+        if (!empty($data['pw'])) {
             // check if pw encrypted with protocol #2
             $pw = decrypt($data['pw']);
             if (empty($pw)) {
