@@ -373,11 +373,13 @@ if (isset($_POST['newtitle'])) {
             if ($createNewFolder == true) {
                 //check if parent folder is personal
                 $data = DB::queryfirstrow(
-                    "SELECT personal_folder
+                    "SELECT personal_folder, bloquer_creation, bloquer_modification
                     FROM ".prefix_table("nested_tree")." 
                     WHERE id = %i",
                     $parentId
                 );
+		$parentBloquerCreation = $data['bloquer_creation'];
+		$parentBloquerModification = $data['bloquer_modification'];
                 if ($data['personal_folder'] === "1") {
                     $isPersonal = 1;
                 } else {
@@ -417,8 +419,8 @@ if (isset($_POST['newtitle'])) {
                             'title' => $title,
                             'personal_folder' => $isPersonal,
                             'renewal_period' => $renewalPeriod,
-                            'bloquer_creation' => isset($dataReceived['block_creation']) && $dataReceived['block_creation'] == 1 ? '1' : '0',
-                            'bloquer_modification' => isset($dataReceived['block_modif']) && $dataReceived['block_modif'] == 1 ? '1' : '0'
+                            'bloquer_creation' => isset($dataReceived['block_creation']) && $dataReceived['block_creation'] == 1 ? '1' : $parentBloquerCreation,
+                            'bloquer_modification' => isset($dataReceived['block_modif']) && $dataReceived['block_modif'] == 1 ? '1' : $parentBloquerModification
                        )
                     );
                     $newId = DB::insertId();
