@@ -284,7 +284,7 @@ function rest_get () {
                 $i = 0;
                 foreach ($response as $row)
                 {
-                    $response = DB::query("SELECT id,label,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
+                    $response = DB::query("SELECT id,label,login,pw,pw_iv,url FROM ".prefix_table("items")." WHERE inactif = %i AND id_tree=%i", "0", $row['id']);
                     foreach ($response as $data)
                     {
                         // prepare output
@@ -321,7 +321,7 @@ function rest_get () {
                     }
                 }
                 $folder_str = implode(";",$folder_arr);
-                
+
                 // get ids
                 if (strpos($folder_str,";") > 0) {
                     $condition = "id_tree IN %ls";
