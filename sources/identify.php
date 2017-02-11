@@ -918,7 +918,8 @@ function identifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk))    //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)),    //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'user_ip' =>  get_client_ip_server()
                 ),
                 "id=%i",
                 $data['id']

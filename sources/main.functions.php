@@ -1057,6 +1057,19 @@ function getStatisticsData() {
         $usedLang[$tp_language['name']] = round((DB::count() * 100 / $counter_users), 0);
     }
 
+    // get list of ips
+    $usedIp = [];
+    $tp_ips = DB::query(
+        "SELECT user_ip FROM ".prefix_table("users")
+    );
+    foreach ($tp_ips as $ip) {
+        if (array_key_exists($ip['user_ip'], $usedIp)) {
+            $usedIp[$ip['user_ip']] = $usedIp[$ip['user_ip']] + 1;
+        } else if (!empty($ip['user_ip']) && $ip['user_ip'] !== "none") {
+            $usedIp[$ip['user_ip']] = 1;
+        }
+    }
+
     return array(
         "error" => "",
         "stat_phpversion" => phpversion(),
@@ -1083,7 +1096,7 @@ function getStatisticsData() {
         "stat_stricthttps" => $_SESSION['settings']['enable_sts'],
         "stat_mysqlversion" => DB::serverVersion(),
         "stat_languages" => $usedLang,
-        "stat_country" => ""
+        "stat_country" => $usedIp
     );
 }
 
@@ -1390,18 +1403,18 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
  */
 function get_client_ip_server() {
     $ipaddress = '';
-    if ($_SERVER['HTTP_CLIENT_IP'])
-        $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
-    else if($_SERVER['HTTP_X_FORWARDED_FOR'])
-        $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
-    else if($_SERVER['HTTP_X_FORWARDED'])
-        $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
-    else if($_SERVER['HTTP_FORWARDED_FOR'])
-        $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
-    else if($_SERVER['HTTP_FORWARDED'])
-        $ipaddress = $_SERVER['HTTP_FORWARDED'];
-    else if($_SERVER['REMOTE_ADDR'])
-        $ipaddress = $_SERVER['REMOTE_ADDR'];
+    if (getenv('HTTP_CLIENT_IP'))
+        $ipaddress = getenv('HTTP_CLIENT_IP');
+    else if(getenv('HTTP_X_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    else if(getenv('HTTP_X_FORWARDED'))
+        $ipaddress = getenv('HTTP_X_FORWARDED');
+    else if(getenv('HTTP_FORWARDED_FOR'))
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    else if(getenv('HTTP_FORWARDED'))
+        $ipaddress = getenv('HTTP_FORWARDED');
+    else if(getenv('REMOTE_ADDR'))
+        $ipaddress = getenv('REMOTE_ADDR');
     else
         $ipaddress = 'UNKNOWN';
 

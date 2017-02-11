@@ -13,6 +13,8 @@ global $settings, $languagesList;
 
 $k['version'] = "2.1.27";
 $k['tool_name'] = "TeamPass";
+$k['one_day_seconds'] = 86400;
+$k['one_week_seconds'] = 604800;
 $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');
 $k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx');

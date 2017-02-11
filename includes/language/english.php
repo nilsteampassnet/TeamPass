@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array (
+    'consider_a_donation' => 'You may consider a donation',
+    'more_information' => 'More information',
+    'feature_request_canal' => 'For Feature Requests or Questions, please use',
+    'bug_canal' => 'For Bugs, please use',
+    'documentation_canal' => 'Complete documentation at',
+    'website_canal' => 'Click to open Teampass website',
     'sending_anonymous_statistics' => "Sending anonymous statistics",
     'considering_sending_anonymous_statistics' => 'Please consider sending anonymous statistics',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',

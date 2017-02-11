@@ -373,6 +373,8 @@ global \$SETTINGS;
                             array('admin','custom_login_text',''),
                             array('admin','default_language','english'),
                             array('admin','send_stats', $var['send_stats']),
+                            array('admin','send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),
+                            array('admin','send_stats_time', time()-2592000),
                             array('admin','get_tp_info', '1'),
                             array('admin','send_mail_on_user_login', '0'),
                             array('cron', 'sending_emails', '0'),
@@ -530,6 +532,7 @@ global \$SETTINGS;
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
                             `encrypted_psk` text NOT NULL
+                            `user_ip` varchar(60) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

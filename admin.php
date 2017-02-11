@@ -47,8 +47,10 @@ echo '
 
 
     <div id="tabs-1">
-        <div style="font-size:14px;">'.$LANG['considering_sending_anonymous_statistics'].'</div>
-        <div class="ui-state-default ui-corner-all" style="padding:5px; margin:5px 0 5px 0;"><span class="fa fa-info-circle fa-lg"></span>&nbsp;'.$LANG['sending_anonymous_statistics_details'].'</div>
+        <div>
+            <span class="fa fa-area-chart fa-2x"></span>&nbsp;<label style="font-size:16px;">'.$LANG['considering_sending_anonymous_statistics'].'</label>
+        </div>
+        <div class="ui-state-default ui-corner-all" style="padding:5px; margin:15px 0 10px 0;"><span class="fa fa-info-circle fa-lg"></span>&nbsp;'.$LANG['sending_anonymous_statistics_details'].'</div>
         <div style="margin:5px 0 5px 0;">'.$LANG['anonymous_statistics_definition'].':</div>
         <div style="margin-left:10px;">
             <table border="0">
@@ -340,21 +342,21 @@ echo '
     <div id="tabs-2" style="font-size:15px;">
 
         <div>
-            <span class="fa fa-external-link fa-lg"></span>&nbsp;&nbsp;Access to <a target="_blank" href="http://www.teampass.net" style="font-weight:bold;font-style:italic;">TeamPass website</a>
+            <span class="fa fa-globe fa-lg"></span>&nbsp;&nbsp;<a target="_blank" href="http://www.teampass.net">'.$LANG['website_canal'].'</a>
+        </div>
+        <div style="margin-top:30px;">
+            <span class="fa fa-book fa-lg"></span>&nbsp;&nbsp;'.$LANG['documentation_canal'].'&nbsp;<a target="_blank" href="https://teampass.readthedocs.org" style="font-weight:bold;font-style:italic;">ReadTheDoc</a>
         </div>
         <div style="margin-top:13px;">
-            <span class="fa fa-book fa-lg"></span>&nbsp;&nbsp;Complete documentation at  <a target="_blank" href="https://teampass.readthedocs.org" style="font-weight:bold;font-style:italic;">ReadTheDoc</a>
+            <span class="fa fa-bug fa-lg"></span>&nbsp;&nbsp;'.$LANG['bug_canal'].'&nbsp;<a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github</a>
         </div>
         <div style="margin-top:13px;">
-            <span class="fa fa-bug fa-lg"></span>&nbsp;&nbsp;For bugs, please use the <a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github</a>
-        </div>
-        <div style="margin-top:13px;">
-        <span class="fa fa-gift fa-lg"></span>&nbsp;&nbsp;For Feature Requests, please use the <a target="_blank" href="http://teampass.userecho.com/" style="font-weight:bold;font-style:italic;">UserEcho</a>
+        <span class="fa fa-lightbulb-o fa-lg"></span>&nbsp;&nbsp;'.$LANG['feature_request_canal'].'&nbsp;<a target="_blank" href="http://teampass.userecho.com/" style="font-weight:bold;font-style:italic;">UserEcho</a>
         </div>
 
 
         <div style="margin-top:30px;">
-        <span class="fa fa-beer fa-lg"></span>&nbsp;&nbsp;You may also considering a donation <span class="fa fa-smile-o"></span>&nbsp;<a target="_blank" href="http://teampass.net/donation" style="font-weight:bold;font-style:italic;">More information</a>
+        <span class="fa fa-beer fa-lg"></span>&nbsp;&nbsp;'.$LANG['consider_a_donation'].'&nbsp;<span class="fa fa-smile-o"></span>&nbsp;<a target="_blank" href="http://teampass.net/donation" style="font-weight:bold;font-style:italic;">'.$LANG['more_information'].'</a>
         </div>
     </div>
     <div id="tabs-3">';

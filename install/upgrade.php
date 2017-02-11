@@ -272,15 +272,10 @@ if (
         }
 
         function launch_database_dump() {
-
+            $("#dump_result").html("<img src=\"../includes/images/76.gif\" />");
             request = $.post("upgrade_ajax.php",
                 {
-                    type      : "perform_database_dump",
-                    db_host   : document.getElementById("db_host").value,
-                    db_login  : document.getElementById("db_login").value,
-                    db_pw     : document.getElementById("db_pw").value,
-                    db_bdd    : document.getElementById("db_bdd").value,
-                    db_port   : document.getElementById("db_port").value,
+                    type      : "perform_database_dump"
                 },
                 function(data) {
                     var obj = $.parseJSON(data);
@@ -289,7 +284,7 @@ if (
                         $("#dump_result").html(obj[0].error);
                     } else {
                         // DONE
-                        $("#dump_result").html("Dump is successfull. File stored: " + obj[0].file);
+                        $("#dump_result").html("Dump is successfull. File stored in folder " + obj[0].file);
                     }
                 }
             );
@@ -304,6 +299,15 @@ require_once '../includes/config/include.php';
 
 if (isset($_POST['root_url'])) {
     $_SESSION['fullurl'] = $_POST['root_url'];
+}
+
+
+//define root path
+$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
+if( isset($_SERVER['HTTPS'] ) ) {
+    $protocol = 'https://';
+} else {
+    $protocol = 'http://';
 }
 
 // LOADER
@@ -359,13 +363,6 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     (isset($_POST['step']) && $_POST['step'] == 1)
     || (isset($_GET['step']) && $_GET['step'] == 1)
 ) {
-//define root path
-    $abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
-    if( isset($_SERVER['HTTPS'] ) ) {
-        $protocol = 'https://';
-    } else {
-        $protocol = 'http://';
-    }
     //ETAPE 1
     echo '
                      <h3>Step 1 - Check server</h3>
@@ -425,6 +422,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      }
 
                      echo '
+                     <a href="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/install/upgrade.php">Restart upgrade process</a>
                      </fieldset>
 
                      <fieldset><legend>Maintenance Mode</legend>
@@ -435,11 +433,13 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      However, some administrators may prefer to warn the users in another way. Nevertheless, keep in mind that the update process may fail or even be corrupted due to parallel queries.</i>
                      </fieldset>
 
+                     <!--
                      <fieldset><legend>Anonymous statistics</legend>
                      <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
                      <i>Please consider sending your statistics as a way to contribute to futur improvements of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
                      This option can be enabled or disabled through the administration panel.</i>
                      </fieldset>
+                     -->
 
                      <div id="dump">
                      <fieldset><legend>Database dump</legend>

@@ -315,17 +315,14 @@ echo '
 
 // SENDING STATISTICS?
 if (
-    isset($_SESSION['settings']['send_stats'])
-    && $_SESSION['settings']['send_stats'] == 1
-    && isset($_SESSION['settings']['send_stats_time'])
-    && !isset($_SESSION['temporary']['send_stats_done'])
-    && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) <= time()
+    isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1
+    && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
 ) {
     echo '
         <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
 } else {
     echo '
-    <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
+    <input type="hidden" name="send_statistics" id="send_statistics" value="0" />';
 }
 
 echo '

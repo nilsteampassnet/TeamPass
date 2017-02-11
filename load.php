@@ -1157,7 +1157,14 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                 }
                 if (data.error === "") {
                     $("#value_items").html(data.stat_items);
-                    $("#value_country").html("");
+                    var ips = "";
+                    $.each(data.stat_country, function( index, value ) {
+                      if (value > 0) {
+                        if (ips === "") ips = index+":"+value;
+                        else ips += ";"+index+":"+value;
+                      }
+                    });
+                    $("#value_country").html(ips);
                     $("#value_folders").html(data.stat_folders);
                     $("#value_items_shared").html(data.stat_items_shared);
                     $("#value_folders_shared").html(data.stat_folders_shared);

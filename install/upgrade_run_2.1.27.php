@@ -392,11 +392,32 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
     );
 }
 
+// add new admin setting "send_statistics_items"
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'send_statistics_items'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;')"
+    );
+}
+
+// add new admin setting "create_item_without_password"
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'create_item_without_password'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'send_stats_time', '".time()-2592000."')"
+    );
+}
+
 
 // alter table USERS to add a new field "ga_temporary_code"
 mysqli_query(
     $dbTmp,
     "ALTER TABLE `".$_SESSION['pre']."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
+);
+// alter table USERS to add a new field "user_ip"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['pre']."users` ADD `user_ip` VARCHAR(60) NOT NULL DEFAULT 'none';"
 );
 
 

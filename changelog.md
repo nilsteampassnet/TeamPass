@@ -17,6 +17,8 @@
        - copy from public to personal folder
        - list of folders is refreshed when copying an Item
  #     Copy folders
+ #1635 New folder inheritance of parent specific settings
+ #1631 Error could be appear on upgrade when checking folders and files
  #1628 URL link to specific item does not work
  #1627 Improved label preview length
  #1625 Request to add/change password

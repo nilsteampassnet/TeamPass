@@ -1073,7 +1073,11 @@ switch ($_POST['type']) {
             break;
         }
 
-        if (isset($_SESSION['settings']['send_statistics_items'])) {
+        if (
+            isset($_SESSION['settings']['send_statistics_items']) && isset($_SESSION['settings']['send_stats']) && isset($_SESSION['settings']['send_stats_time'])
+            && $_SESSION['settings']['send_stats'] === "1"
+            && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) <= time()
+        ) {
             $statsToSend = "";
 
             // get statistics data
@@ -1113,6 +1117,18 @@ switch ($_POST['type']) {
                 "tp_statistics",
                 $statsToSend
             );
+
+            // update table misc with current timestamp
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'send_stats_time' => time()
+                   ),
+                "type = %s AND intitule = %s",
+                'admin',
+                'send_stats_time'
+            );
+
 
             //permits to test only once by session
             $_SESSION['temporary']['send_stats_done'] = true;
