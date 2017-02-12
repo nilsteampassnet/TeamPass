@@ -3,7 +3,7 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -1436,7 +1436,7 @@ switch ($_POST['type']) {
 
         break;
 
-        case "save_sending_statistics":
+    case "save_sending_statistics":
         // Check KEY and rights
         if ($_POST['key'] != $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");

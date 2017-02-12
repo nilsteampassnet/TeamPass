@@ -3,7 +3,7 @@
  *
  * @file          load.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -1252,6 +1252,17 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                             2000
                         );
 
+                        // if enabled, then send stats right now
+                        if ($("#send_stats_input").val() === "1") {
+                            // send statistics
+                            $.post(
+                                "sources/main.queries.php",
+                                {
+                                    type : "sending_statistics",
+                                    key  : "'.$_SESSION['key'].'"
+                                }
+                            );
+                        }
                     }
                 },
                 "json"

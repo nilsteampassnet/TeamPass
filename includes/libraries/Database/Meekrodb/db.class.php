@@ -915,18 +915,6 @@ class DBHelper {
 }
 
 function meekrodb_error_handler($params) {
-  /*if (isset($params['query'])) $out[] = "QUERY: " . $params['query'];
-  if (isset($params['error'])) $out[] = "ERROR: " . $params['error'];
-  $out[] = "";
-
-
-  if (php_sapi_name() == 'cli' && empty($_SERVER['REMOTE_ADDR'])) {
-    echo implode("\n", $out);
-  } else {
-    echo implode("<br>\n", $out);
-  }
-  */
-
   echo prepareExchangedData('[{"error" : "'.$params['error'].'"}]', "encode");
 
   die;

@@ -234,7 +234,7 @@ if (
             if ($("#change_pw_encryption_start").val() != "") {
                 start = $("#change_pw_encryption_start").val();
             } else {
-                $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"../includes/images/76.gif\" />");
+                $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"images/76.gif\" />");
             }
             request = $.post("upgrade_ajax.php",
                 {
@@ -272,7 +272,7 @@ if (
         }
 
         function launch_database_dump() {
-            $("#dump_result").html("<img src=\"../includes/images/76.gif\" />");
+            $("#dump_result").html("<img src=\"images/76.gif\" />");
             request = $.post("upgrade_ajax.php",
                 {
                     type      : "perform_database_dump"
@@ -313,7 +313,7 @@ if( isset($_SERVER['HTTPS'] ) ) {
 // LOADER
 echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader">
-        <img src="../includes/images/76.gif" />
+        <img src="images/76.gif" />
     </div>';
 
 // HEADER

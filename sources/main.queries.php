@@ -3,7 +3,7 @@
  *
  * @file          main.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -1099,6 +1099,16 @@ switch ($_POST['type']) {
                         }
                     }
                     $statsToSend[$data] = $tmp;
+                } else if ($data === "stat_country") {
+                    $tmp = "";
+                    foreach ($stats_data[$data] as $key => $value) {
+                        if (empty($tmp)) {
+                            $tmp = $key."-".$value;
+                        } else {
+                            $tmp .= ",".$key."-".$value;
+                        }
+                    }
+                    $statsToSend[$data] = $tmp;
                 } else {
                     $statsToSend[$data] = $stats_data[$data];
                 }
@@ -1106,15 +1116,16 @@ switch ($_POST['type']) {
 
             // connect to Teampass Statistics database
             $link2 = new MeekroDB(
-                "db4free.net",
-                "tp_statistics",
-                "VNWrC6jW7oarthN57k",
-                "tp_statistics",
+                "teampass.pw",
+                "tp_stats",
+                "KI6pIYk5ZSAA9ZsknnOC",
+                "teampass_statistics",
                 "3306",
                 "utf8"
             );
-            $link2->insert(
-                "tp_statistics",
+            
+            $err = $link2->insert(
+                "statistics",
                 $statsToSend
             );
 
@@ -1122,7 +1133,7 @@ switch ($_POST['type']) {
             DB::update(
                 prefix_table("misc"),
                 array(
-                    'send_stats_time' => time()
+                    'valeur' => time()
                    ),
                 "type = %s AND intitule = %s",
                 'admin',
@@ -1136,7 +1147,7 @@ switch ($_POST['type']) {
         }
 
 
-        echo '[ { "error" : "no" , "count" : ""} ]';
+        echo '[ { "error" : "'.$err.'" , "count" : ""} ]';
 
         break;
 }

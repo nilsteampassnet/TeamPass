@@ -2,7 +2,7 @@
 /**
  * @file          upgrade.ajax.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -24,7 +24,7 @@ require_once '../includes/config/include.php';
 // manage settings.php file
 if (!file_exists("../includes/config/settings.php")) {
     if (file_exists("../includes/settings.php")) {
-        // since 2.1.26, this file has changed location
+        // since 2.1.27, this file has changed location
         if (copy("../includes/settings.php", "../includes/config/settings.php")) {
             unlink("../includes/settings.php");
         } else {

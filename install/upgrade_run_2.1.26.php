@@ -2,7 +2,7 @@
 /**
  * @file          upgrade.ajax.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -13,7 +13,7 @@
  */
 
 /*
-** Upgrade script for release 2.1.26
+** Upgrade script for release 2.1.27
 */
 require_once('../sources/SecureHandler.php');
 session_start();

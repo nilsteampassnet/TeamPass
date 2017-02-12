@@ -60,7 +60,7 @@
  #1408 Display folders visible by a user
  #1299 Export to pdf or csv shows htmlencoded
 
-2.1.26
+2.1.27
  #1537 Homepage not loading in French
  #1527 Error Field 'timestamp' doesn't have a default value
  #1526 New .htaccess file in ./includes/config
@@ -128,7 +128,7 @@
  #1301 add ldap_search_base record for db init
  #1300 After 3 bad login attempts, user needs to wait 10s before new try
  #1299 Export to pdf or csv shows htmlencoded
- #1298 Backup-filename on 2.1.26 contains /
+ #1298 Backup-filename on 2.1.27 contains /
  #1292 SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0

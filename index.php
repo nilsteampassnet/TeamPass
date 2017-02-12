@@ -3,7 +3,7 @@
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -665,7 +665,9 @@ if (
                     <br />
                     <label for="forgot_pw_login">'.$LANG['login'].'</label>
                     <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
-                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" alt="loading" /></div>
+                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none; padding:5px;" class="ui-corner-all"><
+                        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+                    </div>
                 </div>';
     }
 echo '
@@ -700,7 +702,7 @@ echo '
 echo '
     <div id="div_fin_session" style="display:none;">
         <div style="padding:10px;text-align:center;">
-            <img src="includes/images/alarm-clock.png" alt="" />&nbsp;<b>'.$LANG['index_session_ending'].'</b>
+            <i class="fa fa-bell mi-red fa-2x"></i>&nbsp;<b>'.$LANG['index_session_ending'].'</b>
         </div>
     </div>';
 // WARNING FOR QUERY ERROR

@@ -2,7 +2,7 @@
 /**
  * @file          install.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2016 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -424,7 +424,8 @@ global \$SETTINGS;
                             array('admin','syslog_port','514'),
                             array('admin','manager_move_item','0'),
                             array('admin','create_item_without_password','0'),
-                            array('admin','otv_is_enabled','0')
+                            array('admin','otv_is_enabled','0'),
+                            array('admin','agses_authentication_enabled','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
