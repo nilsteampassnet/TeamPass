@@ -630,7 +630,7 @@ require_once \"".$skFile."\";
             } else {
                 //settings.php file doesn't exit => ERROR !!!!
                 echo 'document.getElementById("res_step5").innerHTML = '.
-                        '"<img src=\"../includes/images/error.png\">&nbsp;Setting.php '.
+                        '"<img src=\"images/error.png\">&nbsp;Setting.php '.
                         'file doesn\'t exist! Upgrade can\'t continue without this file.<br />'.
                         'Please copy your existing settings.php into the \"includes\" '.
                         'folder of your TeamPass installation ";';

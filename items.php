@@ -442,7 +442,7 @@ echo'
 echo '
             <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
                 <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
+                <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
             <input type="hidden" id="mypassword_complex" />
@@ -624,7 +624,7 @@ echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
                     <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
+                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>

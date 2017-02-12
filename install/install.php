@@ -153,13 +153,13 @@ echo '
     <label for="tbl_prefix" class="label_block_big">Table prefix :</label><input type="text" id="tbl_prefix" value="teampass_" style="width:250px;" />&nbsp;<span id="res4_check0"></span>
     </div>
     <div class="line_entry">
-    <label for="encrypt_key" class="label_block_big">Encryption key (SaltKey): <img src="../includes/images/information-white.png" alt="" title="The saltkey must be of size 16, and should contains upper and lower case letters, special characters and numbers, and MUST NOT CONTAINS single quotes!!!" />
+    <label for="encrypt_key" class="label_block_big">Encryption key (SaltKey): <img src="images/information-white.png" alt="" title="The saltkey must be of size 16, and should contains upper and lower case letters, special characters and numbers, and MUST NOT CONTAINS single quotes!!!" />
     </label>
     <input type="text" id="encrypt_key" style="width:300px;" />&nbsp;<input type="text" class="button" value="Generate" onclick="suggestKey()" style="width:70px;margin-left:10px;" />&nbsp;<span id="res4_check1"></span>
     </div>
     <div class="line_entry">
     <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
-        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
+        <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
     </label>
     <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
     </div>

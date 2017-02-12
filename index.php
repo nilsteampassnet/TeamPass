@@ -418,7 +418,7 @@ if (
             class="ui-state-highlight ui-corner-all" id="div_maintenance">
             <b>'.$LANG['update_needed_mode_admin'].'</b>
             <span style="float:right;cursor:pointer;">
-                <img src="includes/images/cross.png" onclick="toggleDiv(\'div_maintenance\')" alt="close" />
+                <span class="fa fa-close mi-red" onclick="toggleDiv(\'div_maintenance\')"></span>
             </span>
         </div>';
 }
@@ -539,7 +539,7 @@ if (
                 <div style="margin:15px; text-align:center;">
                     <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\''.htmlspecialchars($_GET['key'], ENT_QUOTES).'\',\''.htmlspecialchars($_GET['login'], ENT_QUOTES).'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
                     <br /><br />
-                    <img id="ajax_loader_send_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+                    <div id="ajax_loader_send_mail" style="display:none; margin: 20px;"><span class="fa fa-cog fa-spin fa-2x"></span></div>
                 </div>
                 <div style="margin-top:30px; text-align:center;">
                     <a href="index.php" class="tip" title="'.$LANG['home'].'"><span class="fa fa-home fa-lg"></span></a>
@@ -587,7 +587,7 @@ if (
                         <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
         isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
                             '.$LANG['index_get_identified'].'
-                            &nbsp;<img id="ajax_loader_connexion" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+                            <span id="ajax_loader_connexion" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                         </div>
                         <div id="connection_error" style="display:none;text-align:center;margin:5px; padding:3px;" class="ui-state-error ui-corner-all">&nbsp;<i class="fa fa-warning"></i>&nbsp;'.$LANG['index_bas_pw'].'</div>';
         echo '

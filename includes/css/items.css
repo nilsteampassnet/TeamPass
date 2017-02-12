@@ -27,7 +27,6 @@ button{
     font-family:verdana;
     font-size:11px;
     color:#242D35;
-    /*background: url(../images/key.png) 0 0 no-repeat;*/
 }
 
 .liste_items a.file_search, .liste_items a.fileselected_search {
@@ -139,10 +138,6 @@ button{
 
 .state-hover{
     background-color:#F0F0F0;
-}
-
-.ui-autocomplete-loading {
-    background: white url('../images/ajax-loader.gif') right center no-repeat;
 }
 
 #folder_menu {

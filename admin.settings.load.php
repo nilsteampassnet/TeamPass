@@ -208,16 +208,6 @@ function loadFieldsList() {
    );
 }
 
-function changeSettingStatus(id, val) {
-    if (val == 1) {
-        $("#flag_"+id).html("<img src='includes/images/status.png' />");
-        $("#"+id+"_radio2").addClass("ui-button.redButton");
-        console.log(("#"+id+"_radio2"));
-    } else {
-        $("#flag_"+id).html("<img src='includes/images/status-busy.png' />");
-    }
-}
-
 //###########
 //## FUNCTION : Launch the action the admin wants
 //###########
@@ -247,24 +237,24 @@ function LaunchAdminActions(action,option)
             $("#div_loading").hide();
             if (data != null) {
                 if (data[0].result == "db_backup") {
-                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>").show();
+                    $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>").show();
                 } else if (data[0].result == "pf_done") {
-                    $("#result_admin_action_check_pf").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_check_pf").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_restore") {
                     $("#restore_bck_encryption_key_dialog").dialog("close");
-                    $("#result_admin_action_db_restore").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_db_restore").html("<span class='fa fa-check mi-green'></span>").show();
                     $("#result_admin_action_db_restore_get_file").hide();
                     //deconnect userd
                     sessionStorage.clear();
                     window.location.href = "logout.php"
                 } else if (data[0].result == "cache_reload") {
-                    $("#result_admin_action_reload_cache_table").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_reload_cache_table").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_optimize") {
-                    $("#result_admin_action_db_optimize").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_db_optimize").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "purge_old_files") {
-                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>").show();
+                    $("#result_admin_action_purge_old_files").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>").show();
                 } else if (data[0].result == "db_clean_items") {
-                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>").show();
+                    $("#result_admin_action_db_clean_items").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>").show();
                 } else if (data[0].result == "changed_salt_key") {
                     //deconnect user
                     $("#menu_action").val("deconnexion");
@@ -287,7 +277,7 @@ function LaunchAdminActions(action,option)
                         $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.").show();
                     }
                 } else if (data[0].result == "rebuild_config_file") {
-                    $("#result_admin_rebuild_config_file").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_rebuild_config_file").html("<span class='fa fa-check mi-green'></span>").show();
                 }
             }
         },

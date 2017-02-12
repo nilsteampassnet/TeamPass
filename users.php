@@ -242,7 +242,7 @@ foreach ($rows as $record) {
                     <div id="auto_create_folder_role"  style="visibility:hidden;">
                         <input type="checkbox" id="new_folder_role_domain" disabled="disabled" />
                         <label for="new_folder_role_domain">'.$LANG['auto_create_folder_role'].'&nbsp;&quot;<span id="auto_create_folder_role_span"></span>&quot;</label>
-                        <img id="ajax_loader_new_mail" style="display:none;" src="includes/images/ajax-loader.gif" alt="" />
+                        <span id="ajax_loader_new_mail" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                         <input type="hidden" id="new_domain" />
                     </div>
                 </td>
@@ -288,7 +288,7 @@ $LANG['give_new_pw'].'
                 <td><label for="generated_user_pw" id="generated_user_pw_title" style="display:none;">'.$LANG['generated_pw'].'</label>
                 </td>
                 <td>
-                    <span style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><img src="includes/images/ajax-loader.gif" alt="ajax-loader" /></span>
+                    <span style="text-align:center;margin-top:8px; display:none;" id="change_user_pw_wait"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                     <span id="generated_user_pw" style="display:none;"></span>
                 </td>
             </tr>

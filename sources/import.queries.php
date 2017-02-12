@@ -644,12 +644,9 @@ switch ($_POST['type']) {
 
             $import_perso = false;
             $itemsArray = array();
-            $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$LANG['nb_folders'].': '.
-                $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$LANG['nb_items'].': '.
+            $text = '<span class="fa fa-folder-open"></span>&nbsp;'.$LANG['nb_folders'].': '.
+                $numGroups.'<br /><span class="fa fa-tag"></span>>&nbsp;'.$LANG['nb_items'].': '.
                 $numItems.'<br /><br />';
-            /*$text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
-                $LANG['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
-                $LANG['importing_folders'].':</b><br />';*/
 
             //if destination is not ROOT then get the complexity level
             if (strpos($_POST['destination'], "perso") != false) {

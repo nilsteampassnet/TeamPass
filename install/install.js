@@ -19,9 +19,9 @@ $(function() {
     $("#encrypt_key").keypress(function (e) {
         var key = e.charCode || e.keyCode || 0;
         if ($("#encrypt_key").val().length != 16 || ("#encrypt_key").val().length != 24 || ("#encrypt_key").val().length != 32)
-            $("#res4_check1").html("<img src='../includes/images/cross.png' />");
+            $("#res4_check1").html("<img src='images/cross.png' />");
         else
-            $("#res4_check1").html("<img src='../includes/images/tick.png' />");
+            $("#res4_check1").html("<img src='images/tick.png' />");
         // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
         return (
             key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96
@@ -262,9 +262,9 @@ function GotoNextStep()
         $("#encrypt_key").live('keypress', function(e){
             var key = e.charCode || e.keyCode || 0;
             if ($("#encrypt_key").val().length < 15)
-                $("#res4_check1").html("<img src='../includes/images/cross.png' />");
+                $("#res4_check1").html("<img src='images/cross.png' />");
             else
-                $("#res4_check1").html("<img src='../includes/images/tick.png' />");
+                $("#res4_check1").html("<img src='images/tick.png' />");
             // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
             return (
                 key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96

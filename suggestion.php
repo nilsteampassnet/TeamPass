@@ -187,7 +187,7 @@ echo '
 
     <label for="suggestion_pwd" class="label_cpm">'.$LANG['index_password'].
     '&nbsp;
-    <span id="pw_wait" style="display:none;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
+    <span id="pw_wait" style="display:none;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
     <span id="complexity_required_text"></span>
     </label>
     <input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
