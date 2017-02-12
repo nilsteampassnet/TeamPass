@@ -3,7 +3,7 @@
  * @file          upgrade.ajax.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -155,7 +155,7 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` MODIFY pw_len INT(
 // alter table misc to add an index
 mysqli_query(
     $dbTmp,
-    "ALTER TABLE `".$_SESSION['pre']."misc` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "ALTER TABLE `".$_SESSION['pre']."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`)"
 );
 
 // alter table misc to add an index

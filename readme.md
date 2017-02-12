@@ -2,7 +2,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright (c) 2009-2016, [Nils Laumaillé] (Nils@TeamPass.net)
+> Copyright (c) 2009-2017, [Nils Laumaillé] (Nils@TeamPass.net)
 
 ## Licence Agreement
 

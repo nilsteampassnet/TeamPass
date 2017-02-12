@@ -3,7 +3,7 @@
  * @file          install.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -293,7 +293,8 @@ if (isset($_POST['type'])) {
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
-                            `valeur` varchar(500) NOT NULL
+                            `valeur` varchar(500) NOT NULL,
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
 
@@ -532,7 +533,7 @@ global \$SETTINGS;
                             `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
-                            `encrypted_psk` text NOT NULL
+                            `encrypted_psk` text NULL,
                             `user_ip` varchar(60) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
@@ -805,7 +806,6 @@ global \$SETTINGS;
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
-                    }
                     } else if ($task == "items_change") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_change` (
@@ -951,7 +951,6 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                         $fh,
                         utf8_encode(
                             "<?php
-@define('SALT', '".$var['encrypt_key']."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 @define('AKEY', '');
 @define('IKEY', '');
@@ -960,6 +959,25 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
 ?>")
                     );
                     fclose($fh);
+                    
+                    // create teampass-seckey.txt
+                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/File.php';
+                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+                    $key = \Defuse\Crypto\Key::createNewRandomKey();
+                    $new_salt = $key->saveToAsciiSafeString();
+                    
+                    file_put_contents(
+                        $securePath."/teampass-seckey.txt",
+                        $new_salt
+                    );
 
                     // update CSRFP TOKEN
                     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
