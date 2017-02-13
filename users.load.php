@@ -309,7 +309,7 @@ $(function() {
                 if ($("#new_login").val() == "" || $("#new_pwd").val()=="" || $("#new_email").val()=="") {
                     $("#add_new_user_error").show(1).html("<?php echo $LANG['error_must_enter_all_fields'];?>").delay(1000).fadeOut(1000);
                 } else {
-                    $("#add_new_user_info").show().html("<?php echo $LANG['please_wait'];?>");
+                    $("#add_new_user_info").show().html("<span class=\'fa fa-cog fa-spin fa-lg\'></span>&nbsp;<?php echo $LANG['please_wait'];?>");
 
                     // get lists
                     var forbidFld = "", authFld = "", groups = "";

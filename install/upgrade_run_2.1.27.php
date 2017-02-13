@@ -295,7 +295,20 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $_SESSION['pre']."cache",
     "timestamp",
-    "VARCHAR(50) DEFAULT NULL"
+    "VARCHAR(50) DEFAULT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field url to table CACHE! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
+// add field url to CACHE table
+$res = addColumnIfNotExist(
+    $_SESSION['pre']."cache",
+    "url",
+    "VARCHAR(500) DEFAULT NULL"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field timestamp to table CACHE! '.mysqli_error($dbTmp).'!"}]';

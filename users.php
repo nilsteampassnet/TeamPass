@@ -251,7 +251,7 @@ foreach ($rows as $record) {
         </div>
     </div>
 
-    <div style="display:none;" id="add_new_user_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:4px; margin-top:5px;" id="add_new_user_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 // DIV FOR DELETING A USER
 echo '

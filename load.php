@@ -1347,7 +1347,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                     if (data[0].error === "" && parseInt(data[0].count) > 0) {
                         // incase we need to show the menu button
                         if (data[0].show_sug_in_menu === "1") {
-                            $("#menu_suggestion_position").append("<a class=\"btn btn-default\" href=\"#\" onclick=\"MenuAction(\'suggestion\')\"><i class=\"fa fa-lightbulb-o fa-2x tip\" id=\"menu_icon_suggestions\" title=\"'.$LANG['suggestion_menu'].'\"></i></a>");
+                            $("#menu_suggestion_position").append("<a class=\'btn btn-default\' href=\'#\' onclick=\'MenuAction(\"suggestion\")\'><i class=\'fa fa-lightbulb-o fa-2x tip\' id=\"menu_icon_suggestions\' title=\''.$LANG['suggestion_menu'].'\'></i></a>");
                         }
 
                         $("#menu_icon_suggestions").addClass("mi-red");
