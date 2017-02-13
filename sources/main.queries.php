@@ -1057,9 +1057,11 @@ switch ($_POST['type']) {
             DB::query("SELECT * FROM ".$pre."suggestion");
             $count += DB::count();
 
-            echo '[ { "error" : "" , "count" : "'.$count.'"} ]';
+            echo '[ { "error" : "" , "count" : "'.$count.'" , "show_sug_in_menu" : "0"} ]';
+        } else if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
+            echo '[ { "error" : "" , "count" : "'.$_SESSION['nb_item_change_proposals'].'" , "show_sug_in_menu" : "1"} ]';
         } else {
-            echo '[ { "error" : "no" , "count" : ""} ]';
+            echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
         }
 
         break;
@@ -1076,7 +1078,7 @@ switch ($_POST['type']) {
         if (
             isset($_SESSION['settings']['send_statistics_items']) && isset($_SESSION['settings']['send_stats']) && isset($_SESSION['settings']['send_stats_time'])
             && $_SESSION['settings']['send_stats'] === "1"
-            && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) <= time()
+            && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) > time()
         ) {
             $statsToSend = "";
 
@@ -1123,7 +1125,7 @@ switch ($_POST['type']) {
                 "3306",
                 "utf8"
             );
-            
+
             $err = $link2->insert(
                 "statistics",
                 $statsToSend
@@ -1144,10 +1146,11 @@ switch ($_POST['type']) {
             //permits to test only once by session
             $_SESSION['temporary']['send_stats_done'] = true;
             $_SESSION['settings']['send_stats_time'] = time();
+
+            echo '[ { "error" : "'.$err.'" , "done" : "1"} ]';
+        } else {
+            echo '[ { "error" : "" , "done" : "0"} ]';
         }
-
-
-        echo '[ { "error" : "'.$err.'" , "count" : ""} ]';
 
         break;
 }

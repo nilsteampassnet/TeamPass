@@ -472,22 +472,6 @@ echo '
                             <div class="toggle toggle-modern" id="enable_suggestion" data-toggle-on="', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_suggestion_input" name="enable_suggestion_input" value="', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '1' : '0', '" />
                     </td></tr>';
 
-echo '<tr><td colspan="3"><hr /></td></tr>';
-// Enable send_stats
-echo '
-                <tr style="margin-bottom:3px">
-                    <td>
-                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
-                        <label>' .
-$LANG['settings_send_stats'].'
-                            &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_send_stats_tip']), ENT_QUOTES).'"></i>
-                        </label>
-                    </td>
-                    <td>
-                        <div class="toggle toggle-modern" id="send_stats" data-toggle-on="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="send_stats_input" name="send_stats_input" value="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '1' : '0', '" />
-                    </td>
-                </tr>';
-
 // Enable GET TP Information
 echo '
                     <tr><td>

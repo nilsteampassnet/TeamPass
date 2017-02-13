@@ -278,6 +278,32 @@ if ($res === false) {
 }
 
 
+// add field URL to CACHE table
+$res = addColumnIfNotExist(
+    $_SESSION['pre']."cache",
+    "encryption_type",
+    "VARCHAR(500) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field URL to table CACHE! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
+// add field timestamp to CACHE table
+$res = addColumnIfNotExist(
+    $_SESSION['pre']."cache",
+    "timestamp",
+    "VARCHAR(50) DEFAULT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field timestamp to table CACHE! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+
 
 
 //-- generate new DEFUSE key
@@ -471,8 +497,8 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 mysqli_query(
     $dbTmp,
     "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."items_change` (
-    `id` tinyint(10) NOT NULL AUTO_INCREMENT,
-    `item_id` tinyint(12) NOT NULL,
+    `id` int(12) NOT NULL AUTO_INCREMENT,
+    `item_id` int(12) NOT NULL,
     `label` varchar(255) NOT NULL DEFAULT 'none',
     `pw` text NOT NULL,
     `login` varchar(255) NOT NULL DEFAULT 'none',

@@ -1204,7 +1204,17 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
     //Load function on page load
     $(function() {
         $("#but_save_send_stat").button();
+
+        // calculate statistic values
         showStatsValues();
+
+        if ($("#setting_send_stats").val() !== "1") {
+            // show anonymous stats tab
+            $("#tabs").tabs({active: 1});
+        } else {
+            // show communication mean tab
+            $("#tabs").tabs({active: 0});
+        }
 
         $(".toggle").toggles({
             drag: true, // allow dragging the toggle between positions
@@ -1334,7 +1344,12 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                 },
                 function(data) {
                     //check if format error
-                    if (data[0].error === "" && data[0].count > 0) {
+                    if (data[0].error === "" && parseInt(data[0].count) > 0) {
+                        // incase we need to show the menu button
+                        if (data[0].show_sug_in_menu === "1") {
+                            $("#menu_suggestion_position").append("<a class=\"btn btn-default\" href=\"#\" onclick=\"MenuAction(\'suggestion\')\"><i class=\"fa fa-lightbulb-o fa-2x tip\" id=\"menu_icon_suggestions\" title=\"'.$LANG['suggestion_menu'].'\"></i></a>");
+                        }
+
                         $("#menu_icon_suggestions").addClass("mi-red");
 
                         setInterval(function(){blink()}, 700);

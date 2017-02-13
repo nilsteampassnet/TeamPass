@@ -302,7 +302,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 590,
-        height: 600,
+        height: 620,
         title: "<?php echo $LANG['new_user_title'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {

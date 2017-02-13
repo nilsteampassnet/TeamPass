@@ -196,6 +196,8 @@ if (isset($_SESSION['login'])) {
                     <i class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'"></i>
                 </a>';
     }
+    echo '
+    <span id="menu_suggestion_position">';
     // SUGGESTION menu
     if (
         isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
@@ -206,6 +208,8 @@ if (isset($_SESSION['login'])) {
                     <i class="fa fa-lightbulb-o fa-2x tip" id="menu_icon_suggestions" title="'.$LANG['suggestion_menu'].'"></i>
                 </a>';
     }
+    echo '
+    </span>';
     // Admin menu
     if ($_SESSION['user_admin'] == 1) {
         echo '

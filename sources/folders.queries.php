@@ -401,8 +401,13 @@ if (isset($_POST['newtitle'])) {
                 );
 
                 // inherit from parent the specific settings it has
-                $parentBloquerCreation = $data['bloquer_creation'];
-                $parentBloquerModification = $data['bloquer_modification'];
+                if (DB::count() > 0) {
+                    $parentBloquerCreation = $data['bloquer_creation'];
+                    $parentBloquerModification = $data['bloquer_modification'];
+                } else {
+                    $parentBloquerCreation = 0;
+                    $parentBloquerModification = 0;
+                }
 
                 if ($data['personal_folder'] === "1") {
                     $isPersonal = 1;

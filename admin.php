@@ -35,12 +35,13 @@ if (isset($_SESSION['settings']['send_statistics_items'])) {
 }
 
 echo '
+<input type="hidden" id="setting_send_stats" value="',isset($_SESSION['settings']['send_stats']) ? $_SESSION['settings']['send_stats'] : '0','" />
 <div class="title ui-widget-content ui-corner-all">'.$LANG['thku'].'</div>
 
 <div style="margin:auto; line-height:20px; padding:10px;" id="tabs">
     <ul>
-        <li><a href="#tabs-1">'.$LANG['sending_anonymous_statistics'].'</a></li>
         <li><a href="#tabs-2">'.$LANG['communication_means'].'</a></li>
+        <li><a href="#tabs-1">'.$LANG['sending_anonymous_statistics'].'</a></li>
         <li><a href="#tabs-3">'.$LANG['changelog'].'</a></li>
         <li><a href="#tabs-4">'.$LANG['admin_info'].'</a></li>
     </ul>

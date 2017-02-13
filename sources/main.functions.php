@@ -775,6 +775,21 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             }
         }
 
+        // check if change proposals on User's items
+        if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1) {
+            DB::query(
+                "SELECT *
+                FROM ".prefix_table("items_change")." AS c
+                LEFT JOIN ".prefix_table("log_items")." AS i ON (c.item_id = i.id_item)
+                WHERE i.action = %s AND i.id_user = %i",
+                "at_creation",
+                $_SESSION['user_id']
+            );
+            $_SESSION['nb_item_change_proposals'] = DB::count();
+        } else {
+            $_SESSION['nb_item_change_proposals'] = 0;
+        }
+
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
         $_SESSION['groupes_visibles_list'] = implode(',', $listAllowedFolders);

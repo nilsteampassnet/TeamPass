@@ -162,12 +162,14 @@ echo '
     <div class="line_entry">
     <label for="admin_pwd" class="label_block_big">Administrator password :</label><input type="text" id="admin_pwd" style="width:250px;" />&nbsp;<span id="res4_check10"></span>
     </div>
+    <!--
     <h5>Anonymous statistics:</h5>
     <div class="line_entry">
     <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
     <div style="font-style: italic; font-size:9px;">Please consider sending your statistics as a way to contribute to future improvements of Teampass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the following information : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
     This option can be enabled or disabled through the administration panel.</div>
     </div>
+    -->
 </div>';
 
 echo '

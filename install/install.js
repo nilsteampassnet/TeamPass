@@ -70,7 +70,7 @@ function CheckPage()
         if ($("#admin_pwd").val() == "") {
             error = "You must define a password for Admin account!";
         } else{
-            data = '{"tbl_prefix":"'+sanitizeString($("#tbl_prefix").val())+'", "sk_path":"'+sanitizeString($("#sk_path").val())+'", "admin_pwd":"'+sanitizeString($("#admin_pwd").val())+'", "send_stats":"'+$("#send_stats").prop("checked")+'"}';
+            data = '{"tbl_prefix":"'+sanitizeString($("#tbl_prefix").val())+'", "sk_path":"'+sanitizeString($("#sk_path").val())+'", "admin_pwd":"'+sanitizeString($("#admin_pwd").val())+'", "send_stats":""}';
             tasks = ["misc*preparation"];
             multiple = "";
         }
@@ -85,8 +85,8 @@ function CheckPage()
 
     // STEP 6
     if (step == "6") {
-        data = '';
-        tasks = ["file*settings.php", "file*sk.php", "file*security"];
+        data = '{"url_path":"'+sanitizeString($("#hid_url_path").val())+'"}';
+        tasks = ["file*settings.php", "file*sk.php", "file*security", "file*teampass-seckey", "file*csrfp-token"];
         multiple = true;
     }
 

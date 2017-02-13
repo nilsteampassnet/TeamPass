@@ -373,7 +373,7 @@ global \$SETTINGS;
                             array('admin','custom_logo',''),
                             array('admin','custom_login_text',''),
                             array('admin','default_language','english'),
-                            array('admin','send_stats', $var['send_stats']),
+                            array('admin','send_stats', '0'),
                             array('admin','send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),
                             array('admin','send_stats_time', time()-2592000),
                             array('admin','get_tp_info', '1'),
@@ -426,7 +426,8 @@ global \$SETTINGS;
                             array('admin','manager_move_item','0'),
                             array('admin','create_item_without_password','0'),
                             array('admin','otv_is_enabled','0'),
-                            array('admin','agses_authentication_enabled','0')
+                            array('admin','agses_authentication_enabled','0'),
+                            array('admin','item_extra_fields','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -809,8 +810,8 @@ global \$SETTINGS;
                     } else if ($task == "items_change") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_change` (
-                            `id` tinyint(10) NOT NULL AUTO_INCREMENT,
-                            `item_id` tinyint(12) NOT NULL,
+                            `id` int(12) NOT NULL AUTO_INCREMENT,
+                            `item_id` int(12) NOT NULL,
                             `label` varchar(255) NOT NULL DEFAULT 'none',
                             `pw` text NOT NULL,
                             `login` varchar(255) NOT NULL DEFAULT 'none',
@@ -866,6 +867,8 @@ global \$SETTINGS;
             //decrypt
             require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
+            $data_sent = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
+            $data_sent = json_decode($data_sent, true);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
             $db = json_decode($json, true);
@@ -959,44 +962,6 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
 ?>")
                     );
                     fclose($fh);
-                    
-                    // create teampass-seckey.txt
-                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                    require_once '../includes/libraries/Encryption/Encryption/File.php';
-                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
-
-                    $key = \Defuse\Crypto\Key::createNewRandomKey();
-                    $new_salt = $key->saveToAsciiSafeString();
-                    
-                    file_put_contents(
-                        $securePath."/teampass-seckey.txt",
-                        $new_salt
-                    );
-
-                    // update CSRFP TOKEN
-                    $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
-                    $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
-                    if (file_exists($csrfp_file)) {
-                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
-                            break;
-                        } else {
-                            $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
-                        }
-                    }
-                    unlink($csrfp_file);    // delete existing csrfp.config file
-                    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
-                    $data = file_get_contents($csrfp_file);
-                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
-                    $jsUrl = $_SESSION['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js';
-                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
-                    file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
                     // finalize
                     if ($result === false) {
@@ -1022,6 +987,48 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
+                } else if ($task == "teampass-seckey") {
+                    // create teampass-seckey.txt
+                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/File.php';
+                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+                    $key = \Defuse\Crypto\Key::createNewRandomKey();
+                    $new_salt = $key->saveToAsciiSafeString();
+
+                    file_put_contents(
+                        $securePath."/teampass-seckey.txt",
+                        $new_salt
+                    );
+
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                } else if ($task == "csrfp-token") {
+                    // update CSRFP TOKEN
+                    $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
+                    $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
+                    if (file_exists($csrfp_file)) {
+                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                            break;
+                        } else {
+                            $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
+                        }
+                    }
+                    unlink($csrfp_file);    // delete existing csrfp.config file
+                    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+                    $data = file_get_contents($csrfp_file);
+                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
+                    $jsUrl = $data_sent['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js';
+                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
+                    file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 }
             }
 
