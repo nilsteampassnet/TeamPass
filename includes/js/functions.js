@@ -108,7 +108,7 @@ function OpenDialog(id){
 *   Toggle a DIV
 **/
 function toggleDiv(id){
-    $('#'+id).toggle();
+    $('#'+id).slideToggle("slow");
     //specific case to not show upgrade alert
     if(id == "div_maintenance"){
         $.post(

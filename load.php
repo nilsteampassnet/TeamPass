@@ -124,16 +124,6 @@ $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[
-    // ShowHide
-    function showHideDiv (divId)
-    {
-        if ($("#"+divId).is(":visible")) {
-            $("#"+divId).hide();
-        } else {
-            $("#"+divId).show();
-        }
-    }
-
 
     //Menu actions
     function MenuAction(val)
@@ -179,11 +169,7 @@ $htmlHeaders .= '
         $("#ajax_loader_connexion").show();
 
         //create random string
-        var randomstring = "";
-        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz".split("");
-        for (var i = 0; i < 10; i++) {
-            randomstring += chars[Math.floor(Math.random() * chars.length)];
-        }
+        var randomstring =CreateRandomString(10);
 
         var data = "";
         if ($("#ga_code").val() != undefined) {
@@ -366,53 +352,6 @@ $htmlHeaders .= '
     }
 
 
-
-    /**
-    * Creates a random string
-    * @returns {string} A random string
-    */
-    function randomString() {
-        var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-        var string_length = 128;
-        var randomstring = "";
-        for (var i=0; i<string_length; i++) {
-            var rnum = Math.floor(Math.random() * chars.length);
-            randomstring += chars.substring(rnum,rnum+1);
-        }
-        //randomstring += cursor.x;
-        //randomstring += cursor.y;
-        return randomstring;
-    }
-
-    function OpenDiv(div)
-    {
-        $("#"+div).slideToggle("slow");
-    }
-
-    function OpenDialogBox(id)
-    {
-        $("#"+id).dialog("open");
-    }
-
-    //Change language using icon flags
-    function ChangeLanguage(lang)
-    {
-        $("#language").val(lang);
-        data = \'{"lang":"\'+sanitizeString(lang)+\'"}\';
-        $.post(
-            "sources/main.queries.php",
-            {
-                type : "change_user_language",
-                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
-            },
-            function(data) {
-                if (data == "done") {
-                    document.location.href="index.php?language="+lang;
-                }
-            }
-       );
-    }
-
     function loadProfileDialog()
     {
         $("#dialog_user_profil").dialog({
@@ -557,6 +496,29 @@ $htmlHeaders .= '
         } else {
             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("'.addslashes($LANG['index_pw_error_identical']).'");
         }
+    }
+
+    /*
+    **
+    */
+    function prepareMsgToDisplay(type, msg) {
+        var html;
+        if (type === "error") {
+            html = "<i class=\'fa fa-warning fa-lg mi-red\'></i>&nbsp;";
+
+            if (msg === "not_allowed") {
+                html += "'.addslashes($LANG['error_not_allowed_to']).'";
+            } else if (msg === "key_not_conform") {
+                html += "Key verification for Query is not correct!";
+            }
+        } else if (type === "info") {
+            html = "<i class=\'fa fa-info-circle fa-lg\'></i>&nbsp;";
+            if (msg === "done") {
+                html += "'.addslashes($LANG['alert_message_done']).'";
+            }
+        }
+
+        return html;
     }
 
     $(function() {
@@ -1328,7 +1290,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
     function prepare_delete_fav(id)
     {
         $("#detele_fav_id").val(id);
-        OpenDialogBox("div_delete_fav");
+        OpenDialog("div_delete_fav");
     }';
 } else if (isset($_GET['page']) && isset($_SESSION['user_id'])) {
     // simulate a CRON activity (only 4 secs after page loading)
@@ -1347,7 +1309,13 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                     if (data[0].error === "" && parseInt(data[0].count) > 0) {
                         // incase we need to show the menu button
                         if (data[0].show_sug_in_menu === "1") {
-                            $("#menu_suggestion_position").append("<a class=\'btn btn-default\' href=\'#\' onclick=\'MenuAction(\"suggestion\")\'><i class=\'fa fa-lightbulb-o fa-2x tip\' id=\"menu_icon_suggestions\' title=\''.$LANG['suggestion_menu'].'\'></i></a>");
+                            $("#menu_suggestion_position")
+                                .append("<a class=\"btn btn-default\" href=\"#\"><i class=\"fa fa-lightbulb-o fa-2x tip\" id=\"menu_icon_suggestions\" title=\"'.$LANG['suggestion_menu'].'\"></i></a>")
+                                .click (function() {
+                                    MenuAction("suggestion");
+                                });
+                            $(".btn").button();
+                            $(".tip").tooltipster({multiple: true});
                         }
 
                         $("#menu_icon_suggestions").addClass("mi-red");

@@ -365,16 +365,21 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                             key     : "<?php echo $_SESSION['key'];?>"
                         },
                         function(data) {
-                            $("#suggestion_view_wait").html("<?php echo $LANG['alert_message_done'];?>");
-                            oTable = $("#t_change").dataTable();
-                            oTable.fnDraw();
-                            setTimeout(
-                                function() {
-                                    $("#div_suggestion_view").dialog("close");
-                                },
-                                1500
-                            );
-                        }
+                            if (data[0].error === "") {
+                                $("#suggestion_view_wait").html(prepareMsgToDisplay("info", "done"));
+                                oTable = $("#t_change").dataTable();
+                                oTable.fnDraw();
+                                setTimeout(
+                                    function() {
+                                        $("#div_suggestion_view").dialog("close");
+                                    },
+                                    1500
+                                );
+                            } else {
+                                $("#suggestion_view_wait").html(prepareMsgToDisplay("error", data[0].error));
+                            }
+                        },
+                        "json"
                     )
                 },
                 "<?php echo $LANG['reject'];?>": function() {

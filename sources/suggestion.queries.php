@@ -429,11 +429,31 @@ if (!empty($_POST['type'])) {
                 $data['item_id']
             );
 
+            // read item creator
+            $ret_item_creator = DB::queryFirstRow(
+                "SELECT id_user FROM ".$pre."log_items
+                WHERE id_item = %i AND action = %s",
+                intval($data['item_id']),
+                "at_creation"
+            );
+
             // get author login
             $author = DB::queryfirstrow(
                 "SELECT login FROM ".$pre."users WHERE id = %i",
                 $data['user_id']
             );
+
+            // is user allowed?
+            if (
+                (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] !== "1") &&
+                (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] !== "1") &&
+                ($data['user_id'] !== $_SESSION['user_id']) &&
+                ($ret_item_creator['id_user'] !== $_SESSION['user_id'])
+            ) {
+                // not allowed ... stop
+                echo '[ { "error" : "not_allowed" } ]';
+                break;
+            }
 
             // prepare query
             $fields_array = array();
@@ -480,6 +500,7 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
 
+            echo '[ { "error" : "" } ]';
         break;
 
 

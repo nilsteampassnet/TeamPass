@@ -423,6 +423,7 @@ switch ($_POST['type']) {
             echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
         }
         break;
+
     // Send to user his new pw if key is conform
     case "generate_new_password":
         // decrypt and retreive data in JSON format

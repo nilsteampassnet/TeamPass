@@ -127,7 +127,13 @@ foreach ($rows as $record) {
     $sOutput .= '["';
 
     //col1
-    if ((isset($_SESSION['user_admin']) && $_SESSION['user_admin'] === "1") || (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] === "1") || ($record['user_id'] === $_SESSION['user_id'])) {
+    $ret_item_creator = DB::queryFirstRow(
+        "SELECT id_user FROM ".$pre."log_items
+        WHERE id_item = %i AND action = %s",
+        intval($record['item_id']),
+        "at_creation"
+    );
+    if ((isset($_SESSION['user_admin']) && $_SESSION['user_admin'] === "1") || (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] === "1") || ($record['user_id'] === $_SESSION['user_id']) || ($ret_item_creator['id_user'] === $_SESSION['user_id'])) {
         $sOutput .= '<i class=\"fa fa-external-link fa-lg\" onclick=\"viewSuggestion(\''.$record['id'].'\')\" style=\"cursor:pointer;\"></i>';
     }
     $sOutput .= '",';
