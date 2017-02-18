@@ -480,7 +480,7 @@ echo '
 if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
     echo '
             <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple"></select>
+            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;"></select>
             <input type="hidden" name="restricted_to" id="restricted_to" />
             <div style="line-height:10px;">&nbsp;</div>';
 }
@@ -597,7 +597,7 @@ echo '
 echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:250px; padding:3px;" class="ui-widget-content"><option style="display: none;"></option></select>
+            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:100%;"><option style="display: none;"></option></select>
             </div>';
 // Line for LOGIN
 echo '
@@ -664,7 +664,7 @@ if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['rest
     echo '
             <div id="div_editRestricted">
                 <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-                <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple"></select>
+                <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
                 <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
             <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>
@@ -894,11 +894,13 @@ echo '
 <div id="div_copy_item_to_folder" style="display:none;">
     <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <h2 id="div_copy_item_to_folder_item"></h2>
-    <div>'.$LANG['item_copy_to_folder'].'</div>
-    <div style="margin:10px;">
-        <select id="copy_in_folder">
-            ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '' .
-        '</select>
+    <div style="text-align:center;">
+        <div>'.$LANG['item_copy_to_folder'].'</div>
+        <div style="margin:10px;">
+            <select id="copy_in_folder" style="width:300px;">
+                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '' .
+            '</select>
+        </div>
     </div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';

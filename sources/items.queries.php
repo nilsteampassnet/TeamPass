@@ -475,7 +475,7 @@ if (isset($_POST['type'])) {
                     // Get existing values
                     $data = DB::queryfirstrow(
                         "SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
-                        i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification, i.pw_iv AS pw_iv,
+                        i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                         u.login as user_login, u.email as user_email
                         FROM ".prefix_table("items")." as i
                         INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
@@ -768,7 +768,6 @@ if (isset($_POST['type'])) {
                     /*PASSWORD */
                     if ($dataReceived['salt_key_set'] == 1 && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] == 1 && isset($dataReceived['is_pf'])) {
                         $oldPw = $data['pw'];
-                        $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption(
                             $oldPw,
                             $_SESSION['user_settings']['session_psk'],
@@ -776,7 +775,6 @@ if (isset($_POST['type'])) {
                         );
                     } else {
                         $oldPw = $data['pw'];
-                        $oldPwIV = $data['pw_iv'];
                         $oldPwClear = cryption(
                             $oldPw,
                             "",
@@ -784,7 +782,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                     if ($sentPw != $oldPwClear['string']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
+                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, "");
                     }
                     /*RESTRICTIONS */
                     if ($data['restricted_to'] != $dataReceived['restricted_to']) {
@@ -946,14 +944,14 @@ if (isset($_POST['type'])) {
         case "copy_item":
             // Check KEY and rights
             if ($_POST['key'] != $_SESSION['key']) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "1'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === true && !in_array($_POST['categorie'], $_SESSION['personal_folders']) || !in_array($_POST['folder_id'], $_SESSION['personal_folders'])) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+            if ($_SESSION['user_read_only'] === "1" && (!in_array($_POST['source_id'], $_SESSION['personal_folders']) || !in_array($_POST['des_id'], $_SESSION['personal_folders']))) {
+                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "2'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
@@ -961,7 +959,7 @@ if (isset($_POST['type'])) {
             $returnValues = $pw = "";
             $is_perso = 0;
 
-            if (isset($_POST['item_id']) && !empty($_POST['item_id']) && !empty($_POST['folder_id'])) {
+            if (isset($_POST['item_id']) && !empty($_POST['item_id']) && !empty($_POST['dest_id'])) {
                 // load the original record into an array
                 $originalRecord = DB::queryfirstrow(
                     "SELECT * FROM ".prefix_table("items")."
@@ -971,11 +969,11 @@ if (isset($_POST['type'])) {
                 $dataDestination = DB::queryfirstrow(
                     "SELECT personal_folder FROM ".prefix_table("nested_tree")."
                     WHERE id=%i",
-                    $_POST['folder_id']
+                    $_POST['dest_id']
                 );
 
                 // previous is personal folder and public one
-                if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 0) {
+                if ($originalRecord['perso'] === "1" && $dataDestination['personal_folder'] === "0") {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
@@ -983,20 +981,19 @@ if (isset($_POST['type'])) {
                         "decrypt"
                     );
                     $encrypt = cryption(
-                        $decrypt,
+                        $decrypt['string'],
                         "",
                         "encrypt"
                     );
 
                     // reaffect pw
                     $originalRecord['pw'] = $encrypt['string'];
-                    $originalRecord['pw_iv'] = $encrypt['iv'];
 
                     // this item is now public
                     $is_perso = 0;
                 }
                 // previous is public folder and personal one
-                else if ($originalRecord['perso'] == 0 && $dataDestination['personal_folder'] == 1) {
+                else if ($originalRecord['perso'] === "0" && $dataDestination['personal_folder'] === "1") {
                     // check if PSK is set
                     if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])){
                         $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
@@ -1018,11 +1015,10 @@ if (isset($_POST['type'])) {
 
                     // reaffect pw
                     $originalRecord['pw'] = $encrypt['string'];
-                    $originalRecord['pw_iv'] = $encrypt['iv'];
 
                     // this item is now private
                     $is_perso = 1;
-                } else if ($originalRecord['perso'] == 1 && $dataDestination['personal_folder'] == 1) {
+                } else if ($originalRecord['perso'] === "1" && $dataDestination['personal_folder'] === "1") {
                 // previous is public folder and personal one
                     // check if PSK is set
                     if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])){
@@ -1045,7 +1041,6 @@ if (isset($_POST['type'])) {
 
                     // reaffect pw
                     $originalRecord['pw'] = $encrypt['string'];
-                    $originalRecord['pw_iv'] = $encrypt['iv'];
 
                     // this item is now private
                     $is_perso = 1;
@@ -1067,12 +1062,12 @@ if (isset($_POST['type'])) {
                 $aSet = array();
                 foreach ($originalRecord as $key => $value) {
                     if ($key == "id_tree") {
-                        array_push($aSet, array("id_tree" => $_POST['folder_id']));
+                        array_push($aSet, array("id_tree" => $_POST['dest_id']));
                     } elseif ($key == "viewed_no") {
                         array_push($aSet, array("viewed_no" => "0"));
                     } elseif ($key == "pw" && !empty($pw)) {
                         array_push($aSet, array("pw" => $originalRecord['pw']));
-                        array_push($aSet, array("pw_iv" => $originalRecord['pw_iv']));
+                        array_push($aSet, array("pw_iv" => ""));
                     } elseif ($key == "perso") {
                         array_push($aSet, array("perso" => $is_perso));
                     } elseif ($key != "id" && $key != "key") {
@@ -2001,7 +1996,6 @@ if (isset($_POST['type'])) {
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.pw_iv) AS pw_iv,
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
@@ -2020,7 +2014,6 @@ if (isset($_POST['type'])) {
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.pw_iv) AS pw_iv,
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
@@ -2704,7 +2697,7 @@ if (isset($_POST['type'])) {
             }
             // get data about item
             $dataSource = DB::queryfirstrow(
-                "SELECT i.pw, i.pw_iv, f.personal_folder,i.id_tree, f.title,i.label
+                "SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
                 FROM ".prefix_table("items")." as i
                 INNER JOIN ".prefix_table("nested_tree")." as f ON (i.id_tree=f.id)
                 WHERE i.id=%i",
@@ -2744,7 +2737,7 @@ if (isset($_POST['type'])) {
                     array(
                         'id_tree' => $_POST['folder_id'],
                         'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv'],
+                        'pw_iv' => "",
                         'perso' => 1
                     ),
                     "id=%i",
@@ -2811,7 +2804,7 @@ if (isset($_POST['type'])) {
                 if (!empty($item_id)) {
                     // get data about item
                     $dataSource = DB::queryfirstrow(
-                        "SELECT i.pw, i.pw_iv, f.personal_folder,i.id_tree, f.title,i.label
+                        "SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
                         FROM ".prefix_table("items")." as i
                         INNER JOIN ".prefix_table("nested_tree")." as f ON (i.id_tree=f.id)
                         WHERE i.id=%i",
@@ -2851,7 +2844,7 @@ if (isset($_POST['type'])) {
                             array(
                                 'id_tree' => $_POST['folder_id'],
                                 'pw' => $encrypt['string'],
-                                'pw_iv' => $encrypt['iv'],
+                                'pw_iv' => "",
                                 'perso' => 1
                             ),
                             "id=%i",

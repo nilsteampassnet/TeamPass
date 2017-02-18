@@ -757,7 +757,7 @@ function AjouterItem()
                         //empty form
                         $("#label, #item_login, #email, #url, #pw1, #visible_pw, #pw2, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
                         CKEDITOR.instances["desc"].setData("");
-                        //$("#restricted_to_list").multiselect('uncheckall');TODO
+
                         $("#item_tabs").tabs({selected: 0});
                         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
                         $(".fields, .item_field, #categorie, #random_id").val("");
@@ -1990,17 +1990,6 @@ function open_edit_item_div(restricted_to_roles)
                 j++;
             }
         }
-        //Prepare multiselect widget
-        $("#edit_restricted_to_list").multiselect({
-            selectedList: 7,
-            minWidth: 430,
-            height: 145,
-            checkAllText: "<?php echo $LANG['check_all_text'];?>",
-            uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
-            noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
-        });
-        $("#edit_restricted_to_list").multiselect('refresh').multiselectfilter();
-
     }
 
     // disable folder selection if PF
@@ -2407,14 +2396,6 @@ $(function() {
     $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
 
     //Build multiselect box
-    $("#restricted_to_list").multiselect({
-        selectedList: 7,
-        minWidth: 430,
-        height: 145,
-        checkAllText: "<?php echo $LANG['check_all_text'];?>",
-        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
-        noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
-    }).multiselectfilter();
 
     //Build tree
     $('#jstree').jstree({
@@ -2571,6 +2552,9 @@ $(function() {
         height: 250,
         title: "<?php echo $LANG['item_menu_copy_elem'];?>",
         open: function( event, ui ) {
+            $("#copy_in_folder").select2({
+                language: "<?php echo $_SESSION['user_language_code'];?>"
+            });
             $(":button:contains('<?php echo $LANG['ok'];?>')").prop("disabled", false);
             $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
             $(".ui-tooltip").siblings(".tooltip").remove();
@@ -2586,8 +2570,8 @@ $(function() {
                     {
                         type        : "copy_item",
                         item_id     : $('#id_item').val(),
-                        categorie   : $('#hid_cat').val(),
-                        folder_id   : $('#copy_in_folder').val(),
+                        source_id   : $('#hid_cat').val(),
+                        dest_id     : $('#copy_in_folder').val(),
                         key         : "<?php echo $_SESSION['key'];?>"
                     },
                     function(data) {
@@ -2798,7 +2782,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 505,
-        height: 665,
+        height: 680,
         title: "<?php echo $LANG['item_menu_add_elem'];?>",
         open: function( event, ui ) {
             $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disabled");
@@ -2838,6 +2822,10 @@ $(function() {
             } else {
                 $("#expected_complexity").show();
             }
+
+            $("#categorie").select2({
+                language: "<?php echo $_SESSION['user_language_code'];?>"
+            });
         },
         close: function(event,ui) {
             if (CKEDITOR.instances["desc"]) {
@@ -2858,7 +2846,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 505,
-        height: 650,
+        height: 680,
         title: "<?php echo $LANG['item_menu_edi_elem'];?>",
         buttons: {
             "<?php echo $LANG['save_button'];?>": function() {
@@ -2915,6 +2903,10 @@ $(function() {
             } else {
                 $("#edit_expected_complexity").show();
             }
+
+            $("#edit_categorie").select2({
+                language: "<?php echo $_SESSION['user_language_code'];?>"
+            });
         }
     });
     //<=
@@ -3856,15 +3848,9 @@ function proceed_list_update(stop_proceeding)
                     }
                 }
                 //Prepare multiselect widget
-                $("#restricted_to_list").multiselect({
-                    selectedList: 7,
-                    minWidth: 430,
-                    height: 145,
-                    checkAllText: "<?php echo $LANG['check_all_text'];?>",
-                    uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
-                    noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
+                $("#restricted_to_list").select2({
+                    language: "<?php echo $_SESSION['user_language_code'];?>"
                 });
-                $("#restricted_to_list").multiselect('refresh').multiselectfilter();
 
                 // *** edit_restricted_to_list ***
                 $("#edit_restricted_to_list").empty();
@@ -3886,15 +3872,9 @@ function proceed_list_update(stop_proceeding)
                     $(".folder_rights_role_edit").wrapAll(optgroup);
                 }
                 //Prepare multiselect widget
-                $("#edit_restricted_to_list").multiselect({
-                    selectedList: 7,
-                    minWidth: 430,
-                    height: 145,
-                    checkAllText: "<?php echo $LANG['check_all_text'];?>",
-                    uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>",
-                    noneSelectedText: "<?php echo $LANG['none_selected_text'];?>"
+                $("#edit_restricted_to_list").select2({
+                    language: "<?php echo $_SESSION['user_language_code'];?>"
                 });
-                $("#edit_restricted_to_list").multiselect('refresh').multiselectfilter();
             }
        );
     }

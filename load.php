@@ -36,6 +36,8 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/functions.js"></script>
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
+        <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
+        <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
 
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
@@ -227,7 +229,7 @@ $htmlHeaders .= '
                 } else if (data[0].value == "user_not_exists") {
                     $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html(data + "'.$LANG['login_attempts_on'].(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
+                    $("#connection_error").html("'.$LANG['login_attempts_on']."&nbsp;".(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
