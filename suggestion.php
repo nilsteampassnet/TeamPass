@@ -116,11 +116,13 @@ foreach ($folders as $folder) {
 }
 
 echo '
-<div class="title ui-widget-content ui-corner-all">
-    '.$LANG['suggestion'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\'); $(\'#tabs\').tabs({ active: 0 });" class="button" style="font-size:16px;">
-        <i class="fa fa-plus"></i>
-    </button>
+<div class="page-header">
+    <h1>
+        '.$LANG['suggestion'].'&nbsp;&nbsp;&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['suggestion_add']), ENT_QUOTES).'" onclick="OpenDialog(\'suggestion_form\'); $(\'#tabs\').tabs({ active: 0 });" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-plus"></span>
+        </button>
+    </h1>
 </div>';
 
 // prepare tabs

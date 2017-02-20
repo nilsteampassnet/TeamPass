@@ -131,6 +131,43 @@ echo '
 <input type="hidden" id="new_listing_characteristics" value="" />';
 
 echo '
+<div class="row">
+    <div class="col-md-3">
+        <div style="margin:3px 0px 10px 18px;font-weight:bold;">
+            '.$LANG['items_browser_title'].'
+            <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.htmlentities(strip_tags($LANG['item_menu_find']), ENT_QUOTES).'" />
+        </div>
+        <div id="sidebar" class="sidebar">
+            <div id="jstree" style="overflow:auto;"></div>
+        </div>
+    </div>
+
+
+    <div class="col-md-5">
+        <div style="margin-top: 3px;">
+                <div id="txt1"  style="float:left;">
+                    <span id="items_path_var"></span>
+                </div>
+
+                <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
+                    <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
+                    <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
+                </div>
+
+                <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp;
+            </div>
+        </div>
+
+        <div id="items_list"></div>
+    </div>
+
+
+    <div class="col-md-4">
+
+    </div>
+</div>';
+
+echo '
 <div id="div_items">';
 // MAIN ITEMS TREE
 echo '
@@ -154,13 +191,6 @@ echo '
                 </li>
             </ul>
         </div>
-        <div style="margin:3px 0px 10px 18px;font-weight:bold;">
-            '.$LANG['items_browser_title'].'
-            <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.htmlentities(strip_tags($LANG['item_menu_find']), ENT_QUOTES).'" />
-        </div>
-        <div id="sidebar" class="sidebar">
-            <div id="jstree" style="overflow:auto;"></div>
-        </div>
     </div>';
 // Zone top right - items list
 echo '
@@ -180,21 +210,7 @@ echo '
                     </ul>
                 </div>
 
-                <div style="margin-top: 3px;">
-                    <div id="txt1"  style="float:left;">
-                        <span id="items_path_var"></span>
-                    </div>
 
-                    <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
-                        <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
-                        <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
-                    </div>
-
-                    <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp;
-                </div>
-            </div>
-            <!--<div id="items_list_loader" style="display:none; float:right;margin:-26px 10px 0 0; z-index:1000;"><img src="includes/images/76.gif" alt="loading" /></div>-->
-            <div id="items_list"></div>
         </div>';
 // Zone ITEM DETAIL
 echo '

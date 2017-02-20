@@ -961,7 +961,7 @@ switch ($_POST['type']) {
         if (DB::count() > 0) {
             foreach ($rows as $record) {
                 if (!in_array($record['id'], $arrTmp)) {
-                    $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
+                    $return .= '<a class="dropdown-item" href="#" onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><span class="fa fa-hand-o-right"></span>&nbsp;'.($record['label']).'</a>';
                     $x++;
                     array_push($arrTmp, $record['id']);
                     if ($x >= 10) break;

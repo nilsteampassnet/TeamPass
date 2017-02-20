@@ -19,10 +19,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Common elements
 $htmlHeaders = '
+        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.structure.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
+        <script type="text/javascript" src="includes/js/vendor/tether.min.js"></script>
+        <script type="text/javascript" src="includes/bootstrap/js/bootstrap.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
@@ -35,13 +38,13 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>
         <script type="text/javascript" src="includes/js/functions.js"></script>
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" type="text/css" />
-        <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
 
-
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
-        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />';
+        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />
+
+        <link rel="stylesheet" href="includes/css/template.css" type="text/css" />';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -56,12 +59,12 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
+        <script type="text/javascript" src="includes/js/vendor/clipboard.min.js"></script>
         <!--
         <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
-        -->
-        <link rel="stylesheet" type="text/css" href="includes/css/items.css" />';
+        <link rel="stylesheet" type="text/css" href="includes/css/items.css" />
+        -->';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
@@ -378,22 +381,6 @@ $htmlHeaders .= '
             }
         }).dialog("open");
     }
-
-    /*
-    * Clean disconnection of user for security reasons.
-    *
-       $(window).bind("beforeunload", function() {
-        if ($("#menu_action").val() == "") {
-            sessionStorage.clear();
-            //Forces the disconnection of the user
-            $.ajax({
-                type: "POST",
-                url : "error.php",
-                data : "session=expired"
-            });
-        }
-    });*/
-
 
     function displayItemNumber (item_id, tree_id)
     {
@@ -1065,6 +1052,12 @@ $htmlHeaders .= '
             $("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
             e.preventDefault();
         });
+
+        //---- NEW ----
+        $(".nav-item").click(function() {
+            $(".nav-item").removeClass("active");
+            $(this).addClass("active");
+        })
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';

@@ -65,14 +65,16 @@ foreach ($rows as $reccord) {
 
 // Display list of USERS
 echo '
-<div class="title ui-widget-content ui-corner-all">
-    '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.htmlentities(strip_tags($LANG['new_user_title']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_user\')" class="button" style="font-size:16px;">
-        <i class="fa fa-plus"></i>
-    </button>
-    <button title="'.htmlentities(strip_tags($LANG['share_user_rights']), ENT_QUOTES).'" onclick="OpenDialog(\'share_rights_dialog\')" class="button" style="font-size:16px;">
-        <i class="fa fa-share-alt"></i>
-    </button>
+<div class="page-header">
+    <h1>
+        '.$LANG['admin_users'].'&nbsp;&nbsp;&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['new_user_title']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_user\');" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-plus"></span>
+        </button>&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['share_user_rights']), ENT_QUOTES).'" onclick="OpenDialog(\'share_rights_dialog\')" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-share-alt"></span>
+        </button>
+    </h1>
 </div>';
 
 
@@ -457,7 +459,7 @@ echo '
         <br>
         <label for="share_rights_details_4" class="form_label"><span class="fa fa-hand-o-right"></span>&nbsp;'.$LANG['forbidden_groups'].'</label>
         <span id="share_rights_details_4"></span>
-        <input type="hidden" id="share_rights_details_ids_4" />        
+        <input type="hidden" id="share_rights_details_ids_4" />
         <input type="hidden" id="share_rights_details_other" />
     </div>
 

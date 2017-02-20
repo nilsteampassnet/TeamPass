@@ -17,10 +17,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 echo '
-<form name="form_favourites" method="post" action="">
-    <div class="title ui-widget-content ui-corner-all">'.$LANG['my_favourites'].'</div>
+<div class="page-header">
+    <h1>
+        '.$LANG['my_favourites'].'
+    </h1>
+</div>
 
-    <div style="height:100%;overflow:auto;">';
+<div style="height:100%;overflow:auto;">';
 if (empty($_SESSION['favourites'])) {
     echo '
     ';
@@ -66,8 +69,7 @@ if (empty($_SESSION['favourites'])) {
     </table>';
 }
     echo '
-    </div>
-</form>';
+</div>';
 
 // DIV FOR FAVOURITES DELETION
 echo '

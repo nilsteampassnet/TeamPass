@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link	      http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -67,17 +67,19 @@ foreach ($tst as $t) {
 
 /* Display header */
 echo '
-<div class="title ui-widget-content ui-corner-all">' .
-    $LANG['admin_groups'].'&nbsp;&nbsp;
-    <button title="'.htmlentities(strip_tags($LANG['item_menu_add_rep']), ENT_QUOTES).'" onclick="OpenDialog(\'div_add_group\')" class="button" style="font-size:16px;">
-        <i class="fa fa-plus"></i>
-    </button>
-    <button title="'.htmlentities(strip_tags($LANG['item_menu_del_rep']), ENT_QUOTES).'" id="click_delete_multiple_folders" class="button" style="font-size:16px;">
-        <i class="fa fa-trash-o"></i>
-    </button>
-    <button title="'.htmlentities(strip_tags($LANG['refresh']), ENT_QUOTES).'" id="click_refresh_folders_list" class="button" style="font-size:16px;">
-        <i class="fa fa-refresh"></i>
-    </button>
+<div class="page-header">
+    <h1>
+        '.$LANG['admin_groups'].'&nbsp;&nbsp;&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['item_menu_add_rep']), ENT_QUOTES).'" onclick="OpenDialog(\'div_add_group\');" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-plus"></span>
+        </button>&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['item_menu_del_rep']), ENT_QUOTES).'" id="click_delete_multiple_folders" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-trash-o"></span>
+        </button>&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['refresh']), ENT_QUOTES).'" id="click_refresh_folders_list" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-refresh"></span>
+        </button>
+    </h1>
 </div>';
 // Hidden things
 echo '
@@ -111,40 +113,51 @@ echo '
 <div id="div_add_group" style="display:none;">
     <div id="addgroup_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 
-    <label for="ajouter_groupe_titre" class="label_cpm">'.$LANG['group_title'].'</label>
-    <input type="text" id="ajouter_groupe_titre" class="input_text text ui-widget-content ui-corner-all" />
+    <div class="input-group">
+        <span class="input-group-addon" id="basic-addon1">'.$LANG['group_title'].'</span>
+        <input type="text" class="form-control" id="ajouter_groupe_titre" aria-describedby="basic-addon1">
+    </div>
 
-    <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
-    <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">
-		'.$droplist.'
-	</select>
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon2">'.$LANG['group_parent'].'</span>
+        <select id="parent_id" class="form-control" aria-describedby="basic-addon2">'.
+            $droplist.'
+        </select>
+    </div>
 
-    <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
-    <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon3">'.$LANG['complex_asked'].'</span>
+        <select id="new_rep_complexite" class="form-control" aria-describedby="basic-addon3">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
-    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
+    echo '
+            <option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
     </select>
+    </div>
 
-    <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].'</label>
-    <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon4">'.$LANG['group_pw_duration'].'</span>
+        <input type="text" class="form-control" id="add_node_renewal_period" aria-describedby="basic-addon4" value="0">
+    </div>
 
-	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
-	<select id="folder_block_creation" class="ui-widget-content ui-corner-all">
-		<option value="0">'.$LANG['no'].'</option>
-		<option value="1">'.$LANG['yes'].'</option>
-	</select>
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon5">'.$LANG['auth_creation_without_complexity'].'</span>
+        <select id="folder_block_creation" class="form-control" aria-describedby="basic-addon5">
+            <option value="0">'.$LANG['no'].'</option>
+            <option value="1">'.$LANG['yes'].'</option>
+        </select>
+    </div>
 
-	<div style="margin-top:10px;">
-		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
-		<select id="folder_block_modif" class="ui-widget-content ui-corner-all">
-			<option value="0">'.$LANG['no'].'</option>
-			<option value="1">'.$LANG['yes'].'</option>
-		</select>
-	</div>
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon6">'.$LANG['auth_modification_without_complexity'].'</span>
+        <select id="folder_block_modif" class="form-control" aria-describedby="basic-addon6">
+            <option value="0">'.$LANG['no'].'</option>
+            <option value="1">'.$LANG['yes'].'</option>
+        </select>
+    </div>
 
-	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
+    <div style="margin-top:20px; padding:5px; width:100%;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
 </div>';
@@ -154,40 +167,51 @@ echo '
 <div id="div_edit_folder" style="display:none;">
     <div id="edit_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
 
-    <label for="edit_folder_title" class="label_cpm">'.$LANG['group_title'].'</label>
-    <input type="text" id="edit_folder_title" class="input_text text ui-widget-content ui-corner-all" />
+    <div class="input-group">
+        <span class="input-group-addon" id="basic-addon1">'.$LANG['group_title'].'</span>
+        <input type="text" class="form-control" id="edit_folder_title" aria-describedby="basic-addon1">
+    </div>
 
-    <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
-    <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">'.
-		$droplist.'
-    </select>
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon2">'.$LANG['group_parent'].'</span>
+        <select id="edit_parent_id" class="form-control" aria-describedby="basic-addon2">'.
+            $droplist.'
+        </select>
+    </div>
 
-    <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
-    <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">';
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon3">'.$LANG['complex_asked'].'</span>
+        <select id="edit_folder_complexite" class="form-control" aria-describedby="basic-addon3">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
-    echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
+    echo '
+            <option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
     </select>
+    </div>
 
-    <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].'</label>
-    <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon4">'.$LANG['group_pw_duration'].'</span>
+        <input type="text" class="form-control" id="edit_folder_renewal_period" aria-describedby="basic-addon4" value="0">
+    </div>
 
-	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
-	<select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
-		<option value="0">'.$LANG['no'].'</option>
-		<option value="1">'.$LANG['yes'].'</option>
-	</select>
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon5">'.$LANG['auth_creation_without_complexity'].'</span>
+        <select id="edit_folder_block_creation" class="form-control" aria-describedby="basic-addon5">
+            <option value="0">'.$LANG['no'].'</option>
+            <option value="1">'.$LANG['yes'].'</option>
+        </select>
+    </div>
 
-	<div style="margin-top:10px;">
-		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
-		<select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
-			<option value="0">'.$LANG['no'].'</option>
-			<option value="1">'.$LANG['yes'].'</option>
-		</select>
-	</div>
+    <div class="input-group space-top">
+        <span class="input-group-addon" id="basic-addon6">'.$LANG['auth_modification_without_complexity'].'</span>
+        <select id="edit_folder_block_modif" class="form-control" aria-describedby="basic-addon6">
+            <option value="0">'.$LANG['no'].'</option>
+            <option value="1">'.$LANG['yes'].'</option>
+        </select>
+    </div>
 
-	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
+    <div style="margin-top:20px; padding:5px; width:100%;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
 </div>';

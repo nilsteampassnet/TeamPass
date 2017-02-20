@@ -50,11 +50,13 @@ if ($counter>0) {
 }
 
 echo '
-<div class="title ui-widget-content ui-corner-all">
-    '.$LANG['kb'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button" style="font-size:16px;">
-        <i class="fa fa-plus"></i>
-    </button>
+<div class="page-header">
+    <h1>
+        '.$LANG['kb'].'&nbsp;&nbsp;&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['new_kb']), ENT_QUOTES).'" onclick="OpenDialog(\'kb_form\')" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-plus"></span>
+        </button>
+    </h1>
 </div>';
 
 //Show the KB in a table view
