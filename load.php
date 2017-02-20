@@ -1251,7 +1251,15 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
             } else {
                 $("#value_"+myid[1]).hide();
             }
-        })
+        });
+
+        $("#cb_select_all").click(function() {
+            if ($("#cb_select_all").prop("checked")) {
+                $(".stat_option").prop("checked", true);
+            } else {
+                $(".stat_option").prop("checked", false);
+            }
+        });
 
         LoadCPMInfo();
     });';

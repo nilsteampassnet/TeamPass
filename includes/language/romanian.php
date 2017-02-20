@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          romanian.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',
     'user_ga_code' => 'Trimite cod Google Authenticator catre user prin email',
     'send_ga_code' => 'Cod Google Authenticator pentru user',

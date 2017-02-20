@@ -480,7 +480,7 @@ echo '
 if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
     echo '
             <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;"></select>
+            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;" class="ui-widget-content"></select>
             <input type="hidden" name="restricted_to" id="restricted_to" />
             <div style="line-height:10px;">&nbsp;</div>';
 }

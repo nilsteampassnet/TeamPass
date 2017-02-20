@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          ukrainian.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',
     'user_ga_code' => 'Відправити Google Authenticator користувачу на електронну пошту',
     'send_ga_code' => 'Код Google Authenticator для користувача',

@@ -1074,6 +1074,7 @@ if (isset($_POST['type'])) {
                         array_push($aSet, array($key => $value));
                     }
                 }
+
                 DB::update(
                     prefix_table("items"),
                     $aSet,

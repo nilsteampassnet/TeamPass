@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          chinese.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',
     'user_ga_code' => '发送 Google 身份验证器至用户，通过电子邮件',
     'send_ga_code' => 'Google 身份验证器，为用户',

@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          dutch.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',
     'user_ga_code' => 'Stuur GoogleAuthenticator naar gebruiker via e-mail',
     'send_ga_code' => 'GoogleAuthenticator voor gebruiker',

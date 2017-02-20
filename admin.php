@@ -321,6 +321,11 @@ echo '
                         <div class="spin_wait" id="value_pf" style="text-align:center;"><span class="fa fa-cog fa-spin "></span></div>
                     </td>
                 </tr>
+                <tr>
+                    <td colspan="3">
+                    <input type="checkbox" id="cb_select_all" style="margin:10px 15px 0 4px;"><label for="cb_select_all"><b>'.$LANG['select_all'].'</b></label>
+                    </td>
+                </tr>
                 </tbody>
             </table>
         </div>
@@ -328,7 +333,7 @@ echo '
         <div style="text-align:center; margin-top:20px;">
             <table border="0">
                 <tr>
-                <td><i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>'.$LANG['settings_send_stats'].'&nbsp;</td>
+                <td>'.$LANG['settings_send_stats'].'&nbsp;</td>
                 <td width="200px"><div class="toggle toggle-modern" id="send_stats" data-toggle-on="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="send_stats_input" name="send_stats_input" value="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '1' : '0', '" /></td>
                 </tr>
             </table>
