@@ -182,6 +182,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         if (start == 0) {
             //clean form
             $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
+				console.log("ici");
             $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
         }
         $("#items_list").css("display", "");
@@ -2338,6 +2339,7 @@ $(function() {
         }
     });
 
+	/*
     $(".quick_menu").menu({
         icons: { submenu: "no-icon" }
     });
@@ -2347,6 +2349,7 @@ $(function() {
             at : "left top"
         }
     });
+	*/
 
     $('.menu_200, .menu_150').on('blur', function () {
         $(this).hide();

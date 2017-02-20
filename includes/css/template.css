@@ -766,3 +766,87 @@ fieldset[disabled] .btn-danger.active {
   background-color: #c12e2a;
   background-image: none;
 }
+
+/**************************************************/
+
+.sidebar {
+    margin-top:10px;
+    min-height:200px;
+}
+
+#jstree{
+    font-family:arial;
+    font-size: 12px;
+}
+
+#items_path{
+    padding: 5px;
+    float:left;
+    font-size: 15px;
+    font-family:arial;
+    font-style:italic;
+    color:#242D35;
+    margin:5px;
+    min-height: 20px;
+}
+
+.liste_items li.hover { color: red; }
+
+.liste_items li.item li.item_draggable {
+    color:#242D35;
+}
+
+
+.liste_items li {
+    list-style-type:none;
+    padding-bottom: 3px;
+}
+
+.small_text{
+    font-size: 10px;
+    font-style: italic;
+}
+
+.liste_items a.file, .liste_items a.fileselected {
+    padding: 2px 1px 1px 0px;
+    display: inline;
+    font-family:verdana;
+    font-size:11px;
+    color:#242D35;
+}
+
+.liste_items a.file_search, .liste_items a.fileselected_search {
+    padding: 2px 1px 1px 2px;
+    display: inline;
+    font-family:verdana;
+    font-size:11px;
+    color:#242D35;
+}
+
+.liste_items a.fileselected {
+    font-style: italic;
+    font-weight:bold;
+}
+.item:hover{
+    background-color: #F0F0F0;
+}
+
+.item_draggable:hover{
+    background-color: #F0F0F0;
+}
+
+.mi-green {
+	color: #388952;
+}
+.mi-yellow {
+	color: #FC9300;
+}
+.mi-red {
+	color: #CC0000;
+}
+.mi-black {
+	color: #222222;
+}
+.mi-grey-1 {
+	color: #9B9B9B;
+}

@@ -132,93 +132,94 @@ echo '
 
 echo '
 <div class="row">
-    <div class="col-md-3">
-        <div style="margin:3px 0px 10px 18px;font-weight:bold;">
-            '.$LANG['items_browser_title'].'
-            <input type="text" name="jstree_search" id="jstree_search" class="text ui-widget-content ui-corner-all search_tree" value="'.htmlentities(strip_tags($LANG['item_menu_find']), ENT_QUOTES).'" />
-        </div>
+    <div class="col-md-3 text-left">
+	
+		<div style="width:100%; height:40px;">
+			<div style="float:left;width:50px;">
+				<div class="nav-item dropdown">										
+					<button type="button" class="btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<span class="fa fa-bars fa-2x"></span>
+					</button>
+					<div class="dropdown-menu" aria-labelledby="dropdown01">
+						<a class="dropdown-item" href="#" id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</a>
+						<a class="dropdown-item" href="#" id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</a>
+						<a class="dropdown-item" href="#" onclick="refreshTree()"><i class="fa fa-refresh fa-fw"></i>&nbsp; '.$LANG['refresh'].'</a>
+						<a class="dropdown-item" href="#" onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</a>
+						<a class="dropdown-item" href="#" onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</a>
+						<a class="dropdown-item" href="#" onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</a>
+						<a class="dropdown-item" href="#" onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</a>
+						<a class="dropdown-item" href="#" onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</a>
+						', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '
+						<a class="dropdown-item" href="#" onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</a>' : '' ,
+						(isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '
+						<a class="dropdown-item" href="#" onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</a>' : '' ,
+						(isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '
+						<a class="dropdown-item" href="#" onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</a>' : '' , '
+					</div>
+				</div>
+			</div>
+			<div style="float:right;">
+				<div class="input-group">
+					<span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
+					<input id="jstree_search" class="form-control search_tree" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
+				</div>
+			</div>
+		</div>
+			
         <div id="sidebar" class="sidebar">
             <div id="jstree" style="overflow:auto;"></div>
         </div>
     </div>
 
 
-    <div class="col-md-5">
-        <div style="margin-top: 3px;">
-                <div id="txt1"  style="float:left;">
-                    <span id="items_path_var"></span>
-                </div>
+    <div class="col-md-5 text-left">
+		<div style="width:100%; height:40px;">
+			<div style="float:left;width:50px;">
+				<div class="nav-item dropdown">										
+					<button type="button" class="btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<span class="fa fa-bars fa-2x"></span>
+					</button>
+					<div class="dropdown-menu" aria-labelledby="dropdown01">
+						<a class="dropdown-item" href="#" id="menu_button_add_item" onclick="open_add_item_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_elem'].'</a>
+						<a class="dropdown-item" href="#" id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</a>
+						<a class="dropdown-item" href="#" id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_elem'].'</a>
+						<a class="dropdown-item" href="#" id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['item_menu_copy_elem'].'</a>
+					</div>
+				</div>
+			</div>
+			<div style="float:right;">
+				<div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
+					<span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
+					<input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
+				</div>
+			</div>
+		</div>
+	
+		
+		<i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp
+		
+		
+		<span id="items_path_var"></span>
 
-                <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
-                    <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
-                    <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
-                </div>
+        <div id="items_list"><ul class="liste_items" id="full_items_list"></ul></div>
+		
+				
 
-                <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp;
-            </div>
-        </div>
-
-        <div id="items_list"></div>
     </div>
 
 
     <div class="col-md-4">
-
-    </div>
-</div>';
-
-echo '
-<div id="div_items">';
-// MAIN ITEMS TREE
-echo '
-    <div class="items_tree">
-        <div id="quick_menu" style="float:left; margin-right: 5px;">
-            <ul class="quick_menu">
-                <li><i class="fa fa-bars"></i>
-                    <ul class="menu_250">
-                        <li id="jstree_open"><i class="fa fa-expand fa-fw"></i>&nbsp; '.$LANG['expand'].'</li>
-                        <li id="jstree_close"><i class="fa fa-compress fa-fw"></i>&nbsp; '.$LANG['collapse'].'</li>
-                        <li onclick="refreshTree()"><i class="fa fa-refresh fa-fw"></i>&nbsp; '.$LANG['refresh'].'</li>
-                        <li onclick="open_add_group_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_rep'].'</li>
-                        <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
-                        <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
-                        <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
-                        <li onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
-                        ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
-                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
-                        (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
-                    </ul>
-                </li>
-            </ul>
-        </div>
-    </div>';
-// Zone top right - items list
-echo '
-    <div id="items_content">
-        <div id="items_center">
-            <div id="items_path" class="ui-corner-all">
-                <div class="quick_menu1" style="float:left; margin-right: 5px;">
-                    <ul class="quick_menu">
-                        <li><i class="fa fa-bars"></i>
-                            <ul class="menu_250">
-                                <li id="menu_button_add_item" onclick="open_add_item_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_elem'].'</li>
-                                <li id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</li>
-                                <li id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_elem'].'</li>
-                                <li id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['item_menu_copy_elem'].'</li>
-                            </ul>
-                        </li>
-                    </ul>
-                </div>
-
-
-        </div>';
-// Zone ITEM DETAIL
+		
+	
+	';
+	
+		// Zone ITEM DETAIL
 echo '
         <div id="item_details_ok">
             <input type="hidden" id="id_categorie" value="" />
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
-            <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
+            <div  id="item_details_scroll">';
 
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
@@ -231,27 +232,30 @@ echo'
 echo '
                 <tr>
                     <td valign="top" class="td_title" colspan="2">
-                        <div class="quick_menu2" style="float:left; margin-right: 5px;">
-                            <ul class="quick_menu ui-menu">
-                                <li><i class="fa fa-bars"></i>
-                                    <ul class="menu_250">
-                                        <li id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</li>
-                                        <li id="menu_button_copy_login" class="copy_clipboard"><i class="fa fa-user fa-fw"></i>&nbsp; '.$LANG['login_copy'].'</li>
-                                        <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
-                                        <li id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</li>
-                                        <li id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</li>
-                                        <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>',
-                                        (isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1) ? '<li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>' : '', '
-                                        ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
-                                        <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</li>' : '', '
-                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 && isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] !== "1"? '
-                                        <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
-                                        ', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '
-                                        <li onclick="OpenDialog(\'div_suggest_change\', \'false\')"><i class="fa fa-random fa-fw"></i>&nbsp; '.$LANG['suggest_password_change'].'</li>' : '', '
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
+					
+						<div style="float:left;width:50px;">
+							<div class="nav-item dropdown">										
+								<button type="button" class="btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<span class="fa fa-bars fa-2x"></span>
+								</button>
+								<div class="dropdown-menu" aria-labelledby="dropdown01">
+									<a class="dropdown-item" href="#" id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</a>
+									<a class="dropdown-item" href="#" id="menu_button_copy_login" class="copy_clipboard"><i class="fa fa-user fa-fw"></i>&nbsp; '.$LANG['login_copy'].'</a>
+									<a class="dropdown-item" href="#" id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</a>
+									<a class="dropdown-item" href="#" id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</a>
+									<a class="dropdown-item" href="#" id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</a>
+									<a class="dropdown-item" href="#" id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</a>',
+									(isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1) ? '<a class="dropdown-item" href="#" id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</a>' : '', '
+									', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
+									<a class="dropdown-item" href="#" id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</a>' : '', '
+									', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 && isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] !== "1"? '
+									<a class="dropdown-item" href="#" onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</a>' : '', '
+									', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '
+									<a class="dropdown-item" href="#" onclick="OpenDialog(\'div_suggest_change\', \'false\')"><i class="fa fa-random fa-fw"></i>&nbsp; '.$LANG['suggest_password_change'].'</a>' : '', '
+								</div>
+							</div>
+						</div>
+						
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
@@ -391,10 +395,12 @@ echo '
         </div>';
 
 echo '
-    </div>';
-
-echo '
+    </div>
+    </div>
 </div>';
+
+
+
 
 
 /********************************

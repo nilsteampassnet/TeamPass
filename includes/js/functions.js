@@ -32,12 +32,12 @@ function RefreshPage(myform){
 *   Add 1 hour to session duration
 **/
 function IncreaseSessionTime(message_end, message_wait){
-    $("#main_info_box_text").html(message_wait);
+    /*$("#main_info_box_text").html(message_wait);
     $("#main_info_box").show().position({
         my: "center",
         at: "center top+75",
         of: "#top"
-    });
+    });*/
     $.post(
         "sources/main.queries.php",
         {
