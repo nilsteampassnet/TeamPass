@@ -307,8 +307,7 @@ if (isset($_POST['type'])) {
                     }
             } else {
                 $okEncryptKey = true;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is <b>'.
-                    $_SESSION['encrypt_key'].'</b>&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is available&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                     '</span><br />';
             }
 

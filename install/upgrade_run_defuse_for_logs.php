@@ -21,12 +21,6 @@ error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
-// if already defused
-if (isset($_SESSION['tp_defuse_installed']) && $_SESSION['tp_defuse_installed'] === true) {
-    echo '[{"finish":"1" , "next":"" , "error":""}]';
-    return false;
-}
-
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
@@ -38,17 +32,17 @@ $finish = false;
 $next = ($_POST['nb'] + $_POST['start']);
 
 $dbTmp = mysqli_connect(
-    $_SESSION['db_host'],
-    $_SESSION['db_login'],
-    $_SESSION['db_pw'],
-    $_SESSION['db_bdd'],
-    $_SESSION['db_port']
+    $_SESSION['server'],
+    $_SESSION['user'],
+    $_SESSION['pass'],
+    $_SESSION['database'],
+    $_SESSION['port']
 );
 
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv FROM ".$_SESSION['pre']."log_items
+    "SELECT * FROM ".$_SESSION['pre']."log_items
     WHERE encryption_type = 'not_set'"
 );
 if (!$rows) {
@@ -60,7 +54,7 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['pre']."log_items
+    "SELECT increment_id, id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['pre']."log_items
     WHERE encryption_type = 'not_set' LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -71,8 +65,8 @@ if (!$rows) {
 while ($data = mysqli_fetch_array($rows)) {
     // extract encrypted string
     $pwd_tmp = explode(":", $data['raison']);
-
-    if ($data['encryption_type'] !== "defuse" && substr($pwd_tmp[1], 0, 3) !== "def") {
+    
+    if ($data['encryption_type'] !== "defuse" && substr($pwd_tmp[1], 0, 3) !== "def" && trim($pwd_tmp[0]) === "at_pw") {
 
         // decrypt with phpCrypt
         $old_pw = cryption_phpCrypt(
@@ -93,13 +87,13 @@ while ($data = mysqli_fetch_array($rows)) {
         mysqli_query($dbTmp,
             "UPDATE ".$_SESSION['pre']."log_items
             SET raison = 'at_pw :".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
-            WHERE id = ".$data['id']
+            WHERE increment_id = ".$data['increment_id']
         );
     } else if (substr($pwd_tmp[1], 0, 3) === "def" && $data['encryption_type'] !== "defuse") {
         mysqli_query($dbTmp,
             "UPDATE ".$_SESSION['pre']."log_items
             SET encryption_type = 'defuse'
-            WHERE id = ".$data['id']
+            WHERE increment_id = ".$data['increment_id']
         );
     }
 }
