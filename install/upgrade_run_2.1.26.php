@@ -119,7 +119,7 @@ require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 
 //Build tree
 $tree = new Tree\NestedTree\NestedTree(
-    $_SESSION['tbl_prefix'].'nested_tree',
+    $_SESSION['pre'].'nested_tree',
     'id',
     'parent_id',
     'title'
@@ -145,7 +145,7 @@ $dbTmp = mysqli_connect(
 
 // add field timestamp to cache table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."cache",
+    $_SESSION['pre']."cache",
     "timestamp",
     "VARCHAR(50) NOT NULL"
 );
@@ -157,7 +157,7 @@ if ($res === false) {
 
 // add field url to cache table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."cache",
+    $_SESSION['pre']."cache",
     "url",
     "VARCHAR(500) NOT NULL DEFAULT '0'"
 );
@@ -169,7 +169,7 @@ if ($res === false) {
 
 // add field can_manage_all_users to users table
 $res = addColumnIfNotExist(
-    $_SESSION['tbl_prefix']."users",
+    $_SESSION['pre']."users",
     "can_manage_all_users",
     "tinyint(1) NOT NULL DEFAULT '0'"
 );
@@ -180,63 +180,63 @@ if ($res === false) {
 }
 
 // check that API doesn't exist
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."users` WHERE id = '".API_USER_ID."'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
+        "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
     );
 }
 
 // check that SYSLOG doesn't exist
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'syslog_enable'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'syslog_enable'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_enable', '0')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_enable', '0')"
     );
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_host', 'localhost')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_host', 'localhost')"
     );
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_port', '514')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_port', '514')"
     );
 }
 
 
 // alter table Items
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY complexity_level VARCHAR(3)");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY label VARCHAR(500)");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY url VARCHAR(500)");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` MODIFY restricted_to DEFAULT NULL");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `description` `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `pw` `pw` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."items` CHANGE `pw_iv` `pw_iv` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` MODIFY complexity_level VARCHAR(3)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` MODIFY label VARCHAR(500)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` MODIFY url VARCHAR(500)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` MODIFY restricted_to DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` CHANGE `description` `description` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` CHANGE `pw` `pw` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` CHANGE `pw_iv` `pw_iv` TEXT CHARACTER SET utf8 COLLATE utf8_general_ci NULL");
 
 // alter table cache
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY label VARCHAR(500)");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY restricted_to DEFAULT NULL");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY tags DEFAULT NULL");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."cache` MODIFY timestamp DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."cache` MODIFY label VARCHAR(500)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."cache` MODIFY restricted_to DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."cache` MODIFY tags DEFAULT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."cache` MODIFY timestamp DEFAULT NULL");
 
 // alter table files
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."files` MODIFY type VARCHAR(255)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."files` MODIFY type VARCHAR(255)");
 
 // alter table USers
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."users` MODIFY can_manage_all_users tinyint(1) NOT NULL DEFAULT '0'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."users`  ADD `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined'");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."users` MODIFY can_manage_all_users tinyint(1) NOT NULL DEFAULT '0'");
 
 // alter table log_system
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['tbl_prefix']."log_system` MODIFY qui VARCHAR(255)");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."log_system` MODIFY qui VARCHAR(255)");
 
 // create index in log_items - for performance
-mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['tbl_prefix']."log_items (id_item,date);");
+mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION['pre']."log_items (id_item,date);");
 
 // change to true setting variable encryptClientServer
 // this variable is not to be changed anymore
-mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc SET `valeur` = 1 WHERE `type` = 'admin' AND `intitule` = 'encryptClientServer'");
+mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."misc SET `valeur` = 1 WHERE `type` = 'admin' AND `intitule` = 'encryptClientServer'");
 
 // create new table
 mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['tbl_prefix']."tokens` (
+    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."tokens` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `user_id` int(10) NOT NULL,
     `token` varchar(255) NOT NULL,
@@ -248,10 +248,10 @@ mysqli_query($dbTmp,
 );
 
 // change to 0 if auto_update_pwd_next_date empty in ITEMS table
-$result = mysqli_query($dbTmp, "SELECT id FROM `".$_SESSION['tbl_prefix']."items` WHERE auto_update_pwd_next_date = ''");
+$result = mysqli_query($dbTmp, "SELECT id FROM `".$_SESSION['pre']."items` WHERE auto_update_pwd_next_date = ''");
 while($row = mysqli_fetch_assoc($result)) {
     mysqli_query($dbTmp,
-        "UPDATE `".$_SESSION['tbl_prefix']."items`
+        "UPDATE `".$_SESSION['pre']."items`
         SET `auto_update_pwd_next_date` = '0'
         WHERE id = '".$row['id']."'"
     );
@@ -260,15 +260,15 @@ mysqli_free_result($result);
 
 
 // add Estonian
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonian'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."languages` WHERE name = 'estonian'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-    mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."languages` VALUES (null, 'estonian', 'Estonian', 'ee', 'ee.png')");
+    mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['pre']."languages` VALUES (null, 'estonian', 'Estonian', 'ee', 'ee.png')");
 }
 
 // remove Estonia
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."languages` WHERE name = 'estonia'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."languages` WHERE name = 'estonia'");
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['pre']."languages` WHERE name = 'estonia'");
 }
 
 // ensure CSRFP config file is ready
@@ -312,7 +312,7 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     global \$SETTINGS;
     \$SETTINGS = array (";
 
-    $result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin'");
+    $result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin'");
     while($row = mysqli_fetch_assoc($result)) {
         // append new setting in config file
         $config_text .= "
@@ -332,27 +332,27 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
 
 
 // clean duplicate ldap_object_class from bad update script version
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if ($tmp[0] > 1 ) {
-    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
 }
 // add new setting - ldap_object_class
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-    mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'ldap_object_class', '0')");
+    mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['pre']."misc` VALUES ('admin', 'ldap_object_class', '0')");
 }
 
 // convert 2factors_ to google_ due to illegal id, and for clarification of purpose
-$tmp_googlecount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'google_authentication'"));
-$tmp_twocount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'"));
+$tmp_googlecount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'google_authentication'"));
+$tmp_twocount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'"));
 
 if ($tmp_googlecount[0] > 0 ) {
-    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'");
+    mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'");
 } else {
     if ($tmp_twocount[0] > 0 ) {
-        mysqli_query($dbTmp, "UPDATE `".$_SESSION['tbl_prefix']."misc` SET intitule = 'google_authentication' WHERE intitule = '2factors_authentication' ");
+        mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."misc` SET intitule = 'google_authentication' WHERE intitule = '2factors_authentication' ");
     } else {
-        mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['tbl_prefix']."misc` VALUES ('admin', 'google_authentication', '0')");
+        mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['pre']."misc` VALUES ('admin', 'google_authentication', '0')");
     }
 }
 
@@ -362,7 +362,7 @@ if ($tmp_googlecount[0] > 0 ) {
 $result = mysqli_query(
     $dbTmp,
     "SELECT title, id
-    FROM `".$_SESSION['tbl_prefix']."nested_tree`
+    FROM `".$_SESSION['pre']."nested_tree`
     WHERE personal_folder = '1' AND nlevel = '1' AND parent_id = '0'"
 );
 while($row = mysqli_fetch_assoc($result)) {
@@ -370,7 +370,7 @@ while($row = mysqli_fetch_assoc($result)) {
     if (!is_numeric($row['title'])) {
         mysqli_query(
             $dbTmp,
-            "UPDATE `".$_SESSION['tbl_prefix']."nested_tree`
+            "UPDATE `".$_SESSION['pre']."nested_tree`
             SET personal_folder = '0'
             WHERE id = '".$row['id']."'"
         );

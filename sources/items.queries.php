@@ -293,8 +293,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                 }
-                // Update CACHE table
-                updateCacheTable("add_value", $newID);
+
                 // Announce by email?
                 if ($dataReceived['annonce'] == 1) {
                     // get links url
@@ -381,6 +380,9 @@ if (isset($_POST['type'])) {
             } elseif (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 0 && $itemExists == 1) {
                 $returnValues = array("error" => "item_exists");
             }
+
+            // Update CACHE table
+            updateCacheTable("add_value", $newID);
 
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");

@@ -331,7 +331,7 @@ if (isset($_POST['type'])) {
             //decrypt the password
             // AES Counter Mode implementation
             require_once 'libs/aesctr.php';
-            
+
             // connexion
             if (
                 mysqli_connect(
@@ -387,7 +387,7 @@ if (isset($_POST['type'])) {
 
                 // put TP in maintenance mode or not
                 @mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."misc`
+                "UPDATE `".$_SESSION['pre']."misc`
                     SET `valeur` = 'maintenance_mode'
                     WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 );
@@ -642,22 +642,22 @@ require_once \"".$skFile."\";
         case "perform_database_dump":
             $filename = "../includes/config/settings.php";
 
-            $mtables = array(); 
-   
+            $mtables = array();
+
             $mysqli = new mysqli($_SESSION['server'], $_SESSION['user'], $_SESSION['pass'], $_SESSION['database'], $_SESSION['port']);
             if ($mysqli->connect_error) {
                 die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
             }
-           
+
             $results = $mysqli->query("SHOW TABLES");
-           
+
             while($row = $results->fetch_array()){
                 $mtables[] = $row[0];
             }
 
             foreach($mtables as $table){
                 $contents .= "-- Table `".$table."` --\n";
-               
+
                 $results = $mysqli->query("SHOW CREATE TABLE ".$table);
                 while($row = $results->fetch_array()){
                     $contents .= $row[1].";\n\n";
@@ -667,7 +667,7 @@ require_once \"".$skFile."\";
                 $row_count = $results->num_rows;
                 $fields = $results->fetch_fields();
                 $fields_count = count($fields);
-               
+
                 $insert_head = "INSERT INTO `".$table."` (";
                 for($i=0; $i < $fields_count; $i++){
                     $insert_head  .= "`".$fields[$i]->name."`";
@@ -676,8 +676,8 @@ require_once \"".$skFile."\";
                             }
                 }
                 $insert_head .=  ")";
-                $insert_head .= " VALUES\n";       
-                       
+                $insert_head .= " VALUES\n";
+
                 if($row_count>0){
                     $r = 0;
                     while($row = $results->fetch_array()){
@@ -687,7 +687,7 @@ require_once \"".$skFile."\";
                         $contents .= "(";
                         for($i=0; $i < $fields_count; $i++){
                             $row_content =  str_replace("\n","\\n",$mysqli->real_escape_string($row[$i]));
-                           
+
                             switch($fields[$i]->type){
                                 case 8: case 3:
                                     $contents .=  $row_content;
@@ -710,7 +710,7 @@ require_once \"".$skFile."\";
             }
 
             $backup_file_name = "sql-backup-".date( "d-m-Y--h-i-s").".sql";
-                 
+
             $fp = fopen("../files/".$backup_file_name ,'w+');
             if (($result = fwrite($fp, $contents))) {
                 echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
@@ -719,6 +719,6 @@ require_once \"".$skFile."\";
             }
             fclose($fp);
 
-            break; 
+            break;
     }
 }

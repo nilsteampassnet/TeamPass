@@ -48,7 +48,7 @@ $dbTmp = mysqli_connect(
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."log_items
+    "SELECT id, pw, pw_iv FROM ".$_SESSION['pre']."log_items
     WHERE encryption_type = 'not_set'"
 );
 if (!$rows) {
@@ -60,7 +60,7 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."log_items
+    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['pre']."log_items
     WHERE encryption_type = 'not_set' LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -91,13 +91,13 @@ while ($data = mysqli_fetch_array($rows)) {
 
         // store Password
         mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['tbl_prefix']."log_items
+            "UPDATE ".$_SESSION['pre']."log_items
             SET raison = 'at_pw :".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
     } else if (substr($pwd_tmp[1], 0, 3) === "def" && $data['encryption_type'] !== "defuse") {
         mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['tbl_prefix']."log_items
+            "UPDATE ".$_SESSION['pre']."log_items
             SET encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
