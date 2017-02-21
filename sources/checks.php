@@ -28,8 +28,12 @@ $pagesRights = array(
 
 function curPage()
 {
-    parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?")+1), $result);
-    return $result['page'];
+    if (strpos($_SERVER["REQUEST_URI"], "?") === false) {
+        return substr($_SERVER["REQUEST_URI"], strrpos($_SERVER["REQUEST_URI"], "/")+1, -4);
+    } else {
+        parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?")+1), $result);
+        return $result['page'];
+    }
 }
 
 function checkUser($userId, $userKey, $pageVisited)

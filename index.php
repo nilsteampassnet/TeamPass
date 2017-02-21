@@ -130,13 +130,13 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
-    if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
+    /*if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
             location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
         } else {
             location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
         }
-    }
+    }*/
     //]]>
 </script>
 <?php
@@ -193,9 +193,9 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "favourites") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'" onclick="$(\'#page_content\').load(\'favorites.php\');"></span>
+                    <span class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favorites\')"></span>
                 </a>
-            </li>';//MenuAction(\'favourites\')
+            </li>';//
     }
     // KB menu
     if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
@@ -324,6 +324,7 @@ if (isset($_SESSION['login'])) {
 echo '
 </nav>
 
+<div class="bottomAnim">
 <div class="container-fluid">
     <div class="template">';
 
@@ -400,7 +401,7 @@ if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
 */
 
 echo '
-<div id="page_content"></div>';
+<div id="page_content">';
 
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
     // error cpassman dir
@@ -701,6 +702,11 @@ if (
 echo '
     </div>
 </div>';
+
+echo '
+</div>
+</div>';
+
 // FOOTER
 /* DON'T MODIFY THE FOOTER ... MANY THANKS TO YOU */
 echo '

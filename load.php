@@ -139,8 +139,17 @@ $htmlHeaders .= '
             window.location.href = "logout.php"
         } else {
             $("#menu_action").val("action");
-            if (val == "") document.location.href="index.php";
-            else document.location.href="index.php?page="+val;
+            /*if (val == "") document.location.href="index.php";
+            else document.location.href="index.php?page="+val;*/
+            $("#page_content").load(
+                val+".php", function( response, status, xhr ) {
+                if (status === "error") {
+                    var msg = "Sorry but there was an error: ";
+                    $( "#error" ).html( msg + xhr.status + " " + xhr.statusText );
+                } else {
+                    NProgress.done();
+                }
+            });
         }
     }
 

@@ -9,6 +9,9 @@
  * @link
  */
 
+require_once 'sources/SecureHandler.php';
+session_start();
+
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -24,6 +27,24 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
+
+
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header("Content-type: text/html; charset==utf-8");
+
+// connect to DB
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$encoding = $encoding;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 

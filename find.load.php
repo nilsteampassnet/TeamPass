@@ -17,7 +17,17 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 ?>
 
+        <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
+        <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
+        <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
+        <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
+        <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
+        <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
 <script type="text/javascript">
+
 //<![CDATA[
 function aes_decrypt(text)
 {

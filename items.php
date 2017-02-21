@@ -13,6 +13,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once 'sources/SecureHandler.php';
+@session_start();
+
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -28,6 +31,23 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
+
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header("Content-type: text/html; charset==utf-8");
+
+// connect to DB
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$encoding = $encoding;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
@@ -133,9 +153,8 @@ echo '
 echo '
 <div class="row">
     <div class="col-md-4 text-left">
-
         <div style="width:100%; height:40px;">
-            <div style="float:left;width:50px;">
+            <div style="float:left;">
                 <div class="nav-item dropdown">
                     <button type="button" class="btn dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <span class="fa fa-bars fa-2x"></span>
@@ -158,18 +177,27 @@ echo '
                     </div>
                 </div>
             </div>
-            <div style="float:right;">
-                <div class="input-group">
+            <div style="float:right; width:100px;">
+                <!--<div class="input-group">
                     <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
                     <input id="jstree_search" class="form-control search_tree" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
-                </div>
+                </div>-->
+                <form action="" class="search-form">
+                    <div class="form-group has-feedback">
+                        <label for="search" class="sr-only">Search</label>
+                        <input type="text" class="form-control" name="search" id="search" placeholder="search">
+                        <span class="fa fa-binoculars fa-fw form-control-feedback"></span>
+                    </div>
+                </form>
             </div>
         </div>
 
-        <div id="sidebar" class="sidebar">
-            <div id="jstree" style="overflow:auto;"></div>
+        <div class="tp-back"></div>
+        <div class="tp-front">
+            <div id="sidebar" class="sidebar">
+                <div id="jstree" style="overflow:auto;"></div>
+            </div>
         </div>
-
     </div>
     <div class="col-md-8 text-left" id="item_right_side">
         <div style="width:100%;">
@@ -197,6 +225,8 @@ echo '
             </div>
         </div>
 
+        <div class="tp-back"></div>
+        <div class="tp-front">
         <div id="area_items_list" style="float:left;">
             <div id="items_path_var" class="top-item-area"></div>
 
@@ -385,6 +415,7 @@ echo '
             </div>';
 
 echo '
+        </div>
         </div>
     </div>
 
