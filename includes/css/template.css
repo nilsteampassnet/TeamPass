@@ -786,7 +786,6 @@ fieldset[disabled] .btn-danger.active {
     font-family:arial;
     font-style:italic;
     color:#242D35;
-    margin:5px;
     min-height: 20px;
 }
 
@@ -805,14 +804,6 @@ fieldset[disabled] .btn-danger.active {
 .small_text{
     font-size: 10px;
     font-style: italic;
-}
-
-.liste_items a.file, .liste_items a.fileselected {
-    padding: 2px 1px 1px 0px;
-    display: inline;
-    font-family:verdana;
-    font-size:11px;
-    color:#242D35;
 }
 
 .liste_items a.file_search, .liste_items a.fileselected_search {
@@ -849,4 +840,9 @@ fieldset[disabled] .btn-danger.active {
 }
 .mi-grey-1 {
 	color: #9B9B9B;
+}
+
+.top-item-area {
+  font-size: 16px;
+  margin: 10px 0 5px 0;
 }

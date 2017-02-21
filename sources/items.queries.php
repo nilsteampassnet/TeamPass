@@ -329,7 +329,7 @@ if (isset($_POST['type'])) {
                 }
                 // Prepare full line
                 $html = '<li class="item_draggable'
-                .'" id="'.$newID.'" style="margin-left:-30px;">'
+                .'" id="'.$newID.'" style="">'
                 .'<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>'
                 .$expirationFlag.'<i class="fa fa-sm fa-warning mi-yellow"></i>&nbsp;' .
                 '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">' .

@@ -193,9 +193,9 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "favourites") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favourites\')"></span>
+                    <span class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'" onclick="$(\'#page_content\').load(\'favorites.php\');"></span>
                 </a>
-            </li>';
+            </li>';//MenuAction(\'favourites\')
     }
     // KB menu
     if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
@@ -398,6 +398,9 @@ if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
     }
 }
 */
+
+echo '
+<div id="page_content"></div>';
 
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
     // error cpassman dir

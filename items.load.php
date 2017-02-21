@@ -229,7 +229,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                 // display path of folders
                 if (data.arborescence != undefined) {
-                    var path_maxlength = 420;
+                    var path_maxlength = $("#item_right_side").width();
                     if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
                     if (data.IsPersonalFolder === 0) {
                         $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + data.arborescence);
@@ -2396,7 +2396,7 @@ $(function() {
 
     // Build buttons
     $("#custom_pw, #edit_custom_pw").buttonset();
-    $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
+    //$(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
 
     //Build multiselect box
 
