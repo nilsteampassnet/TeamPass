@@ -178,7 +178,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
         query_in_progress = groupe_id;
         //LoadingPage();
-        $("#items_list_loader").show();
+        $("#tp_loader").show();
         if (start == 0) {
             //clean form
             $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
@@ -221,7 +221,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                    $("#div_dialog_message_text").html(data.error_text);
                    $("#div_dialog_message").dialog("open");
                    $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-                   $("#items_list_loader").hide();
+                   $("#tp_loader").hide();
                    return false;
                }
 
@@ -296,14 +296,14 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#item_details_ok, #item_details_nok").hide();
 
                     $('#menu_button_add_item').prop('disabled', 'true');
-                    $("#items_list_loader, #div_loading").hide();
+                    $("#tp_loader, #div_loading").hide();
                 } else if (data.error == "not_authorized" || data.access_level == 2) {
                     //warn user
                     $("#hid_cat").val("");
                     //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").prop('disabled', 'true');
                     $("#item_details_nok").show();
                     $("#item_details_ok, #item_details_no_personal_saltkey").hide();
-                    $("#items_list_loader").hide();
+                    $("#tp_loader").hide();
                 } else if (($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) || data.access_level == 1) {
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
@@ -951,7 +951,7 @@ function EditerItem()
                         $("#fileclass"+data.id).text($('#edit_label').val());
 
                         //Refresh form
-                        $("#id_label").text($('#edit_label').val());
+                        $("#id_label").text('<span class="fa fa-key fa-lg"></span>&nbsp;' +$('#edit_label').val());
                         //$("#id_pw").text($('#edit_pw1').val());
                         $("#id_email").html($('#edit_email').val());
                         $("#id_url").html($('#edit_url').val().escapeHTML());
@@ -1180,6 +1180,17 @@ function SupprimerFolder()
     }
 }
 
+
+function showItem(bool) {
+    if (bool === true) {
+        $("#items_list_right_side").hide();
+        $("#item_detail_right_side").show();
+    } else {
+        $("#items_list_right_side").show();
+        $("#item_detail_right_side").hide();
+    }
+}
+
 function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload, id_tree)
 {
     // If a request is already launched, then kill new.
@@ -1211,7 +1222,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#request_ongoing").val("");
         return false;
     }
-    $("#div_loading").show();//LoadingPage();
+    LoadingPage();
     if ($("#is_admin").val() == "1") {
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
@@ -1324,7 +1335,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_files").html("");
 
                         //Display details
-                        $("#id_label").html(data.label);
+                        $("#id_label").html('<span class="fa fa-key fa-lg"></span>&nbsp;' + data.label);
                         $("#hid_label").val(unsanitizeString(data.label));
                         if (data.pw === "") {
                             $("#id_pw").html("");
@@ -1586,6 +1597,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
        }
     //Store Item id shown
     $("#request_lastItem").val(id);
+
+    showItem(true);
     }
 }
 
@@ -1595,7 +1608,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 */
 function showDetailsStep2(id, param)
 {
-    $("#div_loading").show();
     $.post(
         "sources/items.queries.php",
         {
@@ -1647,7 +1659,7 @@ function showDetailsStep2(id, param)
 
             $(param).prop("disabled", false);
             $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
-            $("#div_loading").hide();
+            LoadingPage();
 
             $(".tip").tooltipster({multiple: true});
 
@@ -3726,7 +3738,7 @@ function itemLog(log_case)
             type        : log_case,
             id_item     : $('#id_item').val(),
             folder_id   : $('#hid_cat').val(),
-        hid_label   : $('#hid_label').val(),
+            hid_label   : $('#hid_label').val(),
             key         : "<?php echo $_SESSION['key'];?>"
         }
     );
@@ -3799,7 +3811,7 @@ function proceed_list_update(stop_proceeding)
         }
     } else {
         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
-        $("#items_list_loader").hide();
+        $("#tp_loader").hide();
 
         // prepare clipboard items
         var clipboard = new Clipboard('.mini_login');
@@ -3992,7 +4004,7 @@ function globalItemsSearch()
         $("#items_listing_should_stop").val("1");
 
         // wait
-        $("#items_list_loader").show();
+        $("#tp_loader").show();
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching'];?>');
 
         // clean
@@ -4015,7 +4027,7 @@ function globalItemsSearch()
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>');
                 $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
                 $("#full_items_list").html(data.items_html);
-                $("#items_list_loader").hide();
+                $("#tp_loader").hide();
             }
         );
     }
@@ -4030,7 +4042,7 @@ function searchItemsWithTags(tag)
     if (tag == "") return false
 
     // wait
-    $("#items_list_loader").show();
+    $("#tp_loader").show();
     $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['searching_tag'];?>&nbsp;<b>' + tag + '</b> ...');
 
     // clean
@@ -4052,7 +4064,7 @@ function searchItemsWithTags(tag)
             displayMessage(data.message);
             $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>&nbsp;<b>' + tag + '</b>');
             $("#full_items_list").html(data.items_html);
-            $("#items_list_loader").hide();
+            $("#tp_loader").hide();
         }
     );
 }

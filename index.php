@@ -291,7 +291,10 @@ if (isset($_SESSION['login'])) {
             </li>';
 
     echo '
-        </ul>';
+        </ul>
+        <div class="my-2 my-lg-0">
+            <span id="tp_loader" style="display:none;margin-right:15px;" class="fa fa-cog fa-spin mi-red fa-3x"></span>
+        </div>';//items_list_loader
 
 
 /*
@@ -311,8 +314,7 @@ if (isset($_SESSION['login'])) {
         $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
     }
     echo '
-
-        <div class="my-2 my-lg-0">
+        <div class="my-2 my-lg-1">
             <img src="'.$avatar.'" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()" alt="photo" id="user_avatar_thumb" />
         </div>';
 

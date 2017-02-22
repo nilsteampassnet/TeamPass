@@ -15,10 +15,10 @@
 *   Show or hide Loading animation GIF
 **/
 function LoadingPage(){
-    if ( $("#div_loading").is(':visible') )
-        $("#div_loading").hide();
+    if ( $("#tp_loader").is(':visible') )
+        $("#tp_loader").hide();
     else
-        $("#div_loading").show();
+        $("#tp_loader").show();
 }
 
 /**
@@ -279,7 +279,7 @@ function jsonErrorHdl(message)
     $("#div_dialog_message_text").html(message);
     $("#div_dialog_message").dialog("open");
     $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-    $("#items_list_loader").hide();
+    $("#tp_loader").hide();
     return false;
 }
 

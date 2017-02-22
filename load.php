@@ -25,8 +25,13 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
         <script type="text/javascript" src="includes/js/vendor/tether.min.js"></script>
-        <script type="text/javascript" src="includes/bootstrap/js/bootstrap.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
+        <script type="text/javascript">
+            // Change JQueryUI plugin names to fix name collision with Bootstrap.
+            $.widget.bridge("uitooltip", $.ui.tooltip);
+            $.widget.bridge("uibutton", $.ui.button);
+        </script>
+        <script type="text/javascript" src="includes/bootstrap/js/bootstrap.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
         <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css" type="text/css" />
