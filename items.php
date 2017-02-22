@@ -152,7 +152,7 @@ echo '
 
 echo '
 <div class="row">
-    <div class="col-md-4 md-offset-1 text-left">
+    <div class="col col-md-4 text-left">
         <div style="width:100%; height:40px;">
             <div style="float:left;">
                 <div class="nav-item dropdown">
@@ -217,9 +217,10 @@ echo '
             </div>
 
             <div id="area_items_list" style="float:left;">
-                <div id="items_path_var" class="top-item-area"></div>
+                <div class="tp-row-opacity"></div>
+                <div id="items_path_var" class="top-item-area tp-row-text"></div>
 
-                <div id="items_list">
+                <div id="items_list" style="margin-top:50px;">
                     <ul class="liste_items" id="full_items_list"></ul>
                 </div>
             </div>

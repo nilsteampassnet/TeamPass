@@ -19,7 +19,7 @@ body {
   bottom: 0px;
   left: 0;
   width: 100%;
-  background: #4DC0C7 url("../images/canevas/back_3.jpg");  /*http://i.stack.imgur.com/spmUM.gif*/
+  background: #4DC0C7 url("../images/canevas/back-blue-1.png");  /*http://i.stack.imgur.com/spmUM.gif*/
   background-size: auto;
   background-position: bottom;
   z-index: 10;
@@ -32,13 +32,13 @@ body {
   -moz-opacity: 0.4;/* Mozilla */
   opacity: 0.4;/* CSS3 */
   height: 30px;
-  width: 90%;
+  width: 97%;
   margin: 10px 5px 10px 0;
 }
 
 .tp-row-text {
   position: absolute;
-  width: 90%;
+  width: 97%;
   height: 30px;
   font-size: 16px;
   margin: 10px 5px 10px 0;
@@ -81,6 +81,7 @@ body {
   line-height: 40px; /* Vertically center the text there */
   background-color: #f5f5f5;
   z-index: 100;
+  border-top: 1px #165D63 solid;
 }
 
 .space-top {

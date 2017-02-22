@@ -149,6 +149,7 @@ echo $htmlHeaders;
 
 /* HEADER */
 echo '
+<div class="bottomAnim">
 <nav class="navbar navbar-toggleable-md navbar-inverse bg-inverse fixed-top">
     <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
@@ -326,7 +327,6 @@ if (isset($_SESSION['login'])) {
 echo '
 </nav>
 
-<div class="bottomAnim">
 <div class="container-fluid">
     <div class="template">';
 
