@@ -5,15 +5,24 @@ body {
   font-size: 12px;
 }
 
+p {
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.overflow-ellipsis {
+  text-overflow: ellipsis;
+}
+
 .template {
-  margin-bottom: 50px;
   text-align: center;
   @grid-columns: 24;
 }
 
 .bottomAnim {
-  top: 4.4rem;
-  padding-top: 5px;
+  /*top: 4.4rem;*/
+  top: 50px;
+  padding-top: 10px;
   border: none;
   position: absolute;
   bottom: 0px;
@@ -25,12 +34,21 @@ body {
   z-index: 10;
 }
 
-.tp-row-opacity {
-  position: absolute;
-  background: #CCC;
+.opacity-40 {
+  background: #188489;
   filter: alpha(opacity=40);/* IE */
   -moz-opacity: 0.4;/* Mozilla */
   opacity: 0.4;/* CSS3 */
+}
+.opacity-60 {
+  background: #188489;
+  filter: alpha(opacity=60);/* IE */
+  -moz-opacity: 0.6;/* Mozilla */
+  opacity: 0.6;/* CSS3 */
+}
+
+.tp-row-opacity {
+  position: absolute;
   height: 30px;
   width: 97%;
   margin: 10px 5px 10px 0;
@@ -43,7 +61,7 @@ body {
   font-size: 16px;
   margin: 10px 5px 10px 0;
   border: 1px;
-  padding-left: 5px;
+  padding: 3px 0 0 5px;
   font-weight:bold;
 }
 
@@ -84,8 +102,26 @@ body {
   border-top: 1px #165D63 solid;
 }
 
+.item-tag-bottom {
+  position: fixed;
+  bottom: 50px;
+  right: 20px;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
 .space-top {
   margin-top:4px;
+}
+
+.space-bottom {
+  margin-bottom:4px;
+}
+
+.width-20 {
+  width: 20px;
 }
 
 
@@ -116,8 +152,7 @@ body {
 
 
 .liste_items li {
-    list-style-type:none;
-    padding-bottom: 3px;
+    width: 100%;
 }
 
 .small_text{
@@ -126,8 +161,6 @@ body {
 }
 
 .liste_items a.file_search, .liste_items a.fileselected_search {
-    padding: 2px 1px 1px 2px;
-    display: inline;
     font-family:verdana;
     font-size:11px;
     color:#242D35;
@@ -164,6 +197,115 @@ body {
 .top-item-area {
   font-size: 16px;
   margin: 10px 0 5px 0;
+}
+
+.list-group-item {
+  height: 22px;
+}
+
+.items-list-td1 {
+  width: 10%;
+}
+
+.items-list-td2 {
+  width: 80%;
+}
+
+.items-list-td3 {
+  width: 10%;
+}
+
+
+
+/**********************************************************/
+
+.label {
+  display: inline;
+  padding: .2em .6em .3em;
+  font-size: 75%;
+  font-weight: bold;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: .25em;
+}
+a.label:hover,
+a.label:focus {
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+}
+.label:empty {
+  display: none;
+}
+.btn .label {
+  position: relative;
+  top: -1px;
+}
+.label-default {
+  background-color: #777;
+}
+.label-default[href]:hover,
+.label-default[href]:focus {
+  background-color: #5e5e5e;
+}
+.label-primary {
+  background-color: #337ab7;
+}
+.label-primary[href]:hover,
+.label-primary[href]:focus {
+  background-color: #286090;
+}
+.label-success {
+  background-color: #5cb85c;
+}
+.label-success[href]:hover,
+.label-success[href]:focus {
+  background-color: #449d44;
+}
+.label-info {
+  background-color: #5bc0de;
+}
+.label-info[href]:hover,
+.label-info[href]:focus {
+  background-color: #31b0d5;
+}
+.label-warning {
+  background-color: #f0ad4e;
+}
+.label-warning[href]:hover,
+.label-warning[href]:focus {
+  background-color: #ec971f;
+}
+.label-danger {
+  background-color: #d9534f;
+}
+.label-danger[href]:hover,
+.label-danger[href]:focus {
+  background-color: #c9302c;
+}
+
+/**********************************************************/
+
+.breadcrumb {
+  padding: 8px 15px;
+  margin-bottom: 20px;
+  list-style: none;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+}
+.breadcrumb > li {
+  display: inline-block;
+}
+.breadcrumb > li + li:before {
+  padding: 0 5px;
+  color: #ccc;
+  content: "/\00a0";
+}
+.breadcrumb > .active {
+  color: #777;
 }
 
 

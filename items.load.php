@@ -157,6 +157,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         return false;
     }
 
+    // show list of items if not visible
+    showItem(false);
+
     if (stop_listing_current_folder === 1) {
         me.data('requestRunning', false);
         $("#new_listing_characteristics").val(groupe_id+","+restricted+","+start+",0");
@@ -182,10 +185,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         if (start == 0) {
             //clean form
             $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
-				console.log("ici");
-            $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
+            $("#items_list1").html("");
         }
-        $("#items_list").css("display", "");
+        //$("#items_list").css("display", "");
 
         $("#hid_cat").val(groupe_id);
         if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").hide();
@@ -193,7 +195,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         //Disable menu buttons
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
 
-        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['opening_folder'];?>');
+        if ($("#reading_folder").length === 0) {
+            $("#items_path_var").append('<div class="alert alert-warning" role="alert" style="margin-bottom:10px;" id="reading_folder"><i class="fa fa-folder-open-o"></i>&nbsp;<?php echo $LANG['opening_folder'];?></div>');
+        }
 
         //ajax query
         request = $.post("sources/items.queries.php",
@@ -229,6 +233,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                 // display path of folders
                 if (data.arborescence != undefined) {
+                    $("#items_path_var").html('<ol class="breadcrumb">' + data.arborescence + '</ol>');
+                    /*
                     var path_maxlength = $("#item_right_side").width();
                     if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
                     if (data.IsPersonalFolder === 0) {
@@ -271,12 +277,13 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             });
                         }
                     }
+                    */
                 } else {
                     $("#items_path_var").html('');
                 }
 
                 if (data.array_items == "" && data.items_count == "0") {
-                    $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
+                    $("#items_list1").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']);?></b></div>');
                 }
 
                 // store the categories to be displayed
@@ -308,16 +315,18 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
-                    $("#item_details_ok, #items_list").show();
+                    $("#item_details_ok, #items_list1").show();
 
                     $("#more_items").remove();
 
                     if (data.list_to_be_continued == "yes") {
-                        $("#full_items_list").append(data.items_html);
+                        //$("#full_items_list").append(data.items_html);
+                        $("#items_list1").append(data.items_html);
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
                     } else {
-                        $("#full_items_list").append(data.items_html);
+                        //$("#full_items_list").append(data.items_html);
+                        $("#items_list1").append(data.items_html);
                         $("#query_next_start").val(data.list_to_be_continued);
 
                         // display Categories if needed
@@ -339,18 +348,20 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").hide();
-                    $("#item_details_ok, #items_list").show();
+                    $("#item_details_ok, #items_list1").show();
 
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
                     if (data.list_to_be_continued == "yes") {
-                        $("#full_items_list").append(data.items_html);
+                        //$("#full_items_list").append(data.items_html);
+                        $("#items_list1").append(data.items_html);
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
                     } else {
-                        $("#full_items_list").append(data.items_html);
+                        //$("#full_items_list").append(data.items_html);
+                        $("#items_list1").append(data.items_html);
                         $("#query_next_start").val(data.list_to_be_continued);
 
                         // display Categories if needed
@@ -742,7 +753,8 @@ function AjouterItem()
                         $("#new_show_error").hide();
 
                         //add new line directly in list of items
-                        $("#full_items_list").append(data.new_entry);
+                        //$("#full_items_list").append(data.new_entry);
+                        $("#items_list1").append(data.new_entry);
 
                         //Increment counter
                         $("#itcount_"+$("#hid_cat").val()).text(Math.floor($("#itcount_"+$("#hid_cat").val()).text())+1);
@@ -760,7 +772,7 @@ function AjouterItem()
                         CKEDITOR.instances["desc"].setData("");
 
                         $("#item_tabs").tabs({selected: 0});
-                        $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
+                        //$('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
                         $(".fields, .item_field, #categorie, #random_id").val("");
                         $(".fields_div, #item_file_queue, #display_title, #visible_pw").html("");
 
@@ -1191,6 +1203,16 @@ function showItem(bool) {
     }
 }
 
+
+function quickShowItem(elem) {
+    var item_id = $("#"+elem).val();
+    if (item_id !== "") {
+        var param = $("#" + item_id).attr("data-param").split(',');
+        AfficherDetailsItem(item_id, param[0], param[1], param[2], "", "", "", "");
+    }
+}
+
+
 function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, display, open_edit, reload, id_tree)
 {
     // If a request is already launched, then kill new.
@@ -1254,7 +1276,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
             LoadingPage();
             return;
         } else {
+            // do clean
             $("#timestamp_item_displayed").val("");
+            $(".item_field").html("");
+            $(".item_field_data").val("");
+
             //Send query
             $.post(
                 "sources/items.queries.php",
@@ -1286,6 +1312,23 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
                     }
+
+                    // show buttons for previous and next items
+                    if ($("#" + id).prev("li").attr("id") === undefined) {
+                        $("#previous_item").val("");
+                        $("#but_previous_item").attr('disabled', 'disabled');
+                    } else {
+                        $("#previous_item").val($("#" + id).prev("li").attr("id"));
+                        $("#but_previous_item").attr('disabled', false);
+                    }
+                    if ($("#" + id).next("li").attr("id") === undefined) {
+                        $("#next_item").val("");
+                        $("#but_next_item").attr('disabled', 'disabled');
+                    } else {
+                        $("#next_item").val($("#" + id).next("li").attr("id"));
+                        $("#but_next_item").attr('disabled', false);
+                    }
+
 
                     // reset password shown info
                     $("#pw_shown").val("0");
@@ -2351,6 +2394,8 @@ $(function() {
         }
     });
 
+
+
 	/*
     $(".quick_menu").menu({
         icons: { submenu: "no-icon" }
@@ -2384,13 +2429,14 @@ $(function() {
     // Autoresize Textareas
     $(".items_tree, #items_content, #item_details_ok").addClass("ui-corner-all");
 
+
     //automatic height
     var window_height = $(window).height();
     $("#div_items, #content").height(window_height-170);
     $("#items_center").height(window_height-390);
-    $("#items_list").height(window_height-440);
+    $("#items_list1").height(window_height-440);
     $(".items_tree").height(window_height-160);
-    $("#jstree").height(window_height-185);
+    $("#jstree").height(window_height-160);
 
     //warning if screen height too short
     if (parseInt(window_height-440) <= 30) {
@@ -2948,7 +2994,8 @@ $(function() {
                         $("#div_loading").show();
 
                         // refresh list of items
-                        $("#full_items_list").html("");
+                        //$("#full_items_list").html("");
+                        $("#items_list1").append("");
                         ListerItems($('#hid_cat').val(), "", 0)
 
                         // reload tree
@@ -3810,7 +3857,7 @@ function proceed_list_update(stop_proceeding)
             ListerItems($("#hid_cat").val(),'', parseInt($("#query_next_start").val()));
         }
     } else {
-        $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
+        //$('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
         $("#tp_loader").hide();
 
         // prepare clipboard items
@@ -4010,7 +4057,8 @@ function globalItemsSearch()
         // clean
         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
-        $("#full_items_list").html("");
+        //$("#full_items_list").html("");
+        $("#items_list1").append("");
         $("#selected_items").val("");
 
         // send query
@@ -4025,8 +4073,9 @@ function globalItemsSearch()
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>');
-                $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
-                $("#full_items_list").html(data.items_html);
+                //$("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
+                $("#items_list1").html("");
+                //$("#full_items_list").html(data.items_html);
                 $("#tp_loader").hide();
             }
         );
@@ -4048,7 +4097,8 @@ function searchItemsWithTags(tag)
     // clean
     $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
     $("#button_quick_login_copy, #button_quick_pw_copy").hide();
-    $("#full_items_list").html("");
+    //$("#full_items_list").html("");
+    $("#items_list1").html("");
     $("#selected_items").val("");
 
     // send query
@@ -4063,7 +4113,8 @@ function searchItemsWithTags(tag)
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
             displayMessage(data.message);
             $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo $LANG['search_results'];?>&nbsp;<b>' + tag + '</b>');
-            $("#full_items_list").html(data.items_html);
+            //$("#full_items_list").html(data.items_html);
+            $("#items_list").html(data.items_html);
             $("#tp_loader").hide();
         }
     );

@@ -64,12 +64,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/vendor/clipboard.min.js"></script>
-        <!--
-        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
-        <script src="includes/bootstrap/js/bootstrap.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/css/items.css" />
-        -->';
+        <script type="text/javascript" src="includes/js/vendor/clipboard.min.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
@@ -401,7 +396,7 @@ $htmlHeaders .= '
         if (window.location.href.indexOf("page=items") == -1) {
             location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
         } else {
-            $("#items_list").html("<ul class=\'liste_items\' id=\'full_items_list\'></ul>");
+            $("#items_list").html("<ul class=\'list-group\' id=\'full_items_list\'></ul>");
             AfficherDetailsItem(item_id);
             if (tree_id != $("#hid_cat").val()) {
                 ListerItems(tree_id);
@@ -525,6 +520,12 @@ $htmlHeaders .= '
     }
 
     $(function() {
+        // new
+        $("button").tooltip();
+        //----
+
+
+
         // AGSES authentication
         if ($("#axs_canvas").length > 0) {
             // show the agsesflicker
@@ -672,7 +673,7 @@ $htmlHeaders .= '
         $(".button, .btn").button();
 
         //TOOLTIPS
-        $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
+        $("#main *, #footer *, #icon_last_items *, #top *, .tip").tooltipster({
             maxWidth: 400,
             contentAsHTML: true,
             multiple: true

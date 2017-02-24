@@ -149,13 +149,12 @@ echo $htmlHeaders;
 
 /* HEADER */
 echo '
-<div class="bottomAnim">
 <nav class="navbar navbar-toggleable-md navbar-inverse bg-inverse fixed-top">
     <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
     </button>
-    <a class="navbar-brand" href="#"><img src="includes/images/canevas/logo.png" alt="" /></a>
-';
+    <a class="navbar-brand" href="#"></a>
+';  //<img src="includes/images/canevas/logo.png" alt="" />
 // Display menu
 if (isset($_SESSION['login'])) {
     echo '
@@ -295,14 +294,15 @@ if (isset($_SESSION['login'])) {
         </ul>
         <div class="my-2 my-lg-0">
             <span id="tp_loader" style="display:none;margin-right:15px;" class="fa fa-cog fa-spin mi-red fa-3x"></span>
+        </div>
+        <div class="my-2 my-lg-0" style="margin-right:15px; width:140px;">
+            <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
+                <span class="input-group-addon"><i class="fa fa-binoculars fa-sm"></i></span>
+                <input class="form-control" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
+            </div>
         </div>';//items_list_loader
 
 
-/*
-    // welcome message
-    echo '
-        <div style="float:right; margin:-15px -30px 0 0; color:#FFF;">'.$LANG['index_welcome'].'&nbsp;<b>'.$_SESSION['name'].'&nbsp;'.$_SESSION['lastname'].'&nbsp;['.$_SESSION['login'].']</b>&nbsp;-&nbsp;', $_SESSION['user_admin'] == 1 ? $LANG['god'] : ($_SESSION['user_manager'] == 1 ? $LANG['gestionnaire'] : ($_SESSION['user_read_only'] == 1 ? $LANG['read_only_account'] : $LANG['user'])), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
-*/
 
     // show avatar
     if (isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb'])) {
@@ -327,6 +327,7 @@ if (isset($_SESSION['login'])) {
 echo '
 </nav>
 
+<div class="bottomAnim">
 <div class="container-fluid">
     <div class="template">';
 
