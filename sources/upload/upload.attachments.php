@@ -251,12 +251,16 @@ if (isset($_SERVER["CONTENT_TYPE"])) {
 
 // should we encrypt the attachment?
 if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+    // get key
+    if (empty($ascii_key)) {
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    }
+    
     // prepare encryption of attachment
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+    $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
     $key = substr(
-        md5("\x2D\xFC\xD8".SALT, true).
-        md5("\x2D\xFC\xD9".SALT, true),
+        md5("\x2D\xFC\xD8".$ascii_key, true).
+        md5("\x2D\xFC\xD9".$ascii_key, true),
         0,
         24
     );

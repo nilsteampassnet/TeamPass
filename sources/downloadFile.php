@@ -49,12 +49,17 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     // should we decrypt the attachment?
     if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
         include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+        
+        // get key
+        if (empty($ascii_key)) {
+            $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        }
 
         // Prepare encryption options
-        $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+        $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
         $key = substr(
-            md5("\x2D\xFC\xD8".SALT, true) .
-            md5("\x2D\xFC\xD9".SALT, true),
+            md5("\x2D\xFC\xD8".$ascii_key, true) .
+            md5("\x2D\xFC\xD9".$ascii_key, true),
             0,
             24
         );
