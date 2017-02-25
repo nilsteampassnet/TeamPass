@@ -2,8 +2,8 @@
 /**
  * @file          upgrade_run_encryption_pwd.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,11 +13,18 @@
  */
 
 
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
+
+// if already defused then current instance of Teampss has already been updated to 2.1.27
+if (isset($_SESSION['tp_defuse_installed']) && $_SESSION['tp_defuse_installed'] === true) {
+    echo '[{"finish":"1" , "next":"" , "error":""}]';
+    return false;
+}
+
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
@@ -38,20 +45,21 @@ $dbgDuo = fopen("upgrade.log", "a");
 $finish = false;
 $next = ($_POST['nb']+$_POST['start']);
 
+
 $dbTmp = mysqli_connect(
-    $_SESSION['db_host'],
-    $_SESSION['db_login'],
-    $_SESSION['db_pw'],
-    $_SESSION['db_bdd'],
-    $_SESSION['db_port']
+    $_SESSION['server'],
+    $_SESSION['user'],
+    $_SESSION['pass'],
+    $_SESSION['database'],
+    $_SESSION['port']
 );
 
-fputs($dbgDuo, "\n\nSELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
+fputs($dbgDuo, "\n\nSELECT id, pw, pw_iv FROM ".$_SESSION['pre']."items
     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']."\n");
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
+    "SELECT id, pw, pw_iv FROM ".$_SESSION['pre']."items
     WHERE perso = '0'"
 );
 if (!$rows) {
@@ -63,7 +71,7 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
+    "SELECT id, pw, pw_iv FROM ".$_SESSION['pre']."items
     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -73,13 +81,14 @@ if (!$rows) {
 
 while ($data = mysqli_fetch_array($rows)) {
     fputs($dbgDuo, "\n\n-----\nItem : ".$data['id']);
+
     // check if pw encrypted with protocol #3
     if (!empty($data['pw_iv'])) {
-        $pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt");
+        $pw = cryption_phpCrypt($data['pw'], SALT, $data['pw_iv'], "decrypt");
         // nothing to do - last encryption protocol (#3) used
         fputs($dbgDuo, "\nItem is correctly encrypted");
     } else {
-        if (!empty($data['pw_iv'])) {
+        if (!empty($data['pw']) && substr($data['pw'], 0, 3) !== "def") {
             // check if pw encrypted with protocol #2
             $pw = decrypt($data['pw']);
             if (empty($pw)) {
@@ -89,16 +98,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
             // get key for this pw
             $resData = mysqli_query($dbTmp,
-                "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
-                WHERE `sql_table` = 'items' AND id = ".$data['id']
-            );
-            if (!$resData) {
-                echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
-                exit();
-            }
-
-            $resData = mysqli_query($dbTmp,
-                "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+                "SELECT rand_key FROM ".$_SESSION['pre']."keys
                 WHERE `sql_table` = 'items' AND id = ".$data['id']
             );
             if (!$resData) {
@@ -114,11 +114,11 @@ while ($data = mysqli_fetch_array($rows)) {
 
             // crypt pw with new protocol #3
             // encrypt pw
-            $encrypt = cryption($pw, SALT, "", "encrypt");
+            $encrypt = cryption_phpCrypt($pw, SALT, "", "encrypt");
 
             // store Password
             mysqli_query($dbTmp,
-                "UPDATE ".$_SESSION['tbl_prefix']."items
+                "UPDATE ".$_SESSION['pre']."items
                 SET pw = '".$encrypt['string']."',pw_iv = '".$encrypt['iv']."'
                 WHERE id=".$data['id']
             );
@@ -131,7 +131,7 @@ while ($data = mysqli_fetch_array($rows)) {
     }
 
     // does tables KEYS exists
-    if(mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['tbl_prefix']."keys'")) == 1) {
+    if(mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['pre']."keys'")) == 1) {
         $table_keys_exists = 1;
     } else {
         $table_keys_exists = 0;
@@ -142,8 +142,8 @@ while ($data = mysqli_fetch_array($rows)) {
     if ($table_keys_exists == 1) {
         $resData = mysqli_query($dbTmp,
             "SELECT l.id_item AS id_item, k.rand_key AS rndKey, l.raison AS raison, l.raison_iv AS raison_iv, l.date AS mDate, l.id_user AS id_user, l.action AS action
-            FROM ".$_SESSION['tbl_prefix']."log_items AS l
-            LEFT JOIN ".$_SESSION['tbl_prefix']."keys AS k ON (l.id_item = k.id)
+            FROM ".$_SESSION['pre']."log_items AS l
+            LEFT JOIN ".$_SESSION['pre']."keys AS k ON (l.id_item = k.id)
             WHERE l.id_item = ".$data['id']." AND l.raison LIKE 'at_pw :%' AND k.sql_table='items'"
         );
         fputs($dbgDuo, "\nNb of entries in log: ".mysqli_num_rows($resData));
@@ -168,7 +168,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
                     // get key for this pw
                     $resData_tmp = mysqli_query($dbTmp,
-                        "SELECT rand_key FROM ".$_SESSION['tbl_prefix']."keys
+                        "SELECT rand_key FROM ".$_SESSION['pre']."keys
                         WHERE `sql_table` = 'items' AND id = ".$data['id']
                     );
                     if (!$resData_tmp) {
@@ -185,10 +185,10 @@ while ($data = mysqli_fetch_array($rows)) {
 
                     // store new encryption
                     if (isUTF8($pw) && !empty($pw)) {
-                        $encrypt = cryption($pw , SALT, "", "encrypt");
+                        $encrypt = cryption_phpCrypt($pw , SALT, "", "encrypt");
                         fputs($dbgDuo, " / Final : ".$encrypt['string']);
                         mysqli_query($dbTmp,
-                            "UPDATE ".$_SESSION['tbl_prefix']."log_items
+                            "UPDATE ".$_SESSION['pre']."log_items
                             SET raison = 'at_pw : ".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
                             WHERE id_item =".$data['id']." AND date='".$record['mDate']."'
                             AND id_user=".$record['id_user']." AND action ='".$record['action']."'"
@@ -206,8 +206,8 @@ while ($data = mysqli_fetch_array($rows)) {
         // change category fields encryption
         $resData = mysqli_query($dbTmp,
             "SELECT i.data AS data, k.rand_key AS rndKey
-            FROM ".$_SESSION['tbl_prefix']."categories_items AS i
-            LEFT JOIN ".$_SESSION['tbl_prefix']."keys AS k ON (k.id = i.item_id)
+            FROM ".$_SESSION['pre']."categories_items AS i
+            LEFT JOIN ".$_SESSION['pre']."keys AS k ON (k.id = i.item_id)
             WHERE i.item_id = ".$data['id']." AND k.sql_table='items'"
         );
         if (!$resData) {
@@ -218,11 +218,11 @@ while ($data = mysqli_fetch_array($rows)) {
         while ($record = mysqli_fetch_array($resData)) {
             $tmpData = substr(decrypt($record['data']), strlen($record['rndKey']));
             if (isUTF8($tmpData ) && !empty($tmpData )) {
-                $encrypt = cryption($tmpData , SALT, "", "encrypt");
+                $encrypt = cryption_phpCrypt($tmpData , SALT, "", "encrypt");
 
                 // store Password
                 $resData_tmp2 = mysqli_query($dbTmp,
-                    "UPDATE ".$_SESSION['tbl_prefix']."categories_items
+                    "UPDATE ".$_SESSION['pre']."categories_items
                         SET data = '".$encrypt['string']."', data_iv = '".$encrypt['iv']."'
                         WHERE item_id =".$data['id']
                 );

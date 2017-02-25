@@ -2,8 +2,8 @@
 /**
  * @file          upgrade.ajax.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
@@ -24,7 +24,7 @@ require_once '../includes/config/include.php';
 // manage settings.php file
 if (!file_exists("../includes/config/settings.php")) {
     if (file_exists("../includes/settings.php")) {
-        // since 2.1.26, this file has changed location
+        // since 2.1.27, this file has changed location
         if (copy("../includes/settings.php", "../includes/config/settings.php")) {
             unlink("../includes/settings.php");
         } else {
@@ -96,7 +96,7 @@ function tableExists($tablename, $database = false)
     $res = mysqli_query($dbTmp,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
-        WHERE table_schema = '".$_SESSION['db_bdd']."'
+        WHERE table_schema = '".$_SESSION['database']."'
         AND table_name = '$tablename'"
     );
 
@@ -137,7 +137,7 @@ if (isset($_POST['type'])) {
             );
             foreach ($tab as $elem) {
                 // try to create it if not existing
-                if(!is_dir($elem)) {
+                if(substr($elem, -1) === '/' && !is_dir($elem)) {
                     mkdir($elem);
                 }
                 // check if writable
@@ -291,14 +291,23 @@ if (isset($_POST['type'])) {
             }
 
             if (!isset($_SESSION['encrypt_key']) || empty($_SESSION['encrypt_key'])) {
-                $okEncryptKey = false;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
-                    ' could not be recovered &nbsp;&nbsp;'.
-                    '<img src=\"images/minus-circle.png\"></span><br />';
+                // check if 2.1.27 already installed
+                $defuse_file = substr($_SESSION['sk_file'], 0, strrpos($_SESSION['sk_file'], "/"))."/teampass-seckey.txt";
+                if (file_exists($defuse_file)) {
+                    $okEncryptKey = true;
+                    $_SESSION['tp_defuse_installed'] = true;
+                    $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Defuse encryption key is defined&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                        '</span><br />';
+                } else {
+                    $okEncryptKey = false;
+                    $_SESSION['tp_defuse_installed'] = false;
+                    $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
+                        ' could not be recovered &nbsp;&nbsp;'.
+                        '<img src=\"images/minus-circle.png\"></span><br />';
+                    }
             } else {
                 $okEncryptKey = true;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is <b>'.
-                    $_SESSION['encrypt_key'].'</b>&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is available&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                     '</span><br />';
             }
 
@@ -320,25 +329,24 @@ if (isset($_POST['type'])) {
             $res = "";
             //decrypt the password
             // AES Counter Mode implementation
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';
-            $dbPassword = Encryption\Crypt\aesctr::decrypt($_POST['db_password'], "cpm", 128);
+            require_once 'libs/aesctr.php';
 
             // connexion
             if (
                 mysqli_connect(
-                    $_POST['db_host'],
-                    $_POST['db_login'],
-                    $dbPassword,
-                    $_POST['db_bdd'],
-                    $_POST['db_port']
+                    $_SESSION['server'],
+                    $_SESSION['user'],
+                    $_SESSION['pass'],
+                    $_SESSION['database'],
+                    $_SESSION['port']
                 )
             ) {
                 $dbTmp = mysqli_connect(
-                    $_POST['db_host'],
-                    $_POST['db_login'],
-                    $dbPassword,
-                    $_POST['db_bdd'],
-                    $_POST['db_port']
+                    $_SESSION['server'],
+                    $_SESSION['user'],
+                    $_SESSION['pass'],
+                    $_SESSION['database'],
+                    $_SESSION['port']
                 );
                 $res = "Connection is successful";
                 echo 'document.getElementById("but_next").disabled = "";';
@@ -378,10 +386,12 @@ if (isset($_POST['type'])) {
 
                 // put TP in maintenance mode or not
                 @mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."misc`
+                "UPDATE `".$_SESSION['pre']."misc`
                     SET `valeur` = 'maintenance_mode'
                     WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 );
+
+                echo 'document.getElementById("dump").style.display = "";';
             } else {
                 $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
                 echo 'document.getElementById("but_next").disabled = "disabled";';
@@ -394,18 +404,18 @@ if (isset($_POST['type'])) {
             #==========================
         case "step3":
             mysqli_connect(
-                $_SESSION['db_host'],
-                $_SESSION['db_login'],
-                $_SESSION['db_pw'],
-                $_SESSION['db_bdd'],
-                $_SESSION['db_port']
+                $_SESSION['server'],
+                $_SESSION['user'],
+                $_SESSION['pass'],
+                $_SESSION['database'],
+                $_SESSION['port']
             );
             $dbTmp = mysqli_connect(
-                $_SESSION['db_host'],
-                $_SESSION['db_login'],
-                $_SESSION['db_pw'],
-                $_SESSION['db_bdd'],
-                $_SESSION['db_port']
+                $_SESSION['server'],
+                $_SESSION['user'],
+                $_SESSION['pass'],
+                $_SESSION['database'],
+                $_SESSION['port']
             );
             $status = "";
 
@@ -424,20 +434,20 @@ if (isset($_POST['type'])) {
 
             //convert database
             mysqli_query($dbTmp,
-                "ALTER DATABASE `".$_SESSION['db_bdd']."`
+                "ALTER DATABASE `".$_SESSION['database']."`
                 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
             );
 
             //convert tables
-            $res = mysqli_query($dbTmp,"SHOW TABLES FROM `".$_SESSION['db_bdd']."`");
+            $res = mysqli_query($dbTmp,"SHOW TABLES FROM `".$_SESSION['database']."`");
             while ($table = mysqli_fetch_row($res)) {
                 if (substr($table[0], 0, 4) != "old_") {
                     mysqli_query($dbTmp,
-                        "ALTER TABLE ".$_SESSION['db_bdd'].".`{$table[0]}`
+                        "ALTER TABLE ".$_SESSION['database'].".`{$table[0]}`
                         CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
                     mysqli_query($dbTmp,
-                        "ALTER TABLE".$_SESSION['db_bdd'].".`{$table[0]}`
+                        "ALTER TABLE".$_SESSION['database'].".`{$table[0]}`
                         DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
                 }
@@ -530,12 +540,12 @@ global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPa
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"". $_SESSION['db_host'] ."\";
-\$user = \"". $_SESSION['db_login'] ."\";
-\$pass = \"". str_replace("$", "\\$", $_SESSION['db_pw']) ."\";
-\$database = \"". $_SESSION['db_bdd'] ."\";
-\$port = ". $_SESSION['db_port'] .";
-\$pre = \"". $_SESSION['tbl_prefix'] ."\";
+\$server = \"". $_SESSION['server'] ."\";
+\$user = \"". $_SESSION['user'] ."\";
+\$pass = \"". str_replace("$", "\\$", $_SESSION['pass']) ."\";
+\$database = \"". $_SESSION['database'] ."\";
+\$port = ". $_SESSION['port'] .";
+\$pre = \"". $_SESSION['pre'] ."\";
 \$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
@@ -563,7 +573,6 @@ require_once \"".$skFile."\";
                         $fh,
                         utf8_encode(
 "<?php
-@define('SALT', '".$_SESSION['session_salt']."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 @define('AKEY', '');
 @define('IKEY', '');
@@ -620,12 +629,94 @@ require_once \"".$skFile."\";
             } else {
                 //settings.php file doesn't exit => ERROR !!!!
                 echo 'document.getElementById("res_step5").innerHTML = '.
-                        '"<img src=\"../includes/images/error.png\">&nbsp;Setting.php '.
+                        '"<img src=\"images/error.png\">&nbsp;Setting.php '.
                         'file doesn\'t exist! Upgrade can\'t continue without this file.<br />'.
                         'Please copy your existing settings.php into the \"includes\" '.
                         'folder of your TeamPass installation ";';
                 echo 'document.getElementById("loader").style.display = "none";';
             }
+
+            break;
+
+        case "perform_database_dump":
+            $filename = "../includes/config/settings.php";
+
+            $mtables = array();
+
+            $mysqli = new mysqli($_SESSION['server'], $_SESSION['user'], $_SESSION['pass'], $_SESSION['database'], $_SESSION['port']);
+            if ($mysqli->connect_error) {
+                die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
+            }
+
+            $results = $mysqli->query("SHOW TABLES");
+
+            while($row = $results->fetch_array()){
+                $mtables[] = $row[0];
+            }
+
+            foreach($mtables as $table){
+                $contents .= "-- Table `".$table."` --\n";
+
+                $results = $mysqli->query("SHOW CREATE TABLE ".$table);
+                while($row = $results->fetch_array()){
+                    $contents .= $row[1].";\n\n";
+                }
+
+                $results = $mysqli->query("SELECT * FROM ".$table);
+                $row_count = $results->num_rows;
+                $fields = $results->fetch_fields();
+                $fields_count = count($fields);
+
+                $insert_head = "INSERT INTO `".$table."` (";
+                for($i=0; $i < $fields_count; $i++){
+                    $insert_head  .= "`".$fields[$i]->name."`";
+                        if($i < $fields_count-1){
+                                $insert_head  .= ', ';
+                            }
+                }
+                $insert_head .=  ")";
+                $insert_head .= " VALUES\n";
+
+                if($row_count>0){
+                    $r = 0;
+                    while($row = $results->fetch_array()){
+                        if(($r % 400)  == 0){
+                            $contents .= $insert_head;
+                        }
+                        $contents .= "(";
+                        for($i=0; $i < $fields_count; $i++){
+                            $row_content =  str_replace("\n","\\n",$mysqli->real_escape_string($row[$i]));
+
+                            switch($fields[$i]->type){
+                                case 8: case 3:
+                                    $contents .=  $row_content;
+                                    break;
+                                default:
+                                    $contents .= "'". $row_content ."'";
+                            }
+                            if($i < $fields_count-1){
+                                    $contents  .= ', ';
+                                }
+                        }
+                        if(($r+1) == $row_count || ($r % 400) == 399){
+                            $contents .= ");\n\n";
+                        }else{
+                            $contents .= "),\n";
+                        }
+                        $r++;
+                    }
+                }
+            }
+
+            $backup_file_name = "sql-backup-".date( "d-m-Y--h-i-s").".sql";
+
+            $fp = fopen("../files/".$backup_file_name ,'w+');
+            if (($result = fwrite($fp, $contents))) {
+                echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
+            } else {
+                echo '[{ "error" : "Backup fails - please do it manually."}]';
+            }
+            fclose($fp);
 
             break;
     }

@@ -2,8 +2,8 @@
 /**
  * @file          kb.queries.table.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sessions.php');
+require_once('../SecureHandler.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -83,7 +83,18 @@ if ($_GET['sSearch'] != "") {
     $sWhere = substr_replace($sWhere, "", -3);
 }
 
-DB::query("SELECT * FROM ".$pre."kb");
+DB::query(
+    "SELECT * FROM ".$pre."kb
+    $sWhere
+    $sOrder",
+    array(
+        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+    )
+);
 $iTotal = DB::count();
 
 $rows = DB::query(

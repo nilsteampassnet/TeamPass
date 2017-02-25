@@ -22,10 +22,10 @@ background-image: url(../images/canevas/menu_top_bckg.png);
 }
 
 #logo{
-    float:left;
-    margin-right: 5px;
-    margin-top: -5px;
-	margin-left: -5px;
+float:left;
+margin-right: 5px;
+margin-top: -5px;
+margin-left: -5px;
 }
 
 #menu_top{
@@ -135,6 +135,18 @@ width:95%;
 padding: 4px;
 }
 
+.input_text_60 {
+margin-bottom:10px;
+width:60%;
+padding: 4px;
+}
+
+.input_text_80 {
+margin-bottom:10px;
+width:80%;
+padding: 4px;
+}
+
 .label_cpm{
 display:block;
 }
@@ -160,32 +172,8 @@ min-width: 150px;
 ul{
 list-style-type:none;
 }
-/*
-li{
-cursor: pointer;
-}*/
-
-.error{
-    margin-top: 50px;
-    margin-bottom: 50px;
-    padding: 10px;
-    font-weight: bold;
-    background: url(../images/error.png) no-repeat 0 0;
-}
 
 .button_menu { outline: 0; margin:0; padding: 1px; text-decoration:none; cursor:pointer; position: relative; text-align: center; }
-
-.dropdown dd, .dropdown dt, .dropdown ul { margin:0px; padding:0px; }
-.dropdown dd { position:relative; z-index:1000;}
-.dropdown a, .dropdown a:visited { text-decoration:none; outline:none;}
-.dropdown dt {background: url(../images/arrow.png) no-repeat scroll right center; display:block; padding-right:20px; cursor:pointer;}
-.dropdown dd ul { background:#e4dfcb none repeat scroll 0 0; border:1px solid #d4ca9a; color:#C5C0B0; display:none;
-                  left:0px; padding:5px 0px; position:absolute; top:2px; width:auto; min-width:45px; list-style:none;}
-.dropdown span.value { display:none;}
-.dropdown dd ul li a { padding:5px; display:block;}
-.dropdown dd ul li a:hover { background-color:#d0c9af;}
-
-.dropdown img.flag { border:none; vertical-align:middle; margin-left:10px; }
 
 .title {
   font: bold 160%/100% "Lucida Grande";

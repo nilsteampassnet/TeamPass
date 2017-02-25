@@ -10,6 +10,7 @@
 *          implement protection in pdf.                                     *
 ****************************************************************************/
 
+
 require('tfpdf.class.php');
 
 if(function_exists('mcrypt_encrypt'))
@@ -200,5 +201,31 @@ class FPDF_Protection extends tFPDF
         $this->Uvalue = $this->_Uvalue();
         // Compute P value
         $this->Pvalue = -(($protection^255)+1);
+    }
+
+    function Header()
+    {
+        global $LANG, $k;
+        $this->SetFont('helvetica','B',12);
+        // Teampass
+        $this->Cell(100,10, "Teampass" ,0,0,'L', 0);
+        //
+        $this->SetFont('helvetica','B',12);
+        $this->Cell(0,10,$LANG['print_out_pdf_title'],0,0,'L');
+        // Line break
+        $this->Ln(10);
+    }
+
+    function Footer()
+    {
+        global $LANG;
+        // Position at 1.5 cm from bottom
+        $this->SetY(-15);
+        // Arial italic 8
+        $this->SetFont('helvetica','I',8);
+        // info
+        $this->Cell(0,10,$LANG['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$LANG['by'].' '.$_SESSION['login'],0,0,'C');
+        // Page number
+        $this->Cell(0,10,$LANG['pages'].' '.$this->PageNo().'/{nb}',0,0,'R');
     }
 }

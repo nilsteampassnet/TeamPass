@@ -2,8 +2,8 @@
 /**
  * @file          admin.settings.load.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -33,9 +33,10 @@ function catInFolders(id) {
     $("#post_id").val(id);
     $("#catInFolder_title").html($("#item_"+id).html());    // display title
     // pre-select folders
+    $("#cat_folders_selection > option").prop("selected", false);
     var folder = $("#catFoldersList_"+id).val().split(";");
     for (var i=0; i<folder.length; i++) {
-        $("#cat_folders_selection option[value="+folder[0]+"]").attr('selected', true);
+        $("#cat_folders_selection option[value="+folder[i]+"]").attr('selected', 'selected');
     };
     // open
     $("#category_in_folder").dialog("open");
@@ -207,16 +208,6 @@ function loadFieldsList() {
    );
 }
 
-function changeSettingStatus(id, val) {
-    if (val == 1) {
-        $("#flag_"+id).html("<img src='includes/images/status.png' />");
-        $("#"+id+"_radio2").addClass("ui-button.redButton");
-        console.log(("#"+id+"_radio2"));
-    } else {
-        $("#flag_"+id).html("<img src='includes/images/status-busy.png' />");
-    }
-}
-
 //###########
 //## FUNCTION : Launch the action the admin wants
 //###########
@@ -246,24 +237,24 @@ function LaunchAdminActions(action,option)
             $("#div_loading").hide();
             if (data != null) {
                 if (data[0].result == "db_backup") {
-                    $("#result_admin_action_db_backup").html("<img src='includes/images/document-code.png' alt='' />&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>").show();
+                    $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>").show();
                 } else if (data[0].result == "pf_done") {
-                    $("#result_admin_action_check_pf").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_check_pf").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_restore") {
                     $("#restore_bck_encryption_key_dialog").dialog("close");
-                    $("#result_admin_action_db_restore").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_db_restore").html("<span class='fa fa-check mi-green'></span>").show();
                     $("#result_admin_action_db_restore_get_file").hide();
                     //deconnect userd
                     sessionStorage.clear();
                     window.location.href = "logout.php"
                 } else if (data[0].result == "cache_reload") {
-                    $("#result_admin_action_reload_cache_table").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_reload_cache_table").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_optimize") {
-                    $("#result_admin_action_db_optimize").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_action_db_optimize").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "purge_old_files") {
-                    $("#result_admin_action_purge_old_files").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>").show();
+                    $("#result_admin_action_purge_old_files").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>").show();
                 } else if (data[0].result == "db_clean_items") {
-                    $("#result_admin_action_db_clean_items").html("<img src='includes/images/tick.png' alt='' />&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>").show();
+                    $("#result_admin_action_db_clean_items").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>").show();
                 } else if (data[0].result == "changed_salt_key") {
                     //deconnect user
                     $("#menu_action").val("deconnexion");
@@ -286,7 +277,7 @@ function LaunchAdminActions(action,option)
                         $("#result_admin_action_attachments_cryption").html("It seems the files are encrypted. Are you sure you want to encrypt? please do a check.").show();
                     }
                 } else if (data[0].result == "rebuild_config_file") {
-                    $("#result_admin_rebuild_config_file").html("<img src='includes/images/tick.png' alt='' />").show();
+                    $("#result_admin_rebuild_config_file").html("<span class='fa fa-check mi-green'></span>").show();
                 }
             }
         },
@@ -301,19 +292,6 @@ function changeMainSaltKey(start)
 {
     var nb = 10;    // can be changed - number of items treated in each loop
 
-    // check saltkey length
-    if ($("#new_salt_key").val().length != 16) {
-        $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_saltkey_length'];?>");
-        return false;
-    }
-
-    // prepare excahnge
-    var newSK = prepareExchangedData(
-        '{"newSK":"'+sanitizeString($("#new_salt_key").val())+'"}',
-        "encode",
-        "<?php echo $_SESSION['key'];?>"
-    );
-
     //console.log("Start value: "+start);
 
     // start change
@@ -325,8 +303,7 @@ function changeMainSaltKey(start)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___start",
-               newSK    : newSK
+               type     : "admin_action_change_salt_key___start"
             },
             function(data) {
                 //console.log("Step start - " + data[0].nextAction);
@@ -352,7 +329,6 @@ function changeMainSaltKey(start)
             "sources/admin.queries.php",
             {
                type     : "admin_action_change_salt_key___encrypt",
-               newSK    : newSK,
                start    : start,
                length    : nb,
                nbItems    : $("#changeMainSaltKey_itemsCount").val()
@@ -377,13 +353,12 @@ function changeMainSaltKey(start)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___end",
-               newSK    : newSK
+               type     : "admin_action_change_salt_key___end"
             },
             function(data) {
                 if (data[0].nextAction == "done") {
                     console.log("done");
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-spin fa\"></i>&nbsp;<?php echo $LANG['finalizing'];?> <?php echo $LANG['number_of_items_treated'];?> : "+$("#changeMainSaltKey_itemsCount").val());
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated'];?> : "+$("#changeMainSaltKey_itemsCount").val());
                 } else {
                     // error mngt
                 }
@@ -636,13 +611,23 @@ $(function() {
         }
     });
 
+    $("#cat_folders_selection").multiselect({
+        selectedList: 7,
+        multiple:true,
+        checkAllText: "<?php echo $LANG['check_all_text'];?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+    });
+
     $("#category_in_folder").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 300,
+        width: 400,
         height: 350,
         title: "<?php echo $LANG['category_in_folders'];?>",
+        open: function() {
+            $("#cat_folders_selection").multiselect('refresh');
+        },
         buttons: {
             "<?php echo $LANG['confirm'];?>": function() {
                 // get list of selected folders
@@ -840,12 +825,40 @@ function manageEncryptionOfAttachments(list, cpt) {
 function refreshInput()
 {
     var ids = "";
-    $.each($("#roles_allowed_to_print_select option:selected"), function(){  
+    $.each($("#roles_allowed_to_print_select option:selected"), function(){
         if (ids == "") ids = $(this).val();
         else ids = ids + ";" + $(this).val();
     });
     $("#roles_allowed_to_print").val(ids);
     updateSetting('roles_allowed_to_print');
+}
+
+function changeEncrypMode(id, encrypted_data) {
+    // send to server
+    $("#div_loading").show();
+    //send query
+    $.post(
+        "sources/categories.queries.php",
+        {
+            type    : "dataIsEncryptedInDB",
+            id      : id,
+            encrypt : encrypted_data === "1" ? "0" : "1"
+        },
+        function(data) {
+            // show to user
+            if (data[0].error === ""){
+                if (encrypted_data === "1") {
+                    $("#encryt_data_"+id).html('<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode(\''+id+'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>');
+                } else {
+                    $("#encryt_data_"+id).html('<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode(\''+id+'\', \'1\')"></i>');
+                }
+            }
+            $("#div_loading").hide();
+        },
+        "json"
+   );
+
+
 }
 //]]>
 </script>

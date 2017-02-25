@@ -3,8 +3,8 @@
  *
  * @file          users.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link        http://www.teampass.net
  *
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -27,10 +27,17 @@ if (
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
-    if (!isset($_POST['newValue']) || empty(filter_var($_POST['newValue'], FILTER_SANITIZE_STRING))) {
+    if (!isset($_POST['newValue'])) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
         include $_SESSION['settings']['cpassman_dir'].'/error.php';
         exit();
+    } else {
+        $filtered_newvalue = filter_var($_POST['newValue'], FILTER_SANITIZE_STRING);
+        if (empty($filtered_newvalue)) {
+            $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            exit();
+        }
     }
 }
 
@@ -114,7 +121,7 @@ if (!empty($_POST['type'])) {
                 $new_fonctions = $val[1];
             }
             // ensure no double ; exists
-			$new_fonctions = str_replace(";;", ";", $new_fonctions);
+            $new_fonctions = str_replace(";;", ";", $new_fonctions);
             // Store id DB
             DB::update(
                 prefix_table("users"),
@@ -156,6 +163,12 @@ if (!empty($_POST['type'])) {
             );
 
             if (DB::count() == 0) {
+                // check if admin role is set. If yes then check if originator is allowed
+                if ($dataReceived['admin'] === "true" && $_SESSION['user_admin'] !== "1") {
+                    echo '[ { "error" : "'.addslashes($LANG['error_not_allowed_to']).'" } ]';
+                    break;
+                }
+
                 // Add user in DB
                 DB::insert(
                     prefix_table("users"),
@@ -170,10 +183,11 @@ if (!empty($_POST['type'])) {
                         'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
                         'personal_folder' => $dataReceived['personal_folder'] == "true" ? '1' : '0',
                         'user_language' => $_SESSION['settings']['default_language'],
-                        'fonction_id' => $dataReceived['manager'] == "true" ? $_SESSION['fonction_id'] : '0', // If manager is creater, then assign them roles as creator
-                        'groupes_interdits' => ($dataReceived['manager'] == "true" && isset($data['groupes_interdits']) && !is_null($data['groupes_interdits'])) ? $data['groupes_interdits'] : '0',
-                        'groupes_visibles' => ($dataReceived['manager'] == "true" && isset($data['groupes_visibles']) && !is_null($data['groupes_visibles'])) ? $data['groupes_visibles'] : '0',
-                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole']
+                        'fonction_id' => $dataReceived['groups'],
+                        'groupes_interdits' => $dataReceived['forbidden_flds'],
+                        'groupes_visibles' => $dataReceived['allowed_flds'],
+                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'],
+                        'encrypted_psk' => ''
                        )
                 );
                 $new_user_id = DB::insertId();
@@ -254,7 +268,7 @@ if (!empty($_POST['type'])) {
                     $dataReceived['email']
                 );
                 // update LOG
-				logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+                logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
 
                 echo '[ { "error" : "no" } ]';
             } else {
@@ -407,7 +421,7 @@ if (!empty($_POST['type'])) {
                 exit();
             }
 
-			// Get some data
+            // Get some data
             $data = DB::queryfirstrow(
                 "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
@@ -419,10 +433,10 @@ if (!empty($_POST['type'])) {
                 array(
                     'gestionnaire' => $_POST['value'],
                     'can_manage_all_users' => ($data['can_manage_all_users'] == 0 && $_POST['value'] == 1) ? "0" : (
-						($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
-						($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" :
-						"1")
-					),
+                        ($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
+                        ($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" :
+                        "1")
+                    ),
                     'admin' => $_POST['value'] == 1 ? "0" : "0",
                     'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
@@ -454,7 +468,7 @@ if (!empty($_POST['type'])) {
             break;
         /**
          * UPDATE CAN MANAGE ALL USERS RIGHTS FOR USER
-		 * Notice that this role must be also Manager
+         * Notice that this role must be also Manager
          */
         case "can_manage_all_users":
             // Check KEY
@@ -463,7 +477,7 @@ if (!empty($_POST['type'])) {
                 exit();
             }
 
-			// Get some data
+            // Get some data
             $data = DB::queryfirstrow(
                 "SELECT admin, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
@@ -795,7 +809,7 @@ if (!empty($_POST['type'])) {
             $logs = $sql_filter = "";
             $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
-            if ($_POST['scope'] == "user_activity") {
+            if ($_POST['scope'] === "user_activity") {
                 if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] != "all") {
                     $sql_filter = " AND l.action = '".$_POST['filter']."'";
                 }
@@ -1030,6 +1044,10 @@ if (!empty($_POST['type'])) {
             }
 
             $arrData = array();
+            $arrFunction = array();
+            $arrMngBy = array();
+            $arrFldForbidden = array();
+            $arrFldAllowed = array();
 
             //Build tree
             $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
@@ -1038,7 +1056,7 @@ if (!empty($_POST['type'])) {
 
             // get User info
             $rowUser = DB::queryFirstRow(
-                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole
+                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, gestionnaire, read_only, can_create_root_folder, personal_folder, can_manage_all_users, admin
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $_POST['id']
@@ -1053,8 +1071,20 @@ if (!empty($_POST['type'])) {
             $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
-                    if (in_array($record['id'], $users_functions)) $tmp = ' selected="selected"';
-                    else $tmp = "";
+                    if (in_array($record['id'], $users_functions)) {
+                        $tmp = ' selected="selected"';
+
+                        //
+                        array_push(
+                            $arrFunction,
+                            array(
+                                'title' => $record['title'],
+                                'id' => $record['id']
+                            )
+                        );
+                    } else {
+                        $tmp = "";
+                    }
                     $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role"'.$tmp.'>'.$record['title'].'</option>';
                 }
             }
@@ -1068,10 +1098,32 @@ if (!empty($_POST['type'])) {
             $managedBy = '<option value="0">'.$LANG['administrators_only'].'</option>';
             foreach ($rolesList as $fonction) {
                 if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
-                    if ($rowUser['isAdministratedByRole'] == $fonction['id']) $tmp = ' selected="selected"';
-                    else $tmp = "";
+                    if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
+                        $tmp = ' selected="selected"';
+
+                        //
+                        array_push(
+                            $arrMngBy,
+                            array(
+                                'title' => $fonction['title'],
+                                'id' => $fonction['id']
+                            )
+                        );
+                    } else {
+                        $tmp = "";
+                    }
                     $managedBy .= '<option value="'.$fonction['id'].'"'.$tmp.'>'.$LANG['managers_of'].' '.$fonction['title'].'</option>';
                 }
+            }
+
+            if (count($arrMngBy) === 0) {
+                array_push(
+                    $arrMngBy,
+                    array(
+                        'title' => $LANG['administrators_only'],
+                        'id' => "0"
+                    )
+                );
             }
 
             // get FOLDERS FORBIDDEN
@@ -1087,8 +1139,18 @@ if (!empty($_POST['type'])) {
                     }
                     if (in_array($t->id, $userForbidFolders)) {
                         $tmp = ' selected="selected"';
+
+                        //
+                        array_push(
+                            $arrFldForbidden,
+                            array(
+                                'title' => htmlspecialchars($t->title, ENT_COMPAT, "UTF-8"),
+                                'id' => $t->id
+                            )
+                        );
                     }
                     $forbiddenFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+
                     $prev_level = $t->nlevel;
                 }
             }
@@ -1106,8 +1168,18 @@ if (!empty($_POST['type'])) {
                     }
                     if (in_array($t->id, $userAllowFolders)) {
                         $tmp = ' selected="selected"';
+
+                        //
+                        array_push(
+                            $arrFldAllowed,
+                            array(
+                                'title' => htmlspecialchars($t->title, ENT_COMPAT, "UTF-8"),
+                                'id' => $t->id
+                            )
+                        );
                     }
                     $allowedFolders .= '<option value="'.$t->id.'"'.$tmp.'>'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
+
                     $prev_level = $t->nlevel;
                 }
             }
@@ -1127,7 +1199,17 @@ if (!empty($_POST['type'])) {
             $arrData['function'] = $functionsList;
             $arrData['managedby'] = $managedBy;
             $arrData['foldersForbid'] = $forbiddenFolders;
-            $arrData['foldersAllow'] = $allowedFolders;
+            $arrData['foldersAllow'] = $allowedFolders;//print_r($arrMngBy);
+            $arrData['share_function'] = json_encode($arrFunction, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['share_managedby'] = json_encode($arrMngBy, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['share_forbidden'] = json_encode($arrFldForbidden, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['share_allowed'] = json_encode($arrFldAllowed, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['gestionnaire'] = $rowUser['gestionnaire'];
+            $arrData['read_only'] = $rowUser['read_only'];
+            $arrData['can_create_root_folder'] = $rowUser['can_create_root_folder'];
+            $arrData['personal_folder'] = $rowUser['personal_folder'];
+            $arrData['can_manage_all_users'] = $rowUser['can_manage_all_users'];
+            $arrData['admin'] = $rowUser['admin'];
 
             $return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
             echo $return_values;
@@ -1289,11 +1371,311 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             break;
+
+        /**
+         * IS LOGIN AVAILABLE?
+         */
+        case "is_login_available":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            DB::queryfirstrow(
+                "SELECT * FROM ".prefix_table("users")."
+                WHERE login = %s",
+                mysqli_escape_string($link, htmlspecialchars_decode($_POST['login']))
+            );
+
+            echo '[ { "error" : "" , "exists" : "'.DB::count().'"} ]';
+
+            break;
+
+        /**
+         * GET USER FOLDER RIGHT
+         */
+        case "user_folders_rights":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+            $arrData = array();
+
+            //Build tree
+            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+            // get User info
+            $rowUser = DB::queryFirstRow(
+                "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $_POST['id']
+            );
+
+            // get rights
+            $functionsList = "";
+            $arrFolders = [];
+            $html = '<div style="padding:5px; margin-bottom:10px; height:40px;" class="ui-state-focus ui-corner-all">';
+            if (!empty($rowUser['avatar_thumb'])) {
+                $html .= '<div style="float:left; margin-right:30px;"><img src="includes/avatars/'.$rowUser['avatar_thumb'].'"></div>';
+            }
+            $html .= '<div style="float:left;font-size:20px; margin-top:8px; text-align:center;">'.$rowUser['name'].' '.$rowUser['lastname'].' ['.$rowUser['login'].']</div></div><table>';
+
+            $arrData['functions'] = array_filter(explode(';', $rowUser['fonction_id']));
+            $arrData['allowed_folders'] = array_filter(explode(';', $rowUser['groupes_visibles']));
+            $arrData['denied_folders'] = array_filter(explode(';', $rowUser['groupes_interdits']));
+
+            // refine folders based upon roles
+            $rows = DB::query(
+                "SELECT folder_id, type
+                FROM ".prefix_table("roles_values")."
+                WHERE role_id IN %ls
+                ORDER BY folder_id ASC",
+                $arrData['functions']
+            );
+            foreach ($rows as $record) {
+                $bFound = false;
+                $x = 0;
+                foreach($arrFolders as $fld) {
+                    if ($fld['id'] === $record['folder_id']) {
+                        // get the level of access on the folder
+                        $arrFolders[$x]['type'] = evaluate_folder_acces_level($record['type'], $arrFolders[$x]['type']);
+                        $bFound = true;
+                        break;
+                    }
+                    $x++;
+                }
+                if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
+                    array_push($arrFolders, array("id" => $record['folder_id'] , "type" => $record['type']));
+                }
+            }
+
+            $tree_desc = $tree->getDescendants();
+            foreach ($tree_desc as $t) {
+                foreach($arrFolders as $fld) {
+                    if ($fld['id'] === $t->id) {
+                        // get folder name
+                        $row = DB::queryFirstRow(
+                            "SELECT title, nlevel
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %i",
+                            $fld['id']
+                        );
+
+                        // manage indentation
+                        $ident = '';
+                        for ($y = 1; $y < $row['nlevel']; $y++) {
+                            $ident .= '<i class="fa fa-sm fa-caret-right"></i>&nbsp;';
+                        }
+
+                        // manage right icon
+                        if ($fld['type'] == "W") {
+                            $color = '#008000';
+                            $allowed = "W";
+                            $title = $LANG['write'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-edit fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-eraser fa-stack-1x"></i>
+                            </span>';
+                        } elseif ($fld['type'] == "ND") {
+                            $color = '#4E45F7';
+                            $allowed = "ND";
+                            $title = $LANG['no_delete'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-edit fa-stack-1x"></i>
+                            </span>';
+                        } elseif ($fld['type'] == "NE") {
+                            $color = '#4E45F7';
+                            $allowed = "NE";
+                            $title = $LANG['no_edit'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>
+                            <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-eraser fa-stack-1x"></i>
+                            </span>';
+                        } elseif ($fld['type'] == "NDNE") {
+                            $color = '#4E45F7';
+                            $allowed = "NDNE";
+                            $title = $LANG['no_edit_no_delete'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['no_edit_no_delete'].'" style="color:#4E45F7;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-indent fa-stack-1x"></i>
+                            </span>';
+                        } else {
+                            $color = '#FEBC11';
+                            $allowed = "R";
+                            $title = $LANG['read'];
+                            $label = '
+                            <span class="fa-stack" title="'.$LANG['read'].'" style="color:#ff9000;">
+                                <i class="fa fa-square-o fa-stack-2x"></i>
+                                <i class="fa fa-eye fa-stack-1x"></i>
+                            </span>';
+                        }
+
+                        $html .= '<tr><td>'.$ident.$row['title'].'</td><td>'.$label."</td></tr>";
+                        break;
+                    }
+                }
+            }
+
+            $html .= '</table><div style="margin-top:15px; padding:3px;" class="ui-widget-content ui-state-default ui-corner-all"><span class="fa fa-info"></span>&nbsp;'.$LANG['folders_not_visible_are_not_displayed'].'</div>';
+
+            $return_values = prepareExchangedData(
+                array(
+                    'html' => $html,
+                    'error' => '',
+                    'login' => $rowUser['login']
+                ),
+                "encode"
+            );
+            echo $return_values;
+            break;
+
+        /**
+         * GET LIST OF USERS
+         */
+        case "get_list_of_users_for_sharing":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            $list_users_from = '';
+            $list_users_to = '';
+
+            if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
+                $rows = DB::query(
+                    "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                    FROM ".prefix_table("users")."
+                    WHERE admin = %i AND isAdministratedByRole IN %ls",
+                    "0",
+                    array_filter($_SESSION['user_roles'])
+                );
+            } else {
+                $rows = DB::query(
+                    "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                    FROM ".prefix_table("users")."
+                    WHERE admin = %i",
+                    "0"
+                );
+            }
+
+            foreach ($rows as $record) {
+                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+            }
+
+            $return_values = prepareExchangedData(
+                array(
+                    'users_list_from' => $list_users_from,
+                    'users_list_to' => $list_users_to,
+                    'error' => ''
+                ),
+                "encode"
+            );
+            echo $return_values;
+
+            break;
+
+        /**
+         * UPDATE USERS RIGHTS BY SHARING
+         */
+        case "update_users_rights_sharing":
+            // Check KEY
+            if ($_POST['key'] != $_SESSION['key']) {
+                // error
+                exit();
+            }
+
+            // Check send values
+            if (empty($_POST['source_id']) || empty($_POST['destination_ids'])) {
+                // error
+                exit();
+            }
+
+            // manage other rights
+            $user_other_rights = explode(';', $_POST['user_otherrights']); //gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin
+
+            foreach (explode(';', $_POST['destination_ids']) as $dest_user_id) {
+                // update user
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'fonction_id' => $_POST['user_functions'],
+                        'isAdministratedByRole' => $_POST['user_managedby'],
+                        'groupes_visibles' => $_POST['user_fldallowed'],
+                        'groupes_interdits' => $_POST['user_fldforbid'],
+                        'gestionnaire' => $user_other_rights[0],
+                        'read_only' => $user_other_rights[1],
+                        'can_create_root_folder' => $user_other_rights[2],
+                        'personal_folder' => $user_other_rights[3],
+                        'can_manage_all_users' => $user_other_rights[4],
+                        'admin' => $user_other_rights[5],
+                       ),
+                    "id = %i",
+                    $dest_user_id
+                );
+            }
+
+/*
+            $list_users_from = $list_users_to = '';
+
+            $rows = DB::query(
+                "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
+                FROM ".prefix_table("users")."
+                WHERE admin = %i",
+                "0"
+            );
+            foreach ($rows as $record) {
+                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
+            }
+
+            $return_values = prepareExchangedData(
+                array(
+                    'users_list_from' => $list_users_from,
+                    'users_list_to' => $list_users_to,
+                    'error' => ''
+                ),
+                "encode"
+            );
+            echo $return_values;
+*/
+            break;
     }
 }
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 elseif (!empty($_POST['newValue'])) {
     $value = explode('_', $_POST['id']);
+    if ($value[0] === "userlanguage") {
+        $value[0]  = "user_language";
+        $_POST['newValue'] = strtolower($_POST['newValue']);
+    }
     DB::update(
         prefix_table("users"),
         array(
@@ -1307,13 +1689,22 @@ elseif (!empty($_POST['newValue'])) {
     // refresh SESSION if requested
     if ($value[0] === "treeloadstrategy") {
         $_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
-    }
+
+    } else if ($value[0] === "usertimezone") {
     // special case for usertimezone where session needs to be updated
-    if ($value[0] === "usertimezone") {
         $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
-    }
+
+    } else if ($value[0] === "userlanguage") {
+    // special case for user_language where session needs to be updated
+        $_SESSION['user_settings']['user_language'] = $_POST['newValue'];
+        $_SESSION['user_language'] = $_POST['newValue'];
+
+    } else if ($value[0] === "agses-usercardid") {
+    // special case for agsescardid where session needs to be updated
+        $_SESSION['user_settings']['agses-usercardid'] = $_POST['newValue'];
+
+    } else if ($value[0] === "email") {
     // store email change in session
-    if ($value[0] === "email") {
         $_SESSION['user_email'] = $_POST['newValue'];
     }
     // Display info
@@ -1335,5 +1726,37 @@ elseif (isset($_POST['newadmin'])) {
         echo "Oui";
     } else {
         echo "Non";
+    }
+}
+
+function evaluate_folder_acces_level($new_val, $existing_val) {
+    $levels = array(
+        "W" => 4,
+        "ND" => 3,
+        "NE" => 3,
+        "NDNE" => 2,
+        "R" => 1
+    );
+
+    if (empty($existing_val)) {
+        $current_level_points = 0;
+    } else {
+        $current_level_points = $levels[$existing_val];
+    }
+    $new_level_points = $levels[$new_val];
+
+    // check if new is > to current one (always keep the highest level)
+    if (
+        ($new_val === "ND" && $existing_val === "NE")
+        ||
+        ($new_val === "NE" && $existing_val === "ND")
+    ) {
+        return "NDNE";
+    } else {
+        if ($current_level_points > $new_level_points) {
+            return  $existing_val;
+        } else {
+            return  $new_val;
+        }
     }
 }

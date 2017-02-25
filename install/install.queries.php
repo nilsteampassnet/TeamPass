@@ -2,8 +2,8 @@
 /**
  * @file          install.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -11,7 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 header("Content-type: text/html; charset=utf-8");
@@ -69,7 +69,7 @@ if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "step_2":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
@@ -132,7 +132,7 @@ if (isset($_POST['type'])) {
 
         case "step_3":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -179,7 +179,7 @@ if (isset($_POST['type'])) {
 
         case "step_4":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -225,7 +225,7 @@ if (isset($_POST['type'])) {
 
         case "step_5":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -290,9 +290,11 @@ if (isset($_POST['type'])) {
                     } else if ($task == "misc") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."misc` (
+                            `id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
-                            `valeur` varchar(100) NOT NULL
+                            `valeur` varchar(500) NOT NULL,
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
 
@@ -371,7 +373,9 @@ global \$SETTINGS;
                             array('admin','custom_logo',''),
                             array('admin','custom_login_text',''),
                             array('admin','default_language','english'),
-                            array('admin','send_stats', $var['send_stats']),
+                            array('admin','send_stats', '0'),
+                            array('admin','send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),
+                            array('admin','send_stats_time', time()-2592000),
                             array('admin','get_tp_info', '1'),
                             array('admin','send_mail_on_user_login', '0'),
                             array('cron', 'sending_emails', '0'),
@@ -418,7 +422,12 @@ global \$SETTINGS;
                             array('admin','bck_script_filename', 'bck_cpassman'),
                             array('admin','syslog_enable','0'),
                             array('admin','syslog_host','localhost'),
-                            array('admin','syslog_port','514')
+                            array('admin','syslog_port','514'),
+                            array('admin','manager_move_item','0'),
+                            array('admin','create_item_without_password','0'),
+                            array('admin','otv_is_enabled','0'),
+                            array('admin','agses_authentication_enabled','0'),
+                            array('admin','item_extra_fields','0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -510,19 +519,23 @@ global \$SETTINGS;
                             `can_create_root_folder` tinyint(1) NOT null DEFAULT '0',
                             `read_only` tinyint(1) NOT null DEFAULT '0',
                             `timestamp` varchar(30) NOT null DEFAULT '0',
-                            `user_language` varchar(30) NOT null DEFAULT 'english',
+                            `user_language` varchar(50) NOT null DEFAULT '0',
                             `name` varchar(100) NULL,
                             `lastname` varchar(100) NULL,
                             `session_end` varchar(30) NULL,
                             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
                             `psk` varchar(400) NULL,
                             `ga` varchar(50) NULL,
+                            `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none',
                             `avatar` varchar(255) NULL,
                             `avatar_thumb` varchar(255) NULL,
                             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
                             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
                             `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
+                            `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
+                            `encrypted_psk` text NULL,
+                            `user_ip` varchar(60) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -707,6 +720,7 @@ global \$SETTINGS;
                             `description` text NULL,
                             `type` varchar(50) NULL default '',
                             `order` int(12) NOT NULL default '0',
+                            `encrypted_data` tinyint(1) NOT NULL default '1',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -746,7 +760,7 @@ global \$SETTINGS;
                             `timestamp` text NOT NULL,
                             `code` varchar(100) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            `originator` tinyint(12) NOT NULL,
+                            `originator` int(12) NOT NULL,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -762,6 +776,7 @@ global \$SETTINGS;
                             `author_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
                             `comment` text NOT NULL,
+                            `suggestion_type` varchar(10) NOT NULL default 'new',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -773,7 +788,11 @@ global \$SETTINGS;
                             `login` varchar(100) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
-                            `path` varchar(255) NOT NULL
+                            `path` varchar(500) NOT NULL,
+                            `email` varchar(500) NOT NULL default 'none',
+                            `url` varchar(500) NOT NULL default 'none',
+                            `kbs` varchar(500) NOT NULL default 'none',
+                            `tags` varchar(500) NOT NULL default 'none'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "tokens") {
@@ -785,6 +804,24 @@ global \$SETTINGS;
                             `reason` varchar(255) NOT NULL,
                             `creation_timestamp` varchar(50) NOT NULL,
                             `end_timestamp` varchar(50) NOT NULL,
+                            PRIMARY KEY (`id`)
+                            ) CHARSET=utf8;"
+                        );
+                    } else if ($task == "items_change") {
+                        $mysqli_result = mysqli_query($dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_change` (
+                            `id` int(12) NOT NULL AUTO_INCREMENT,
+                            `item_id` int(12) NOT NULL,
+                            `label` varchar(255) NOT NULL DEFAULT 'none',
+                            `pw` text NOT NULL,
+                            `login` varchar(255) NOT NULL DEFAULT 'none',
+                            `email` varchar(255) NOT NULL DEFAULT 'none',
+                            `url` varchar(255) NOT NULL DEFAULT 'none',
+                            `description` text NOT NULL,
+                            `comment` text NOT NULL,
+                            `folder_id` tinyint(12) NOT NULL,
+                            `user_id` tinyint(12) NOT NULL,
+                            `timestamp` varchar(50) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -828,8 +865,10 @@ global \$SETTINGS;
 
         case "step_6":
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
+            $data_sent = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
+            $data_sent = json_decode($data_sent, true);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
             $db = json_decode($json, true);
@@ -915,7 +954,6 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                         $fh,
                         utf8_encode(
                             "<?php
-@define('SALT', '".$var['encrypt_key']."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 @define('AKEY', '');
 @define('IKEY', '');
@@ -924,25 +962,6 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
 ?>")
                     );
                     fclose($fh);
-
-                    // update CSRFP TOKEN
-                    $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
-                    $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
-                    if (file_exists($csrfp_file)) {
-                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
-                            break;
-                        } else {
-                            $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
-                        }
-                    }
-                    unlink($csrfp_file);    // delete existing csrfp.config file
-                    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
-                    $data = file_get_contents($csrfp_file);
-                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
-                    $jsUrl = $_SESSION['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js';
-                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
-                    file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
                     // finalize
                     if ($result === false) {
@@ -968,6 +987,48 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
+                } else if ($task == "teampass-seckey") {
+                    // create teampass-seckey.txt
+                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/File.php';
+                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+                    $key = \Defuse\Crypto\Key::createNewRandomKey();
+                    $new_salt = $key->saveToAsciiSafeString();
+
+                    file_put_contents(
+                        $securePath."/teampass-seckey.txt",
+                        $new_salt
+                    );
+
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                } else if ($task == "csrfp-token") {
+                    // update CSRFP TOKEN
+                    $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
+                    $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
+                    if (file_exists($csrfp_file)) {
+                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                            break;
+                        } else {
+                            $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
+                        }
+                    }
+                    unlink($csrfp_file);    // delete existing csrfp.config file
+                    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+                    $data = file_get_contents($csrfp_file);
+                    $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
+                    $jsUrl = $data_sent['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js';
+                    $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
+                    file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
+
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 }
             }
 
@@ -979,7 +1040,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
         case "step_7":
 
             //decrypt
-            require_once '../includes/libraries/Encryption/Crypt/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             // launch

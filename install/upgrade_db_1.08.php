@@ -2,8 +2,8 @@
 /**
  * @file          upgrade_db_1.08.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 global $k;
@@ -65,23 +65,23 @@ changeDB();
 function changeDB()
 {
     global $k, $spanish_vals, $french_vals, $english_vals, $dbTmp;
-    $res = mysqli_query($dbTmp, "SELECT * FROM ".$_SESSION['tbl_prefix']."log_items") or die(mysqli_error($dbTmp));
+    $res = mysqli_query($dbTmp, "SELECT * FROM ".$_SESSION['pre']."log_items") or die(mysqli_error($dbTmp));
     while ($data = mysqli_fetch_array($res)) {
         $action = "";
         //ENGLISH
         foreach ($english_vals as $lang) {
             if ($lang[1] == $data['action']) {
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET action = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']);
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET action = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']);
                 $found = true;
                 $action = $lang[0];
             }
             if ($lang[1] == $data['raison'] && !empty($data['raison'])) {
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
                 $found = true;
             } else
             if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
-                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['tbl_prefix']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }
@@ -90,17 +90,17 @@ function changeDB()
         $action = "";
         foreach ($french_vals as $lang) {
             if ($lang[1] == $data['action']) {
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET action = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']);
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET action = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']);
                 $found = true;
                 $action = $lang[0];
             }
             if ($lang[1] == $data['raison'] && !empty($data['raison'])) {
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
                 $found = true;
             } else
             if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
-                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['tbl_prefix']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }
@@ -109,17 +109,17 @@ function changeDB()
         $action = "";
         foreach ($spanish_vals as $lang) {
             if ($lang[1] == $data['action']) {
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET action = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']);
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET action = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']);
                 $found = true;
                 $action = $lang[0];
             }
             if ($lang[1] == $data['raison'] && !empty($data['raison'])) {
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
                 $found = true;
             } else
             if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
-                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['tbl_prefix']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['tbl_prefix']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }

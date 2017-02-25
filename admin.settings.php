@@ -3,8 +3,8 @@
  *
  * @file          admin.settings.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -405,7 +405,7 @@ echo '
                 <div class="toggle toggle-modern" id="enable_pf_feature" data-toggle-on="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_pf_feature_input" name="enable_pf_feature_input" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '1' : '0', '" />
             </td></tr>';
 // enable Use MD5 passowrd as Personal SALTKEY
-/* DISABLED FOR 2.1.26
+/* DISABLED FOR 2.1.27
 echo '
         <tr><td>
             <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
@@ -472,21 +472,6 @@ echo '
                             <div class="toggle toggle-modern" id="enable_suggestion" data-toggle-on="', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_suggestion_input" name="enable_suggestion_input" value="', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '1' : '0', '" />
                     </td></tr>';
 
-echo '<tr><td colspan="3"><hr /></td></tr>';
-// Enable send_stats
-echo '
-                <tr style="margin-bottom:3px">
-                    <td>
-                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
-                        <label>' .
-$LANG['settings_send_stats'].'
-                            &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_send_stats_tip']), ENT_QUOTES).'"></i>
-                        </label>
-                    </td>
-                    <td>
-                        <div class="toggle toggle-modern" id="send_stats" data-toggle-on="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="send_stats_input" name="send_stats_input" value="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1 ? '1' : '0', '" />
-                    </td>
-                </tr>';
 // Enable GET TP Information
 echo '
                     <tr><td>
@@ -575,19 +560,17 @@ echo '
 // Change main SALT key
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'div_change_salt_key\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="changeMainSaltKey(\'starting\')" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
                     <label>'.$LANG['admin_action_change_salt_key'].'</label>
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_change_salt_key_tip']), ENT_QUOTES).'"></i></span>
-                    <span id="div_change_salt_key" style="margin-left:10px;display:none;">
-                        <input type="text" id="new_salt_key" size="50" value="'.SALT.'" /><span id="change_salt_key_image"></span>&nbsp;
-                        <span class="fa fa-asterisk" style="cursor:pointer;display:none;" onclick="changeMainSaltKey(\'starting\')" id="change_salt_key_but"></span>
                         &nbsp;<span id="changeMainSaltKey_message"></span>
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
                 </div>';
+/*
 // Correct passwords prefix
 echo '
                 <div style="margin-bottom:3px">
@@ -599,6 +582,7 @@ echo '
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_pw_prefix_correct_tip']), ENT_QUOTES).'"></i></span>
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
+*/
 // Encrypt / decrypt attachments
 echo '
                 <div style="margin-bottom:3px">
@@ -632,6 +616,14 @@ echo '
                     </td><td>
                     <input type="text" size="5" id="delay_item_edition" name="delay_item_edition" value="', isset($_SESSION['settings']['delay_item_edition']) ? $_SESSION['settings']['delay_item_edition'] : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                 </td></tr>';
+// OTV - otv_is_enabled
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['otv_is_enabled'].'</label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="otv_is_enabled" data-toggle-on="', isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="otv_is_enabled_input" name="otv_is_enabled_input" value="', isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1 ? '1' : '0', '" />
+                </td></tr>';
 // Expired time for OTV - otv_expiration_period
 echo '
                 <tr><td>
@@ -649,6 +641,15 @@ echo '
                     <label>'.$LANG['settings_manager_edit'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="manager_edit" data-toggle-on="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="manager_edit_input" name="manager_edit_input" value="', isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+
+// Managers can move items they are allowed to see
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['settings_manager_move_item'].'</label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="manager_move_item" data-toggle-on="', isset($_SESSION['settings']['manager_move_item']) && $_SESSION['settings']['manager_move_item'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="manager_move_item_input" name="manager_move_item_input" value="', isset($_SESSION['settings']['manager_move_item']) && $_SESSION['settings']['manager_move_item'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
 echo '<tr><td colspan="3"><hr /></td></tr>';
@@ -708,6 +709,17 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="subfolder_rights_as_parent" data-toggle-on="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="subfolder_rights_as_parent_input" name="subfolder_rights_as_parent_input" value="', isset($_SESSION['settings']['subfolder_rights_as_parent']) && $_SESSION['settings']['subfolder_rights_as_parent'] == 1 ? '1' : '0', '" />
                 </td></tr>';
+// Enable create_item_without_password
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>
+                        '.$LANG['create_item_without_password'].'
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="create_item_without_password" data-toggle-on="', isset($_SESSION['settings']['create_item_without_password']) && $_SESSION['settings']['create_item_without_password'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="create_item_without_password_input" name="create_item_without_password_input" value="', isset($_SESSION['settings']['create_item_without_password']) && $_SESSION['settings']['create_item_without_password'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+/*
 // Enable extra fields for each Item
 echo '
                 <tr><td>
@@ -719,7 +731,7 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '1' : '0', '" />
                 </td></tr>';
-
+*/
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // enable FAVOURITES
 echo '
@@ -744,6 +756,16 @@ echo '
                     <label>'.$LANG['setting_can_create_root_folder'].'</label>
                     </td><td>
                         <div class="toggle toggle-modern" id="can_create_root_folder" data-toggle-on="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="can_create_root_folder_input" name="can_create_root_folder_input" value="', isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+// enable enable_massive_move_delete
+echo '
+                <tr><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>'.$LANG['enable_massive_move_delete'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['enable_massive_move_delete_tip']), ENT_QUOTES).'"></i></span>
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="enable_massive_move_delete" data-toggle-on="', isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_massive_move_delete_input" name="enable_massive_move_delete_input" value="', isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
 echo '<tr><td colspan="3"><hr /></td></tr>';
@@ -1106,19 +1128,19 @@ if (isset($ldap_type) && $ldap_type == 'posix-search') {
                 echo '
                 <tr>
                     <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_bind_dn_tip']), ENT_QUOTES).'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                    <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="uid=teampass,ou=people,dc=mydomain,dc=local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND PASSWD for search
                 echo '
                 <tr>
                     <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_bind_passwd_tip']), ENT_QUOTES).'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                    <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="123password456" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BASE for search
                 echo '
                 <tr>
                     <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_search_base_tip']), ENT_QUOTES).'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                    <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="ou=people,dc=octopoos,dc=local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
 }
 
@@ -1127,6 +1149,13 @@ echo '
                     <tr>
                         <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_domain_controler_tip']), ENT_QUOTES).'"></i></label></td>
                         <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                    </tr>';
+
+// AD Port
+ echo '
+                    <tr>
+                        <td><label for="ldap_port">'.$LANG['settings_ldap_port'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_port_tip']), ENT_QUOTES).'"></i></label></td>
+                        <td><input type="text" size="50" id="ldap_port" name="ldap_port" class="text ui-widget-content" title="389" value="', isset($_SESSION['settings']['ldap_port']) ? $_SESSION['settings']['ldap_port'] : '389', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
 
 // AD SSL

@@ -1,8 +1,8 @@
 /**
  * @file          functions.js
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -64,7 +64,6 @@ function IncreaseSessionTime(message_end, message_wait){
 function countdown()
 {
     var DayTill
-    //var theDay =  document.getElementById('temps_restant').value;
     var theDay =  $('#temps_restant').val();
     var today = new Date(); //Create an Date Object that contains today's date.
     var second = Math.floor(theDay - (today.getTime()/1000));
@@ -109,7 +108,7 @@ function OpenDialog(id){
 *   Toggle a DIV
 **/
 function toggleDiv(id){
-    $('#'+id).toggle();
+    $('#'+id).slideToggle("slow");
     //specific case to not show upgrade alert
     if(id == "div_maintenance"){
         $.post(
@@ -199,6 +198,15 @@ function SendMail(cat, content, key, message){
 function IsValidEmail(email){
     var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
     return filter.test(email);
+}
+
+/**
+*   Checks if URL has expected format
+**/
+function validateURL(textval) {
+    //var urlregex = new RegExp("^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
+    var urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+    return urlregex.test(textval);
 }
 
 

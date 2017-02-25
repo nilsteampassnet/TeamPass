@@ -2,8 +2,8 @@
 /**
  * @file          core.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -76,7 +76,7 @@ foreach ($rows as $record) {
 }
 
 //pw complexity levels
-if (isset($_SESSION['user_language'])) {
+if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $_SESSION['settings']['pwComplexity'] = array(
         0=>array(0,$LANG['complex_level0']),
@@ -106,13 +106,9 @@ if (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_setting
 
 //Load Languages stuff
 if (empty($languagesDropmenu)) {
-    $languagesDropmenu = "";
     $languagesList = array();
     $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
     foreach ($rows as $record) {
-        $languagesDropmenu .= '<li><a href="#"><img class="flag" src="includes/images/flags/'.
-            $record['flag'].'" alt="'.$record['label'].'" title="'.
-            $record['label'].'" onclick="ChangeLanguage(\''.$record['name'].'\')" /></a></li>';
         array_push($languagesList, $record['name']);
         if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
             $_SESSION['user_language_flag'] = $record['flag'];
@@ -273,8 +269,9 @@ if (
 ) {
     // do a check to make sure that the certificate is not self signed.
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
-    $server_cert=openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
-    $cert_name=$server_cert['name'];
+    $server_cert = openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
+    $cert_name = $server_cert['name'];
+    $cert_issuer = "";
     foreach ($server_cert['issuer'] as $key => $value) {
         $cert_issuer .= "/$key=$value";
     }
@@ -346,14 +343,16 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         );
 
         // user type
-        if ($_SESSION['user_admin'] == 1) {
-            $_SESSION['user_privilege'] = $LANG['god'];
-        } elseif ($_SESSION['user_manager'] == 1) {
-            $_SESSION['user_privilege'] = $LANG['gestionnaire'];
-        } elseif ($_SESSION['user_read_only'] == 1) {
-            $_SESSION['user_privilege'] = $LANG['read_only_account'];
-        } else {
-            $_SESSION['user_privilege'] = $LANG['user'];
+        if (isset($LANG)) {
+            if ($_SESSION['user_admin'] == 1) {
+                $_SESSION['user_privilege'] = $LANG['god'];
+            } elseif ($_SESSION['user_manager'] == 1) {
+                $_SESSION['user_privilege'] = $LANG['gestionnaire'];
+            } elseif ($_SESSION['user_read_only'] == 1) {
+                $_SESSION['user_privilege'] = $LANG['read_only_account'];
+            } else {
+                $_SESSION['user_privilege'] = $LANG['user'];
+            }
         }
     }
 }
@@ -411,7 +410,8 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
                     $arrFields,
                     array(
                         $field['id'],
-                        addslashes($field['title'])
+                        addslashes($field['title']),
+                        $field['encrypted_data']
                     )
                 );
             }
@@ -426,21 +426,6 @@ if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['
                 $arrFields
             )
         );
-    }
-}
-
-/*
-* CHECK IF SENDING ANONYMOUS STATS
-*/
-if (
-    isset($_SESSION['settings']['send_stats'])
-    && $_SESSION['settings']['send_stats'] == 1
-    && isset($_SESSION['settings']['send_stats_time'])
-    && !isset($_SESSION['temporary']['send_stats_done'])
-) {
-    if (($_SESSION['settings']['send_stats_time'] + $k['one_month_seconds']) <= time()) {
-        teampassStats();
-        $_SESSION['temporary']['send_stats_done'] = true;   //permits to test only once by session
     }
 }
 

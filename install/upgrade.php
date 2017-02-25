@@ -1,5 +1,5 @@
 <?php
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;
@@ -89,6 +89,14 @@ if (
                 $("#step").val($(this).attr("target_id"));
                 document.install.submit();
             });
+
+            $("#dump_done").click(function(event) {
+                if($("#dump_done").is(':checked')) {
+                    $("#but_next").prop("disabled", false);
+                } else {
+                    $("#but_next").prop("disabled", true);
+                }
+            });
         });
 
         function aes_encrypt(text)
@@ -113,12 +121,12 @@ if (
                         maintenance = 0;
                     }
                     var data = "type="+step+
-                    "&db_host="+document.getElementById("db_host").value+
+                    /*"&db_host="+document.getElementById("db_host").value+
                     "&db_login="+escape(document.getElementById("db_login").value)+
                     "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
                     "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
                     "&db_port="+(document.getElementById("db_port").value)+
-                    "&db_bdd="+document.getElementById("db_bdd").value+
+                    "&db_bdd="+document.getElementById("db_bdd").value+*/
                     "&no_maintenance_mode="+maintenance;
                 } else
                 if (step == "step3") {
@@ -191,7 +199,8 @@ if (
                     type        : type_parameter,
                     start       : start_at,
                     total       : start_at,
-                    nb          : noitems_by_loop
+                    nb          : noitems_by_loop,
+                    session_salt: $("#session_salt").val()
                 },
                 function(data) {
                     // work not finished
@@ -225,7 +234,7 @@ if (
             if ($("#change_pw_encryption_start").val() != "") {
                 start = $("#change_pw_encryption_start").val();
             } else {
-                $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"../includes/images/76.gif\" />");
+                $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"images/76.gif\" />");
             }
             request = $.post("upgrade_ajax.php",
                 {
@@ -261,6 +270,25 @@ if (
             );
 
         }
+
+        function launch_database_dump() {
+            $("#dump_result").html("<img src=\"images/76.gif\" />");
+            request = $.post("upgrade_ajax.php",
+                {
+                    type      : "perform_database_dump"
+                },
+                function(data) {
+                    var obj = $.parseJSON(data);
+                    if (obj[0].error !== "") {
+                        // ERROR
+                        $("#dump_result").html(obj[0].error);
+                    } else {
+                        // DONE
+                        $("#dump_result").html("Dump is successfull. File stored in folder " + obj[0].file);
+                    }
+                }
+            );
+        }
         </script>
     </head>
     <body>
@@ -268,28 +296,24 @@ if (
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 
-if (isset($_POST['db_host'])) {
-    $_SESSION['db_host'] = $_POST['db_host'];
-    $_SESSION['db_bdd'] = $_POST['db_bdd'];
-    $_SESSION['db_login'] = $_POST['db_login'];
-    $_SESSION['db_pw'] = $_POST['db_pw'];
-    $_SESSION['db_port'] = $_POST['db_port'];
-    $_SESSION['tbl_prefix'] = $_POST['tbl_prefix'];
-    //$_SESSION['session_start'] = $_POST['session_start'];
-    if (isset($_POST['send_stats'])) {
-        $_SESSION['send_stats'] = $_POST['send_stats'];
-    } else {
-        $_SESSION['send_stats'] = "";
-    }
-}
+
 if (isset($_POST['root_url'])) {
     $_SESSION['fullurl'] = $_POST['root_url'];
+}
+
+
+//define root path
+$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
+if( isset($_SERVER['HTTPS'] ) ) {
+    $protocol = 'https://';
+} else {
+    $protocol = 'http://';
 }
 
 // LOADER
 echo '
     <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader">
-        <img src="../includes/images/76.gif" />
+        <img src="images/76.gif" />
     </div>';
 
 // HEADER
@@ -300,7 +324,7 @@ echo '
         <div id="content">
             <div id="center" class="ui-corner-bottom">
                 <form name="install" method="post" action="">';
-                
+
 //HIDDEN THINGS
 echo '
                     <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
@@ -312,34 +336,26 @@ echo '
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE O
     echo '
-                     <h2>This page will help you to upgrade the TeamPass\'s database</h2>
+                     <h2>Teampass upgrade</h2>
 
-                     Before starting, be sure to:<br />
-                     - upload the complete package on the server and overwrite existing files,<br />
-                     - have the database connection informations,<br />
-                     - get some CHMOD rights on the server.<br />
-                     <br />
-                     <div style="font-weight:bold; font-size:14px;color:#C60000;"><img src="../includes/images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING</div>
-                     <div class="">
-                         <h4>TeamPass is distributed under GNU AFFERO GPL licence.</h4>';
-                        // Display the license file
-                        $Fnm = "../license.txt";
-                        if (file_exists($Fnm)) {
-                            $tab = file($Fnm);
-                            echo '
-                            <div style="float:left;width:100%;height:250px;overflow:auto;">
-                                <div style="float:left;font-style:italic;">';
-                                $show = false;
-                                $cnt = 0;
-                                while (list($cle,$val) = each($tab)) {
-                                    echo $val."<br />";
-                                }
-                                echo '
-                                </div>
-                            </div>';
-                        }
-                    echo '
+                     Before starting, be sure to:<ul>
+                     <li>upload the complete package on the server and overwrite existing files,</li>
+                     <li>have the database connection informations,</li>
+                     <li>get some CHMOD rights on the server.</li>
+                     </ul>
+
+                     <div style="font-weight:bold; color:#C60000; margin-bottom:10px;">
+                        <img src="images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
                      </div>
+
+                     <!--
+                     <div style="width:550px; margin-bottom:10px; float:left;">
+                        <label for="dump_done" style="width:350px;">&nbsp;A database dump has been performed</label><input type="checkbox" id="dump_done" name="dump_done" style="">
+                     </div>
+                     -->
+
+                     <br />
+                     <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
                      &nbsp;
                      ';
 
@@ -347,13 +363,6 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     (isset($_POST['step']) && $_POST['step'] == 1)
     || (isset($_GET['step']) && $_GET['step'] == 1)
 ) {
-//define root path
-    $abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
-    if( isset($_SERVER['HTTPS'] ) ) {
-        $protocol = 'https://';
-    } else {
-        $protocol = 'http://';
-    }
     //ETAPE 1
     echo '
                      <h3>Step 1 - Check server</h3>
@@ -388,13 +397,32 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE 2
     echo '
                      <h3>Step 2</h3>
-                     <fieldset><legend>DataBase Informations</legend>
-                     <label for="db_host">Host :</label><input type="text" id="db_host" name="db_host" class="step" value="'.$_SESSION['server'].'" /><br />
-                     <label for="db_db">DataBase name :</label><input type="text" id="db_bdd" name="db_bdd" class="step" value="'.$_SESSION['database'].'" /><br />
-                     <label for="db_login">Login :</label><input type="text" id="db_login" name="db_login" class="step" value="'.$_SESSION['user'].'" /><br />
-                     <label for="db_pw">Password :</label><input type="text" id="db_pw" name="db_pw" class="step" value="'.$_SESSION['pass'].'" /><br />
-                     <label for="db_port">Port :</label><input type="text" id="db_port" name="db_port" class="step" value="',isset($_SESSION['port']) ? $_SESSION['port'] : "3306",'" /><br />
-                     <label for="tbl_prefix">Table prefix :</label><input type="text" id="tbl_prefix" name="tbl_prefix" class="step" value="'.$_SESSION['pre'].'" />
+                     <fieldset><legend>DataBase Informations</legend>';
+
+                     // check if all database  info are available
+                     if (
+                        isset($_SESSION['server']) && !empty($_SESSION['server'])
+                        && isset($_SESSION['database']) && !empty($_SESSION['database'])
+                        && isset($_SESSION['user']) && !empty($_SESSION['user'])
+                        && isset($_SESSION['pass'])
+                        && isset($_SESSION['port']) && !empty($_SESSION['port'])
+                        && isset($_SESSION['pre'])
+                    ) {
+                        echo '
+                        <div style="">
+                        The database information has been retreived from the settings file.<br>
+                        If you need to change them, please edit file `/includes/config/settings.php` and relaunch the upgrade process.
+                        </div>';
+                     } else {
+                        echo '
+                        <div style="">
+                        The database information has not been retreived from the settings file.<br>
+                        You need to adapt the file `/includes/config/settings.php` and relaunch the upgrade process.
+                        </div>';
+                     }
+
+                     echo '
+                     <a href="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/install/upgrade.php">Restart upgrade process</a>
                      </fieldset>
 
                      <fieldset><legend>Maintenance Mode</legend>
@@ -405,11 +433,24 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      However, some administrators may prefer to warn the users in another way. Nevertheless, keep in mind that the update process may fail or even be corrupted due to parallel queries.</i>
                      </fieldset>
 
+                     <!--
                      <fieldset><legend>Anonymous statistics</legend>
                      <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
                      <i>Please consider sending your statistics as a way to contribute to futur improvements of TeamPass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the next informations : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
                      This option can be enabled or disabled through the administration panel.</i>
                      </fieldset>
+                     -->
+
+                     <div id="dump">
+                     <fieldset><legend>Database dump</legend>
+                     <i>If you have NOT performed a dump of your database, please considere to create one now.</i>
+                     <br>
+                     <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
+                     <br><span id="dump_result" style="margin-top:4px;"></span>
+                     </fieldset>
+                     </div>
+
+
 
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
@@ -478,13 +519,13 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
         echo '
         <h3>IMPORTANT: Since version 2.1.13, saltkey is stored in an independent file.</h3>
         <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
-            <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
+            <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
         </label><input type="text" id="sk_path" name="sk_path" value="'.$abs_path.'/includes" size="75" /><br />
         ';
     } else {
         echo '<br /><br />
         <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
-            <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
+            <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
         </label><input type="text" id="sk_path" name="sk_path" value="'.substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path'])-7).'" size="75" /><br />
         ';
     }

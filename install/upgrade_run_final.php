@@ -2,8 +2,8 @@
 /**
  * @file          upgrade_run_final.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -15,7 +15,7 @@
 /*
 ** Is always performed at the end of the update process
 */
-require_once('../sources/sessions.php');
+require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
@@ -37,96 +37,100 @@ require_once '../sources/main.functions.php';
 require_once '../sources/SplClassLoader.php';
 
 $finish = 0;
-$next = "";	// init on 1st task to be done
+$next = ""; // init on 1st task to be done
 
 //Update CACHE table -> this will be the last task during update
 if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 
-	//Load Tree
+    //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
-	$dbTmp = mysqli_connect(
-		$_SESSION['db_host'],
-		$_SESSION['db_login'],
-		$_SESSION['db_pw'],
-		$_SESSION['db_bdd'],
-		$_SESSION['db_port']
-	);
 
-	// truncate table
-	mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['tbl_prefix']."cache");
+    $dbTmp = mysqli_connect(
+        $_SESSION['server'],
+        $_SESSION['user'],
+        $_SESSION['pass'],
+        $_SESSION['database'],
+        $_SESSION['port']
+    );
 
-	// reload table
-	$rows = mysqli_query($dbTmp,
-		"SELECT *
-		FROM ".$_SESSION['tbl_prefix']."items as i
-		INNER JOIN ".$_SESSION['tbl_prefix']."log_items as l ON (l.id_item = i.id)
-		AND l.action = 'at_creation'
-		AND i.inactif = 0"
-	);
-	foreach ($rows as $record) {
-		// Get all TAGS
-		$tags = "";
-		$itemTags = mysqli_query($dbTmp,
-			"SELECT tag FROM ".$_SESSION['tbl_prefix']."tags WHERE item_id=".intval($record['id'])
-		);
-		$itemTags = mysqli_fetch_array($itemTags);
-		foreach ($itemTags as $itemTag) {
-			if (!empty($itemTag['tag'])) {
-				$tags .= $itemTag['tag']." ";
-			}
-		}
-		// Get renewal period
-		$resNT = mysqli_query(
-			$dbTmp,
-			"SELECT renewal_period FROM ".$_SESSION['tbl_prefix']."nested_tree WHERE id=".intval($record['id_tree'])
-		);
-		$resNT = mysqli_fetch_array($resNT);
+    // truncate table
+    mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['pre']."cache");
 
-		// form id_tree to full foldername
-		$folder = "";
-		$arbo = $tree->getPath($record['id_tree'], true);
-		foreach ($arbo as $elem) {
-			if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
-				$elem->title = $_SESSION['login'];
-			}
-			if (empty($folder)) {
-				$folder = stripslashes($elem->title);
-			} else {
-				$folder .= " » ".stripslashes($elem->title);
-			}
-		}
+    // reload table
+    $rows = mysqli_query($dbTmp,
+        "SELECT *
+        FROM ".$_SESSION['pre']."items as i
+        INNER JOIN ".$_SESSION['pre']."log_items as l ON (l.id_item = i.id)
+        AND l.action = 'at_creation'
+        AND i.inactif = 0"
+    );
+    foreach ($rows as $record) {
+        // Get all TAGS
+        $tags = "";
+        $itemTags = mysqli_query($dbTmp,
+            "SELECT tag FROM ".$_SESSION['pre']."tags WHERE item_id=".intval($record['id'])
+        );
+        $itemTags = mysqli_fetch_array($itemTags);
+        foreach ($itemTags as $itemTag) {
+            if (!empty($itemTag['tag'])) {
+                $tags .= $itemTag['tag']." ";
+            }
+        }
+        // Get renewal period
+        $resNT = mysqli_query(
+            $dbTmp,
+            "SELECT renewal_period FROM ".$_SESSION['pre']."nested_tree WHERE id=".intval($record['id_tree'])
+        );
+        $resNT = mysqli_fetch_array($resNT);
 
-		// temp data
-		if (!isset($record['login'])) $record['login'] = "";
-		if (!isset($resNT['renewal_period'])) $resNT['renewal_period'] = "0";
+        // form id_tree to full foldername
+        $folder = "";
+        $arbo = $tree->getPath($record['id_tree'], true);
+        foreach ($arbo as $elem) {
+            if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+                $elem->title = $_SESSION['login'];
+            }
+            if (empty($folder)) {
+                $folder = stripslashes($elem->title);
+            } else {
+                $folder .= " » ".stripslashes($elem->title);
+            }
+        }
 
-		// store data
-		$res = mysqli_query($dbTmp,
-			"INSERT INTO `".$_SESSION['tbl_prefix']."cache`
-			(`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`, `renewal_period`, `timestamp`) VALUES (
-			'".$record['id']."',
-			'".addslashes($record['label'])."',
-			'".addslashes($record['description'])."',
-			'".$tags."',
-			'".$record['id_tree']."',
-			'".$record['perso']."',
-			'".$record['restricted_to']."',
-			'".$record['login']."',
-			'".$folder."',
-			'".$record['id_user']."',
-			'".$resNT['renewal_period']."',
-			'".$record['date']."'
-			)"
-		);
-		if (mysqli_error($dbTmp)) {
-			echo $res;
-		}
-	}
+        // temp data
+        if (!isset($record['login'])) $record['login'] = "";
+        if (!isset($resNT['renewal_period'])) $resNT['renewal_period'] = "0";
 
-	$finish = 1;
+        // store data
+        $res = mysqli_query($dbTmp,
+            "INSERT INTO `".$_SESSION['pre']."cache`
+            (`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`, `renewal_period`, `timestamp`) VALUES (
+            '".$record['id']."',
+            '".addslashes($record['label'])."',
+            '".addslashes($record['description'])."',
+            '".$tags."',
+            '".$record['id_tree']."',
+            '".$record['perso']."',
+            '".$record['restricted_to']."',
+            '".$record['login']."',
+            '".$folder."',
+            '".$record['id_user']."',
+            '".$resNT['renewal_period']."',
+            '".$record['date']."'
+            )"
+        );
+        if (mysqli_error($dbTmp)) {
+            echo $res;
+        }
+    }
+
+    $finish = 1;
 }
+
+// alter ITEMS table by adding default value to encryption_type field
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` CHANGE encryption_type encryption_type varchar(20) NOT NULL DEFAULT 'defuse'");
 
 echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';

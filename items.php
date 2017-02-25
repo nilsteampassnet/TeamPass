@@ -3,8 +3,8 @@
  *
  * @file          items.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -92,18 +92,20 @@ echo '
 <input type="hidden" id="path_fontsize" value="" />
 <input type="hidden" id="access_level" value="" />
 <input type="hidden" id="empty_clipboard" value="" />
-<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />';
+<input type="hidden" id="selected_folder_is_personal" value="" />
+<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />
+<input type="hidden" id="create_item_without_password" value="', isset($_SESSION['settings']['create_item_without_password']) ? $_SESSION['settings']['create_item_without_password'] : "0", '" />';
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
     <input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />
     <input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />
-    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
     <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
@@ -113,7 +115,7 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 }
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['session_psk']) && !empty($_SESSION['user_settings']['session_psk']) ? '1':'0', '" />
 <input type="hidden" id="personal_upgrade_needed" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1':'0', '" />';
 // define what group todisplay in Tree
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
@@ -124,7 +126,9 @@ if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
 
 echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />
-<input type="hidden" id="item_user_token" value="" />';
+<input type="hidden" id="item_user_token" value="" />
+<input type="hidden" id="items_listing_should_stop" value="" />
+<input type="hidden" id="new_listing_characteristics" value="" />';
 
 echo '
 <div id="div_items">';
@@ -142,11 +146,12 @@ echo '
                         <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
+                        <li onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
                         ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
                         (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
                     </ul>
-               	</li>
+                </li>
             </ul>
         </div>
         <div style="margin:3px 0px 10px 18px;font-weight:bold;">
@@ -182,7 +187,6 @@ echo '
 
                     <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
                         <span class="input-group-addon"><i class="fa fa-binoculars fa-fw"></i></span>
-                        <!--    placeholder="'.$LANG['item_menu_find'].'"   -->
                         <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
                     </div>
 
@@ -220,14 +224,16 @@ echo '
                                         <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
                                         <li id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</li>
                                         <li id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</li>
-                                        <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>
-                                        <li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>
+                                        <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>',
+                                        (isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1) ? '<li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>' : '', '
                                         ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
-                                        <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['link_copy'].'</li>' : '', '
-                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 ? '
+                                        <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</li>' : '', '
+                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 && isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] !== "1"? '
                                         <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
+                                        ', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '
+                                        <li onclick="OpenDialog(\'div_suggest_change\', \'false\')"><i class="fa fa-random fa-fw"></i>&nbsp; '.$LANG['suggest_password_change'].'</li>' : '', '
                                     </ul>
-                               	</li>
+                                </li>
                             </ul>
                         </div>
                         <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
@@ -409,7 +415,7 @@ echo '
 // Line for FOLDERS
 echo '
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:200px"><option style="display: none;"></option></select>';
+            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:250px; padding:3px;" class="ui-widget-content"><option style="display: none;"></option></select>';
 // Line for LOGIN
 echo '
             <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
@@ -436,7 +442,7 @@ echo'
 echo '
             <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
                 <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                <span id="pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
+                <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
             <input type="hidden" id="mypassword_complex" />
@@ -474,7 +480,7 @@ echo '
 if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
     echo '
             <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple"></select>
+            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;" class="ui-widget-content"></select>
             <input type="hidden" name="restricted_to" id="restricted_to" />
             <div style="line-height:10px;">&nbsp;</div>';
 }
@@ -542,7 +548,7 @@ echo '
                         <div style="margin:2px 0 2px 15px;">
                             <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                             <label class="cpm_label">'.$field[1].'</span>
-                            <input type="text" id="field_'.$field[0].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                            <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
                         </div>';
                     }
                     echo '
@@ -556,7 +562,7 @@ echo '
     </div>';
 echo '
     </form>
-    <div style="display:none; padding:5px;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
+    <div style="display:none; padding:5px; margin-top:5px; text-align:center;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
 </div>';
 
 /***************************
@@ -591,7 +597,7 @@ echo '
 echo '
             <div style="margin:10px 0px 10px 0px;">
             <label for="" class="">'.$LANG['group'].' : </label>
-            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:200px;"><option style="display: none;"></option></select>
+            <select id="edit_categorie" onchange="RecupComplexite(this.value,1)" style="width:100%;"><option style="display: none;"></option></select>
             </div>';
 // Line for LOGIN
 echo '
@@ -618,7 +624,7 @@ echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
                     <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
+                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
@@ -658,7 +664,7 @@ if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['rest
     echo '
             <div id="div_editRestricted">
                 <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-                <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple"></select>
+                <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
                 <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
             <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>
@@ -760,24 +766,23 @@ echo '
     <table>
         <tr>
             <td>'.$LANG['label'].' : </td>
-            <td><input type="text" size="20" id="new_rep_titre" /></td>
+            <td><input type="text" id="new_rep_titre" style="width:242px; padding:3px;" class="ui-widget-content" /></td>
         </tr>
         <tr>
             <td>'.$LANG['sub_group_of'].' : </td>
-            <td><select id="new_rep_groupe"><option style="display: none;"></option>
-                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ?
-                '<option value="0">---</option>' : '', '' .'
+            <td><select id="new_rep_groupe" style="width:250px; padding:3px;" class="ui-widget-content">
+                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '
             </select></td>
         </tr>
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
-            <td><select id="new_rep_complexite">';
+            <td><select id="new_rep_complexite" style="width:250px; padding:3px;" class="ui-widget-content">';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
             </select>
-           	</td>
+            </td>
         </tr>';
 echo '
     </table>
@@ -792,23 +797,22 @@ echo '
     <table>
         <tr>
             <td>'.$LANG['new_label'].' : </td>
-            <td><input type="text" size="20" id="edit_folder_title" /></td>
+            <td><input type="text" id="edit_folder_title" style="width:242px; padding:3px;" class="ui-widget-content" /></td>
         </tr>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
-            <td><select id="edit_folder_folder">
-                <option value="0">-choisir-</option></select></td>
+            <td><select id="edit_folder_folder" style="width:250px; padding:3px;" class="ui-widget-content"></select></td>
         </tr>
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
-            <td><select id="edit_folder_complexity">
+            <td><select id="edit_folder_complexity" style="width:250px; padding:3px;" class="ui-widget-content">
                 <option value="">---</option>';
 foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
             </select>
-	        </td>
+            </td>
         </tr>
     </table>
     <div id="edit_folder_loader" style="display:none;text-align:center;margin-top:20px;">
@@ -823,7 +827,6 @@ echo '
         <p>'.$LANG['folder_will_be_moved_below'].'</p>
         <div>
         <select id="move_folder_id" style="width:250px; padding:3px;" class="ui-widget-content">
-            <option value="0">-choisir-</option>
         </select>
         </div>
     </div>
@@ -831,19 +834,42 @@ echo '
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
+// Formulaire COPY FOLDER
+echo '
+<div id="div_copy_folder" style="display:none;">
+    <div id="div_copy_folder_info" class="ui-widget-content ui-state-highlight ui-corner-all" style="padding:5px;"><span class="fa fa-info-circle fa-2x"></span>&nbsp;'.$LANG['copy_folder_info'].'</div>
+
+    <div style="margin:10px 0 0 0;">
+        <label style="float:left; width:150px;">'.$LANG['copy_folder_source'].'</label>
+        <select id="copy_folder_source_id" style="width:300px; padding:3px;" class="ui-widget-content"></select>
+    </div>
+    <div style="margin:10px 0 0 0;">
+        <label style="float:left; width:150px;">'.$LANG['copy_folder_destination'].'</label>
+        <select id="copy_folder_destination_id" style="width:300px; padding:3px;" class="ui-widget-content"></select>
+    </div>
+
+    <div id="div_copy_folder_msg" style="text-align:center;padding:5px;display:none; margin-top:10px; font-size:14px;" class="ui-corner-all"></div>
+</div>';
 // Formulaire SUPPRIMER REPERTORIE
 echo '
 <div id="div_supprimer_rep" style="display:none;">
-    <div id="del_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
             <td>'.$LANG['group_select'].' : </td>
-            <td><select id="delete_rep_groupe">
-                <option value="0">-choisir-</option>
+            <td><select id="delete_rep_groupe" style="width:250px; padding:3px;" class="ui-widget-content">
             </select></td>
         </tr>
+        <tr>
+        <td colspan="2">
+            <div id="delete_rep_groupe_validate_div" class="ui-state-default ui-corner-all" style="padding:5px; margin-top:10px;">
+                <input type="checkbox" id="delete_rep_groupe_validate"><label for="delete_rep_groupe_validate">'.$LANG['confirm_delete_group'].'</label>
+            </div>
+        </td>
+        </tr>
     </table>
-    <div id="del_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="del_rep_show_error" style="text-align:center;padding:5px;display:none;margin-top:10px;" class="ui-state-error ui-corner-all"></div>
+
+    <div id="del_folder_loader" style="display:none;text-align:center;margin-top:15px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -868,11 +894,13 @@ echo '
 <div id="div_copy_item_to_folder" style="display:none;">
     <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <h2 id="div_copy_item_to_folder_item"></h2>
-    <div>'.$LANG['item_copy_to_folder'].'</div>
-    <div style="margin:10px;">
-        <select id="copy_in_folder">
-            ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">---</option>' : '', '' .
-        '</select>
+    <div style="text-align:center;">
+        <div>'.$LANG['item_copy_to_folder'].'</div>
+        <div style="margin:10px;">
+            <select id="copy_in_folder" style="width:300px;">
+                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '' .
+            '</select>
+        </div>
     </div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';
@@ -896,12 +924,22 @@ echo '
     <div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <div style="">'.$LANG['item_share_text'].'</div>
     <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
-    <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none;" class="ui-corner-all"><img src="includes/images/76.gif" alt="loading" /></div>
+    <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none; padding:5px;" class="ui-corner-all">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    </div>
 </div>';
 // DIALOG FOR ITEM IS UPDATED
 echo '
 <div id="div_item_updated" style="display:none;">
     <div style="">'.$LANG['item_updated_text'].'</div>
+</div><br />';
+
+// DIALOG FOR SUGGESTING PWD CHANGE
+echo '
+<div id="div_suggest_change" style="display:none;">
+    <div style="padding:5px; text-align:center;" class="ui-corner-all ui-state-default"><i class="fa fa-info-circle fa-lg"></i>&nbsp;'.$LANG['suggest_password_change_intro'].'</div>
+    <div style=" margin-top:10px;" id="div_suggest_change_html"></div>
+    <div id="div_suggest_change_wait" style="margin-top:10; padding:5px; display:none;" class="ui-state-focus ui-corner-all"></div>
 </div><br />';
 
 // Off line mode
@@ -942,7 +980,7 @@ if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['
     <div id="dialog_upgrade_personal_passwords" style="display:none;">
         <div style="text-align:center;">
             <div>'.$LANG['pf_change_encryption'].'</div>
-            <div id="dialog_upgrade_personal_passwords_status" style="margin:15px 0 15px 0; font-weight:bold;">', isset($_SESSION['my_sk']) ? $LANG['pf_sk_set'] : $LANG['pf_sk_not_set'], '</div>
+            <div id="dialog_upgrade_personal_passwords_status" style="margin:15px 0 15px 0; font-weight:bold;">', isset($_SESSION['user_settings']['session_psk']) ? $LANG['pf_sk_set'] : $LANG['pf_sk_not_set'], '</div>
         </div>
     </div>';
 }

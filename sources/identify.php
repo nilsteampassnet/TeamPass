@@ -3,8 +3,8 @@
  *
  * @file          identify.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -16,7 +16,7 @@
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -26,8 +26,10 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
     $_SESSION['settings']['cpassman_dir'] = "..";
 }
 
-// DUO
 if ($_POST['type'] === "identify_duo_user") {
+//--------
+// DUO AUTHENTICATION
+//--------
     // This step creates the DUO request encrypted key
 
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
@@ -52,8 +54,115 @@ if ($_POST['type'] === "identify_duo_user") {
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
+} elseif ($_POST['type'] == "identify_user_with_agses") {
+//--------
+//-- AUTHENTICATION WITH AGSES
+//--------
+
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+    // connect to the server
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    // do checks
+    if (isset($_POST['cardid']) && empty($_POST['cardid'])) {
+        // no card id is given
+        // check if it is DB
+        $row = DB::queryFirstRow(
+            "SELECT `agses-usercardid` FROM ".prefix_table("users")."
+            WHERE login = %s",
+            filter_var($_POST['login'], FILTER_SANITIZE_STRING)
+        );
+    } else if (!empty($_POST['cardid']) && is_numeric($_POST['cardid'])) {
+        // card id is given
+        // save it in DB
+        DB::update(
+            prefix_table('users'),
+            array(
+                'agses-usercardid' =>  filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT)
+               ),
+            "login = %s",
+            $_POST['login']
+        );
+        $row['agses-usercardid'] = filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT);
+    }else {
+        // error
+        echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
+        return false;
+    }
+
+    //-- get AGSES hosted information
+    $ret_agses_url = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")."
+        WHERE type = %s AND intitule = %s",
+        'admin',
+        'agses_hosted_url'
+    );
+
+    $ret_agses_id = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")."
+        WHERE type = %s AND intitule = %s",
+        'admin',
+        'agses_hosted_id'
+    );
+
+    $ret_agses_apikey = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")."
+        WHERE type = %s AND intitule = %s",
+        'admin',
+        'agses_hosted_apikey'
+    );
+
+    // if we have a card id and all agses credentials
+    // then we try to generate the message for agsesflicker
+    if (isset($row['agses-usercardid']) && !empty($ret_agses_url['valeur']) && !empty($ret_agses_id['valeur']) && !empty($ret_agses_apikey['valeur'])) {
+        // check that card id is not empty or equal to 0
+        if ($row['agses-usercardid'] !== "0" && !empty($row['agses-usercardid'])) {
+            include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
+            $agses = new AXSILPortal_V1_Auth();
+            $agses->setUrl($ret_agses_url['valeur']);
+            $agses->setAAId($ret_agses_id['valeur']);
+            //for release there will be another api-key - this is temporary only
+            $agses->setApiKey($ret_agses_apikey['valeur']);
+            $agses->create();
+            //create random salt and store it into session
+            if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+                $_SESSION['hedgeId'] = md5(time());
+            }
+            $_SESSION['user_settings']['agses-usercardid'] = $row['agses-usercardid'];
+            $agses_message = $agses->createAuthenticationMessage(
+                $row['agses-usercardid'],
+                true,
+                1,
+                2,
+                $_SESSION['hedgeId']
+            );
+
+            echo '[{"agses_message" : "'.$agses_message.'" , "error" : ""}]';
+        } else {
+            echo '[{"agses_status" : "no_user_card_id" , "agses_message" : "" , "error" : ""}]';
+        }
+    } else {
+        if (empty($ret_agses_apikey['valeur']) || empty($ret_agses_url['valeur']) || empty($ret_agses_id['valeur'])) {
+            echo '[{"error" : "no_agses_info" , "agses_message" : ""}]';
+        } else {
+            echo '[{"error" : "something_wrong" , "agses_message" : ""}]';  // user not found but not displayed as this in the error message
+        }
+    }
 } elseif ($_POST['type'] == "identify_duo_user_check") {
-    // this step is verifying the response received from the server
+//--------
+// DUO AUTHENTICATION
+// this step is verifying the response received from the server
+//--------
 
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     // load library
@@ -77,6 +186,10 @@ if ($_POST['type'] === "identify_duo_user") {
         echo '[{"resp" : "'.$resp.'"}]';
     }
 } elseif ($_POST['type'] == "identify_user") {
+//--------
+// NORMAL IDENTICATION STEP
+//--------
+
     // increment counter of login attempts
     if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
     else $_SESSION["pwd_attempts"] ++;
@@ -197,6 +310,7 @@ function identifyUser($sentData)
             'user_attribute : ' . $_SESSION['settings']['ldap_user_attribute']."\n" .
             'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
             'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+            'port : '.$_SESSION['settings']['ldap_port']."\n" .
             'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
             'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
         );
@@ -218,7 +332,20 @@ function identifyUser($sentData)
             $username=substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
-            $ldapconn = ldap_connect($_SESSION['settings']['ldap_domain_controler']);
+            $ldapURIs = "";
+            foreach(explode(",", $_SESSION['settings']['ldap_domain_controler']) as $domainControler) {
+                if($_SESSION['settings']['ldap_ssl'] == 1) {
+                    $ldapURIs .= "ldaps://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
+                }
+                else {
+                    $ldapURIs .= "ldap://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
+                }
+            }
+            if ($debugLdap == 1) {
+                fputs($dbgLdap, "LDAP URIs : " . $ldapURIs . "\n");
+            }
+            $ldapconn = ldap_connect($ldapURIs);
+
             if ($_SESSION['settings']['ldap_tls']) {
                ldap_start_tls($ldapconn);
             }
@@ -233,7 +360,7 @@ function identifyUser($sentData)
                 }
                 if ($ldapbind) {
                     $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=" . $_SESSION['settings']['ldap_object_class'] ."))";
-                    $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn'));
+                    $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                        $filter_group = "memberUid=".$username;
                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'],$filter_group, array('dn'));
@@ -280,6 +407,7 @@ function identifyUser($sentData)
                     'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
                     'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
                     'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
+                    'port : '.$_SESSION['settings']['ldap_port']."\n" .
                     'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
                 );
@@ -299,6 +427,7 @@ function identifyUser($sentData)
                     'base_dn' => $_SESSION['settings']['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $_SESSION['settings']['ldap_domain_controler']),
+                    'port' => $_SESSION['settings']['ldap_port'],
                     'use_ssl' => $_SESSION['settings']['ldap_ssl'],
                     'use_tls' => $_SESSION['settings']['ldap_tls']
                 )
@@ -390,9 +519,14 @@ function identifyUser($sentData)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
-        
+
         // get user info from LDAP
-        $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
+        if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
+            //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
+            $user_info_from_ad = $result;
+        } else {
+            $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
+        }
 
         DB::insert(
             prefix_table('users'),
@@ -448,22 +582,54 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "USer exists (confirm): " . $counter . "\n"
+            "User exists (confirm): " . $counter . "\n"
         );
     }
 
     // check GA code
     if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username != "admin") {
         if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
-            include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
-            include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
-            $g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
+            // load library
+            include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
 
-            if ($g->checkCode($data['ga'], $dataReceived['GACode'])) {
-                $proceedIdentification = true;
+            // create new instance
+            $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($_SESSION['settings']['ga_website_name']);
+
+            // now check if it is the 1st time the user is using 2FA
+            if ($data['ga_temporary_code'] !== "none" && $data['ga_temporary_code'] !== "done") {
+                if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
+                    $proceedIdentification = false;
+                    $logError = "ga_temporary_code_wrong";
+                } else {
+                    $proceedIdentification = false;
+                    $logError = "ga_temporary_code_correct";
+
+                    // generate new QR
+                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri("Teampass - ".$username, $data['ga']);
+
+                    // clear temporary code from DB
+                    DB::update(
+                        prefix_table('users'),
+                        array(
+                            'ga_temporary_code' => 'done'
+                        ),
+                        "id=%i",
+                        $data['id']
+                    );
+
+                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+
+                    exit();
+
+                }
             } else {
-                $proceedIdentification = false;
-                $logError = "ga_code_wrong";
+                // verify the user GA code
+                if ($tfa->verifyCode($data['ga'], $dataReceived['GACode'])) {
+                    $proceedIdentification = true;
+                } else {
+                    $proceedIdentification = false;
+                    $logError = "ga_code_wrong";
+                }
             }
         } else {
             $proceedIdentification = false;
@@ -476,6 +642,78 @@ function identifyUser($sentData)
             $dbgDuo,
             "Proceed with Ident: " . $proceedIdentification . "\n"
         );
+    }
+
+    // check AGSES code
+    if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 && $username != "admin") {
+        // load AGSES
+        include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
+            $agses = new AXSILPortal_V1_Auth();
+            $agses->setUrl($_SESSION['settings']['agses_hosted_url']);
+            $agses->setAAId($_SESSION['settings']['agses_hosted_id']);
+            //for release there will be another api-key - this is temporary only
+            $agses->setApiKey($_SESSION['settings']['agses_hosted_apikey']);
+            $agses->create();
+            //create random salt and store it into session
+            if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+                $_SESSION['hedgeId'] = md5(time());
+            }
+
+        $responseCode = $passwordClear;
+        if ($responseCode != "" && strlen($responseCode) >= 4) {
+            // Verify response code, store result in session
+            $result = $agses->verifyResponse(
+                $_SESSION['user_settings']['agses-usercardid'],
+                $responseCode,
+                $_SESSION['hedgeId']
+            );
+
+            if ($result == 1) {
+                $return = "";
+                $logError = "";
+                $proceedIdentification = true;
+                $userPasswordVerified = true;
+                unset($_SESSION['hedgeId']);
+                unset($_SESSION['flickercode']);
+            } else {
+                if ($result < -10) {
+                    $logError =  "ERROR: ".$result;
+                } else if ($result == -4) {
+                    $logError =  "Wrong response code, no more tries left.";
+                } else if ($result == -3) {
+                    $logError =  "Wrong response code, try to reenter.";
+                } else if ($result == -2) {
+                    $logError =  "Timeout. The response code is not valid anymore.";
+                } else if ($result == -1) {
+                    $logError =  "Security Error. Did you try to verify the response from a different computer?";
+                } else if ($result == 1) {
+                    $logError =  "Authentication successful, response code correct.
+                          <br /><br />Authentification Method for SecureBrowser updated!";
+                    // Add necessary code here for accessing your Business Application
+                }
+                $return = "agses_error";
+                echo '[{"value" : "'.$return.'", "user_admin":"',
+                isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+                '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+                "error" : "'.$logError.'"}]';
+
+                exit();
+            }
+
+        } else {
+
+            $return = "agses_error";
+            $logError = "No response code given";
+
+            echo '[{"value" : "'.$return.'", "user_admin":"',
+            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+            '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+            "error" : "'.$logError.'"}]';
+
+            exit();
+
+        }
+
     }
 
     if ($proceedIdentification === true && $user_initial_creation_through_ldap == false) {
@@ -512,11 +750,13 @@ function identifyUser($sentData)
         }
 
         // check the given password
-        if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
-            $userPasswordVerified = true;
-        } else {
-            $userPasswordVerified = false;
-            logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
+        if ($userPasswordVerified !== true) {
+            if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
+                $userPasswordVerified = true;
+            } else {
+                $userPasswordVerified = false;
+                logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
+            }
         }
 
         if ($debugDuo == 1) {
@@ -588,15 +828,14 @@ function identifyUser($sentData)
             // get personal settings
             if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) $data['treeloadstrategy'] = "full";
             $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
+            $_SESSION['user_settings']['agses-usercardid'] = $data['agses-usercardid'];
+            $_SESSION['user_settings']['user_language'] = $data['user_language'];
+            $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
+            $_SESSION['user_settings']['usertimezone'] = $data['usertimezone'];
+
 
             // manage session expiration
-            $serverTime = time();
-            if ($dataReceived['TimezoneOffset'] > 0) {
-                $userTime = $serverTime + $dataReceived['TimezoneOffset'];
-            } else {
-                $userTime = $serverTime;
-            }
-            $_SESSION['fin_session'] = $userTime + $dataReceived['duree_session'] * 60;
+            $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
 
             /* If this option is set user password MD5 is used as personal SALTKey */
             if (
@@ -679,7 +918,8 @@ function identifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk))    //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)),    //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'user_ip' =>  get_client_ip_server()
                 ),
                 "id=%i",
                 $data['id']
@@ -764,7 +1004,7 @@ function identifyUser($sentData)
                                 '#tp_time#'
                             ),
                             array(
-                                " ".$_SESSION['login'],
+                                " ".$_SESSION['login']." (IP: ".get_client_ip_server().")",
                                 date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']),
                                 date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion'])
                             ),

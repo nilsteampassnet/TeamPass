@@ -2,8 +2,8 @@
 /**
  * @file        favorites.php
  * @author      Nils Laumaillé
- * @version       2.1.26
- * @copyright   (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright   (c) 2009-2017 Nils Laumaillé
  * @licensing   GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -47,7 +47,7 @@ if (empty($_SESSION['favourites'])) {
             );
             if (!empty($data['label'])) {
                 echo '
-                    <tr class="ligne'.($cpt%2).'">
+                    <tr class="ligne'.($cpt%2).'" id="row-'.$data['id'].'">
                         <td>
                             <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;

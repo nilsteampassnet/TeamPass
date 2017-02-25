@@ -3,8 +3,8 @@
  *
  * @file          folders.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link	      http://www.teampass.net
  *
@@ -45,7 +45,7 @@ $tst = $tree->getDescendants();
 // prepare options list
 $prev_level = 0;
 $droplist = '<option value="na">---'.$LANG['select'].'---</option>';
-if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
+if ($_SESSION['is_admin'] === "1" || $_SESSION['user_manager'] === "1" || $_SESSION['can_create_root_folder'] === "1") {
     $droplist .= '<option value="0">'.$LANG['root'].'</option>';
 }
 foreach ($tst as $t) {
@@ -93,6 +93,7 @@ echo '
         <th></th>
         <th>ID</th>
         <th>'.$LANG['group'].'</th>
+        <th style="width:20px;">'.$LANG['nb_items'].'</th>
         <th>'.$LANG['complexity'].'</th>
         <th>'.$LANG['group_parent'].'</th>
         <th>'.$LANG['level'].'</th>

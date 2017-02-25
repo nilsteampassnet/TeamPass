@@ -3,57 +3,38 @@
 /**
  * Random Number Generator
  *
- * The idea behind this function is that it can be easily replaced with your own crypt_random_string()
- * function. eg. maybe you have a better source of entropy for creating the initial states or whatever.
- *
- * PHP versions 4 and 5
+ * PHP version 5
  *
  * Here's a short example of how to use this library:
  * <code>
  * <?php
- *    include 'Crypt/Random.php';
+ *    include 'vendor/autoload.php';
  *
- *    echo bin2hex(crypt_random_string(8));
+ *    echo bin2hex(\phpseclib\Crypt\Random::string(8));
  * ?>
  * </code>
  *
- * LICENSE: Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
  * @category  Crypt
- * @package   Crypt_Random
+ * @package   Random
  * @author    Jim Wigginton <terrafrost@php.net>
  * @copyright 2007 Jim Wigginton
  * @license   http://www.opensource.org/licenses/mit-license.html  MIT License
  * @link      http://phpseclib.sourceforge.net
  */
 
-// laravel is a PHP framework that utilizes phpseclib. laravel workbenches may, independently,
-// have phpseclib as a requirement as well. if you're developing such a program you may encounter
-// a "Cannot redeclare crypt_random_string()" error.
-if (!function_exists('crypt_random_string')) {
-    /**
-     * "Is Windows" test
-     *
-     * @access private
-     */
-    define('CRYPT_RANDOM_IS_WINDOWS', strtoupper(substr(PHP_OS, 0, 3)) === 'WIN');
+namespace phpseclib\Crypt;
 
+use phpseclib\Crypt\Common\BlockCipher;
+
+/**
+ * Pure-PHP Random Number Generator
+ *
+ * @package Random
+ * @author  Jim Wigginton <terrafrost@php.net>
+ * @access  public
+ */
+class Random
+{
     /**
      * Generate a random string.
      *
@@ -62,55 +43,22 @@ if (!function_exists('crypt_random_string')) {
      * eg. for RSA key generation.
      *
      * @param int $length
+     * @throws \RuntimeException if a symmetric cipher is needed but not loaded
      * @return string
-     * @access public
      */
-    function crypt_random_string($length)
+    static function string($length)
     {
-        if (CRYPT_RANDOM_IS_WINDOWS) {
-            // method 1. prior to PHP 5.3, mcrypt_create_iv() would call rand() on windows
-            if (extension_loaded('mcrypt') && version_compare(PHP_VERSION, '5.3.0', '>=')) {
-                return mcrypt_create_iv($length);
-            }
-            // method 2. openssl_random_pseudo_bytes was introduced in PHP 5.3.0 but prior to PHP 5.3.4 there was,
-            // to quote <http://php.net/ChangeLog-5.php#5.3.4>, "possible blocking behavior". as of 5.3.4
-            // openssl_random_pseudo_bytes and mcrypt_create_iv do the exact same thing on Windows. ie. they both
-            // call php_win32_get_random_bytes():
-            //
-            // https://github.com/php/php-src/blob/7014a0eb6d1611151a286c0ff4f2238f92c120d6/ext/openssl/openssl.c#L5008
-            // https://github.com/php/php-src/blob/7014a0eb6d1611151a286c0ff4f2238f92c120d6/ext/mcrypt/mcrypt.c#L1392
-            //
-            // php_win32_get_random_bytes() is defined thusly:
-            //
-            // https://github.com/php/php-src/blob/7014a0eb6d1611151a286c0ff4f2238f92c120d6/win32/winutil.c#L80
-            //
-            // we're calling it, all the same, in the off chance that the mcrypt extension is not available
-            if (extension_loaded('openssl') && version_compare(PHP_VERSION, '5.3.4', '>=')) {
-                return openssl_random_pseudo_bytes($length);
-            }
-        } else {
-            // method 1. the fastest
-            if (extension_loaded('openssl') && version_compare(PHP_VERSION, '5.3.0', '>=')) {
-                return openssl_random_pseudo_bytes($length);
-            }
-            // method 2
-            static $fp = true;
-            if ($fp === true) {
-                // warning's will be output unles the error suppression operator is used. errors such as
-                // "open_basedir restriction in effect", "Permission denied", "No such file or directory", etc.
-                $fp = @fopen('/dev/urandom', 'rb');
-            }
-            if ($fp !== true && $fp !== false) { // surprisingly faster than !is_bool() or is_resource()
-                return fread($fp, $length);
-            }
-            // method 3. pretty much does the same thing as method 2 per the following url:
-            // https://github.com/php/php-src/blob/7014a0eb6d1611151a286c0ff4f2238f92c120d6/ext/mcrypt/mcrypt.c#L1391
-            // surprisingly slower than method 2. maybe that's because mcrypt_create_iv does a bunch of error checking that we're
-            // not doing. regardless, this'll only be called if this PHP script couldn't open /dev/urandom due to open_basedir
-            // restrictions or some such
-            if (extension_loaded('mcrypt')) {
-                return mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
-            }
+        try {
+            return \random_bytes($length);
+        } catch (\Exception $e) {
+            // random_compat will throw an Exception, which in PHP 5 does not implement Throwable
+        } catch (\Throwable $e) {
+            // If a sufficient source of randomness is unavailable, random_bytes() will throw an
+            // object that implements the Throwable interface (Exception, TypeError, Error).
+            // We don't actually need to do anything here. The string() method should just continue
+            // as normal. Note, however, that if we don't have a sufficient source of randomness for
+            // random_bytes(), most of the other calls here will fail too, so we'll end up using
+            // the PHP implementation.
         }
         // at this point we have no choice but to use a pure-PHP CSPRNG
 
@@ -147,15 +95,14 @@ if (!function_exists('crypt_random_string')) {
             session_cache_limiter('');
             session_start();
 
-            $v = $seed = $_SESSION['seed'] = pack('H*', sha1(
-                serialize($_SERVER) .
-                serialize($_POST) .
-                serialize($_GET) .
-                serialize($_COOKIE) .
-                serialize($GLOBALS) .
-                serialize($_SESSION) .
-                serialize($_OLD_SESSION)
-            ));
+            $v = (isset($_SERVER) ? self::safe_serialize($_SERVER) : '') .
+                 (isset($_POST) ? self::safe_serialize($_POST) : '') .
+                 (isset($_GET) ? self::safe_serialize($_GET) : '') .
+                 (isset($_COOKIE) ? self::safe_serialize($_COOKIE) : '') .
+                 self::safe_serialize($GLOBALS) .
+                 self::safe_serialize($_SESSION) .
+                 self::safe_serialize($_OLD_SESSION);
+            $v = $seed = $_SESSION['seed'] = sha1($v, true);
             if (!isset($_SESSION['count'])) {
                 $_SESSION['count'] = 0;
             }
@@ -186,56 +133,37 @@ if (!function_exists('crypt_random_string')) {
             // http://tools.ietf.org/html/rfc4253#section-7.2
             //
             // see the is_string($crypto) part for an example of how to expand the keys
-            $key = pack('H*', sha1($seed . 'A'));
-            $iv = pack('H*', sha1($seed . 'C'));
+            $key = sha1($seed . 'A', true);
+            $iv = sha1($seed . 'C', true);
 
             // ciphers are used as per the nist.gov link below. also, see this link:
             //
             // http://en.wikipedia.org/wiki/Cryptographically_secure_pseudorandom_number_generator#Designs_based_on_cryptographic_primitives
             switch (true) {
-                case phpseclib_resolve_include_path('Crypt/AES.php'):
-                    if (!class_exists('Crypt_AES')) {
-                        include_once 'AES.php';
-                    }
-                    $crypto = new Crypt_AES(CRYPT_AES_MODE_CTR);
+                case class_exists('\phpseclib\Crypt\AES'):
+                    $crypto = new AES(BlockCipher::MODE_CTR);
                     break;
-                case phpseclib_resolve_include_path('Crypt/Twofish.php'):
-                    if (!class_exists('Crypt_Twofish')) {
-                        include_once 'Twofish.php';
-                    }
-                    $crypto = new Crypt_Twofish(CRYPT_TWOFISH_MODE_CTR);
+                case class_exists('\phpseclib\Crypt\Twofish'):
+                    $crypto = new Twofish(BlockCipher::MODE_CTR);
                     break;
-                case phpseclib_resolve_include_path('Crypt/Blowfish.php'):
-                    if (!class_exists('Crypt_Blowfish')) {
-                        include_once 'Blowfish.php';
-                    }
-                    $crypto = new Crypt_Blowfish(CRYPT_BLOWFISH_MODE_CTR);
+                case class_exists('\phpseclib\Crypt\Blowfish'):
+                    $crypto = new Blowfish(BlockCipher::MODE_CTR);
                     break;
-                case phpseclib_resolve_include_path('Crypt/TripleDES.php'):
-                    if (!class_exists('Crypt_TripleDES')) {
-                        include_once 'TripleDES.php';
-                    }
-                    $crypto = new Crypt_TripleDES(CRYPT_DES_MODE_CTR);
+                case class_exists('\phpseclib\Crypt\TripleDES'):
+                    $crypto = new TripleDES(BlockCipher::MODE_CTR);
                     break;
-                case phpseclib_resolve_include_path('Crypt/DES.php'):
-                    if (!class_exists('Crypt_DES')) {
-                        include_once 'DES.php';
-                    }
-                    $crypto = new Crypt_DES(CRYPT_DES_MODE_CTR);
+                case class_exists('\phpseclib\Crypt\DES'):
+                    $crypto = new DES(BlockCipher::MODE_CTR);
                     break;
-                case phpseclib_resolve_include_path('Crypt/RC4.php'):
-                    if (!class_exists('Crypt_RC4')) {
-                        include_once 'RC4.php';
-                    }
-                    $crypto = new Crypt_RC4();
+                case class_exists('\phpseclib\Crypt\RC4'):
+                    $crypto = new RC4();
                     break;
                 default:
-                    user_error('crypt_random_string requires at least one symmetric cipher be loaded');
-                    return false;
+                    throw new \RuntimeException(__CLASS__ . ' requires at least one symmetric cipher be loaded');
             }
 
-            $crypto->setKey($key);
-            $crypto->setIV($iv);
+            $crypto->setKey(substr($key, 0, $crypto->getKeyLength() >> 3));
+            $crypto->setIV(substr($iv, 0, $crypto->getBlockLength() >> 3));
             $crypto->enableContinuousBuffer();
         }
 
@@ -258,42 +186,36 @@ if (!function_exists('crypt_random_string')) {
         }
         return substr($result, 0, $length);
     }
-}
 
-if (!function_exists('phpseclib_resolve_include_path')) {
     /**
-     * Resolve filename against the include path.
+     * Safely serialize variables
      *
-     * Wrapper around stream_resolve_include_path() (which was introduced in
-     * PHP 5.3.2) with fallback implementation for earlier PHP versions.
+     * If a class has a private __sleep() it'll emit a warning
      *
-     * @param string $filename
-     * @return string|false
+     * @param mixed $arr
      * @access public
      */
-    function phpseclib_resolve_include_path($filename)
+    static function safe_serialize(&$arr)
     {
-        if (function_exists('stream_resolve_include_path')) {
-            return stream_resolve_include_path($filename);
+        if (is_object($arr)) {
+            return '';
         }
-
-        // handle non-relative paths
-        if (file_exists($filename)) {
-            return realpath($filename);
+        if (!is_array($arr)) {
+            return serialize($arr);
         }
-
-        $paths = PATH_SEPARATOR == ':' ?
-            preg_split('#(?<!phar):#', get_include_path()) :
-            explode(PATH_SEPARATOR, get_include_path());
-        foreach ($paths as $prefix) {
-            // path's specified in include_path don't always end in /
-            $ds = substr($prefix, -1) == DIRECTORY_SEPARATOR ? '' : DIRECTORY_SEPARATOR;
-            $file = $prefix . $ds . $filename;
-            if (file_exists($file)) {
-                return realpath($file);
+        // prevent circular array recursion
+        if (isset($arr['__phpseclib_marker'])) {
+            return '';
+        }
+        $safearr = array();
+        $arr['__phpseclib_marker'] = true;
+        foreach (array_keys($arr) as $key) {
+            // do not recurse on the '__phpseclib_marker' key itself, for smaller memory usage
+            if ($key !== '__phpseclib_marker') {
+                $safearr[$key] = self::safe_serialize($arr[$key]);
             }
         }
-
-        return false;
+        unset($arr['__phpseclib_marker']);
+        return serialize($safearr);
     }
 }

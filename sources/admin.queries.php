@@ -3,8 +3,8 @@
 /**
  * @file          admin.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -125,7 +125,11 @@ switch ($_POST['type']) {
     #CASE for refreshing all Personal Folders
     case "admin_action_check_pf":
         //get through all users
-        $rows = DB::query("SELECT id,login,email FROM ".prefix_table("users")." ORDER BY login ASC");
+        $rows = DB::query(
+            "SELECT id, login, email
+            FROM ".prefix_table("users")."
+            ORDER BY login ASC"
+        );
         foreach ($rows as $record) {
             //update PF field for user
             DB::update(
@@ -138,7 +142,13 @@ switch ($_POST['type']) {
             );
 
             //if folder doesn't exist then create it
-            $data = DB::queryfirstrow("SELECT * FROM ".prefix_table("nested_tree")." WHERE title = %s AND parent_id = %i", $record['id'], 0);
+            $data = DB::queryfirstrow(
+                "SELECT id
+                FROM ".prefix_table("nested_tree")."
+                WHERE title = %s AND parent_id = %i",
+                $record['id'],
+                0
+            );
             $counter = DB::count();
             if ($counter == 0) {
                 //If not exist then add it
@@ -150,6 +160,9 @@ switch ($_POST['type']) {
                         'personal_folder' => '1'
                    )
                 );
+
+                //rebuild fuild tree folder
+                $tree->rebuild();
             } else {
                 //If exists then update it
                 DB::update(
@@ -157,11 +170,15 @@ switch ($_POST['type']) {
                     array(
                         'personal_folder' => '1'
                    ),
-                   "title=%s AND parent_id=%i", $record['id'], 0
+                   "title=%s AND parent_id=%i",
+                   $record['id'],
+                   0
                 );
+                //rebuild fuild tree folder
+                $tree->rebuild();
 
                 // Get an array of all folders
-                $folders = $tree->getDescendants($record['id'], false, true, true);
+                $folders = $tree->getDescendants($data['id'], false, true, true);
                 foreach ($folders as $folder) {
                  //update PF field for user
                     DB::update(
@@ -172,12 +189,10 @@ switch ($_POST['type']) {
                         "id = %s",
                         $folder
                     );
-                }          
+                }
             }
         }
 
-        //rebuild fuild tree folder
-        $tree->rebuild();
 
         echo '[{"result" : "pf_done"}]';
         break;
@@ -504,16 +519,21 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___start":
         $error = "";
-        require_once 'main.functions.php';
+        $_SESSION['reencrypt_old_salt'] = require_once 'main.functions.php';
 
-        // check saltkey
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
-        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
-            // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
-            break;
-        }
+        // store old sk
+        $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+        // generate new saltkey
+        copy(
+            SECUREPATH."/teampass-seckey.txt",
+            SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+        );
+        $_SESSION['reencrypt_new_salt'] = defuse_generate_key();
+        file_put_contents(
+            SECUREPATH."/teampass-seckey.txt",
+            $_SESSION['reencrypt_new_salt']
+        );
 
         //put tool in maintenance.
         DB::update(
@@ -541,11 +561,9 @@ switch ($_POST['type']) {
         require_once 'main.functions.php';
 
         // prepare SK
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
-        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
+        if (empty($_SESSION['reencrypt_new_salt']) ||empty($_SESSION['reencrypt_old_salt'])) {
             // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
+            echo '[{"nextAction":"" , "error":"saltkeys are empty???" , "nbOfItems":""}]';
             break;
         }
 
@@ -555,16 +573,25 @@ switch ($_POST['type']) {
             FROM ".prefix_table("items")."
             WHERE perso = %s
             LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
-            "0");
+            "0"
+        );
         foreach ($rows as $record) {
-            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+            $pw = cryption(
+                $record['pw'],
+                $_SESSION['reencrypt_old_salt'],
+                "decrypt"
+            );
             //encrypt with new SALT
-            $encrypt = cryption($pw['string'], $new_salt_key, "", "encrypt");
+            $encrypt = cryption(
+                $pw['string'],
+                $_SESSION['reencrypt_new_salt'],
+                "encrypt"
+            );
             DB::update(
                 prefix_table("items"),
                 array(
                     'pw' => $encrypt['string'],
-                    'pw_iv' => $encrypt['iv'],
+                    'pw_iv' => ""
                ),
                 "id = %i",
                 $record['id']
@@ -588,42 +615,6 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___end":
         $error = "";
-
-        $dataReceived = prepareExchangedData($_POST['newSK'], "decode");
-        $new_salt_key = htmlspecialchars_decode($dataReceived['newSK']);
-        if (!isUTF8($new_salt_key) || empty($new_salt_key)) {
-            // SK is not correct
-            echo '[{"nextAction":"" , "error":"saltkey is corrupted or empty" , "nbOfItems":""}]';
-            break;
-        }
-
-        // write the sk.php file
-        // get path to sk.php
-        $filename = "../includes/config/settings.php";
-        if (file_exists($filename)) {
-            //copy some constants from this existing file
-            $settings_file = file($filename);
-            while (list($key,$val) = each($settings_file)) {
-                if (substr_count($val, 'require_once "')>0) {
-                    $skfile = substr($val, 14, strpos($val, '";')-14);
-                    break;
-                }
-            }
-        }
-        //Do a copy of the existing file
-        @copy($skfile, $skfile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))));
-        unlink($skfile);
-        $fh = fopen($skfile, 'w');
-        fwrite(
-            $fh,
-            utf8_encode(
-                "<?php
-@define('SALT', '".$new_salt_key."'); //Never Change it once it has been used !!!!!
-@define('COST', '13'); // Don't change this.
-?>"
-            )
-        );
-        fclose($fh);
 
         // quit maintenance mode.
         DB::update(
@@ -1191,6 +1182,106 @@ switch ($_POST['type']) {
         echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
         break;
 
+    case "save_agses_options":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData($_POST['data'], "decode");
+
+        // agses_hosted_url
+        if (!is_null($dataReceived['agses_hosted_url'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_url");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_hosted_url",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_hosted_url"
+                );
+            }
+            $_SESSION['settings']['agses_hosted_url'] = htmlspecialchars_decode($dataReceived['agses_hosted_url']);
+        } else {
+            $_SESSION['settings']['agses_hosted_url'] = "";
+        }
+
+        // agses_hosted_id
+        if (!is_null($dataReceived['agses_hosted_id'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_id");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_hosted_id",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_hosted_id"
+                );
+            }
+            $_SESSION['settings']['agses_hosted_id'] = htmlspecialchars_decode($dataReceived['agses_hosted_id']);
+        } else {
+            $_SESSION['settings']['agses_hosted_id'] = "";
+        }
+
+        // agses_hosted_apikey
+        if (!is_null($dataReceived['agses_hosted_apikey'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_apikey");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "agses_hosted_apikey",
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey'])
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey'])
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "agses_api_key"
+                );
+            }
+            $_SESSION['settings']['agses_hosted_apikey'] = htmlspecialchars_decode($dataReceived['agses_hosted_apikey']);
+        } else {
+            $_SESSION['settings']['agses_hosted_apikey'] = "";
+        }
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
+        break;
+
     case "save_option_change":
         // Check KEY and rights
         if ($_POST['key'] != $_SESSION['key']) {
@@ -1328,5 +1419,89 @@ switch ($_POST['type']) {
             ),
             "encode"
         );
+        break;
+
+    case "get_values_for_statistics":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // Encrypt data to return
+        echo prepareExchangedData(
+            getStatisticsData(),
+            "encode"
+        );
+
+        break;
+
+    case "save_sending_statistics":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // send statistics
+        if (!is_null($_POST['status'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_stats");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "send_stats",
+                        'valeur' => $_POST['status']
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => $_POST['status']
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "send_stats"
+                );
+            }
+            $_SESSION['settings']['send_stats'] = $_POST['status'];
+        } else {
+            $_SESSION['settings']['send_stats'] = "0";
+        }
+
+        // send statistics items
+        if (!is_null($_POST['list'])) {
+            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
+            $counter = DB::count();
+            if ($counter == 0) {
+                DB::insert(
+                    prefix_table("misc"),
+                    array(
+                        'type' => "admin",
+                        "intitule" => "send_statistics_items",
+                        'valeur' => $_POST['list']
+                    )
+                );
+            } else {
+                DB::update(
+                    prefix_table("misc"),
+                    array(
+                        'valeur' => $_POST['list']
+                    ),
+                    "type = %s AND intitule = %s",
+                    "admin",
+                    "send_statistics_items"
+                );
+            }
+            $_SESSION['settings']['send_statistics_items'] = $_POST['list'];
+        } else {
+            $_SESSION['settings']['send_statistics_items'] = "";
+        }
+
+        // send data
+        echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';
         break;
 }

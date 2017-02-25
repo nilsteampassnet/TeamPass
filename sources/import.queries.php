@@ -2,8 +2,8 @@
 /**
  * @file          import.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -15,7 +15,7 @@ use Goodby\CSV\Import\Standard\Lexer;
 use Goodby\CSV\Import\Standard\Interpreter;
 use Goodby\CSV\Import\Standard\LexerConfig;
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -250,9 +250,17 @@ switch ($_POST['type']) {
 
             //Encryption key
             if ($personalFolder == 1) {
-                $encrypt = cryption($item[2], $_SESSION['my_sk'], "", "encrypt");
+                $encrypt = cryption(
+                    $item[2],
+                    $_SESSION['user_settings']['session_psk'],
+                    "encrypt"
+                );
             } else {
-                $encrypt = cryption($item[2], SALT, "", "encrypt");
+                $encrypt = cryption(
+                    $item[2],
+                    "",
+                    "encrypt"
+                );
             }
 
             // Insert new item in table ITEMS
@@ -636,12 +644,9 @@ switch ($_POST['type']) {
 
             $import_perso = false;
             $itemsArray = array();
-            $text = '<img src="includes/images/folder_open.png" alt="" \>&nbsp;'.$LANG['nb_folders'].': '.
-                $numGroups.'<br /><img src="includes/images/tag.png" alt="" \>&nbsp;'.$LANG['nb_items'].': '.
+            $text = '<span class="fa fa-folder-open"></span>&nbsp;'.$LANG['nb_folders'].': '.
+                $numGroups.'<br /><span class="fa fa-tag"></span>>&nbsp;'.$LANG['nb_items'].': '.
                 $numItems.'<br /><br />';
-            /*$text .= '<img src="includes/images/magnifier.png" alt="" \>&nbsp;<span onclick="toggle_importing_details()">'.
-                $LANG['importing_details'].'</span><div id="div_importing_kp_details" style="display:none;margin-left:20px;"><b>'.
-                $LANG['importing_folders'].':</b><br />';*/
 
             //if destination is not ROOT then get the complexity level
             if (strpos($_POST['destination'], "perso") != false) {
@@ -841,9 +846,17 @@ switch ($_POST['type']) {
 
                         // prepare PW
                         if ($import_perso == true) {
-                            $encrypt = cryption($pw, $_SESSION['my_sk'], "", "encrypt");
+                            $encrypt = cryption(
+                                $pw,
+                                $_SESSION['user_settings']['session_psk'],
+                                "encrypt"
+                            );
                         } else {
-                            $encrypt = cryption($pw, SALT, "", "encrypt");
+                            $encrypt = cryption(
+                                $pw,
+                                "",
+                                "encrypt"
+                            );
                         }
 
                         //ADD item

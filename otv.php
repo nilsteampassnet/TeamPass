@@ -2,8 +2,8 @@
 /**
  * @file          otv.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sources/sessions.php');
+require_once('sources/SecureHandler.php');
 @session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -40,6 +40,10 @@ if (
     DB::$error_handler = 'db_error_handler';
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
+
+    if (!isset($_SESSION['settings']['otv_is_enabled']) || $_SESSION['settings']['otv_is_enabled'] === "0") {
+        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;One-Time-View is not allowed!</div>';
+    }
 
     // check session validity
     $data = DB::queryfirstrow(
@@ -100,14 +104,15 @@ if (
                         // log
                         logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_delete', 'otv', 'at_automatically_deleted');
 
-                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.LANG['not_allowed_to_see_pw_is_expired'].'</div>';
+                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.addslashes(
+                            $LANG['not_allowed_to_see_pw_is_expired']).'</div>';
                         return false;
                     }
                 }
             }
 
             // get data
-            $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+            $pw = cryption($dataItem['pw'], "", "decrypt");
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];

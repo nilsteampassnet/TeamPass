@@ -2,8 +2,8 @@
 /**
  * @file          downloadFile.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || !isset($_SESSION['key_tmp']) || !isset($_SESSION['key']) || $_SESSION['CPM'] != 1 || $_GET['key'] != $_SESSION['key'] || $_GET['key_tmp'] != $_SESSION['key_tmp'] || empty($_SESSION['key']) || empty($_SESSION['key_tmp']) ) {
     die('Hacking attempt...');
@@ -49,12 +49,17 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     // should we decrypt the attachment?
     if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
         include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+        
+        // get key
+        if (empty($ascii_key)) {
+            $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        }
 
         // Prepare encryption options
-        $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
+        $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
         $key = substr(
-            md5("\x2D\xFC\xD8".SALT, true) .
-            md5("\x2D\xFC\xD9".SALT, true),
+            md5("\x2D\xFC\xD8".$ascii_key, true) .
+            md5("\x2D\xFC\xD9".$ascii_key, true),
             0,
             24
         );

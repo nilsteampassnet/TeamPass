@@ -3,8 +3,8 @@
  *
  * @file 		  find.php
  * @author 		  Nils Laumaillé
- * @version       2.1.26
- * @copyright 	  (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright 	  (c) 2009-2017 Nils Laumaillé
  * @licensing	  GNU AFFERO GPL 3.0
  * @link
  */
@@ -48,7 +48,15 @@ echo '
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />
     <input type="hidden" id="personalItem" />
-    <div class="title ui-widget-content ui-corner-all">'.$LANG['find'].'</div>
+    <div class="title ui-widget-content ui-corner-all">
+    '.$LANG['find'].'&nbsp;&nbsp;&nbsp;
+    <button title="'.htmlentities(strip_tags($LANG['move_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'move\').dialog(\'open\');" class="button" style="font-size:16px;">
+        <i class="fa fa-share"></i>
+    </button>&nbsp;
+    <button title="'.htmlentities(strip_tags($LANG['delete_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'delete\').dialog(\'open\');" class="button" style="font-size:16px;">
+        <i class="fa fa-trash"></i>
+    </button>
+    </div>
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
 <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
     <thead><tr>
@@ -72,9 +80,7 @@ echo '
     <div style="">'.$LANG['item_copy_to_folder'].'</div>
     <div style="margin:10px;">
         <select id="copy_in_folder">
-            <option value="0">---</option>' .
-$select_visible_nonpersonal_folders_options .
-'</select>
+        </select>
     </div>
 </div>';
 // DIALOG TO SEE ITEM DATA
@@ -82,6 +88,12 @@ echo '
 <div id="div_item_data" style="display:none;">
     <div id="div_item_data_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <div id="div_item_data_text" style=""></div>
+</div>';
+// DIALOG TO MASS OPERATIONS
+echo '
+<div id="div_mass_op" style="display:none;">
+    <div id="div_mass_html" style=""></div>
+    <div id="div_mass_op_msg" style="text-align:center; margin-top:10px; display:none; padding:10px;" class="ui-corner-all"></div>
 </div>';
 // Load file
 require_once 'find.load.php';

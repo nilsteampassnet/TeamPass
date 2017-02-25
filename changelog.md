@@ -1,9 +1,66 @@
-Last changes
-
-Bug fixing
+2.1.27
+ New   Defuse Encryption implemented in place of phpCrypt
+ NEW   AGSES authentication implemented
+ NEW   Custom Fields data can be encrytped or not in database
+ NEW   Folder copy feature
+ NEW   Mass move or delete operation on Items
+ NEW   Item change proposal
+ IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
+ IMP   Language selection is now in User Profile (Default language is used on authentication page)
+ IMP   User creation dialogbox improved with all user properties
+ IMP   New user login availability is checked "live"
+ IMP   Filtering counters in datatables
+ IMP   Users Management dialogbox improved
+ IMP   2FA authentication change to improve security (no call to external QR generator)
+ UPD   AES library updated
+ FIX   "Find" feature:
+       - copy from public to personal folder
+       - list of folders is refreshed when copying an Item
+ #     Copy folders
+ #1635 New folder inheritance of parent specific settings
+ #1631 Error could be appear on upgrade when checking folders and files
+ #1628 URL link to specific item does not work
+ #1627 Improved label preview length
+ #1625 Request to add/change password
+ #1624 Error 500 while importing item with API (with PHP < 7)
+ #1621 New option: OTV can be disabled
+ #     New option: create Item without password
+ #1620 Direct copy password from seach results and large folders
+ #1616 Cannot show password with IE11
+ #1614 Generate personal folders sets regular root folders also as personal
+ #1608 All folders are deleted
+ #1603 Attached files disappears
+ #1601 Time zone can't be saved in My Profile
+ #1593 Insert duplicate label with API
+ #1592 Show Client IP in mail to admin about logged on users
+ #1588 Fix for OTV links
+ #1587 fix for e-mail to administrator on logon does not work
+ #1581 Fix for new folder Custom Fields inheritance
+ #1579 Fix for preventing a php fatal error
+ #1575 Fix for tree not loaded when user has no access to a folder with children
+ #1571 Drag and drop from PF to public folder makes item password corrupted
+ #1571 Create an item inside another folder than the one selected
+ #1561 Personal folder deletion deletes all
+ #1559 API IP Whitelist check does not consider XFF
+ #1556 Fix bug for upgrading old passwords
+ #1553 LDAP support - Add LDAP port - Add support multi LDAP server
+ #1551 Authentication through LDAP posix-search
  #1550 2 Factor enabled but can still log in without code
+ #1549 Read Only users can use Personal Folders
+ #1543 Wrong Saltkey message after setting
+ #1533 The change of the main SALT Key doesn't work
+ #1532 Added error message in install.js if db-pw contains double quotes
+ #1531 Database otv table originator field should be int instead of tinyint
+ #1514 User language selection is done in Profile dialogbox
+ #1474 New option: create an item without password
+ #1472 "folder access" and "role" settings when adding new user + propage rights from one user
+ #1464 CSV files broken, html entities not decoded, newlines not stripped
+ #1422 Folders deletion protocol has been securized to prevent unconsistencies in folders tree
+ #1412 New option: Manager can move items they can view
+ #1408 Display folders visible by a user
+ #1299 Export to pdf or csv shows htmlencoded
 
-2.1.26
+2.1.27
  #1537 Homepage not loading in French
  #1527 Error Field 'timestamp' doesn't have a default value
  #1526 New .htaccess file in ./includes/config
@@ -71,7 +128,7 @@ Bug fixing
  #1301 add ldap_search_base record for db init
  #1300 After 3 bad login attempts, user needs to wait 10s before new try
  #1299 Export to pdf or csv shows htmlencoded
- #1298 Backup-filename on 2.1.26 contains /
+ #1298 Backup-filename on 2.1.27 contains /
  #1292 SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data
  #1284 fix for can_manage_all_users update during upgrade
  #1279 SyntaxError: Unexpected token î in JSON at position 0

@@ -3,8 +3,8 @@
  *
  * @file          main.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -15,7 +15,7 @@
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     $_SESSION['error']['code'] = "1004"; //Hacking attempt
@@ -86,14 +86,14 @@ switch ($_POST['type']) {
         $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));    //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
 
         // User has decided to change is PW
-        if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "user_change" && $_SESSION['user_admin'] != 1) {
+        if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] === "user_change" && $_SESSION['user_admin'] !== "1") {
             // check if expected security level is reached
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
             // check if badly written
-            $data_roles['fonction_id'] = explode(',',str_replace(';', ',', $data_roles['fonction_id']));
+            $data_roles['fonction_id'] = array_filter(explode(',',str_replace(';', ',', $data_roles['fonction_id'])));
             if ($data_roles['fonction_id'][0] === "") {
-                $data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
+                //$data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 DB::update(
                     prefix_table("users"),
@@ -176,7 +176,7 @@ switch ($_POST['type']) {
                 break;
             }
             // ADMIN has decided to change the USER's PW
-        } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] == "admin_change" || $_POST['change_pw_origine'] == "user_change") && $_SESSION['user_admin'] == 1)) {
+        } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] === "admin_change" || $_POST['change_pw_origine'] === "user_change") && ($_SESSION['user_admin'] === "1" || $_SESSION['user_manager'] === "1" || $_SESSION['user_can_manage_all_users'] === "1"))) {
             // check if user is admin / Manager
             $userInfo = DB::queryFirstRow(
                 "SELECT admin, gestionnaire
@@ -210,7 +210,7 @@ switch ($_POST['type']) {
             );
 
             // update LOG
-            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+            logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
 
             //Send email to user
             if ($_POST['change_pw_origine'] != "admin_change") {
@@ -264,6 +264,12 @@ switch ($_POST['type']) {
     * This will generate the QR Google Authenticator
     */
     case "ga_generate_qr":
+        // is this allowed by setting
+        if (!isset($_SESSION['settings']['ga_reset_by_user']) || $_SESSION['settings']['ga_reset_by_user'] !== "1") {
+            // User cannot ask for a new code
+            echo '[{"error" : "not_allowed"}]';
+        }
+
         // Check if user exists
         if (!isset($_POST['id']) || empty($_POST['id'])) {
             // decrypt and retreive data in JSON format
@@ -294,35 +300,37 @@ switch ($_POST['type']) {
                 echo '[{"error" : "no_email"}]';
             } else {
                 // generate new GA user code
-                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/FixedBitNotation.php");
-                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/GoogleAuthenticator/GoogleAuthenticator.php");
-                $g = new Authentication\GoogleAuthenticator\GoogleAuthenticator();
-                $gaSecretKey = $g->generateSecret();
+                include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+                $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($_SESSION['settings']['ga_website_name']);
+                $gaSecretKey = $tfa->createSecret();
+                $gaTemporaryCode = GenerateCryptKey(12);
 
                 // save the code
                 DB::update(
                     prefix_table("users"),
                     array(
-                        'ga' => $gaSecretKey
+                        'ga' => $gaSecretKey,
+                        'ga_temporary_code' => $gaTemporaryCode
                        ),
                     "id = %i",
                     $data['id']
                 );
 
-                // generate QR url
-                $gaUrl = $g->getURL($data['login'], $_SESSION['settings']['ga_website_name'], $gaSecretKey);
-
                 // send mail?
-                if (isset($_POST['send_email']) && $_POST['send_email'] == 1) {
+                if (isset($_POST['send_email']) && $_POST['send_email'] === "1") {
                     sendEmail (
                         $LANG['email_ga_subject'],
-                        str_replace("#link#", $gaUrl, $LANG['email_ga_text']),
+                        str_replace(
+                            "#2FACode#",
+                            $gaTemporaryCode,
+                            $LANG['email_ga_text']
+                        ),
                         $data['email']
                     );
                 }
 
                 // send back
-                echo '[{ "error" : "0" , "ga_url" : "'.$gaUrl.'" }]';
+                echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace("#email#", "<b>".$data['email']."</b>", addslashes($LANG['admin_email_result_ok'])).'"}]';
             }
         }
         break;
@@ -415,6 +423,7 @@ switch ($_POST['type']) {
             echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
         }
         break;
+
     // Send to user his new pw if key is conform
     case "generate_new_password":
         // decrypt and retreive data in JSON format
@@ -524,16 +533,59 @@ switch ($_POST['type']) {
      * Store the personal saltkey
      */
     case "store_personal_saltkey":
+        $err = "";
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
-        if ($dataReceived['psk'] != "") {
-            $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($dataReceived['psk']));
-            setcookie(
-                "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                encrypt($_SESSION['my_sk'], ""),
-                (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-                '/'
+
+        // manage store
+        if ($dataReceived['psk'] !== "") {
+            // store in session the cleartext for psk
+            $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
+
+            // check if encrypted_psk is in database. If not, add it
+            if (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk'])) {
+                // generate it based upon clear psk
+                $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($dataReceived['psk']);
+
+                // store it in DB
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
+                       ),
+                    "id = %i",
+                    $_SESSION['user_id']
+                );
+            }
+
+            // check if psk is correct.
+            $user_key_encoded = defuse_validate_personal_key(
+                $dataReceived['psk'],
+                $_SESSION['user_settings']['encrypted_psk']
             );
+
+            if (strpos($user_key_encoded, "Error ") !== false) {
+                $err = $user_key_encoded;
+            } else {
+                // Store PSK
+                $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
+                setcookie(
+                    "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                    encrypt($dataReceived['psk'], ""),
+                    (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                    '/'
+                );
+            }
+        } else {
+            $err = "Personal Saltkey is empty!";
         }
+
+        echo prepareExchangedData(
+            array(
+                "error" => $err
+            ),
+            "encode"
+        );
+
         break;
     /**
      * Change the personal saltkey
@@ -543,17 +595,56 @@ switch ($_POST['type']) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
+
+        //init
+        $list = "";
+        $nb = 0;
+
         //decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
 
         //Prepare variables
         $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
         $oldPersonalSaltkey = htmlspecialchars_decode($dataReceived['old_sk']);
-        if (empty($oldPersonalSaltkey)) {
-            $oldPersonalSaltkey = $_SESSION['my_sk'];
+
+        // check old psk
+        $user_key_encoded = defuse_validate_personal_key(
+            $oldPersonalSaltkey,
+            $_SESSION['user_settings']['encrypted_psk']
+        );
+        if (strpos($user_key_encoded, "Error ") !== false) {
+            echo prepareExchangedData(
+                array(
+                    "list" => $list,
+                    "error" => $user_key_encoded,
+                    "nb_total" => $nb
+                ),
+                "encode"
+            );
+            break;
+        } else {
+            // Store PSK
+            $_SESSION['user_settings']['encrypted_oldpsk'] = $user_key_encoded;
         }
 
-        $list = "";
+        // generate the new encrypted psk based upon clear psk
+        $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($newPersonalSaltkey);
+
+        // store it in DB
+        DB::update(
+            prefix_table("users"),
+            array(
+                'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
+               ),
+            "id = %i",
+            $_SESSION['user_id']
+        );
+
+        $user_key_encoded = defuse_validate_personal_key(
+            $newPersonalSaltkey,
+            $_SESSION['user_settings']['encrypted_psk']
+        );
+        $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
 
         // Change encryption
         $rows = DB::query(
@@ -577,10 +668,9 @@ switch ($_POST['type']) {
         }
 
         // change salt
-        $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
         setcookie(
             "TeamPass_PFSK_".md5($_SESSION['user_id']),
-            encrypt($_SESSION['my_sk'], ""),
+            encrypt($newPersonalSaltkey, ""),
             time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
             '/'
         );
@@ -664,6 +754,11 @@ switch ($_POST['type']) {
      * Send emails not sent
      */
     case "send_waiting_emails":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
         if (isset($_SESSION['settings']['enable_send_email_on_user_login'])
             && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
             && isset($_SESSION['key'])
@@ -947,6 +1042,116 @@ switch ($_POST['type']) {
         echo json_encode($array);
         break;
 
+    /**
+     * Check if suggestions are existing
+     */
+    case "is_existings_suggestions":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if ($_SESSION['user_manager'] === "1" || $_SESSION['is_admin'] === "1") {
+            $count = 0;
+            DB::query("SELECT * FROM ".$pre."items_change");
+            $count += DB::count();
+            DB::query("SELECT * FROM ".$pre."suggestion");
+            $count += DB::count();
+
+            echo '[ { "error" : "" , "count" : "'.$count.'" , "show_sug_in_menu" : "0"} ]';
+        } else if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
+            echo '[ { "error" : "" , "count" : "'.$_SESSION['nb_item_change_proposals'].'" , "show_sug_in_menu" : "1"} ]';
+        } else {
+            echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
+        }
+
+        break;
+
+    /**
+     * Check if suggestions are existing
+     */
+    case "sending_statistics":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        if (
+            isset($_SESSION['settings']['send_statistics_items']) && isset($_SESSION['settings']['send_stats']) && isset($_SESSION['settings']['send_stats_time'])
+            && $_SESSION['settings']['send_stats'] === "1"
+            && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) > time()
+        ) {
+            $statsToSend = "";
+
+            // get statistics data
+            $stats_data = getStatisticsData();
 
 
+            // get statistics items to share
+            $statsToSend = [];
+            $statsToSend['ip'] = $_SERVER['SERVER_ADDR'];
+            $statsToSend['timestamp'] = time();
+            foreach (array_filter(explode(";", $_SESSION['settings']['send_statistics_items'])) as $data) {
+                if ($data === "stat_languages") {
+                    $tmp = "";
+                    foreach ($stats_data[$data] as $key => $value) {
+                        if (empty($tmp)) {
+                            $tmp = $key."-".$value;
+                        } else {
+                            $tmp .= ",".$key."-".$value;
+                        }
+                    }
+                    $statsToSend[$data] = $tmp;
+                } else if ($data === "stat_country") {
+                    $tmp = "";
+                    foreach ($stats_data[$data] as $key => $value) {
+                        if (empty($tmp)) {
+                            $tmp = $key."-".$value;
+                        } else {
+                            $tmp .= ",".$key."-".$value;
+                        }
+                    }
+                    $statsToSend[$data] = $tmp;
+                } else {
+                    $statsToSend[$data] = $stats_data[$data];
+                }
+            }
+
+            // connect to Teampass Statistics database
+            $link2 = new MeekroDB(
+                "teampass.pw",
+                "tp_stats",
+                "KI6pIYk5ZSAA9ZsknnOC",
+                "teampass_statistics",
+                "3306",
+                "utf8"
+            );
+
+            $err = $link2->insert(
+                "statistics",
+                $statsToSend
+            );
+
+            // update table misc with current timestamp
+            DB::update(
+                prefix_table("misc"),
+                array(
+                    'valeur' => time()
+                   ),
+                "type = %s AND intitule = %s",
+                'admin',
+                'send_stats_time'
+            );
+
+
+            //permits to test only once by session
+            $_SESSION['temporary']['send_stats_done'] = true;
+            $_SESSION['settings']['send_stats_time'] = time();
+
+            echo '[ { "error" : "'.$err.'" , "done" : "1"} ]';
+        } else {
+            echo '[ { "error" : "" , "done" : "0"} ]';
+        }
+
+        break;
 }

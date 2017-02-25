@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sessions.php');
+require_once('../SecureHandler.php');
 session_start();
 if (
         !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -112,7 +112,7 @@ if ($file_size <= 0) {
 // Get parameters
 $chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
 $chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
-$fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
+$fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANITIZE_STRING) : '';
 
 // Validate the upload
 if (!isset($_FILES['file'])) {
@@ -126,7 +126,14 @@ if (!isset($_FILES['file'])) {
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['file']['name'])));
+$file_name = preg_replace(
+    '/[^'.$valid_chars_regex.'\.]/',
+    '',
+    filter_var(
+        strtolower(basename($_FILES['file']['name'])),
+        FILTER_SANITIZE_STRING
+    )
+);
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
     handleError('Invalid file name: '.$file_name.'.', 114);
 }
@@ -146,7 +153,7 @@ if (!in_array(
 
 // Clean the fileName for security reasons
 $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
-$fileName = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($fileName)));
+$fileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
@@ -262,14 +269,21 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
     rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["xmlFile"]);
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+    // sanitize the new file name
+    $newFileName = preg_replace('/[^\w\._]+/', '_', $_POST['newFileName']);
+    $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));
+
+    // get file extension
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] . '.' . $ext);
+
+    // rename the file
+    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext);
 
     // make thumbnail
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     make_thumb(
-        $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] . '.' . $ext,
-        $targetDir . DIRECTORY_SEPARATOR . $_POST['newFileName'] ."_thumb" . '.' . $ext,
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext,
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName ."_thumb" . '.' . $ext,
         40
     );
 
@@ -291,14 +305,19 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar']);
     @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar_thumb']);
 
-    DB::query("UPDATE ".$pre."users
-        SET avatar='".$_POST['newFileName'] . '.' . $ext."', avatar_thumb='".$_POST['newFileName'] ."_thumb" . '.' . $ext."'
-        WHERE id=%i", $_SESSION['user_id']);
+    // store in DB the new avatar
+    DB::query(
+        "UPDATE ".$pre."users
+        SET avatar='".$newFileName . '.' . $ext."', avatar_thumb='".$newFileName ."_thumb" . '.' . $ext."'
+        WHERE id=%i",
+        $_SESSION['user_id']
+    );
 
-    $_SESSION['user_avatar'] = $_POST['newFileName'].'.'.$ext;
-    $_SESSION['user_avatar_thumb'] = $_POST['newFileName']."_thumb".'.'.$ext;
+    // store in session
+    $_SESSION['user_avatar'] = $newFileName.'.'.$ext;
+    $_SESSION['user_avatar_thumb'] = $newFileName."_thumb".'.'.$ext;
 
-    echo '{"filename" : "'.$_POST['newFileName'].'.'.$ext.'"}';
+    echo '{"filename" : "'.$_SESSION['user_avatar'].'" , "filename_thumb" : "'.$_SESSION['user_avatar_thumb'].'"}';
     exit();
 
 } else {

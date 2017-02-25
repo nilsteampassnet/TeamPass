@@ -2,8 +2,8 @@
 /**
  * @file          export.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -48,7 +48,7 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 //User's language loading
 $k['langage'] = @$_SESSION['user_language'];
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-;
+
 //Manage type of action asked
 switch ($_POST['type']) {
     case "initialize_export_table":
@@ -76,7 +76,7 @@ switch ($_POST['type']) {
 
             // send query
             $rows = DB::query(
-                "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
+                "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
                     l.date as date, i.pw_iv as pw_iv,
                     n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
@@ -109,10 +109,52 @@ switch ($_POST['type']) {
                     } else {
                         //encrypt PW
                         if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                            $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                            $pw = cryption(
+                                $record['pw'],
+                                mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                "decrypt"
+                            );
                         } else {
-                            $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                            $pw = cryption(
+                                $record['pw'],
+                                "",
+                                "decrypt"
+                            );
                         }
+
+                        // get KBs
+                        $arr_kbs = "";
+                        $rows_kb = DB::query(
+                            "SELECT b.label, b.id
+                            FROM ".prefix_table("kb_items")." AS a
+                            INNER JOIN ".prefix_table("kb")." AS b ON (a.kb_id = b.id)
+                            WHERE a.item_id = %i",
+                            $record['id']
+                        );
+                         foreach ($rows_kb as $rec_kb) {
+                            if (empty($arr_kbs)) {
+                                $arr_kbs = $rec_kb['label'];
+                            } else {
+                                $arr_kbs .= " | ".$rec_kb['label'];
+                            }
+                         }
+
+                        // get TAGS
+                        $arr_tags = "";
+                        $rows_tag = DB::query(
+                            "SELECT tag
+                            FROM ".prefix_table("tags")."
+                            WHERE item_id = %i",
+                            $record['id']
+                        );
+                         foreach ($rows_tag as $rec_tag) {
+                            if (empty($arr_tags)) {
+                                $arr_tags = $rec_tag['tag'];
+                            } else {
+                                $arr_tags .= " ".$rec_tag['tag'];
+                            }
+                         }
+
                         // store
                         DB::insert(
                             prefix_table("export"),
@@ -121,9 +163,23 @@ switch ($_POST['type']) {
                                 'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                 'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true),
                                 'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
-                                'login' => ($record['login']),
-                                'path' => $path
+                                'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'path' => $path,
+                                'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'kbs' => $arr_kbs,
+                                'tags' => $arr_tags
                             )
+                        );
+
+                        // log
+                        logItems(
+                            $record['id'],
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_export',
+                            $_SESSION['login'],
+                            'pdf'
                         );
                     }
                 }
@@ -142,15 +198,15 @@ switch ($_POST['type']) {
         if ($counter > 0) {
             // print
             //Some variables
-            $table_full_width = 190;
-            $table_col_width = array(45, 40, 45, 60);
-            $table = array('label', 'login', 'pw', 'description');
+            $table_full_width = 300;
+            $table_col_width = array(40, 30, 30, 60, 27, 40, 25, 25);
+            $table = array('label', 'login', 'pw', 'description', 'email', 'url', 'kbs', 'tags');
             $prev_path = "";
 
             //Prepare the PDF file
             include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
 
-            $pdf=new FPDF_Protection();
+            $pdf = new FPDF_Protection("P", "mm", "A4", "ma page");
             $pdf->SetProtection(array('print'), $_POST['pdf_password']);
 
             //Add font for regular text
@@ -159,20 +215,19 @@ switch ($_POST['type']) {
             $pdf->AddFont('LiberationMono', '');
 
             $pdf->aliasNbPages();
-            $pdf->addPage();
-            $pdf->SetFont('helvetica', '', 16);
-            $pdf->Cell(0, 10, $LANG['print_out_pdf_title'], 0, 1, 'C', false);
-            $pdf->SetFont('helvetica', '', 12);
-            $pdf->Cell(0, 10, $LANG['pdf_del_date']." ".date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()).' '.$LANG['by'].' '.$_SESSION['login'], 0, 1, 'C', false);
+            $pdf->addPage(L);
 
             $prev_path = "";
-            $table = array('label', 'login', 'pw', 'description');
             foreach ($rows as $record) {
                 // decode
                 $record['label'] = utf8_decode($record['label']);
                 $record['login'] = utf8_decode($record['login']);
                 $record['pw'] = utf8_decode($record['pw']);
                 $record['description'] = utf8_decode($record['description']);
+                $record['email'] = utf8_decode($record['email']);
+                $record['url'] = utf8_decode($record['url']);
+                $record['kbs'] = utf8_decode($record['kbs']);
+                $record['tags'] = utf8_decode($record['tags']);
 
                 $printed_ids[] = $record['id'];
                 if ($prev_path != $record['path']) {
@@ -184,7 +239,11 @@ switch ($_POST['type']) {
                     $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
                     $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
                     $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, "C", 1);
+                    $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, "C", 1);
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) $record['pw'] = "";
@@ -194,12 +253,15 @@ switch ($_POST['type']) {
                 $nb = max($nb, nbLines($table_col_width[1], $record['login']));
                 $nb = max($nb, nbLines($table_col_width[3], $record['description']));
                 $nb = max($nb, nbLines($table_col_width[2], $record['pw']));
+                $nb = max($nb, nbLines($table_col_width[5], $record['url']));
+                $nb = max($nb, nbLines($table_col_width[6], $record['kbs']));
+                $nb = max($nb, nbLines($table_col_width[7], $record['tags']));
 
                 $h=5*$nb;
                 //Page break needed?
                 checkPageBreak($h);
                 //Draw cells
-                $pdf->SetFont('helvetica', '', 9);
+                $pdf->SetFont('helvetica', '', 8);
                 for ($i=0; $i<count($table); $i++) {
                     $w=$table_col_width[$i];
                     $a='L';
@@ -242,7 +304,11 @@ switch ($_POST['type']) {
             'pw' => "pw",
             'login' => "login",
             'restricted_to' => "restricted_to",
-            'perso' => "perso"
+            'perso' => "perso",
+            'url' => "url",
+            'email' => "email",
+            'kbs' => "kb",
+            'tags' => "tag"
         );
 
         $id_managed = '';
@@ -252,7 +318,7 @@ switch ($_POST['type']) {
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 $rows = DB::query(
-                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login,
+                    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
                        l.date as date, i.pw_iv as pw_iv,
                        n.renewal_period as renewal_period
                     FROM ".prefix_table("items")." as i
@@ -281,20 +347,68 @@ switch ($_POST['type']) {
                         } else {
                             //encrypt PW
                             if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                                $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                    "decrypt"
+                                );
                             } else {
-                                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                                $pw = cryption(
+                                    $record['pw'],
+                                    "",
+                                    "decrypt"
+                                );
                             }
+
+                            // get KBs
+                            $arr_kbs = [];
+                            $rows_kb = DB::query(
+                                "SELECT b.label, b.id
+                                FROM ".prefix_table("kb_items")." AS a
+                                INNER JOIN ".prefix_table("kb")." AS b ON (a.kb_id = b.id)
+                                WHERE a.item_id = %i",
+                                $record['id']
+                            );
+                             foreach ($rows_kb as $rec_kb) {
+                                array_push($arr_kbs, $rec_kb['label']);
+                             }
+
+                            // get TAGS
+                            $arr_tags = [];
+                            $rows_tag = DB::query(
+                                "SELECT tag
+                                FROM ".prefix_table("tags")."
+                                WHERE item_id = %i",
+                                $record['id']
+                            );
+                             foreach ($rows_tag as $rec_tag) {
+                                array_push($arr_tags, $rec_tag['tag']);
+                             }
+
                             $full_listing[$i] = array(
                                 'id' => $record['id'],
-                                'label' => htmlspecialchars_decode($record['label']),
+                                'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                 'description' => htmlspecialchars_decode(addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
-                                'pw' => addslashes($pw['string']),
-                                'login' => htmlspecialchars_decode($record['login']),
+                                'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
+                                'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
                                 'restricted_to' => $record['restricted_to'],
-                                'perso' => $record['perso']
+                                'perso' => $record['perso'] === "0" ? "False" : "True",
+                                'url' => $record['url'] !== "none" ? htmlspecialchars_decode($record['url']) : "",
+                                'email' => $record['email'] !== "none" ? htmlspecialchars_decode($record['email']) : "",
+                                'kbs' => implode(" | ", $arr_kbs),
+                                'tags' => implode(" ", $arr_tags)
                             );
                             $i++;
+
+                            // log
+                            logItems(
+                                $record['id'],
+                                $record['label'],
+                                $_SESSION['user_id'],
+                                'at_export',
+                                $_SESSION['login'],
+                                'csv'
+                            );
                         }
                     }
                     $id_managed = $record['id'];
@@ -329,7 +443,7 @@ switch ($_POST['type']) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 // count elements to display
                 $result = DB::query(
-                    "SELECT i.id AS id, i.restricted_to AS restricted_to, i.perso AS perso
+                    "SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
@@ -358,6 +472,16 @@ switch ($_POST['type']) {
                     ) {
                         array_push($idsList, $record['id']);
                         $objNumber++;
+
+                        // log
+                        logItems(
+                            $record['id'],
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_export',
+                            $_SESSION['login'],
+                            'html'
+                        );
                     }
                 }
             }
@@ -452,9 +576,17 @@ Enter the decryption key : <input type="password" id="saltkey" />
             if (empty($id_managed) || $id_managed != $record['id']) {
                 // decrypt PW
                 if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
-                    $pw = cryption($record['pw'], mysqli_escape_string($link, stripslashes($_POST['salt_key'])), $record['pw_iv'], "decrypt");
+                    $pw = cryption(
+                        $record['pw'],
+                        mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                        "decrypt"
+                    );
                 } else {
-                    $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
+                    $pw = cryption(
+                        $record['pw'],
+                        "",
+                        "decrypt"
+                    );
                 }
                 array_push($full_listing,array(
                     'id_tree' => $record['id_tree'],
@@ -654,3 +786,4 @@ function nbLines($w, $txt)
 
     return $nl;
 }
+

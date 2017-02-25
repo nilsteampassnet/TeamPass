@@ -3,8 +3,8 @@
 /**
  * @file          views_database.load.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -41,7 +41,7 @@ function killEntry(type, id)
             }
         );
     } else if (type == "disconnect_user") {
-    	$.post(
+        $.post(
                 "sources/users.queries.php",
                 {
                     type    : "disconnect_user",
@@ -59,16 +59,16 @@ function killEntry(type, id)
  * Manage display of divs
  */
 function manage_div_display(show_id){
-	var all_divs = new Array();
-	all_divs[0] = "tab5_1";
-	all_divs[1] = "tab5_2";
-	for (i=0;i<all_divs.length;i++) {
-	    if (all_divs[i] == show_id) {
-	        $("#"+all_divs[i]).show();
-	    } else {
-	    	$("#"+all_divs[i]).hide();
-	    }
-	}
+    var all_divs = new Array();
+    all_divs[0] = "tab5_1";
+    all_divs[1] = "tab5_2";
+    for (i=0;i<all_divs.length;i++) {
+        if (all_divs[i] == show_id) {
+            $("#"+all_divs[i]).show();
+        } else {
+            $("#"+all_divs[i]).hide();
+        }
+    }
 }
 
 /**
@@ -124,7 +124,7 @@ $(function() {
         title: "<?php echo $LANG["admin_action"];?>",
         buttons: {
             "<?php echo $LANG["ok"];?>": function() {
-            	$.post(
+                $.post(
                     "sources/users.queries.php",
                     {
                         type   : "disconnect_all_users",
@@ -143,8 +143,8 @@ $(function() {
     });
 
     $("#but_disconnect_all_users").click(function() {
-    	$("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"];?>");
-    	$("#div_dialog_message").dialog("open");
+        $("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"];?>");
+        $("#div_dialog_message").dialog("open");
     });
 });
 //]]>

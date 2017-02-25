@@ -2,8 +2,8 @@
 /**
  * @file          kb.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -108,6 +108,9 @@ echo '
         <select id="kb_associated_to" class="multiselect" multiple="multiple" name="kb_associated_to[]" style="width: 860px; height: 150px;">';
             //get list of available items
             $items_id_list = array();
+            if (empty($_SESSION['list_folders_limited'])) {
+                $_SESSION['list_folders_limited'] = array();
+            }
             $rows = DB::query(
                 "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
                     l.date as date
@@ -121,7 +124,14 @@ echo '
                 'at_creation',
                 'at_modification',
                 'at_pw :%',
-                array_unique(array_merge($_SESSION['all_non_personal_folders'], $_SESSION['list_folders_editable_by_role'], $_SESSION['list_restricted_folders_for_items'], $_SESSION['list_folders_limited']))
+                array_unique(
+                    array_merge(
+                        $_SESSION['all_non_personal_folders'],
+                        $_SESSION['list_folders_editable_by_role'],
+                        $_SESSION['list_restricted_folders_for_items'],
+                        $_SESSION['list_folders_limited']
+                    )
+                )
             );
             foreach ($rows as $reccord) {
                 if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {

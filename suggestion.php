@@ -2,8 +2,8 @@
 /**
  * @file          suggestion.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -118,27 +118,53 @@ foreach ($folders as $folder) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['suggestion'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\')" class="button" style="font-size:16px;">
+    <button title="'.$LANG['suggestion_add'].'" onclick="OpenDialog(\'suggestion_form\'); $(\'#tabs\').tabs({ active: 0 });" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
 </div>';
 
-//Show the SUGGESTION in a table view
+// prepare tabs
 echo '
-<div style="margin:10px auto 25px auto;min-height:250px;" id="kb_page">
-<table id="t_suggestion" class="hover" width="100%">
-    <thead><tr>
-        <th style="width:30px;"></th>
-        <th style="width:20%;">'.$LANG['label'].'</th>
-        <th style="width:30%;">'.$LANG['description'].'</th>
-        <th style="width:15%;">'.$LANG['group'].'</th>
-        <th style="width:10%;">'.$LANG['author'].'</th>
-        <th style="width:15%;">'.$LANG['comment'].'</th>
-    </tr></thead>
-    <tbody>
-        <tr><td></td></tr>
-    </tbody>
-</table>
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1">'.$LANG['show_suggestions'].'</a></li>
+        <li><a href="#tabs-2">'.$LANG['show_changes'].'</a></li>
+    </ul>
+    <div id="tabs-1">
+        <div style="margin:10px auto 25px auto;min-height:250px;" id="kb_page">
+            <table id="t_suggestion" class="hover items_table" width="100%">
+                <thead><tr>
+                    <th></th>
+                    <th>'.$LANG['label'].'</th>
+                    <th>'.$LANG['description'].'</th>
+                    <th>'.$LANG['group'].'</th>
+                    <th>'.$LANG['author'].'</th>
+                    <th>'.$LANG['comment'].'</th>
+                </tr></thead>
+                <tbody>
+                    <tr><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div id="tabs-2">
+        <div style="margin:10px auto 25px auto;min-height:250px;" id="kb_page_changes">
+            <table id="t_change" class="hover items_table" width="100%" style="">
+                <thead><tr>
+                    <th></th>
+                    <th>'.$LANG['author'].'</th>
+                    <th>'.$LANG['date'].'</th>
+                    <th>'.$LANG['item_id'].'</th>
+                    <th>'.$LANG['label'].'</th>
+                    <th>'.$LANG['group'].'</th>
+                    <th>'.$LANG['comment'].'</th>
+                </tr></thead>
+                <tbody>
+                    <tr><td></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>';
 
 /* DIV FOR ADDING A SUGGESTION */
@@ -149,32 +175,32 @@ echo '
     <label for="suggestion_label" class="label_cpm">'.$LANG['label'].'</label>
     <input type="text" id="suggestion_label" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
 
-	<label for="suggestion_description" class="label_cpm">'.$LANG['description'].'</label>
-	<textarea rows="2" cols="70" name="suggestion_description" id="suggestion_description" class="input" style="width:100%;"></textarea>
+    <label for="suggestion_description" class="label_cpm">'.$LANG['description'].'</label>
+    <textarea rows="2" cols="70" name="suggestion_description" id="suggestion_description" class="input" style="width:100%;"></textarea>
     <br />
 
-	<label for="suggestion_folder" class="label_cpm">'.$LANG['group'].'</label>
-	<select name="suggestion_folder" id="suggestion_folder" onchange="GetRequiredComplexity()" style="width:100%;">
-		'.$selectVisibleFoldersOptions.'
-	</select>
-	<br /><br />
+    <label for="suggestion_folder" class="label_cpm">'.$LANG['group'].'</label>
+    <select name="suggestion_folder" id="suggestion_folder" onchange="GetRequiredComplexity()" style="width:100%;">
+        '.$selectVisibleFoldersOptions.'
+    </select>
+    <br /><br />
 
-	<label for="suggestion_pwd" class="label_cpm">'.$LANG['index_password'].
-	'&nbsp;
-	<span id="pw_wait" style="display:none;"><img src="includes/images/ajax-loader.gif" alt="loading" /></span>
-	<span id="complexity_required_text"></span>
-	</label>
-	<input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
-	<div style="width:100%;">
-		<input type="hidden" id="complexity_required" />
-		<div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
-		<input type="hidden" id="password_complexity" />
-	</div>
+    <label for="suggestion_pwd" class="label_cpm">'.$LANG['index_password'].
+    '&nbsp;
+    <span id="pw_wait" style="display:none;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
+    <span id="complexity_required_text"></span>
+    </label>
+    <input type="password" id="suggestion_pwd" class="input text ui-widget-content ui-corner-all" style="width:100%;" />
+    <div style="width:100%;">
+        <input type="hidden" id="complexity_required" />
+        <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
+        <input type="hidden" id="password_complexity" />
+    </div>
 
-	<label for="suggestion_comment" class="label_cpm">'.$LANG['comment'].'</label>
-	<textarea rows="2" cols="70" name="suggestion_comment" id="suggestion_comment" class="input" style="width:100%;"></textarea>
+    <label for="suggestion_comment" class="label_cpm">'.$LANG['comment'].'</label>
+    <textarea rows="2" cols="70" name="suggestion_comment" id="suggestion_comment" class="input" style="width:100%;"></textarea>
 
-	<div style="padding:5px; z-index:9999999; width:100%;" class="ui-widget-content ui-state-focus ui-corner-all" id="add_suggestion_wait">
+    <div style="padding:5px; z-index:9999999; width:100%;" class="ui-widget-content ui-state-focus ui-corner-all" id="add_suggestion_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
 </div>';
@@ -188,12 +214,18 @@ echo '
 //CONFIRM DIALOG
 echo '
 <div id="div_suggestion_validate" style="display:none;">
-	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="suggestion_edit_wait">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="suggestion_edit_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
-	<div style="margin:5px 0 5px 0; text-align:center; font-size:15px; font-weight:bold;" id="suggestion_add_label"></div>
+    <div style="margin:5px 0 5px 0; text-align:center; font-size:15px; font-weight:bold;" id="suggestion_add_label"></div>
     <p><span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;">&nbsp;</span>'.$LANG['suggestion_validate'].'</p>
     <div style="display:none;margin-top:10px;" id="suggestion_is_duplicate">'.$LANG['suggestion_is_duplicate'].'</div>
+</div>';
+
+//VIEW DIALOG
+echo '
+<div id="div_suggestion_view" style="display:none;">
+    <div style=" margin-top:10px;" id="div_suggestion_html"></div>
 </div>';
 
 // hidden

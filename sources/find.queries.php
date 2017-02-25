@@ -2,8 +2,8 @@
 /**
  * @file          find.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
@@ -185,7 +185,12 @@ if (!empty($listPf)) {
     $sWhere = "WHERE ".$sWhere;
 }
 
-DB::query("SELECT id FROM ".prefix_table("cache"));
+DB::query(
+    "SELECT id FROM ".prefix_table("cache")."
+    $sWhere
+    $sOrder",
+    $crit
+);
 $iTotal = DB::count();
 
 $rows = DB::query(
@@ -214,13 +219,34 @@ if (!isset($_GET['type'])) {
         $getItemInList = true;
         $sOutputItem = "[";
 
+        // massive move/delete enabled?
+        $checkbox = '';
+        if (isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] === "1") {
+            // check role access on this folder (get the most restrictive) (2.1.23)
+            $accessLevel = 2;
+            $arrTmp = [];
+//echo $_SESSION['fonction_id'];
+            foreach (explode(';', $_SESSION['fonction_id']) as $role) {
+                $access = DB::queryFirstRow(
+                    "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
+                    $role,
+                    $record['id_tree']
+                );
+                if ($access['type'] == "R") array_push($arrTmp, 1);
+                else if ($access['type'] == "W") array_push($arrTmp, 0);
+                else array_push($arrTmp, 2);
+            }
+            $accessLevel = min($arrTmp);
+            if ($accessLevel === 0)
+                $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
+        }
+
         //col1
         $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
-            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item(' . $record['id'] . ',' . $record['perso'] . ');\" style=\"cursor:pointer;\"></i>&nbsp;'.
-            '<i class=\"fa fa-clone tip\" title=\"'.$LANG['item_menu_copy_elem'].'\" onClick=\"javascript:copy_item(' . $record['id'] . ');\" style=\"cursor:pointer;\"></i>&nbsp;", ';
+            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item(' . $record['id'] . ',' . $record['perso'] . ');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['label']), ENT_QUOTES) . '", ';
+        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">' . htmlspecialchars(stripslashes($record['label']), ENT_QUOTES) . '</span>", ';
 
         //col3
         $sOutputItem .= '"' . str_replace("&amp;", "&", htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)) . '", ';
@@ -433,8 +459,9 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare new line
-        $sOutput .= '<li ondblclick="'.$action_dbl.'" class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search" onclick="'.$action.'
-        "><i class="fa fa-key mi-yellow"></i>&nbsp;'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
+        $sOutput .= '<li class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search">'.
+            '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
+            '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
@@ -447,16 +474,49 @@ if (!isset($_GET['type'])) {
         // set folder
         $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(mb_substr(cleanString($record['folder']), 0, 65))).'</span>';
 
-        $sOutput .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+        $sOutput .= '</span><span style="float:right;margin:2px 10px 0px 0px;">';
+
+        // prepare login mini icon
+        if (!empty($record['login'])) {
+            $sOutput .= '<i class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+        }
+
+        // prepare pwd copy if enabled
+        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
+            $data_item = DB::queryFirstRow(
+                "SELECT pw
+                from ".prefix_table("items")." WHERE id=%i",
+                $record['id']
+            );
+
+            if ($record['perso'] === "1" && isset($_SESSION['user_settings']['session_psk'])) {
+                $pw = cryption(
+                    $data_item['pw'],
+                    $_SESSION['user_settings']['session_psk'],
+                    "decrypt"
+                );
+            } else {
+                $pw = cryption(
+                    $data_item['pw'],
+                    "",
+                    "decrypt"
+                );
+            }
+
+            // test charset => may cause a json error if is not utf8
+            $pw = $pw['string'];
+            if (isUTF8($pw)) {
+                $sOutput .= '<i class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+            }
+        }
+
 
         // Prepare make Favorite small icon
-        $sOutput .= '&nbsp;<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
         if (in_array($record['id'], $_SESSION['favourites'])) {
-            $sOutput .= '<i class="fa fa-star mi-yellow fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>&nbsp;';
+            $sOutput .= '<i class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" title="'.$LANG['item_menu_del_from_fav'].'"></i>';
         } else {
-            $sOutput .= '<i class="fa fa-star-o fa-lg" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>&nbsp;';
+            $sOutput .= '<i class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" title="'.$LANG['item_menu_add_to_fav'].'"></i>';
         }
-        $sOutput .= "</span>";
 
         $sOutput .= '</li>';
     }

@@ -2,8 +2,8 @@
 /**
  * @file          suggestion.load.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -20,6 +20,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
 
 <script type="text/javascript">
 //<![CDATA[
+    var oTable1;
+    var oTable2;
+
     //Function opening
     function openKB(id)
     {
@@ -76,7 +79,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                 } else if (data[0].status = "duplicate") {
                     $("#suggestion_is_duplicate").show().addClass("ui-state-error");
                 }
-				$("#suggestion_add_label").html(suggestion_text);
+                $("#suggestion_add_label").html(suggestion_text);
                 $("#div_loading").hide();
                 // show dialog
                 $("#div_suggestion_validate").dialog("open");
@@ -113,18 +116,91 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
         return funcReturned;
     }
 
-    $(function() {
+    function showDiv(div_name) {
+        $(".items_table").hide();
+        $("#" + div_name).show();
+    }
 
-        //Launch the datatables pluggin
-        $("#t_suggestion").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
-            "sPaginationType": "full_numbers",
-            "bProcessing": true,
-            "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.suggestion.php",
-            "bJQueryUI": true,
-            "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+    function viewSuggestion(id) {
+        $("#suggestion_id").val(id);
+        $("#div_suggestion_view").dialog("open");
+    }
+
+    $(function() {
+        $( "#tabs" ).tabs({
+            create: function( event, ui ) {
+                oTable1 = $("#t_suggestion").dataTable({
+                    "aaSorting": [[ 1, "asc" ]],
+                    "sPaginationType": "full_numbers",
+                    "bProcessing": true,
+                    "bDestroy": true,
+                    "bServerSide": true,
+                    "sAjaxSource": "sources/datatable/datatable.suggestion.php",
+                    "bJQueryUI": true,
+                    "oLanguage": {
+                        "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                    },
+                    "columns": [
+                        {"width": "7%", className: "dt-body-left"},
+                        {"width": "22%"},
+                        {"width": "28%"},
+                        {"width": "15%"},
+                        {"width": "10%"},
+                        {"width": "20%"}
+                    ]
+                });
+                oTable1.fnDraw(false);
+            },
+            activate: function (event, ui) {
+                var act = $("#tabs").tabs("option", "active");
+
+                if (act === 0) {
+                    oTable1 = $("#t_suggestion").dataTable({
+                        "aaSorting": [[ 1, "asc" ]],
+                        "sPaginationType": "full_numbers",
+                        "bProcessing": true,
+                        "bDestroy": true,
+                        "bServerSide": true,
+                        "sAjaxSource": "sources/datatable/datatable.suggestion.php",
+                        "bJQueryUI": true,
+                        "oLanguage": {
+                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                        },
+                        "columns": [
+                            {"width": "7%", className: "dt-body-left"},
+                            {"width": "22%"},
+                            {"width": "28%"},
+                            {"width": "15%"},
+                            {"width": "10%"},
+                            {"width": "20%"}
+                        ]
+                    });
+                    oTable1.fnDraw(false);
+                } else if (act === 1) {
+                    oTable2 = $("#t_change").dataTable({
+                        "aaSorting": [[ 1, "asc" ]],
+                        "sPaginationType": "full_numbers",
+                        "bProcessing": true,
+                        "bDestroy": true,
+                        "bServerSide": true,
+                        "sAjaxSource": "sources/datatable/datatable.items_change.php",
+                        "bJQueryUI": true,
+                        "oLanguage": {
+                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                        },
+                        "columns": [
+                            {"width": "5%", className: "dt-body-left"},
+                            {"width": "15%"},
+                            {"width": "10%"},
+                            {"width": "10%"},
+                            {"width": "20%"},
+                            {"width": "15%"},
+                            {"width": "20%"}
+                        ]
+                    });
+                    oTable2.fnDraw(false);
+                }
+                $('#tabs').tooltipster({multiple: true});
             }
         });
 
@@ -166,12 +242,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             width: 400,
             height: 240,
             title: "<?php echo $LANG['suggestion_validate_confirm'];?>",
-			open: function( event, ui ) {
-				$("#suggestion_edit_wait").hide();
-			},
+            open: function( event, ui ) {
+                $("#suggestion_edit_wait").hide();
+            },
             buttons: {
                 "<?php echo $LANG['confirm'];?>": function() {
-					$("#suggestion_edit_wait").show();
+                    $("#suggestion_edit_wait").show();
                     $.post(
                         "sources/suggestion.queries.php",
                         {
@@ -217,7 +293,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                     } else if (parseInt($("#password_complexity").val()) < parseInt($("#complexity_required").val())) {
                         $("#suggestion_error").show().html("<?php echo $LANG['error_complex_not_enought'];?>").addClass("ui-state-error");
                     } else {
-						$("#add_suggestion_wait").show();
+                        $("#add_suggestion_wait").show();
                         var data = '{"label":"'+sanitizeString($("#suggestion_label").val())+
                             '","password":"'+sanitizeString($("#suggestion_pwd").val())+
                             '", "description":"'+sanitizeString($("#suggestion_description").val()).replace(/\n/g, '<br />')+
@@ -238,7 +314,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                                 } else if (data[0].status = "duplicate_suggestion") {
                                     $("#suggestion_error").show().html("<?php echo $LANG['suggestion_error_duplicate'];?>").addClass("ui-state-error");
                                 }
-								$("#add_suggestion_wait").hide();
+                                $("#add_suggestion_wait").hide();
                             },
                             "json"
                         );
@@ -250,13 +326,124 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             },
             open:function(event, ui) {
                 $("#suggestion_email, #suggestion_pwd, #suggestion_email").removeClass("ui-state-error");
-				$("#add_suggestion_wait").hide();
-				//empty dialogbox
-				$("#suggestion_form input, #suggestion_form select, #suggestion_form textarea").val("");
-				$("#password_complexity").val("0");
-				$("#complexity_required_text").html("");
-				$("#suggestion_pwd").focus();
-				$("#suggestion_label").focus();
+                $("#add_suggestion_wait").hide();
+                //empty dialogbox
+                $("#suggestion_form input, #suggestion_form select, #suggestion_form textarea").val("");
+                $("#password_complexity").val("0");
+                $("#complexity_required_text").html("");
+                $("#suggestion_pwd").focus();
+                $("#suggestion_label").focus();
+            }
+        });
+
+        //Dialogbox for VIEW KB
+        $("#div_suggestion_view").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 700,
+            height: 400,
+            title: "<?php echo $LANG['suggestion_delete_confirm'];?>",
+            buttons: {
+                "<?php echo $LANG['approve'];?>": function() {
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
+
+                    // select fields to update
+                    var fields_to_update = "";
+                    if ($("#confirm_label-check").length !== 0) fields_to_update += "label;";
+                    if ($("#confirm_pw-check").length !== 0) fields_to_update += "pw;";
+                    if ($("#confirm_login-check").length !== 0) fields_to_update += "login;";
+                    if ($("#confirm_url-check").length !== 0) fields_to_update += "url;";
+                    if ($("#confirm_email-check").length !== 0) fields_to_update += "email;";
+
+                    $.post(
+                        "sources/suggestion.queries.php",
+                        {
+                            type    : "approve_item_change",
+                            id      : $("#suggestion_id").val(),
+                            data    : fields_to_update,
+                            key     : "<?php echo $_SESSION['key'];?>"
+                        },
+                        function(data) {
+                            if (data[0].error === "") {
+                                $("#suggestion_view_wait").html(prepareMsgToDisplay("info", "done"));
+                                oTable = $("#t_change").dataTable();
+                                oTable.fnDraw();
+                                setTimeout(
+                                    function() {
+                                        $("#div_suggestion_view").dialog("close");
+                                    },
+                                    1500
+                                );
+                            } else {
+                                $("#suggestion_view_wait").html(prepareMsgToDisplay("error", data[0].error));
+                            }
+                        },
+                        "json"
+                    )
+                },
+                "<?php echo $LANG['reject'];?>": function() {
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
+                    $.post(
+                        "sources/suggestion.queries.php",
+                        {
+                            type    : "reject_item_change",
+                            id      : $("#suggestion_id").val(),
+                            key     : "<?php echo $_SESSION['key'];?>"
+                        },
+                        function(data) {
+
+                            $("#suggestion_view_wait").html("<?php echo $LANG['alert_message_done'];?>");
+                            oTable = $("#t_change").dataTable();
+                            oTable.fnDraw();
+                            setTimeout(
+                                function() {
+                                    $("#div_suggestion_view").dialog("close");
+                                },
+                                1500
+                            );
+                        }
+                    )
+                },
+                "<?php echo $LANG['cancel_button'];?>": function() {
+                    $(this).dialog("close");
+                }
+            },
+            open: function (event, ui) {
+                $("#div_suggestion_html").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>");
+
+                // load change
+                $.post("sources/suggestion.queries.php",
+                    {
+                        type     : "get_item_change_detail",
+                        id       : $("#suggestion_id").val(),
+                        key      : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        //decrypt data
+                        try {
+                            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                        } catch (e) {
+                            // error
+                            return;
+                        }
+                        if (data.error === "") {
+                            $("#div_suggestion_html").html(
+                                data.html
+                            );
+
+                            $(".confirm_change").click(function(event){
+                                console.log($(this).attr("id"));
+                                var tmp = $(this).attr("id").split('-');
+                                $("#"+tmp[0]).html('<span class="fa fa-close mi-red fa-lg"></span>');
+                                tmp = tmp[0].split('_');
+                                $("#"+tmp[1]+"_change").val("").remove();
+                            });
+                        }
+                        $("#add_suggestion_wait").hide();
+                    }
+                );
+
             }
         });
 

@@ -3,8 +3,8 @@
  *
  * @file          items.import.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('./sources/sessions.php');
+require_once('./sources/SecureHandler.php');
 session_start();
 if (
     (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -67,14 +67,14 @@ echo '
     <!-- TAB1 -->
     <div id="tabs-1">
         <!-- show some info -->
-		<div class="ui-state-highlight ui-corner-all" style="padding:10px;" id="csv_import_info">
-			<table border="0">
-				<tr>
-				<td valign="center"><span class="fa fa-info-circle fa-2x"></span>&nbsp;</td>
-				<td>'.$LANG['csv_import_information'].'</td>
-				</tr>
-			</table>
-		</div>
+        <div class="ui-state-highlight ui-corner-all" style="padding:10px;" id="csv_import_info">
+            <table border="0">
+                <tr>
+                <td valign="center"><span class="fa fa-info-circle fa-2x"></span>&nbsp;</td>
+                <td>'.$LANG['csv_import_information'].'</td>
+                </tr>
+            </table>
+        </div>
         <!-- show input file -->
         <div id="upload_container_csv">
             <div id="filelist_csv"></div><br />
@@ -213,7 +213,7 @@ foreach ($folders as $t) {
                 UploadComplete: function(up, files) {
                     $.each(files, function(i, file) {
                         ImportCSV(file.name);
-                        up.splice();	// clear the file queue
+                        up.splice();    // clear the file queue
                     });
                 }
             }
@@ -229,7 +229,7 @@ foreach ($folders as $t) {
                 (err.file ? ", File: " + err.file.name : "") +
                 "</div>"
             );
-            up.splice();	// Clear the file queue
+            up.splice();    // Clear the file queue
             up.refresh(); // Reposition Flash/Silverlight
         });
         uploader_csv.bind("+", function(up, file) {
@@ -295,7 +295,7 @@ foreach ($folders as $t) {
                 },
                 UploadComplete: function(up, files) {
                     ImportKEEPASS(files[0].name);
-                    up.splice();		// clear the file queue
+                    up.splice();        // clear the file queue
                 }
             }
         });
@@ -309,7 +309,7 @@ foreach ($folders as $t) {
                 (err.file ? ", File: " + err.file.name : "") +
                 "</div>"
             );
-            up.splice();	// clear the file queue
+            up.splice();    // clear the file queue
             up.refresh(); // Reposition Flash/Silverlight
         });
         uploader_kp.bind("+", function(up, file) {

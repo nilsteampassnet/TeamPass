@@ -1,7 +1,7 @@
 /**
  * @file          install.js
  * @author        Nils Laumaillé
- * @version       2.1.26
+ * @version       2.1.27
  * @copyright     (c) 2009-2011 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
@@ -15,23 +15,8 @@ $(function() {
     $(".button").button();
     $("#but_launch, #step_error, #but_restart").hide();
 
-    //SALT KEY non accepted characters management
-    $("#encrypt_key").keypress(function (e) {
-        var key = e.charCode || e.keyCode || 0;
-        if ($("#encrypt_key").val().length != 16 || ("#encrypt_key").val().length != 24 || ("#encrypt_key").val().length != 32)
-            $("#res4_check1").html("<img src='../includes/images/cross.png' />");
-        else
-            $("#res4_check1").html("<img src='../includes/images/tick.png' />");
-        // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
-        return (
-            key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96
-                && key != 44 && key != 38 && key != 94 && (key < 122)
-                && $("#encrypt_key").val().length <= 32
-        );
-    });
-
     // no paste
-    $('#encrypt_key, #admin_pwd').bind("paste",function(e) {
+    $('#admin_pwd').bind("paste",function(e) {
         alert('Paste option is disabled !!');
         e.preventDefault();
     });
@@ -66,6 +51,8 @@ function CheckPage()
     if (step == "3") {
         if ($("#db_host").val() == "" || $("#db_db").val() == "" || $("#db_login").val() == "" || $("#db_port").val() == "") {
             error = "Paths need to be filled in!";
+        } else if ($("#db_pw").val().indexOf('"') > -1) {
+            error = "Double quotes in password not allowed!";
         } else {
             data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'", "abspath":"'+$("#hid_abspath").val()+'", "url_path":"'+$("#hid_url_path").val()+'"}';
             tasks = ["connection*test"];
@@ -80,14 +67,10 @@ function CheckPage()
 
     // STEP 4
     if (step == "4") {
-        if ($("#encrypt_key").val() == "") {
-            error = "You must define a SALTkey!";
-        } else if ($("#encrypt_key").val().length != 16 && $("#encrypt_key").val().length != 24 && $("#encrypt_key").val().length != 32) {
-            error = "You must define a SALTkey!";
-        } else if ($("#admin_pwd").val() == "") {
+        if ($("#admin_pwd").val() == "") {
             error = "You must define a password for Admin account!";
         } else{
-            data = '{"tbl_prefix":"'+sanitizeString($("#tbl_prefix").val())+'", "encrypt_key":"'+sanitizeString($("#encrypt_key").val())+'", "sk_path":"'+sanitizeString($("#sk_path").val())+'", "admin_pwd":"'+sanitizeString($("#admin_pwd").val())+'", "send_stats":"'+$("#send_stats").prop("checked")+'"}';
+            data = '{"tbl_prefix":"'+sanitizeString($("#tbl_prefix").val())+'", "sk_path":"'+sanitizeString($("#sk_path").val())+'", "admin_pwd":"'+sanitizeString($("#admin_pwd").val())+'", "send_stats":""}';
             tasks = ["misc*preparation"];
             multiple = "";
         }
@@ -96,14 +79,14 @@ function CheckPage()
     // STEP 5
     if (step == "5") {
         data = '';
-        tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "entry*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens"];
+        tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "entry*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens", "table*items_change"];
         multiple = true;
     }
 
     // STEP 6
     if (step == "6") {
-        data = '';
-        tasks = ["file*settings.php", "file*sk.php", "file*security"];
+        data = '{"url_path":"'+sanitizeString($("#hid_url_path").val())+'"}';
+        tasks = ["file*settings.php", "file*sk.php", "file*security", "file*teampass-seckey", "file*csrfp-token"];
         multiple = true;
     }
 
@@ -257,20 +240,7 @@ function GotoNextStep()
         $("#step_result").html("");
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
-        $("#encrypt_key").live('keypress', function(e){
-            var key = e.charCode || e.keyCode || 0;
-            if ($("#encrypt_key").val().length < 15)
-                $("#res4_check1").html("<img src='../includes/images/cross.png' />");
-            else
-                $("#res4_check1").html("<img src='../includes/images/tick.png' />");
-            // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
-            return (
-                key != 33 && key != 34 && key != 39 && key != 92 && key != 32  && key != 96
-                    && key != 44 && key != 38 && key != 94 && (key < 122)
-                    && $("#encrypt_key").val().length <= 32
-            );
-        });
-        $('#encrypt_key, #admin_pwd').live("paste",function(e) {
+        $('#admin_pwd').live("paste",function(e) {
             alert('Paste option is disabled !!');
             e.preventDefault();
         });
@@ -284,22 +254,6 @@ function GotoNextStep()
         // Auto start as required
         if (nextStep == 5 || nextStep == 6 || nextStep ==7 ) CheckPage();
     }
-}
-
-function suggestKey() {
-    // restrict the password to just letters and numbers to avoid problems:
-    // "editors and viewers regard the password as multiple words and
-    // things like double click no longer work"
-    var pwchars = "abcdefhjmnpqrstuvwxyz23456789ABCDEFGHJKLMNPQRSTUVWYXZ";
-    var passwordlength = 16;    // length of the salt
-    var passwd = "";
-
-    for ( i = 0; i < passwordlength; i++ ) {
-        passwd += pwchars.charAt( Math.floor( Math.random() * pwchars.length ) )
-    }
-    $("#encrypt_key").val(passwd);
-    $("#res4_check1").html("<img src='../includes/images/tick.png' />");
-    return true;
 }
 
 function aes_encrypt(text)

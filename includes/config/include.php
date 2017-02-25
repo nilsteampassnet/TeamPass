@@ -3,16 +3,18 @@
  *
  * @file          include.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
 // DONT'T CHANGE BELOW THIS LINE
 global $settings, $languagesList;
 
-$k['version'] = "2.1.26";
+$k['version'] = "2.1.27";
 $k['tool_name'] = "TeamPass";
+$k['one_day_seconds'] = 86400;
+$k['one_week_seconds'] = 604800;
 $k['one_month_seconds'] = 2592000;
 $k['image_file_ext'] = array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp');
 $k['office_file_ext'] = array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx');
@@ -28,7 +30,7 @@ $k['allowedTags'] = "<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><bl
 @define('ERR_VALID_SESSION', "1004");
 @define('OTV_USER_ID', "9999991");
 @define('API_USER_ID', "9999999");
-@define('DEFUSE_ENCRYPTION', false);
+@define('DEFUSE_ENCRYPTION', true);
 
 // Management Pages
 $mngPages = array(

@@ -4,8 +4,8 @@ namespace Tree\NestedTree;
 /**
  * @file          NestedTree.class.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -49,7 +49,7 @@ class NestedTree
     public function getFields()
     {
         return array($this->fields['id'], $this->fields['parent'], $this->fields['sort'],
-                     'nleft', 'nright', 'nlevel', 'personal_folder');
+                     'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation');
     }
 
     /**

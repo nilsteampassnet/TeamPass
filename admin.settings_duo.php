@@ -3,8 +3,8 @@
  *
  * @file          admin.settings_duo.php
  * @author        Nils Laumaillé
- * @version       2.1.26
- * @copyright     (c) 2009-2016 Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -12,7 +12,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-require_once('sources/sessions.php');
+require_once('sources/SecureHandler.php');
 session_start();
 if (
         !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -107,6 +107,7 @@ td {
 }
 .google_enabled { ', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? '' : 'display:none;', ' }
 .duo_enabled { ', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '' : 'display:none;', ' }
+.agses_enabled { ', isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 ? '' : 'display:none;', ' }
 </style>
 </head><body>';
 
@@ -142,9 +143,22 @@ echo '
       <td>
         <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'not set', '" class="text ui-widget-content" />
         <input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
-        <span id="save_wait" style="display: none;">
-        <i class="fa fa-cog fa-spin"></i>
-        </span>
+        <span id="save_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
+      </td>
+    </tr>
+
+<!-- // ga_reset_by_user -->
+    <tr class="googleauth google_enabled">
+      <td>
+        <label for="ga_reset_by_user">
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['ga_reset_by_user'].'<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['ga_reset_by_user_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="', isset($_SESSION['settings']['ga_reset_by_user']) && $_SESSION['settings']['ga_reset_by_user'] == 1 ? 'true' : 'false', '">
+        </div>
+        <input type="hidden" id="ga_reset_by_user_input" name="ga_reset_by_user_input" value="', isset($_SESSION['settings']['ga_reset_by_user']) && $_SESSION['settings']['ga_reset_by_user'] == 1 ? '1' : '0', '" />
       </td>
     </tr>
 
@@ -182,7 +196,6 @@ echo '
         <table>
           <tr>
             <td>
-              
               <label for="duo_akey">
                 '.$LANG['admin_duo_akey'].'
               </label>
@@ -193,7 +206,6 @@ echo '
           </tr>
           <tr>
             <td>
-              
               <label for="duo_ikey">'.$LANG['admin_duo_ikey'].'</label>
             </td>
             <td>
@@ -202,7 +214,6 @@ echo '
           </tr>
           <tr>
             <td>
-              
               <label for="duo_skey">'.$LANG['admin_duo_skey'].'</label>
             </td>
             <td>
@@ -211,7 +222,6 @@ echo '
           </tr>
           <tr>
             <td>
-              
               <label for="duo_host">'.$LANG['admin_duo_host'].'</label>
             </td>
             <td>
@@ -237,6 +247,85 @@ echo '
         </div>
       </td>
     </tr>
+
+    <tr>
+      <td colspan="2"><hr />
+      </td>
+    </tr>
+
+<!-- // AgSES -->
+    <tr class="agses">
+      <td>
+        <label>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_agses_authentication_setting'].'
+          <i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_agses_authentication_setting_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <div class="toggle toggle-modern" id="agses_authentication_enabled" data-toggle-on="', isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 ? 'true' : 'false', '">
+        </div>
+        <input type="hidden" id="agses_authentication_enabled_input" name="agses_authentication_enabled_input" value="', isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 ? '1' : '0', '" />
+      </td>
+    </tr>
+
+<!-- // AgSES API -->
+    <tr class="agses agses_enabled">
+      <td>
+        <label for="agses_api_key">
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_agses_hosted'].'<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_agses_hosted_tip']), ENT_QUOTES).'"></i>
+        </label>
+      </td>
+      <td>
+        <table>
+          <tr>
+            <td>
+              <label for="duo_akey">
+                '.$LANG['admin_agses_hosted_url'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="agses_hosted_url" value="', isset($_SESSION['settings']['agses_hosted_url']) ? $_SESSION['settings']['agses_hosted_url'] : '', '" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+               '.$LANG['admin_agses_hosted_id'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="agses_hosted_id" value="', isset($_SESSION['settings']['agses_hosted_id']) ? $_SESSION['settings']['agses_hosted_id'] : '', '" class="text ui-widget-content" />
+            </td>
+          </tr>
+          <tr>
+            <td>
+               '.$LANG['admin_agses_hosted_apikey'].'
+              </label>
+            </td>
+            <td>
+              <input type="text" size="60" id="agses_hosted_apikey" value="', isset($_SESSION['settings']['agses_hosted_apikey']) ? $_SESSION['settings']['agses_hosted_apikey'] : '', '" class="text ui-widget-content" />
+            </td>
+          </tr>
+        </table>
+        </td>
+      </tr>
+
+      <tr class="agses agses_enabled">
+        <td>
+        <label>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_agses_save'].'
+        </label>
+      </td>
+        <td>
+        <input type="button" onclick="SaveAgses()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
+        <span id="save_agses_wait" style="display: none;">
+        <i class="fa fa-cog fa-spin"></i>
+        </span>
+      </td>
+    </tr>
+
   </tbody></table>
 </div>';
 
@@ -356,6 +445,36 @@ function SaveFA()
     );
 }
 
+function SaveAgses()
+{
+    $("#save_agses_wait").show();
+
+    var data = "{\"agses_hosted_url\":\""+sanitizeString($("#agses_hosted_url").val())+"\" , \"agses_hosted_id\":\""+sanitizeString($("#agses_hosted_id").val())+"\" , \"agses_hosted_apikey\":\""+sanitizeString($("#agses_hosted_apikey").val())+"\"}";
+    $.post(
+        "sources/admin.queries.php",
+        {
+            type : "save_agses_options",
+            data : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'"),
+            key  : "'.$_SESSION['key'].'"
+        },
+        function(data) {
+            if (data[0].error == "") {
+                $("#main_info_box_text").html(data[0].result);
+            } else {
+                $("#main_info_box_text").html(data[0].error);
+            }
+            $("#main_info_box").show().position({
+                my: "center",
+                at: "center top+75",
+                of: "#top"
+            });
+            setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 2000);
+            $("#save_agses_wait").hide();
+        },
+        "json"
+    );
+}
+
 $(function() {
     $(".toggle").toggles({
         drag: true, // allow dragging the toggle between positions
@@ -376,10 +495,12 @@ $(function() {
             $("#"+e.target.id+"_input").val(1);
             if(e.target.id == "duo") $(".duo_enabled").show();
             if(e.target.id == "google_authentication") $(".google_enabled").show();
+            if(e.target.id == "agses_authentication_enabled") $(".agses_enabled").show();
         } else {
             $("#"+e.target.id+"_input").val(0);
             if(e.target.id == "duo") $(".duo_enabled").hide();
             if(e.target.id == "google_authentication") $(".google_enabled").hide();
+            if(e.target.id == "agses_authentication_enabled") $(".agses_enabled").hide();
         }
         // store in DB
         var data = "{\"field\":\""+e.target.id+"\", \"value\":\""+$("#"+e.target.id+"_input").val()+"\"}";
