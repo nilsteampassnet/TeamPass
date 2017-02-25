@@ -1428,11 +1428,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#id_categorie").val(data.folder);
                         $("#id_item").val(data.id);
                         $("#id_kbs").html(data.links_to_kbs);
-                        $(".tip").tooltipster({
+                        /*$(".tip").tooltipster({
                             maxWidth: 400,
                             contentAsHTML: true,
                             multiple: true
-                        });
+                        });*/
 
                         // show Field values
                         $(".fields").val("");
@@ -1624,19 +1624,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
             if (id_tree != "" && id_tree != $("#hid_cat").val()) {
                 refreshTree(id_tree, "0");
             }
-
-           // statistic
-           /*$.post(
-                "sources/main.queries.php",
-                {
-                    type                : 'item_stat',
-                    id                  : id,
-                    scope                : "item"
-                },
-                function(data) {
-
-                }
-            );*/
        }
     //Store Item id shown
     $("#request_lastItem").val(id);
@@ -1704,7 +1691,7 @@ function showDetailsStep2(id, param)
             $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
             LoadingPage();
 
-            $(".tip").tooltipster({multiple: true});
+            //$(".tip").tooltipster({multiple: true});
 
             // refresh
             refreshListLastSeenItems();
@@ -2449,7 +2436,8 @@ $(function() {
         //do nothing ... good value
     } else {
         //adapt to the screen height
-        $("#nb_items_to_display_once").val(Math.max(Math.round((window_height-450)/23),2));
+        //$("#nb_items_to_display_once").val(Math.max(Math.round((window_height-450)/23),2));
+        $("#nb_items_to_display_once").val(50);
     }
 
     // Build buttons
@@ -3211,7 +3199,7 @@ $(function() {
                 '<label class="form_label_100" style="padding:4px;"><?php echo $LANG['comment'];?></label><input type="text" id="comment_change" value="" class="input_text_80 ui-widget-content ui-corner-all">'
             )
             .show();
-            $(".tip").tooltipster({multiple: true});
+            //$(".tip").tooltipster({multiple: true});
         }
     });
     //<=
@@ -3766,7 +3754,7 @@ var showPwdContinuous = function(){
         }
     } else {
         $('#id_pw').html('<?php echo $var['hidden_asterisk'];?>');
-        $('.tip').tooltipster({multiple: true});
+        //$('.tip').tooltipster({multiple: true});
     }
 }
 
@@ -3874,7 +3862,7 @@ function proceed_list_update(stop_proceeding)
             e.clearSelection();
         });
 
-        $(".tip").tooltipster({multiple: true});
+        //$(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
         var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0;?>;
@@ -4034,7 +4022,7 @@ function prepareOneTimeView()
                     e.clearSelection();
                 });
 
-                $(".tip").tooltipster({multiple: true});
+                //$(".tip").tooltipster({multiple: true});
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }

@@ -2040,7 +2040,7 @@ if (isset($_POST['type'])) {
                 // REMOVED:  OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%')
                 $idManaged = '';
                 $i = 0;
-                $html = '<table class="table table-sm" style="width:100%;"><tbody>';
+                $html = '<table class="table table-sm table-striped table-hover" style="table-layout:fixed;"><tbody>';
 
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
@@ -2215,10 +2215,22 @@ if (isset($_POST['type'])) {
                         }
                         */
 
-                        $html .= '<tr>';
-                        $html .= '<td class="items-list-td1">'.
-                            '<span id="'.$record['id'].'" data-param="'.$findPfGroup.','.$expired_item.','.$restrictedTo.'"><input type="checkbox"></span></td>';
-                        $html .= '<td class="items-list-td2" id="fileclass'.$record['id'].'" onclick="'.$action.'"><p class="overflow-ellipsis">';
+                        // COLUMN 1
+                        $html .= '<tr id="'.$record['id'].'" data-param="'.$findPfGroup.','.$expired_item.','.$restrictedTo.'"';
+                        if ($canMove == 1 && $accessLevel === 0) {
+                            $html .= ' class="item_draggable"';
+                        }
+                        $html .= '>'.
+                            '<td class="items-list-td1">';
+
+                        if ($canMove == 1 && $accessLevel === 0) {
+                            $html .= '<i class="fa fa-sm fa-arrows grippy"></i>&nbsp;&nbsp;';
+                        }
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<input type="checkbox" /></td>';
+
+                        // COLUMN 2
+                        $html .= '<td class="items-list-td2" id="fileclass'.$record['id'].'" onclick="'.$action.'">'.
+                            '<div class="wrap">';
 
                             // manage text to show
                         $label = stripslashes(handleBackslash($record['label']));
@@ -2230,8 +2242,13 @@ if (isset($_POST['type'])) {
                         }
                         //$html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$label.'&nbsp;<font size="1px">['.$desc.']</font></a></p>';
 
-                        $html .= ''.$label.'&nbsp;<font size="2px">['.$desc.']</font></p></td>';
+                        $html .= $label;
+                        if (!empty($desc)) {
+                            $html .= '&nbsp;<span class="text-extract">-&nbsp;'.$desc.'</span>';
+                        }
+                        $html .= '</div></td>';
 
+                        // COLUMN 3
                         $html .= '<td class="items-list-td3">';
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
@@ -2254,9 +2271,9 @@ if (isset($_POST['type'])) {
                             $pw = $pw['string'];
                             if (!isUTF8($pw)) {
                                 $pw = "";
-                                $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
+                                $html .= '&nbsp;<i class="fa fa-warning mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
                             } else if (empty($pw)) {
-                                $html .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>'.$pw;
+                                $html .= '&nbsp;<i class="fa fa-exclamation-circle mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>'.$pw;
                             }
                         } else {
                             $pw = "";
@@ -2267,7 +2284,7 @@ if (isset($_POST['type'])) {
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
-                                $html .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                                $html .= '<i class="fa fa-pencil mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                             }
                         }
 
@@ -2275,19 +2292,19 @@ if (isset($_POST['type'])) {
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+                                    $html .= '<i class="fa fa-user mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                                    $html .= '<i class="fa ffa-lock mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
                                 }
                             }
                         }
                         // Prepare make Favorite small icon
                         $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $html .= '<i class="fa fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
-                            $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $html .= '<i class="fa fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
                         }
 
                         $html .= '</span></td></tr>';
@@ -2303,6 +2320,14 @@ if (isset($_POST['type'])) {
             }
 
             $html .= '</tbody></table>';
+            /*
+            $html = '<table class="table table-sm table-striped table-hover" style="table-layout:fixed;"><tbody>'.
+            '<tr><td class="items-list-td1">Mark</td><td class="items-list-td2"><div class="wrap">IE on Windows 10 and 8.1 setting document type to 7. All "normal" browsers work OK. Compatibility mode is disabled. When you use developer tool in IE and force document type to 9 website looks correctly</div></td><td class="items-list-td3">@mdo</td></tr>'.
+            '<tr><td>Mark</td><td>Otto</td><td>@mdo</td></tr>'.
+            '<tr><td>Mark</td><td>Otto</td><td>@mdo</td></tr>'.
+            '<tr><td>Mark</td><td>Otto</td><td>@mdo</td></tr>'.
+            '</tbody></table>';
+            */
 
             // Identify of it is a personal folder
             if (in_array($_POST['id'], $_SESSION['personal_visible_groups'])) {

@@ -2,7 +2,7 @@
 
 body {
   padding-top: 5rem;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 p {
@@ -112,6 +112,10 @@ p {
   cursor: pointer;
 }
 
+.grippy{
+    cursor:move;
+}
+
 .space-top {
   margin-top:4px;
 }
@@ -213,6 +217,16 @@ p {
 
 .items-list-td3 {
   width: 10%;
+}
+
+.wrap {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.text-extract {
+  color: #6B6B6B;
 }
 
 

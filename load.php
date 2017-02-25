@@ -521,7 +521,7 @@ $htmlHeaders .= '
 
     $(function() {
         // new
-        $("button").tooltip();
+        $("button, .tip").tooltip();
         //----
 
 
@@ -672,12 +672,6 @@ $htmlHeaders .= '
 
         $(".button, .btn").button();
 
-        //TOOLTIPS
-        $("#main *, #footer *, #icon_last_items *, #top *, .tip").tooltipster({
-            maxWidth: 400,
-            contentAsHTML: true,
-            multiple: true
-        });
         $("#user_session").val(sessionStorage.password);
 
         $(".menu").menu({
@@ -1333,7 +1327,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                                     MenuAction("suggestion");
                                 });
                             $(".btn").button();
-                            $(".tip").tooltipster({multiple: true});
+                            //$(".tip").tooltipster({multiple: true});
                         }
 
                         $("#menu_icon_suggestions").addClass("mi-red");

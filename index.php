@@ -153,7 +153,7 @@ echo '
     <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
     </button>
-    <a class="navbar-brand" href="#"></a>
+    <a class="navbar-brand" href="#"><img src="includes/images/canevas/logo2_26.png" alt="" /></a>
 ';  //<img src="includes/images/canevas/logo.png" alt="" />
 // Display menu
 if (isset($_SESSION['login'])) {
@@ -169,7 +169,7 @@ if (isset($_SESSION['login'])) {
             (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
             || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? '' : ' onclick="MenuAction(\'items\')"',
             '>
-                <span class="fa fa-key fa-2x tip" title="'.$LANG['pw'].'"></span>
+                <span class="fa fa-key fa-2x tip" title="'.$LANG['pw'].'" data-placement="bottom"></span>
                 </a>
             </li>
 
@@ -178,7 +178,7 @@ if (isset($_SESSION['login'])) {
             (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
             || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? '' : ' onclick="MenuAction(\'find\')"',
             '>
-                <span class="fa fa-binoculars fa-2x tip" title="'.$LANG['find'].'"></span>
+                <span class="fa fa-binoculars fa-2x tip" title="'.$LANG['find'].'" data-placement="bottom"></span>
                 </a>
             </li>';
     }
@@ -193,7 +193,7 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "favourites") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favorites\')"></span>
+                    <span class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'" onclick="MenuAction(\'favorites\')" data-placement="bottom"></span>
                 </a>
             </li>';//
     }
@@ -202,7 +202,7 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "kb") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'" onclick="MenuAction(\'kb\')"></span>
+                    <span class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'" onclick="MenuAction(\'kb\')" data-placement="bottom"></span>
                 </a>
             </li>';
     }
@@ -216,7 +216,7 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "suggestion") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-lightbulb-o fa-2x tip" title="'.$LANG['suggestion_menu'].'" onclick="MenuAction(\'suggestion\')" id="menu_icon_suggestions"></span>
+                    <span class="fa fa-lightbulb-o fa-2x tip" title="'.$LANG['suggestion_menu'].'" onclick="MenuAction(\'suggestion\')" id="menu_icon_suggestions" data-placement="bottom"></span>
                 </a>
             </li>';
     }
@@ -227,12 +227,12 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_main") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-info fa-2x tip" title="'.$LANG['admin_main'].'" onclick="MenuAction(\'manage_main\')"></span>
+                    <span class="fa fa-info fa-2x tip" title="'.$LANG['admin_main'].'" onclick="MenuAction(\'manage_main\')" data-placement="bottom"></span>
                 </a>
             </li>
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_settings") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-wrench fa-2x tip" title="'.$LANG['admin_settings'].'" onclick="MenuAction(\'manage_settings\')"></span>
+                    <span class="fa fa-wrench fa-2x tip" title="'.$LANG['admin_settings'].'" onclick="MenuAction(\'manage_settings\')" data-placement="bottom"></span>
                 </a>
             </li>';
     }
@@ -241,25 +241,25 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_folders") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-folder-open fa-2x tip" title="'.$LANG['admin_groups'].'" onclick="MenuAction(\'manage_folders\')"></span>
+                    <span class="fa fa-folder-open fa-2x tip" title="'.$LANG['admin_groups'].'" onclick="MenuAction(\'manage_folders\')" data-placement="bottom"></span>
                 </a>
             </li>
 
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_roles") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-graduation-cap fa-2x tip" title="'.$LANG['admin_functions'].'" onclick="MenuAction(\'manage_roles\')"></span>
+                    <span class="fa fa-graduation-cap fa-2x tip" title="'.$LANG['admin_functions'].'" onclick="MenuAction(\'manage_roles\')" data-placement="bottom"></span>
                 </a>
             </li>
 
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_users") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-users fa-2x tip" title="'.$LANG['admin_users'].'" onclick="MenuAction(\'manage_users\')"></span>
+                    <span class="fa fa-users fa-2x tip" title="'.$LANG['admin_users'].'" onclick="MenuAction(\'manage_users\')" data-placement="bottom"></span>
                 </a>
             </li>
 
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_views") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-cubes fa-2x tip" title="'.$LANG['admin_views'].'" onclick="MenuAction(\'manage_views\')"></span>
+                    <span class="fa fa-cubes fa-2x tip" title="'.$LANG['admin_views'].'" onclick="MenuAction(\'manage_views\')" data-placement="bottom"></span>
                 </a>
             </li>';
     }
