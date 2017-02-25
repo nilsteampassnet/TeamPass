@@ -192,7 +192,7 @@ if (isset($_POST['type'])) {
                                 $field['id'],
                                 $field['title'],
                                 $field['order'],
-                                "",
+                                $field['encrypted_data'],
                                 ""
                             )
                         );
