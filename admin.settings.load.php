@@ -194,8 +194,19 @@ function loadFieldsList() {
                     newList += '<tr id="t_field_'+val[1]+'"><td width="20px"></td>'+
                     '<td><input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
                     '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
-                    '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>'+
-                    '</td><td></td></tr>';
+                    '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>';
+
+                    if (val[4] !== "") {
+                        newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
+                        if (val[4] === "1") {
+                            newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 1)"></i>';
+                        } else if (val[4] === "0") {
+                            newList += '<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 0)"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>';
+                        }
+                        newList += '</span>'
+                    }
+
+                    newList += '</td><td></td></tr>';
                 }
             });
 
