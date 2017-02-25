@@ -3099,11 +3099,11 @@ $(function() {
 
                 // do checks
                 if (!IsValidEmail($("#email_change").val()) && $("#email_change").val() !== "") {
-                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo $LANG['email_format_is_not_correct'];?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['email_format_is_not_correct']);?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
                     return false;
                 }
                 if (!validateURL($("#url_change").val()) && $("#url_change").val() !== "") {
-                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo $LANG['url_format_is_not_correct'];?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['url_format_is_not_correct']);?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
                     return false;
                 }
 
