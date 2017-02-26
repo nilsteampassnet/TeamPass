@@ -2018,6 +2018,8 @@ if (isset($_POST['type'])) {
                         ORDER BY i.label ASC, l.date DESC".$query_limit,//
                         $where
                     );
+
+                    $items_count = DB::count();
                 } else {
                     $items_to_display_once = "max";
                     $where->add('i.inactif=%i',0);
@@ -2036,6 +2038,7 @@ if (isset($_POST['type'])) {
                         ORDER BY i.label ASC, l.date DESC",
                         $where
                     );
+                    $items_count = DB::count();
                 }
                 // REMOVED:  OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%')
                 $idManaged = '';
@@ -2284,7 +2287,7 @@ if (isset($_POST['type'])) {
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
-                                $html .= '<i class="fa fa-pencil mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                                $html .= '<i class="fa fa-pencil mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'" data-toggle="tooltip" data-placement="left"></i>&nbsp;&nbsp;';
                             }
                         }
 
@@ -2292,15 +2295,15 @@ if (isset($_POST['type'])) {
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<i class="fa fa-user mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+                                    $html .= '<i class="fa fa-user mi-black mini_login tip" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'" data-toggle="tooltip" data-placement="left"></i>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<i class="fa ffa-lock mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                                    $html .= '<i class="fa fa-lock mi-black mini_pw tip" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'" data-toggle="tooltip" data-placement="left"></i>&nbsp;';
                                 }
                             }
                         }
                         // Prepare make Favorite small icon
-                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip" data-toggle="tooltip" data-placement="left">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
                             $html .= '<i class="fa fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
@@ -2320,14 +2323,6 @@ if (isset($_POST['type'])) {
             }
 
             $html .= '</tbody></table>';
-            /*
-            $html = '<table class="table table-sm table-striped table-hover" style="table-layout:fixed;"><tbody>'.
-            '<tr><td class="items-list-td1">Mark</td><td class="items-list-td2"><div class="wrap">IE on Windows 10 and 8.1 setting document type to 7. All "normal" browsers work OK. Compatibility mode is disabled. When you use developer tool in IE and force document type to 9 website looks correctly</div></td><td class="items-list-td3">@mdo</td></tr>'.
-            '<tr><td>Mark</td><td>Otto</td><td>@mdo</td></tr>'.
-            '<tr><td>Mark</td><td>Otto</td><td>@mdo</td></tr>'.
-            '<tr><td>Mark</td><td>Otto</td><td>@mdo</td></tr>'.
-            '</tbody></table>';
-            */
 
             // Identify of it is a personal folder
             if (in_array($_POST['id'], $_SESSION['personal_visible_groups'])) {
@@ -2335,6 +2330,7 @@ if (isset($_POST['type'])) {
             } else {
                 $findPfGroup = "";
             }
+
             // count
             DB::query(
                 "SELECT *
@@ -2353,6 +2349,7 @@ if (isset($_POST['type'])) {
             } else {
                 $listToBeContinued = "end";
             }
+            
             // Get folder complexity
             $folderComplexity = DB::queryFirstRow(
                 "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %i",
@@ -2391,13 +2388,14 @@ if (isset($_POST['type'])) {
                 "saltkey_is_required" => $folderIsPf,
                 "show_clipboard_small_icons" => isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? 1 : 0,
                 "next_start" => $_POST['nb_items_to_display_once'] + $start,
-                "list_to_be_continued" => $listToBeContinued,
+                //"list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
                 'folder_complexity' => $folderComplexity['valeur'],
                 // "items" => $returnedData
                 'displayCategories' => $displayCategories,
                 'access_level' => $accessLevel,
-                'IsPersonalFolder' => $folderIsPf
+                'IsPersonalFolder' => $folderIsPf,
+                //'items_count' => $items_count
             );
             // Check if $rights is not null
             if (count($rights) > 0) {

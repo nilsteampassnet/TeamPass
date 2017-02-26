@@ -325,16 +325,34 @@ if (isset($_SESSION['login'])) {
 }
 
 echo '
-</nav>
+</nav>';
 
+echo '
+    <div class="modal fade" id="main_info_box" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+
+            </div>
+        </div>
+    </div>
+
+    <div id="message" style="display:none;">
+    </div>
+
+</div>';  
+
+echo '
 <div class="bottomAnim">
 <div class="container-fluid">
     <div class="template">';
 
+/*
 echo '
     <div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
         <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
     </div>';
+    */
+
 
 /* MAIN PAGE */
 echo '

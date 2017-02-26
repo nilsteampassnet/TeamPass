@@ -45,6 +45,7 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
+        <script type="text/javascript" src="includes/js/vendor/notify.min.js"></script>
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
         <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />
@@ -53,6 +54,7 @@ $htmlHeaders = '
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
+        <script src="includes/js/vendor/jquery.bootpag.min.js"></script>
         <link rel="stylesheet" href="includes/js/jstree/themes/default/style.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jstree/jstree.min.js"></script>
         <script type="text/javascript" src="includes/js/jstree/jquery.cookie.js"></script>
@@ -808,6 +810,7 @@ $htmlHeaders .= '
                                 });
                                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 5000);
                             } else {
+                                
                                 $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
                                     my: "center",

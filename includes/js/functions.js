@@ -46,11 +46,12 @@ function IncreaseSessionTime(message_end, message_wait){
         function(data){
             if (data[0].new_value != "expired") {
                 $("#main_info_box_text").html(message_end);
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                
+                displayMessage(message_end);
+
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
-                $('#countdown').css("color","white");
-            } else {console.log("cii");
+            } else {
                 document.location = "index.php?session=expired";
             }
         },
@@ -283,15 +284,20 @@ function jsonErrorHdl(message)
     return false;
 }
 
-function displayMessage(textToDisplay)
+function displayMessage(textToDisplay, className, delay)
 {
-    $("#main_info_box_text").html(textToDisplay);
-    $("#main_info_box").show().position({
-        my: "center",
-        at: "center top+20",
-        of: "#main_simple"
-    });
-    setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
+    className = className || 'success';
+    delay = delay || 1500;
+
+    $.notify(
+        textToDisplay,
+        {
+            className: className,
+            autoHide: true,
+            autoHideDelay: delay,
+            position: 'top center'
+        }
+    );
 }
 
 

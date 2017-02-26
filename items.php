@@ -148,7 +148,8 @@ echo '
 <input type="hidden" name="jstree_group_selected" id="jstree_group_selected" value="'.htmlspecialchars($firstGroup).'" />
 <input type="hidden" id="item_user_token" value="" />
 <input type="hidden" id="items_listing_should_stop" value="" />
-<input type="hidden" id="new_listing_characteristics" value="" />';
+<input type="hidden" id="new_listing_characteristics" value="" />
+<input type="hidden" id="current_page_number" value="1" />';
 
 echo '
 <div class="row">
@@ -198,26 +199,14 @@ echo '
                 </a>
 
                 <div style="float:right;">
-                    <nav aria-label="Items Page navigation">
-                      <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                          <a class="page-link" href="#" tabindex="-1">Previous</a>
-                        </li>
-                        <li class="page-item"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item">
-                          <a class="page-link" href="#">Next</a>
-                        </li>
-                      </ul>
-                    </nav>
+                    <nav aria-label="Items Page navigation" id="items_pages_navigation"></nav>
                 </div>
             </div>
 
             <div id="area_items_list" style="float:left; width:100%;">
                 <div id="items_path_var" class="space-top"></div>
 
-                <div id="items_list1"></div>
+                <div id="items_list1" class="pointer" style="overflow-y:auto;"></div>
             </div>
         </div>';
 
@@ -255,7 +244,7 @@ echo '
                         </button>
                     </div>
                     <div class="btn-group mr-2" role="group" aria-label="Item actions">
-                        <button type="button" class="btn btn-secondary" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')" title="'.$LANG['item_menu_edi_elem'].'" data-placement="bottom">
+                        <button type="button" class="btn btn-secondary" onclick="showDiv(\'', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? "edit_item_form" : "" , '\', \'item_detail_right_side\')" title="'.$LANG['item_menu_edi_elem'].'" data-placement="bottom">
                             <span class="fa fa-pencil fa-1x"></span>
                         </button>
                         <button type="button" class="btn btn-secondary" onclick="open_del_item_div()" title="'.$LANG['item_menu_edi_elem'].'" data-placement="bottom">
@@ -312,14 +301,26 @@ echo'
 
 // line for badges
 echo '
-            <div class="space-bottom space-top" style="margin-top:44px;"><h6>
-                <span class="label label-primary item_field" id="item_viewed_x_times"></span>&nbsp;
-                <div class="" style="float:right;margin-right:5px;" id="item_extra_info" title=""></div>
-                <div id="id_label2" style="display:inline; margin:4px 0px 0px 120px; "></div>
-            </h6></div>';
+        <div style="width:100%; margin-top:44px;" class="space-bottom space-top">
+            <div style="float:left; width:50%;">
+                <button type="button" class="btn btn-primary btn-sm tip" id="button_quick_pw_copy" title="'.$LANG['item_menu_copy_pw'].'" data-toggle="tooltip">
+                    <span class="fa fa-hashtag fa-sm"></span>
+                </button>
+                <button type="button" class="btn btn-primary btn-sm tip" id="button_quick_login_copy" title="'.$LANG['item_menu_copy_login'].'" data-toggle="tooltip">
+                    <span class="fa fa-user fa-sm"></span>
+                </button>
+            </div>
+            <div style="margin-right:10px; float:right;">
+                <h6>
+                    <span class="label label-primary item_field" id="item_viewed_x_times"></span>&nbsp;
+                    <div class="" style="float:right;margin-right:5px;" id="item_extra_info"></div>
+                    <div id="id_label2" style="display:inline; margin:4px 0px 0px 120px; "></div>
+                </h6>
+            </div>
+        </div>';
 
 echo '
-            <table width="100%">';
+            <table width="100%" class="table-pres">';
 
 // Line for DESCRIPTION
 echo '
@@ -332,18 +333,23 @@ echo '
 // Line for PW
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="width-20 fa fa-hashtag"></i>&nbsp;'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="width-20 fa fa-hashtag"></i>&nbsp;'.$LANG['pw'].' :
+                        
+                    </td>
                     <td>
-                        &nbsp;
-                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;" class="item_field"></div>
+                        <button type="button" class="btn btn-primary btn-sm show-password">
+                            <span class="fa fa-eye fa-sm tip" title="'.$LANG['show_password'].'" data-toggle="tooltip"></span>
+                        </button>
+                        &nbsp;&nbsp;
+                        <span id="id_pw" style="display:inline;cursor:pointer;" class="item_field"></span>
                     </td>
                 </tr>';
 // Line for LOGIN
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="width-20 fa fa-user"></i>&nbsp;'.$LANG['index_login'].' :<i id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></i></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="width-20 fa fa-user"></i>&nbsp;'.$LANG['index_login'].' :</td>
                     <td>
-                        <div id="id_login" style="float:left;" class="item_field"></div>
+                        <span id="id_login" style="display:inline;" class="item_field"></span>
                     </td>
                 </tr>';
 // Line for EMAIL
@@ -351,7 +357,7 @@ echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="width-20 fa fa-envelope"></i>&nbsp;'.$LANG['email'].' :</td>
                     <td>
-                        <div id="id_email" style="display:inline;" class="item_field"></div>
+                        <span id="id_email" style="display:inline;" class="item_field"></span>
                     </td>
                 </tr>';
 // Line for URL
@@ -401,7 +407,7 @@ echo '
 foreach ($elem[2] as $field) {
             echo '
                 <tr class="tr_fields itemCatName_'.$itemCatName.'">
-                    <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
+                    <td valign="top" class="td_title"><i class="fa fa-caret-right" style="margin-left:30px;"></i>&nbsp;<i>'.$field[1].'</i> :</td>
                     <td>
                         <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'" class="fields" />
                     </td>
@@ -442,198 +448,60 @@ echo '
             </div>';
 
 echo '
-        </div>
+        </div>';
+
+        /************* EDIT ITEM ************************/
+echo '
+        <div id="edit_item_form" style="display:none;">
+            <div class="btn-toolbar" role="toolbar" aria-label="Item edit buttons bar">
+                <div class="btn-group mr-1" role="group" aria-label="Back">
+                    <button type="button" class="btn btn-secondary" onclick="showItem(false)">
+                        <span class="fa fa-reply fa-1x"></span>
+                    </button>
+                </div>
+            </div>';
+
+echo '
+            <ul class="nav nav-tabs" role="tablist" id="MyTab" style="margin-top:10px;">
+                <li class="nav-item">
+                    <a class="nav-link active" data-toggle="tab" href="#item-definition" role="tab">'.$LANG['definition'].'</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#item-passwd" role="tab">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#item-files" role="tab">'.$LANG['files_&_images'].'</a>
+                </li>
+                ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
+                '<li class="nav-item">
+                    <a class="nav-link" data-toggle="tab" href="#item-extra" role="tab">'.$LANG['more'].'</a>
+                </li>' :
+                '', '
+            </ul>';
+
+echo '
+            <div class="tab-content">
+                <div class="tab-pane active" id="item-definition" role="tabpanel">
+                    1
+                </div>
+                <div class="tab-pane" id="item-passwd" role="tabpanel">
+                    12
+                </div>
+                <div class="tab-pane" id="item-files" role="tabpanel">
+                    13
+                </div>
+                <div class="tab-pane" id="item-extra" role="tabpanel">
+                    14
+                </div>
+            </div>';
+
+
+echo '
+        </div>';
+
+echo '
     </div>
 </div>';
-
-
-
-
-
-/********************************
-* NEW Item Form
-*/
-echo '
-<div id="div_formulaire_saisi" style="display:none;">
-    <form method="post" name="new_item" action="">
-        <div id="afficher_visibilite" style="text-align:center;margin-bottom:6px;height:20px;"></div>
-        <div id="display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
-        <div id="new_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-
-        <div id="item_tabs">
-        <ul>
-            <li><a href="#tabs-01">'.$LANG['definition'].'</a></li>
-            <li><a href="#tabs-02">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a></li>
-            <li><a href="#tabs-03">'.$LANG['files_&_images'].'</a></li>
-            ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
-            '<li id="form_tab_fields"><a href="#tabs-04">'.$LANG['more'].'</a></li>' :
-            '', '
-        </ul>
-        <div id="tabs-01">';
-// Line for LABEL
-echo '
-            <label for="" class="label_cpm">'.$LANG['label'].' : </label>
-            <input type="text" name="label" id="label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'display_title\')" class="input_text text ui-widget-content ui-corner-all" />';
-// Line for DESCRIPTION
-echo '
-            <label for="" class="label_cpm">'.$LANG['description'].' : </label>
-            <span id="desc_span">
-                <textarea rows="5" cols="60" name="desc" id="desc" class="input_text"></textarea>
-            </span>
-            <br />';
-// Line for FOLDERS
-echo '
-            <label for="" class="">'.$LANG['group'].' : </label>
-            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:250px; padding:3px;" class="ui-widget-content"><option style="display: none;"></option></select>';
-// Line for LOGIN
-echo '
-            <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
-            <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all" />';
-// Line for EMAIL
-echo '
-            <label for="" class="label_cpm">'.$LANG['email'].' : </label>
-            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all" />';
-// Line for URL
-echo '
-            <label for="" class="label_cpm">'.$LANG['url'].' : </label>
-            <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all" />
-        </div>';
-// Tabs Items N?2
-echo '
-        <div id="tabs-02">';
-// Line for folder complexity
-echo'
-            <div style="margin-bottom:10px;" id="expected_complexity">
-                <label for="" class="form_label_180">'.$LANG['complex_asked'].'</label>
-                <span id="complex_attendue" style="color:#D04806; margin-left:40px;"></span>
-            </div>';
-// Line for PW
-echo '
-            <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
-                <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
-            </label>
-            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
-            <input type="hidden" id="mypassword_complex" />
-            <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
-            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
-
-            <div style="font-size:9px; text-align:center; width:100%;">
-                <span id="custom_pw">
-                    <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
-                    <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
-                    <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="pw_secure" checked="checked" /><label for="pw_secure">'.$LANG['secure'].'</label>
-                    &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
-                    &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
-                </span>
-
-                <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-                </span>&nbsp;
-                <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
-                </span>&nbsp;
-                <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="showPwd()" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
-                </span>
-            </div>
-            <div style="width:100%;">
-                <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
-            </div>';
-
-// Line for RESTRICTED TO
-if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
-    echo '
-            <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;" class="ui-widget-content"></select>
-            <input type="hidden" name="restricted_to" id="restricted_to" />
-            <div style="line-height:10px;">&nbsp;</div>';
-}
-// Line for TAGS
-echo '
-            <label for="" class="label_cpm">'.$LANG['tags'].' : </label>
-            <input type="text" name="item_tags" id="item_tags" class="input_text text ui-widget-content ui-corner-all" />';
-// Line for Item modification
-echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
-                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify"',
-                    isset($_SESSION['settings']['anyone_can_modify_bydefault'])
-                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
-                    ' checked="checked"' : '', ' />
-                <label for="anyone_can_modify">'.$LANG['anyone_can_modify'].'</label>
-            </div>';
-// Line for Item automatically deleted
-echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
-                <input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
-                <label for="enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
-                <input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$LANG['times'].'&nbsp;
-                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onchange="$(\'#times_before_deletion\').val(\'\')" />
-            </div>';
-// Line for EMAIL
-echo '
-            <input type="checkbox" name="annonce" id="annonce" onchange="toggleDiv(\'annonce_liste\')" />
-            <label for="annonce">'.$LANG['email_announce'].'</label>
-            <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
-                <h3>'.$LANG['email_select'].'</h3>
-                <select id="annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($usersList as $user) {
-    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-}
-echo '
-                </select>
-            </div>
-        </div>';
-// Tabs EDIT N?3
-echo '
-        <div id="tabs-03">
-            <div id="item_upload">
-                <div id="item_upload_list"></div><br />
-                <div id="item_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
-                <a id="item_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
-                <a id="item_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
-                <input type="hidden" id="files_number" value="0" />
-            </div>
-        </div>';
-// Tabs N°4
-if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
-echo '
-        <div id="tabs-04">
-            <div id="item_more">';
-                // load all categories and fields
-                foreach ($_SESSION['item_fields'] as $elem) {
-                    $itemCatName = $elem[0];
-                    echo '
-                    <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
-                        <div style="font-weight:bold;font-size:12px;">
-                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
-                        </div>';
-                    foreach ($elem[2] as $field) {
-                        echo '
-                        <div style="margin:2px 0 2px 15px;">
-                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                            <label class="cpm_label">'.$field[1].'</span>
-                            <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
-                        </div>';
-                    }
-                    echo '
-                    </div>';
-                }
-            echo '
-            </div>
-        </div>';
-}
-echo '
-    </div>';
-echo '
-    </form>
-    <div style="display:none; padding:5px; margin-top:5px; text-align:center;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
-</div>';
-
 /***************************
 * Edit Item Form
 */
@@ -825,6 +693,195 @@ echo '
     </div>
     </form>
 </div>';
+
+
+
+
+/********************************
+* NEW Item Form
+*/
+echo '
+<div id="div_formulaire_saisi" style="display:none;">
+    <form method="post" name="new_item" action="">
+        <div id="afficher_visibilite" style="text-align:center;margin-bottom:6px;height:20px;"></div>
+        <div id="display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
+        <div id="new_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+
+        <div id="item_tabs">
+        <ul>
+            <li><a href="#tabs-01">'.$LANG['definition'].'</a></li>
+            <li><a href="#tabs-02">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a></li>
+            <li><a href="#tabs-03">'.$LANG['files_&_images'].'</a></li>
+            ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
+            '<li id="form_tab_fields"><a href="#tabs-04">'.$LANG['more'].'</a></li>' :
+            '', '
+        </ul>
+        <div id="tabs-01">';
+// Line for LABEL
+echo '
+            <label for="" class="label_cpm">'.$LANG['label'].' : </label>
+            <input type="text" name="label" id="label" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'display_title\')" class="input_text text ui-widget-content ui-corner-all" />';
+// Line for DESCRIPTION
+echo '
+            <label for="" class="label_cpm">'.$LANG['description'].' : </label>
+            <span id="desc_span">
+                <textarea rows="5" cols="60" name="desc" id="desc" class="input_text"></textarea>
+            </span>
+            <br />';
+// Line for FOLDERS
+echo '
+            <label for="" class="">'.$LANG['group'].' : </label>
+            <select name="categorie" id="categorie" onchange="RecupComplexite(this.value,0)" style="width:250px; padding:3px;" class="ui-widget-content"><option style="display: none;"></option></select>';
+// Line for LOGIN
+echo '
+            <label for="" class="label_cpm" style="margin-top:10px;">'.$LANG['login'].' : </label>
+            <input type="text" name="item_login" id="item_login" class="input_text text ui-widget-content ui-corner-all" />';
+// Line for EMAIL
+echo '
+            <label for="" class="label_cpm">'.$LANG['email'].' : </label>
+            <input type="text" name="email" id="email" class="input_text text ui-widget-content ui-corner-all" />';
+// Line for URL
+echo '
+            <label for="" class="label_cpm">'.$LANG['url'].' : </label>
+            <input type="text" name="url" id="url" class="input_text text ui-widget-content ui-corner-all" />
+        </div>';
+// Tabs Items N?2
+echo '
+        <div id="tabs-02">';
+// Line for folder complexity
+echo'
+            <div style="margin-bottom:10px;" id="expected_complexity">
+                <label for="" class="form_label_180">'.$LANG['complex_asked'].'</label>
+                <span id="complex_attendue" style="color:#D04806; margin-left:40px;"></span>
+            </div>';
+// Line for PW
+echo '
+            <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
+                <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
+            </label>
+            <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
+            <input type="hidden" id="mypassword_complex" />
+            <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
+            <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
+
+            <div style="font-size:9px; text-align:center; width:100%;">
+                <span id="custom_pw">
+                    <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
+                    <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
+                    <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
+                    <input type="checkbox" id="pw_secure" checked="checked" /><label for="pw_secure">'.$LANG['secure'].'</label>
+                    &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
+                    &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
+                </span>
+
+                <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                </span>&nbsp;
+                <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+                </span>&nbsp;
+                <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="showPwd()" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+                </span>
+            </div>
+            <div style="width:100%;">
+                <div id="pw_strength" style="margin:5px 0 5px 120px;"></div>
+            </div>';
+
+// Line for RESTRICTED TO
+if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
+    echo '
+            <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
+            <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;" class="ui-widget-content"></select>
+            <input type="hidden" name="restricted_to" id="restricted_to" />
+            <div style="line-height:10px;">&nbsp;</div>';
+}
+// Line for TAGS
+echo '
+            <label for="" class="label_cpm">'.$LANG['tags'].' : </label>
+            <input type="text" name="item_tags" id="item_tags" class="input_text text ui-widget-content ui-corner-all" />';
+// Line for Item modification
+echo '
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
+                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify"',
+                    isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
+                    ' checked="checked"' : '', ' />
+                <label for="anyone_can_modify">'.$LANG['anyone_can_modify'].'</label>
+            </div>';
+// Line for Item automatically deleted
+echo '
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+                <input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
+                <label for="enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
+                <input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$LANG['times'].'&nbsp;
+                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="deletion_after_date" onchange="$(\'#times_before_deletion\').val(\'\')" />
+            </div>';
+// Line for EMAIL
+echo '
+            <input type="checkbox" name="annonce" id="annonce" onchange="toggleDiv(\'annonce_liste\')" />
+            <label for="annonce">'.$LANG['email_announce'].'</label>
+            <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
+                <h3>'.$LANG['email_select'].'</h3>
+                <select id="annonce_liste_destinataires" multiple="multiple" size="10">';
+foreach ($usersList as $user) {
+    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+}
+echo '
+                </select>
+            </div>
+        </div>';
+// Tabs EDIT N?3
+echo '
+        <div id="tabs-03">
+            <div id="item_upload">
+                <div id="item_upload_list"></div><br />
+                <div id="item_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
+                <a id="item_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
+                <a id="item_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
+                <input type="hidden" id="files_number" value="0" />
+            </div>
+        </div>';
+// Tabs N°4
+if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
+echo '
+        <div id="tabs-04">
+            <div id="item_more">';
+                // load all categories and fields
+                foreach ($_SESSION['item_fields'] as $elem) {
+                    $itemCatName = $elem[0];
+                    echo '
+                    <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
+                        <div style="font-weight:bold;font-size:12px;">
+                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
+                        </div>';
+                    foreach ($elem[2] as $field) {
+                        echo '
+                        <div style="margin:2px 0 2px 15px;">
+                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
+                            <label class="cpm_label">'.$field[1].'</span>
+                            <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        </div>';
+                    }
+                    echo '
+                    </div>';
+                }
+            echo '
+            </div>
+        </div>';
+}
+echo '
+    </div>';
+echo '
+    </form>
+    <div style="display:none; padding:5px; margin-top:5px; text-align:center;" id="div_formulaire_saisi_info" class="ui-state-default ui-corner-all"></div>
+</div>';
+
+
 
 /*
 * ADD NEW FOLDER form

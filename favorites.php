@@ -50,14 +50,14 @@ if (empty($_SESSION['favourites'])) {
     ';
 } else {
     echo '
-    <table id="t_items" style="empty-cells:show;width:100%;" cellspacing="0" cellpadding="5">
-        <thead><tr>
+    <table id="t_items" style="empty-cells:show;width:100%;" class="table table-striped table-hover">
+        <thead class=""><tr>
             <th style="width:55px;"></th>
             <th style="min-width:15%;">'.$LANG['label'].'</th>
             <th style="min-width:50%;">'.$LANG['description'].'</th>
             <th style="min-width:20%;">'.$LANG['group'].'</th>
         </tr></thead>
-        <tbody>';
+        <tbody class="">';
     //Get favourites
     $cpt= 0 ;
     foreach ($_SESSION['favourites'] as $fav) {
@@ -71,7 +71,7 @@ if (empty($_SESSION['favourites'])) {
             );
             if (!empty($data['label'])) {
                 echo '
-                    <tr class="ligne'.($cpt%2).'" id="row-'.$data['id'].'">
+                    <tr id="row-'.$data['id'].'">
                         <td>
                             <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;

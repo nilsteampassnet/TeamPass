@@ -1,8 +1,9 @@
 
 
 body {
-  padding-top: 5rem;
+  padding-top: 3.7rem;
   font-size: 13px;
+  background: #52C3C9;
 }
 
 p {
@@ -19,7 +20,7 @@ p {
   @grid-columns: 24;
 }
 
-.bottomAnim {
+.bottomAnim1 {
   /*top: 4.4rem;*/
   top: 50px;
   padding-top: 10px;
@@ -28,7 +29,7 @@ p {
   bottom: 0px;
   left: 0;
   width: 100%;
-  background: #4DC0C7 url("../images/canevas/back-blue-1.png");  /*http://i.stack.imgur.com/spmUM.gif*/
+  background: #1D7279 url("../images/canevas/back-blue-1.png");  /*http://i.stack.imgur.com/spmUM.gif*/
   background-size: auto;
   background-position: bottom;
   z-index: 10;
@@ -229,6 +230,9 @@ p {
   color: #6B6B6B;
 }
 
+.table-pres tr {
+  line-height: 25px;
+}
 
 
 /**********************************************************/
@@ -1121,3 +1125,4 @@ fieldset[disabled] .btn-danger.active {
 }
 
 /**************************************************/
+
