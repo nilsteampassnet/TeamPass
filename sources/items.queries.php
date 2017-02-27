@@ -2043,7 +2043,7 @@ if (isset($_POST['type'])) {
                 // REMOVED:  OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%')
                 $idManaged = '';
                 $i = 0;
-                $html = '<table class="table table-sm table-striped table-hover" style="table-layout:fixed;"><tbody>';
+                $html = '<table class="table table-sm table-striped table-hover" style="table-layout:fixed;" id="table_list_items"><tbody>';
 
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
@@ -2229,7 +2229,7 @@ if (isset($_POST['type'])) {
                         if ($canMove == 1 && $accessLevel === 0) {
                             $html .= '<i class="fa fa-sm fa-arrows grippy"></i>&nbsp;&nbsp;';
                         }
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<input type="checkbox" /></td>';
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<input type="checkbox" class="cb-multi-item" id="item-select_'.$record['id'].'" /></td>';
 
                         // COLUMN 2
                         $html .= '<td class="items-list-td2" id="fileclass'.$record['id'].'" onclick="'.$action.'">'.
@@ -2349,7 +2349,7 @@ if (isset($_POST['type'])) {
             } else {
                 $listToBeContinued = "end";
             }
-            
+
             // Get folder complexity
             $folderComplexity = DB::queryFirstRow(
                 "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %i",

@@ -66,6 +66,25 @@ p {
   font-weight:bold;
 }
 
+.tp-top2 {
+  position: absolute;
+  height: 30px;
+  width: 97%;
+  margin: 0px 5px 0px 0;
+}
+
+.tp-top2-text {
+  position: absolute;
+  height: 30px;
+  width: 97%;
+  height: 30px;
+  font-size: 16px;
+  border: 1px;
+  margin: 0px 5px 0px 0;
+  text-align:center;
+  font-weight:bold;
+}
+
 .tp-back {
   background: #CCC;
   filter: alpha(opacity=40);/* IE */
@@ -123,6 +142,10 @@ p {
 
 .space-bottom {
   margin-bottom:4px;
+}
+
+.hidden {
+  display: none;
 }
 
 .width-20 {
@@ -209,15 +232,15 @@ p {
 }
 
 .items-list-td1 {
-  width: 10%;
+  width: 80px;
 }
 
 .items-list-td2 {
-  width: 80%;
+  width: 100%;
 }
 
 .items-list-td3 {
-  width: 10%;
+  width: 70px;
 }
 
 .wrap {
