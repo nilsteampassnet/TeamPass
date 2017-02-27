@@ -478,7 +478,7 @@ echo '
           </button>
         </div>
         <div class="btn-group mr-2" role="group" aria-label="Back">
-          <button type="button" class="btn btn-default" onclick="">
+          <button type="button" class="btn btn-default" onclick="saveItemDefinition()">
             <span class="fa fa-floppy-o fa-1x"></span>&nbsp;'.$LANG['save_button'].'
           </button>
         </div>
@@ -487,6 +487,7 @@ echo '
 // only for item edition
 echo '
       <div id="item_form_top_info_edit" class="hidden">
+        <input type="hidden" id="item-definition-conform" value="1" />
         <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
         <!--<div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>-->
         <div class="tp-top2 opacity-40"></div>
@@ -535,7 +536,7 @@ echo '
             <div class="form-group row">
               <label for="item-folder-input" class="col-2 col-form-label">'.$LANG['group'].'</label>
               <div class="col-10">
-                <select class="form-control form-control-sm item-input-form" id="item-folder-input" onchange="RecupComplexite(this.value,1)"><option style="display: none;"></option></select>
+                <select class="form-control" id="item-folder-input" onchange="RecupComplexite(this.value,1)"></select>
               </div>
             </div>
 
@@ -549,14 +550,14 @@ echo '
             <div class="form-group row">
               <label for="item-email-input" class="col-2 col-form-label">'.$LANG['email'].'</label>
               <div class="col-10">
-                <input class="form-control form-control-sm item-input-form" type="email" value="" id="item-email-input">
+                <input class="form-control form-control-sm item-input-form form-control-warning email-check" type="email" value="" id="item-email-input">
               </div>
             </div>
 
             <div class="form-group row">
               <label for="item-url-input" class="col-2 col-form-label">'.$LANG['url'].'</label>
               <div class="col-10">
-                <input class="form-control form-control-sm item-input-form" type="url" value="" id="item-url-input">
+                <input class="form-control form-control-sm form-control-warning item-input-form" type="url" value="" id="item-url-input">
               </div>
             </div>
 

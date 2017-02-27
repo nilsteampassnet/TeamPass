@@ -840,7 +840,7 @@ function EditerItem()
   else if ($("#edit_pw1").val() === "" && $("#create_item_without_password").val() !== "1") erreur = "<?php echo $LANG['error_pw'];?>";
   else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
   else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo addslashes($LANG['error_tags']);?>";
-  else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
+  else if ($("#item-folder-input option:selected").val() == "" || typeof  $("#item-folder-input option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
   else{
     //Check pw complexity level
     if ((
@@ -926,7 +926,7 @@ function EditerItem()
         //prepare data
       var data = '{"pw":"' + sanitizeString($('#edit_pw1').val()) + '", "label":"' + sanitizeString($('#edit_label').val()) + '", ' +
       '"login":"' + sanitizeString($('#edit_item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
-      '"description":"' + description + '", "email":"' + $('#edit_email').val() + '", "url":"' + url + '", "categorie":"' + $("#edit_categorie option:selected").val() + '", ' +
+      '"description":"' + description + '", "email":"' + $('#edit_email').val() + '", "url":"' + url + '", "categorie":"' + $("#item-folder-input option:selected").val() + '", ' +
       '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val() + '", "is_pf":"' + $('#recherche_group_pf').val() + '", ' +
       '"annonce":"' + annonce + '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
       '"anyone_can_modify":"' + $('#edit_anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#edit_tags').val()) + '" ,' +
@@ -1050,7 +1050,7 @@ function EditerItem()
               ListerItems($('#hid_cat').val(), "", 0)
               //increment / decrement number of items in folders
               $("#itcount_"+$('#hid_cat').val()).text(Math.floor($("#itcount_"+$('#hid_cat').val()).text())-1);
-              $("#itcount_"+$('#edit_categorie').val()).text(Math.floor($("#itcount_"+$('#edit_categorie').val()).text())+1);
+              $("#itcount_"+$('#item-folder-input').val()).text(Math.floor($("#itcount_"+$('#item-folder-input').val()).text())+1);
             }
 
             // tags
@@ -2227,9 +2227,8 @@ function notify_click(status)
 */
 function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders, textFieldId)
 {
-  $("#new_show_error").html("").hide();
-  $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
   if (itemTitle != "") {
+    $("#item-label-input").removeClass('has-danger');
     if (checkInCurrentFolder == "1" || checkInAllFolders == "1") {
       //prepare data
       var data = '{"label":"' + itemTitle.replace(/"/g,'&quot;') + '", "idFolder":"' + $('#hid_cat').val() + '"}';
@@ -2239,9 +2238,6 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
       } else {
         var typeOfCheck = "all_folders";
       }
-
-      // disable Save button
-      $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
 
       // send query
       $.post(
@@ -2259,7 +2255,8 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
             $("#"+textFieldId).html(itemTitle.escapeHTML());
           } else {
             $("#label").focus();
-            $("#new_show_error").html("<?php echo $LANG['duplicate_title_in_same_folder'];?>").show();
+            $("#item-label-input").addClass('has-danger');
+            displayMessage("<?php echo $LANG['duplicate_title_in_same_folder'];?>").show();
           }
         }
       );
@@ -2321,10 +2318,10 @@ function refreshVisibleFolders()
       //check if format error
       if (data.error == "") {
         // append new list
-        $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
+        $("#categorie, #item-folder-input, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
         $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
         $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
-
+        
         // remove ROOT option if exists
         $('#edit_folder_folder option[value="0"]').remove();
         $('#delete_rep_groupe option[value="0"]').remove();
@@ -2340,6 +2337,7 @@ function showItemElement(id) {
   if (id === "item_detail_div") {
     $("#items_list_div, #item_form_div").hide();
     $(".item-input-form").empty().val("");  // this clears the form
+    $("#item-description-input").summernote('destroy'); // destroy wysiwyg
   } else if (id === "items_list_div") {
     $("#item_form_div, #item_detail_div").hide();
   } else if (id === "item_form_div") {
@@ -2386,10 +2384,6 @@ function prepare_item_edition(restricted_to_roles) {
     return;
   }
 
-  //
-  if (CKEDITOR.instances["item-description-input"]) {
-    CKEDITOR.instances["item-description-input"].destroy();
-  }
 
   // Check if Item has changed since loaded
   if (CheckIfItemChanged() == 1) {
@@ -2402,15 +2396,17 @@ function prepare_item_edition(restricted_to_roles) {
   }
 
   // Show WYGIWYG editor
-  CKEDITOR.replace(
-    "item-description-input",
-    {
-      toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]],
-      height: 100,
-      language: "<?php echo $_SESSION['user_language_code'];?>"
-    }
-   );
-  CKEDITOR.instances["item-description-input"].setData($('#hid_desc').val());
+  $("#item-description-input").summernote({
+    lang: "<?php echo strtolower($_SESSION['user_language_code']).'-'.strtoupper($_SESSION['user_language_code']);?>",
+    toolbar: [
+      ['style', ['bold', 'italic', 'underline', 'clear']],
+      ['font', ['strikethrough', 'superscript', 'subscript']],
+      ['fontsize', ['fontsize']],
+      ['color', ['color']],
+      ['para', ['ul', 'ol', 'paragraph']],
+      ['height', ['height']]
+    ]
+  });
 
   $('#edit_display_title').html($('#hid_label').val());
   $('#item-label-input').val($('#hid_label').val());
@@ -2421,6 +2417,10 @@ function prepare_item_edition(restricted_to_roles) {
   $('#item-email-input').val($('#hid_email').val());
   $('#item-url-input').val($('#hid_url').val());
   $('#item-folder-input').val($('#id_categorie').val());
+  $('#item-folder-input').select2({
+    language: "<?php echo $_SESSION['user_language_code'];?>"
+  });
+
   if ($('#item-restrictedto-input').val() != undefined) {
     $('#item-restrictedto-input').val($('#hid_restricted_to').val());
   }
@@ -2510,13 +2510,33 @@ function prepare_item_edition(restricted_to_roles) {
 
   // disable folder selection if PF
   if ($('#recherche_group_pf').val() == "1") {
-    $("#edit_categorie").prop("disabled", true);
+    $("#item-folder-input").prop("disabled", true);
   } else {
-    $("#edit_categorie").prop("disabled", false);
+    $("#item-folder-input").prop("disabled", false);
   }
 
   //open dialog
   $("#div_loading").hide();
+}
+
+function saveItemDefinition() {
+  // first check that form is correctly filled in
+  if (!IsValidEmail($("#item-email-input").val()) && $("#item-email-input").val() !== "") {
+    $("#item-email-input").addClass('has-warning');
+    $("#item-definition-conform").val("0");
+  }
+  if (!validateURL($("#item-url-input").val()) && $("#item-url-input").val() !== "") {
+    $("#item-url-input").addClass('has-warning');
+    $("#item-definition-conform").val("0");
+  }
+
+  if ($("#item-definition-conform").val() === "0") {
+    displayMessage("Item definition is not correct!", "error", 3000);
+    return false;
+  }
+
+  // send query
+
 }
 
 
@@ -2555,6 +2575,8 @@ $(function() {
       $("#button-items-multi-selection").hide();
     }
   });
+
+
 
   //---
 
@@ -3176,7 +3198,7 @@ $(function() {
         $("#edit_expected_complexity").show();
       }
 
-      $("#edit_categorie").select2({
+      $("#item-folder-input").select2({
         language: "<?php echo $_SESSION['user_language_code'];?>"
       });
     }

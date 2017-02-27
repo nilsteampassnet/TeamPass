@@ -58,13 +58,12 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" href="includes/js/jstree/themes/default/style.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jstree/jstree.min.js"></script>
         <script type="text/javascript" src="includes/js/jstree/jquery.cookie.js"></script>
-        <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
-        <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
-        <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
-        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
-        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
+        <!--<script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>-->
+
+        <link rel="stylesheet" type="text/css" href="includes/js/summernote/summernote.css" rel="stylesheet">
+        <script type="text/javascript" src="includes/js/summernote/summernote.min.js"></script>
+        <script type="text/javascript" src="includes/js/trumbowyg/lang/summernote-'.strtolower($_SESSION['user_language_code']).'-'.strtoupper($_SESSION['user_language_code']).'.js"></script>   
+
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
         <script type="text/javascript" src="includes/js/vendor/clipboard.min.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {

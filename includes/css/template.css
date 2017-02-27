@@ -1147,5 +1147,32 @@ fieldset[disabled] .btn-danger.active {
   background-image: none;
 }
 
-/**************************************************/
 
+/**************************************************/
+/*** SUMMERNOTE adaptation for Boostrap 4 ***/
+.popover-content{
+  display: none;
+}
+.note-editor.fullscreen {
+  background-color:#FFF;
+}
+.note-toolbar .note-icon-caret{
+  display: none;
+}
+.note-toolbar .dropdown-menu{
+  padding: 0.2rem;
+}
+
+
+/**************************************************/
+/*** SELECT2 adaptation for Bootstrap4 ***/
+.select2-selection__rendered {
+  line-height: 30px !important;
+}
+
+.select2-selection {
+  height: 32px !important;
+}
+
+
+/**************************************************/
