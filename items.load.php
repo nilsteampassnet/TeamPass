@@ -107,7 +107,7 @@ $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/librari
     }
   }
 
-  $("#edit_pw1").keyup(function() {
+  $("#item-pwd-input").keyup(function() {
     $("#edit_visible_pw").text( this.value );
   });
 
@@ -837,15 +837,15 @@ function EditerItem()
 
   // do checks
   if ($('#edit_label').val() == "") erreur = "<?php echo addslashes($LANG['error_label']);?>";
-  else if ($("#edit_pw1").val() === "" && $("#create_item_without_password").val() !== "1") erreur = "<?php echo $LANG['error_pw'];?>";
-  else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
+  else if ($("#item-pwd-input").val() === "" && $("#create_item_without_password").val() !== "1") erreur = "<?php echo $LANG['error_pw'];?>";
+  else if ($("#item-pwd-input").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']);?>";
   else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo addslashes($LANG['error_tags']);?>";
   else if ($("#item-folder-input option:selected").val() == "" || typeof  $("#item-folder-input option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']);?>";
   else{
     //Check pw complexity level
     if ((
         $("#bloquer_modification_complexite").val() == 0 &&
-        parseInt($("#edit_mypassword_complex").val()) >= parseInt($("#complexite_groupe").val())
+        parseInt($("#item-pwdcomplexity-input").val()) >= parseInt($("#complexite_groupe").val())
        )
       ||
       ($("#bloquer_modification_complexite").val() == 1)
@@ -924,13 +924,13 @@ function EditerItem()
       });
 
         //prepare data
-      var data = '{"pw":"' + sanitizeString($('#edit_pw1').val()) + '", "label":"' + sanitizeString($('#edit_label').val()) + '", ' +
+      var data = '{"pw":"' + sanitizeString($('#item-pwd-input').val()) + '", "label":"' + sanitizeString($('#edit_label').val()) + '", ' +
       '"login":"' + sanitizeString($('#edit_item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
       '"description":"' + description + '", "email":"' + $('#edit_email').val() + '", "url":"' + url + '", "categorie":"' + $("#item-folder-input option:selected").val() + '", ' +
       '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val() + '", "is_pf":"' + $('#recherche_group_pf').val() + '", ' +
       '"annonce":"' + annonce + '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
       '"anyone_can_modify":"' + $('#edit_anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#edit_tags').val()) + '" ,' +
-      '"to_be_deleted":"' + to_be_deleted + '" ,"fields":"' + sanitizeString(fields) + '", "complexity_level":"' + parseInt($("#edit_mypassword_complex").val()) + '"}';
+      '"to_be_deleted":"' + to_be_deleted + '" ,"fields":"' + sanitizeString(fields) + '", "complexity_level":"' + parseInt($("#item-pwdcomplexity-input").val()) + '"}';
 
       //send query
       $.post(
@@ -991,7 +991,7 @@ function EditerItem()
 
             //Refresh form
             $("#id_label").text('<span class="fa fa-key fa-lg"></span>&nbsp;' +$('#edit_label').val());
-            //$("#id_pw").text($('#edit_pw1').val());
+            //$("#id_pw").text($('#item-pwd-input').val());
             $("#id_email").html($('#edit_email').val());
             $("#id_url").html($('#edit_url').val().escapeHTML());
             $("#id_desc").html(description);
@@ -1005,7 +1005,7 @@ function EditerItem()
 
             //Refresh hidden data
             $("#hid_label").val($('#edit_label').val());
-            $("#hid_pw").val($('#edit_pw1').val());
+            $("#hid_pw").val($('#item-pwd-input').val());
             $("#hid_email").val($('#edit_email').val());
             $("#hid_url").val($('#edit_url').val().escapeHTML());
             $("#hid_desc").val(description);
@@ -1057,10 +1057,10 @@ function EditerItem()
             $(".round-grey").addClass("ui-state-highlight ui-corner-all");
 
             //Prepare clipboard copies
-            if ($('#edit_pw1').val() != "") {
+            if ($('#item-pwd-input').val() != "") {
               new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
                 text: function() {
-                  return unsanitizeString($('#edit_pw1').val());
+                  return unsanitizeString($('#item-pwd-input').val());
                 }
               });
 
@@ -1946,7 +1946,7 @@ function open_edit_item_div(restricted_to_roles)
   $('#edit_display_title').html($('#hid_label').val());
   $('#edit_label').val($('#hid_label').val());
   $('#edit_desc').html($('#hid_desc').val());
-  $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
+  $('#item-pwd-input, #edit_pw2').val($('#hid_pw').val());
   $("#edit_visible_pw").text($('#hid_pw').val());
   $('#edit_item_login').val($('#hid_login').val());
   $('#edit_email').val($('#hid_email').val());
@@ -2321,7 +2321,7 @@ function refreshVisibleFolders()
         $("#categorie, #item-folder-input, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
         $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
         $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
-        
+
         // remove ROOT option if exists
         $('#edit_folder_folder option[value="0"]').remove();
         $('#delete_rep_groupe option[value="0"]').remove();
@@ -2333,17 +2333,15 @@ function refreshVisibleFolders()
 
 
 function showItemElement(id) {
-  $("#" + id).show();
   if (id === "item_detail_div") {
     $("#items_list_div, #item_form_div").hide();
     $(".item-input-form").empty().val("");  // this clears the form
     $("#item-description-input").summernote('destroy'); // destroy wysiwyg
+    $("#item_detail_div").show();
   } else if (id === "items_list_div") {
     $("#item_form_div, #item_detail_div").hide();
+    $("#" + id).show();
   } else if (id === "item_form_div") {
-    $("#items_list_div, #item_detail_div").hide();
-    $("#item_form_top_info_edit").show();
-    $('#edit_item_navigator a:first').tab('show');
     prepare_item_edition();
   }
 }
@@ -2373,14 +2371,14 @@ function prepare_item_edition(restricted_to_roles) {
     displayMessage("<?php echo $LANG['none_selected_text'];?>");
     return false;
   }
-  $("#div_loading").show();
+  $("#tp_loader").show();
 
   // Get complexity level for this folder
   // and stop edition if Item edited by another user
   var compReturn = RecupComplexite($('#hid_cat').val(), 1);
 
   if (compReturn == 0) {
-    $("#div_loading").hide();
+    $("#tp_loader").hide();
     return;
   }
 
@@ -2391,7 +2389,7 @@ function prepare_item_edition(restricted_to_roles) {
     tmp = tmp.substring(20,tmp.indexOf(")"));
     tmp = tmp.replace(/'/g, "").split(',');
     AfficherDetailsItem(tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], 1, 1);
-    $("#div_loading").hide();
+    $("#tp_loader").hide();
     return;
   }
 
@@ -2411,7 +2409,7 @@ function prepare_item_edition(restricted_to_roles) {
   $('#edit_display_title').html($('#hid_label').val());
   $('#item-label-input').val($('#hid_label').val());
   $('#item-description-input').html($('#hid_desc').val());
-  $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
+  $('#item-pwd-input, #item-pwdconfirm-input').val($('#hid_pw').val());
   $("#edit_visible_pw").text($('#hid_pw').val());
   $('#item-login-input').val($('#hid_login').val());
   $('#item-email-input').val($('#hid_email').val());
@@ -2515,8 +2513,13 @@ function prepare_item_edition(restricted_to_roles) {
     $("#item-folder-input").prop("disabled", false);
   }
 
+  // now display
+  $("#items_list_div, #item_detail_div").hide();
+  $("#item_form_top_info_edit, #item_form_div").show();
+  $('#edit_item_navigator a:first').tab('show');
+
   //open dialog
-  $("#div_loading").hide();
+  $("#tp_loader").hide();
 }
 
 function saveItemDefinition() {
@@ -3178,7 +3181,7 @@ $(function() {
     open: function(event,ui) {
       //refresh pw complexity
       $("#item_edit_tabs").tabs( "option", "active",1  );
-      $("#edit_pw1").first().focus();
+      $("#item-pwd-input").first().focus();
       $("#item_edit_tabs").tabs( "option", "active",0  );
       $(".ui-tooltip").siblings(".tooltip").remove();
 
@@ -3193,9 +3196,9 @@ $(function() {
 
       // hide complexity if PF
       if ($("#pf_selected").val() == 1) {
-        $("#edit_expected_complexity").hide();
+        $("#item-expected-complexity").hide();
       } else {
-        $("#edit_expected_complexity").show();
+        $("#item-expected-complexity").show();
       }
 
       $("#item-folder-input").select2({
@@ -3745,7 +3748,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
 
   //Password meter for item update
-  $("#edit_pw1").simplePassMeter({
+  $("#item-pwd-input").simplePassMeter({
     "requirements": {},
     "container": "#edit_pw_strength",
     "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
@@ -3780,9 +3783,9 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
       }
     ]
   });
-  $('#edit_pw1').on(
+  $('#item-pwd-input').on(
     "score.simplePassMeter", function(jQEvent, score) {
-      $("#edit_mypassword_complex").val(score);
+      $("#item-pwdcomplexity-input").val(score);
     }
   );
 

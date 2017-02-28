@@ -241,25 +241,25 @@ if (isset($_SESSION['login'])) {
         echo '
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_folders") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-folder-open fa-2x tip" title="'.$LANG['admin_groups'].'" onclick="MenuAction(\'manage_folders\')" data-placement="bottom"></span>
+                    <span class="fa fa-folder-open fa-2x tip" title="'.$LANG['admin_groups'].'" onclick="MenuAction(\'folders\')" data-placement="bottom"></span>
                 </a>
             </li>
 
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_roles") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-graduation-cap fa-2x tip" title="'.$LANG['admin_functions'].'" onclick="MenuAction(\'manage_roles\')" data-placement="bottom"></span>
+                    <span class="fa fa-graduation-cap fa-2x tip" title="'.$LANG['admin_functions'].'" onclick="MenuAction(\'roles\')" data-placement="bottom"></span>
                 </a>
             </li>
 
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_users") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-users fa-2x tip" title="'.$LANG['admin_users'].'" onclick="MenuAction(\'manage_users\')" data-placement="bottom"></span>
+                    <span class="fa fa-users fa-2x tip" title="'.$LANG['admin_users'].'" onclick="MenuAction(\'users\')" data-placement="bottom"></span>
                 </a>
             </li>
 
             <li class="nav-item', (isset($_GET['page']) && $_GET['page'] === "manage_views") ? " active" : "" ,'">
                 <a class="nav-link" href="#">
-                    <span class="fa fa-cubes fa-2x tip" title="'.$LANG['admin_views'].'" onclick="MenuAction(\'manage_views\')" data-placement="bottom"></span>
+                    <span class="fa fa-cubes fa-2x tip" title="'.$LANG['admin_views'].'" onclick="MenuAction(\'views\')" data-placement="bottom"></span>
                 </a>
             </li>';
     }
@@ -292,8 +292,8 @@ if (isset($_SESSION['login'])) {
 
     echo '
         </ul>
-        <div class="my-2 my-lg-0">
-            <span id="tp_loader" style="display:none;margin-right:15px;" class="fa fa-cog fa-spin mi-red fa-3x"></span>
+        <div id="tp_loader" style="display:none;margin-right:15px; padding:5px;" class="my-2 my-lg-0 ui-state-error ui-corner-all">
+            <span class="fa fa-cog fa-spin fa-2x align-middle"></span>&nbsp;'.$LANG['loading'].'
         </div>
         <div class="my-2 my-lg-0" style="margin-right:15px; width:140px;">
             <div class="input-group margin-bottom-sm" style="float:right; margin-top:-1px;">
@@ -339,7 +339,7 @@ echo '
     <div id="message" style="display:none;">
     </div>
 
-</div>';  
+</div>';
 
 echo '
 <div class="bottomAnim">
@@ -748,7 +748,7 @@ echo '
 // PAGE LOADING
 echo '
     <div id="div_loading" style="display:none;">
-        <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all">
+        <div style="padding:5px; z-index:9999999;" class="ui-state-error ui-corner-all">
             <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
     </div>';

@@ -152,6 +152,9 @@ p {
   width: 20px;
 }
 
+.full-width {
+  width: 100%;
+}
 
 .sidebar {
     margin-top: 5px;

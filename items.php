@@ -468,7 +468,7 @@ echo '
 echo '
     </div>';
 
-    /************* EDIT ITEM ************************/
+    /************* ITEM FORM ************************/
 echo '
     <div id="item_form_div" style="display:none;">
       <div class="btn-toolbar" role="toolbar" aria-label="Item edit buttons bar">
@@ -497,89 +497,190 @@ echo '
       </div>';
 
 echo '
-      <ul class="nav nav-tabs" role="tablist" id="edit_item_navigator" style="margin-top:40px;">
-        <li class="nav-item">
-          <a class="nav-link active" data-toggle="tab" href="#item-definition" role="tab">'.$LANG['definition'].'</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-toggle="tab" href="#item-passwd" role="tab">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-toggle="tab" href="#item-files" role="tab">'.$LANG['files_&_images'].'</a>
-        </li>
-        ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
-        '<li class="nav-item">
-          <a class="nav-link" data-toggle="tab" href="#item-extra" role="tab">'.$LANG['more'].'</a>
-        </li>' :
-        '', '
-      </ul>';
+      <div class="card" style="margin-top:40px;">
+        <div class="card-header">
+          <ul class="nav nav-tabs" role="tablist" id="edit_item_navigator">
+            <li class="nav-item">
+              <a class="nav-link active" data-toggle="tab" href="#item-definition" role="tab">'.$LANG['definition'].'</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#item-passwd" role="tab">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#item-files" role="tab">'.$LANG['files_&_images'].'</a>
+            </li>
+            ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
+            '<li class="nav-item">
+              <a class="nav-link" data-toggle="tab" href="#item-extra" role="tab">'.$LANG['more'].'</a>
+            </li>' :
+            '', '
+          </ul>
+        </div>';
 
 echo '
-      <div class="tab-content">
-        <div class="tab-pane active" id="item-definition" role="tabpanel">
-          <form class="space-top">
+        <div class="card-block">
+          <div class="tab-pane active" id="item-definition" role="tabpanel">
+            <form>
 
-            <div class="form-group row">
-              <label for="item-label-input" class="col-2 col-form-label">'.$LANG['label'].'</label>
-              <div class="col-10">
-                <input class="form-control form-control-sm item-input-form" type="text" value="" id="item-label-input" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'edit_display_title\')">
+              <div class="form-group row">
+                <label for="item-label-input" class="col-2 col-form-label">'.$LANG['label'].'</label>
+                <div class="col-10">
+                  <input class="form-control form-control-sm item-input-form" type="text" value="" id="item-label-input" onchange="checkTitleDuplicate(this.value, \'', isset($_SESSION['settings']['item_duplicate_in_same_folder']) && $_SESSION['settings']['item_duplicate_in_same_folder'] == 1 ? 0 : 1, '\', \'', isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] == 1 ? 0 : 1, '\', \'edit_display_title\')">
+                </div>
               </div>
-            </div>
 
-            <div class="form-group row">
-              <label for="item-description-input" class="col-2 col-form-label">'.$LANG['description'].'&nbsp;<span class="fa fa-eraser" style="cursor:pointer;" onclick="clear_html_tags()"></span></label>
-              <div class="col-10">
-                <textarea class="form-control item-input-form" rows="5" cols="70" id="item-description-input"></textarea>
+              <div class="form-group row">
+                <label for="item-description-input" class="col-2 col-form-label">'.$LANG['description'].'&nbsp;<span class="fa fa-eraser" style="cursor:pointer;" onclick="clear_html_tags()"></span></label>
+                <div class="col-10">
+                  <textarea class="form-control item-input-form" rows="5" cols="70" id="item-description-input"></textarea>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group row">
-              <label for="item-folder-input" class="col-2 col-form-label">'.$LANG['group'].'</label>
-              <div class="col-10">
-                <select class="form-control" id="item-folder-input" onchange="RecupComplexite(this.value,1)"></select>
+              <div class="form-group row">
+                <label for="item-folder-input" class="col-2 col-form-label">'.$LANG['group'].'</label>
+                <div class="col-10">
+                  <select class="form-control form-control-sm full-width" id="item-folder-input" onchange="RecupComplexite(this.value,1)"></select>
+                </div>
               </div>
-            </div>
 
-            <div class="form-group row">
-              <label for="item-login-input" class="col-2 col-form-label">'.$LANG['login'].'</label>
-              <div class="col-10">
-                <input class="form-control form-control-sm item-input-form" type="text" value="" id="item-login-input">
+              <div class="form-group row">
+                <label for="item-login-input" class="col-2 col-form-label">'.$LANG['login'].'</label>
+                <div class="col-10">
+                  <input class="form-control form-control-sm item-input-form" type="text" value="" id="item-login-input">
+                </div>
               </div>
-            </div>
 
-            <div class="form-group row">
-              <label for="item-email-input" class="col-2 col-form-label">'.$LANG['email'].'</label>
-              <div class="col-10">
-                <input class="form-control form-control-sm item-input-form form-control-warning email-check" type="email" value="" id="item-email-input">
+              <div class="form-group row">
+                <label for="item-email-input" class="col-2 col-form-label">'.$LANG['email'].'</label>
+                <div class="col-10">
+                  <input class="form-control form-control-sm item-input-form form-control-warning email-check" type="email" value="" id="item-email-input">
+                </div>
               </div>
-            </div>
 
-            <div class="form-group row">
-              <label for="item-url-input" class="col-2 col-form-label">'.$LANG['url'].'</label>
-              <div class="col-10">
-                <input class="form-control form-control-sm form-control-warning item-input-form" type="url" value="" id="item-url-input">
+              <div class="form-group row">
+                <label for="item-url-input" class="col-2 col-form-label">'.$LANG['url'].'</label>
+                <div class="col-10">
+                  <input class="form-control form-control-sm form-control-warning item-input-form" type="url" value="" id="item-url-input">
+                </div>
               </div>
-            </div>
 
-          </form>
-        </div>
+            </form>
+          </div>
 
-        <div class="tab-pane" id="item-passwd" role="tabpanel">
-          <form class="space-top">
+          <div class="tab-pane" id="item-passwd" role="tabpanel">
+            <form>
 
-          <.form>
-        </div>
+              <!-- Line for folder complexity -->
+              <h6 class="card-subtitle mb-2 text-muted" id="item-expected-complexity">
+                <label for="" class="cpm_label">'.$LANG['complex_asked'].'</label>
+                <span id="edit_complex_attendue" style="color:#D04806;"></span>
+              </h6>
 
-        <div class="tab-pane" id="item-files" role="tabpanel">
-          <form class="space-top">
+              <p class="card-text">
+                <!--  -->
+                <div class="form-group row">
+                  <label for="item-pwd-input" class="col-2 col-form-label">'.$LANG['used_pw'].'
+                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
+                  </label>
+                  <div class="col-10">
+                    <input class="form-control form-control-sm form-control-warning item-input-form" type="password" value="" id="item-pwd-input">
+                    <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
+                  </div>
+                  <input type="hidden" id="item-pwdcomplexity-input" />
+                </div>
 
-          <.form>
-        </div>
+                <div class="form-group row">
+                  <label for="item-pwdconfirm-input" class="col-2 col-form-label">'.$LANG['confirm'].'</label>
+                  <div class="col-10">
+                    <input class="form-control form-control-sm form-control-warning item-input-form" type="password" value="" id="item-pwdconfirm-input">
+                  </div>
+                </div>
 
-        <div class="tab-pane" id="item-extra" role="tabpanel">
-          <form class="space-top">
+                <div style="font-size:9px; text-align:center; width:100%;">
+                  <span id="edit_custom_pw">
+                    <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
+                    <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
+                    <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
+                    <input type="checkbox" id="edit_pw_secure" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
+                    &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
+                    &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
+                  </span>
 
-          <.form>
+                  <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                  </span>&nbsp;
+                  <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+                  </span>&nbsp;
+                  <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
+                    <i class="fa fa-square fa-stack-2x"></i>
+                    <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+                  </span>
+                <div style="width:100%;">
+                  <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>
+                </div>';
+
+        if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
+          echo '
+              <div id="div_editRestricted">
+                <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
+                <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
+                <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
+              <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
+              <div style="line-height:10px;">&nbsp;</div>
+              </div>';
+        }
+
+        echo '
+              <label for="" class="cpm_label">'.$LANG['tags'].' : </label>
+              <input type="text" size="50" name="edit_tags" id="edit_tags" class="input_text text ui-widget-content ui-corner-all" />';
+        // Line for Item modification
+        echo '
+              <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
+                <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify"',
+                  isset($_SESSION['settings']['anyone_can_modify_bydefault'])
+                  && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
+                  ' checked="checked"' : '', ' />
+                <label for="edit_anyone_can_modify">'.$LANG['anyone_can_modify'].'</label>
+              </div>';
+        // Line for Item automatically deleted
+        echo '
+              <div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+                <input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
+                <label for="edit_enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
+                <input type="text" value="" size="1" id="edit_times_before_deletion" onchange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$LANG['times'].'&nbsp;
+                '.$LANG['automatic_del_after_date_text'].'&nbsp;<input type="text" value="" class="datepicker" readonly="readonly" size="10" id="edit_deletion_after_date" onchange="$(\'#edit_times_before_deletion\').val(\'\')" />
+              </div>';
+
+        echo '
+              <input type="checkbox" name="edit_annonce" id="edit_annonce" onchange="toggleDiv(\'edit_annonce_liste\')" />
+              <label for="edit_annonce">'.$LANG['email_announce'].'</label>
+              <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:3px;padding:5px;" id="edit_annonce_liste">
+                <h3>'.$LANG['email_select'].'</h3>
+                <select id="edit_annonce_liste_destinataires" multiple="multiple" size="10">';
+        foreach ($usersList as $user) {
+          echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+        }
+        echo '
+                </select>
+              </div>
+            </form>
+          </div>
+
+          <div class="tab-pane" id="item-files" role="tabpanel">
+            <form class="space-top">
+
+            </form>
+          </div>
+
+          <div class="tab-pane" id="item-extra" role="tabpanel">
+            <form class="space-top">
+
+            </form>
+          </div>
         </div>
       </div>';
 
