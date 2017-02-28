@@ -257,6 +257,8 @@ $htmlHeaders .= '
                 } else if (data[0].error == "ga_temporary_code_correct") {
                     $("#ga_code").val("").focus();
                     $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
+                } else if (data[0].value === "install_error") {
+                    $("#connection_error").html(data[0].error).show();
                 } else {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                 }
