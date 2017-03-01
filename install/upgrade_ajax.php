@@ -179,7 +179,7 @@ if (isset($_POST['type'])) {
             break;
 
         case "step1":
-echo ">> ".$_SESSION['user_granted'];
+
             if ($_SESSION['user_granted'] !== "1") {
                 echo 'document.getElementById("res_step1").innerHTML = "User not connected anymore!";';
                 echo 'document.getElementById("loader").style.display = "none";';
