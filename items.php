@@ -499,7 +499,7 @@ echo '
 echo '
       <div class="card" style="margin-top:40px;">
         <div class="card-header">
-          <ul class="nav nav-tabs" role="tablist" id="edit_item_navigator">
+          <ul class="nav nav-tabs card-header-tabs pull-xs-left" role="tablist" id="edit_item_navigator">
             <li class="nav-item">
               <a class="nav-link active" data-toggle="tab" href="#item-definition" role="tab">'.$LANG['definition'].'</a>
             </li>
@@ -518,8 +518,8 @@ echo '
         </div>';
 
 echo '
-        <div class="card-block">
-          <div class="tab-pane active" id="item-definition" role="tabpanel">
+        <div class="tab-content">
+          <div class="card-block tab-pane active" id="item-definition" role="tabpanel">
             <form>
 
               <div class="form-group row">
@@ -539,7 +539,7 @@ echo '
               <div class="form-group row">
                 <label for="item-folder-input" class="col-2 col-form-label">'.$LANG['group'].'</label>
                 <div class="col-10">
-                  <select class="form-control form-control-sm full-width" id="item-folder-input" onchange="RecupComplexite(this.value,1)"></select>
+                  <select class="form-control form-control-sm full-width" id="item-folder-input" style="width: 100%" onchange="RecupComplexite(this.value,1)"></select>
                 </div>
               </div>
 
@@ -567,72 +567,118 @@ echo '
             </form>
           </div>
 
-          <div class="tab-pane" id="item-passwd" role="tabpanel">
+          <div class="card-block tab-pane" id="item-passwd" role="tabpanel">
             <form>
+              <div class="card">
+                <h5 class="card-header">'.$LANG['index_password'].'</h5>
+                <div class="card-block">
+                  <h6 class="card-title">'.$LANG['complex_asked'].'&nbsp;<span id="edit_complex_attendue" style="color:#D04806;"></span></h6>
+                  <p class="card-text">
+                    <div class="form-group row">
+                      <label for="item-pwd-input" class="col-2 col-form-label">'.$LANG['used_pw'].'&nbsp;<span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span></label>
+                      <div class="col-8">
+                        <input class="form-control form-control-sm form-control-warning item-input-form" type="password" value="" id="item-pwd-input">
+                        <p id="edit_visible_pw" class="form-text text-muted">
+                          <span style="display:none;font-weight:bold;"></span>
+                        </p>
+                      </div>
+                      <div class="col-2">
+                        <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
+                      </div>
+                      <input type="hidden" id="item-pwdcomplexity-input" />
+                    </div>
 
-              <!-- Line for folder complexity -->
-              <h6 class="card-subtitle mb-2 text-muted" id="item-expected-complexity">
-                <label for="" class="cpm_label">'.$LANG['complex_asked'].'</label>
-                <span id="edit_complex_attendue" style="color:#D04806;"></span>
-              </h6>
+                    <div class="form-group row">
+                      <label for="item-pwdconfirm-input" class="col-2 col-form-label">'.$LANG['confirm'].'</label>
+                      <div class="col-8">
+                        <input class="form-control form-control-sm form-control-warning item-input-form" type="password" value="" id="item-pwdconfirm-input">
+                      </div>
+                    </div>
 
-              <p class="card-text">
-                <!--  -->
-                <div class="form-group row">
-                  <label for="item-pwd-input" class="col-2 col-form-label">'.$LANG['used_pw'].'
-                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
-                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
-                  </label>
-                  <div class="col-10">
-                    <input class="form-control form-control-sm form-control-warning item-input-form" type="password" value="" id="item-pwd-input">
-                    <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
-                  </div>
-                  <input type="hidden" id="item-pwdcomplexity-input" />
+                    <div class="form-group row text-center">
+                      <span id="edit_custom_pw">
+                        <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
+                        <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
+                        <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
+                        <input type="checkbox" id="edit_pw_secure" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
+                        &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
+                        &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
+                      </span>
+
+                      <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                      </span>&nbsp;
+                      <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
+                      </span>&nbsp;
+                      <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
+                        <i class="fa fa-square fa-stack-2x"></i>
+                        <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
+                      </span>
+                      <div style="width:100%;">
+                        <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>
+                      </div>
+                    </div>
+                  </p>
                 </div>
+              </div>
 
-                <div class="form-group row">
-                  <label for="item-pwdconfirm-input" class="col-2 col-form-label">'.$LANG['confirm'].'</label>
-                  <div class="col-10">
-                    <input class="form-control form-control-sm form-control-warning item-input-form" type="password" value="" id="item-pwdconfirm-input">
+              <div class="card">
+                <h5 class="card-header">'.$LANG['visibility'].'</h5>
+                <div class="card-block">';
+if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
+  echo '
+                  <div class="form-group row" id="div_editRestricted">
+                    <label for="edit_restricted_to_list" class="col-2 col-form-label">'.$LANG['restricted_to'].' : </label>
+                    <div class="col-10">
+                      <select id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
+                      <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
+                      <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
+                    </div>
+                  </div>';
+}
+
+echo '
+                  <div class="form-group row">
+                    <label for="edit_restricted_to_list" class="col-2 col-form-label">'.$LANG['restricted_to'].' : </label>
+                    <div class="col-10">
+
+                    </div>
+                  </div>
+
+                  <div class="form-group row">
+                    <label for="edit_restricted_to_list" class="col-2 col-form-label">'.$LANG['restricted_to'].' : </label>
+                    <div class="col-10">
+
+                    </div>
+                  </div>
+
+                  <div class="form-group row">
+                    <label for="edit_restricted_to_list" class="col-2 col-form-label">'.$LANG['restricted_to'].' : </label>
+                    <div class="col-10">
+
+                    </div>
+                  </div>
+
+                  <div class="form-group row">
+                    <label for="edit_restricted_to_list" class="col-2 col-form-label">'.$LANG['restricted_to'].' : </label>
+                    <div class="col-10">
+
+                    </div>
+                  </div>
+
+                  <div class="form-group row">
+                    <label for="edit_restricted_to_list" class="col-2 col-form-label">'.$LANG['restricted_to'].' : </label>
+                    <div class="col-10">
+
+                    </div>
                   </div>
                 </div>
-
-                <div style="font-size:9px; text-align:center; width:100%;">
-                  <span id="edit_custom_pw">
-                    <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
-                    <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
-                    <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="edit_pw_secure" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
-                    &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
-                    &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
-                  </span>
-
-                  <span class="fa-stack fa-lg tip" title="'.$LANG['pw_generate'].'" onclick="pwGenerate(\'edit\')" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-                  </span>&nbsp;
-                  <span class="fa-stack fa-lg tip" title="'.$LANG['copy'].'" onclick="pwCopy(\'edit\')" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-copy fa-stack-1x fa-inverse"></i>
-                  </span>&nbsp;
-                  <span class="fa-stack fa-lg tip" title="'.$LANG['mask_pw'].'" onclick="ShowPasswords_EditForm()" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-eye fa-stack-1x fa-inverse"></i>
-                  </span>
-                <div style="width:100%;">
-                  <div id="edit_pw_strength" style="margin:5px 0 5px 120px;"></div>
-                </div>';
-
-        if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1) {
-          echo '
-              <div id="div_editRestricted">
-                <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
-                <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
-                <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
-              <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
-              <div style="line-height:10px;">&nbsp;</div>
               </div>';
-        }
+
+
 
         echo '
               <label for="" class="cpm_label">'.$LANG['tags'].' : </label>
