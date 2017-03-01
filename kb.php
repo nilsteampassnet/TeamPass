@@ -190,7 +190,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
     echo '
         <script language="javascript" type="text/javascript">
         <!--
-        openKB('.$_GET['id'].');
+        openKB('.htmlspecialchars($_GET['id']).');
         -->
         </script>';
 }
