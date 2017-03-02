@@ -711,9 +711,21 @@ function identifyUser($sentData)
             "error" : "'.$logError.'"}]';
 
             exit();
-
         }
+    }
 
+    // If admin user then check if folder install exists
+    // if yes then refuse connection
+    if ($data['admin'] === "1" && is_dir("../install")) {
+        $return = "install_error";
+        $logError = "Install folder has to be removed!";
+
+        echo '[{"value" : "'.$return.'", "user_admin":"',
+        isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+        '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+        "error" : "'.$logError.'"}]';
+
+        exit();
     }
 
     if ($proceedIdentification === true && $user_initial_creation_through_ldap == false) {

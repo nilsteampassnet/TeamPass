@@ -109,11 +109,82 @@ function tableExists($tablename, $database = false)
 
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
-        case "step1":
+        case "step0":
             // erase session table
             $_SESSION = array();
             setcookie('pma_end_session');
             session_destroy();
+
+            echo 'document.getElementById("res_step0").innerHTML = "";';
+            require_once 'libs/aesctr.php';
+            require_once "../includes/config/settings.php";
+
+            $_SESSION['settings']['cpassman_dir'] = "..";
+            require_once '../includes/libraries/PasswordLib/Random/Generator.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/MTRand.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/Rand.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/UniqID.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/URandom.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/MicroTime.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/CAPICOM.php';
+            require_once '../includes/libraries/PasswordLib/Random/Mixer.php';
+            require_once '../includes/libraries/PasswordLib/Random/AbstractMixer.php';
+            require_once '../includes/libraries/PasswordLib/Random/Mixer/Hash.php';
+            require_once '../includes/libraries/PasswordLib/Password/AbstractPassword.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Hash.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Crypt.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/SHA256.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/SHA512.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/PHPASS.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/PHPBB.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/PBKDF.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/MediaWiki.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/MD5.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Joomla.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Drupal.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/APR1.php';
+            require_once '../includes/libraries/PasswordLib/PasswordLib.php';
+            $pwdlib = new PasswordLib\PasswordLib();
+
+            $pwd = Encryption\Crypt\aesctr::decrypt($_POST['pwd'], "cpm", 128);
+
+            //connect to db and check user is granted
+            $link = mysqli_connect(
+                $server,
+                $user,
+                $pass,
+                $database,
+                $port
+            );
+
+            $user_info = mysqli_fetch_array(mysqli_query($link,
+                "SELECT pw, admin FROM ".$pre."users
+                WHERE login='".mysqli_escape_string($link, stripslashes($_POST['login']))."'")
+            );
+
+            if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt($_POST['pwd'], "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
+                echo 'document.getElementById("but_next").disabled = "";';
+                echo 'document.getElementById("res_step0").innerHTML = "User is granted.";';
+                echo 'document.getElementById("step").value = "1";';
+                echo 'document.getElementById("user_granted").value = "1";';
+                $_SESSION['user_granted'] = true;
+            } else {
+                echo 'document.getElementById("but_next").disabled = "disabled";';
+                echo 'document.getElementById("res_step0").innerHTML = "This user is not allowed!";';
+                echo 'document.getElementById("user_granted").value = "0";';
+                $_SESSION['user_granted'] = false;
+            }
+            echo 'document.getElementById("loader").style.display = "none";';
+            break;
+
+        case "step1":
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step1").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
 
             $_SESSION['fullurl'] = $_POST['fullurl'];
             $abspath = str_replace('\\', '/', $_POST['abspath']);
@@ -327,6 +398,12 @@ if (isset($_POST['type'])) {
             #==========================
         case "step2":
             $res = "";
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step2").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
             //decrypt the password
             // AES Counter Mode implementation
             require_once 'libs/aesctr.php';
@@ -403,6 +480,13 @@ if (isset($_POST['type'])) {
 
             #==========================
         case "step3":
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step3").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
+
             mysqli_connect(
                 $_SESSION['server'],
                 $_SESSION['user'],
@@ -466,6 +550,13 @@ if (isset($_POST['type'])) {
 
             //=============================
         case "step5":
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step5").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
+
             $filename = "../includes/config/settings.php";
             $events = "";
             if (file_exists($filename)) {

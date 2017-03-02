@@ -146,8 +146,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree=n.id)
             WHERE i.inactif = %i
-            AND l.action = %s
-            GROUP BY l.id_item",
+            AND l.action = %s",
             1,
             "at_delete"
         );

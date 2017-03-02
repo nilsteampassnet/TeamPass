@@ -278,7 +278,7 @@ if (isset($_SESSION['login'])) {
 
     // show avatar
     if (isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb'])) {
-        if (file_exists($_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'])) {
+        if (file_exists('includes/avatars/'.$_SESSION['user_avatar_thumb'])) {
             $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'];
         } else {
             $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';

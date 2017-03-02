@@ -248,9 +248,6 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
 
         setcookie('pma_end_session');
 
-        // Kill session
-        session_destroy();
-
         // REDIRECTION PAGE ERREUR
         echo '
         <script language="javascript" type="text/javascript">

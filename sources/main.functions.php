@@ -729,7 +729,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 if (!in_array($pf['id'], $listAllowedFolders)) {
                     array_push($_SESSION['personal_folders'], $pf['id']);
                     // get all descendants
-                    $ids = $tree->getDescendants($pf['id'], true, true);
+                    $ids = $tree->getDescendants($pf['id'], true, false);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);

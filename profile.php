@@ -46,7 +46,7 @@ $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("
 
 // prepare avatar
 if (isset($userData['avatar']) && !empty($userData['avatar'])) {
-    if (file_exists($_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$userData['avatar'])) {
+    if (file_exists('includes/avatars/'.$userData['avatar'])) {
         $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$userData['avatar'];
     } else {
         $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
@@ -71,7 +71,7 @@ echo '
 <table style="margin-left:7px;">
     <tr>
         <td rowspan="4" style="width:94px">
-            <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px;"><img src="'.$avatar.'" /></div>
+            <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px; text-align:center;"><img src="'.$avatar.'" /></div>
         </td>
         <td style="width:70px;">&nbsp;'.$LANG['name'].':</td>
         <td><b>', isset($_SESSION['name']) && !empty($_SESSION['name']) ? $_SESSION['name'].' '.$_SESSION['lastname'] : $_SESSION['login'], '</b></td>

@@ -1,4 +1,9 @@
 2.1.27
+ #1672 Anonymous settings not stored
+ #1669 Logout - Errors
+ #1666 Can`t set avatar
+ #1659 Third level of sub folders in the Personal folder are not seen
+
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented
  NEW   Custom Fields data can be encrytped or not in database
