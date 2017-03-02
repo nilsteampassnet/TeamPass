@@ -36,7 +36,4 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 // erase session table
 $_SESSION = array();
 
-// Kill session
-session_destroy();
-
 header("Location: index.php");

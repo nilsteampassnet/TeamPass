@@ -16,7 +16,7 @@ function getSettingValue($val)
 //get infos from SETTINGS.PHP file
 $filename = "../includes/config/settings.php";
 $events = "";
-if (file_exists($filename)) {    // && empty($_SESSION['server'])
+if (file_exists($filename)) {
     //copy some constants from this existing file
     $settings_file = file($filename);
     while (list($key,$val) = each($settings_file)) {
@@ -85,7 +85,6 @@ if (
         <script type="text/javascript">
         $(function(){
             $("#but_next").click(function(event) {
-                //console.log("> "+$(this).attr("target_id"));
                 $("#step").val($(this).attr("target_id"));
                 document.install.submit();
             });
@@ -108,10 +107,10 @@ if (
         {
             if (step != "") {
                 var upgrade_file = "upgrade_ajax.php";
-                if (step == "step0") {
+                if (step === "step0" && document.getElementById("user_login").value !== "" && document.getElementById("user_pwd").value !== "") {
                     var data = "type="+step+
                     "&login="+escape(document.getElementById("user_login").value)+
-                        "&pwd="+aes_encrypt(document.getElementById("user_pwd").value);
+                    "&pwd="+aes_encrypt(document.getElementById("user_pwd").value);
                     document.getElementById("loader").style.display = "";
                 } else if (step == "step1") {
                     var data = "type="+step+
@@ -126,12 +125,6 @@ if (
                         maintenance = 0;
                     }
                     var data = "type="+step+
-                    /*"&db_host="+document.getElementById("db_host").value+
-                    "&db_login="+escape(document.getElementById("db_login").value)+
-                    "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
-                    "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
-                    "&db_port="+(document.getElementById("db_port").value)+
-                    "&db_bdd="+document.getElementById("db_bdd").value+*/
                     "&no_maintenance_mode="+maintenance;
                 } else
                 if (step == "step3") {
@@ -141,11 +134,8 @@ if (
                     document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step4") {
-                    //$("#loader").show();
                     upgrade_file = "";
                     var data = "type="+step;
-                    //document.getElementById("loader").style.display = "";
-
                     manageUpgradeScripts("0");
 
                 } else
@@ -380,9 +370,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 1)
     || (isset($_GET['step']) && $_GET['step'] == 1)
-    && $_SESSION['user_granted'] === "1"
+    && $_POST['user_granted'] === "1"
 ) {
     //ETAPE 1
+    $_SESSION['user_granted'] = $_POST['user_granted'];
     echo '
                      <h3>Step 1 - Check server</h3>
 
