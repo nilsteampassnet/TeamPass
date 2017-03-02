@@ -1473,7 +1473,7 @@ switch ($_POST['type']) {
         }
 
         // send statistics items
-        if (!is_null($_POST['list'])) {
+        if (isset($_POST['list'])) {
             DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
             $counter = DB::count();
             if ($counter == 0) {

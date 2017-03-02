@@ -13,8 +13,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-session_start();
-
 // Update table by deleting ID
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     DB::update(
