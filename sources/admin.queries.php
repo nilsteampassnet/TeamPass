@@ -788,7 +788,7 @@ switch ($_POST['type']) {
                             if ($checkCoherancy == false) {
                                 $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$entry, "rb");
                                 $line = fgets($fp);
-
+$line = "qsd";
                                 // check if isUTF8. If yes, then check if process = encryption, and vice-versa
                                 if (isUTF8($line) && $_POST['option'] == "decrypt") {
                                     $error = "file_not_encrypted";
