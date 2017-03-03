@@ -57,7 +57,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 echo '
-<input type="hidden" id="folder_id_selected" value="', isset($_GET["folder_id"]) ? $_GET["folder_id"] : '', '" />
+<input type="hidden" id="folder_id_selected" value="', isset($_GET["folder_id"]) ? filter_var($_GET["folder_id"], FILTER_SANITIZE_NUMBER_INT) : '', '" />
 <input type="hidden" id="import_user_token" value="" />
 <div id="import_tabs">
     <ul>
@@ -119,8 +119,11 @@ foreach ($folders as $t) {
         for ($x=1; $x<$t->nlevel; $x++) {
             $ident .= "&nbsp;&nbsp;";
         }
-        if (isset($_GET['folder_id']) && $_GET['folder_id'] == $t->id) $selected = " selected";
-        else $selected = "";
+        if (isset($_GET['folder_id']) && filter_var($_GET['folder_id'], FILTER_SANITIZE_NUMBER_INT) == $t->id) {
+            $selected = " selected";
+        }else {
+            $selected = "";
+        }
         if ($prevLevel < $t->nlevel) {
             echo '<option value="'.$t->id.'"'.$selected.'>'.$ident.$t->title.'</option>';
         } elseif ($prevLevel == $t->nlevel) {
