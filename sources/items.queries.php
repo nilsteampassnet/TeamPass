@@ -2115,7 +2115,7 @@ if (isset($_POST['type'])) {
                             in_array($_POST['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']))
                             && $record['perso'] == 1
                         ) {
-                            $perso = '<i class="fa fa-warning mi-yellow fa-sm"></i>&nbsp';
+                            $perso = '<i class="fa fa-user-secret mi-grey-1 fa-sm"></i>&nbsp';
                             $findPfGroup = 1;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
@@ -2138,7 +2138,7 @@ if (isset($_POST['type'])) {
                         }
                         // CAse where item is restricted to a group of users not including user
                         elseif (
-                            $record['perso'] == 1
+                            $record['perso'] === "1"
                             ||
                             (
                                 !empty($record['restricted_to'])
@@ -2204,6 +2204,16 @@ if (isset($_POST['type'])) {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
 
+                        // manage text to show
+                        $label = stripslashes(handleBackslash($record['label']));
+                        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === "1") {
+                            $desc = explode("<br>", $record['description']);
+                            $desc = strip_tags(stripslashes(cleanString($desc[0])));
+                        } else {
+                            $desc = "";
+                        }
+                        //$html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$label.'&nbsp;<font size="1px">['.$desc.']</font></a></p>';
+
                             // manage text to show
                         $label = stripslashes(handleBackslash($record['label']));
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === "1") {
@@ -2221,6 +2231,7 @@ if (isset($_POST['type'])) {
                             $item_text = substr($label, 0, 65);
                             $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$item_text.'&nbsp;<font size="1px">['.substr($desc, 0, 95 - strlen($label)).']</font>';
                         }
+
                         $html .= '</a>';
 
                         // increment array for icons shortcuts (don't do if option is not enabled)

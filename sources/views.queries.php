@@ -150,18 +150,22 @@ switch ($_POST['type']) {
             1,
             "at_delete"
         );
+        $prev_id = "";
         foreach ($rows as $record) {
-            if (in_array($record['id_tree'], $arrFolders)) {
-                if (count($arrFolders[$record['id_tree']])>0) {
-                    $thisFolder = '<td>'.$arrFolders[$record['id_tree']].'</td>';
+            if ($record['id'] !== $prev_id) {
+                if (in_array($record['id_tree'], $arrFolders)) {
+                    if (count($arrFolders[$record['id_tree']])>0) {
+                        $thisFolder = '<td>'.$arrFolders[$record['id_tree']].'</td>';
+                    } else {
+                        $thisFolder = "";
+                    }
                 } else {
                     $thisFolder = "";
                 }
-            } else {
-                $thisFolder = "";
-            }
 
-            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
+                $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
+            }
+            $prev_id = $record['id'];
         }
 
         echo '[{"text":"'.$texte.'</table><div style=\'margin:15px 0px 0px 5px;\'><input type=\'checkbox\' id=\'item_deleted_select_all\' />&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'restoration\');OpenDialog(\'tab2_dialog\');\"><i class=\"fa fa-undo fa-lg\"></i>&nbsp;'.$LANG['restore'].'</a>&nbsp;&nbsp;<a class=\"button\" onclick=\"$(\'#tab2_action\').val(\'deletion\');OpenDialog(\'tab2_dialog\')\"><i class=\"fa fa-trash-o fa-lg\"></i>&nbsp;'.$LANG['delete'].'</a></div>"}]';
