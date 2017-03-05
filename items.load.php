@@ -2132,6 +2132,17 @@ PreviewImage = function(uri,title) {
                     title: title,
                     open: function( event, ui ) {
                         // nothing to do
+                    },
+                    close: function (event, ui) {
+                        // delete file
+                        $.post(
+                            "sources/main.queries.php",
+                            {
+                                type    : "file_deletion",
+                                filename: data.file_path,
+                                key     : "<?php echo $_SESSION['key'];?>"
+                            }
+                        );
                     }
                 });
             });

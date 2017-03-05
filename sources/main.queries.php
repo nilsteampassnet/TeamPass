@@ -1154,4 +1154,17 @@ switch ($_POST['type']) {
         }
 
         break;
+
+    /**
+     * delete a file
+     */
+    case "file_deletion":
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        @unlink($_POST['filename']);
+
+        break;
 }

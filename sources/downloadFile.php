@@ -41,30 +41,31 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     $link->set_charset($encoding);
 
     // get file key
-    $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", $_GET['fileid']);
+    $file_info = DB::queryfirstrow("SELECT file, status FROM ".prefix_table("files")." WHERE id=%i", $_GET['fileid']);
 
     // Open the file
-    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'], 'rb');
+    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
+
+    // get key
+    if (empty($ascii_key)) {
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    }
+    
+    // Prepare encryption options
+    $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
+    $key = substr(
+        md5("\x2D\xFC\xD8".$ascii_key, true) .
+        md5("\x2D\xFC\xD9".$ascii_key, true),
+        0,
+        24
+    );
+    $opts = array('iv'=>$iv, 'key'=>$key);
+
+    // should we encrypt/decrypt the file
+    encrypt_or_decrypt_file($image_code, $opts);
 
     // should we decrypt the attachment?
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
-        include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-        
-        // get key
-        if (empty($ascii_key)) {
-            $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-        }
-
-        // Prepare encryption options
-        $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
-        $key = substr(
-            md5("\x2D\xFC\xD8".$ascii_key, true) .
-            md5("\x2D\xFC\xD9".$ascii_key, true),
-            0,
-            24
-        );
-        $opts = array('iv'=>$iv, 'key'=>$key);
-
+    if (isset($file_info['status']) && $file_info['status'] === "encrypted") {        
         // Add the Mcrypt stream filter
         stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
     }

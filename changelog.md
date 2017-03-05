@@ -4,7 +4,9 @@
  #1672 Anonymous settings not stored
  #1670 Incremental upgrade not active
  #1669 Logout - Errors
+ #1668 File encryption is not correct in case of upgrade
  #1666 Can`t set avatar
+ #1662 Can not delete folders
  #1659 Third level of sub folders in the Personal folder are not seen
 
  New   Defuse Encryption implemented in place of phpCrypt

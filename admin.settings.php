@@ -583,6 +583,7 @@ echo '
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
 */
+                /*
 // Encrypt / decrypt attachments
 echo '
                 <div style="margin-bottom:3px">
@@ -598,6 +599,7 @@ echo '
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_attachments_cryption_tip']), ENT_QUOTES).'"></i></span>
                     <span id="result_admin_action_attachments_cryption" style="margin-left:10px;"></span>
                 </div>';
+*/
 echo '
             </div>';
 // --------------------------------------------------------------------------------

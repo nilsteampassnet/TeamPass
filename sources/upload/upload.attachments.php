@@ -265,6 +265,10 @@ if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['s
         24
     );
     $opts = array('iv'=>$iv, 'key'=>$key);
+
+    $file_status = "encrypted";
+} else {
+    $file_status = "clear";
 }
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
@@ -273,7 +277,7 @@ if (strpos($contentType, "multipart") !== false) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
 
-        if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+        if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1") {
             // Add the Mcrypt stream filter
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
         }
@@ -306,7 +310,7 @@ if (strpos($contentType, "multipart") !== false) {
     // Open temp file
     $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
 
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1") {
         // Add the Mcrypt stream filter
         stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
     }
@@ -360,7 +364,8 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
             'size' => $_FILES['file']['size'],
             'extension' => getFileExtension($fileName),
             'type' => $_FILES['file']['type'],
-            'file' => $fileRandomId
+            'file' => $fileRandomId,
+            'status' => $file_status
         )
     );
     // Log upload into databse only if "item edition"
@@ -368,11 +373,11 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
         DB::insert(
             $pre.'log_items',
             array(
-                    'id_item' => $_POST['itemId'],
-                    'date' => time(),
-                    'id_user' => $_SESSION['user_id'],
-                    'action' => 'at_modification',
-                    'raison' => 'at_add_file : '.addslashes($fileName)
+                'id_item' => $_POST['itemId'],
+                'date' => time(),
+                'id_user' => $_SESSION['user_id'],
+                'action' => 'at_modification',
+                'raison' => 'at_add_file : '.addslashes($fileName)
             )
         );
     }

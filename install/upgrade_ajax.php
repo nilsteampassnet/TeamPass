@@ -429,11 +429,10 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("but_next").disabled = "";';
 
                 // check in db if previous saltk exists
-                $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_POST['tbl_prefix']."misc
+                $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
                 WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
-                echo ">".$db_sk[0]."<";
                 if (!empty($_POST['previous_sk'])) {
-                    if (!empty($db_sk['valeur'])) {
+                    if (!empty($db_sk[0])) {
                         mysqli_query($dbTmp,
                             "UPDATE `".$_SESSION['pre']."misc`
                             SET `valeur` = '".filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING)."'
@@ -446,7 +445,7 @@ if (isset($_POST['type'])) {
                             VALUES ('".filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING)."', 'admin', 'saltkey_ante_2127')"
                         );
                     }
-                } elseif (empty($db_sk['valeur'])) {
+                } elseif (empty($db_sk[0])) {
                     $res = "Please provide the previous saltkey.";
                     echo 'document.getElementById("but_next").disabled = "disabled";';
                     echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';

@@ -3217,37 +3217,130 @@ if (isset($_POST['type'])) {
             }
 
             // get file info
-            $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
+            $file_info = DB::queryfirstrow("SELECT file, status FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
             // prepare image info
-            $image_code = $result['file'];
+            $image_code = $file_info['file'];
             $extension = substr($_POST['title'], strrpos($_POST['title'], '.')+1);
             $file_to_display = $_SESSION['settings']['url_to_upload_folder'].'/'.$image_code;
             $file_suffix = "";
 
+
+            // get key
+            if (empty($ascii_key)) {
+                $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+            }
+            
+            // Prepare encryption options
+            $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
+            $key = substr(
+                md5("\x2D\xFC\xD8".$ascii_key, true) .
+                md5("\x2D\xFC\xD9".$ascii_key, true),
+                0,
+                24
+            );
+            $opts = array('iv'=>$iv, 'key'=>$key);
+
+
+            // should we encrypt/decrypt the file
+            encrypt_or_decrypt_file($image_code, $opts);
+/*
+            if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($file_info['status']) && $file_info['status'] === "clear") {
+                // file needs to be encrypted
+                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+                    // make a copy of file
+                    if (!copy(
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
+                    )) {
+                        $error = "Copy not possible";
+                        exit;
+                    } else {
+                        // do a bck
+                        copy(
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
+                        );
+                    }
+
+                    // Open the file
+                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
+                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
+                    $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
+
+                    // ecnrypt
+                    stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+
+                    // read file and create new one
+                    while (($line = fgets($fp)) !== false) {
+                        fputs($out, $line);
+                    }
+                    fclose($fp);
+                    fclose($out);
+
+                    // update table
+                    DB::update(
+                        prefix_table('files'),
+                        array(
+                            'status' => 'encrypted'
+                           ),
+                        "id=%i",
+                        substr($_POST['uri'], 1)
+                    );
+                }
+            } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($file_info['status']) && $file_info['status'] === "encrypted") {
+                // file needs to be encrypted
+                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+                    // make a copy of file
+                    if (!copy(
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
+                    )) {
+                        $error = "Copy not possible";
+                        exit;
+                    } else {
+                        // do a bck
+                        copy(
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
+                        );
+                    }
+
+                    // Open the file
+                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
+                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
+                    $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
+
+                    // ecnrypt
+                    stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+
+                    // read file and create new one
+                    while (($line = fgets($fp)) !== false) {
+                        fputs($out, $line);
+                    }
+                    fclose($fp);
+                    fclose($out);
+
+                    // update table
+                    DB::update(
+                        prefix_table('files'),
+                        array(
+                            'status' => 'clear'
+                           ),
+                        "id=%i",
+                        substr($_POST['uri'], 1)
+                    );
+                }
+            }
+*/
             // should we decrypt the attachment?
-            if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+            if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
 
                 @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension);
 
                 // Open the file
                 $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
                 $fp_new = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension, 'wb');
-
-                // get key
-                if (empty($ascii_key)) {
-                    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-                }
-                
-                // Prepare encryption options
-                $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
-                $key = substr(
-                    md5("\x2D\xFC\xD8".$ascii_key, true) .
-                    md5("\x2D\xFC\xD9".$ascii_key, true),
-                    0,
-                    24
-                );
-                $opts = array('iv'=>$iv, 'key'=>$key);
 
                 // Add the Mcrypt stream filter
                 stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
@@ -3262,13 +3355,13 @@ if (isset($_POST['type'])) {
                 $file_suffix = "_delete.".$extension;
             }
 
-            //echo '[ { "error" : "" , "new_file" : "'.$file_to_display.'" , "file_suffix" : "'.$file_suffix.'" } ]';
             // Encrypt data to return
             echo prepareExchangedData(
                 array(
                     "error" => "",
                     "new_file" => $file_to_display,
-                    "file_suffix" => $file_suffix
+                    "file_suffix" => $file_suffix,
+                    "file_path" => $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension
                 ),
                 "encode"
             );
