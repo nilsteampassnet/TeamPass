@@ -8,6 +8,7 @@
  #1666 Can`t set avatar
  #1662 Can not delete folders
  #1659 Third level of sub folders in the Personal folder are not seen
+ #1654 User management page - no "next" button
 
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented

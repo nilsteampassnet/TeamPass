@@ -466,10 +466,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      echo '
                      <div id="no_encrypt_key" style="display:none;">
                      <fieldset><legend>Previous SALTKEY</legend>
-                        <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing a sk.php backup file.<br>
+                        <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
                         </p>
                         <label for="previous_sk">Previous SaltKey:&nbsp:</label>
-                        <input type="password" id="previous_sk" size="100px" />
+                        <input type="password" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
                      </fieldset>
                      </div>';
 

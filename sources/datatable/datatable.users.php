@@ -89,7 +89,6 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
    * word by word on any field. It's possible to do here, but concerned about efficiency
    * on very large tables, and MySQL's regex functionality is very limited
 */
-$criteria = "";
 if (isset($_GET['letter']) && $_GET['letter'] != "" && $_GET['letter'] != "None") {
     if (empty($sWhere)) $sWhere = " WHERE ";
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
@@ -112,14 +111,16 @@ if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
 
 $rows = DB::query(
     "SELECT * FROM ".$pre."users
-    $sWhere
-    $sLimit",
-    $criteria
+    $sWhere"
 );
 $iTotal = DB::count();
 
-//$iFilteredTotal = DB::count();
-$iFilteredTotal = 0;
+$rows = DB::query(
+    "SELECT * FROM ".$pre."users
+    $sWhere
+    $sLimit"
+);
+$iFilteredTotal = DB::count();
 
 // output
 if (DB::count() > 0) {
@@ -309,4 +310,4 @@ if (count($rows) > 0) {
 
 // prepare complete output
 
-echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iTotal.', "data": '.$sOutput;
+echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iFilteredTotal.', "data": '.$sOutput;

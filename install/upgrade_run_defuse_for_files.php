@@ -32,7 +32,6 @@ $_SESSION['settings']['loaded'] = "";
 $finish = false;
 $next = ($_POST['nb'] + $_POST['start']);
 
-
 $dbTmp = mysqli_connect(
     $_SESSION['server'],
     $_SESSION['user'],
@@ -40,9 +39,8 @@ $dbTmp = mysqli_connect(
     $_SESSION['database'],
     $_SESSION['port']
 );
-
 // are files encrypted? get the setting ongoing in teampass
-$set = mysqli_num_rows(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='enable_attachment_encryption'"));
+$set = mysqli_fetch_row(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='enable_attachment_encryption'"));
 $enable_attachment_encryption = $set[0];
 
 // if no encryption then stop
@@ -53,8 +51,12 @@ if ($enable_attachment_encryption === "0") {
 }
 
 // get path to upload
-$set = mysqli_num_rows(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='path_to_upload_folder'"));
+$set = mysqli_fetch_row(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='path_to_upload_folder'"));
 $path_to_upload_folder = $set[0];
+
+// get previous saltkey
+$set = mysqli_fetch_row(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='saltkey_ante_2127'"));
+$saltkey_ante_2127 = $set[0];
 
 
 // get total items
@@ -76,16 +78,23 @@ if (!$rows) {
     exit();
 }
 
-// get key
-if (empty($ascii_key)) {
-    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-}
-
-// Prepare encryption options
+// Prepare encryption options - with new KEY
+$ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
 $key = substr(
     hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-$opts = array('iv'=>$iv, 'key'=>$key);
+$opts_encrypt = array('iv'=>$iv, 'key'=>$key);
+
+// Prepare encryption options - with old KEY
+$iv = substr(md5("\x1B\x3C\x58".$saltkey_ante_2127, true), 0, 8);
+$key = substr(
+    md5("\x2D\xFC\xD8".$saltkey_ante_2127, true).
+    md5("\x2D\xFC\xD9".$saltkey_ante_2127, true),
+    0,
+    24
+);
+$opts_decrypt = array('iv'=>$iv, 'key'=>$key);
+
 
 while ($data = mysqli_fetch_array($rows)) {
     if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
@@ -109,14 +118,13 @@ while ($data = mysqli_fetch_array($rows)) {
         $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
         $out = fopen($path_to_upload_folder.'/'.$data['file'], 'wb');
 
-        if ($_POST['option'] == "decrypt") {
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-        } else if ($_POST['option'] == "encrypt") {
-            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-        }
+        // decrypt using old
+        stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
+
+        // encrypt using new
+        stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
 
         // read file and create new one
-        $check = false;
         while (($line = fgets($fp)) !== false) {
             fputs($out, $line);
         }
