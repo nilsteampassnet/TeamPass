@@ -47,7 +47,7 @@ $enable_attachment_encryption = $set[0];
 if ($enable_attachment_encryption === "0") {
     mysqli_query($dbTmp, "update `".$_SESSION['pre']."files` set status = 'clear' where 1 = 1");
     echo '[{"finish":"1" , "next":"", "error":""}]';
-    break;
+    exit();
 }
 
 // get path to upload
