@@ -3225,13 +3225,8 @@ if (isset($_POST['type'])) {
             $file_to_display = $_SESSION['settings']['url_to_upload_folder'].'/'.$image_code;
             $file_suffix = "";
 
-
-            // get key
-            if (empty($ascii_key)) {
-                $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-            }
-            
             // Prepare encryption options
+            $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
             $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
             $key = substr(
                 md5("\x2D\xFC\xD8".$ascii_key, true) .
@@ -3243,7 +3238,7 @@ if (isset($_POST['type'])) {
 
 
             // should we encrypt/decrypt the file
-            encrypt_or_decrypt_file($image_code, $opts);
+            encrypt_or_decrypt_file($file_info['file'], $file_info['status'], $opts);
 /*
             if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($file_info['status']) && $file_info['status'] === "clear") {
                 // file needs to be encrypted

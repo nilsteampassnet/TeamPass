@@ -110,7 +110,7 @@ if (
                 if (step === "step0" && document.getElementById("user_login").value !== "" && document.getElementById("user_pwd").value !== "") {
                     var data = "type="+step+
                     "&login="+escape(document.getElementById("user_login").value)+
-                    "&pwd="+aes_encrypt(document.getElementById("user_pwd").value);
+                    "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
                     document.getElementById("loader").style.display = "";
                 } else if (step == "step1") {
                     var data = "type="+step+

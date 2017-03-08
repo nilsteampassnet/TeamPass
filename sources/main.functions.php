@@ -1594,7 +1594,7 @@ function checkCFconsistency($source_id, $target_id) {
 /*
 *
 */
-function encrypt_or_decrypt_file($image_code, $opts) {
+function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     $tp_config_file = "../includes/config/tp.config.php";
 
@@ -1610,7 +1610,7 @@ function encrypt_or_decrypt_file($image_code, $opts) {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($file_info['status']) && $file_info['status'] === "clear") {
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && $image_status === "clear") {
         // file needs to be encrypted
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
             // make a copy of file
@@ -1653,7 +1653,7 @@ function encrypt_or_decrypt_file($image_code, $opts) {
                 substr($_POST['uri'], 1)
             );
         }
-    } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($file_info['status']) && $file_info['status'] === "encrypted") {
+    } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($image_status) && $image_status === "encrypted") {
         // file needs to be encrypted
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
             // make a copy of file

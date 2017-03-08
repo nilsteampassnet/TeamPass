@@ -147,8 +147,6 @@ if (isset($_POST['type'])) {
             require_once '../includes/libraries/PasswordLib/PasswordLib.php';
             $pwdlib = new PasswordLib\PasswordLib();
 
-            $pwd = Encryption\Crypt\aesctr::decrypt($_POST['pwd'], "cpm", 128);
-
             //connect to db and check user is granted
             $link = mysqli_connect(
                 $server,
@@ -163,7 +161,7 @@ if (isset($_POST['type'])) {
                 WHERE login='".mysqli_escape_string($link, stripslashes($_POST['login']))."'")
             );
 
-            if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt($_POST['pwd'], "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
+            if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($_POST['pwd']), "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step0").innerHTML = "User is granted.";';
                 echo 'document.getElementById("step").value = "1";';

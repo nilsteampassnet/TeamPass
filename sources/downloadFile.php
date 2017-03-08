@@ -46,15 +46,11 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     // Open the file
     $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
 
-    // get key
-    if (empty($ascii_key)) {
-        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-    }
-    
     // Prepare encryption options
+    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
     $key = substr(
-        md5("\x2D\xFC\xD8".$ascii_key, true) .
+        md5("\x2D\xFC\xD8".$ascii_key, true).
         md5("\x2D\xFC\xD9".$ascii_key, true),
         0,
         24
@@ -62,10 +58,10 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     $opts = array('iv'=>$iv, 'key'=>$key);
 
     // should we encrypt/decrypt the file
-    encrypt_or_decrypt_file($image_code, $opts);
+    encrypt_or_decrypt_file($file_info['file'], $file_info['status'], $opts);
 
     // should we decrypt the attachment?
-    if (isset($file_info['status']) && $file_info['status'] === "encrypted") {        
+    if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
         // Add the Mcrypt stream filter
         stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
     }

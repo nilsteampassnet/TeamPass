@@ -79,68 +79,83 @@ if (!$rows) {
 }
 
 // Prepare encryption options - with new KEY
-$ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-$iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-$key = substr(
-    hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-$opts_encrypt = array('iv'=>$iv, 'key'=>$key);
+if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
+    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
+    $key = substr(
+        hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
+    $opts_encrypt = array('iv'=>$iv, 'key'=>$key);
 
-// Prepare encryption options - with old KEY
-$iv = substr(md5("\x1B\x3C\x58".$saltkey_ante_2127, true), 0, 8);
-$key = substr(
-    md5("\x2D\xFC\xD8".$saltkey_ante_2127, true).
-    md5("\x2D\xFC\xD9".$saltkey_ante_2127, true),
-    0,
-    24
-);
-$opts_decrypt = array('iv'=>$iv, 'key'=>$key);
+    // Prepare encryption options - with old KEY
+    $iv = substr(md5("\x1B\x3C\x58".$saltkey_ante_2127, true), 0, 8);
+    $key = substr(
+        md5("\x2D\xFC\xD8".$saltkey_ante_2127, true).
+        md5("\x2D\xFC\xD9".$saltkey_ante_2127, true),
+        0,
+        24
+    );
+    $opts_decrypt = array('iv'=>$iv, 'key'=>$key);
 
 
-while ($data = mysqli_fetch_array($rows)) {
-    if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
-        // make a copy of file
-        if (!copy(
-                $path_to_upload_folder.'/'.$data['file'],
-                $path_to_upload_folder.'/'.$data['file'].".copy"
-        )) {
-            $error = "Copy not possible";
-            exit;
-        } else {
-            // do a bck
-            copy(
-                $path_to_upload_folder.'/'.$data['file'],
-                $path_to_upload_folder.'/'.$data['file'].".bck"
+    while ($data = mysqli_fetch_array($rows)) {
+        if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
+            // make a copy of file
+            if (!copy(
+                    $path_to_upload_folder.'/'.$data['file'],
+                    $path_to_upload_folder.'/'.$data['file'].".copy"
+            )) {
+                $error = "Copy not possible";
+                exit;
+            } else {
+                // do a bck
+                copy(
+                    $path_to_upload_folder.'/'.$data['file'],
+                    $path_to_upload_folder.'/'.$data['file'].".bck"
+                );
+            }
+
+            // Open the file
+            unlink($path_to_upload_folder.'/'.$data['file']);
+            $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
+            $out = fopen($path_to_upload_folder.'/'.$data['file']."tmp", 'wb');
+
+            // decrypt using old
+            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
+            // copy to file
+            stream_copy_to_stream($fp, $out);
+            // clean
+            fclose($fp);
+            fclose($out);
+            unlink($path_to_upload_folder.'/'.$data['file'].".copy");
+
+
+            // Now encrypt the file with new saltkey
+            $fp = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", "rb");
+            $out = fopen($path_to_upload_folder.'/'.$data['file'], 'wb');
+            // encrypt using new
+            stream_filter_append($fp, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
+            // copy to file
+            stream_copy_to_stream($fp, $out);
+
+            // clean
+            fclose($fp);
+            fclose($out);
+            unlink($path_to_upload_folder.'/'.$data['file'].".tmp");
+
+            // update table
+            mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."files`
+                SET `status` = 'encrypted'
+                WHERE id = '".$data['id']."'"
             );
         }
-
-        // Open the file
-        unlink($path_to_upload_folder.'/'.$data['file']);
-        $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
-        $out = fopen($path_to_upload_folder.'/'.$data['file'], 'wb');
-
-        // decrypt using old
-        stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
-
-        // encrypt using new
-        stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
-
-        // read file and create new one
-        while (($line = fgets($fp)) !== false) {
-            fputs($out, $line);
-        }
-        fclose($fp);
-        fclose($out);
-
-        // update table
-        mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."files`
-            SET `status` = 'encrypted'
-            WHERE id = '".$data['id']."'"
-        );
     }
-}
 
-if ($next >= $total) {
-    $finish = 1;
+    if ($next >= $total) {
+        $finish = 1;
+    }
+} else {
+    echo '[{"finish":"1" , "error":"'.SECUREPATH.'/teampass-seckey.txt does not exist!"}]';
+    exit();
 }
 
 
