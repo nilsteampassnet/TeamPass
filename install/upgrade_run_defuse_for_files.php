@@ -117,7 +117,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
             // Open the file
             unlink($path_to_upload_folder.'/'.$data['file']);
             $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
-            $out = fopen($path_to_upload_folder.'/'.$data['file']."tmp", 'wb');
+            $out = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", 'wb');
 
             // decrypt using old
             stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
@@ -133,9 +133,11 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
             $fp = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", "rb");
             $out = fopen($path_to_upload_folder.'/'.$data['file'], 'wb');
             // encrypt using new
-            stream_filter_append($fp, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
+            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_READ, $opts_encrypt);
             // copy to file
-            stream_copy_to_stream($fp, $out);
+            while (($line = fgets($fp)) !== false) {
+                fputs($out, $line);
+            }
 
             // clean
             fclose($fp);

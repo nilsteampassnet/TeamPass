@@ -255,15 +255,10 @@ if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['s
     if (empty($ascii_key)) {
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     }
-    
+
     // prepare encryption of attachment
-    $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
-    $key = substr(
-        md5("\x2D\xFC\xD8".$ascii_key, true).
-        md5("\x2D\xFC\xD9".$ascii_key, true),
-        0,
-        24
-    );
+    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
+    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
     $opts = array('iv'=>$iv, 'key'=>$key);
 
     $file_status = "encrypted";
