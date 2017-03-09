@@ -676,7 +676,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($rows as $record) {
             $listRestrictedFoldersForItems[$record['id_tree']][$x] = $record['id'];
             $x++;
-            // array_push($listRestrictedFoldersForItems, $record['id_tree']);
         }
         // => Build final lists
         // Clean arrays

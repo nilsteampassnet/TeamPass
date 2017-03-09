@@ -211,7 +211,7 @@ if (!empty($_POST['type'])) {
             //get full tree dependencies
             $tree = $tree->getDescendants($_POST['folder'], true);
 
-            if ($_POST['access'] == "read" || $_POST['access'] == "write" || $_POST['access'] == "nodelete") {
+            if ($_POST['access'] === "read" || $_POST['access'] === "write" || $_POST['access'] === "nodelete") {
                 // define code to use
                 if ($_POST['access'] == "read") $access = "R";
                 elseif ($_POST['access'] == "write") {
