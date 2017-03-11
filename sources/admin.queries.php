@@ -1270,7 +1270,7 @@ switch ($_POST['type']) {
                     ),
                     "type = %s AND intitule = %s",
                     "admin",
-                    "agses_api_key"
+                    "agses_hosted_apikey"
                 );
             }
             $_SESSION['settings']['agses_hosted_apikey'] = htmlspecialchars_decode($dataReceived['agses_hosted_apikey']);
