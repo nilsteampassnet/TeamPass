@@ -13,6 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+header("X-XSS-Protection: 1; mode=block");
+header("X-Frame-Option=SameOrigin: 1; mode=block");
+header("Set-Cookie: name=value; httpOnly");
+
 // Before we start processing, we should abort no install is present
 if (!file_exists('includes/config/settings.php')) {
     // This should never happen, but in case it does
@@ -29,7 +33,6 @@ if (!file_exists('includes/config/settings.php')) {
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
-
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <?php
@@ -437,7 +440,7 @@ if (
             include 'otv.php';
         } else {
             $_SESSION['error']['code'] = ERR_VALID_SESSION;
-            $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
+            $_SESSION['initial_url'] = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")), FILTER_SANITIZE_URL);
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
     }
@@ -557,7 +560,7 @@ if (
     } else {
         // Automatic redirection
         if (strpos($_SERVER["REQUEST_URI"], "?") > 0) {
-            $nextUrl = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?"));
+            $nextUrl = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?")), FILTER_SANITIZE_URL);
         } else {
             $nextUrl = "";
         }
@@ -579,7 +582,7 @@ if (
 
         // case where user not logged and can't access a direct link
         if (!empty($_GET['page'])) {
-            $_SESSION['initial_url'] = substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?"));
+            $_SESSION['initial_url'] = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")), FILTER_SANITIZE_URL);
         } else {
             $_SESSION['initial_url'] = "";
         }

@@ -1168,10 +1168,11 @@ function SupprimerFolder()
                         $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_cannot_delete_subfolders_exist']);?>").show(1).delay(3000).fadeOut(1000);
 
                     } else if (data.error === "ERR_FOLDER_NOT_ALLOWED") {
-                        $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_not_allowed_to']);?>");
+                        $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_not_allowed_to']);?>").show(1).delay(3000).fadeOut(1000);
                     }
                 } else {
-                    refreshTree();
+                    refreshTree(data.parent_id);
+                    ListerItems(data.parent_id,'', 0);
                     $("#div_supprimer_rep").dialog("close");
                 }
             }
@@ -2131,6 +2132,17 @@ PreviewImage = function(uri,title) {
                     title: title,
                     open: function( event, ui ) {
                         // nothing to do
+                    },
+                    close: function (event, ui) {
+                        // delete file
+                        $.post(
+                            "sources/main.queries.php",
+                            {
+                                type    : "file_deletion",
+                                filename: data.file_path,
+                                key     : "<?php echo $_SESSION['key'];?>"
+                            }
+                        );
                     }
                 });
             });
@@ -2773,6 +2785,10 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+        },
+        close: function() {
+            $("#delete_rep_groupe_validate").prop("checked", false);
+            $("#del_rep_show_error").html("").hide();
         }
     });
     //<=

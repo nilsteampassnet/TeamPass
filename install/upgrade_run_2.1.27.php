@@ -526,5 +526,32 @@ mysqli_query(
     ) CHARSET=utf8;"
 );
 
+
+
+// File encryption
+// add field status to FILE table
+$res = addColumnIfNotExist(
+    $_SESSION['pre']."files",
+    "status",
+    "VARCHAR(50) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field agses-usercardid to table Users! '.mysqli_error($dbTmp).'!"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
+
+// fill in this new field with the current "encryption-file" status
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'enable_attachment_encryption'"));
+if (!empty($tmp[0])) {
+    if ($tmp[0] === "1") {
+        $status = "encrypted";
+    } else {
+        $status = "clear";
+    }
+    mysqli_query($dbTmp, "update `".$_SESSION['pre']."files` set status = '".$status."' where 1 = 1");
+}
+
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

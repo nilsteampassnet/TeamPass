@@ -1239,7 +1239,7 @@ if (!empty($_POST['type'])) {
 
             // delete account
             // delete user in database
-            if ($account_status_action == "delete") {
+            if ($account_status_action === "delete") {
                 DB::delete(
                     prefix_table("users"),
                     "id = %i",
@@ -1278,8 +1278,8 @@ if (!empty($_POST['type'])) {
                 }
                 // update LOG
                 logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
-            }
-            else {
+
+            } else {
 
                 // Get old data about user
                 $oldData = DB::queryfirstrow(
@@ -1317,10 +1317,11 @@ if (!empty($_POST['type'])) {
                 );
 
                 // update SESSION
-                $_SESSION['user_email'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']));
-                $_SESSION['name'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name']));
-                $_SESSION['lastname'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname']));
-
+                if ($_SESSION['user_id'] === $_POST['id']) {
+                    $_SESSION['user_email'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']));
+                    $_SESSION['name'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name']));
+                    $_SESSION['lastname'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname']));
+                }
 
                 // update LOG
                 if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {

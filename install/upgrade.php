@@ -110,7 +110,7 @@ if (
                 if (step === "step0" && document.getElementById("user_login").value !== "" && document.getElementById("user_pwd").value !== "") {
                     var data = "type="+step+
                     "&login="+escape(document.getElementById("user_login").value)+
-                    "&pwd="+aes_encrypt(document.getElementById("user_pwd").value);
+                    "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
                     document.getElementById("loader").style.display = "";
                 } else if (step == "step1") {
                     var data = "type="+step+
@@ -125,7 +125,8 @@ if (
                         maintenance = 0;
                     }
                     var data = "type="+step+
-                    "&no_maintenance_mode="+maintenance;
+                    "&no_maintenance_mode="+maintenance+
+                    "&previous_sk="+escape(document.getElementById("previous_sk").value);
                 } else
                 if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
@@ -459,10 +460,20 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
                      <br><span id="dump_result" style="margin-top:4px;"></span>
                      </fieldset>
-                     </div>
+                     </div>';
 
+                    // teampass_version = 2.1.27 and no encrypt_key in db
+                     echo '
+                     <div id="no_encrypt_key" style="display:none;">
+                     <fieldset><legend>Previous SALTKEY</legend>
+                        <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
+                        </p>
+                        <label for="previous_sk">Previous SaltKey:&nbsp:</label>
+                        <input type="password" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                     </fieldset>
+                     </div>';
 
-
+                    echo '
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
 } elseif (
