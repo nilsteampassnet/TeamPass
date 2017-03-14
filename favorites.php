@@ -12,28 +12,52 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once 'sources/SecureHandler.php';
+session_start();
+
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
-echo '
-<form name="form_favourites" method="post" action="">
-    <div class="title ui-widget-content ui-corner-all">'.$LANG['my_favourites'].'</div>
 
-    <div style="height:100%;overflow:auto;">';
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header("Content-type: text/html; charset==utf-8");
+
+// connect to DB
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$encoding = $encoding;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
+
+echo '
+<div class="page-header">
+    <h1>
+        '.$LANG['my_favourites'].'
+    </h1>
+</div>
+
+<div style="height:100%;overflow:auto;">';
 if (empty($_SESSION['favourites'])) {
     echo '
     ';
 } else {
     echo '
-    <table id="t_items" style="empty-cells:show;width:100%;" cellspacing="0" cellpadding="5">
-        <thead><tr>
+    <table id="t_items" style="empty-cells:show;width:100%;" class="table table-striped table-hover">
+        <thead class=""><tr>
             <th style="width:55px;"></th>
             <th style="min-width:15%;">'.$LANG['label'].'</th>
             <th style="min-width:50%;">'.$LANG['description'].'</th>
             <th style="min-width:20%;">'.$LANG['group'].'</th>
         </tr></thead>
-        <tbody>';
+        <tbody class="">';
     //Get favourites
     $cpt= 0 ;
     foreach ($_SESSION['favourites'] as $fav) {
@@ -47,7 +71,7 @@ if (empty($_SESSION['favourites'])) {
             );
             if (!empty($data['label'])) {
                 echo '
-                    <tr class="ligne'.($cpt%2).'" id="row-'.$data['id'].'">
+                    <tr id="row-'.$data['id'].'">
                         <td>
                             <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;
@@ -66,8 +90,7 @@ if (empty($_SESSION['favourites'])) {
     </table>';
 }
     echo '
-    </div>
-</form>';
+</div>';
 
 // DIV FOR FAVOURITES DELETION
 echo '

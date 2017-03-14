@@ -12,6 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once 'sources/SecureHandler.php';
+session_start();
+
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -28,9 +31,22 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     exit();
 }
 
-//load help
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_admin_help.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header("Content-type: text/html; charset==utf-8");
+
+// connect to DB
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$encoding = $encoding;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 //Get full list of groups
 $arr_groups = array();
@@ -41,20 +57,23 @@ foreach ($rows as $reccord) {
 
 //display
 echo '
-<div class="title ui-widget-content ui-corner-all">
-    '.$LANG['admin_functions'].'&nbsp;&nbsp;
-    <button title="'.htmlentities(strip_tags($LANG['add_role_tip']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
-        <i class="fa fa-plus"></i>
-    </button>
-    <button title="'.htmlentities(strip_tags($LANG['refresh_matrix']), ENT_QUOTES).'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
-        <i class="fa fa-refresh"></i>
-    </button>
+<div class="page-header">
+    <h1>
+        '.$LANG['admin_functions'].'&nbsp;&nbsp;&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['add_role_tip']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_role\');" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-plus"></span>
+        </button>&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['item_menu_del_rep']), ENT_QUOTES).'" onclick="refresh_roles_matrix()" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-refresh"></span>
+        </button>
+    </h1>
 </div>
+
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
     <div style="">
         <span class="fa fa-arrow-left" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')"></span>&nbsp;
-		<span class="fa fa-arrow-right" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')"></span>
+        <span class="fa fa-arrow-right" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')"></span>
     </div>
 </div>
 <input type="hidden" id="selected_function" />
@@ -82,7 +101,7 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
     </select>
     </p>
-	<div id="add_role_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="add_role_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -93,7 +112,7 @@ echo '
     <div>'.$LANG['confirm_del_role'].'</div>
     <div style="font-weight:bold;text-align:center;color:#FF8000;text-align:center;font-size:13pt;" id="delete_role_show"></div>
     <input type="hidden" id="delete_role_id" />
-	<div id="delete_role_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="delete_role_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -116,7 +135,7 @@ foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
 echo '
     </select>
     </p>
-	<div id="edit_role_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="edit_role_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -130,11 +149,11 @@ echo '
         <input type="radio" name="right_types_radio" id="right_read" /><label for="right_read">'.$LANG['read'].'</label>&nbsp;
         <input type="radio" name="right_types_radio" id="right_noaccess" /><label for="right_noaccess">'.$LANG['no_access'].'</label>
     </div>
-	<div style="margin:10px 0 0 30px; display:none;" id="div_delete_option">
-		<input type="checkbox" id="right_nodelete" />&nbsp;'.$LANG['role_cannot_delete_item'].'<br />
-		<input type="checkbox" id="right_noedit" />&nbsp;'.$LANG['role_cannot_edit_item'].'
-	</div>
-	<div id="role_rights_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div style="margin:10px 0 0 30px; display:none;" id="div_delete_option">
+        <input type="checkbox" id="right_nodelete" />&nbsp;'.$LANG['role_cannot_delete_item'].'<br />
+        <input type="checkbox" id="right_noedit" />&nbsp;'.$LANG['role_cannot_edit_item'].'
+    </div>
+    <div id="role_rights_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';

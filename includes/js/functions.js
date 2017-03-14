@@ -15,10 +15,10 @@
 *   Show or hide Loading animation GIF
 **/
 function LoadingPage(){
-    if ( $("#div_loading").is(':visible') )
-        $("#div_loading").hide();
+    if ( $("#tp_loader").is(':visible') )
+        $("#tp_loader").hide();
     else
-        $("#div_loading").show();
+        $("#tp_loader").show();
 }
 
 /**
@@ -32,12 +32,12 @@ function RefreshPage(myform){
 *   Add 1 hour to session duration
 **/
 function IncreaseSessionTime(message_end, message_wait){
-    $("#main_info_box_text").html(message_wait);
+    /*$("#main_info_box_text").html(message_wait);
     $("#main_info_box").show().position({
         my: "center",
         at: "center top+75",
         of: "#top"
-    });
+    });*/
     $.post(
         "sources/main.queries.php",
         {
@@ -46,10 +46,11 @@ function IncreaseSessionTime(message_end, message_wait){
         function(data){
             if (data[0].new_value != "expired") {
                 $("#main_info_box_text").html(message_end);
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                
+                displayMessage(message_end);
+
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
-                $('#countdown').css("color","white");
             } else {
                 document.location = "index.php?session=expired";
             }
@@ -279,19 +280,24 @@ function jsonErrorHdl(message)
     $("#div_dialog_message_text").html(message);
     $("#div_dialog_message").dialog("open");
     $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-    $("#items_list_loader").hide();
+    $("#tp_loader").hide();
     return false;
 }
 
-function displayMessage(textToDisplay)
+function displayMessage(textToDisplay, className, delay)
 {
-    $("#main_info_box_text").html(textToDisplay);
-    $("#main_info_box").show().position({
-        my: "center",
-        at: "center top+20",
-        of: "#main_simple"
-    });
-    setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
+    className = className || 'success';
+    delay = delay || 1500;
+
+    $.notify(
+        textToDisplay,
+        {
+            className: className,
+            autoHide: true,
+            autoHideDelay: delay,
+            position: 'top center'
+        }
+    );
 }
 
 

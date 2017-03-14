@@ -328,7 +328,7 @@ if (isset($_POST['type'])) {
                 }
                 // Prepare full line
                 $html = '<li class="item_draggable'
-                .'" id="'.$newID.'" style="margin-left:-30px;">'
+                .'" id="'.$newID.'" style="">'
                 .'<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>'
                 .$expirationFlag.'<i class="fa fa-sm fa-warning mi-yellow"></i>&nbsp;' .
                 '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">' .
@@ -529,8 +529,8 @@ if (isset($_POST['type'])) {
                                 )
                             );
                             // prepare display
-                            if (empty($tags)) $return_tags = "<span class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".strtolower($tag)."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".strtolower($tag)."</span></span>";
-                            else $return_tags .= "&nbsp;&nbsp;<span class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".strtolower($tag)."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".strtolower($tag)."</span></span>";
+                            if (empty($tags)) $return_tags = "<span class='label label-success pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".strtolower($tag)."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".strtolower($tag)."</span></span>";
+                            else $return_tags .= "&nbsp;&nbsp;<span class='label label-success pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".strtolower($tag)."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".strtolower($tag)."</span></span>";
                         }
                     }
 
@@ -1224,8 +1224,11 @@ if (isset($_POST['type'])) {
             $tags = "";
             $rows = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $_POST['id']);
             foreach ($rows as $record) {
-                if (empty($tags)) $tags = "<span style='' class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></span>";
-                else $tags .= "&nbsp;&nbsp;<span style='' class='round-grey pointer tip' title='".addslashes($LANG['list_items_with_tag'])."' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></span>";
+                if (empty($tags)) $tags = "<h6><span style='' class='label label-success pointer tip' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></span>";
+                else $tags .= "&nbsp;&nbsp;<span style='' class='label label-success pointer tip' onclick='searchItemsWithTags(\"".$record['tag']."\")'><i class='fa fa-tag fa-sm'></i>&nbsp;<span class=\"item_tag\">".$record['tag']."</span></span>";
+            }
+            if (!empty($tags)) {
+                $tags .= '</h6>';
             }
 
             // TODO -> improve this check
@@ -1898,22 +1901,29 @@ if (isset($_POST['type'])) {
                 $start = $_POST['start'];
             }
             // Prepare tree
+            $x = 1;
             $arbo = $tree->getPath($_POST['id'], true);
             foreach ($arbo as $elem) {
                 if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
                     $elem->title = $_SESSION['login'];
                     $folderIsPf = 1;
                 }
-                $arboHtml_tmp = '<a class="path_element" id="path_elem_'.$elem->id.'"';
-                if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
-                    $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
+                if ($x < count($arbo)) {
+                    $arboHtml_tmp = '<li><a class="path_element" id="path_elem_'.$elem->id.'"';
+                    if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
+                        $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
+                    }
+                    $arboHtml_tmp .= ' href="#">'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a></li>';
+                } else {
+                    $arboHtml_tmp = '<li>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</li>';
                 }
-                $arboHtml_tmp .= '>'. htmlspecialchars(stripslashes($elem->title), ENT_QUOTES). '</a>';
                 if (empty($arboHtml)) {
                     $arboHtml = $arboHtml_tmp;
                 } else {
-                    $arboHtml .= '&nbsp;<i class="fa fa-caret-right"></i>&nbsp;'.$arboHtml_tmp;
+                    //$arboHtml .= '&nbsp;<i class="fa fa-caret-right"></i>&nbsp;'.$arboHtml_tmp;
+                    $arboHtml .= $arboHtml_tmp;
                 }
+                $x ++;
             }
 
             // check if this folder is a PF. If yes check if saltket is set
@@ -2010,6 +2020,8 @@ if (isset($_POST['type'])) {
                         ORDER BY i.label ASC, l.date DESC".$query_limit,//
                         $where
                     );
+
+                    $items_count = DB::count();
                 } else {
                     $items_to_display_once = "max";
                     $where->add('i.inactif=%i',0);
@@ -2028,10 +2040,12 @@ if (isset($_POST['type'])) {
                         ORDER BY i.label ASC, l.date DESC",
                         $where
                     );
+                    $items_count = DB::count();
                 }
                 // REMOVED:  OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%')
                 $idManaged = '';
                 $i = 0;
+                $html = '<table class="table table-sm table-striped table-hover" style="table-layout:fixed;" id="table_list_items"><tbody>';
 
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
@@ -2189,20 +2203,39 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // Prepare full line
-                        $html .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
+                        /*
+                        $html .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="list-group-item ';
                         if ($canMove == 1 && $accessLevel === 0) {
                             $html .= 'item_draggable';
                         } else {
                             $html .= 'item';
                         }
 
-                        $html .= '" id="'.$record['id'].'" style="margin-left:-30px;">';
+                        $html .= '" id="'.$record['id'].'" data-param="'.$findPfGroup.','.$expired_item.','.$restrictedTo.'">';
 
                         if ($canMove == 1 && $accessLevel === 0) {
                             $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
                         } else {
                             $html .= '<span style="margin-left:11px;"></span>';
                         }
+                        */
+
+                        // COLUMN 1
+                        $html .= '<tr id="'.$record['id'].'" data-param="'.$findPfGroup.','.$expired_item.','.$restrictedTo.'"';
+                        if ($canMove == 1 && $accessLevel === 0) {
+                            $html .= ' class="item_draggable"';
+                        }
+                        $html .= '>'.
+                            '<td class="items-list-td1">';
+
+                        if ($canMove == 1 && $accessLevel === 0) {
+                            $html .= '<i class="fa fa-sm fa-arrows grippy"></i>&nbsp;&nbsp;';
+                        }
+                        $html .= $expirationFlag.''.$perso.'&nbsp;<input type="checkbox" class="cb-multi-item" id="item-select_'.$record['id'].'" /></td>';
+
+                        // COLUMN 2
+                        $html .= '<td class="items-list-td2" id="fileclass'.$record['id'].'" onclick="'.$action.'">'.
+                            '<div class="wrap">';
 
                         // manage text to show
                         $label = stripslashes(handleBackslash($record['label']));
@@ -2222,16 +2255,12 @@ if (isset($_POST['type'])) {
                         } else {
                             $desc = "";
                         }
-                        if (strlen($label) >= 95 || $desc === "") {
-                            $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.substr($label, 0, 100);
-                        } else if (strlen($label) < 95 && strlen($label) > 65) {
-                            $item_text = substr($label, 0, 65);
-                            $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$item_text.'&nbsp;<font size="1px">['.substr($desc, 0, 95 - strlen($label)).']</font>';
-                        } else if (strlen($label) <= 65) {
-                            $item_text = substr($label, 0, 65);
-                            $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$item_text.'&nbsp;<font size="1px">['.substr($desc, 0, 95 - strlen($label)).']</font>';
-                        }
+                        //$html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file" onclick="'.$action.'">'.$label.'&nbsp;<font size="1px">['.$desc.']</font></a></p>';
 
+                        $html .= $label;
+                        if (!empty($desc)) {
+                            $html .= '&nbsp;<span class="text-extract">-&nbsp;'.$desc.'</span>';
+                        }
                         $html .= '</a>';
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
@@ -2254,20 +2283,20 @@ if (isset($_POST['type'])) {
                             $pw = $pw['string'];
                             if (!isUTF8($pw)) {
                                 $pw = "";
-                                $html .= '&nbsp;<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
+                                $html .= '&nbsp;<i class="fa fa-warning mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>'.$pw;
                             } else if (empty($pw)) {
-                                $html .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>'.$pw;
+                                $html .= '&nbsp;<i class="fa fa-exclamation-circle mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>'.$pw;
                             }
                         } else {
                             $pw = "";
                         }
 
-                        $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+                        $html .= '<span style="float:right;">';
 
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1) {
                             if ($record['anyone_can_modify'] == 1) {
-                                $html .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                                $html .= '<i class="fa fa-pencil mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'" data-toggle="tooltip" data-placement="left"></i>&nbsp;&nbsp;';
                             }
                         }
 
@@ -2275,22 +2304,22 @@ if (isset($_POST['type'])) {
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
                             if ($displayItem == true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+                                    $html .= '<i class="fa fa-user mi-black mini_login tip" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'" data-toggle="tooltip" data-placement="left"></i>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                                    $html .= '<i class="fa fa-lock mi-black mini_pw tip" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'" data-toggle="tooltip" data-placement="left"></i>&nbsp;';
                                 }
                             }
                         }
                         // Prepare make Favorite small icon
-                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip" data-toggle="tooltip" data-placement="left">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $html .= '<i class="fa fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
-                            $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $html .= '<i class="fa fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
                         }
 
-                        $html .= '</span></li>';
+                        $html .= '</span></td></tr>';
                         // Build array with items
                         array_push($itemsIDList, array($record['id'], $pw, $record['login'], $displayItem));
 
@@ -2302,12 +2331,15 @@ if (isset($_POST['type'])) {
                 $rights = recupDroitCreationSansComplexite($_POST['id']);
             }
 
+            $html .= '</tbody></table>';
+
             // Identify of it is a personal folder
             if (in_array($_POST['id'], $_SESSION['personal_visible_groups'])) {
                 $findPfGroup = 1;
             } else {
                 $findPfGroup = "";
             }
+
             // count
             DB::query(
                 "SELECT *
@@ -2326,6 +2358,7 @@ if (isset($_POST['type'])) {
             } else {
                 $listToBeContinued = "end";
             }
+
             // Get folder complexity
             $folderComplexity = DB::queryFirstRow(
                 "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %i",
@@ -2364,13 +2397,14 @@ if (isset($_POST['type'])) {
                 "saltkey_is_required" => $folderIsPf,
                 "show_clipboard_small_icons" => isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1 ? 1 : 0,
                 "next_start" => $_POST['nb_items_to_display_once'] + $start,
-                "list_to_be_continued" => $listToBeContinued,
+                //"list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
                 'folder_complexity' => $folderComplexity['valeur'],
                 // "items" => $returnedData
                 'displayCategories' => $displayCategories,
                 'access_level' => $accessLevel,
-                'IsPersonalFolder' => $folderIsPf
+                'IsPersonalFolder' => $folderIsPf,
+                //'items_count' => $items_count
             );
             // Check if $rights is not null
             if (count($rights) > 0) {

@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'index_session_duration' => 'Session duration',
     'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',
     'user_ga_code' => 'Email Google Authentication to user',
@@ -529,7 +530,6 @@ $LANG = array (
     'index_pw_expiration' => 'Actual password expiration in',
     'index_pw_level_txt' => 'Password Strength',
     'index_refresh_page' => 'Refresh page',
-    'index_session_duration' => 'Session duration',
     'index_session_ending' => 'Your session will end in less than 1 minute.',
     'index_session_expired' => 'Your session has expired or you are not correctly identified!',
     'index_welcome' => 'Welcome',

@@ -9,6 +9,9 @@
  * @link
  */
 
+require_once 'sources/SecureHandler.php';
+session_start();
+
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -24,6 +27,24 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
+
+
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header("Content-type: text/html; charset==utf-8");
+
+// connect to DB
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$encoding = $encoding;
+DB::$error_handler = 'db_error_handler';
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -46,32 +67,37 @@ echo '
 <input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1':'0', '" />';
 
 // Show the Items in a table view
-echo '<input type="hidden" id="id_selected_item" />
-    <input type="hidden" id="personalItem" />
-    <div class="title ui-widget-content ui-corner-all">
-    '.$LANG['find'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.htmlentities(strip_tags($LANG['move_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'move\').dialog(\'open\');" class="button" style="font-size:16px;">
-        <i class="fa fa-share"></i>
-    </button>&nbsp;
-    <button title="'.htmlentities(strip_tags($LANG['delete_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'delete\').dialog(\'open\');" class="button" style="font-size:16px;">
-        <i class="fa fa-trash"></i>
-    </button>
-    </div>
+echo '
+<input type="hidden" id="id_selected_item" />
+<input type="hidden" id="personalItem" />
+
+<div class="page-header">
+    <h1>
+        '.$LANG['find'].'&nbsp;&nbsp;&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['move_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'move\').dialog(\'open\');" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-share"></span>
+        </button>&nbsp;
+        <button title="'.htmlentities(strip_tags($LANG['delete_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'delete\').dialog(\'open\');" class="button btn btn-default" style="font-size:16px;">
+            <span class="fa fa-trash"></span>
+        </button>
+    </h1>
+</div>
+
 <div style="margin:10px auto 25px auto;min-height:250px;" id="find_page">
-<table id="t_items" cellspacing="0" cellpadding="5" width="100%">
-    <thead><tr>
-        <th></th>
-        <th style="width:15%;">'.$LANG['label'].'</th>
-        <th style="width:20%;">'.$LANG['login'].'</th>
-        <th style="width:25%;">'.$LANG['description'].'</th>
-        <th style="width:13%;">'.$LANG['tags'].'</th>
-        <th style="width:13%;">'.$LANG['url'].'</th>
-        <th style="width:20%;">'.$LANG['group'].'</th>
-    </tr></thead>
-    <tbody>
-        <tr><td></td></tr>
-    </tbody>
-</table>
+    <table id="t_items" cellspacing="0" cellpadding="5" width="100%">
+        <thead><tr>
+            <th></th>
+            <th style="width:15%;">'.$LANG['label'].'</th>
+            <th style="width:20%;">'.$LANG['login'].'</th>
+            <th style="width:25%;">'.$LANG['description'].'</th>
+            <th style="width:13%;">'.$LANG['tags'].'</th>
+            <th style="width:13%;">'.$LANG['url'].'</th>
+            <th style="width:20%;">'.$LANG['group'].'</th>
+        </tr></thead>
+        <tbody>
+            <tr><td></td></tr>
+        </tbody>
+    </table>
 </div>';
 // DIALOG TO WHAT FOLDER COPYING ITEM
 echo '

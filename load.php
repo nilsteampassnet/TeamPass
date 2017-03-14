@@ -19,11 +19,19 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Common elements
 $htmlHeaders = '
+        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.structure.min.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.theme.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jquery-ui/external/jquery/jquery.js"></script>
+        <script type="text/javascript" src="includes/js/vendor/tether.min.js"></script>
         <script type="text/javascript" src="includes/js/jquery-ui/jquery-ui.min.js"></script>
+        <script type="text/javascript">
+            // Change JQueryUI plugin names to fix name collision with Bootstrap.
+            $.widget.bridge("uitooltip", $.ui.tooltip);
+            $.widget.bridge("uibutton", $.ui.button);
+        </script>
+        <script type="text/javascript" src="includes/bootstrap/js/bootstrap.js"></script>
         <script src="includes/js/jeditable/jquery.jeditable.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/js/tooltipster/js/jquery.tooltipster.min.js"></script>
         <link rel="stylesheet" href="includes/js/tooltipster/css/tooltipster.css" type="text/css" />
@@ -35,33 +43,29 @@ $htmlHeaders = '
         <script type="text/javascript" src="includes/js/nprogress/nprogress.js"></script>
         <script type="text/javascript" src="includes/js/functions.js"></script>
         <link rel="stylesheet" href="includes/font-awesome/css/font-awesome.min.css" type="text/css" />
-        <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
-
+        <script type="text/javascript" src="includes/js/vendor/notify.min.js"></script>
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
-        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />';
+        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />
+
+        <link rel="stylesheet" href="includes/css/template.css" type="text/css" />';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
+        <script src="includes/js/vendor/jquery.bootpag.min.js"></script>
         <link rel="stylesheet" href="includes/js/jstree/themes/default/style.css" type="text/css" />
         <script type="text/javascript" src="includes/js/jstree/jstree.min.js"></script>
         <script type="text/javascript" src="includes/js/jstree/jquery.cookie.js"></script>
-        <script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>
-        <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
-        <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
-        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
-        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
+        <!--<script type="text/javascript" src="includes/js/bgiframe/jquery.bgiframe.min.js"></script>-->
+
+        <link rel="stylesheet" type="text/css" href="includes/js/summernote/summernote.css" rel="stylesheet">
+        <script type="text/javascript" src="includes/js/summernote/summernote.min.js"></script>
+        <script type="text/javascript" src="includes/js/trumbowyg/lang/summernote-'.strtolower($_SESSION['user_language_code']).'-'.strtoupper($_SESSION['user_language_code']).'.js"></script>   
+
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
-        <!--
-        <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
-        <script src="includes/bootstrap/js/bootstrap.min.js"></script>
-        -->
-        <link rel="stylesheet" type="text/css" href="includes/css/items.css" />';
+        <script type="text/javascript" src="includes/js/vendor/clipboard.min.js"></script>';
 } else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
@@ -136,8 +140,17 @@ $htmlHeaders .= '
             window.location.href = "logout.php"
         } else {
             $("#menu_action").val("action");
-            if (val == "") document.location.href="index.php";
-            else document.location.href="index.php?page="+val;
+            /*if (val == "") document.location.href="index.php";
+            else document.location.href="index.php?page="+val;*/
+            $("#page_content").load(
+                val+".php", function( response, status, xhr ) {
+                if (status === "error") {
+                    var msg = "Sorry but there was an error: ";
+                    $( "#error" ).html( msg + xhr.status + " " + xhr.statusText );
+                } else {
+                    NProgress.done();
+                }
+            });
         }
     }
 
@@ -381,28 +394,12 @@ $htmlHeaders .= '
         }).dialog("open");
     }
 
-    /*
-    * Clean disconnection of user for security reasons.
-    *
-       $(window).bind("beforeunload", function() {
-        if ($("#menu_action").val() == "") {
-            sessionStorage.clear();
-            //Forces the disconnection of the user
-            $.ajax({
-                type: "POST",
-                url : "error.php",
-                data : "session=expired"
-            });
-        }
-    });*/
-
-
     function displayItemNumber (item_id, tree_id)
     {
         if (window.location.href.indexOf("page=items") == -1) {
             location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
         } else {
-            $("#items_list").html("<ul class=\'liste_items\' id=\'full_items_list\'></ul>");
+            $("#items_list").html("<ul class=\'list-group\' id=\'full_items_list\'></ul>");
             AfficherDetailsItem(item_id);
             if (tree_id != $("#hid_cat").val()) {
                 ListerItems(tree_id);
@@ -526,6 +523,12 @@ $htmlHeaders .= '
     }
 
     $(function() {
+        // new
+        $("button, .tip").tooltip();
+        //----
+
+
+
         // AGSES authentication
         if ($("#axs_canvas").length > 0) {
             // show the agsesflicker
@@ -672,12 +675,6 @@ $htmlHeaders .= '
 
         $(".button, .btn").button();
 
-        //TOOLTIPS
-        $("#main *, #footer *, #icon_last_items *, #top *, button, .tip").tooltipster({
-            maxWidth: 400,
-            contentAsHTML: true,
-            multiple: true
-        });
         $("#user_session").val(sessionStorage.password);
 
         $(".menu").menu({
@@ -814,6 +811,7 @@ $htmlHeaders .= '
                                 });
                                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 5000);
                             } else {
+                                
                                 $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
                                     my: "center",
@@ -1067,6 +1065,12 @@ $htmlHeaders .= '
             $("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
             e.preventDefault();
         });
+
+        //---- NEW ----
+        $(".nav-item").click(function() {
+            $(".nav-item").removeClass("active");
+            $(this).addClass("active");
+        })
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
@@ -1327,7 +1331,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                                     MenuAction("suggestion");
                                 });
                             $(".btn").button();
-                            $(".tip").tooltipster({multiple: true});
+                            //$(".tip").tooltipster({multiple: true});
                         }
 
                         $("#menu_icon_suggestions").addClass("mi-red");
