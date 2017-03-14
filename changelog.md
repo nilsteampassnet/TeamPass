@@ -1,4 +1,6 @@
 2.1.27
+ #1686 Fix for item History dialogbox
+ #1685 Fix in Portuguese file
  #1684 Estonian language still missing
  #1679 Sort by don't work in Utilities/logs
  #1676 Pre-auth XSS in index.php
