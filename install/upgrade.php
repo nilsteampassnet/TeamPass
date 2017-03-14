@@ -16,7 +16,7 @@ function getSettingValue($val)
 //get infos from SETTINGS.PHP file
 $filename = "../includes/config/settings.php";
 $events = "";
-if (file_exists($filename)) {    // && empty($_SESSION['server'])
+if (file_exists($filename)) {
     //copy some constants from this existing file
     $settings_file = file($filename);
     while (list($key,$val) = each($settings_file)) {
@@ -85,7 +85,6 @@ if (
         <script type="text/javascript">
         $(function(){
             $("#but_next").click(function(event) {
-                //console.log("> "+$(this).attr("target_id"));
                 $("#step").val($(this).attr("target_id"));
                 document.install.submit();
             });
@@ -108,7 +107,12 @@ if (
         {
             if (step != "") {
                 var upgrade_file = "upgrade_ajax.php";
-                if (step == "step1") {
+                if (step === "step0" && document.getElementById("user_login").value !== "" && document.getElementById("user_pwd").value !== "") {
+                    var data = "type="+step+
+                    "&login="+escape(document.getElementById("user_login").value)+
+                    "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
+                    document.getElementById("loader").style.display = "";
+                } else if (step == "step1") {
                     var data = "type="+step+
                     "&abspath="+escape(document.getElementById("root_path").value)+
                         "&fullurl="+escape(document.getElementById("root_url").value);
@@ -121,13 +125,8 @@ if (
                         maintenance = 0;
                     }
                     var data = "type="+step+
-                    /*"&db_host="+document.getElementById("db_host").value+
-                    "&db_login="+escape(document.getElementById("db_login").value)+
-                    "&tbl_prefix="+escape(document.getElementById("tbl_prefix").value)+
-                    "&db_password="+aes_encrypt(document.getElementById("db_pw").value)+
-                    "&db_port="+(document.getElementById("db_port").value)+
-                    "&db_bdd="+document.getElementById("db_bdd").value+*/
-                    "&no_maintenance_mode="+maintenance;
+                    "&no_maintenance_mode="+maintenance+
+                    "&previous_sk="+escape(document.getElementById("previous_sk").value);
                 } else
                 if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
@@ -136,11 +135,8 @@ if (
                     document.getElementById("loader").style.display = "";
                 } else
                 if (step == "step4") {
-                    //$("#loader").show();
                     upgrade_file = "";
                     var data = "type="+step;
-                    //document.getElementById("loader").style.display = "";
-
                     manageUpgradeScripts("0");
 
                 } else
@@ -331,39 +327,54 @@ echo '
                     <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version']:'', '" />
                     <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8']:'', '" />
                     <input type="hidden" name="menu_action" id="menu_action" value="" />
+                    <input type="hidden" name="user_granted" id="user_granted" value="" />
                     <input type="hidden" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt']:@$_SESSION['encrypt_key'], '" />';
 
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE O
     echo '
-                     <h2>Teampass upgrade</h2>
+                    <div>
+                    <fieldset>
+                        <legend>Teampass upgrade</legend>
+                        Before starting, be sure to:<ul>
+                        <li>upload the complete package on the server and overwrite existing files,</li>
+                        <li>have the database connection informations,</li>
+                        <li>get some CHMOD rights on the server.</li>
+                        </ul>
 
-                     Before starting, be sure to:<ul>
-                     <li>upload the complete package on the server and overwrite existing files,</li>
-                     <li>have the database connection informations,</li>
-                     <li>get some CHMOD rights on the server.</li>
-                     </ul>
+                        <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
 
-                     <div style="font-weight:bold; color:#C60000; margin-bottom:10px;">
+                        <div style="font-weight:bold; color:#C60000; margin-bottom:10px;">
                         <img src="images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
-                     </div>
+                        </div>
+                    </fieldset>
 
-                     <!--
-                     <div style="width:550px; margin-bottom:10px; float:left;">
-                        <label for="dump_done" style="width:350px;">&nbsp;A database dump has been performed</label><input type="checkbox" id="dump_done" name="dump_done" style="">
-                     </div>
-                     -->
+                    <fieldset>
+                        <legend>Authentication</legend>
+                        <div class="ui-state-default ui-corner-all" style="float:left; width:100%; padding:10px; margin:20px 0 20 px;">
+                             <div style="float:left; height:50px; width:100%;">
+                                <label for="user_login" style="width:200px;">Administrator Login:</label>&nbsp;
+                                <input type="text" id="user_login" />
+                             </div>
+                             <div style="float:left;">
+                                <label for="user_pwd" style="width:200px;">Administrator Password:</label>&nbsp;
+                                <input type="password" id="user_pwd" />
+                             </div>
+                        </div>
+                    </fieldset>
 
-                     <br />
-                     <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
-                     &nbsp;
-                     ';
+                    <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step0"></div>
+                    <input type="hidden" id="step0" name="step0" value="" />
+
+                     </div>';
 
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 1)
     || (isset($_GET['step']) && $_GET['step'] == 1)
+    && $_POST['user_granted'] === "1"
 ) {
     //ETAPE 1
+    $_SESSION['user_granted'] = $_POST['user_granted'];
     echo '
                      <h3>Step 1 - Check server</h3>
 
@@ -393,6 +404,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 2)
     || (isset($_GET['step']) && $_GET['step'] == 2)
+    && $_SESSION['user_granted'] === "1"
 ) {
     //ETAPE 2
     echo '
@@ -448,15 +460,26 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
                      <br><span id="dump_result" style="margin-top:4px;"></span>
                      </fieldset>
-                     </div>
+                     </div>';
 
+                    // teampass_version = 2.1.27 and no encrypt_key in db
+                     echo '
+                     <div id="no_encrypt_key" style="display:none;">
+                     <fieldset><legend>Previous SALTKEY</legend>
+                        <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
+                        </p>
+                        <label for="previous_sk">Previous SaltKey:&nbsp:</label>
+                        <input type="password" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                     </fieldset>
+                     </div>';
 
-
+                    echo '
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3)
     && isset($_POST['actual_cpm_version'])
+    && $_SESSION['user_granted'] === "1"
 ) {
     //ETAPE 3
     echo '
@@ -481,6 +504,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step'])
     && $_GET['step'] == 4)
+    && $_SESSION['user_granted'] === "1"
 ) {
     //ETAPE 4
 
@@ -506,6 +530,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 5)
     || (isset($_GET['step']) && $_GET['step'] == 5)
+    && $_SESSION['user_granted'] === "1"
 ) {
     //ETAPE 5
     echo '
@@ -534,6 +559,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 } elseif (
     (isset($_POST['step']) && $_POST['step'] == 6)
     || (isset($_GET['step']) && $_GET['step'] == 6)
+    && $_SESSION['user_granted'] === "1"
 ) {
     //ETAPE 5
     echo '
@@ -548,9 +574,10 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 if (!isset($_POST['step'])) {
     echo '
                  <div id="buttons_bottom">
-                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="CONTINUE" />
+                     <input type="button" id="but_launch" onclick="Check(\'step0\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                    <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                  </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 == false) {
+} elseif ($_POST['step'] == 3 && $conversion_utf8 == false && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
@@ -558,7 +585,7 @@ if (!isset($_POST['step'])) {
                             <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 == true) {
+} elseif ($_POST['step'] == 3 && $conversion_utf8 == true && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
@@ -567,7 +594,7 @@ if (!isset($_POST['step'])) {
                             <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
-} elseif ($_POST['step'] == 6) {
+} elseif ($_POST['step'] == 6 && $_SESSION['user_granted'] === "1") {
     echo '
                  <div style="margin-top:30px; text-align:center; width:100%; font-size:24px;">
                      <a href="#" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'\';"><b>Open TeamPass</b></a>

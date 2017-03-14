@@ -3,6 +3,18 @@
 
 
 2.1.27
+ #1679 Sort by don't work in Utilities/logs
+ #1676 Pre-auth XSS in index.php
+ #1674 name and lastname are changed on other user edit
+ #1672 Anonymous settings not stored
+ #1670 Incremental upgrade not active
+ #1669 Logout - Errors
+ #1668 File encryption is not correct in case of upgrade
+ #1666 Can`t set avatar
+ #1662 Can not delete folders
+ #1659 Third level of sub folders in the Personal folder are not seen
+ #1654 User management page - no "next" button
+
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented
  NEW   Custom Fields data can be encrytped or not in database

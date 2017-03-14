@@ -228,26 +228,26 @@ $htmlHeaders .= '
                     else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
                     else window.location.href="index.php?page=items";
                 } else if (data[0].value == "user_is_locked") {
-                    $("#connection_error").html("'.$LANG['account_is_locked'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
                 } else if (data[0].value == "bad_psk") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.$LANG['bad_psk'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
                 } else if (data[0].value == "bad_psk_confirmation") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.$LANG['bad_psk_confirmation'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
                 } else if (data[0].value == "psk_required") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("' . $LANG['psk_required'] . '");
+                    $("#connection_error").html("' . addslashes($LANG['psk_required']) . '");
                     $("#connection_error, #connect_psk_confirm").show();
                 } else if (data[0].value == "user_not_exists") {
-                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html("'.$LANG['login_attempts_on']."&nbsp;".(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
+                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value == "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
                 } else if (data[0].value == "new_ldap_account_created") {
-                    $("#connection_error").html("'.$LANG['reload_page_after_user_account_creation'].'").show().switchClass("ui-state-error", "ui-state-default");
+                    $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
                     setTimeout(
                         function (){
                             window.location.href="index.php"
@@ -255,23 +255,25 @@ $htmlHeaders .= '
                         2000
                     );
                 } else if (data[0].value == "false_onetimepw") {
-                    $("#connection_error").html("'.$LANG['bad_onetime_password'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
                 } else if (data[0].pwd_attempts >=3 ||data[0].error == "bruteforce_wait") {
                     // now user needs to wait 10 secs before new passwd
-                    $("#connection_error").html("'.$LANG['error_bad_credentials_more_than_3_times'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
                 } else if (data[0].error == "bad_credentials") {
-                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                 } else if (data[0].error == "ga_code_wrong") {
-                    $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
                 } else if (data[0].value === "agses_error") {
                     $("#connection_error").html(data[0].error).show();
                 } else if (data[0].error == "ga_temporary_code_wrong") {
-                    $("#connection_error").html("'.$LANG['ga_bad_code'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
                 } else if (data[0].error == "ga_temporary_code_correct") {
                     $("#ga_code").val("").focus();
-                    $("#2fa_new_code_div").html(data[0].value+"<br />'.$LANG['ga_flash_qr_and_login'].'").show();
+                    $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
+                } else if (data[0].value === "install_error") {
+                    $("#connection_error").html(data[0].error).show();
                 } else {
-                    $("#connection_error").html("'.$LANG['error_bad_credentials'].'").show();
+                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                 }
 
                 $("#ajax_loader_connexion").hide();
@@ -301,10 +303,10 @@ $htmlHeaders .= '
                         //$("#ga_qr").attr("src", data[0].ga_url);
                         $("#div_ga_url").show();
                     } else if (data[0].error === "not_allowed") {
-                        $("#connection_error").html("'.$LANG['2FA_new_code_by_user_not_allowed'].'").show();
+                        $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
                         $("#div_ga_url").hide();
                     } else {
-                        $("#connection_error").html("'.$LANG['index_bas_pw'].'").show();
+                        $("#connection_error").html("'.addslashes($LANG['index_bas_pw']).'").show();
                         $("#div_ga_url").hide();
                     }
                     $("#ajax_loader_connexion").hide();
@@ -312,7 +314,7 @@ $htmlHeaders .= '
                 "json"
             );
         } else {
-            $("#connection_error").html("'.$LANG['ga_enter_credentials'].'").show();
+            $("#connection_error").html("'.addslashes($LANG['ga_enter_credentials']).'").show();
         }
     }
 

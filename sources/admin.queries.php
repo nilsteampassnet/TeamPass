@@ -788,7 +788,7 @@ switch ($_POST['type']) {
                             if ($checkCoherancy == false) {
                                 $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$entry, "rb");
                                 $line = fgets($fp);
-
+$line = "qsd";
                                 // check if isUTF8. If yes, then check if process = encryption, and vice-versa
                                 if (isUTF8($line) && $_POST['option'] == "decrypt") {
                                     $error = "file_not_encrypted";
@@ -1473,7 +1473,7 @@ switch ($_POST['type']) {
         }
 
         // send statistics items
-        if (!is_null($_POST['list'])) {
+        if (isset($_POST['list'])) {
             DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
             $counter = DB::count();
             if ($counter == 0) {

@@ -676,7 +676,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         foreach ($rows as $record) {
             $listRestrictedFoldersForItems[$record['id_tree']][$x] = $record['id'];
             $x++;
-            // array_push($listRestrictedFoldersForItems, $record['id_tree']);
         }
         // => Build final lists
         // Clean arrays
@@ -729,7 +728,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 if (!in_array($pf['id'], $listAllowedFolders)) {
                     array_push($_SESSION['personal_folders'], $pf['id']);
                     // get all descendants
-                    $ids = $tree->getDescendants($pf['id'], true, true);
+                    $ids = $tree->getDescendants($pf['id'], true, false);
                     foreach ($ids as $id) {
                         array_push($listAllowedFolders, $id->id);
                         array_push($_SESSION['personal_visible_groups'], $id->id);
@@ -1589,4 +1588,112 @@ function checkCFconsistency($source_id, $target_id) {
     }
 
     return true;
+}
+
+/*
+*
+*/
+function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    $tp_config_file = "../includes/config/tp.config.php";
+
+    // include librairies & connect to DB
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = $server;
+    DB::$user = $user;
+    DB::$password = $pass;
+    DB::$dbName = $database;
+    DB::$port = $port;
+    DB::$encoding = $encoding;
+    DB::$error_handler = 'db_error_handler';
+    $link = mysqli_connect($server, $user, $pass, $database, $port);
+    $link->set_charset($encoding);
+
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && $image_status === "clear") {
+        // file needs to be encrypted
+        if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+            // make a copy of file
+            if (!copy(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
+            )) {
+                $error = "Copy not possible";
+                exit;
+            } else {
+                // do a bck
+                copy(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
+                );
+            }
+
+            // Open the file
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
+            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
+            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
+
+            // ecnrypt
+            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+
+            // read file and create new one
+            while (($line = fgets($fp)) !== false) {
+                fputs($out, $line);
+            }
+            fclose($fp);
+            fclose($out);
+
+            // update table
+            DB::update(
+                prefix_table('files'),
+                array(
+                    'status' => 'encrypted'
+                   ),
+                "id=%i",
+                substr($_POST['uri'], 1)
+            );
+        }
+    } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($image_status) && $image_status === "encrypted") {
+        // file needs to be encrypted
+        if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+            // make a copy of file
+            if (!copy(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
+            )) {
+                $error = "Copy not possible";
+                exit;
+            } else {
+                // do a bck
+                copy(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
+                );
+            }
+
+            // Open the file
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
+            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
+            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
+
+            // ecnrypt
+            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+
+            // read file and create new one
+            while (($line = fgets($fp)) !== false) {
+                fputs($out, $line);
+            }
+            fclose($fp);
+            fclose($out);
+
+            // update table
+            DB::update(
+                prefix_table('files'),
+                array(
+                    'status' => 'clear'
+                   ),
+                "id=%i",
+                substr($_POST['uri'], 1)
+            );
+        }
+    }
 }

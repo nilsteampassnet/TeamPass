@@ -109,11 +109,80 @@ function tableExists($tablename, $database = false)
 
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
-        case "step1":
+        case "step0":
             // erase session table
             $_SESSION = array();
             setcookie('pma_end_session');
             session_destroy();
+
+            echo 'document.getElementById("res_step0").innerHTML = "";';
+            require_once 'libs/aesctr.php';
+            require_once "../includes/config/settings.php";
+
+            $_SESSION['settings']['cpassman_dir'] = "..";
+            require_once '../includes/libraries/PasswordLib/Random/Generator.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/MTRand.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/Rand.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/UniqID.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/URandom.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/MicroTime.php';
+            require_once '../includes/libraries/PasswordLib/Random/Source/CAPICOM.php';
+            require_once '../includes/libraries/PasswordLib/Random/Mixer.php';
+            require_once '../includes/libraries/PasswordLib/Random/AbstractMixer.php';
+            require_once '../includes/libraries/PasswordLib/Random/Mixer/Hash.php';
+            require_once '../includes/libraries/PasswordLib/Password/AbstractPassword.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Hash.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Crypt.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/SHA256.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/SHA512.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/PHPASS.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/PHPBB.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/PBKDF.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/MediaWiki.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/MD5.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Joomla.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/Drupal.php';
+            require_once '../includes/libraries/PasswordLib/Password/Implementation/APR1.php';
+            require_once '../includes/libraries/PasswordLib/PasswordLib.php';
+            $pwdlib = new PasswordLib\PasswordLib();
+
+            //connect to db and check user is granted
+            $link = mysqli_connect(
+                $server,
+                $user,
+                $pass,
+                $database,
+                $port
+            );
+
+            $user_info = mysqli_fetch_array(mysqli_query($link,
+                "SELECT pw, admin FROM ".$pre."users
+                WHERE login='".mysqli_escape_string($link, stripslashes($_POST['login']))."'")
+            );
+
+            if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($_POST['pwd']), "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
+                echo 'document.getElementById("but_next").disabled = "";';
+                echo 'document.getElementById("res_step0").innerHTML = "User is granted.";';
+                echo 'document.getElementById("step").value = "1";';
+                echo 'document.getElementById("user_granted").value = "1";';
+                $_SESSION['user_granted'] = true;
+            } else {
+                echo 'document.getElementById("but_next").disabled = "disabled";';
+                echo 'document.getElementById("res_step0").innerHTML = "This user is not allowed!";';
+                echo 'document.getElementById("user_granted").value = "0";';
+                $_SESSION['user_granted'] = false;
+            }
+            echo 'document.getElementById("loader").style.display = "none";';
+            break;
+
+        case "step1":
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step1").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
 
             $_SESSION['fullurl'] = $_POST['fullurl'];
             $abspath = str_replace('\\', '/', $_POST['abspath']);
@@ -307,8 +376,7 @@ if (isset($_POST['type'])) {
                     }
             } else {
                 $okEncryptKey = true;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is <b>'.
-                    $_SESSION['encrypt_key'].'</b>&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is available&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                     '</span><br />';
             }
 
@@ -328,10 +396,16 @@ if (isset($_POST['type'])) {
             #==========================
         case "step2":
             $res = "";
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step2").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
             //decrypt the password
             // AES Counter Mode implementation
             require_once 'libs/aesctr.php';
-            
+
             // connexion
             if (
                 mysqli_connect(
@@ -351,6 +425,31 @@ if (isset($_POST['type'])) {
                 );
                 $res = "Connection is successful";
                 echo 'document.getElementById("but_next").disabled = "";';
+
+                // check in db if previous saltk exists
+                $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
+                WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
+                if (!empty($_POST['previous_sk'])) {
+                    if (!empty($db_sk[0])) {
+                        mysqli_query($dbTmp,
+                            "UPDATE `".$_SESSION['pre']."misc`
+                            SET `valeur` = '".filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING)."'
+                            WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                        );
+                    } else {
+                        mysqli_query($dbTmp,
+                            "INSERT INTO `".$_SESSION['pre']."misc`
+                            (`valeur`, `type`, `intitule`)
+                            VALUES ('".filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING)."', 'admin', 'saltkey_ante_2127')"
+                        );
+                    }
+                } elseif (empty($db_sk[0])) {
+                    $res = "Please provide the previous saltkey.";
+                    echo 'document.getElementById("but_next").disabled = "disabled";';
+                    echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
+                    echo 'document.getElementById("loader").style.display = "none";';
+                    echo 'document.getElementById("no_encrypt_key").style.display = "";';
+                }
 
                 //What CPM version
                 if (@mysqli_query($dbTmp,
@@ -387,7 +486,7 @@ if (isset($_POST['type'])) {
 
                 // put TP in maintenance mode or not
                 @mysqli_query($dbTmp,
-                "UPDATE `".$_SESSION['tbl_prefix']."misc`
+                "UPDATE `".$_SESSION['pre']."misc`
                     SET `valeur` = 'maintenance_mode'
                     WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 );
@@ -404,6 +503,13 @@ if (isset($_POST['type'])) {
 
             #==========================
         case "step3":
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step3").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
+
             mysqli_connect(
                 $_SESSION['server'],
                 $_SESSION['user'],
@@ -467,6 +573,13 @@ if (isset($_POST['type'])) {
 
             //=============================
         case "step5":
+
+            if ($_SESSION['user_granted'] !== "1") {
+                echo 'document.getElementById("res_step5").innerHTML = "User not connected anymore!";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
+
             $filename = "../includes/config/settings.php";
             $events = "";
             if (file_exists($filename)) {
@@ -642,22 +755,22 @@ require_once \"".$skFile."\";
         case "perform_database_dump":
             $filename = "../includes/config/settings.php";
 
-            $mtables = array(); 
-   
+            $mtables = array();
+
             $mysqli = new mysqli($_SESSION['server'], $_SESSION['user'], $_SESSION['pass'], $_SESSION['database'], $_SESSION['port']);
             if ($mysqli->connect_error) {
                 die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
             }
-           
+
             $results = $mysqli->query("SHOW TABLES");
-           
+
             while($row = $results->fetch_array()){
                 $mtables[] = $row[0];
             }
 
             foreach($mtables as $table){
                 $contents .= "-- Table `".$table."` --\n";
-               
+
                 $results = $mysqli->query("SHOW CREATE TABLE ".$table);
                 while($row = $results->fetch_array()){
                     $contents .= $row[1].";\n\n";
@@ -667,7 +780,7 @@ require_once \"".$skFile."\";
                 $row_count = $results->num_rows;
                 $fields = $results->fetch_fields();
                 $fields_count = count($fields);
-               
+
                 $insert_head = "INSERT INTO `".$table."` (";
                 for($i=0; $i < $fields_count; $i++){
                     $insert_head  .= "`".$fields[$i]->name."`";
@@ -676,8 +789,8 @@ require_once \"".$skFile."\";
                             }
                 }
                 $insert_head .=  ")";
-                $insert_head .= " VALUES\n";       
-                       
+                $insert_head .= " VALUES\n";
+
                 if($row_count>0){
                     $r = 0;
                     while($row = $results->fetch_array()){
@@ -687,7 +800,7 @@ require_once \"".$skFile."\";
                         $contents .= "(";
                         for($i=0; $i < $fields_count; $i++){
                             $row_content =  str_replace("\n","\\n",$mysqli->real_escape_string($row[$i]));
-                           
+
                             switch($fields[$i]->type){
                                 case 8: case 3:
                                     $contents .=  $row_content;
@@ -710,7 +823,7 @@ require_once \"".$skFile."\";
             }
 
             $backup_file_name = "sql-backup-".date( "d-m-Y--h-i-s").".sql";
-                 
+
             $fp = fopen("../files/".$backup_file_name ,'w+');
             if (($result = fwrite($fp, $contents))) {
                 echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
@@ -719,6 +832,6 @@ require_once \"".$skFile."\";
             }
             fclose($fp);
 
-            break; 
+            break;
     }
 }

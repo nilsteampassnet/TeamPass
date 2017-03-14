@@ -251,16 +251,19 @@ if (isset($_SERVER["CONTENT_TYPE"])) {
 
 // should we encrypt the attachment?
 if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+    // get key
+    if (empty($ascii_key)) {
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    }
+
     // prepare encryption of attachment
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
-    $key = substr(
-        md5("\x2D\xFC\xD8".SALT, true).
-        md5("\x2D\xFC\xD9".SALT, true),
-        0,
-        24
-    );
+    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
+    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
     $opts = array('iv'=>$iv, 'key'=>$key);
+
+    $file_status = "encrypted";
+} else {
+    $file_status = "clear";
 }
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
@@ -269,7 +272,7 @@ if (strpos($contentType, "multipart") !== false) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
 
-        if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+        if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1") {
             // Add the Mcrypt stream filter
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
         }
@@ -302,7 +305,7 @@ if (strpos($contentType, "multipart") !== false) {
     // Open temp file
     $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
 
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1") {
         // Add the Mcrypt stream filter
         stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
     }
@@ -356,7 +359,8 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
             'size' => $_FILES['file']['size'],
             'extension' => getFileExtension($fileName),
             'type' => $_FILES['file']['type'],
-            'file' => $fileRandomId
+            'file' => $fileRandomId,
+            'status' => $file_status
         )
     );
     // Log upload into databse only if "item edition"
@@ -364,11 +368,11 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
         DB::insert(
             $pre.'log_items',
             array(
-                    'id_item' => $_POST['itemId'],
-                    'date' => time(),
-                    'id_user' => $_SESSION['user_id'],
-                    'action' => 'at_modification',
-                    'raison' => 'at_add_file : '.addslashes($fileName)
+                'id_item' => $_POST['itemId'],
+                'date' => time(),
+                'id_user' => $_SESSION['user_id'],
+                'action' => 'at_modification',
+                'raison' => 'at_add_file : '.addslashes($fileName)
             )
         );
     }

@@ -1207,16 +1207,17 @@ function SupprimerFolder()
           if (data.error === "ERR_SUB_FOLDERS_EXIST") {
             $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_cannot_delete_subfolders_exist']);?>").show(1).delay(3000).fadeOut(1000);
 
-          } else if (data.error === "ERR_FOLDER_NOT_ALLOWED") {
-            $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_not_allowed_to']);?>");
-          }
-        } else {
-          refreshTree();
-          $("#div_supprimer_rep").dialog("close");
-        }
-      }
-     );
-  }
+                    } else if (data.error === "ERR_FOLDER_NOT_ALLOWED") {
+                        $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_not_allowed_to']);?>").show(1).delay(3000).fadeOut(1000);
+                    }
+                } else {
+                    refreshTree(data.parent_id);
+                    ListerItems(data.parent_id,'', 0);
+                    $("#div_supprimer_rep").dialog("close");
+                }
+            }
+       );
+    }
 }
 
 
@@ -2154,35 +2155,46 @@ PreviewImage = function(uri,title) {
     function(data) {
       data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
 
-      $("#dialog_files").html('<img id="image_files" src="" />');
-      //Get the HTML Elements
-      imageDialog = $("#dialog_files");
-      imageTag = $('#image_files');
+            $("#dialog_files").html('<img id="image_files" src="" />');
+            //Get the HTML Elements
+            imageDialog = $("#dialog_files");
+            imageTag = $('#image_files');
 
-      //Set the image src
-      imageTag.attr("src", data.new_file);
+            //Set the image src
+            imageTag.attr("src", data.new_file);
 
-      //When the image has loaded, display the dialog
-      imageTag
-      .error(function() {
-        $("#div_loading").hide();
-        displayMessage("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".addslashes($LANG['error_file_is_missing']);?>");
-      })
-      .load(function() {
-        $("#div_loading").hide();
-        imageDialog.dialog({
-          modal: true,
-          resizable: false,
-          draggable: false,
-          width: 'auto',
-          title: title,
-          open: function( event, ui ) {
-            // nothing to do
-          }
-        });
-      });
-    }
-  );
+            //When the image has loaded, display the dialog
+            imageTag
+            .error(function() {
+                $("#div_loading").hide();
+                displayMessage("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".addslashes($LANG['error_file_is_missing']);?>");
+            })
+            .load(function() {
+                $("#div_loading").hide();
+                imageDialog.dialog({
+                    modal: true,
+                    resizable: false,
+                    draggable: false,
+                    width: 'auto',
+                    title: title,
+                    open: function( event, ui ) {
+                        // nothing to do
+                    },
+                    close: function (event, ui) {
+                        // delete file
+                        $.post(
+                            "sources/main.queries.php",
+                            {
+                                type    : "file_deletion",
+                                filename: data.file_path,
+                                key     : "<?php echo $_SESSION['key'];?>"
+                            }
+                        );
+                    }
+                });
+            });
+        }
+    );
 }
 
 function notify_click(status)
@@ -2629,82 +2641,58 @@ $(function() {
     }
   });
 
+                //Send query
+                $.post(
+                    "sources/folders.queries.php",
+                    {
+                        type    : "copy_folder",
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        //check if format error
+                        if (data[0].error == "") {
+                            $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                            refreshTree();
+                            $("#div_copy_folder").dialog("close");
+                        } else {
+                            $("#div_copy_folder_msg").html(data[0].error).show().delay(2000).fadeOut(1000);
+                        }
+                    },
+                    "json"
+                );
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $("#div_copy_folder_msg").html("").hide();
+                $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
+                $(this).dialog('close');
+            }
+        }
+    });
+    //<=
 
-
-	/*
-  $(".quick_menu").menu({
-    icons: { submenu: "no-icon" }
-  });
-  $(".quick_menu_left").menu({
-    position: {
-      my : "right top",
-      at : "left top"
-    }
-  });
-	*/
-
-  $('.menu_200, .menu_150').on('blur', function () {
-    $(this).hide();
-  });
-
-  $("#pw_size, #edit_pw_size").spinner({
-    min:   3,
-    step:  1,
-    numberFormat: "n"
-  });
-
-  //Disable menu buttons
-  $('#menu_button_edit_item,#menu_button_del_item,#menu_button_add_fav,#menu_button_del_fav').attr('disabled', 'disabled');
-
-  //DIsable more buttons if read only user
-  if ($("#user_is_read_only").val() == 1) {
-    $('#menu_button_add_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group').attr('disabled', 'disabled');
-  }
-
-  // Autoresize Textareas
-  $(".items_tree, #items_content, #item_details_ok").addClass("ui-corner-all");
-
-
-  //automatic height
-  var window_height = $(window).height();
-  $("#div_items, #content").height(window_height-170);
-  $("#items_center").height(window_height-390);
-  $("#items_list1").height(window_height-220);
-  $(".items_tree").height(window_height-150);
-  $("#jstree").height(window_height-150);
-
-  //warning if screen height too short
-  if (parseInt(window_height-440) <= 30) {
-    $("#div_dialog_message_text").html("<?php echo addslashes($LANG['warning_screen_height']);?>");
-    $("#div_dialog_message").dialog('open');
-  }
-
-  //Evaluate number of items to display - depends on screen height
-  if (parseInt($("#nb_items_to_display_once").val()) || $("#nb_items_to_display_once").val() == "max") {
-    //do nothing ... good value
-  } else {
-    //adapt to the screen height
-    //$("#nb_items_to_display_once").val(Math.max(Math.round((window_height-450)/23),2));
-    $("#nb_items_to_display_once").val(50);
-  }
-
-  // Build buttons
-  $("#custom_pw, #edit_custom_pw").buttonset();
-  //$(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
-
-  //Build multiselect box
-
-  //Build tree
-  $('#jstree').jstree({
-    "core" : {
-      "animation" : 0,
-      "check_callback" : true,
-      'data' : {
-        'url' : "./sources/tree.php",
-        "dataType" : "json",
-        "async" : true,
-        'data' : function (node) {
-          return { 'id' : node.id.split('_')[1] };
+    //=> DELETE A GROUP
+    $("#div_supprimer_rep").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 600,
+        height: 230,
+        title: "<?php echo $LANG['item_menu_del_rep'];?>",
+        buttons: {
+            "<?php echo $LANG['delete'];?>": function() {
+                SupprimerFolder();
+            },
+            "<?php echo $LANG['cancel_button'];?>": function() {
+                $(this).dialog('close');
+            }
+        },
+        open: function(event,ui) {
+            $(".ui-tooltip").siblings(".tooltip").remove();
+        },
+        close: function() {
+            $("#delete_rep_groupe_validate").prop("checked", false);
+            $("#del_rep_show_error").html("").hide();
         }
       },
       "strings" : {
@@ -2880,14 +2868,61 @@ $(function() {
             } else if (data[0].error == "no_psk") {
               $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
             }
-            //if OK
-            if (data[0].status == "ok") {
-              //window.location.href = "index.php?page=items&group="+$('#copy_in_folder').val()+"&id="+data[1].new_id;
-              ListerItems($('#copy_in_folder').val(),'', 0);
-              AfficherDetailsItem(data[1].new_id);
-              refreshTree($('#copy_in_folder').val());
-              $("#copy_in_folder").val("");
-              $("#div_copy_item_to_folder").dialog('close');
+        },
+        open: function(event,ui) {
+            $(".ui-tooltip").siblings(".tooltip").remove();
+        }
+    });
+    //<=
+    //=> SHOW SHARE DIALOG
+    $("#div_suggest_change").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 750,
+        height: 450,
+        title: "<?php echo $LANG['suggest_password_change'];?>",
+        buttons: {
+            "<?php echo $LANG['ok'];?>": function() {
+                $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show().removeClass("ui-state-error");
+
+                // do checks
+                if (!IsValidEmail($("#email_change").val()) && $("#email_change").val() !== "") {
+                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['email_format_is_not_correct']);?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                    return false;
+                }
+                if (!validateURL($("#url_change").val()) && $("#url_change").val() !== "") {
+                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['url_format_is_not_correct']);?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                    return false;
+                }
+
+                // prepare changes
+                var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '", "folder":"' + $("#hid_cat").val() + '", "comment":"' + $("#comment_change").val() + '", "item_id":"' + $("#id_item").val() + '"}';
+
+                $.post(
+                    "sources/items.queries.php",
+                    {
+                        type    : "suggest_item_change",
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+                        id      : $("#id_item").val(),
+                        key     : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data) {
+                        if (data[0].error === "") {
+                            $("#div_suggest_change_wait").html("<?php echo $LANG['suggestion_done'];?>").show(1).delay(1500).fadeOut(1000);
+                            setTimeout(
+                                function() {
+                                    $("#div_suggest_change").dialog("close");
+                                },
+                                500
+                            );
+                        }
+                    },
+                    "json"
+               );
+            },
+            "<?php echo $LANG['close'];?>": function() {
+                $(this).dialog('close');
             }
             $("#copy_item_info").hide();
           },

@@ -21,11 +21,6 @@ error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
-// if already defused
-if (isset($_SESSION['tp_defuse_installed']) && $_SESSION['tp_defuse_installed'] === true) {
-    echo '[{"finish":"1" , "next":"" , "error":""}]';
-    return false;
-}
 
 require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
@@ -49,7 +44,7 @@ $dbTmp = mysqli_connect(
 
 // get total items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv FROM ".$_SESSION['tbl_prefix']."items
+    "SELECT id, pw, pw_iv FROM ".$_SESSION['pre']."items
     WHERE perso = '0'"
 );
 if (!$rows) {
@@ -61,7 +56,7 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id, pw, pw_iv, encryption_type FROM ".$_SESSION['tbl_prefix']."items
+    "SELECT id, pw, pw_iv, encryption_type FROM ".$_SESSION['pre']."items
     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -88,7 +83,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
         // store Password
         mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['tbl_prefix']."items
+            "UPDATE ".$_SESSION['pre']."items
             SET pw = '".$new_pw['string']."', pw_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
