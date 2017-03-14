@@ -277,6 +277,13 @@ if (isset($_POST['type'])) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"xml\"'.
                     '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
+            if (!extension_loaded('curl')) {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"curl\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"curl\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
             if (ini_get('max_execution_time')<60) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds.'.

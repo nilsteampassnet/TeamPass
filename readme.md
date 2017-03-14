@@ -18,14 +18,18 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 Visit [Teampass.net](http://www.teampass.net/)
 
-## Bugs & Proposals
+## Bugs
 
-For bugs discovery or any suggestions, please report in [Github Issues] (https://github.com/nilsteampassnet/TeamPass/issues)
+For bugs discovery, please report in [Github Issues] (https://github.com/nilsteampassnet/TeamPass/issues)
+
+## Requests
+
+For requests, please report in [UserEcho] (https://teamPass.userecho.com)
 
 ## Requirements
 
-* Apache,
-* MySQL,
+* Apache 2.0,
+* MySQL 5.1,
 * PHP 5.5.0 (or higher),
 * PHP extensions:
 ** mcrypt
@@ -37,17 +41,18 @@ For bugs discovery or any suggestions, please report in [Github Issues] (https:/
 ** xml
 ** gd
 ** openssl
+** curl
 * Function 'mysqli_fetch_all'
 
 ## Installation
 
-* Read [installation related pages] (http://www.teampass.net/categories#installation/)
+* Read [installation related pages] (https://teampass.readthedocs.io)
 * Once uploaded, launch install/install.php and follow instructions.
 
 ### Docker Installation/Use
 *Currently SSL is not provided in this setup, it is advised to use something like HAproxy to add SSL support*
 
-Two ways to provide Docker install 
+Two ways to provide Docker install
 In both cases, the Teampass will be persistent IF you keep the data volume intact between runs and the database content (of course)
 
 #### Docker Compose
@@ -62,7 +67,7 @@ In both cases, the Teampass will be persistent IF you keep the data volume intac
   * the other credentials are the ones you provided in your docker-compose file
 
 #### Simple Docker container
-* In this scenario, it is assumed you have a mysql database ready to be used. 
+* In this scenario, it is assumed you have a mysql database ready to be used.
 * First build the Teampass container :
 ```docker build -t teampass .```
 * Then simply run the Teampass container with a volume to store the data :
@@ -72,29 +77,30 @@ In both cases, the Teampass will be persistent IF you keep the data volume intac
  * for the database, please provide your own database parameters
 
 
-
 ## Update
 
-Once uploaded, launch install/upgrade.php and follow instructions.
+* Read [upgrade related pages] (https://teampass.readthedocs.io)
+* Once uploaded, launch install/upgrade.php and follow instructions.
 
 ## Languages
 
 Teampass is translated in next languages:
 * CATALAN
 * CHINESE
-* CZECH 
+* CZECH
 * DUTCH
 * ENGLISH
-* FRENCH 
+* ESTONIAN
+* FRENCH
 * GERMAN
 * HUNGARIAN
 * ITALIAN
 * JAPANESE
-* NORWEGIAN 
+* NORWEGIAN
 * PORTUGUESE
 * PORTUGUESE (BR)
 * ROMANIAN
-* RUSSIAN 
+* RUSSIAN
 * SPANISH
 * TURKISH
 * UKRAINIAN

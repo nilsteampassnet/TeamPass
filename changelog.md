@@ -1,4 +1,5 @@
 2.1.27
+ #1684 Estonian language still missing
  #1679 Sort by don't work in Utilities/logs
  #1676 Pre-auth XSS in index.php
  #1674 name and lastname are changed on other user edit
