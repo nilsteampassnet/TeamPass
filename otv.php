@@ -133,6 +133,9 @@ if (
                 "<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
                 "</div>";
 
+            // log
+            logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_shown', 'otv');
+
             // delete entry
             DB::delete(prefix_table("otv"), "id = %i", $data['id']);
 

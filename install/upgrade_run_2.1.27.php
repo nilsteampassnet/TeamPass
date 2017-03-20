@@ -553,5 +553,19 @@ if (!empty($tmp[0])) {
 }
 
 
+// add 2 generic users
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."users` WHERE id = '9999991' AND login = 'OTV'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('9999991', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+    );
+}
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."users` WHERE id = '9999991' AND login = 'OTV'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('9999999', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+    );
+}
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

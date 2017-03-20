@@ -174,7 +174,7 @@ function loadFieldsList() {
             // parse json table and disaply
             var json = $.parseJSON(data);
             $(json).each(function(i,val){
-                if (val[0] == 1) {
+                if (val[0] === "1") {
                     newList += '<tr id="t_cat_'+val[1]+'"><td colspan="2">'+
                     '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
                     '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+

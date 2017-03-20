@@ -8,12 +8,9 @@
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
-// session_start();
+
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
-
-//if (function_exists('getBits'))
-//    return;
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');

@@ -192,7 +192,7 @@ if (!empty($_POST['type'])) {
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
-                if ($dataReceived['personal_folder'] == "true") {
+                if ($dataReceived['personal_folder'] === "true") {
                     DB::insert(
                         prefix_table("nested_tree"),
                         array(
