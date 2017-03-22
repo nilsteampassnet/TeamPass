@@ -126,6 +126,7 @@ if (
                     }
                     var data = "type="+step+
                     "&no_maintenance_mode="+maintenance+
+                    "&session_salt="+escape(document.getElementById("session_salt").value)
                     "&previous_sk="+escape(document.getElementById("previous_sk").value);
                 } else
                 if (step == "step3") {

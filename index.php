@@ -14,7 +14,7 @@
  */
 
 header("X-XSS-Protection: 1; mode=block");
-header("X-Frame-Option=SameOrigin: 1; mode=block");
+header("X-Frame-Option: SameOrigin");
 header("Set-Cookie: name=value; httpOnly");
 
 // Before we start processing, we should abort no install is present
