@@ -341,7 +341,7 @@ switch ($_POST['type']) {
         // check if session is not already expired.
         if ($_SESSION['fin_session'] > time()) {
             // Calculate end of session
-            $_SESSION['fin_session'] = $_SESSION['fin_session'] + 3600;
+            $_SESSION['fin_session'] = $_SESSION['fin_session'] + (isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration'] : 3600);
             // Update table
             DB::update(
                 prefix_table("users"),

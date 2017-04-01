@@ -164,18 +164,20 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         $("#new_listing_characteristics").val("");
     }
 
+
     // prevent launch of similar query in case of doubleclick
-    if ( me.data('requestRunning') ) {
+    if (me.data('requestRunning') === true) {
         return false;
-    } else {
-        me.data('requestRunning', true);
     }
+    me.data('requestRunning', true);
 
     $("#request_lastItem, #selected_items").val("");
 
     if (groupe_id != undefined) {
         //refreshTree(groupe_id);
-        if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
+        if (query_in_progress != 0 && query_in_progress != groupe_id) {
+            request.abort();    //kill previous query if needed
+        }
         query_in_progress = groupe_id;
         //LoadingPage();
         $("#items_list_loader").show();
@@ -211,9 +213,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 }
                 //get data
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
-
-                // reset doubleclick prevention
-                me.data('requestRunning', false);
 
                 // manage not allowed
                 if (data.error == "not_allowed") {
@@ -433,8 +432,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     proceed_list_update(stop_listing_current_folder);
                 }
-                //Delete data
-                delete data;
+
+                // reset doubleclick prevention
+                me.data('requestRunning', false);
             }
         );
     }

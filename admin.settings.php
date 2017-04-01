@@ -327,7 +327,7 @@ echo '
                         <label for="default_language">'.$LANG['settings_default_language'].'</label>
                     </td>
                     <td>
-                        <select id="default_language" name="default_language" class="text ui-widget-content">
+                        <select id="default_language" name="default_language" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="">-- '.$LANG['select'].' --</option>';
 foreach ($languagesList as $lang) {
     echo '

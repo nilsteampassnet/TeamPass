@@ -1,4 +1,8 @@
 2.1.27
+ Secure fixes
+ Session increase time feature is now increasing with the expected user session duration
+ Default language cannot be changed fix
+ #1709 Missing field in table on fresh install
  #1696 Fix for no log for OTV
  #1686 Fix for item History dialogbox
  #1685 Fix in Portuguese file

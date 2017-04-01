@@ -68,7 +68,7 @@ foreach ($rows as $reccord) {
 
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT) : "", '" />
 <input type="hidden" id="complexite_groupe" value="" />
 <input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" id="bloquer_creation_complexite" value="" />
@@ -98,14 +98,14 @@ echo '
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
-    <input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />
-    <input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />
-    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
+    <input type="hidden" name="open_folder" id="open_folder" value="'.filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT).'" />
+    <input type="hidden" name="open_id" id="open_id" value="'.filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT).'" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
     <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';

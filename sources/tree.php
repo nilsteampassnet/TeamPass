@@ -234,7 +234,7 @@ function buildNodeTree($nodeId)
                         ', "children":'. ($childrenNb == 0 ? "false" : "true").
                         ', "text":"'.str_replace('"', '&quot;', $text).'"'.
                         ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$node->id.'] '.$title.'"}'.
-                        ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0, 1)"}'.
+                        ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.' nodblclick" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0, 1)"}'.
                     '}';
                 } else if ($show_but_block == true) {
                     $ret_json .= '{'.

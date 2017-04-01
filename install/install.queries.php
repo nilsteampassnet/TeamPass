@@ -572,6 +572,7 @@ global \$SETTINGS;
                             `extension` varchar(10) NOT NULL,
                             `type` varchar(255) NOT NULL,
                             `file` varchar(50) NOT NULL,
+                            `status` varchar(50) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
                            ) CHARSET=utf8;"
                         );

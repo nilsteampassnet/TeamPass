@@ -20,8 +20,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 $html = "";
 if (
-    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != false
-    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
+    filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
+    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) !== false
 ) {
     //Include files
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
