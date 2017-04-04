@@ -3401,8 +3401,8 @@ if (isset($_POST['type'])) {
                 $_POST['iFolderId']
             );
             foreach ($rows as $record) {
-                $selOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
-                $selEOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
+                $selOptionsRoles .= '<option value="role_'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
+                $selEOptionsRoles .= '<option value="role_'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
                 $rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
                 foreach ($rows2 as $record2) {
                     foreach (explode(";", $record2['fonction_id']) as $role) {
