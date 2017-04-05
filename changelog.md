@@ -2,6 +2,7 @@
  Secure fixes
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix
+ Fix for "hide not accessible folders" option
  #1718 Moving a folder to itself
  #1717 After deleting a folder, items are still visible in search page
  #1713 Doubleclick on directory shows items twice
