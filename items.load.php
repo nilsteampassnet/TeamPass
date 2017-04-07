@@ -1858,7 +1858,7 @@ function open_edit_item_div(restricted_to_roles)
     // is user read only and it is not a personal folder
     if (
         ($('#recherche_group_pf').val() == 0 && $("#user_is_read_only").length && $("#user_is_read_only").val() == "1") ||
-        $("#access_level").val() == "NE" || $("#access_level").val() == "NDNE"
+        $("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3"
     ) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -2025,7 +2025,7 @@ function open_del_item_div()
     // is user read only
     if (
         ($('#recherche_group_pf').val() == 0 && $("#user_is_read_only").length && $("#user_is_read_only").val() == "1") ||
-        $("#access_level").val() == "ND" || $("#access_level").val() == "NDNE"
+        $("#access_level").val() == "1" || $("#access_level").val() == "2" || $("#access_level").val() == "3"
     ) {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
         return false;

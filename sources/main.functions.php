@@ -1695,6 +1695,9 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     }
 }
 
+/*
+* NOT TO BE USED
+*/
 function debugTeampass($text) {
     $debugFile = fopen('D:/wamp64/www/TeamPass/debug.txt', 'r+');
     fputs($debugFile, $text);

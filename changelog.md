@@ -3,12 +3,14 @@
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix
  Fix for "hide not accessible folders" option
+ #1722 SELinux issue leads to upload impossible
  #1718 Moving a folder to itself
  #1717 After deleting a folder, items are still visible in search page
  #1713 Doubleclick on directory shows items twice
  #1710 Error on psk change
  #1709 Missing field in table on fresh install
  #1707 "Restricted To" not working correctly when creating new items
+ #1706 User can edit & delete items without rights
  #1696 Fix for no log for OTV
  #1686 Fix for item History dialogbox
  #1685 Fix in Portuguese file
