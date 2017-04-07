@@ -1833,6 +1833,11 @@ function open_add_item_div()
             }
         );
 
+        // prepare select2 for users
+        $("#annonce_liste_destinataires").select2({
+            language: "<?php echo $_SESSION['user_language_code'];?>"
+        });
+
         if ($("#recherche_group_pf").val() == 1) {
             $("#div_editRestricted").hide();
         } else {
@@ -1994,6 +1999,11 @@ function open_edit_item_div(restricted_to_roles)
             }
         }
     }
+
+    // prepare select2 for users
+    $("#edit_annonce_liste_destinataires").select2({
+        language: "<?php echo $_SESSION['user_language_code'];?>"
+    });
 
     // disable folder selection if PF
     if ($('#recherche_group_pf').val() == "1") {

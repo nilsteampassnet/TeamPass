@@ -508,17 +508,19 @@ echo '
             </div>';
 // Line for EMAIL
 echo '
-            <input type="checkbox" name="annonce" id="annonce" onchange="toggleDiv(\'annonce_liste\')" />
-            <label for="annonce">'.$LANG['email_announce'].'</label>
-            <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
-                <h3>'.$LANG['email_select'].'</h3>
-                <select id="annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($usersList as $user) {
-    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-}
-echo '
+            <div>
+                <div style="line-height:10px;">&nbsp;</div>
+                <label for="" class="label_cpm">'.$LANG['email_announce'].' : </label>
+                <select id="annonce_liste_destinataires" multiple="multiple" style="width:100%">';
+                foreach ($usersList as $user) {
+                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+                }
+                echo '
                 </select>
-            </div>
+            </div>';
+
+echo '
+
         </div>';
 // Tabs EDIT N?3
 echo '
@@ -694,17 +696,18 @@ echo '
             </div>';
 
 echo '
-            <input type="checkbox" name="edit_annonce" id="edit_annonce" onchange="toggleDiv(\'edit_annonce_liste\')" />
-            <label for="edit_annonce">'.$LANG['email_announce'].'</label>
-            <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:3px;padding:5px;" id="edit_annonce_liste">
-                <h3>'.$LANG['email_select'].'</h3>
-                <select id="edit_annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($usersList as $user) {
-    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-}
-echo '
+            <div id="div_anounce_change_by_email">
+                <div style="line-height:10px;">&nbsp;</div>
+                <label for="" class="label_cpm">'.$LANG['email_announce'].' : </label>
+                <select id="edit_annonce_liste_destinataires" multiple="multiple" style="width:100%">';
+                foreach ($usersList as $user) {
+                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+                }
+                echo '
                 </select>
-            </div>
+            </div>';
+
+echo '
         </div>';
 // Tab EDIT N°3
 echo '

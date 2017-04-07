@@ -299,14 +299,23 @@ function LaunchAdminActions(action,option)
 /*
 *
 */
-function changeMainSaltKey(start)
+function confirmChangingSk() {
+    if (confirm("Please confirm")) {
+        changeMainSaltKey('starting', '');
+    }
+}
+
+/*
+*
+*/
+function changeMainSaltKey(start, type)
 {
     var nb = 10;    // can be changed - number of items treated in each loop
 
     //console.log("Start value: "+start);
 
     // start change
-    if (start == "starting") {
+    if (start === "starting") {
         // inform
         $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['starting'];?>");
 
@@ -322,7 +331,7 @@ function changeMainSaltKey(start)
                     $("#changeMainSaltKey_itemsCount").val(data[0].nbOfItems);
                     //console.log("Now launch encryption");
                     // start encrypting items with new saltkey
-                    changeMainSaltKey(0);
+                    changeMainSaltKey(0, "items");
                 } else {
                     // error mngt
                     $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back'];?> : "+data[0].error);
@@ -330,25 +339,24 @@ function changeMainSaltKey(start)
             },
             "json"
         );
-    }
-    else if (isFinite(start)) {
-        //console.log("Step Encrypt - " + newSK+" ; "+start+" ; "+nb+" ; "+$("#changeMainSaltKey_itemsCount").val());
+    } else if (isFinite(start) && type === "items") {
+        console.log("Step Encrypt - " +start+" ; "+nb+" ; "+$("#changeMainSaltKey_itemsCount").val());
 
         $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
 
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___encrypt",
+               type     : "admin_action_change_salt_key___encrypt_files",
                start    : start,
                length    : nb,
                nbItems    : $("#changeMainSaltKey_itemsCount").val()
             },
             function(data) {
                 console.log("Next action: "+data[0].nextAction);
-                if (data[0].nextAction == "encrypting") {
-                    changeMainSaltKey(data[0].nextStart);
-                } else if (data[0].nextAction == "finishing") {
+                if (data[0].nextAction === "encrypting") {
+                    changeMainSaltKey(data[0].nextStart, "items");
+                } else if (data[0].nextAction === "finishing") {
                     $("#changeMainSaltKey_message").html("<?php echo $LANG['finalizing'];?>...");
                     changeMainSaltKey("finishing");
                 } else {
@@ -358,16 +366,33 @@ function changeMainSaltKey(start)
             },
             "json"
         );
-    }
-    else {
-        console.log("finishing");
+    } else if (isFinite(start) && type == "logs") {
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
+
+        changeMainSaltKey(0, "files");
+
+    } else if (isFinite(start) && type == "files") {
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
+
+        changeMainSaltKey(0, "categories");
+
+    } else if (isFinite(start) && type == "categories") {
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
+
+        changeMainSaltKey(0, "custfields");
+
+    } else if (isFinite(start) && type == "custfields") {
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
+
+        changeMainSaltKey("finishing");
+    } else {
         $.post(
             "sources/admin.queries.php",
             {
                type     : "admin_action_change_salt_key___end"
             },
             function(data) {
-                if (data[0].nextAction == "done") {
+                if (data[0].nextAction === "done") {
                     console.log("done");
                     $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated'];?> : "+$("#changeMainSaltKey_itemsCount").val());
                 } else {

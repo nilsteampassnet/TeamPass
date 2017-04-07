@@ -527,7 +527,7 @@ switch ($_POST['type']) {
         // generate new saltkey
         copy(
             SECUREPATH."/teampass-seckey.txt",
-            SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y')))
+            SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).'.'.time()
         );
         $_SESSION['reencrypt_new_salt'] = defuse_generate_key();
         file_put_contents(
@@ -556,12 +556,12 @@ switch ($_POST['type']) {
     /*
     * Change SALT Key - ENCRYPT
     */
-    case "admin_action_change_salt_key___encrypt":
+    case "admin_action_change_salt_key___encrypt_files":
         $error = "";
         require_once 'main.functions.php';
 
         // prepare SK
-        if (empty($_SESSION['reencrypt_new_salt']) ||empty($_SESSION['reencrypt_old_salt'])) {
+        if (empty($_SESSION['reencrypt_new_salt']) || empty($_SESSION['reencrypt_old_salt'])) {
             // SK is not correct
             echo '[{"nextAction":"" , "error":"saltkeys are empty???" , "nbOfItems":""}]';
             break;
