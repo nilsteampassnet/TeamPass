@@ -250,10 +250,10 @@ if (isset($_POST['newtitle'])) {
                                     'action' => 'at_delete'
                                 )
                             );
-                        }
 
-                        //Update CACHE table
-                        updateCacheTable("delete_value", $item['id']);
+                            //Update CACHE table
+                            updateCacheTable("delete_value", $item['id']);
+                        }
                     }
                     //array for delete folder
                     $folderForDel[] = $folder->id;
@@ -349,14 +349,15 @@ if (isset($_POST['newtitle'])) {
                                 if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
                                     unset($_SESSION['groupes_visibles'][$item['id']]);
                                 }
+
+                                //Update CACHE table
+                                updateCacheTable("delete_value", $item['id']);
                             }
 
                             //Actualize the variable
                             $_SESSION['nb_folders'] --;
                         }
                     }
-                    //Update CACHE table
-                    updateCacheTable("delete_value", $folderId);
 
                     // delete folders
                     $folderForDel=array_unique($folderForDel);
