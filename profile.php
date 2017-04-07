@@ -542,8 +542,9 @@ $(function() {
             key             : "<?php echo $_SESSION['key'];?>"
          },
          function(data) {
-            $("#div_loading").hide();
-            $("#div_reset_personal_sk").dialog("close");
+            $("#psk_reset_wait").hide();
+            $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done'];?></div>');
+            setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
          }
       );
    })
