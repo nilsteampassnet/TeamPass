@@ -64,26 +64,26 @@ use phpseclib\System\SSH\Agent;
 use phpseclib\Exception\NoSupportedAlgorithmsException;
 use phpseclib\Common\Functions\Strings;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE\ConstantTime\EncoderInterface.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE\ConstantTime\Binary.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE\ConstantTime\Hex.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE\ConstantTime\Base64.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Common\SymmetricKey.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Common\StreamCipher.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Common\BlockCipher.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Blowfish.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Hash.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Random.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\RC4.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Rijndael.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\RSA.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\DES.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\TripleDES.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt\Twofish.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Math\BigInteger.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/System\SSH\Agent.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Exception\NoSupportedAlgorithmsException.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Common\Functions\Strings.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE/ConstantTime/EncoderInterface.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE/ConstantTime/Binary.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE/ConstantTime/Hex.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/ParagonIE/ConstantTime/Base64.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Common/SymmetricKey.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Common/StreamCipher.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Common/BlockCipher.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Blowfish.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Hash.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Random.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/RC4.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Rijndael.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/RSA.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/DES.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/TripleDES.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Crypt/Twofish.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Math/BigInteger.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/System/SSH/Agent.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Exception/NoSupportedAlgorithmsException.php";
+require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/phpseclib/Common/Functions/Strings.php";
 
 /**
  * Pure-PHP implementation of SSHv2.
