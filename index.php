@@ -14,8 +14,18 @@
  */
 
 header("X-XSS-Protection: 1; mode=block");
-header("X-Frame-Option=SameOrigin: 1; mode=block");
-header("Set-Cookie: name=value; httpOnly");
+header("X-Frame-Option: SameOrigin");
+
+// **PREVENTING SESSION HIJACKING**
+// Prevents javascript XSS attacks aimed to steal the session ID
+ini_set('session.cookie_httponly', 1);
+
+// **PREVENTING SESSION FIXATION**
+// Session ID cannot be passed through URLs
+ini_set('session.use_only_cookies', 1);
+
+// Uses a secure connection (HTTPS) if possible
+ini_set('session.cookie_secure', 1);
 
 // Before we start processing, we should abort no install is present
 if (!file_exists('includes/config/settings.php')) {
@@ -75,7 +85,7 @@ if (isset($_GET['language'])) {
         "SELECT flag, name
         FROM ".prefix_table("languages")."
         WHERE name = %s",
-        $_GET['language']
+        filter_var($_GET['language'], FILTER_SANITIZE_STRING)
     );
     $_SESSION['user_language'] = $dataLanguage['name'];
     $_SESSION['user_language_flag'] = $dataLanguage['flag'];
@@ -115,7 +125,7 @@ if (isset($_GET['language'])) {
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    if (isset($_GET['page']) && $_GET['page'] == "kb") {
+    if (isset($_GET['page']) && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === "kb") {
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
     }
 } else {
@@ -333,7 +343,7 @@ if (
 }
 
 echo '
-    <div id="', (isset($_GET['page']) && $_GET['page'] == "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
+    <div id="', (isset($_GET['page']) && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
 // MESSAGE BOX
 echo '
         <div style="" class="div_center">
@@ -431,7 +441,7 @@ if (
 }
 
 // display an item in the context of OTV link
-    if ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && $_GET['otv'] == "true") {
+    if ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === "true") {
         // case where one-shot viewer
         if (
             isset($_GET['code']) && !empty($_GET['code'])

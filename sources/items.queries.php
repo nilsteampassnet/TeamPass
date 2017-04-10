@@ -3401,8 +3401,8 @@ if (isset($_POST['type'])) {
                 $_POST['iFolderId']
             );
             foreach ($rows as $record) {
-                $selOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
-                $selEOptionsRoles .= '<option value="'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
+                $selOptionsRoles .= '<option value="role_'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
+                $selEOptionsRoles .= '<option value="role_'.$record['role_id'].'" class="folder_rights_role_edit">'.$record['title'].'</option>';
                 $rows2 = DB::query("SELECT id, login, fonction_id FROM ".prefix_table("users")." WHERE fonction_id LIKE '%".$record['role_id']."%'");
                 foreach ($rows2 as $record2) {
                     foreach (explode(";", $record2['fonction_id']) as $role) {
@@ -3724,7 +3724,7 @@ if (isset($_POST['type'])) {
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
                         '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($_SESSION['settings']['date_format'].' '.$_SESSION['settings']['time_format'], $record['date']).'</i></td></tr>'.
                         '<tr style="border-bottom:3px solid #C9C9C9;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
-                        '<td style="">'.(!empty($record['raison'] && $record['action'] !== "at_creation") ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])):'').'</td>'.
+                        '<td style="">' . (!empty($record['raison']) && $record['action'] !== "at_creation" ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] == "at_manual" ? $reason[0] : $LANG[trim($reason[0])])) : '') . '</td>'.
                         '</tr>'.
                         '<tr></tr>';
                 }

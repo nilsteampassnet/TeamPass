@@ -277,6 +277,13 @@ if (isset($_POST['type'])) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"xml\"'.
                     '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
+            if (!extension_loaded('curl')) {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"curl\"'.
+                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
+            } else {
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"curl\"'.
+                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
+            }
             if (ini_get('max_execution_time')<60) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds.'.
@@ -429,18 +436,26 @@ if (isset($_POST['type'])) {
                 // check in db if previous saltk exists
                 $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
                 WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
-                if (!empty($_POST['previous_sk'])) {
+                if (!empty($_POST['previous_sk']) || !empty($_POST['session_salt'])) {
+                    // get sk
+                    if (!empty($_POST['session_salt'])) {
+                        $sk_val = filter_var($_POST['session_salt'], FILTER_SANITIZE_STRING);
+                    } else {
+                        $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
+                    }
+
+                    // upidate
                     if (!empty($db_sk[0])) {
                         mysqli_query($dbTmp,
                             "UPDATE `".$_SESSION['pre']."misc`
-                            SET `valeur` = '".filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING)."'
+                            SET `valeur` = '".$sk_val."'
                             WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                         );
                     } else {
                         mysqli_query($dbTmp,
                             "INSERT INTO `".$_SESSION['pre']."misc`
                             (`valeur`, `type`, `intitule`)
-                            VALUES ('".filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING)."', 'admin', 'saltkey_ante_2127')"
+                            VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
                         );
                     }
                 } elseif (empty($db_sk[0])) {

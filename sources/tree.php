@@ -234,7 +234,7 @@ function buildNodeTree($nodeId)
                         ', "children":'. ($childrenNb == 0 ? "false" : "true").
                         ', "text":"'.str_replace('"', '&quot;', $text).'"'.
                         ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$node->id.'] '.$title.'"}'.
-                        ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0, 1)"}'.
+                        ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.' nodblclick" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0, 1)"}'.
                     '}';
                 } else if ($show_but_block == true) {
                     $ret_json .= '{'.
@@ -272,7 +272,7 @@ function recursiveTree($nodeId)
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             // manage tree counters
-            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 && in_array($node,array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) {
                 DB::query(
                     "SELECT * FROM ".prefix_table("items")."
                     WHERE inactif=%i AND id_tree = %i",
@@ -354,14 +354,14 @@ function recursiveTree($nodeId)
             } else {
                 $restricted = "1";
                 $folderClass = "folder_not_droppable";
-                if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1 && $nbChildrenItems === 0) {
+                if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] === "1" && $nbChildrenItems === 0) {
                     // folder should not be visible
                     // only if it has no descendants
-                    $nodeDirectDescendants = $tree->getDescendants($nodeId, false, true, true);
-                    if (count($nodeDirectDescendants) > 0) {
+                    $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
+                    if (count(array_diff($nodeDirectDescendants, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) !== count($nodeDirectDescendants)) {
                         // show it but block it
-                        $hide_node = false;
                         $show_but_block = true;
+                        $hide_node = false;
                     } else {
                         // hide it
                         $hide_node = true;
@@ -373,12 +373,15 @@ function recursiveTree($nodeId)
             }
 
             // prepare json return for current node
-            if ($completTree[$nodeId]->parent_id==0) $parent = "#";
-            else $parent = "li_".$completTree[$nodeId]->parent_id;
+            if ($completTree[$nodeId]->parent_id === "0") {
+                $parent = "#";
+            } else {
+                $parent = "li_".$completTree[$nodeId]->parent_id;
+            }
 
             // handle displaying
-            if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1) {
-                if ($hide_node == true) {
+            if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] === "1") {
+                if ($hide_node === true) {
                     $last_visible_parent = $parent;
                     $last_visible_parent_level = $completTree[$nodeId]->nlevel --;
                 } else if ($completTree[$nodeId]->nlevel < $last_visible_parent_level) {
@@ -388,7 +391,7 @@ function recursiveTree($nodeId)
 
 
             // json
-            if ($hide_node == false && $show_but_block == false) {
+            if ($hide_node === false  && $show_but_block === false) {
                 $ret_json .= (!empty($ret_json) ? ", " : "") . '{'.
                     '"id":"li_'.$completTree[$nodeId]->id.'"'.
                     ', "parent":"'.(empty($last_visible_parent) ? $parent : $last_visible_parent).'"'.
@@ -396,7 +399,7 @@ function recursiveTree($nodeId)
                     ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
                     ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0, 1)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')"}'.
                 '}';
-            } else if ($show_but_block == true) {
+            } else if ($show_but_block === true) {
                 $ret_json .= (!empty($ret_json) ? ", " : "") . '{'.
                     '"id":"li_'.$completTree[$nodeId]->id.'"'.
                     ', "parent":"'.(empty($last_visible_parent) ? $parent : $last_visible_parent).'"'.

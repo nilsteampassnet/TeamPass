@@ -789,7 +789,6 @@ $htmlHeaders .= '
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
                 $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
-                console.log("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {

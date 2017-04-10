@@ -223,6 +223,14 @@ if (isset($_POST['newtitle'])) {
                            )
                         );
 
+                        //array for delete folder
+                        $folderForDel[] = $folder->id;
+
+                        //delete items & logs
+                        $items = DB::query(
+                            "SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i",
+                            $folder->id
+                        );
                         foreach ($items as $item) {
                             DB::update(
                                 prefix_table("items"),
@@ -242,14 +250,14 @@ if (isset($_POST['newtitle'])) {
                                     'action' => 'at_delete'
                                 )
                             );
-                        }
 
-                        //Update CACHE table
-                        updateCacheTable("delete_value", $_POST['id']);
+                            //Update CACHE table
+                            updateCacheTable("delete_value", $item['id']);
+                        }
                     }
                     //array for delete folder
                     $folderForDel[] = $folder->id;
-                    
+
                     //delete items & logs
                     $items = DB::query(
                         "SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i",
@@ -275,7 +283,7 @@ if (isset($_POST['newtitle'])) {
             foreach ($folderForDel as $fol){
                 DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
             }
-            
+
             echo prepareExchangedData(array("error" => "", "parent_id" => $parent_id), "encode");
 
             break;
@@ -341,14 +349,15 @@ if (isset($_POST['newtitle'])) {
                                 if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
                                     unset($_SESSION['groupes_visibles'][$item['id']]);
                                 }
+
+                                //Update CACHE table
+                                updateCacheTable("delete_value", $item['id']);
                             }
 
                             //Actualize the variable
                             $_SESSION['nb_folders'] --;
                         }
                     }
-                    //Update CACHE table
-                    updateCacheTable("delete_value", $folderId);
 
                     // delete folders
                     $folderForDel=array_unique($folderForDel);

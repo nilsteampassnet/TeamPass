@@ -962,7 +962,8 @@ mysqli_query($dbTmp,
     ('', 'swedish', 'Swedish' , 'se', 'se.png'),
     ('', 'dutch', 'Dutch' , 'nl', 'nl.png'),
     ('', 'catalan', 'Catalan' , 'ct', 'ct.png'),
-    ('', 'vietnamese', 'Vietnamese' , 'vi', 'vi.png');"
+    ('', 'vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
+    ('', 'estonian', 'Estonian' , 'ee', 'ee.png');"
 );
 if ($res) {
     //

@@ -126,6 +126,7 @@ if (
                     }
                     var data = "type="+step+
                     "&no_maintenance_mode="+maintenance+
+                    "&session_salt="+escape(document.getElementById("session_salt").value)
                     "&previous_sk="+escape(document.getElementById("previous_sk").value);
                 } else
                 if (step == "step3") {
@@ -395,6 +396,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "gd" is loaded</span><br />
+                     <span style="padding-left:30px;font-size:13pt;">PHP extension "curl" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP version is greater or equal to 5.5.0</span><br />
                      </div>
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1"></div>
@@ -468,8 +470,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <fieldset><legend>Previous SALTKEY</legend>
                         <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
                         </p>
-                        <label for="previous_sk">Previous SaltKey:&nbsp:</label>
-                        <input type="password" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                        <label for="previous_sk">Previous SaltKey:&nbsp</label>
+                        <input type="text" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
                      </fieldset>
                      </div>';
 

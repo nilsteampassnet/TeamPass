@@ -844,10 +844,11 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['user_language'] = $data['user_language'];
             $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
             $_SESSION['user_settings']['usertimezone'] = $data['usertimezone'];
+            $_SESSION['user_settings']['session_duration'] = $dataReceived['duree_session'] * 60;
 
 
             // manage session expiration
-            $_SESSION['fin_session'] = time() + $dataReceived['duree_session'] * 60;
+            $_SESSION['fin_session'] = time() + $_SESSION['user_settings']['session_duration'];
 
             /* If this option is set user password MD5 is used as personal SALTKey */
             if (

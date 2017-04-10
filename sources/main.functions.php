@@ -8,12 +8,9 @@
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
-// session_start();
+
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
-
-//if (function_exists('getBits'))
-//    return;
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -845,7 +842,7 @@ function updateCacheTable($action, $id = "")
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // Rebuild full cache table
-    if ($action == "reload") {
+    if ($action === "reload") {
         // truncate table
         DB::query("TRUNCATE TABLE ".$pre."cache");
 
@@ -905,7 +902,7 @@ function updateCacheTable($action, $id = "")
             );
         }
         // UPDATE an item
-    } elseif ($action == "update_value") {
+    } elseif ($action === "update_value") {
         // get new value from db
         $data = DB::queryfirstrow(
             "SELECT label, description, id_tree, perso, restricted_to, login, url
@@ -951,7 +948,7 @@ function updateCacheTable($action, $id = "")
             $id
         );
         // ADD an item
-    } elseif ($action == "add_value") {
+    } elseif ($action === "add_value") {
         // get new value from db
         $data = DB::queryFirstRow(
             "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
@@ -1002,7 +999,7 @@ function updateCacheTable($action, $id = "")
                )
         );
         // DELETE an item
-    } elseif ($action == "delete_value") {
+    } elseif ($action === "delete_value") {
         DB::delete($pre."cache", "id = %i", $id);
     }
 }
@@ -1696,4 +1693,13 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
             );
         }
     }
+}
+
+/*
+* NOT TO BE USED
+*/
+function debugTeampass($text) {
+    $debugFile = fopen('D:/wamp64/www/TeamPass/debug.txt', 'r+');
+    fputs($debugFile, $text);
+    fclose($debugFile);
 }

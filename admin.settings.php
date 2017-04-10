@@ -327,7 +327,7 @@ echo '
                         <label for="default_language">'.$LANG['settings_default_language'].'</label>
                     </td>
                     <td>
-                        <select id="default_language" name="default_language" class="text ui-widget-content">
+                        <select id="default_language" name="default_language" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
                             <option value="">-- '.$LANG['select'].' --</option>';
 foreach ($languagesList as $lang) {
     echo '
@@ -560,7 +560,7 @@ echo '
 // Change main SALT key
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="changeMainSaltKey(\'starting\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="confirmChangingSk()" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>

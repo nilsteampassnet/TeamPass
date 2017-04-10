@@ -203,7 +203,7 @@ foreach ($rows as $record) {
         } else {
             $sOutput .= '"';
         }
-        if ($record['id'] != API_USER_ID)
+        if ($record['id'] != API_USER_ID && $record['id'] != OTV_USER_ID)
             $sOutput .= '<span class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></span>';
 
         // pwd change

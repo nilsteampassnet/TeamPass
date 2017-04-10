@@ -393,7 +393,7 @@ switch ($_POST['type']) {
         $ret = "";
         require($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
         $parse = parse_url($dataItem['url']);
-        if (!isset($parse['host']) || empty($parse['host']) ||!isset($parse['host']) || empty($parse['host'])) {
+        if (!isset($parse['host']) || empty($parse['host']) ||!isset($parse['port']) || empty($parse['port'])) {
             // error in parsing the url
             echo prepareExchangedData(
                 array(
@@ -417,7 +417,7 @@ switch ($_POST['type']) {
             }else{
                 // send ssh script for user change
                 $ret .= "<br />".$LANG['ssh_answer_from_server'].':&nbsp;<div style="margin-left:20px;font-style: italic;">';
-                $ret_server = $ssh->exec('echo -e "'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
+                $ret_server = $ssh->exec('echo -e "'.$dataReceived['ssh_pwd'].'\n'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
                 if (strpos($ret_server, "updated successfully") !== false) {
                     $err = false;
                 } else {

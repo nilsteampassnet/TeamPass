@@ -145,6 +145,7 @@ function LoadTreeNode(node_id)
 //###########
 //## FUNCTION : Launch the listing of all items of one category
 //###########
+var requestRunning = false;
 function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 {
     var me = $(this);
@@ -152,7 +153,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
     // case where we should stop listing the items
     if ($("#items_listing_should_stop").val() === "1") {
-        me.data('requestRunning', false);
+        requestRunning = false;
         $("#items_listing_should_stop").val("0");
         return false;
     }
@@ -164,18 +165,20 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         $("#new_listing_characteristics").val("");
     }
 
+
     // prevent launch of similar query in case of doubleclick
-    if ( me.data('requestRunning') ) {
+    if (requestRunning === true) {
         return false;
-    } else {
-        me.data('requestRunning', true);
     }
+    requestRunning = true;
 
     $("#request_lastItem, #selected_items").val("");
 
     if (groupe_id != undefined) {
         //refreshTree(groupe_id);
-        if (query_in_progress != 0 && query_in_progress != groupe_id) request.abort();    //kill previous query if needed
+        if (query_in_progress != 0 && query_in_progress != groupe_id) {
+            request.abort();    //kill previous query if needed
+        }
         query_in_progress = groupe_id;
         //LoadingPage();
         $("#items_list_loader").show();
@@ -213,7 +216,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
 
                 // reset doubleclick prevention
-                me.data('requestRunning', false);
+                requestRunning = false;
 
                 // manage not allowed
                 if (data.error == "not_allowed") {
@@ -433,8 +436,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     proceed_list_update(stop_listing_current_folder);
                 }
-                //Delete data
-                delete data;
             }
         );
     }
@@ -606,7 +607,7 @@ function AjouterItem()
 
             //Manage restrictions
             var restriction = restriction_role = "";
-            $("#restricted_to_list option:selected").each(function () {
+            $("#restricted_to_list option:selected").each(function () {console.log($(this).val());
                 //check if it's a role
                 if ($(this).val().indexOf('role_') != -1) {
                     restriction_role += $(this).val().substring(5) + ";";
@@ -1743,7 +1744,8 @@ function open_move_group_div()
         return false;
     }
 
-    if ($("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) echo $_SESSION['personal_folders'][0]; else echo "";?>") {
+    if (
+        $("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) echo $_SESSION['personal_folders'][0]; else echo "";?>") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
     }
@@ -1831,6 +1833,11 @@ function open_add_item_div()
             }
         );
 
+        // prepare select2 for users
+        $("#annonce_liste_destinataires").select2({
+            language: "<?php echo $_SESSION['user_language_code'];?>"
+        });
+
         if ($("#recherche_group_pf").val() == 1) {
             $("#div_editRestricted").hide();
         } else {
@@ -1851,7 +1858,7 @@ function open_edit_item_div(restricted_to_roles)
     // is user read only and it is not a personal folder
     if (
         ($('#recherche_group_pf').val() == 0 && $("#user_is_read_only").length && $("#user_is_read_only").val() == "1") ||
-        $("#access_level").val() == "NE" || $("#access_level").val() == "NDNE"
+        $("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3"
     ) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -1993,6 +2000,11 @@ function open_edit_item_div(restricted_to_roles)
         }
     }
 
+    // prepare select2 for users
+    $("#edit_annonce_liste_destinataires").select2({
+        language: "<?php echo $_SESSION['user_language_code'];?>"
+    });
+
     // disable folder selection if PF
     if ($('#recherche_group_pf').val() == "1") {
         $("#edit_categorie").prop("disabled", true);
@@ -2013,7 +2025,7 @@ function open_del_item_div()
     // is user read only
     if (
         ($('#recherche_group_pf').val() == 0 && $("#user_is_read_only").length && $("#user_is_read_only").val() == "1") ||
-        $("#access_level").val() == "ND" || $("#access_level").val() == "NDNE"
+        $("#access_level").val() == "1" || $("#access_level").val() == "2" || $("#access_level").val() == "3"
     ) {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']);?>");
         return false;
@@ -2631,6 +2643,10 @@ $(function() {
                 $("#move_rep_show_error").hide();
                 if ($("#move_folder_id").val() == "0") {
                     $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_group']);?>");
+                    $("#move_rep_show_error").show();
+                } else if($('#hid_cat').val() === $('#move_folder_id').val()) {
+                    // do not move to itself
+                    $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_not_allowed_to']);?>");
                     $("#move_rep_show_error").show();
                 } else {
                     $("#move_folder_loader").show();
@@ -3845,14 +3861,6 @@ function proceed_list_update(stop_proceeding)
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
                 // *** restricted_to_list ***
                 $("#restricted_to_list").empty();
-                //Add list of roles if option is set
-                if (restricted_to_roles == 1 && $('#restricted_to').val() != undefined) {
-                    //add optgroup
-                    var optgroup = $('<optgroup>');
-                    optgroup.attr('label', "<?php echo $LANG['roles'];?>");
-                    $("#restricted_to_list").append(data.selOptionsRoles);
-                    $(".folder_rights_role").wrapAll(optgroup);
-                }
                 // add list of users
                 if ($('#restricted_to').val() != undefined) {
                     $("#restricted_to_list").append(data.selOptionsUsers);
@@ -3862,6 +3870,14 @@ function proceed_list_update(stop_proceeding)
                         optgroup.attr('label', "<?php echo $LANG['users'];?>");
                         $(".folder_rights_user").wrapAll(optgroup);
                     }
+                }
+                //Add list of roles if option is set
+                if (restricted_to_roles == 1 && $('#restricted_to').val() != undefined) {
+                    //add optgroup
+                    var optgroup = $('<optgroup>');
+                    optgroup.attr('label', "<?php echo $LANG['roles'];?>");
+                    $("#restricted_to_list").append(data.selOptionsRoles);
+                    $(".folder_rights_role").wrapAll(optgroup);
                 }
                 //Prepare multiselect widget
                 $("#restricted_to_list").select2({

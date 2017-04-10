@@ -68,7 +68,7 @@ foreach ($rows as $reccord) {
 
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? htmlspecialchars($_GET['group']) : "", '" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT) : "", '" />
 <input type="hidden" id="complexite_groupe" value="" />
 <input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" id="bloquer_creation_complexite" value="" />
@@ -98,14 +98,14 @@ echo '
 // Hidden objects for Item search
 if (isset($_GET['group']) && isset($_GET['id'])) {
     echo '
-    <input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />
-    <input type="hidden" name="open_id" id="open_id" value="'.htmlspecialchars($_GET['id']).'" />
-    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
+    <input type="hidden" name="open_folder" id="open_folder" value="'.filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT).'" />
+    <input type="hidden" name="open_id" id="open_id" value="'.filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT).'" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
     <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
 } elseif (isset($_GET['group']) && !isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.htmlspecialchars($_GET['group']).'" />';
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT).'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(htmlspecialchars($_GET['group']), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
@@ -482,6 +482,7 @@ if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['rest
             <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
             <select name="restricted_to_list" id="restricted_to_list" multiple="multiple" style="width:100%;" class="ui-widget-content"></select>
             <input type="hidden" name="restricted_to" id="restricted_to" />
+            <input type="hidden" size="50" name="restricted_to_roles" id="restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>';
 }
 // Line for TAGS
@@ -507,17 +508,19 @@ echo '
             </div>';
 // Line for EMAIL
 echo '
-            <input type="checkbox" name="annonce" id="annonce" onchange="toggleDiv(\'annonce_liste\')" />
-            <label for="annonce">'.$LANG['email_announce'].'</label>
-            <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:6px;padding:5px;" id="annonce_liste">
-                <h3>'.$LANG['email_select'].'</h3>
-                <select id="annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($usersList as $user) {
-    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-}
-echo '
+            <div>
+                <div style="line-height:10px;">&nbsp;</div>
+                <label for="" class="label_cpm">'.$LANG['email_announce'].' : </label>
+                <select id="annonce_liste_destinataires" multiple="multiple" style="width:100%">';
+                foreach ($usersList as $user) {
+                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+                }
+                echo '
                 </select>
-            </div>
+            </div>';
+
+echo '
+
         </div>';
 // Tabs EDIT N?3
 echo '
@@ -666,8 +669,8 @@ if (isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['rest
                 <label for="" class="label_cpm">'.$LANG['restricted_to'].' : </label>
                 <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
                 <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
-            <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
-            <div style="line-height:10px;">&nbsp;</div>
+                <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
+                <div style="line-height:10px;">&nbsp;</div>
             </div>';
 }
 
@@ -693,17 +696,18 @@ echo '
             </div>';
 
 echo '
-            <input type="checkbox" name="edit_annonce" id="edit_annonce" onchange="toggleDiv(\'edit_annonce_liste\')" />
-            <label for="edit_annonce">'.$LANG['email_announce'].'</label>
-            <div style="display:none; border:1px solid #808080; margin-left:30px; margin-top:3px;padding:5px;" id="edit_annonce_liste">
-                <h3>'.$LANG['email_select'].'</h3>
-                <select id="edit_annonce_liste_destinataires" multiple="multiple" size="10">';
-foreach ($usersList as $user) {
-    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-}
-echo '
+            <div id="div_anounce_change_by_email">
+                <div style="line-height:10px;">&nbsp;</div>
+                <label for="" class="label_cpm">'.$LANG['email_announce'].' : </label>
+                <select id="edit_annonce_liste_destinataires" multiple="multiple" style="width:100%">';
+                foreach ($usersList as $user) {
+                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+                }
+                echo '
                 </select>
-            </div>
+            </div>';
+
+echo '
         </div>';
 // Tab EDIT N°3
 echo '
@@ -771,7 +775,7 @@ echo '
         <tr>
             <td>'.$LANG['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe" style="width:250px; padding:3px;" class="ui-widget-content">
-                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '
+                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 || $_SESSION['user_manager'] === "1") ? '<option value="0">'.$LANG['root'].'</option>' : '', '
             </select></td>
         </tr>
         <tr>

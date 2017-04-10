@@ -542,8 +542,9 @@ $(function() {
             key             : "<?php echo $_SESSION['key'];?>"
          },
          function(data) {
-            $("#div_loading").hide();
-            $("#div_reset_personal_sk").dialog("close");
+            $("#psk_reset_wait").hide();
+            $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done'];?></div>');
+            setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
          }
       );
    })
@@ -602,36 +603,42 @@ function changePersonalSaltKey(credentials, ids, nb_total)
       "sources/main.queries.php",
         {
            type    : "store_personal_saltkey",
-           data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
+           data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+           debug   : true
         },
         function(data){
-            $.post(
-            "sources/utils.queries.php",
-            {
-                type            : "reencrypt_personal_pwd",
-                data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key'];?>"),
-                currentId       : currentID,
-                key             : "<?php echo $_SESSION['key'];?>"
-            },
-            function(data){
-                if (currentID == "") {
-                    $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done'];?>");
-                    location.reload();
-                } else {
-                    if (data[0].error == "") {
-                    changePersonalSaltKey(credentials, aIds, nb_total);
-                    } else {
-                        $("#psk_change_wait_info").html(data[0].error);
-                    }
-                }
-            },
-            "json"
-            );
-
-        },
-        "json"
+            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+            if (data.error !== "") {
+                // display error
+                $("#psk_change_wait_info").html(data.error);
+                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 4000);
+            } else {
+                $.post(
+                    "sources/utils.queries.php",
+                    {
+                        type            : "reencrypt_personal_pwd",
+                        data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key'];?>"),
+                        currentId       : currentID,
+                        key             : "<?php echo $_SESSION['key'];?>"
+                    },
+                    function(data){
+                        if (currentID == "") {
+                            $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done'];?>");
+                            location.reload();
+                        } else {
+                            if (data[0].error == "") {
+                            changePersonalSaltKey(credentials, aIds, nb_total);
+                            } else {
+                                $("#psk_change_wait_info").html(data[0].error);
+                            }
+                        }
+                    },
+                    "json"
+                );
+            }
+        }
     );
 
-   
+
 }
  </script>

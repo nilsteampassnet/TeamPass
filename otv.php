@@ -20,8 +20,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 $html = "";
 if (
-    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != false
-    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
+    filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
+    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) !== false
 ) {
     //Include files
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
@@ -132,6 +132,9 @@ if (
                 "</table></div>".
                 "<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
                 "</div>";
+
+            // log
+            logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_shown', 'otv');
 
             // delete entry
             DB::delete(prefix_table("otv"), "id = %i", $data['id']);

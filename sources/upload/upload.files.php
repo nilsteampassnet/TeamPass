@@ -151,6 +151,11 @@ if (!in_array(
     handleError('Invalid file extension.', 115);
 }
 
+// is destination folder writable
+if (is_writable($_SESSION['settings']['path_to_files_folder'])) {
+    handleError('Not enough permissions on folder '.$_SESSION['settings']['path_to_files_folder'].'.', 114);
+}
+
 // Clean the fileName for security reasons
 $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
 $fileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($fileName)));
