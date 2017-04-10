@@ -775,7 +775,7 @@ echo '
         <tr>
             <td>'.$LANG['sub_group_of'].' : </td>
             <td><select id="new_rep_groupe" style="width:250px; padding:3px;" class="ui-widget-content">
-                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '
+                ', (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] == 1 || $_SESSION['user_manager'] === "1") ? '<option value="0">'.$LANG['root'].'</option>' : '', '
             </select></td>
         </tr>
         <tr>

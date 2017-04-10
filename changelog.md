@@ -13,6 +13,7 @@
  #1707 "Restricted To" not working correctly when creating new items
  #1706 User can edit & delete items without rights
  #1696 Fix for no log for OTV
+ #1695 Manager can create folder at root from Items pas
  #1686 Fix for item History dialogbox
  #1685 Fix in Portuguese file
  #1684 Estonian language still missing
