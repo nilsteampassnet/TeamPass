@@ -1,4 +1,8 @@
 2.1.27
+ #1733 Copy Item doesn't work if copy from public to public folders
+ #1729 Protection against bigger data than database field size
+ #1727 Cannot edit or delete entry in the Personal folder
+
  Secure fixes
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix

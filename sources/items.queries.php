@@ -1046,6 +1046,24 @@ if (isset($_POST['type'])) {
 
                     // this item is now private
                     $is_perso = 1;
+                } else if ($originalRecord['perso'] === "0" && $dataDestination['personal_folder'] === "0") {
+                    // decrypt and re-encrypt password
+                    $decrypt = cryption(
+                        $originalRecord['pw'],
+                        "",
+                        "decrypt"
+                    );
+                    $encrypt = cryption(
+                        $decrypt['string'],
+                        "",
+                        "encrypt"
+                    );
+
+                    // reaffect pw
+                    $originalRecord['pw'] = $encrypt['string'];
+
+                    // is public item
+                    $is_perso = 0;
                 } else {
                     $returnValues = '[{"error" : "case_not_managed"}, {"error_text" : "ERROR - case is not managed"}]';
                         echo $returnValues;
@@ -1084,7 +1102,7 @@ if (isset($_POST['type'])) {
                     $newID
                 );
                 // Add attached itms
-                $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i",$newID);
+                $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $_POST['item_id']);
                 foreach ($rows as $record) {
                     DB::insert(
                         prefix_table('files'),
@@ -1098,6 +1116,34 @@ if (isset($_POST['type'])) {
                            )
                     );
                 }
+
+                // Add specific restrictions
+                $rows = DB::query("SELECT * FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i", $_POST['item_id']);
+                foreach ($rows as $record) {
+                    DB::insert(
+                        prefix_table('restriction_to_roles'),
+                        array(
+                            'item_id' => $newID,
+                            'role_id' => $record['role_id']
+                           )
+                    );
+                }
+
+                // Add Tags
+                $rows = DB::query("SELECT * FROM ".prefix_table("tags")." WHERE item_id = %i", $_POST['item_id']);
+                foreach ($rows as $record) {
+                    DB::insert(
+                        prefix_table('tags'),
+                        array(
+                            'item_id' => $newID,
+                            'tag' => $record['tag']
+                           )
+                    );
+                }
+
+                // Add custom fields
+
+
                 // Add this duplicate in logs
                 logItems($newID, $originalRecord['label'], $_SESSION['user_id'], 'at_creation', $_SESSION['login']);
                 // Add the fact that item has been copied in logs
@@ -1283,7 +1329,7 @@ if (isset($_POST['type'])) {
                 ||
                 (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 && $dataItem['anyone_can_modify'] == 1 && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] == 1) && $restrictionActive == false)
                 ||
-                (isset($_POST['folder_id']) && in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
+                (isset($_POST['folder_id']) && isset($_SESSION['list_folders_limited'][$_POST['folder_id']]) && in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
             ) {
                 // Allow show details
                 $arrData['show_details'] = 1;

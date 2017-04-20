@@ -896,7 +896,6 @@ echo '
 // DIALOG TO WHAT FOLDER COPYING ITEM
 echo '
 <div id="div_copy_item_to_folder" style="display:none;">
-    <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
     <h2 id="div_copy_item_to_folder_item"></h2>
     <div style="text-align:center;">
         <div>'.$LANG['item_copy_to_folder'].'</div>
@@ -906,6 +905,7 @@ echo '
             '</select>
         </div>
     </div>
+    <div id="copy_item_to_folder_show_error" style="text-align:center;margin:2px;display:none; padding:3px;" class="ui-state-error ui-corner-all"></div>
     <div style="height:20px;text-align:center;margin:2px;" id="copy_item_info" class=""></div>
 </div>';
 // DIALOG FOR HISTORY OF ITEM
