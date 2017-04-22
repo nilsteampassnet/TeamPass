@@ -1869,6 +1869,13 @@ if (isset($_POST['type'])) {
                 $dataReceived['target_folder_id']
             );
 
+            // check if target is not a child of source
+            if ($tree->isChildOf($dataReceived['target_folder_id'], $dataReceived['source_folder_id']) === true) {
+                $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+
             // check if source or target folder is PF. If Yes, then cancel operation
             if (
                 !($tmp_source['personal_folder'] == 1 && $tmp_target['personal_folder'] == 1)
