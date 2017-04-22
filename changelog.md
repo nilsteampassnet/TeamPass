@@ -1,5 +1,7 @@
 2.1.27
+ #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
  #1733 Copy Item doesn't work if copy from public to public folders
+ #1731 Cannot login in after fresh install
  #1729 Protection against bigger data than database field size
  #1727 Cannot edit or delete entry in the Personal folder
 
@@ -7,7 +9,6 @@
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix
  Fix for "hide not accessible folders" option
- #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
  #1725 Some fixes
  #1723 Fix spin not removed while reseting user saltkey
  #1722 SELinux issue leads to upload impossible
