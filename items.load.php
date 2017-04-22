@@ -1259,15 +1259,15 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     page                : "items",
                     key                 : "<?php echo $_SESSION['key'];?>"
                 },
-                function(data) {
+                function(data_raw) {
                     //decrypt data
                     try {
-                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                        data = prepareExchangedData(data_raw , "decode", "<?php echo $_SESSION['key'];?>");
                     } catch (e) {
                         // error
                         $("#div_loading").hide();
                         $("#request_ongoing").val("");
-                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data);
+                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data_raw);
                         $("#div_dialog_message").show();
                         return;
                     }
@@ -1857,8 +1857,7 @@ function open_edit_item_div(restricted_to_roles)
 {
     // is user read only and it is not a personal folder
     if (
-        ($('#recherche_group_pf').val() == 0 && $("#user_is_read_only").length && $("#user_is_read_only").val() == "1") ||
-        $("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3"
+        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1") && ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
     ) {
         displayMessage("<?php echo $LANG['error_not_allowed_to'];?>");
         return false;
@@ -2600,12 +2599,8 @@ $(function() {
                     },
                     function(data) {
                         //check if format error
-                        if (data[0].error == "no_item") {
-                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
-                        } else if (data[0].error == "not_allowed") {
-                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
-                        } else if (data[0].error == "no_psk") {
-                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                        if (data[0].error !== "") {
+                            $("#copy_item_to_folder_show_error").html(data[1].error_text).show(1).delay(2000).fadeOut(1000);
                         }
                         //if OK
                         if (data[0].status == "ok") {

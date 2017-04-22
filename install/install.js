@@ -79,7 +79,7 @@ function CheckPage()
     // STEP 5
     if (step == "5") {
         data = '';
-        tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "entry*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens", "table*items_change"];
+        tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "populate*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens", "table*items_change"];
         multiple = true;
     }
 
@@ -98,14 +98,14 @@ function CheckPage()
     }
 
     // launch query
-    if (error == "" && multiple == true) {
+    if (error === "" && multiple === true) {
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
         var globalResult = true;
         $("#step_res").val("true");
         $('#pop_db').html("");
         var ajaxReqs = [];
         for (index = 0; index < tasks.length; ++index) {
-            var tsk = tasks[index].split("*");//console.log(tsk[1]);
+            var tsk = tasks[index].split("*");//console.log(tsk[0]+" - "+tsk[1]);
             ajaxReqs.push($.ajax({
                 url: "install.queries.php",
                 type : 'POST',
@@ -125,9 +125,13 @@ function CheckPage()
                         $("#step_result").html("[ERROR] Answer from server is empty. This may occur if PHP version is not at least 5.5. Please check this this fit your server configuration!");
                     } else {
                         data = $.parseJSON(data.responseText);
-                        if (data[0].error == "") {
+                        if (data[0].error === "") {
                             if (step == "5") {
-                                $('#pop_db').append('<li>Table <b>'+data[0].table+'</b> created</li>');
+                                if (data[0].activity === "table") {
+                                    $('#pop_db').append('<li>Table <b>'+data[0].task+'</b> created</li>');
+                                } else if (data[0].activity === "entry") {
+                                    $('#pop_db').append('<li>Entries <b>'+data[0].task+'</b> were added</li>');
+                                }
                             } else {
                                 $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
                             }
@@ -141,7 +145,7 @@ function CheckPage()
                                 $("#step_res").val("false");
                             }
                             $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
-                            $('#pop_db').append('<li><img src=\"images/exclamation-red.png\">&nbsp;Error on task `<b>'+data[0].table+'`</b>. <i>'+data[0].error+'</i></li>');
+                            $('#pop_db').append('<li><img src=\"images/exclamation-red.png\">&nbsp;Error on task `<b>'+data[0].activity+' > '+data[0].task+'`</b>. <i>'+data[0].error+'</i></li>');
                             if (data[0].result != undefined && data[0].result != "" ) {
                                 $("#step_result").html(data[0].result);
                             }

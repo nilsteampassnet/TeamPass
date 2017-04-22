@@ -1,4 +1,11 @@
 2.1.27
+ Fix: Prevent moving a folder to one of its child folder
+ #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
+ #1733 Copy Item doesn't work if copy from public to public folders
+ #1731 Cannot login in after fresh install
+ #1729 Protection against bigger data than database field size
+ #1727 Cannot edit or delete entry in the Personal folder
+
  Secure fixes
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix

@@ -128,7 +128,7 @@ if (isset($_POST['type'])) {
                 }
                 break;
             }
-        break;
+            break;
 
         case "step_3":
             //decrypt
@@ -175,7 +175,7 @@ if (isset($_POST['type'])) {
                 echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())).'", "result" : "Failed", "multiple" : ""}]';
             }
             mysqli_close($dbTmp);
-        break;
+            break;
 
         case "step_4":
             //decrypt
@@ -243,7 +243,7 @@ if (isset($_POST['type'])) {
                     $var[$row[0]] = $row[1];
                 }
 
-                if ($activity == "table") {
+                if ($activity === "table") {
                     //FORCE UTF8 DATABASE
                     mysqli_query($dbTmp, "ALTER DATABASE `".$dbBdd."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
                     if ($task == "items") {
@@ -827,13 +827,16 @@ global \$SETTINGS;
                             ) CHARSET=utf8;"
                         );
                     }
-                } else if ($activity == "entry") {
-                    if ($task == "admin") {
+                } else if ($activity === "populate") {
+                    // include constants
+                    require_once "../includes/config/include.php";
+
+                    if ($task === "admin") {
                         // check that admin accounts doesn't exist
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
-                        if ($tmp[0] == 0 || empty($tmp[0])) {
+                        if ($tmp[0] === "0" || empty($tmp[0])) {
                             $mysqli_result = mysqli_query($dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'],'13' )."', '1', '0', '0')"
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'],'13' )."', '1', '0', '0', '', '')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'],'13' )."' WHERE login = 'admin' AND id = '1'");
@@ -841,7 +844,7 @@ global \$SETTINGS;
 
                         // check that API doesn't exist
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
-                        if ($tmp[0] == 0 || empty($tmp[0])) {
+                        if ($tmp[0] === "0" || empty($tmp[0])) {
                             $mysqli_result = mysqli_query($dbTmp,
                                 "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".API_USER_ID."', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
                             );
@@ -849,7 +852,7 @@ global \$SETTINGS;
 
                         // check that OTV doesn't exist
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '".OTV_USER_ID."'"));
-                        if ($tmp[0] == 0 || empty($tmp[0])) {
+                        if ($tmp[0] === "0" || empty($tmp[0])) {
                             $mysqli_result = mysqli_query($dbTmp,
                                 "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".OTV_USER_ID."', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
                             );
@@ -858,9 +861,9 @@ global \$SETTINGS;
                 }
                 // answer back
                 if ($mysqli_result) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "table" : "'.$task.'"}]';
+                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "task" : "'.$task.'", "activity" : "'.$activity.'"}]';
                 } else {
-                    echo '[{"error" : "'.$mysqli_result.'", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "table" : "'.$task.'"}]';
+                    echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error())).'", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "table" : "'.$task.'"}]';
                 }
             } else {
                 echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())).'", "result" : "Failed", "multiple" : ""}]';
@@ -1086,14 +1089,14 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }
-                 }
+                }
             }
             // delete install table
             //
-               mysqli_close($dbTmp);
-               // Destroy session without writing to disk
-               define('NODESTROY_SESSION','true');
-               session_destroy();
-               break;
+            mysqli_close($dbTmp);
+            // Destroy session without writing to disk
+            define('NODESTROY_SESSION','true');
+            session_destroy();
+            break;
     }
 }
