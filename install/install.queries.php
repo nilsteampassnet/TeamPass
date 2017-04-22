@@ -827,8 +827,8 @@ global \$SETTINGS;
                             ) CHARSET=utf8;"
                         );
                     }
-                } else if ($activity == "entry") {
-                    if ($task == "admin") {
+                } else if ($activity === "entry") {
+                    if ($task === "admin") {
                         // check that admin accounts doesn't exist
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {

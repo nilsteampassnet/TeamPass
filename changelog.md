@@ -7,6 +7,7 @@
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix
  Fix for "hide not accessible folders" option
+ #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
  #1725 Some fixes
  #1723 Fix spin not removed while reseting user saltkey
  #1722 SELinux issue leads to upload impossible
