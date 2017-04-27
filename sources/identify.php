@@ -374,6 +374,9 @@ function identifyUser($sentData)
                        if (!ldap_count_entries($ldapconn, $result_group)) {
                                $ldapConnection = false;
                        }
+                       else {
+                               $ldapConnection = true;
+                       }
                     }
                     if ($debugLdap == 1) {
                         fputs(
@@ -382,7 +385,7 @@ function identifyUser($sentData)
                             'Results : ' . print_r(ldap_get_entries($ldapconn, $result), true) . "\n"
                         );
                     }
-                    if (ldap_count_entries($ldapconn, $result)) {
+                    if ($ldapConnection && ldap_count_entries($ldapconn, $result)) {
                         // try auth
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
