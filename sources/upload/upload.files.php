@@ -31,11 +31,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 }
 
 //check for session
-if (isset($_POST['PHPSESSID'])) {
-    session_id($_POST['PHPSESSID']);
-} elseif (isset($_GET['PHPSESSID'])) {
-    session_id($_GET['PHPSESSID']);
-} else {
+if (!isset($_POST['PHPSESSID']) || !isset($_GET['PHPSESSID'])) {
     handleError('No Session was found.');
 }
 

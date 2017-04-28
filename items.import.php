@@ -443,7 +443,7 @@ foreach ($folders as $t) {
             function(data) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>';?>");
                 $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done'];?>").attr("class","ui-state-highlight");
-                setTimeout(function(){$("#import_information").effect( "fade", "slow" );document.location = "index.php?page=items"}, 1000);
+                //setTimeout(function(){$("#import_information").effect( "fade", "slow" );document.location = "index.php?page=items"}, 1000);
             },
             "json"
         );
