@@ -44,7 +44,11 @@ if (!file_exists('includes/config/settings.php')) {
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
+[
+<!ATTLIST div data-toggle-on (true|false) #IMPLIED>
+]>
 <?php
 
 $_SESSION['CPM'] = 1;
