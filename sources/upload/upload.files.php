@@ -13,7 +13,12 @@
  */
 
 require_once('../SecureHandler.php');
-session_start();
+try {
+    session_start();
+} catch(ErrorExpression $e) {
+    session_regenerate_id();
+    session_start();
+}
 if (
         !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
         !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
@@ -149,7 +154,7 @@ if (!in_array(
 
 // is destination folder writable
 if (is_writable($_SESSION['settings']['path_to_files_folder'])) {
-    handleError('Not enough permissions on folder '.$_SESSION['settings']['path_to_files_folder'].'.', 114);
+    //handleError('Not enough permissions on folder '.$_SESSION['settings']['path_to_files_folder'].'.', 114);
 }
 
 // Clean the fileName for security reasons

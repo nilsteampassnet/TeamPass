@@ -201,7 +201,7 @@ switch ($_POST['type']) {
             $display .= '<tr><td colspan=\"2\"><br><input type=\"checkbox\" id=\"item_all_selection\" />&nbsp;'.$LANG['all'].'</td></tr>';
 
             // Prepare a list of all folders that the user can choose
-            $display .= '</table><div style=\"margin-top:10px;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\">';
+            $display .= '</table><div style=\"margin:10px 0 10px 0;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\" style=\"width:87%;\">';
             foreach ($tree as $t) {
                 if (in_array($t->id, $_SESSION['groupes_visibles'])) {
                     $ident="";
