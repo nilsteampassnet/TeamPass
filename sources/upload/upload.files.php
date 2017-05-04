@@ -13,16 +13,11 @@
  */
 
 require_once('../SecureHandler.php');
-try {
-    session_start();
-} catch(ErrorExpression $e) {
-    session_regenerate_id();
-    session_start();
-}
+session_start();
 if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])
+    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
 ) {
     die('Hacking attempt...');
 }
@@ -36,7 +31,11 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 }
 
 //check for session
-if (!isset($_POST['PHPSESSID']) || !isset($_GET['PHPSESSID'])) {
+if (isset($_POST['PHPSESSID'])) {
+    session_id($_POST['PHPSESSID']);
+} elseif (isset($_GET['PHPSESSID'])) {
+    session_id($_GET['PHPSESSID']);
+} else {
     handleError('No Session was found.');
 }
 
@@ -150,11 +149,6 @@ if (!in_array(
     )
 )) {
     handleError('Invalid file extension.', 115);
-}
-
-// is destination folder writable
-if (is_writable($_SESSION['settings']['path_to_files_folder'])) {
-    //handleError('Not enough permissions on folder '.$_SESSION['settings']['path_to_files_folder'].'.', 114);
 }
 
 // Clean the fileName for security reasons
