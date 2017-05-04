@@ -1,5 +1,6 @@
 2.1.27
  Fix: Prevent moving a folder to one of its child folder
+  #1740 Missing buttons on Users page
   #1737 Cannot import files
   #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
   #1733 Copy Item doesn't work if copy from public to public folders

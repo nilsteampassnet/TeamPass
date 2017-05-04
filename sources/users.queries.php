@@ -186,7 +186,7 @@ if (!empty($_POST['type'])) {
                         'fonction_id' => $dataReceived['groups'],
                         'groupes_interdits' => $dataReceived['forbidden_flds'],
                         'groupes_visibles' => $dataReceived['allowed_flds'],
-                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'],
+                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'] === "null" ? "0" : $dataReceived['isAdministratedByRole'],
                         'encrypted_psk' => ''
                        )
                 );
