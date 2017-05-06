@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'add_category' => 'Add Category',
     'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',
     'user_ga_code' => 'Email Google Authentication to user',
