@@ -3764,7 +3764,7 @@ if (isset($_POST['type'])) {
 
                     // prepare avatar
                     if (isset($record['avatar_thumb']) && !empty($record['avatar_thumb'])) {
-                        if (file_exists($_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'])) {
+                        if (file_exists($_SESSION['settings']['cpassman_dir'].'/includes/avatars/'.$record['avatar_thumb'])) {
                             $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'];
                         } else {
                             $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
