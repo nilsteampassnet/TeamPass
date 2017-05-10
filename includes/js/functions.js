@@ -31,7 +31,8 @@ function RefreshPage(myform){
 /**
 *   Add 1 hour to session duration
 **/
-function IncreaseSessionTime(message_end, message_wait){
+function IncreaseSessionTime(message_end, message_wait, duration){
+    duration = duration || 60;
     $("#main_info_box_text").html(message_wait);
     $("#main_info_box").show().position({
         my: "center",
@@ -41,7 +42,8 @@ function IncreaseSessionTime(message_end, message_wait){
     $.post(
         "sources/main.queries.php",
         {
-        type    : "increase_session_time"
+        type    : "increase_session_time",
+        duration: parseInt(duration) * 60
         },
         function(data){
             if (data[0].new_value != "expired") {
@@ -50,6 +52,7 @@ function IncreaseSessionTime(message_end, message_wait){
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
                 $('#countdown').css("color","white");
+                $("#div_increase_session_time").dialog("close");
             } else {
                 document.location = "index.php?session=expired";
             }
@@ -79,7 +82,7 @@ function countdown()
 
     //Avertir de la fin imminante de la session
     if ( DayTill == "00:01:00" ){
-        $('#div_fin_session').dialog('open');
+        $('#div_increase_session_time').dialog('open');
         $('#countdown').css("color","red");
     }
 

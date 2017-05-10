@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'ldap_test_config' => 'Test current configuration',
+    'ldap_test_username' => 'Username to use for testing purpose',
+    'ldap_test_username_pwd' => 'Username password',
     'add_category' => 'Add Category',
     'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',

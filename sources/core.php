@@ -124,6 +124,20 @@ if (
     (isset($_GET['session']) && $_GET['session'] == "expired")
     || (isset($_POST['session']) && $_POST['session'] == "expired")
 ) {
+    // Clear User tempo key
+    if (isset($_SESSION['user_id'])) {
+        DB::update(
+            prefix_table("users"),
+            array(
+                'key_tempo' => '',
+                'timestamp' => '',
+                'session_end' => ''
+            ),
+            "id=%i",
+            $_SESSION['user_id']
+        );
+    }
+
     // REDIRECTION PAGE ERREUR
     echo '
     <script language="javascript" type="text/javascript">

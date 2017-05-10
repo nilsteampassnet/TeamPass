@@ -128,12 +128,12 @@ $htmlHeaders .= '
 <!-- // --><![CDATA[
 
     //Menu actions
-    function MenuAction(val)
+    function MenuAction(val, user_id)
     {
         NProgress.start();
         if (val == "deconnexion") {
-            sessionStorage.clear();
-            window.location.href = "logout.php"
+            //sessionStorage.clear();
+            window.location.href = "logout.php?user_id="+user_id
         } else {
             $("#menu_action").val("action");
             if (val == "") document.location.href="index.php";
@@ -706,24 +706,6 @@ $htmlHeaders .= '
                 $(this).removeClass("ui-state-active");
         });
 
-        //END SESSION DIALOG BOX
-        $("#div_fin_session").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 400,
-            height: 150,
-            title: "'.$LANG['index_alarm'].'",
-            buttons: {
-                "'.$LANG['index_add_one_hour'].'": function() {
-                    IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'");
-                    $("#div_fin_session").hide();
-                    $("#countdown").css("color","white");
-                    $(this).dialog("close");
-                }
-            }
-        });
-
         //WARNING FOR QUERY ERROR
         $("#div_mysql_error").dialog({
             bgiframe: true,
@@ -933,6 +915,34 @@ $htmlHeaders .= '
                     $("#forgot_pw_email").val("");
                     $(this).dialog("close");
                 }
+            }
+        });
+
+
+        // DIALOG for div_increase_session_time
+        $("#div_increase_session_time").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 400,
+            height: 150,
+            title: "'.$LANG['index_add_one_hour'].'",
+            buttons: {
+                "'.$LANG['confirm'].'": function() {
+                    if (isInteger($("#input_session_duration").val())) {
+                        IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'", $("#input_session_duration").val());
+                        $("#div_increase_session_time").dialog("close");
+                    }
+                },
+                "'.$LANG['cancel_button'].'": function() {
+                    $(this).dialog("close");
+                }
+            },
+            beforeClose: function(){
+                $("#input_session_duration_warning").html("");
+            },
+            close: function() {
+                $("#div_increase_session_time").dialog("close");
             }
         });
 

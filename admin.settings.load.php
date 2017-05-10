@@ -222,20 +222,42 @@ function loadFieldsList() {
 //###########
 //## FUNCTION : Launch the action the admin wants
 //###########
-function LaunchAdminActions(action,option)
+function LaunchAdminActions(action, option)
 {
+    var option;
+
     $("#div_loading").show();
     $("#email_testing_results").hide();
     $("#result_admin_action_db_backup").html("");
-    if (action == "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
-    else if (action == "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
-    else if (action == "admin_action_change_salt_key") {
+    if (action === "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
+    else if (action === "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
+    else if (action === "admin_action_change_salt_key") {
         option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
-    } else if (action == "admin_email_send_backlog") {
-        $("#email_testing_results").show().html("'.addslashes($LANG['please_wait']).'").attr("class","ui-corner-all ui-state-focus");
-    } else if (action == "admin_action_attachments_cryption") {
+    } else if (action === "admin_email_send_backlog") {
+        $("#email_testing_results").show().html("<?php echo addslashes($LANG['please_wait']);?>").attr("class","ui-corner-all ui-state-focus");
+    } else if (action === "admin_action_attachments_cryption") {
         option = $("input[name=attachments_cryption]:checked").val();
-        if (option == "") return;
+        if (option === "") return;
+    } else if (action === "admin_ldap_test_configuration") {
+        option = [];
+        var item = {};
+
+        // adding the user
+        item['username'] = $("#ldap_test_username").val();
+        item['username_pwd'] = $("#ldap_test_pwd").val();
+
+        // adding ldap params
+        $("#ldap_config_values tr").each(function(k){
+            $(this).find("input, select").each(function(i){
+                item[$(this).attr('id')] = $(this).val();
+            });
+        });
+        option.push(item);
+
+        if (option === "" || option.length === 0) return;
+
+        // convert to json string
+        option = prepareExchangedData(JSON.stringify(option) , "encode", "<?php echo $_SESSION['key'];?>");
     }
     //Lauchn ajax query
     $.post(
@@ -289,6 +311,12 @@ function LaunchAdminActions(action,option)
                     }
                 } else if (data[0].result == "rebuild_config_file") {
                     $("#result_admin_rebuild_config_file").html("<span class='fa fa-check mi-green'></span>").show();
+                } else if (data[0].option === "admin_ldap_test_configuration") {
+                    if (data[0].error !== "" && data[0].results === undefined) {
+                        $("#ldap_test_msg").html(data[0].error).show(1).delay(2000).fadeOut(500);
+                    } else {
+                        $("#ldap_test_msg").html(data[0].results).show();
+                    }
                 }
             }
         },

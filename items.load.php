@@ -1223,9 +1223,12 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
     // Check if personal SK is needed and set
     if (($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "0") && salt_key_required === "1") {
-        $("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg mi-red'></span>&nbsp;<\/span><?php echo addslashes($LANG['alert_message_personal_sk_missing']);?><\/div>");
+        $("#set_personal_saltkey_warning").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg'></span>&nbsp;</span><?php echo addslashes($LANG['alert_message_personal_sk_missing']);?></div>").show(1).delay(2500).fadeOut(1000);
+        $('#div_set_personal_saltkey').dialog('open');
+
+        //$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg mi-red'></span>&nbsp;<\/span><?php echo addslashes($LANG['alert_message_personal_sk_missing']);?><\/div>");
         $("#div_loading").hide();
-        $("#div_dialog_message").dialog("open");
+        //$("#div_dialog_message").dialog("open");
         $("#request_ongoing").val("");
         return false;
     } else if ($('#recherche_group_pf').val() === "0" || ($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "1")) {

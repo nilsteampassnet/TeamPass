@@ -1062,7 +1062,7 @@ if (!extension_loaded('ldap')) {
 echo '
             <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$LANG['admin_ldap_configuration'].'</div>
-                <table>';
+                <table id="ldap_config_values">';
 // Type
 $ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
 echo '
@@ -1184,12 +1184,39 @@ echo '
                             <div class="toggle toggle-modern" id="ldap_elusers" data-toggle-on="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_elusers_input" name="ldap_elusers_input" value="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? '1' : '0', '" />
                         </td>
                     </tr>';
+echo '
+                </table>';
+
+// Test LDAP configuration
+echo '
+                <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">
+                    '.$LANG['ldap_test_config'].'
+                </div>
+                    <table>
+                        <tr>
+                            <td><label>'.htmlentities($LANG['ldap_test_username']).'</label></td>
+                            <td><input type="text" size="50" id="ldap_test_username" class="text ui-widget-content" value="" class="text ui-widget-content" /></td>
+                        </tr>
+                        <tr>
+                            <td><label>'.htmlentities($LANG['ldap_test_username_pwd']).'</label></td>
+                            <td><input type="password" size="50" id="ldap_test_pwd" class="text ui-widget-content" value="" class="text ui-widget-content" /></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div id="ldap_test_msg" class="ui-widget-content ui-state-focus ui-corner-all" style="padding:10px; display:none;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'</td>
+                            <td><span class="fa-stack" onclick="LaunchAdminActions(\'admin_ldap_test_configuration\')" style="cursor:pointer;">
+                                <i class="fa fa-square fa-stack-2x"></i>
+                                <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                            </span></td>
+                        </tr>
+                    </table>';
 
 echo '
-                </table>
-            </div>';
-
-echo '
+            </div>
             </div>';
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
