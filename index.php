@@ -49,26 +49,8 @@ $_SESSION['CPM'] = 1;
 session_id();
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] == "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
+    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
 }
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<head>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<title>Teampass</title>
-<script type="text/javascript">
-    //<![CDATA[
-    if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
-        if (window.location.href.indexOf("session_over=true") == -1) {
-            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
-        } else {
-            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
-        }
-    }
-    //]]>
-</script>
-<?php
 
 // Include files
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
@@ -155,6 +137,26 @@ if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings
 
 // Load links, css and javascripts
 @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<title>Teampass</title>
+<script type="text/javascript">
+    //<![CDATA[
+    if (window.location.href.indexOf("page=") === -1 && (window.location.href.indexOf("otv=") === -1 && window.location.href.indexOf("action=") === -1)) {
+        if (window.location.href.indexOf("session_over=true") == -1) {
+            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+        } else {
+            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
+        }
+    }
+    //]]>
+</script>
+<?php
 
 // load HEADERS
 echo $htmlHeaders;

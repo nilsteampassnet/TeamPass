@@ -228,7 +228,7 @@ if (isset($_POST['type'])) {
                                     'item_id' => $newID,
                                     'field_id' => $field_data[0],
                                     'data' => $encrypt['string'],
-                                    'data_iv' => $encrypt['iv']
+                                    'data_iv' => ""
                                 )
                             );
                         }
@@ -581,7 +581,6 @@ if (isset($_POST['type'])) {
                                             'field_id' => $field_data[0],
                                             'data' => $encrypt['string'],
                                             'data_iv' => ""
-                                            //'data_iv' => $encrypt['iv']
                                         )
                                     );
                                     // update LOG

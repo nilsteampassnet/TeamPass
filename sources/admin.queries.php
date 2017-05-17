@@ -549,14 +549,38 @@ switch ($_POST['type']) {
 
         // get number of items to change
         DB::query("SELECT id FROM ".prefix_table("items")." WHERE perso = %i", 0);
+        $nb_of_items = DB::count();
 
-        echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.DB::count().'"}]';
+        // create backup table
+        DB::query("DROP TABLE ".prefix_table("backup"));
+        DB::query("CREATE TABLE `".prefix_table("backup")."` (
+            `table` varchar(100) NOT NULL,
+            `field` varchar(500) NOT NULL,
+            `id` varchar(500) NOT NULL,
+            `value` text NOT NULL,
+            `sql` text NOT NULL
+            ) CHARSET=utf8;"
+        );
+
+        // store olf SK in backup table
+        DB::insert(
+            prefix_table("backup"),
+            array(
+                'table' => 'old_sk',
+                'field' => 'old_sk',
+                'id' => 'old_sk',
+                'value' => $_SESSION['reencrypt_old_salt'],
+                'sql' => "old_sk"
+            )
+        );
+
+        echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'"}]';
         break;
 
     /*
     * Change SALT Key - ENCRYPT
     */
-    case "admin_action_change_salt_key___encrypt_files":
+    case "admin_action_change_salt_key___encrypt":
         $error = "";
         require_once 'main.functions.php';
 
@@ -567,47 +591,159 @@ switch ($_POST['type']) {
             break;
         }
 
-        //change all passwords in DB
-        $rows = DB::query("
-            SELECT id, pw, pw_iv
-            FROM ".prefix_table("items")."
-            WHERE perso = %s
-            LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
-            "0"
-        );
-        foreach ($rows as $record) {
-            $pw = cryption(
-                $record['pw'],
-                $_SESSION['reencrypt_old_salt'],
-                "decrypt"
-            );
-            //encrypt with new SALT
-            $encrypt = cryption(
-                $pw['string'],
-                $_SESSION['reencrypt_new_salt'],
-                "encrypt"
-            );
-            DB::update(
-                prefix_table("items"),
-                array(
-                    'pw' => $encrypt['string'],
-                    'pw_iv' => ""
-               ),
-                "id = %i",
-                $record['id']
-            );
-        }
-
-        $nextStart = intval($_POST['start']) + intval($_POST['length']);
-
-        // check if last item to change has been treated
-        if ($nextStart >= intval($_POST['nbItems'])) {
+        // what objects to treat
+        if (empty($_POST['object']) || empty($_POST['object'])) {
+            // no more object to treat
             $nextAction = "finishing";
         } else {
-            $nextAction = "encrypting";
+            // manage list of objects
+            $objects = explode(",", $_POST['object']);
+
+            if ($objects[0] === "items") {
+                //change all encrypted data in Items (passwords)
+                $rows = DB::query("
+                    SELECT id, pw, pw_iv
+                    FROM ".prefix_table("items")."
+                    WHERE perso = %s
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
+                    "0"
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefix_table("backup"),
+                        array(
+                            'table' => 'items',
+                            'field' => 'pw',
+                            'id' => $record['id'],
+                            'value' => $record['pw'],
+                            'sql' => "UPDATE ".prefix_table("items")." SET pw = '".$record['pw']."' WHERE id = '".$record['id']."';"
+                        )
+                    );
+
+                    /*$pw = cryption(
+                        $record['pw'],
+                        $_SESSION['reencrypt_old_salt'],
+                        "decrypt"
+                    );
+                    //encrypt with new SALT
+                    $encrypt = cryption(
+                        $pw['string'],
+                        $_SESSION['reencrypt_new_salt'],
+                        "encrypt"
+                    );
+                    DB::update(
+                        prefix_table("items"),
+                        array(
+                            'pw' => $encrypt['string'],
+                            'pw_iv' => ""
+                       ),
+                        "id = %i",
+                        $record['id']
+                    );*/
+                }
+
+            } if ($objects[0] === "logs") {
+                //change all encrypted data in Logs (passwords)
+                $rows = DB::query("
+                    SELECT raison, increment_id
+                    FROM ".prefix_table("log_items")."
+                    WHERE action = %s AND raison LIKE 'at_pw :%'
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
+                    "at_modification"
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefix_table("backup"),
+                        array(
+                            'table' => 'log_items',
+                            'field' => 'raison',
+                            'id' => $record['increment_id'],
+                            'value' => $record['raison'],
+                            'sql' => "UPDATE ".prefix_table("log_items")." SET raison = '".$record['raison']."' WHERE increment_id = '".$record['increment_id']."';"
+                        )
+                    );
+
+                }
+
+            } if ($objects[0] === "categories") {
+                //change all encrypted data in CATEGORIES (passwords)
+                $rows = DB::query("
+                    SELECT id, data
+                    FROM ".prefix_table("categories_items")."
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefix_table("backup"),
+                        array(
+                            'table' => 'categories_items',
+                            'field' => 'data',
+                            'id' => $record['id'],
+                            'value' => $record['data'],
+                            'sql' => "UPDATE ".prefix_table("categories_items")." SET data = '".$record['data']."' WHERE id = '".$record['id']."';"
+                        )
+                    );
+
+                }
+
+            } if ($objects[0] === "files") {
+                //change all encrypted data in FILES (passwords)
+                $rows = DB::query("
+                    SELECT id, file
+                    FROM ".prefix_table("files")."
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefix_table("backup"),
+                        array(
+                            'table' => 'files',
+                            'field' => 'file',
+                            'id' => $record['id'],
+                            'value' => $record['file'],
+                            'sql' => "no_query"
+                        )
+                    );
+
+                }
+
+            }
+
+            $nextStart = intval($_POST['start']) + intval($_POST['length']);
+
+            // check if last item to change has been treated
+            if ($nextStart >= intval($_POST['nbItems'])) {
+                array_shift($objects);
+                $nextAction = implode(",", $objects); // remove first object of the list
+
+                // do some things for new object
+                if (isset($objects[0])) {
+                    if ($objects[0] === "logs") {
+                        DB::query("SELECT raison FROM ".prefix_table("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
+                    } else if ($objects[0] === "files") {
+                        DB::query("SELECT id FROM ".prefix_table("files"));
+                    } else if ($objects[0] === "categories") {
+                        DB::query("SELECT id FROM ".prefix_table("categories_items"));
+                    } else if ($objects[0] === "custfields") {
+                        DB::query("SELECT raison FROM ".prefix_table("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
+                    }
+                    $nb_of_items = DB::count();
+                } else {
+                    // now finishing
+                    $nextAction = "finishing";
+                    $nb_of_items = $error = $nextStart = "";
+                }
+            } else {
+                $nextAction = $_POST['object'];
+                $nb_of_items = "";
+            }
         }
 
-        echo '[{"nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'", "error":"'.$error.'"}]';
+        echo '[{"nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'"}]';
         break;
 
     /*
@@ -1517,7 +1653,7 @@ switch ($_POST['type']) {
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['option'], "decode");
 
-        if (empty($dataReceived[0]['username_pwd']) || empty($dataReceived[0]['username'])) {
+        if ((empty($dataReceived[0]['username_pwd']) || empty($dataReceived[0]['username'])) && $dataReceived[0]['no_username_needed'] === "0") {
             echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No user credentials" }]';
             break;
         }
@@ -1539,23 +1675,23 @@ switch ($_POST['type']) {
                     $ldapURIs .= "ldap://".$domainControler.":".$dataReceived[0]['ldap_port']." ";
                 }
             }
-            if ($debugLdap == 1) {
-                $debug_ldap .= "LDAP URIs : " . $ldapURIs . "\n";
-            }
+
+            $debug_ldap .= "LDAP URIs : " . $ldapURIs . "<br/>";
+
             $ldapconn = ldap_connect($ldapURIs);
 
-            if ($dataReceived[0]['ldap_tls_input_input']) {
+            if ($dataReceived[0]['ldap_tls_input']) {
                ldap_start_tls($ldapconn);
             }
-            if ($debugLdap == 1) {
-                $debug_ldap .= "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "<br/>";
-            }
+
+            $debug_ldap .= "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "<br/>";
+
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
-                $ldapbind = ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
-                if ($debugLdap == 1) {
-                    $debug_ldap .= "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "<br/>";
-                }
+                $ldapbind = @ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
+
+                $debug_ldap .= "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "<br/>";
+
                 if ($ldapbind) {
                     $filter="(&(" . $dataReceived[0]['ldap_user_attribute']. "=$username)(objectClass=" . $dataReceived[0]['ldap_object_class'] ."))";
                     $result=ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
@@ -1634,7 +1770,7 @@ switch ($_POST['type']) {
             if ($adldap->authenticate($auth_username, html_entity_decode($dataReceived[0]['username_pwd']))) {
                 $ldapConnection = "Successfull";
             } else {
-                $ldapConnection = "Not possible to get connected";
+                $ldapConnection = "Not possible to get connected with this user";
             }
 
             $debug_ldap .= "After authenticate : ".$adldap->getLastError()."<br/><br/>" .
@@ -1642,6 +1778,25 @@ switch ($_POST['type']) {
         }
 
         echo '[{ "option" : "admin_ldap_test_configuration", "results" : "'.$debug_ldap.'" }]';
+
+        break;
+
+    case "is_backup_table_existing":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        if ($result = DB::query("SHOW TABLES LIKE '".prefix_table("backup")."'")) {
+            if(DB::count() === 1) {
+                echo "1";
+            } else {
+                echo "0";
+            }
+        } else {
+            echo "0";
+        }
 
         break;
 }

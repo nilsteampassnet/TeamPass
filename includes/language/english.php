@@ -14,9 +14,12 @@
  */
 global $LANG;
 $LANG = array (
+    'previous_backup_exists' => 'A previous backup exist. Do you want to restore the data and cancel the previous saltkey change?',
+    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
     'ldap_test_config' => 'Test current configuration',
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
+    'no_username_needed' => 'No username needed',
     'add_category' => 'Add Category',
     'select_all' => 'Select all',
     'item_has_change_proposal' => 'This item has a change proposal',

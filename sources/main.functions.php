@@ -1378,7 +1378,7 @@ function logEvents($type, $label, $who, $login="", $field_1 = NULL)
     }
 }
 
-function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL)
+function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL, $encryption_type = "")
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
@@ -1401,7 +1401,8 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
                 'id_user' => $id_user,
                 'action' => $action,
                 'raison' => $raison,
-                'raison_iv' => $raison_iv
+                'raison_iv' => $raison_iv,
+                'encryption_type' => $encryption_type
             )
         );
         if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
