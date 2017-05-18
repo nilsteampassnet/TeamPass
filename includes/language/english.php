@@ -14,7 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'previous_backup_exists' => 'A previous backup exist. Do you want to restore the data and cancel the previous saltkey change?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to restore the data and cancel the previous saltkey change?',
     'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
     'ldap_test_config' => 'Test current configuration',
     'ldap_test_username' => 'Username to use for testing purpose',

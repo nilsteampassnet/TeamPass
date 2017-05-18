@@ -621,7 +621,7 @@ switch ($_POST['type']) {
                         )
                     );
 
-                    /*$pw = cryption(
+                    $pw = cryption(
                         $record['pw'],
                         $_SESSION['reencrypt_old_salt'],
                         "decrypt"
@@ -640,7 +640,7 @@ switch ($_POST['type']) {
                        ),
                         "id = %i",
                         $record['id']
-                    );*/
+                    );
                 }
 
             } if ($objects[0] === "logs") {
@@ -665,6 +665,30 @@ switch ($_POST['type']) {
                         )
                     );
 
+                    // extract the pwd
+                    $tmp = explode('at_pw:', $record['raison']);
+                    if (!empty($tmp[1])) {
+                        $pw = cryption(
+                            $tmp[1],
+                            $_SESSION['reencrypt_old_salt'],
+                            "decrypt"
+                        );
+                        //encrypt with new SALT
+                        $encrypt = cryption(
+                            $pw['string'],
+                            $_SESSION['reencrypt_new_salt'],
+                            "encrypt"
+                        );
+                        DB::update(
+                            prefix_table("log_items"),
+                            array(
+                                'raison' => 'at_pw :'.$encrypt['string'],
+                                'encryption_type' => 'defuse'
+                            ),
+                            "id = %i",
+                            $record['id']
+                        );
+                    }
                 }
 
             } if ($objects[0] === "categories") {
@@ -687,6 +711,27 @@ switch ($_POST['type']) {
                         )
                     );
 
+                    //
+                    $pw = cryption(
+                        $record['data'],
+                        $_SESSION['reencrypt_old_salt'],
+                        "decrypt"
+                    );
+                    //encrypt with new SALT
+                    $encrypt = cryption(
+                        $pw['string'],
+                        $_SESSION['reencrypt_new_salt'],
+                        "encrypt"
+                    );
+                    DB::update(
+                        prefix_table("categories_items"),
+                        array(
+                            'data' => $encrypt['string'],
+                            'encryption_type' => 'defuse'
+                       ),
+                        "id = %i",
+                        $record['id']
+                    );
                 }
 
             } if ($objects[0] === "files") {
@@ -709,6 +754,63 @@ switch ($_POST['type']) {
                         )
                     );
 
+                    if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'])) {
+                        // Prepare decryption options
+                        $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_old_salt']), 0, 8);
+                        $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_old_salt'], true), 0, 24);
+                        $opts = array('iv'=>$iv, 'key'=>$key);
+
+                        // make a copy of file
+                        if (!copy(
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy_before_change_saltkey"
+                        )) {
+                            $error = "Copy not possible";
+                            exit;
+                        }
+
+                        // treat file
+                        // check if isUTF8 then it means the file is not encrypted.
+                        // So no need to decrypt it
+                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
+                        $line = fgets($fp);
+                        if (!isUTF8($line)) {
+                            // Decrypt the file
+                            // Open the file
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
+                            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy_before_change_saltkey", "rb");
+                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
+
+                            // decrypt
+                            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+
+                            // fill in new file (uncrypted)
+                            while (($line = fgets($fp)) !== false) {
+                                fputs($out, $line);
+                            }
+                            fclose($out);
+                        }
+                        fclose($fp);
+
+                        // Prepare encryption options
+                        $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_new_salt']), 0, 8);
+                        $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_new_salt'], true), 0, 24);
+                        $opts = array('iv'=>$iv, 'key'=>$key);
+
+                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
+                        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
+                        $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
+
+                        // encrypt
+                        stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+
+                        // read file and create new one
+                        while (($line = fgets($fp)) !== false) {
+                            fputs($out, $line);
+                        }
+                        fclose($fp);
+                        fclose($out);
+                    }
                 }
 
             }
