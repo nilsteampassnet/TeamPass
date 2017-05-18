@@ -1079,14 +1079,12 @@ echo '
                         </td>
                     </tr>';
 // Domain
-if (isset($ldap_type) && $ldap_type !== 'posix' && $ldap_type !== 'posix-search') {
 echo '
                     <tr style="display:', (isset($ldap_type)) ? '' : 'none' , '" class="tr-windows tr-ldap tr-posix tr-posix-search">
                         <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
                         <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
 
-if (isset($ldap_type) && $ldap_type !== 'posix-search') {
 // Domain DN
 echo '
                     <tr style="display:', (isset($ldap_type) && $ldap_type != 'posix-search') ? '' : 'none' , '" class="tr-windows tr-posix tr-ldap">
@@ -1095,15 +1093,13 @@ echo '
                     </tr>';
 
 // Subtree for posix / openldap
-if (isset($ldap_type) && $ldap_type === 'posix') {
         echo '
                 <tr>
                     <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain_posix'].'</label></td>
                     <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
-                </tr>';*/
+                </tr>';
 
 // LDAP username attribute
-if (isset($ldap_type) && $ldap_type === 'posix-search') {
         // LDAP Object Class
         echo '
                 <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
