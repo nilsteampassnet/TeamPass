@@ -1755,7 +1755,7 @@ switch ($_POST['type']) {
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData($_POST['option'], "decode");
 
-        if ((empty($dataReceived[0]['username_pwd']) || empty($dataReceived[0]['username'])) && $dataReceived[0]['no_username_needed'] === "0") {
+        if (empty($dataReceived[0]['username_pwd']) || empty($dataReceived[0]['username'])) {
             echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No user credentials" }]';
             break;
         }
@@ -1862,7 +1862,7 @@ switch ($_POST['type']) {
             $debug_ldap .= "Create new adldap object : ".$adldap->getLastError()."<br/><br/>";
 
             // openLDAP expects an attribute=value pair
-            if ($dataReceived[0]['ldap_type'] == 'posix') {
+            if ($dataReceived[0]['ldap_type'] === 'posix') {
                 $auth_username = $dataReceived[0]['ldap_user_attribute'].'='.$dataReceived[0]['username'];
             } else {
                 $auth_username = $dataReceived[0]['username'];

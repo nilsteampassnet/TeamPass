@@ -388,12 +388,12 @@ function rest_get () {
                         }
                     }
                 }
-                $folder_str = array_filter(implode(";",$folder_arr));
+                $folder_str = array_filter($folder_arr);
 
                 // get ids
-                if (strpos($folder_str,";") > 0) {
+                if (is_array($folder_str)) {
                     $condition = "id_tree IN %ls";
-                    $condition_value = explode(';', $folder_str);
+                    $condition_value = $folder_str;
                 } else {
                     $condition = "id_tree = %s";
                     $condition_value = $folder_str;
