@@ -353,7 +353,7 @@ switch ($_POST['type']) {
             $fileArray = file($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //delete file
-            unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
+            deleteFile($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //create new file with uncrypted data
             $file = $_SESSION['settings']['path_to_files_folder']."/".time().".txt";
@@ -381,7 +381,7 @@ switch ($_POST['type']) {
         }
 
         //delete file
-        unlink($file);
+        deleteFile($file);
 
         //Show done
         echo '[{"result":"db_restore"}]';
@@ -450,7 +450,7 @@ switch ($_POST['type']) {
         //delete file
         while ($f = readdir($dir)) {
             if (is_file($dir.$f) && (time()-filectime($dir.$f)) > 604800) {
-                unlink($dir.$f);
+                deleteFile($dir.$f);
                 $nbFilesDeleted++;
             }
         }
@@ -735,6 +735,18 @@ switch ($_POST['type']) {
                 }
 
             } if ($objects[0] === "files") {
+
+                // Prepare decryption options
+                $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_old_salt']), 0, 8);
+                $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_old_salt'], true), 0, 24);
+                $decrypt_opts = array('iv'=>$iv, 'key'=>$key);
+
+
+                // Prepare encryption options
+                $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_new_salt']), 0, 8);
+                $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_new_salt'], true), 0, 24);
+                $encrypt_opts = array('iv'=>$iv, 'key'=>$key);
+
                 //change all encrypted data in FILES (passwords)
                 $rows = DB::query("
                     SELECT id, file
@@ -755,61 +767,86 @@ switch ($_POST['type']) {
                     );
 
                     if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'])) {
-                        // Prepare decryption options
-                        $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_old_salt']), 0, 8);
-                        $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_old_salt'], true), 0, 24);
-                        $opts = array('iv'=>$iv, 'key'=>$key);
 
                         // make a copy of file
                         if (!copy(
                                 $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy_before_change_saltkey"
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy"
                         )) {
                             $error = "Copy not possible";
                             exit;
+                        } else {
+                            // prepare a bck of file (that will not be deleted)
+                            copy(
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".bck.".time()
+                            );
                         }
+
+                        // delete the original file
+                        fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
 
                         // treat file
                         // check if isUTF8 then it means the file is not encrypted.
                         // So no need to decrypt it
-                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
+                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy", "rb");
                         $line = fgets($fp);
                         if (!isUTF8($line)) {
-                            // Decrypt the file
+                            // 1- DECRYTP THE FILE
+
                             // Open the file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
-                            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy_before_change_saltkey", "rb");
+                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", 'wb');
+
+                            // decrypt using old
+                            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $decrypt_opts);
+                            // copy to file
+                            //stream_copy_to_stream($fp, $out);
+                            while ($buff = fread($fp, 4096)) {
+                                fwrite($out, $buff);
+                            }
+
+                            // delete the copy file
+                            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
+
+                            // close streams
+                            fclose($out);
+                            fclose($fp);
+
+
+                            // 2- NOW ENCRYPT THE FILE
+                            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", "rb");
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
 
-                            // decrypt
-                            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-
-                            // fill in new file (uncrypted)
-                            while (($line = fgets($fp)) !== false) {
-                                fputs($out, $line);
+                            // encrypt using new
+                            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $encrypt_opts);
+                            // copy to file
+                            while ($buff = fread($fp, 4096)) {
+                                fwrite($out, $buff);
                             }
+                            //stream_copy_to_stream($fp, $out);
+
+                            fclose($fp);
                             fclose($out);
+
+                            // delete file
+                            //fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp");
+                        } else {
+                            // prepare output file
+                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
+
+                            // encrypt using new
+                            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $encrypt_opts);
+                            // copy to file
+                            while ($buff = fread($fp, 4096)) {
+                                fwrite($out, $buff);
+                            }
+
+                            fclose($fp);
+                            fclose($out);
+
+                            // delete file
+                            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
                         }
-                        fclose($fp);
-
-                        // Prepare encryption options
-                        $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_new_salt']), 0, 8);
-                        $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_new_salt'], true), 0, 24);
-                        $opts = array('iv'=>$iv, 'key'=>$key);
-
-                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
-                        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
-                        $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
-
-                        // encrypt
-                        stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-
-                        // read file and create new one
-                        while (($line = fgets($fp)) !== false) {
-                            fputs($out, $line);
-                        }
-                        fclose($fp);
-                        fclose($out);
                     }
                 }
 
@@ -845,7 +882,7 @@ switch ($_POST['type']) {
             }
         }
 
-        echo '[{"nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'"}]';
+        echo '[{ "nextAction":"'.$nextAction.'" , "nextStart":"'.$nextStart.'" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'" , "oldsk" : "'.$_SESSION['reencrypt_old_salt'].'" , "newsk" : "'.$_SESSION['reencrypt_new_salt'].'"}]';
         break;
 
     /*
@@ -1113,7 +1150,7 @@ switch ($_POST['type']) {
                         }
 
                         // Open the file
-                        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                        fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
                         $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file.".copy", "rb");
                         $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
 
@@ -1318,7 +1355,7 @@ switch ($_POST['type']) {
                     echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
                     break;
                 } else {
-                    unlink($tmp_skfile);
+                    deleteFile($tmp_skfile);
                 }
             } else {
                 // send back an error

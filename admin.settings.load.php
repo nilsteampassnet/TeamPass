@@ -339,7 +339,11 @@ function confirmChangingSk() {
 */
 function changeMainSaltKey(start, object)
 {
-    var nb = 10;    // can be changed - number of items treated in each loop
+    if (object === "files") {
+        var nb = 1;
+    } else {
+        var nb = 10;    // can be changed - number of items treated in each loop
+    }
 
     //console.log("Start value: "+start);
 
@@ -378,11 +382,11 @@ function changeMainSaltKey(start, object)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___encrypt",
-               object   : object,
-               start    : start,
-               length   : nb,
-               nbItems  : $("#changeMainSaltKey_itemsCount").val()
+               type         : "admin_action_change_salt_key___encrypt",
+               object       : object,
+               start        : start,
+               length       : nb,
+               nbItems      : $("#changeMainSaltKey_itemsCount").val()
             },
             function(data) {
                 console.log("Next action: "+data[0].nextAction);

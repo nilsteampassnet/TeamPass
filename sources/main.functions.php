@@ -1704,3 +1704,16 @@ function debugTeampass($text) {
     fputs($debugFile, $text);
     fclose($debugFile);
 }
+
+/*
+* DELETE the file with expected command depending on server type
+*/
+function fileDelete($file) {
+    // define if we under Windows
+    if (strpos(dirname(__FILE__), '/', 0) !== false) {
+        unlink($file);
+    } else {
+        $lines = array();
+        exec("DEL /F/Q \"" . $file . "\"", $lines, $deleteError);
+    }
+}
