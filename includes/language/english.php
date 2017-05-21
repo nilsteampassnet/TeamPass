@@ -14,8 +14,13 @@
  */
 global $LANG;
 $LANG = array (
-    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to restore the data and cancel the previous saltkey change?',
+    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
+    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
     'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
+    'revert' => 'Revert?',
+    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
+    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
     'ldap_test_config' => 'Test current configuration',
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',

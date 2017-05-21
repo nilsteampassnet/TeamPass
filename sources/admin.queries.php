@@ -518,22 +518,33 @@ switch ($_POST['type']) {
     * Change SALT Key START
     */
     case "admin_action_change_salt_key___start":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
         $error = "";
-        $_SESSION['reencrypt_old_salt'] = require_once 'main.functions.php';
+        require_once('main.functions.php');
 
         // store old sk
         $_SESSION['reencrypt_old_salt'] = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
+
         // generate new saltkey
+        $old_sk_filename = SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).'.'.time();
         copy(
             SECUREPATH."/teampass-seckey.txt",
-            SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).'.'.time()
+            $old_sk_filename
         );
-        $_SESSION['reencrypt_new_salt'] = defuse_generate_key();
+        $new_key = defuse_generate_key();
         file_put_contents(
             SECUREPATH."/teampass-seckey.txt",
-            $_SESSION['reencrypt_new_salt']
+            $new_key
         );
+
+        // store new sk
+        $_SESSION['reencrypt_new_salt'] = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
         //put tool in maintenance.
         DB::update(
@@ -552,27 +563,44 @@ switch ($_POST['type']) {
         $nb_of_items = DB::count();
 
         // create backup table
-        DB::query("DROP TABLE ".prefix_table("backup"));
-        DB::query("CREATE TABLE `".prefix_table("backup")."` (
-            `table` varchar(100) NOT NULL,
-            `field` varchar(500) NOT NULL,
-            `id` varchar(500) NOT NULL,
+        DB::query("DROP TABLE IF EXISTS ".prefix_table("sk_reencrypt_backup"));
+        DB::query("CREATE TABLE `".prefix_table("sk_reencrypt_backup")."` (
+            `id` int(12) NOT null AUTO_INCREMENT,
+            `current_table` varchar(100) NOT NULL,
+            `current_field` varchar(500) NOT NULL,
+            `value_id` varchar(500) NOT NULL,
             `value` text NOT NULL,
-            `sql` text NOT NULL
+            `value2` varchar(500) NOT NULL,
+            `current_sql` text NOT NULL,
+            `result` text NOT NULL,
+            PRIMARY KEY (`id`)
             ) CHARSET=utf8;"
         );
 
-        // store olf SK in backup table
+        // store old SK in backup table
         DB::insert(
-            prefix_table("backup"),
+            prefix_table("sk_reencrypt_backup"),
             array(
-                'table' => 'old_sk',
-                'field' => 'old_sk',
-                'id' => 'old_sk',
+                'current_table' => 'old_sk',
+                'current_field' => 'old_sk',
+                'value_id' => 'old_sk',
                 'value' => $_SESSION['reencrypt_old_salt'],
-                'sql' => "old_sk"
+                'current_sql' => "old_sk",
+                'value2' => $old_sk_filename,
+                'result' => "none"
             )
         );
+
+        // delete previous backup files
+        $files = glob($_SESSION['settings']['path_to_upload_folder'].'/*'); // get all file names
+        foreach($files as $file){ // iterate files
+            if(is_file($file)) {
+                $file_parts = pathinfo($file);
+                if (strpos($file_parts['filename'], ".bck-change-sk") !== false) {
+                    unlink($file); // delete file
+                }
+            }
+        }
 
         echo '[{"nextAction":"encrypt_items" , "error":"'.$error.'" , "nbOfItems":"'.$nb_of_items.'"}]';
         break;
@@ -581,6 +609,12 @@ switch ($_POST['type']) {
     * Change SALT Key - ENCRYPT
     */
     case "admin_action_change_salt_key___encrypt":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
         $error = "";
         require_once 'main.functions.php';
 
@@ -611,15 +645,18 @@ switch ($_POST['type']) {
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("backup"),
+                        prefix_table("sk_reencrypt_backup"),
                         array(
-                            'table' => 'items',
-                            'field' => 'pw',
-                            'id' => $record['id'],
+                            'current_table' => 'items',
+                            'current_field' => 'pw',
+                            'value_id' => $record['id'],
                             'value' => $record['pw'],
-                            'sql' => "UPDATE ".prefix_table("items")." SET pw = '".$record['pw']."' WHERE id = '".$record['id']."';"
+                            'current_sql' => "UPDATE ".prefix_table("items")." SET pw = '".$record['pw']."' WHERE id = '".$record['id']."';",
+                            'value2' => "none",
+                            'result' => "none"
                         )
                     );
+                    $newID = DB::insertId();
 
                     $pw = cryption(
                         $record['pw'],
@@ -632,6 +669,8 @@ switch ($_POST['type']) {
                         $_SESSION['reencrypt_new_salt'],
                         "encrypt"
                     );
+
+                    //save in DB
                     DB::update(
                         prefix_table("items"),
                         array(
@@ -641,9 +680,19 @@ switch ($_POST['type']) {
                         "id = %i",
                         $record['id']
                     );
+
+                    // update backup table
+                    DB::update(
+                        prefix_table('sk_reencrypt_backup'),
+                        array(
+                            'result' => "ok"
+                           ),
+                        "id=%i",
+                        $newID
+                    );
                 }
 
-            } if ($objects[0] === "logs") {
+            } else if ($objects[0] === "logs") {
                 //change all encrypted data in Logs (passwords)
                 $rows = DB::query("
                     SELECT raison, increment_id
@@ -655,18 +704,21 @@ switch ($_POST['type']) {
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("backup"),
+                        prefix_table("sk_reencrypt_backup"),
                         array(
-                            'table' => 'log_items',
-                            'field' => 'raison',
-                            'id' => $record['increment_id'],
+                            'current_table' => 'log_items',
+                            'current_field' => 'raison',
+                            'value_id' => $record['increment_id'],
                             'value' => $record['raison'],
-                            'sql' => "UPDATE ".prefix_table("log_items")." SET raison = '".$record['raison']."' WHERE increment_id = '".$record['increment_id']."';"
+                            'current_sql' => "UPDATE ".prefix_table("log_items")." SET raison = '".$record['raison']."' WHERE increment_id = '".$record['increment_id']."';",
+                            'value2' => "none",
+                            'result' => "none"
                         )
                     );
+                    $newID = DB::insertId();
 
                     // extract the pwd
-                    $tmp = explode('at_pw:', $record['raison']);
+                    $tmp = explode('at_pw :', $record['raison']);
                     if (!empty($tmp[1])) {
                         $pw = cryption(
                             $tmp[1],
@@ -679,19 +731,31 @@ switch ($_POST['type']) {
                             $_SESSION['reencrypt_new_salt'],
                             "encrypt"
                         );
+
+                        // save in DB
                         DB::update(
                             prefix_table("log_items"),
                             array(
                                 'raison' => 'at_pw :'.$encrypt['string'],
                                 'encryption_type' => 'defuse'
                             ),
-                            "id = %i",
-                            $record['id']
+                            "increment_id = %i",
+                            $record['increment_id']
+                        );
+
+                        // update backup table
+                        DB::update(
+                            prefix_table('sk_reencrypt_backup'),
+                            array(
+                                'result' => "ok"
+                               ),
+                            "id=%i",
+                            $newID
                         );
                     }
                 }
 
-            } if ($objects[0] === "categories") {
+            } else if ($objects[0] === "categories") {
                 //change all encrypted data in CATEGORIES (passwords)
                 $rows = DB::query("
                     SELECT id, data
@@ -701,15 +765,18 @@ switch ($_POST['type']) {
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("backup"),
+                        prefix_table("sk_reencrypt_backup"),
                         array(
-                            'table' => 'categories_items',
-                            'field' => 'data',
-                            'id' => $record['id'],
+                            'current_table' => 'categories_items',
+                            'current_field' => 'data',
+                            'value_id' => $record['id'],
                             'value' => $record['data'],
-                            'sql' => "UPDATE ".prefix_table("categories_items")." SET data = '".$record['data']."' WHERE id = '".$record['id']."';"
+                            'current_sql' => "UPDATE ".prefix_table("categories_items")." SET data = '".$record['data']."' WHERE id = '".$record['id']."';",
+                            'value2' => "none",
+                            'result' => "none"
                         )
                     );
+                    $newID = DB::insertId();
 
                     //
                     $pw = cryption(
@@ -723,6 +790,7 @@ switch ($_POST['type']) {
                         $_SESSION['reencrypt_new_salt'],
                         "encrypt"
                     );
+                    // save in DB
                     DB::update(
                         prefix_table("categories_items"),
                         array(
@@ -732,9 +800,19 @@ switch ($_POST['type']) {
                         "id = %i",
                         $record['id']
                     );
+
+                    // update backup table
+                    DB::update(
+                        prefix_table('sk_reencrypt_backup'),
+                        array(
+                            'result' => "ok"
+                           ),
+                        "id=%i",
+                        $newID
+                    );
                 }
 
-            } if ($objects[0] === "files") {
+            } else if ($objects[0] === "files") {
 
                 // Prepare decryption options
                 $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_old_salt']), 0, 8);
@@ -751,20 +829,24 @@ switch ($_POST['type']) {
                 $rows = DB::query("
                     SELECT id, file
                     FROM ".prefix_table("files")."
+                    WHERE status = 'encrypted'
                     LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("backup"),
+                        prefix_table("sk_reencrypt_backup"),
                         array(
-                            'table' => 'files',
-                            'field' => 'file',
-                            'id' => $record['id'],
+                            'current_table' => 'files',
+                            'current_field' => 'file',
+                            'value_id' => $record['id'],
                             'value' => $record['file'],
-                            'sql' => "no_query"
+                            'current_sql' => "no_query",
+                            'value2' => "none",
+                            'result' => "none"
                         )
                     );
+                    $newID = DB::insertId();
 
                     if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'])) {
 
@@ -777,59 +859,57 @@ switch ($_POST['type']) {
                             exit;
                         } else {
                             // prepare a bck of file (that will not be deleted)
+                            $backup_filename = $record['file'].".bck-change-sk.".time();
                             copy(
                                 $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".bck.".time()
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
                             );
                         }
-
-                        // delete the original file
-                        fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
 
                         // treat file
                         // check if isUTF8 then it means the file is not encrypted.
                         // So no need to decrypt it
-                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy", "rb");
+                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
                         $line = fgets($fp);
                         if (!isUTF8($line)) {
+                            fclose($fp);
                             // 1- DECRYTP THE FILE
 
                             // Open the file
+                            $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", 'wb');
 
-                            // decrypt using old
-                            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $decrypt_opts);
-                            // copy to file
-                            //stream_copy_to_stream($fp, $out);
-                            while ($buff = fread($fp, 4096)) {
-                                fwrite($out, $buff);
-                            }
+                            // decrypt stream using old
+                            stream_filter_append($in, 'mdecrypt.tripledes', STREAM_FILTER_READ, $decrypt_opts);
 
-                            // delete the copy file
-                            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
+                            // copy to file
+                            stream_copy_to_stream($in, $out);
 
                             // close streams
                             fclose($out);
-                            fclose($fp);
+                            fclose($in);
+
+                            // delete the copy file
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
 
 
                             // 2- NOW ENCRYPT THE FILE
-                            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", "rb");
+                            $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", "rb");
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
 
                             // encrypt using new
                             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $encrypt_opts);
                             // copy to file
-                            while ($buff = fread($fp, 4096)) {
+                            while ($buff = fread($in, 4096)) {
                                 fwrite($out, $buff);
                             }
-                            //stream_copy_to_stream($fp, $out);
 
-                            fclose($fp);
+                            fclose($in);
                             fclose($out);
 
                             // delete file
-                            //fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp");
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp");
                         } else {
                             // prepare output file
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
@@ -845,8 +925,19 @@ switch ($_POST['type']) {
                             fclose($out);
 
                             // delete file
-                            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
                         }
+
+                        // update backup table
+                        DB::update(
+                            prefix_table('sk_reencrypt_backup'),
+                            array(
+                                'value2' => $backup_filename,
+                                'result' => "ok"
+                               ),
+                            "id=%i",
+                            $newID
+                        );
                     }
                 }
 
@@ -862,7 +953,7 @@ switch ($_POST['type']) {
                 // do some things for new object
                 if (isset($objects[0])) {
                     if ($objects[0] === "logs") {
-                        DB::query("SELECT raison FROM ".prefix_table("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
+                        DB::query("SELECT increment_id FROM ".prefix_table("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
                     } else if ($objects[0] === "files") {
                         DB::query("SELECT id FROM ".prefix_table("files"));
                     } else if ($objects[0] === "categories") {
@@ -889,6 +980,12 @@ switch ($_POST['type']) {
     * Change SALT Key - END
     */
     case "admin_action_change_salt_key___end":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
         $error = "";
 
         // quit maintenance mode.
@@ -905,6 +1002,86 @@ switch ($_POST['type']) {
         @define(SALT, $new_salt_key);
 
         echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
+        break;
+
+    /*
+    * Change SALT Key - Restore BACKUP data
+    */
+    case "admin_action_change_salt_key___restore_backup":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // delete files
+        $rows = DB::query("
+            SELECT current_table, value, value2, current_sql
+            FROM ".prefix_table("sk_reencrypt_backup")
+        );
+        foreach ($rows as $record) {
+            if ($record['current_table'] === "items" || $record['current_table'] === "logs" || $record['current_table'] === "categories") {
+                // excute query
+                DB::query(
+                    str_replace("\'", "'", $record['current_sql'])
+                );                
+            } else if ($record['current_table'] === "files") {
+                // restore backup file
+                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value'])) {
+                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value']);
+                    if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2'])) {
+                        rename(
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2'],
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$record['value']
+                        );
+                    }
+                }
+            } else if ($record['current_table'] === "old_sk") {
+                $previous_saltkey_filename = $record['value2'];
+            }
+        }
+        
+        // restore saltkey file
+        if (file_exists($previous_saltkey_filename)) {
+            unlink(SECUREPATH."/teampass-seckey.txt");
+            rename(
+                $previous_saltkey_filename,
+                SECUREPATH.'/teampass-seckey.txt'
+            );
+        }
+
+        // drop table
+        DB::query("DROP TABLE IF EXISTS ".prefix_table("sk_reencrypt_backup"));
+
+        echo '[{"status":"done"}]';
+        break;
+
+    /*
+    * Change SALT Key - Delete BACKUP data
+    */
+    case "admin_action_change_salt_key___delete_backup":
+        // Check KEY and rights
+        if ($_POST['key'] != $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // delete files
+        $rows = DB::query("
+            SELECT value, value2
+            FROM ".prefix_table("sk_reencrypt_backup")."
+            WHERE current_table = 'files'"
+        );
+        foreach ($rows as $record) {
+            if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2'])) {
+                unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2']);
+            }
+        }
+
+        // drop table
+        DB::query("DROP TABLE IF EXISTS ".prefix_table("sk_reencrypt_backup"));
+
+        echo '[{"status":"done"}]';
         break;
 
     /*
@@ -1927,7 +2104,7 @@ switch ($_POST['type']) {
             break;
         }
 
-        if ($result = DB::query("SHOW TABLES LIKE '".prefix_table("backup")."'")) {
+        if ($result = DB::query("SHOW TABLES LIKE '".prefix_table("sk_reencrypt_backup")."'")) {
             if(DB::count() === 1) {
                 echo "1";
             } else {

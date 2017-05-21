@@ -1107,20 +1107,20 @@ if (isset($_POST['newtitle'])) {
                         );
 
                         // Add attached itms
-                        $rows = DB::query(
+                        $rows2 = DB::query(
                             "SELECT * FROM ".prefix_table("files")." WHERE id_item=%i",
                             $newItemId
                         );
-                        foreach ($rows as $record) {
+                        foreach ($rows2 as $record2) {
                             DB::insert(
                                 prefix_table('files'),
                                 array(
                                     'id_item' => $newID,
-                                    'name' => $record['name'],
-                                    'size' => $record['size'],
-                                    'extension' => $record['extension'],
-                                    'type' => $record['type'],
-                                    'file' => $record['file']
+                                    'name' => $record2['name'],
+                                    'size' => $record2['size'],
+                                    'extension' => $record2['extension'],
+                                    'type' => $record2['type'],
+                                    'file' => $record2['file']
                                    )
                             );
                         }

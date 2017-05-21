@@ -1,6 +1,7 @@
 2.1.27
  New: Multiselection in Roles vs Folders matrix
  Fix: Prevent moving a folder to one of its child folder
+ Fix: Global saltkey change
  #1742 Fix for issue #1539 verifying LDAP groups properly
  #1740 Missing buttons on Users page
  #1737 Cannot import files

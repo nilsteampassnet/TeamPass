@@ -228,7 +228,8 @@ if (isset($_POST['type'])) {
                                     'item_id' => $newID,
                                     'field_id' => $field_data[0],
                                     'data' => $encrypt['string'],
-                                    'data_iv' => ""
+                                    'data_iv' => "",
+                                    'encryption_type' => "defuse"
                                 )
                             );
                         }
@@ -580,7 +581,8 @@ if (isset($_POST['type'])) {
                                             'item_id' => $dataReceived['id'],
                                             'field_id' => $field_data[0],
                                             'data' => $encrypt['string'],
-                                            'data_iv' => ""
+                                            'data_iv' => "",
+                                            'encryption_type' => "defuse"
                                         )
                                     );
                                     // update LOG
@@ -603,8 +605,8 @@ if (isset($_POST['type'])) {
                                             prefix_table('categories_items'),
                                             array(
                                                 'data' => $encrypt['string'],
-                                                'data_iv' => ""
-                                                //'data_iv' => $encrypt['iv']
+                                                'data_iv' => "",
+                                                'encryption_type' => "defuse"
                                             ),
                                             "item_id = %i AND field_id = %i",
                                             $dataReceived['id'],
@@ -783,7 +785,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                     if ($sentPw != $oldPwClear['string']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, "");
+                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, "", "defuse");
                     }
                     /*RESTRICTIONS */
                     if ($data['restricted_to'] != $dataReceived['restricted_to']) {
@@ -3286,95 +3288,7 @@ if (isset($_POST['type'])) {
 
             // should we encrypt/decrypt the file
             encrypt_or_decrypt_file($file_info['file'], $file_info['status'], $opts);
-/*
-            if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($file_info['status']) && $file_info['status'] === "clear") {
-                // file needs to be encrypted
-                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
-                    // make a copy of file
-                    if (!copy(
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
-                    )) {
-                        $error = "Copy not possible";
-                        exit;
-                    } else {
-                        // do a bck
-                        copy(
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
-                        );
-                    }
 
-                    // Open the file
-                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
-                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
-                    $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
-
-                    // ecnrypt
-                    stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-
-                    // read file and create new one
-                    while (($line = fgets($fp)) !== false) {
-                        fputs($out, $line);
-                    }
-                    fclose($fp);
-                    fclose($out);
-
-                    // update table
-                    DB::update(
-                        prefix_table('files'),
-                        array(
-                            'status' => 'encrypted'
-                           ),
-                        "id=%i",
-                        substr($_POST['uri'], 1)
-                    );
-                }
-            } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($file_info['status']) && $file_info['status'] === "encrypted") {
-                // file needs to be encrypted
-                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
-                    // make a copy of file
-                    if (!copy(
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
-                    )) {
-                        $error = "Copy not possible";
-                        exit;
-                    } else {
-                        // do a bck
-                        copy(
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
-                        );
-                    }
-
-                    // Open the file
-                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
-                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
-                    $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
-
-                    // ecnrypt
-                    stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-
-                    // read file and create new one
-                    while (($line = fgets($fp)) !== false) {
-                        fputs($out, $line);
-                    }
-                    fclose($fp);
-                    fclose($out);
-
-                    // update table
-                    DB::update(
-                        prefix_table('files'),
-                        array(
-                            'status' => 'clear'
-                           ),
-                        "id=%i",
-                        substr($_POST['uri'], 1)
-                    );
-                }
-            }
-*/
             // should we decrypt the attachment?
             if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
 

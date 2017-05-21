@@ -329,7 +329,7 @@ function LaunchAdminActions(action, option)
 *
 */
 function confirmChangingSk() {
-    if (confirm("Please confirm. If a previous backup was present, it will be reseted during the change.")) {
+    if (confirm("<?php echo addslashes($LANG['confirm_database_reencryption']);?>")) {
         changeMainSaltKey('starting', '');
     }
 }
@@ -340,7 +340,7 @@ function confirmChangingSk() {
 function changeMainSaltKey(start, object)
 {
     if (object === "files") {
-        var nb = 1;
+        var nb = 5;
     } else {
         var nb = 10;    // can be changed - number of items treated in each loop
     }
@@ -356,7 +356,8 @@ function changeMainSaltKey(start, object)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___start"
+                type     : "admin_action_change_salt_key___start",
+                key     : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
                 if (data[0].error == "" && data[0].nextAction == "encrypt_items") {
@@ -364,8 +365,8 @@ function changeMainSaltKey(start, object)
                     $("#changeMainSaltKey_itemsCount, #changeMainSaltKey_itemsCountTotal").val(data[0].nbOfItems);
                     //console.log("Now launch encryption");
                     // start encrypting items with new saltkey
-                    //changeMainSaltKey(0, "items,logs,files,categories");
-                    changeMainSaltKey(0, "files");
+                    changeMainSaltKey(0, "items,logs,files,categories");
+                    //changeMainSaltKey(0, "files");
                 } else {
                     // error mngt
                     $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back'];?> : "+data[0].error);
@@ -382,11 +383,12 @@ function changeMainSaltKey(start, object)
         $.post(
             "sources/admin.queries.php",
             {
-               type         : "admin_action_change_salt_key___encrypt",
-               object       : object,
-               start        : start,
-               length       : nb,
-               nbItems      : $("#changeMainSaltKey_itemsCount").val()
+                type         : "admin_action_change_salt_key___encrypt",
+                object       : object,
+                start        : start,
+                length       : nb,
+                nbItems      : $("#changeMainSaltKey_itemsCount").val(),
+                key     : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
                 console.log("Next action: "+data[0].nextAction);
@@ -414,12 +416,13 @@ function changeMainSaltKey(start, object)
         $.post(
             "sources/admin.queries.php",
             {
-               type     : "admin_action_change_salt_key___end"
+                type     : "admin_action_change_salt_key___end",
+                key     : "<?php echo $_SESSION['key'];?>"
             },
             function(data) {
                 if (data[0].nextAction === "done") {
                     console.log("done");
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated'];?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p>' + $LANG['check_data_after_reencryption'] + '<p>');
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated'];?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p><?php echo $LANG['check_data_after_reencryption'];?><p><div style=\"margin-top:5px;\"><a href=\"#\" onclick=\"encryption_show_revert()\"><?php echo $LANG['revert'];?></a></div>');
                 } else {
                     // error mngt
                 }
@@ -427,6 +430,23 @@ function changeMainSaltKey(start, object)
             },
             "json"
         );
+    }
+}
+
+function encryption_show_revert() {
+    if (confirm('<?php echo $LANG['revert_the_database'];?>')) {
+        $("#changeMainSaltKey_message").append('<div style="margin-top:5px;"><i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']);?>...</div>')
+        $.post(
+            "sources/admin.queries.php",
+            {
+                type    : "admin_action_change_salt_key___restore_backup",
+                key     : "<?php echo $_SESSION['key'];?>"
+            },
+            function(data) {
+                $("#changeMainSaltKey_message").html('').hide();
+            },
+            "json"
+       );
     }
 }
 
@@ -877,10 +897,28 @@ $(function() {
         },
         function(data) {
             if (data === "1") {
-                $("#changeMainSaltKey_message").show().html('<?php echo addslashes($LANG['previous_backup_exists']);?>&nbsp;&nbsp;<b><a href="#" id="but_bck_restore"><?php echo $LANG['yes'];?></a></b>');
+                $("#changeMainSaltKey_message").show().html('<?php echo addslashes($LANG['previous_backup_exists']);?>&nbsp;&nbsp;<b><a href="#" id="but_bck_restore"><?php echo $LANG['yes'];?></a></b><br /><?php echo $LANG['previous_backup_exists_delete'];?>&nbsp;&nbsp;<b><a href="#" id="but_bck_delete"><?php echo $LANG['yes'];?></a></b>');
+                
+                // Restore the backup
                 $("#but_bck_restore").click(function(e) {
-                    if (confirm("Are you sure?")) {
-                        console.log("start restoring");
+                    encryption_show_revert();
+                });
+
+                // Delete the backup
+                $("#but_bck_delete").click(function(e) {
+                    if (confirm("<?php echo $LANG['wipe_backup_data'];?>")) {
+                        $("#changeMainSaltKey_message").append('<div style="margin-top:5px;"><i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']);?>...</div>')
+                        $.post(
+                            "sources/admin.queries.php",
+                            {
+                                type    : "admin_action_change_salt_key___delete_backup",
+                                key     : "<?php echo $_SESSION['key'];?>"
+                            },
+                            function(data) {
+                                $("#changeMainSaltKey_message").html('').hide();
+                            },
+                            "json"
+                       );
                     }
                 });
             }
