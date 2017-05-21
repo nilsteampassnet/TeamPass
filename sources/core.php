@@ -14,7 +14,7 @@
 
 //session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ) {
-    die('Hacking attempt...');
+    die('Please login...');
 }
 
 function redirect($url)

@@ -461,7 +461,7 @@ if (
         }
     }
 // ask the user to change his password
-    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] == false) && !empty($_SESSION['user_id'])) {
+    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id'])) {
         //Check if password is valid
         echo '
         <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
