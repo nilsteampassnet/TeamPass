@@ -1060,7 +1060,7 @@ if (isset($_POST['newtitle'])) {
                         "at_restored"
                     );
 
-                    if ($dataDeleted === "0" || intval($item_deleted['date']) < intval($item_restored['date'])) {
+                    if ($dataDeleted !== "1" || intval($item_deleted['date']) < intval($item_restored['date'])) {
 
                         // decrypt and re-encrypt password
                         $decrypt = cryption(

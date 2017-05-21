@@ -2700,6 +2700,13 @@ $(function() {
         width: 500,
         height: 290,
         title: "<?php echo $LANG['copy_folder'];?>",
+        close: function () {
+            $("#copy_folder_source_id, #copy_folder_destination_id").children('option').remove();
+            $("#div_copy_folder_msg")
+                .html('')
+                .removeClass("ui-state-highlight")
+                .hide();
+        },
         open: function(event,ui) {
             $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo $LANG['save_button'];?>')").prop("disabled", false);
 
