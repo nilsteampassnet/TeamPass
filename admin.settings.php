@@ -435,6 +435,7 @@ echo '
 
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // Attachments encryption strategy
+
 echo '
                     <tr><td>
                         <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
@@ -566,7 +567,7 @@ echo '
                     </span>
                     <label>'.$LANG['admin_action_change_salt_key'].'</label>
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_change_salt_key_tip']), ENT_QUOTES).'"></i></span>
-                        &nbsp;<br/>
+                        <br/>
                         <div id="changeMainSaltKey_message" class="ui-widget-content ui-state-focus ui-corner-all" style="padding:10px; display:none; margin-left:30px; text-align:center;"></div>
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
@@ -584,23 +585,28 @@ echo '
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
 */
-                /*
+
 // Encrypt / decrypt attachments
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="startFileEncDecyption()" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
-                    <div class="div_radio" style="float:left;">
-                        <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$LANG['encrypt'].'</label>
-                        <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$LANG['decrypt'].'</label>
-                    </div>
                     '.$LANG['admin_action_attachments_cryption'].'
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_attachments_cryption_tip']), ENT_QUOTES).'"></i></span>
-                    <span id="result_admin_action_attachments_cryption" style="margin-left:10px;"></span>
+                    <br/>
+                    <div id="admin_action_attachments_cryption_selection" class="ui-widget-content ui-state-focus ui-corner-all" style="padding:10px; display:none; margin-left:30px; text-align:center;">
+                        '.$LANG['what_action_to_perform'].':&nbsp;
+                        <span class="div_radio" style="">
+                            <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$LANG['encrypt'].'</label>
+                            <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$LANG['decrypt'].'</label>
+                        </span>
+                        &nbsp;&nbsp;<a href="#" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')">'.addslashes($LANG['admin_action_db_backup_start_tip']).'</a>
+                        <div id="result_admin_action_attachments_cryption" class="" style="padding:10px; display:none; margin-left:30px; text-align:center;"></div>
+                    </div>
                 </div>';
-*/
+
 echo '
             </div>';
 // --------------------------------------------------------------------------------

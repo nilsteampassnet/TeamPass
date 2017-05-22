@@ -1024,7 +1024,7 @@ switch ($_POST['type']) {
                 // excute query
                 DB::query(
                     str_replace("\'", "'", $record['current_sql'])
-                );                
+                );
             } else if ($record['current_table'] === "files") {
                 // restore backup file
                 if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value'])) {
@@ -1040,7 +1040,7 @@ switch ($_POST['type']) {
                 $previous_saltkey_filename = $record['value2'];
             }
         }
-        
+
         // restore saltkey file
         if (file_exists($previous_saltkey_filename)) {
             unlink(SECUREPATH."/teampass-seckey.txt");
@@ -1225,7 +1225,6 @@ switch ($_POST['type']) {
         $error = "";
         $ret = "";
         $cpt = 0;
-        $checkCoherancy = false;
         $filesList = "";
         $continu = true;
 
@@ -1237,34 +1236,27 @@ switch ($_POST['type']) {
                     if ($entry != "." && $entry != ".." && $entry != ".htaccess" && $entry != ".gitignore") {
                         if (strpos($entry, ".") == false) {
                             // check if user query is coherant
-                            if ($checkCoherancy == false) {
+                            $addfile = 0;
+                            if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$entry)) {
                                 $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$entry, "rb");
                                 $line = fgets($fp);
 
                                 // check if isUTF8. If yes, then check if process = encryption, and vice-versa
-                                if (isUTF8($line) && $_POST['option'] == "decrypt") {
-                                    $error = "file_not_encrypted";
-                                    $continu = false;
-                                    break;
-                                } elseif (!isUTF8($line) && $_POST['option'] == "encrypt") {
-                                    $error = "file_not_clear";
-                                    $continu = false;
-                                    break;
+                                if ((isUTF8($line) && $_POST['option'] === "encrypt") || (!isUTF8($line) && $_POST['option'] === "decrypt")) {
+                                    $addfile = 1;
+                                } else {
+                                    $addfile = 0;
                                 }
                                 fclose($fp);
-                                $checkCoherancy = true;
-
-                                // check if to stop
-                                if (!empty($error)) {
-                                    break;
-                                }
                             }
 
                             // build list
-                            if (empty($filesList)) {
-                                $filesList = $entry;
-                            } else {
-                                $filesList .= ";".$entry;
+                            if ($addfile === 1) {
+                                if (empty($filesList)) {
+                                    $filesList = $entry;
+                                } else {
+                                    $filesList .= ";".$entry;
+                                }
                             }
                         }
                     }
@@ -1291,13 +1283,9 @@ switch ($_POST['type']) {
             $error = "";
 
             // Prepare encryption options
-            $iv = substr(md5("\x1B\x3C\x58".SALT, true), 0, 8);
-            $key = substr(
-                md5("\x2D\xFC\xD8".SALT, true).
-                md5("\x2D\xFC\xD9".SALT, true),
-                0,
-                24
-            );
+            $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+            $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
+            $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
             $opts = array('iv'=>$iv, 'key'=>$key);
 
             // treat 10 files
@@ -1305,47 +1293,59 @@ switch ($_POST['type']) {
             foreach ($filesList as $file) {
                 if ($cpt < 5) {
                     // skip file is Coherancey not respected
-                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, "rb");
-                    $line = fgets($fp);
-                    $skipFile = false;
-                    // check if isUTF8. If yes, then check if process = encryption, and vice-versa
-                    if (!isUTF8($line) && $_POST['option'] == "decrypt") {
-                        $skipFile = true;
-                    } elseif (isUTF8($line) && $_POST['option'] == "encrypt") {
-                        $skipFile = true;
-                    }
-                    fclose($fp);
-
-                    if ($skipFile == true) {
-                        // make a copy of file
-                        if (!copy(
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$file.".copy"
-                        )) {
-                            $error = "Copy not possible";
-                            exit;
-                        }
-
-                        // Open the file
-                        fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
-                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file.".copy", "rb");
-                        $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
-
-                        if ($_POST['option'] == "decrypt") {
-                            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-                        } else if ($_POST['option'] == "encrypt") {
-                            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-                        }
-
-                        // read file and create new one
-                        $check = false;
-                        while (($line = fgets($fp)) !== false) {
-                            fputs($out, $line);
+                    if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$file)){
+                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, "rb");
+                        $line = fgets($fp);
+                        $skipFile = false;
+                        // check if isUTF8. If yes, then check if process = encryption, and vice-versa
+                        if (!isUTF8($line) && $_POST['option'] == "decrypt") {
+                            $skipFile = true;
+                        } elseif (isUTF8($line) && $_POST['option'] == "encrypt") {
+                            $skipFile = true;
                         }
                         fclose($fp);
-                        fclose($out);
 
-                        $cpt ++;
+                        if ($skipFile == true) {
+                            // make a copy of file
+                            $backup_filename = $file.".bck-before-change.".time();
+                            if (!copy(
+                                    $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
+                                    $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
+                            )) {
+                                $error = "Copy not possible";
+                                exit;
+                            }
+
+                            // Open the file
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                            $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename, "rb");
+                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
+
+                            if ($_POST['option'] === "decrypt") {
+                                stream_filter_append($in, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+                            } else if ($_POST['option'] === "encrypt") {
+                                stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+                            }
+
+                            // read file and create new one
+                            while ($buff = fread($in, 4096)) {
+                                fwrite($out, $buff);
+                            }
+                            fclose($in);
+                            fclose($out);
+
+                            // store in DB
+                            DB::update(
+                                prefix_table('files'),
+                                array(
+                                    'status' => $_POST['option'] === "decrypt" ? "0" : "encrypted"
+                                   ),
+                                "file=%s",
+                                $file
+                            );
+
+                            $cpt ++;
+                        }
                     }
                 } else {
                     // build list

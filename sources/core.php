@@ -12,7 +12,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-//session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ) {
     die('Please login...');
 }

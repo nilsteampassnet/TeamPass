@@ -237,7 +237,10 @@ function LaunchAdminActions(action, option)
         $("#email_testing_results").show().html("<?php echo addslashes($LANG['please_wait']);?>").attr("class","ui-corner-all ui-state-focus");
     } else if (action === "admin_action_attachments_cryption") {
         option = $("input[name=attachments_cryption]:checked").val();
-        if (option === "") return;
+        if (option === "" || option === undefined) {
+            $("#div_loading").hide();
+            return false;
+        }
     } else if (action === "admin_ldap_test_configuration") {
         option = [];
         var item = {};
@@ -304,6 +307,7 @@ function LaunchAdminActions(action, option)
                     $("result_admin_action_pw_prefix_correct").html(data[0].ret).show();
                 } else if (data[0].result == "attachments_cryption") {
                     if (data[0].continu == true) {
+                        $("#result_admin_action_attachments_cryption").html('').show();
                         manageEncryptionOfAttachments(data[0].list, data[0].cpt);
                     } else if (data[0].error == "file_not_encrypted") {
                         $("#result_admin_action_attachments_cryption").html("It seems the files are not encrypted. Are you sure you want to decrypt? please do a check.").show();
@@ -493,11 +497,19 @@ function updateSetting(field)
 }
 
 /*
-*
+* show/hide ldap options
 */
 function showLdapFields(ldap_type) {
     $(".tr-ldap").hide();
     $(".tr-" + ldap_type).show();
+}
+
+/*
+* show/hide file Dec/Enc cryption options
+*/
+function startFileEncDecyption() {
+    $("#admin_action_attachments_cryption_selection").show();
+    //
 }
 
 // Init
@@ -898,7 +910,7 @@ $(function() {
         function(data) {
             if (data === "1") {
                 $("#changeMainSaltKey_message").show().html('<?php echo addslashes($LANG['previous_backup_exists']);?>&nbsp;&nbsp;<b><a href="#" id="but_bck_restore"><?php echo $LANG['yes'];?></a></b><br /><?php echo $LANG['previous_backup_exists_delete'];?>&nbsp;&nbsp;<b><a href="#" id="but_bck_delete"><?php echo $LANG['yes'];?></a></b>');
-                
+
                 // Restore the backup
                 $("#but_bck_restore").click(function(e) {
                     encryption_show_revert();
@@ -929,7 +941,7 @@ $(function() {
 });
 
 function manageEncryptionOfAttachments(list, cpt) {
-
+    $("#div_loading").show();
     $.post(
         "sources/admin.queries.php",
         {
@@ -939,10 +951,12 @@ function manageEncryptionOfAttachments(list, cpt) {
             list    : list
         },
         function(data) {
-            if (data[0].continu == true ) {
+            if (data[0].continu === "1" ) {
                 manageEncryptionOfAttachments(data[0].list, data[0].cpt);
             } else {
-                $("#result_admin_action_attachments_cryption").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].cpt+" files changed");
+                $("#result_admin_action_attachments_cryption").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].cpt+" files changed.").show();
+                $('#attachments_cryption_radio1, #attachments_cryption_radio2').prop('checked', false);
+                $("#div_loading").hide();
             }
         },
         "json"

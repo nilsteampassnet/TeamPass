@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'what_action_to_perform' => 'Select the action to perform',
     'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
     'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
     'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
