@@ -12,6 +12,8 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+//header("X-XSS-Protection: 1; mode=block");
+header("X-Frame-Option: SameOrigin");
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
@@ -19,7 +21,7 @@ $debugDuo = 0; //Can be used in order to debug DUO authentication
 require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] !== 1) {
-    die('Hacking attempt...');
+    die('Hacking attempt...1');
 }
 
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "" || $_SESSION['settings']['cpassman_dir'] === ".") {

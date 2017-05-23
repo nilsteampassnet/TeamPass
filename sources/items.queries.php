@@ -217,11 +217,24 @@ if (isset($_POST['type'])) {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data)>1 && !empty($field_data[1])) {
-                            $encrypt = cryption(
-                                $field_data[1],
-                                "",
-                                "encrypt"
+                            // should we encrypt the data
+                            $dataTmp = DB::queryFirstRow("SELECT encrypted_data
+                                    FROM ".prefix_table("categories")."
+                                    WHERE id = %i", $field_data[0]
                             );
+                            if ($dataTmp['encrypted_data'] === "1") {
+                                $encrypt = cryption(
+                                    $field_data[1],
+                                    "",
+                                    "encrypt"
+                                );
+                                $enc_type = "defuse";
+                            } else {
+                                $encrypt['string'] = $field_data[1];
+                                $enc_type = "not_set";
+                            }
+
+
                             DB::insert(
                                 prefix_table('categories_items'),
                                 array(
@@ -229,7 +242,7 @@ if (isset($_POST['type'])) {
                                     'field_id' => $field_data[0],
                                     'data' => $encrypt['string'],
                                     'data_iv' => "",
-                                    'encryption_type' => "defuse"
+                                    'encryption_type' => $enc_type
                                 )
                             );
                         }
@@ -560,7 +573,7 @@ if (isset($_POST['type'])) {
                             $field_data = explode("~~", $field);
                             if (count($field_data)>1 && !empty($field_data[1])) {
                                 $dataTmp = DB::queryFirstRow(
-                                    "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv, c.encrypted_data AS encrypted_data
+                                    "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data
                                     FROM ".prefix_table("categories_items")." AS i
                                     INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
                                     WHERE i.field_id = %i AND i.item_id = %i",
@@ -569,11 +582,19 @@ if (isset($_POST['type'])) {
                                 );
                                 // store Field text in DB
                                 if (count($dataTmp['title']) == 0) {
-                                    $encrypt = cryption(
-                                        $field_data[1],
-                                        "",
-                                        "encrypt"
-                                    );
+                                    // should we encrypt the data
+                                    if ($dataTmp['encrypted_data)'] === "1") {
+                                        $encrypt = cryption(
+                                            $field_data[1],
+                                            "",
+                                            "encrypt"
+                                        );
+                                        $enc_type = "defuse";
+                                    } else {
+                                        $encrypt['string'] = $field_data[1];
+                                        $enc_type = "not_set";
+                                    }
+
                                     // store field text
                                     DB::insert(
                                         prefix_table('categories_items'),
@@ -582,31 +603,44 @@ if (isset($_POST['type'])) {
                                             'field_id' => $field_data[0],
                                             'data' => $encrypt['string'],
                                             'data_iv' => "",
-                                            'encryption_type' => "defuse"
+                                            'encryption_type' => $enc_type
                                         )
                                     );
                                     // update LOG
                                     logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_creation', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' : '.$field_data[1]);
                                 } else {
                                     // compare the old and new value
-                                    $oldVal = cryption(
-                                        $dataTmp['data'],
-                                        "",
-                                        "decrypt"
-                                    );
-                                    if ($field_data[1] != $oldVal['string']) {
-                                        $encrypt = cryption(
-                                            $field_data[1],
+                                    if ($dataTmp['encryption_type'] === "defuse") {
+                                        $oldVal = cryption(
+                                            $dataTmp['data'],
                                             "",
-                                            "encrypt"
+                                            "decrypt"
                                         );
+                                    } else {
+                                        $oldVal = $dataTmp['data'];
+                                    }
+
+                                    if ($field_data[1] != $oldVal['string']) {
+                                        // should we encrypt the data
+                                        if ($dataTmp['encrypted_data)'] === "1") {
+                                            $encrypt = cryption(
+                                                $field_data[1],
+                                                "",
+                                                "encrypt"
+                                            );
+                                            $enc_type = "defuse";
+                                        } else {
+                                            $encrypt['string'] = $field_data[1];
+                                            $enc_type = "not_set";
+                                        }
+
                                         // update value
                                         DB::update(
                                             prefix_table('categories_items'),
                                             array(
                                                 'data' => $encrypt['string'],
                                                 'data_iv' => "",
-                                                'encryption_type' => "defuse"
+                                                'encryption_type' => $enc_type
                                             ),
                                             "item_id = %i AND field_id = %i",
                                             $dataReceived['id'],
@@ -1456,7 +1490,7 @@ if (isset($_POST['type'])) {
 
                         // get fields for this Item
                         $rows_tmp = DB::query(
-                            "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv, c.encrypted_data
+                            "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type, c.encrypted_data
                             FROM ".prefix_table("categories")."_items AS i
                             INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
                             WHERE i.item_id=%i AND c.parent_id IN %ls",
@@ -1464,12 +1498,17 @@ if (isset($_POST['type'])) {
                             $arrCatList
                         );
                         foreach ($rows_tmp as $row) {
-                            $fieldText = cryption(
-                                $row['data'],
-                                "",
-                                "decrypt"
-                            );
-                            $fieldText = $fieldText['string'];
+                            if ($row['encryption_type'] === "defuse") {
+                                $fieldText = cryption(
+                                    $row['data'],
+                                    "",
+                                    "decrypt"
+                                );
+                                $fieldText = $fieldText['string'];
+                            } else {
+                                $fieldText = $row['data'];
+                            }
+
                             // build returned list of Fields text
                             if (empty($fieldsTmp)) {
                                 $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $fieldText);

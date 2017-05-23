@@ -14,7 +14,7 @@
  */
 
 header("X-XSS-Protection: 1; mode=block");
-header("X-Frame-Option: SameOrigin");
+//header("X-Frame-Option: SameOrigin");
 
 // **PREVENTING SESSION HIJACKING**
 // Prevents javascript XSS attacks aimed to steal the session ID
@@ -43,10 +43,10 @@ if (!file_exists('includes/config/settings.php')) {
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
-
+//session_destroy();
+session_id();
 // initialize session
 $_SESSION['CPM'] = 1;
-session_id();
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
     $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
@@ -136,7 +136,9 @@ if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings
 }
 
 // Load links, css and javascripts
-@require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+if (isset($_SESSION['CPM'])) {
+    @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+}
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -149,9 +151,9 @@ if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings
     //<![CDATA[
     if (window.location.href.indexOf("page=") === -1 && (window.location.href.indexOf("otv=") === -1 && window.location.href.indexOf("action=") === -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
-            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+            location.replace("./index.php?page=items");
         } else {
-            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
+            location.replace("./logout.php");
         }
     }
     //]]>
@@ -159,7 +161,8 @@ if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings
 <?php
 
 // load HEADERS
-echo $htmlHeaders;
+if (isset($_SESSION['CPM']))
+    echo $htmlHeaders;
 ?>
     </head>
 

@@ -14,7 +14,7 @@
  */
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...');
+    die('Hacking attempt...2');
 }
 
 // Common elements
@@ -209,6 +209,7 @@ $htmlHeaders .= '
             "sources/identify.php",
             {
                 type : "identify_user",
+                tst : "'.$_SESSION['CPM'].'",
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
