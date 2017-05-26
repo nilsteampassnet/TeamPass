@@ -14,7 +14,7 @@
  */
 
 header("X-XSS-Protection: 1; mode=block");
-//header("X-Frame-Option: SameOrigin");
+header("X-Frame-Option: SameOrigin");
 
 // **PREVENTING SESSION HIJACKING**
 // Prevents javascript XSS attacks aimed to steal the session ID
@@ -25,7 +25,7 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 
 // Uses a secure connection (HTTPS) if possible
-ini_set('session.cookie_secure', 1);
+ini_set('session.cookie_secure', 0);
 
 // Before we start processing, we should abort no install is present
 if (!file_exists('includes/config/settings.php')) {
