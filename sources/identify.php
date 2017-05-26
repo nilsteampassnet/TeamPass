@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 //header("X-XSS-Protection: 1; mode=block");
-header("X-Frame-Option: SameOrigin");
+//header("X-Frame-Option: SameOrigin");
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication

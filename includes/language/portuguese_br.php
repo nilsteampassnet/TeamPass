@@ -14,7 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'item_has_change_proposal' => 'This item has a change proposal',
+    'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Enviar ao usuário o Código do Google Authenticator por e-mail ',
     'send_ga_code' => 'Google Authenticator para usuário',
     'error_no_email' => 'Este usuário não tem e-mail definido!',
@@ -1027,5 +1027,23 @@ $LANG = array (
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
+    'item_has_change_proposal' => 'This Item has a change proposal',
+    'select_all' => 'Select all',
+    'add_category' => 'Add Category',
+    'what_action_to_perform' => 'Select the action to perform',
+    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
+    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
+    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
+    'revert' => 'Revert?',
+    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
+    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
+    'bad_psk' => 'This personal Saltkey is not correct!',
+    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
+    'psk_required' => 'The personal saltkey is required!',
+    'ldap_test_config' => 'Test current configuration',
+    'ldap_test_username' => 'Username to use for testing purpose',
+    'ldap_test_username_pwd' => 'Username password',
+    'no_username_needed' => 'No username needed',
     '' => ''
 );

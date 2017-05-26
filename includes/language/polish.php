@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          polish.php
@@ -14,8 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'select_all' => 'Select all',
-    'item_has_change_proposal' => 'This item has a change proposal',
+    'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Wyślij do użytkownika Google Authenticator za pośrednictwem e-mail ',
     'send_ga_code' => 'Google Authenticator dla użytkownika',
     'error_no_email' => 'Ten użytkownik nie ma ustawionego adresu e-mail',
@@ -873,7 +872,7 @@ $LANG = array (
     'error_bad_credentials' => 'Poświadczenia logowania nie odpowiadają!',
     'reload_page_after_user_account_creation' => 'Twoje konto zostało dodane. Strona zostanie automatycznie przekierowana w ciągu 3 sekund ...',
     'settings_ldap_usergroup' => 'Grupa LDAP do przeszukiwania',
-    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa?',
+    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa?,
     'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze (używając połączenia SSH)',
     'error_login_missing' => 'Nie podano loginu!',
     'error_pwd_missing' => 'Nie podano hasła!',
@@ -1028,5 +1027,23 @@ $LANG = array (
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
+    'item_has_change_proposal' => 'This Item has a change proposal',
+    'select_all' => 'Select all',
+    'add_category' => 'Add Category',
+    'what_action_to_perform' => 'Select the action to perform',
+    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
+    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
+    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
+    'revert' => 'Revert?',
+    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
+    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
+    'bad_psk' => 'This personal Saltkey is not correct!',
+    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
+    'psk_required' => 'The personal saltkey is required!',
+    'ldap_test_config' => 'Test current configuration',
+    'ldap_test_username' => 'Username to use for testing purpose',
+    'ldap_test_username_pwd' => 'Username password',
+    'no_username_needed' => 'No username needed',
     '' => ''
 );

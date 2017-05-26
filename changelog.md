@@ -1,5 +1,6 @@
 2.1.27
  New: Multiselection in Roles vs Folders matrix
+ New: LDAP configuration test mode (in progress)
  Fix: Prevent moving a folder to one of its child folder
  Fix: Global saltkey change
  Fix: Copy folder does'nt copy included items

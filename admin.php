@@ -340,7 +340,7 @@ echo '
         </div>
 
         <div style="text-align:center; margin-top:20px; font-size:16px;">
-        <input type="button" id="but_save_send_stat" style="width:300px;" value="'.$LANG['save_statistics_choice'].'" />
+        <input type="button" id="but_save_send_stat" style="width:300px;" value="'.addslashes($LANG['save_statistics_choice']).'" />
         </div>
     </div>
 
@@ -348,21 +348,24 @@ echo '
     <div id="tabs-2" style="font-size:15px;">
 
         <div>
-            <span class="fa fa-globe fa-lg"></span>&nbsp;&nbsp;<a target="_blank" href="http://www.teampass.net">'.$LANG['website_canal'].'</a>
+            <span class="fa fa-globe fa-lg"></span>&nbsp;&nbsp;<a target="_blank" href="http://www.teampass.net">'.addslashes($LANG['website_canal']).'</a>
         </div>
         <div style="margin-top:30px;">
-            <span class="fa fa-book fa-lg"></span>&nbsp;&nbsp;'.$LANG['documentation_canal'].'&nbsp;<a target="_blank" href="https://teampass.readthedocs.org" style="font-weight:bold;font-style:italic;">ReadTheDoc</a>
+            <span class="fa fa-book fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['documentation_canal']).'&nbsp;<a target="_blank" href="https://teampass.readthedocs.org" style="font-weight:bold;font-style:italic;">ReadTheDoc</a>
         </div>
         <div style="margin-top:13px;">
-            <span class="fa fa-bug fa-lg"></span>&nbsp;&nbsp;'.$LANG['bug_canal'].'&nbsp;<a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github</a>
+            <span class="fa fa-github fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['bug_canal']).'&nbsp;<a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github</a>
         </div>
         <div style="margin-top:13px;">
-        <span class="fa fa-lightbulb-o fa-lg"></span>&nbsp;&nbsp;'.$LANG['feature_request_canal'].'&nbsp;<a target="_blank" href="http://teampass.userecho.com/" style="font-weight:bold;font-style:italic;">UserEcho</a>
+        <span class="fa fa-lightbulb-o fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['feature_request_canal']).'&nbsp;<a target="_blank" href="http://teampass.userecho.com/" style="font-weight:bold;font-style:italic;">UserEcho</a>
+        </div>
+        <div style="margin-top:13px;">
+        <span class="fa fa-reddit-alien fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['feature_support_canal']).'&nbsp;<a target="_blank" href="https://www.reddit.com/r/TeamPass/" style="font-weight:bold;font-style:italic;">Reddit</a>
         </div>
 
 
         <div style="margin-top:30px;">
-        <span class="fa fa-beer fa-lg"></span>&nbsp;&nbsp;'.$LANG['consider_a_donation'].'&nbsp;<span class="fa fa-smile-o"></span>&nbsp;<a target="_blank" href="http://teampass.net/donation" style="font-weight:bold;font-style:italic;">'.$LANG['more_information'].'</a>
+        <span class="fa fa-beer fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['consider_a_donation']).'&nbsp;<span class="fa fa-smile-o"></span>&nbsp;<a target="_blank" href="http://teampass.net/donation" style="font-weight:bold;font-style:italic;">'.addslashes($LANG['more_information']).'</a>
         </div>
     </div>
     <div id="tabs-3">';

@@ -467,11 +467,11 @@ $htmlHeaders .= '
     // DUO box - wait
     function loadDuoDialogWait()
     {
-        $("#div_duo").html("<center><i class=\"fa fa-cog fa-spin fa-2x\"></i><br /><br />'.$LANG['duo_wait'].'</center>");
+        $("#div_duo").html("<center><i class=\"fa fa-cog fa-spin fa-2x\"></i><br /><br />'.$LANG['please_wait'].'</center>");
         $("#dialog_duo").dialog({
             width: 400,
             height: 250,
-            title: "DUO Security - please wait ..."
+            title: "DUO Security - '.$LANG['please_wait'].' ..."
         }).dialog("open");
     }
 
