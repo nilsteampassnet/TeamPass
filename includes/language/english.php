@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          english.php
@@ -14,8 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'select_all' => 'Select all',
-    'item_has_change_proposal' => 'This item has a change proposal',
+    'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',
@@ -413,7 +412,7 @@ $LANG = array (
     'email' => 'Email',
     'email_altbody_1' => 'Item',
     'email_altbody_2' => 'has been created.',
-    'email_announce' => 'Email a link to users',
+    'email_announce' => 'Email a link to all users',
     'email_change' => 'Change the account\'s email',
     'email_changed' => 'Email changed!',
     'email_select' => 'Select users to inform',
@@ -508,7 +507,7 @@ $LANG = array (
     'import_keepass_to_folder' => 'Select the destination folder',
     'import_kp_finished' => 'Import from KeePass is now finished ! The required password strength for new folders has been set to Medium. You may wish to modify the password strength requirement.',
     'import_to_folder' => 'Select the items you wish to import to folder:',
-    'index_add_one_hour' => 'Extend session duration',
+    'index_add_one_hour' => 'Extend session 1 hour',
     'index_alarm' => 'ALARM!!!',
     'index_bas_pw' => 'Bad password for this account!',
     'index_change_pw' => 'Change my password',
@@ -1023,10 +1022,28 @@ $LANG = array (
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'consider_a_donation' => 'You may consider a donation',
     'more_information' => 'More information',
-    'feature_request_canal' => 'For Feature Requests or Questions, please use',
+    'feature_request_canal' => 'For Feature Requests, please use',
     'bug_canal' => 'For Bugs, please use',
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
+    'item_has_change_proposal' => 'This Item has a change proposal',
+    'select_all' => 'Select all',
+    'add_category' => 'Add Category',
+    'what_action_to_perform' => 'Select the action to perform',
+    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
+    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
+    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
+    'revert' => 'Revert?',
+    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
+    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
+    'bad_psk' => 'This personal Saltkey is not correct!',
+    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
+    'psk_required' => 'The personal saltkey is required!',
+    'ldap_test_config' => 'Test current configuration',
+    'ldap_test_username' => 'Username to use for testing purpose',
+    'ldap_test_username_pwd' => 'Username password',
+    'no_username_needed' => 'No username needed',
     '' => ''
 );

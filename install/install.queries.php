@@ -676,6 +676,7 @@ global \$SETTINGS;
                                 ('norwegian', 'Norwegian' , 'no', 'no.png'),
                                 ('japanese', 'Japanese' , 'ja', 'ja.png'),
                                 ('portuguese', 'Portuguese' , 'pr', 'pr.png'),
+                                ('portuguese_br', 'Portuguese (Brazil)' , 'pr-bt', 'pr-bt.png'),
                                 ('chinese', 'Chinese' , 'cn', 'cn.png'),
                                 ('swedish', 'Swedish' , 'se', 'se.png'),
                                 ('dutch', 'Dutch' , 'nl', 'nl.png'),

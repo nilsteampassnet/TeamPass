@@ -14,7 +14,7 @@
  */
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    die('Hacking attempt...');
+    die('Hacking attempt...2');
 }
 
 // Common elements
@@ -123,17 +123,21 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
         <link rel="icon" href="'.$_SESSION['settings']['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
+// get some init
+//if (!isset($_SESSION["key"])) $_SESSION["key"] = "nothing";
+//if (!isset($_SESSION["user_id"])) $_SESSION["user_id"] = "";
+
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[
 
     //Menu actions
-    function MenuAction(val)
+    function MenuAction(val, user_id)
     {
         NProgress.start();
         if (val == "deconnexion") {
-            sessionStorage.clear();
-            window.location.href = "logout.php"
+            //sessionStorage.clear();
+            window.location.href = "logout.php?user_id="+user_id
         } else {
             $("#menu_action").val("action");
             if (val == "") document.location.href="index.php";
@@ -205,6 +209,7 @@ $htmlHeaders .= '
             "sources/identify.php",
             {
                 type : "identify_user",
+                tst : "'.$_SESSION['CPM'].'",
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
@@ -462,11 +467,11 @@ $htmlHeaders .= '
     // DUO box - wait
     function loadDuoDialogWait()
     {
-        $("#div_duo").html("<center><i class=\"fa fa-cog fa-spin fa-2x\"></i><br /><br />'.$LANG['duo_wait'].'</center>");
+        $("#div_duo").html("<center><i class=\"fa fa-cog fa-spin fa-2x\"></i><br /><br />'.$LANG['please_wait'].'</center>");
         $("#dialog_duo").dialog({
             width: 400,
             height: 250,
-            title: "DUO Security - please wait ..."
+            title: "DUO Security - '.$LANG['please_wait'].' ..."
         }).dialog("open");
     }
 
@@ -706,24 +711,6 @@ $htmlHeaders .= '
                 $(this).removeClass("ui-state-active");
         });
 
-        //END SESSION DIALOG BOX
-        $("#div_fin_session").dialog({
-            bgiframe: true,
-            modal: true,
-            autoOpen: false,
-            width: 400,
-            height: 150,
-            title: "'.$LANG['index_alarm'].'",
-            buttons: {
-                "'.$LANG['index_add_one_hour'].'": function() {
-                    IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'");
-                    $("#div_fin_session").hide();
-                    $("#countdown").css("color","white");
-                    $(this).dialog("close");
-                }
-            }
-        });
-
         //WARNING FOR QUERY ERROR
         $("#div_mysql_error").dialog({
             bgiframe: true,
@@ -933,6 +920,34 @@ $htmlHeaders .= '
                     $("#forgot_pw_email").val("");
                     $(this).dialog("close");
                 }
+            }
+        });
+
+
+        // DIALOG for div_increase_session_time
+        $("#div_increase_session_time").dialog({
+            bgiframe: true,
+            modal: true,
+            autoOpen: false,
+            width: 400,
+            height: 150,
+            title: "'.$LANG['index_add_one_hour'].'",
+            buttons: {
+                "'.$LANG['confirm'].'": function() {
+                    if (isInteger($("#input_session_duration").val())) {
+                        IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'", $("#input_session_duration").val());
+                        $("#div_increase_session_time").dialog("close");
+                    }
+                },
+                "'.$LANG['cancel_button'].'": function() {
+                    $(this).dialog("close");
+                }
+            },
+            beforeClose: function(){
+                $("#input_session_duration_warning").html("");
+            },
+            close: function() {
+                $("#div_increase_session_time").dialog("close");
             }
         });
 

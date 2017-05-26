@@ -208,45 +208,53 @@ if (!empty($_POST['type'])) {
         //-------------------------------------------
         #CASE change right for a role on a folder via the TM
         case "change_role_via_tm":
-            //get full tree dependencies
-            $tree = $tree->getDescendants($_POST['folder'], true);
+            $arr = explode(",", $_POST['multiselection']);
+            foreach ($arr as $elem) {
+                $tmp = explode('-', $elem);
+                $folder_id = $tmp[0];
+                $role_id = $tmp[1];
 
-            if ($_POST['access'] === "read" || $_POST['access'] === "write" || $_POST['access'] === "nodelete") {
-                // define code to use
-                if ($_POST['access'] == "read") $access = "R";
-                elseif ($_POST['access'] == "write") {
-                    if ($_POST['accessoption'] == "") {
-                        $access = "W";
-                    } elseif ($_POST['accessoption'] == "nodelete") {
-                        $access = "ND";
-                    } elseif ($_POST['accessoption'] == "noedit") {
-                        $access = "NE";
-                    } elseif ($_POST['accessoption'] == "nodelete_noedit") {
-                        $access = "NDNE";
+                //get full tree dependencies
+                $tree_list = $tree->getDescendants($folder_id, true);
+
+                if ($_POST['access'] === "read" || $_POST['access'] === "write" || $_POST['access'] === "nodelete") {
+                    // define code to use
+                    if ($_POST['access'] == "read") $access = "R";
+                    elseif ($_POST['access'] == "write") {
+                        if ($_POST['accessoption'] == "") {
+                            $access = "W";
+                        } elseif ($_POST['accessoption'] == "nodelete") {
+                            $access = "ND";
+                        } elseif ($_POST['accessoption'] == "noedit") {
+                            $access = "NE";
+                        } elseif ($_POST['accessoption'] == "nodelete_noedit") {
+                            $access = "NDNE";
+                        }
+                    } else $access = "";
+
+                    // loop
+                    foreach ($tree_list as $node) {
+                        // delete
+                        DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $role_id);
+
+                        //Store in DB
+                        DB::insert(
+                            prefix_table("roles_values"),
+                            array(
+                                'folder_id' => $node->id,
+                                'role_id' => $role_id,
+                                'type' => $access
+                           )
+                        );
                     }
-                } else $access = "";
-
-                // loop
-                foreach ($tree as $node) {
-                    // delete
-                    DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
-
-                    //Store in DB
-                    DB::insert(
-                        prefix_table("roles_values"),
-                        array(
-                            'folder_id' => $node->id,
-                            'role_id' => $_POST['role'],
-                            'type' => $access
-                       )
-                    );
-                }
-            } else {
-                foreach ($tree as $node) {
-                    // delete
-                    DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
+                } else {
+                    foreach ($tree_list as $node) {
+                        // delete
+                        DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $role_id);
+                    }
                 }
             }
+
             echo '[ { "error" : "no" } ]';
             break;
 
@@ -341,41 +349,41 @@ if (!empty($_POST['type'])) {
                         $role_detail = DB::queryfirstrow("SELECT * FROM ".prefix_table("roles_values")." WHERE folder_id = %i AND role_id = %i", $node->id, $role);
                         if (DB::count() > 0) {
                             if ($role_detail['type'] == "W") {
-                                $couleur = '#008000';
+                                $color = '#008000';
                                 $allowed = "W";
                                 $title = $LANG['write'];
                                 $label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>&nbsp;<i class="fa fa-eraser"></i>';
                             } elseif ($role_detail['type'] == "ND") {
-                                $couleur = '#4E45F7';
+                                $color = '#4E45F7';
                                 $allowed = "ND";
                                 $title = $LANG['no_delete'];
                                 $label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-edit"></i>';
                             } elseif ($role_detail['type'] == "NE") {
-                                $couleur = '#4E45F7';
+                                $color = '#4E45F7';
                                 $allowed = "NE";
                                 $title = $LANG['no_edit'];
                                 $label = '<i class="fa fa-indent"></i>&nbsp;<i class="fa fa-eraser"></i>';
                             } elseif ($role_detail['type'] == "NDNE") {
-                                $couleur = '#4E45F7';
+                                $color = '#4E45F7';
                                 $allowed = "NDNE";
                                 $title = $LANG['no_edit_no_delete'];
                                 $label = '<i class="fa fa-indent"></i>';
                             } else {
-                                $couleur = '#FEBC11';
+                                $color = '#FEBC11';
                                 $allowed = "R";
                                 $title = $LANG['read'];
                                 $label = '<i class="fa fa-eye"></i>';
                             }
                         } else {
-                            $couleur = '#FF0000';
+                            $color = '#FF0000';
                             $allowed = false;
                             $title = $LANG['no_access'];
-                                $label = '<i class="fa fa-hand-stop-o"></i>';
+                            $label = '<i class="fa fa-hand-stop-o"></i>';
                         }
                         if (in_array($node->id, $_SESSION['read_only_folders']) || !in_array($node->id, $_SESSION['groupes_visibles'])) {
-                            $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+                            $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$color.'\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
                         } else {
-                            $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$couleur.'\' onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'>'.$label.'</td>';
+                            $texte .= '<td align=\'center\' style=\'text-align:center;background-color:'.$color.'\' id=\'tm_cell_'.$i.'\' title=\''.$title.'\'><span onclick=\'openRightsDialog('.$role.','.$node->id.','.$i.',"'.$allowed.'")\'>'.$label.'</span><span style=\'float:right;\'><input type=\'checkbox\' title=\'\' class=\'multi_folders\' id=\'multisel_'.$node->id.'_'.$role.'\'></span></td>';
                         }
 
 

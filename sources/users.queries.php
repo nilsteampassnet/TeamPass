@@ -186,7 +186,7 @@ if (!empty($_POST['type'])) {
                         'fonction_id' => $dataReceived['groups'],
                         'groupes_interdits' => $dataReceived['forbidden_flds'],
                         'groupes_visibles' => $dataReceived['allowed_flds'],
-                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'],
+                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'] === "null" ? "0" : $dataReceived['isAdministratedByRole'],
                         'encrypted_psk' => ''
                        )
                 );
@@ -401,12 +401,12 @@ if (!empty($_POST['type'])) {
             DB::update(
                 prefix_table("users"),
                 array(
-                    'admin' => $_POST['value'],
-                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
+                    'admin' => filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
+                    'gestionnaire' => $_POST['value'] === "1" ? "0" : "0",
+                    'read_only' => $_POST['value'] === "1" ? "0" : "0"
                    ),
                 "id = %i",
-                $_POST['id']
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
 
             echo prepareExchangedData(array("error" => ""), "encode");
@@ -425,22 +425,23 @@ if (!empty($_POST['type'])) {
             $data = DB::queryfirstrow(
                 "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'gestionnaire' => $_POST['value'],
-                    'can_manage_all_users' => ($data['can_manage_all_users'] == 0 && $_POST['value'] == 1) ? "0" : (
-                        ($data['can_manage_all_users'] == 0 && $_POST['value'] == 0) ? "0" : (
-                        ($data['can_manage_all_users'] == 1 && $_POST['value'] == 0) ? "0" :
+                    'gestionnaire' => filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
+                    'can_manage_all_users' => ($data['can_manage_all_users'] === "0" && $_POST['value'] === "1") ? "0" : (
+                        ($data['can_manage_all_users'] === "0" && $_POST['value'] === "0") ? "0" : (
+                        ($data['can_manage_all_users'] === "1" && $_POST['value'] === "0") ? "0" :
                         "1")
                     ),
-                    'admin' => $_POST['value'] == 1 ? "0" : "0",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
+                    'admin' => $_POST['value'] === "1" ? "0" : "0",
+                    'read_only' => $_POST['value'] === "1" ? "0" : "0"
                    ),
-                "id = ".$_POST['id']
+                "id = %i",
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -462,7 +463,7 @@ if (!empty($_POST['type'])) {
                     'admin' => $_POST['value'] == 1 ? "0" : "0"
                    ),
                 "id = %i",
-                $_POST['id']
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -481,7 +482,7 @@ if (!empty($_POST['type'])) {
             $data = DB::queryfirstrow(
                 "SELECT admin, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
 
             DB::update(
@@ -492,7 +493,8 @@ if (!empty($_POST['type'])) {
                     'admin' => $_POST['value'] == 1 ? "0" : "0",
                     'read_only' => $_POST['value'] == 1 ? "0" : "0"
                    ),
-                "id = ".$_POST['id']
+                "id = %i",
+                $_POST['id']
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -810,8 +812,8 @@ if (!empty($_POST['type'])) {
             $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
             if ($_POST['scope'] === "user_activity") {
-                if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] != "all") {
-                    $sql_filter = " AND l.action = '".$_POST['filter']."'";
+                if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] !== "all") {
+                    $sql_filter = " AND l.action = '".filter_var($_POST['filter'], FILTER_SANITIZE_STRING)."'";
                 }
                 // get number of pages
                 DB::query(
@@ -820,7 +822,7 @@ if (!empty($_POST['type'])) {
                     INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
                     INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                     WHERE l.id_user = %i ".$sql_filter,
-                    intval($_POST['id'])
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
@@ -838,7 +840,7 @@ if (!empty($_POST['type'])) {
                     WHERE l.id_user = %i ".$sql_filter."
                     ORDER BY date DESC
                     LIMIT ".intval($start).",".intval($_POST['nb_items_by_page']),
-                    intval($_POST['id'])
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
             } else {
                 // get number of pages
@@ -847,7 +849,7 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i",
                     "user_mngt",
-                    $_POST['id']
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
@@ -864,7 +866,7 @@ if (!empty($_POST['type'])) {
                     ORDER BY date DESC
                     LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
                     "user_mngt",
-                    $_POST['id']
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
             }
             // generate data

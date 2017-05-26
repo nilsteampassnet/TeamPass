@@ -108,7 +108,7 @@ if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
     else $sWhere .= " AND ";
     $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
 }
-
+db::debugmode(false);
 $rows = DB::query(
     "SELECT * FROM ".$pre."users
     $sWhere"
@@ -122,11 +122,21 @@ $rows = DB::query(
 );
 $iFilteredTotal = DB::count();
 
-// output
+// Output
+if ($iTotal == "") {
+    $iTotal = 0;
+}
+
+$sOutput = '{';
+$sOutput .= '"sEcho": '.intval($_GET['draw']).', ';
+$sOutput .= '"iTotalRecords": '.$iTotal.', ';
+$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
+$sOutput .= '"aaData": ';
+
 if (DB::count() > 0) {
-    $sOutput = '[';
+    $sOutput .= '[';
 } else {
-    $sOutput = '';
+    $sOutput .= '';
 }
 
 foreach ($rows as $record) {
@@ -308,6 +318,4 @@ if (count($rows) > 0) {
     $sOutput .= '[] }';
 }
 
-// prepare complete output
-
-echo '{"recordsTotal": '.$iTotal.', "recordsFiltered": '.$iFilteredTotal.', "data": '.$sOutput;
+echo $sOutput;

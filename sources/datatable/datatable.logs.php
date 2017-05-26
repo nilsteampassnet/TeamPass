@@ -53,7 +53,7 @@ if (isset($_GET['action'])) {
 if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
@@ -159,7 +159,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 } elseif (isset($_GET['action']) && $_GET['action'] == "errors") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui', 'u.login');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
@@ -258,7 +258,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 } elseif (isset($_GET['action']) && $_GET['action'] == "access") {
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
@@ -359,7 +359,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 } elseif (isset($_GET['action']) && $_GET['action'] == "copy") {
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
@@ -460,7 +460,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 } elseif (isset($_GET['action']) && $_GET['action'] == "admin") {
     //Columns name
     $aColumns = array('l.date', 'u.login', 'l.label');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
@@ -561,7 +561,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login', 'l.action', 'i.perso');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
@@ -680,7 +680,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui');
-    
+
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";

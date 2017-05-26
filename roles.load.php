@@ -167,15 +167,25 @@ $(function() {
                     }
                 }
 
+                // is several folders selected?
+                var multiselection = '',
+                    tmp;
+                $(".multi_folders:checkbox:checked").each(function(){
+                    tmp = $(this).attr('id').substring(9).split('_');
+                    multiselection += tmp[0] + "-" + tmp[1] + ",";   //folder_id-role_id
+                });
+                multiselection += $("#change_folder").val() + "-" + $('#change_role').val();
+
                 $.post(
                     "sources/roles.queries.php",
                     {
                         type    : "change_role_via_tm",
                         access  : $("input[name=right_types_radio]:checked").attr("id").substring(6),
                         accessoption : accessoption,
-                        folder  : $("#change_folder").val(),
-                        role    : $('#change_role').val(),
-                        line    : $("#change_line").val()
+                        //folder  : $("#change_folder").val(),
+                        //role    : $('#change_role').val(),
+                        line    : $("#change_line").val(),
+                        multiselection: multiselection
                     },
                     function(data) {
                         $("#div_loading").show();

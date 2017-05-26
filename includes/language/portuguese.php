@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          portuguese.php
@@ -14,8 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'select_all' => 'Select all',
-    'item_has_change_proposal' => 'This item has a change proposal',
+    'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'Este utilizador não possui uma conta de email definida!',
@@ -489,10 +488,10 @@ $LANG = array (
     'history' => 'Historia ',
     'home' => 'Inicio',
     'home_personal_menu' => 'Ações pessoais',
-    'home_personal_saltkey' => 'Sua senha pessoal `SALT KEY`',
+    'home_personal_saltkey' => 'Sua senha pessoal \'SALT KEY\'',
     'home_personal_saltkey_button' => 'Armazená-lo',
-    'home_personal_saltkey_info' => 'Entre com seu `SALT KEY` pessoal. É necessário para administrar suas senhas pessoais',
-    'home_personal_saltkey_label' => 'Entre com seu `SALT KEY` pesso',
+    'home_personal_saltkey_info' => 'Entre com seu \'SALT KEY\' pessoal. É necessário para administrar suas senhas pessoais',
+    'home_personal_saltkey_label' => 'Entre com seu \'SALT KEY\' pesso',
     'importing_details' => 'Lista de detalhes',
     'importing_folders' => 'Importar diretórios',
     'importing_items' => 'Importar itens',
@@ -909,7 +908,7 @@ $LANG = array (
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
-    'folder_will_be_moved_below' => 'The folder <b><span id=\\\'move_folder_title\\\'></span></b> will be moved below folder:',
+    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
     'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
     'runtime_upload' => 'Upload feature: runtime',
     'encrypted_data' => 'Data is encrypted in database',
@@ -963,7 +962,7 @@ $LANG = array (
     'suggest_password_change' => 'Suggest a password change',
     'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
     'suggestion_done' => 'Suggestion has been stored.',
-    'suggest_change_password_blank' => 'Leave this field empty if you DON\\\'T want to suggest a password change',
+    'suggest_change_password_blank' => 'Leave this field empty if you DON\'T want to suggest a password change',
     'item_id' => 'Item ID',
     'approve' => 'Approve',
     'reject' => 'Reject',
@@ -1027,5 +1026,23 @@ $LANG = array (
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
+    'item_has_change_proposal' => 'This Item has a change proposal',
+    'select_all' => 'Select all',
+    'add_category' => 'Add Category',
+    'what_action_to_perform' => 'Select the action to perform',
+    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
+    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
+    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
+    'revert' => 'Revert?',
+    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
+    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
+    'bad_psk' => 'This personal Saltkey is not correct!',
+    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
+    'psk_required' => 'The personal saltkey is required!',
+    'ldap_test_config' => 'Test current configuration',
+    'ldap_test_username' => 'Username to use for testing purpose',
+    'ldap_test_username_pwd' => 'Username password',
+    'no_username_needed' => 'No username needed',
     '' => ''
 );

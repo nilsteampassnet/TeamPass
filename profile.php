@@ -484,7 +484,7 @@ $(function() {
 
         if ($("#new_personal_saltkey").val() === "" || $("#new_personal_saltkey").val() === "") {
             $("#psk_change_wait").hide();
-            $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo $LANG['home_personal_saltkey_label'];?></div>');
+            $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']);?></div>');
 
             setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 1000);
             return false;

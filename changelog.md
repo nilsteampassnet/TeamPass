@@ -1,5 +1,13 @@
 2.1.27
+ New: Multiselection in Roles vs Folders matrix
+ New: LDAP configuration test mode (in progress)
  Fix: Prevent moving a folder to one of its child folder
+ Fix: Global saltkey change
+ Fix: Copy folder does'nt copy included items
+ Fix: Encrypt/Decrypt attachments feature from admin page
+ #1742 Fix for issue #1539 verifying LDAP groups properly
+ #1740 Missing buttons on Users page
+ #1737 Cannot import files
  #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
  #1733 Copy Item doesn't work if copy from public to public folders
  #1731 Cannot login in after fresh install

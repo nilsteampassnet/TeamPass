@@ -388,12 +388,12 @@ function rest_get () {
                         }
                     }
                 }
-                $folder_str = array_filter(implode(";",$folder_arr));
+                $folder_str = array_filter($folder_arr);
 
                 // get ids
-                if (strpos($folder_str,";") > 0) {
+                if (is_array($folder_str)) {
                     $condition = "id_tree IN %ls";
-                    $condition_value = explode(';', $folder_str);
+                    $condition_value = $folder_str;
                 } else {
                     $condition = "id_tree = %s";
                     $condition_value = $folder_str;
@@ -1761,6 +1761,8 @@ function rest_get () {
                     } else {
                         $user_id = $userData['id'];
                     }
+                } else {
+                    $user_id = API_USER_ID;
                 }
 
                 if(count($array_category) > 0 && count($array_category) < 5) {
@@ -1773,7 +1775,7 @@ function rest_get () {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
 
                     // this will delete all sub folders and items associated
-                    for ($i=0; $i < count($array_category); $i ++) {
+                    for ($i=0; $i < count($array_category); $i ++) {echo "\n".$array_category[$i]."\n";
                         // Get through each subfolder
                         $folders = $tree->getDescendants($array_category[$i], true);
                         print_r($folders);

@@ -435,6 +435,7 @@ echo '
 
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // Attachments encryption strategy
+
 echo '
                     <tr><td>
                         <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
@@ -566,7 +567,8 @@ echo '
                     </span>
                     <label>'.$LANG['admin_action_change_salt_key'].'</label>
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_change_salt_key_tip']), ENT_QUOTES).'"></i></span>
-                        &nbsp;<span id="changeMainSaltKey_message"></span>
+                        <br/>
+                        <div id="changeMainSaltKey_message" class="ui-widget-content ui-state-focus ui-corner-all" style="padding:10px; display:none; margin-left:30px; text-align:center;"></div>
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
                 </div>';
@@ -583,23 +585,28 @@ echo '
                     <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
                 </div>';
 */
-                /*
+
 // Encrypt / decrypt attachments
 echo '
                 <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')" style="cursor:pointer;">
+                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="startFileEncDecyption()" style="cursor:pointer;">
                         <i class="fa fa-square fa-stack-2x"></i>
                         <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                     </span>
-                    <div class="div_radio" style="float:left;">
-                        <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$LANG['encrypt'].'</label>
-                        <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$LANG['decrypt'].'</label>
-                    </div>
                     '.$LANG['admin_action_attachments_cryption'].'
                     <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_attachments_cryption_tip']), ENT_QUOTES).'"></i></span>
-                    <span id="result_admin_action_attachments_cryption" style="margin-left:10px;"></span>
+                    <br/>
+                    <div id="admin_action_attachments_cryption_selection" class="ui-widget-content ui-state-focus ui-corner-all" style="padding:10px; display:none; margin-left:30px; text-align:center;">
+                        '.$LANG['what_action_to_perform'].':&nbsp;
+                        <span class="div_radio" style="">
+                            <input type="radio" id="attachments_cryption_radio1" name="attachments_cryption" value="encrypt" /><label for="attachments_cryption_radio1">'.$LANG['encrypt'].'</label>
+                            <input type="radio" id="attachments_cryption_radio2" name="attachments_cryption" value="decrypt" /><label for="attachments_cryption_radio2">'.$LANG['decrypt'].'</label>
+                        </span>
+                        &nbsp;&nbsp;<a href="#" onclick="LaunchAdminActions(\'admin_action_attachments_cryption\')">'.addslashes($LANG['admin_action_db_backup_start_tip']).'</a>
+                        <div id="result_admin_action_attachments_cryption" class="" style="padding:10px; display:none; margin-left:30px; text-align:center;"></div>
+                    </div>
                 </div>';
-*/
+
 echo '
             </div>';
 // --------------------------------------------------------------------------------
@@ -1062,134 +1069,159 @@ if (!extension_loaded('ldap')) {
 echo '
             <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$LANG['admin_ldap_configuration'].'</div>
-                <table>';
+                <table id="ldap_config_values">';
 // Type
 $ldap_type = isset($_SESSION['settings']['ldap_type']) ? $_SESSION['settings']['ldap_type'] : '';
 echo '
                     <tr>
                         <td><label for="ldap_type">'.$LANG['settings_ldap_type'].'</label></td>
                         <td>
-                            <select id="ldap_type" name="ldap_type" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
+                            <select id="ldap_type" name="ldap_type" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\')); showLdapFields($(this).val());">
                                 <option value="0">-- '.$LANG['select'].' --</option>
-                                <option value="windows"', $ldap_type == 'windows' ? ' selected="selected"' : '', '>Windows / Active Directory</option>
-                                <option value="posix"', $ldap_type == 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
-                                <option value="posix-search"', $ldap_type == 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>
+                                <option value="windows"', $ldap_type === 'windows' ? ' selected="selected"' : '', '>Windows / Active Directory</option>
+                                <option value="posix"', $ldap_type === 'posix' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307)</option>
+                                <option value="posix-search"', $ldap_type === 'posix-search' ? ' selected="selected"' : '', '>Posix / OpenLDAP (RFC2307) Search Based</option>
                             </select>
                         </td>
                     </tr>';
 // Domain
-if (isset($ldap_type) && $ldap_type != 'posix' && $ldap_type != 'posix-search') {
 echo '
-                    <tr>
+                    <tr style="display:', (isset($ldap_type)) ? '' : 'none' , '" class="tr-windows tr-ldap tr-posix tr-posix-search">
                         <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
                         <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
-}
 
-if (isset($ldap_type) && $ldap_type != 'posix-search') {
 // Domain DN
 echo '
-                    <tr>
+                    <tr style="display:', (isset($ldap_type) && $ldap_type != 'posix-search') ? '' : 'none' , '" class="tr-windows tr-posix tr-ldap">
                         <td><label for="ldap_domain_dn">'.$LANG['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_domain_dn']) ? $_SESSION['settings']['ldap_domain_dn'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
-}
 
 // Subtree for posix / openldap
-if (isset($ldap_type) && $ldap_type == 'posix') {
         echo '
                 <tr>
                     <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain_posix'].'</label></td>
                     <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
-}
 
 // LDAP username attribute
-if (isset($ldap_type) && $ldap_type == 'posix-search') {
         // LDAP Object Class
         echo '
-                <tr>
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_object_class_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_object_class" name="ldap_object_class" class="text ui-widget-content" title="Person" value="',
                     isset($_SESSION['settings']['ldap_object_class']) ? $_SESSION['settings']['ldap_object_class'] : 'posixAccount', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
         echo '
-                <tr>
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_user_attribute_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP
                 echo '
-                <tr>
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_usergroup_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_usergroup']) ? $_SESSION['settings']['ldap_usergroup'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND DN for search
                 echo '
-                <tr>
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_bind_dn_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="uid=teampass,ou=people,dc=mydomain,dc=local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND PASSWD for search
                 echo '
-                <tr>
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_bind_passwd_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="123password456" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BASE for search
                 echo '
-                <tr>
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_search_base_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="ou=people,dc=octopoos,dc=local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
-}
 
 // Domain controler
 echo '
-                    <tr>
-                        <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_domain_controler_tip']), ENT_QUOTES).'"></i></label></td>
-                        <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
-                    </tr>';
+                <tr>
+                    <td><label for="ldap_domain_controler">'.$LANG['settings_ldap_domain_controler'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_domain_controler_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_domain_controler" name="ldap_domain_controler" class="text ui-widget-content" title="dc01.mydomain.local,dc02.mydomain.local" value="', isset($_SESSION['settings']['ldap_domain_controler']) ? $_SESSION['settings']['ldap_domain_controler'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                </tr>';
 
 // AD Port
  echo '
-                    <tr>
-                        <td><label for="ldap_port">'.$LANG['settings_ldap_port'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_port_tip']), ENT_QUOTES).'"></i></label></td>
-                        <td><input type="text" size="50" id="ldap_port" name="ldap_port" class="text ui-widget-content" title="389" value="', isset($_SESSION['settings']['ldap_port']) ? $_SESSION['settings']['ldap_port'] : '389', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
-                    </tr>';
+                <tr>
+                    <td><label for="ldap_port">'.$LANG['settings_ldap_port'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_port_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_port" name="ldap_port" class="text ui-widget-content" title="389" value="', isset($_SESSION['settings']['ldap_port']) ? $_SESSION['settings']['ldap_port'] : '389', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                </tr>';
 
 // AD SSL
 echo '
-                    <tr>
-                        <td><label>'.$LANG['settings_ldap_ssl'].'</label></td>
-                        <td>
-                            <div class="toggle toggle-modern" id="ldap_ssl" data-toggle-on="', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_ssl_input" name="ldap_ssl_input" value="', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? '1' : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
-                        </td>
-                    </tr>';
+                <tr>
+                    <td><label>'.$LANG['settings_ldap_ssl'].'</label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="ldap_ssl" data-toggle-on="', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_ssl_input" name="ldap_ssl_input" value="', isset($_SESSION['settings']['ldap_ssl']) && $_SESSION['settings']['ldap_ssl'] == 1 ? '1' : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
+                    </td>
+                </tr>';
+
 // AD TLS
 echo '
-                    <tr>
-                        <td><label>'.$LANG['settings_ldap_tls'].'</label></td>
-                        <td>
-                            <div class="toggle toggle-modern" id="ldap_tls" data-toggle-on="', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_tls_input" name="ldap_tls_input" value="', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? '1' : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
-                        </td>
-                    </tr>';
+                <tr>
+                    <td><label>'.$LANG['settings_ldap_tls'].'</label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="ldap_tls" data-toggle-on="', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_tls_input" name="ldap_tls_input" value="', isset($_SESSION['settings']['ldap_tls']) && $_SESSION['settings']['ldap_tls'] == 1 ? '1' : '0', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
+                    </td>
+                </tr>';
+
 // Enable only localy declared users with tips help
 echo '
-                    <tr>
-                        <td><label>'.$LANG['settings_ldap_elusers'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_elusers_tip']), ENT_QUOTES).'"></i></label></td>
-                        <td>
-                            <div class="toggle toggle-modern" id="ldap_elusers" data-toggle-on="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_elusers_input" name="ldap_elusers_input" value="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? '1' : '0', '" />
-                        </td>
-                    </tr>';
+                <tr>
+                    <td><label>'.$LANG['settings_ldap_elusers'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_elusers_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="ldap_elusers" data-toggle-on="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_elusers_input" name="ldap_elusers_input" value="', isset($_SESSION['settings']['ldap_elusers']) && $_SESSION['settings']['ldap_elusers'] == 1 ? '1' : '0', '" />
+                    </td>
+                </tr>';
+echo '
+                </table>';
+
+// Test LDAP configuration
+echo '
+                <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">
+                    '.$LANG['ldap_test_config'].'
+                </div>
+                    <table>
+                        <tr>
+                            <td><label>'.htmlentities($LANG['ldap_test_username']).'</label></td>
+                            <td><input type="text" size="50" id="ldap_test_username" class="text ui-widget-content" value="" class="text ui-widget-content" /></td>
+                        </tr>
+                        <tr>
+                            <td><label>'.htmlentities($LANG['ldap_test_username_pwd']).'</label></td>
+                            <td><input type="password" size="50" id="ldap_test_pwd" class="text ui-widget-content" value="" class="text ui-widget-content" /></td>
+                        </tr>
+                        <tr>
+                            <td><label for="ldap_test_no_username">'.htmlentities($LANG['no_username_needed']).'</label></td>
+                            <td><input type="checkbox" size="50" id="ldap_test_no_username" /></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">
+                                <div id="ldap_test_msg" class="ui-widget-content ui-state-focus ui-corner-all" style="padding:10px; display:none;"></div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><b>'.htmlentities($LANG['admin_action_db_backup_start_tip']).'</b></td>
+                            <td><span class="fa-stack" onclick="LaunchAdminActions(\'admin_ldap_test_configuration\')" style="cursor:pointer;">
+                                <i class="fa fa-square fa-stack-2x"></i>
+                                <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                            </span></td>
+                        </tr>
+                    </table>';
 
 echo '
-                </table>
-            </div>';
-
-echo '
+            </div>
             </div>';
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------

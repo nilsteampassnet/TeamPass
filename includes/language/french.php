@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          french.php
@@ -14,8 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'select_all' => 'Tous',
-    'item_has_change_proposal' => 'Cet Object a une proposition de changement',
+    'feature_support_canal' => 'Pour du Support et de l\'Aide, merci d\'utiliser ',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas d\'email de défini !',
@@ -508,7 +507,7 @@ $LANG = array (
     'import_keepass_to_folder' => 'Choisir le répertoire de destination',
     'import_kp_finished' => 'L\'importation depuis KeePass est maintenant terminée ! Par défaut, le niveau de complexité des nouveaux répertoires a été défini à \'Moyen\'. Vous devriez peut-être le changer en fonction de vos besoins.',
     'import_to_folder' => 'Cocher les éléments que vous voulez importer dans le répertoire :',
-    'index_add_one_hour' => 'Augmenter la durée de la session',
+    'index_add_one_hour' => 'Ajouter une heure',
     'index_alarm' => 'ATTENTION !!!',
     'index_bas_pw' => 'Mauvais mot de passe pour ce compte !',
     'index_change_pw' => 'Changer votre mot de passe',
@@ -567,7 +566,7 @@ $LANG = array (
     'link_copy' => 'Copier le lien',
     'link_is_copied' => 'Le lien vers cet élément a été copié vers le presse-papier.',
     'login' => 'Identifiant (si nécessaire)',
-    'login_attempts_on' => ' tentatives de connexion sur ',
+    'login_attempts_on' => 'Nombre de tentatives de connexion ',
     'login_copied_clipboard' => 'Identifiant copié dans le presse-papier',
     'login_copy' => 'Copier l\'identifiant dans le presse-papier',
     'logs' => 'Journaux',
@@ -985,7 +984,7 @@ $LANG = array (
     'country_statistics' => 'Mapmonde',
     'country' => 'Pays',
     'users_statistics' => 'Nombre moyen d\'utilisateurs',
-    '﻿users_statistics' => 'Average number of users by instance',
+    '﻿users_statistics' => 'Nombre moyen d\'utilisateurs par instance',
     'items_all' => 'Tous les Objets',
     'folders_all' => 'Tous les Répertoires',
     'items_shared' => 'Tous les Objets publics',
@@ -1028,5 +1027,23 @@ $LANG = array (
     'documentation_canal' => 'La documentation est disponible sur',
     'website_canal' => 'Cliquer pour accéder à Teampass.net',
     'sending_anonymous_statistics_details' => 'Des statistiques relatives à l\'utilisation de Teampass sont nécessaires pour connaitre les contexts d\'utilisation de l\'outil par le développeur. Elles permettent d\'évaluer comment Teampass est utilisé et par conséquent orienter l\'implémentation des nouvelles fonctionnalités. Les données envoyées sont uniquement utilisées en interne and ne seront absolument pas distribuées ou vendues à un tiers.',
+    'item_has_change_proposal' => 'Une proposition d\'évolution est disponible pour cet objet',
+    'select_all' => 'Tous',
+    'add_category' => 'Ajouter une Catégorie',
+    'what_action_to_perform' => 'Choisir une action à réaliser',
+    'confirm_database_reencryption' => 'Cela va ré-encrypter la base de données avec la nouvelle clé de salage. Vous confirmez ?',
+    'previous_backup_exists' => 'Une ancienne sauvegarde existe.<br>Voulez-vous la restaurer ?',
+    'previous_backup_exists_delete' => 'Voulez-vous effacer cette ancienne sauvegarde ?',
+    'check_data_after_reencryption' => 'Merci d\'effectuer une vérification de vos données. Une table de sauvegarde <b>Backup</b> a été créée durant l\'opération de ré-encryptage.',
+    'revert' => 'Restaurer les données ?',
+    'revert_the_database' => 'Vous avez décidé de restaurer les anciennes données. Merci de confirmer.',
+    'wipe_backup_data' => 'Vous avez décidé de supprimer la table de sauvegarde. Avez-vous bien vérifié vos données ? Merci de confirmer.',
+    'bad_psk' => 'Cette clé de salage personnelle n\'est pas correcte !',
+    'bad_psk_confirmation' => 'Cette clé de salage personnelle de confirmation n\'est pas correcte !',
+    'psk_required' => 'La clé de salage personnelle est requise !',
+    'ldap_test_config' => 'Tester cette configuration',
+    'ldap_test_username' => 'Nom d\'utilisateur',
+    'ldap_test_username_pwd' => 'Mot de passe utilisateur',
+    'no_username_needed' => 'Aucune nom d\'utilisateur fourni',
     '' => ''
 );

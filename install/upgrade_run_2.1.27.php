@@ -319,6 +319,8 @@ if ($res === false) {
 
 
 
+
+
 //-- generate new DEFUSE key
 if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed'] === false) {
     $filename = "../includes/config/settings.php";
@@ -452,6 +454,14 @@ $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION[
 if ($tmp[0] == 0 || empty($tmp[0])) {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'agses_authentication_enabled', '0')"
+    );
+}
+
+// add new language "portuges_br"
+$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."languages` WHERE name = 'portuguese_br'"));
+if ($tmp[0] == 0 || empty($tmp[0])) {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."languages` (`name`, `label`, `code`, `flag`) VALUES ('portuguese_br', 'Portuguese_br', 'pr-bt', 'pr-bt.png')"
     );
 }
 

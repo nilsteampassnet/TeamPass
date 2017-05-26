@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          german.php
@@ -14,8 +14,7 @@
  */
 global $LANG;
 $LANG = array (
-    'select_all' => 'Select all',
-    'item_has_change_proposal' => 'This item has a change proposal',
+    'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Den Google Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator für Benutzer',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail Adresse festgelegt.',
@@ -947,10 +946,10 @@ $LANG = array (
     'share_rights_source' => 'Ursprünglicher Benutzer',
     'share_rights_destination' => 'Ziel Benutzer',
     'password_is_empty' => 'Element hat kein Passwort',
-    '2FA_new_code_by_user_not_allowed' => 'This has been disabled. Please request new code to your Administrator.',
+    '2FA_new_code_by_user_not_allowed' => 'Dies wurde deaktiviert. Bitte einen neuen Code vom Administrator anfordern',
     'ga_reset_by_user' => 'User can reset his 2FA code',
     'ga_reset_by_user_tip' => 'If enabled, the user will have the possibility to reset his 2FA code using the link in the login page. This could be useful in case he has changed mobile device for example. If not enabled, the user will have to ask the Administrator to generate a new code.',
-    'error_cannot_delete_subfolders_exist' => 'This folder cannot be deleted as at least one subfolder exists.',
+    'error_cannot_delete_subfolders_exist' => 'Dieser Ordner kann nicht gelöscht werden, da mindestens ein Unterordner existiert',
     'enable_massive_move_delete' => 'Allow user to perform massive move and delete operations',
     'enable_massive_move_delete_tip' => 'When enabled, this option permits a user to perform a massive move and/or delete operation in one time. The user will only be able to perform this on Items on which he is allowed to.',
     'mass_operation' => 'Mass operation on Items',
@@ -1028,5 +1027,23 @@ $LANG = array (
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
     'sending_anonymous_statistics_details' => 'Statistics are needed to improve Teampass by knowing the users population and usage. The data you will provide will only be used internally for datamining and will absolutely not be distributed or sold to any third party.',
+    'item_has_change_proposal' => 'This Item has a change proposal',
+    'select_all' => 'Select all',
+    'add_category' => 'Add Category',
+    'what_action_to_perform' => 'Select the action to perform',
+    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
+    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
+    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
+    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
+    'revert' => 'Revert?',
+    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
+    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
+    'bad_psk' => 'This personal Saltkey is not correct!',
+    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
+    'psk_required' => 'The personal saltkey is required!',
+    'ldap_test_config' => 'Test current configuration',
+    'ldap_test_username' => 'Username to use for testing purpose',
+    'ldap_test_username_pwd' => 'Username password',
+    'no_username_needed' => 'No username needed',
     '' => ''
 );

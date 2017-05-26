@@ -1378,7 +1378,7 @@ function logEvents($type, $label, $who, $login="", $field_1 = NULL)
     }
 }
 
-function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL)
+function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL, $encryption_type = "")
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
@@ -1401,7 +1401,8 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
                 'id_user' => $id_user,
                 'action' => $action,
                 'raison' => $raison,
-                'raison_iv' => $raison_iv
+                'raison_iv' => $raison_iv,
+                'encryption_type' => $encryption_type
             )
         );
         if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
@@ -1650,7 +1651,7 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
             );
         }
     } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($image_status) && $image_status === "encrypted") {
-        // file needs to be encrypted
+        // file needs to be decrypted
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
             // make a copy of file
             if (!copy(
@@ -1702,4 +1703,20 @@ function debugTeampass($text) {
     $debugFile = fopen('D:/wamp64/www/TeamPass/debug.txt', 'r+');
     fputs($debugFile, $text);
     fclose($debugFile);
+}
+
+/*
+* DELETE the file with expected command depending on server type
+*/
+function fileDelete($file) {
+    if (is_file($file)) {
+        @close($file);
+        // define if we under Windows
+        if (strpos(dirname(__FILE__), '/', 0) !== false) {
+            unlink($file);
+        } else {
+            $lines = array();
+            exec("DEL /F/Q \"" . $file . "\"", $lines, $deleteError);
+        }
+    }
 }

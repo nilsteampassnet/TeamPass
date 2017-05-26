@@ -96,9 +96,9 @@ echo '
     <!-- TAB2 -->
     <div id="tabs-2">
         <!-- Prepare a list of all folders that the user can choose -->
-        <div style="margin-top:10px;" id="keypass_import_options">
+        <div style="margin:10px 0 5px 0;" id="keypass_import_options">
             <label><b>'.$LANG['import_keepass_to_folder'].'</b></label>&nbsp;
-            <select id="import_keepass_items_to">
+            <select id="import_keepass_items_to" style="width:87%; height:35px;">
                 <option value="0">'.$LANG['root'].'</option>';
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
@@ -161,8 +161,8 @@ foreach ($folders as $t) {
 ?>
 <script type="text/javascript">
     $(function() {
-        $("select").multiselect({
-            multiple: false
+        $("#import_keepass_items_to").select2({
+            language: "<?php echo $_SESSION['user_language_code'];?>"
         });
         $("#import_tabs").tabs();
 
@@ -207,7 +207,7 @@ foreach ($folders as $t) {
                 },
                 BeforeUpload: function (up, file) {
                     up.settings.multipart_params = {
-                        "PHPSESSID":"'.$_SESSION['user_id'];?>",
+                        "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
                         "csvFile":file.name,
                         "type_upload":"import_items_from_csv",
                         "user_token": $("#import_user_token").val()
@@ -361,11 +361,12 @@ foreach ($folders as $t) {
                     $("#but_csv_start").click(function() {
                         launchCSVItemsImport();
                     });
-                    $("select").multiselect({
+                    $("#import_items_to").select2({
                         multiple: false,
-                        selectedText: function(numChecked, numTotal, checkedItems){
+                        language: "<?php echo $_SESSION['user_language_code'];?>"
+                        /*selectedText: function(numChecked, numTotal, checkedItems){
                             return $(checkedItems[0]).attr('title') + ' checked';
-                        }
+                        }*/
                     });
                     $("button").button();
                     $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("disable");
@@ -443,7 +444,7 @@ foreach ($folders as $t) {
             function(data) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>';?>");
                 $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done'];?>").attr("class","ui-state-highlight");
-                setTimeout(function(){$("#import_information").effect( "fade", "slow" );document.location = "index.php?page=items"}, 1000);
+                //setTimeout(function(){$("#import_information").effect( "fade", "slow" );document.location = "index.php?page=items"}, 1000);
             },
             "json"
         );

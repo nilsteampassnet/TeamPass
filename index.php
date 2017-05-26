@@ -25,7 +25,7 @@ ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
 
 // Uses a secure connection (HTTPS) if possible
-ini_set('session.cookie_secure', 1);
+ini_set('session.cookie_secure', 0);
 
 // Before we start processing, we should abort no install is present
 if (!file_exists('includes/config/settings.php')) {
@@ -43,14 +43,13 @@ if (!file_exists('includes/config/settings.php')) {
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<?php
-
-$_SESSION['CPM'] = 1;
+//session_destroy();
 session_id();
-if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] == "") {
+// initialize session
+$_SESSION['CPM'] = 1;
+if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
+    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
 }
 
 // Include files
@@ -75,8 +74,6 @@ $link->set_charset($encoding);
 require_once 'sources/main.functions.php';
 // Load CORE
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
-
-include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
 
 /* DEFINE WHAT LANGUAGE TO USE */
 if (isset($_GET['language'])) {
@@ -124,7 +121,7 @@ if (isset($_GET['language'])) {
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    @require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     if (isset($_GET['page']) && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === "kb") {
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
     }
@@ -133,9 +130,18 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
 }
 
+// load 2FA Google
+if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] === "1") {
+    include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+}
+
 // Load links, css and javascripts
-@require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+if (isset($_SESSION['CPM'])) {
+    @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+}
+
 ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -143,17 +149,20 @@ if (in_array($_SESSION['user_language'], $languagesList)) {
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
-    if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
+    if (window.location.href.indexOf("page=") === -1 && (window.location.href.indexOf("otv=") === -1 && window.location.href.indexOf("action=") === -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
-            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/index.php?page=items");
+            location.replace("./index.php?page=items");
         } else {
-            location.replace("<?php echo $_SESSION['settings']['cpassman_url'];?>/logout.php");
+            location.replace("./logout.php");
         }
     }
     //]]>
 </script>
 <?php
-echo $htmlHeaders;
+
+// load HEADERS
+if (isset($_SESSION['CPM']))
+    echo $htmlHeaders;
 ?>
     </head>
 
@@ -262,13 +271,13 @@ if (isset($_SESSION['login'])) {
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
-                                <li onclick="IncreaseSessionTime(\''.$LANG['alert_message_done'].'\', \''.$LANG['please_wait'].'\')">
+                                <li onclick="$(\'#div_increase_session_time\').dialog(\'open\')">
                                     <i class="fa fa-clock-o fa-fw"></i> &nbsp;'.$LANG['index_add_one_hour'].'
                                 </li>
                                 <li onclick="loadProfileDialog()">
                                     <i class="fa fa-user fa-fw"></i> &nbsp;'.$LANG['my_profile'].'
                                 </li>
-                                <li onclick="MenuAction(\'deconnexion\')">
+                                <li onclick="MenuAction(\'deconnexion\', \''.$_SESSION['user_id'].'\')">
                                     <i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'
                                 </li>
                             </ul>
@@ -455,7 +464,7 @@ if (
         }
     }
 // ask the user to change his password
-    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] == false) && !empty($_SESSION['user_id'])) {
+    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id'])) {
         //Check if password is valid
         echo '
         <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
@@ -646,7 +655,7 @@ if (
         }
 
         // Google Authenticator code
-        if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1) {
+        if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] === "1") {
             echo '
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'
@@ -695,6 +704,10 @@ echo '
     <div id="footer">
         <div style="float:left;width:32%;">
             <a href="http://teampass.net/about" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$k['copyright'].'</a>
+            &nbsp;|&nbsp;
+            <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
+            &nbsp;
+            <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['admin_help']).'"><i class="fa fa-reddit-alien"></i></a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
@@ -715,13 +728,7 @@ echo '
     <div id="div_dialog_message" style="display:none;">
         <div id="div_dialog_message_text"></div>
     </div>';
-// ENDING SESSION WARNING
-echo '
-    <div id="div_fin_session" style="display:none;">
-        <div style="padding:10px;text-align:center;">
-            <i class="fa fa-bell mi-red fa-2x"></i>&nbsp;<b>'.$LANG['index_session_ending'].'</b>
-        </div>
-    </div>';
+
 // WARNING FOR QUERY ERROR
 echo '
     <div id="div_mysql_error" style="display:none;">
@@ -744,24 +751,32 @@ if (
 }
 
 // user profile
-    echo '
-    <div id="dialog_user_profil" style="display:none;padding:4px;">
-        <div id="div_user_profil">
-            <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
-        </div>
-    </div>';
+echo '
+<div id="dialog_user_profil" style="display:none;padding:4px;">
+    <div id="div_user_profil">
+        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    </div>
+</div>';
 
-    // DUO box
-    echo '
-    <div id="dialog_duo" style="display:none;padding:4px;">
-        <div id="div_duo"></div>
-        '.$LANG['duo_loading_iframe'].'
-        <form method="post" id="duo_form" action="#">
-            <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
-            <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
-        </form>
-    </div>';
+// DUO box
+echo '
+<div id="dialog_duo" style="display:none;padding:4px;">
+    <div id="div_duo"></div>
+    '.$LANG['duo_loading_iframe'].'
+    <form method="post" id="duo_form" action="#">
+        <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
+        <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
+    </form>
+</div>';
 
+// INCREASE session time
+echo '
+<div id="div_increase_session_time" style="display:none;padding:4px;">
+    <b>'.$LANG['index_session_duration'].':</b>
+    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration']/60 : 60, '" />
+    <b>'.$LANG['minutes'].'</b>
+    <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="input_session_duration_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
+</div>';
 
 closelog();
 
