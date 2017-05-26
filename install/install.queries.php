@@ -268,6 +268,7 @@ if (isset($_POST['type'])) {
                             `complexity_level` varchar(3) NOT null DEFAULT '-1',
                             `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
                             `auto_update_pwd_next_date` int(15) NOT null DEFAULT '0',
+                            `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
                             PRIMARY KEY (`id`),
                             KEY    `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
@@ -280,7 +281,8 @@ if (isset($_POST['type'])) {
                             `id_user` int(8) NOT NULL,
                             `action` varchar(250) NULL,
                             `raison` text NULL,
-                            `raison_iv` text NULL
+                            `raison_iv` text NULL,
+                            `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set'
                             ) CHARSET=utf8;"
                         );
                         // create index
@@ -591,7 +593,8 @@ global \$SETTINGS;
                             `author` varchar(50) NOT NULL,
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
-                            `url` varchar(500) NOT NULL DEFAULT '0'
+                            `url` varchar(500) NOT NULL DEFAULT '0',
+                            `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0'
                             ) CHARSET=utf8;"
                         );
                     } else if ($task == "roles_title") {
@@ -734,6 +737,7 @@ global \$SETTINGS;
                             `item_id` int(11) NOT NULL,
                             `data` text NOT NULL,
                             `data_iv` text NOT NULL,
+                            `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
