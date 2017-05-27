@@ -841,7 +841,7 @@ global \$SETTINGS;
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
                         if ($tmp[0] === "0" || empty($tmp[0])) {
                             $mysqli_result = mysqli_query($dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'],'13' )."', '1', '0', '0', '', '')"
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'],'13' )."', '1', '0', '0', '', '', '')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'],'13' )."' WHERE login = 'admin' AND id = '1'");
