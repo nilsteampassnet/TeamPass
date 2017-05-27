@@ -1,4 +1,7 @@
 2.1.27
+
+ #1769 Installation issue - no admin account is created
+
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)
  Fix: Prevent moving a folder to one of its child folder
