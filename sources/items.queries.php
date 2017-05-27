@@ -572,7 +572,7 @@ if (isset($_POST['type'])) {
                         foreach (explode("_|_", $dataReceived['fields']) as $field) {
                             $field_data = explode("~~", $field);
                             if (count($field_data)>1 && !empty($field_data[1])) {
-                                $dataTmp = DB::queryFirstRow(
+                                $dataTmpCat = DB::queryFirstRow(
                                     "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data
                                     FROM ".prefix_table("categories_items")." AS i
                                     INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
@@ -581,9 +581,17 @@ if (isset($_POST['type'])) {
                                     $dataReceived['id']
                                 );
                                 // store Field text in DB
-                                if (count($dataTmp['title']) == 0) {
+                                if (count($dataTmpCat['title']) === 0) {
+                                    // get info about this custom field
+                                    $dataTmpCat = DB::queryFirstRow(
+                                        "SELECT title, encrypted_data
+                                        FROM ".prefix_table("categories")."
+                                        WHERE id = %i",
+                                        $field_data[0]
+                                    );
+
                                     // should we encrypt the data
-                                    if ($dataTmp['encrypted_data)'] === "1") {
+                                    if ($dataTmpCat['encrypted_data'] === "1") {
                                         $encrypt = cryption(
                                             $field_data[1],
                                             "",
@@ -606,23 +614,24 @@ if (isset($_POST['type'])) {
                                             'encryption_type' => $enc_type
                                         )
                                     );
+
                                     // update LOG
-                                    logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_creation', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' : '.$field_data[1]);
+                                    logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmpCat['title'].' : '.$field_data[1]);
                                 } else {
                                     // compare the old and new value
-                                    if ($dataTmp['encryption_type'] === "defuse") {
+                                    if ($dataTmpCat['encryption_type'] === "defuse") {
                                         $oldVal = cryption(
-                                            $dataTmp['data'],
+                                            $dataTmpCat['data'],
                                             "",
                                             "decrypt"
                                         );
                                     } else {
-                                        $oldVal = $dataTmp['data'];
+                                        $oldVal['string'] = $dataTmpCat['data'];
                                     }
 
-                                    if ($field_data[1] != $oldVal['string']) {
+                                    if ($field_data[1] !== $oldVal['string']) {
                                         // should we encrypt the data
-                                        if ($dataTmp['encrypted_data)'] === "1") {
+                                        if ($dataTmpCat['encrypted_data'] === "1") {
                                             $encrypt = cryption(
                                                 $field_data[1],
                                                 "",
@@ -646,9 +655,9 @@ if (isset($_POST['type'])) {
                                             $dataReceived['id'],
                                             $field_data[0]
                                         );
-
+                                        
                                         // update LOG
-                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmp['title'].' => '.$oldVal['string']);
+                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmpCat['title'].' => '.$oldVal['string']);
                                     }
                                 }
                             } else {
