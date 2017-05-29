@@ -992,11 +992,11 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     // is server Windows or Linux?
                     if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
                         // Change directory permissions
-                        $result = chmod_r($_SESSION['abspath'], 0770, 0740);
+                        $result = chmod_r($_SESSION['abspath'], 0775, 0744);
                         if ($result )
-                            $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0770);
+                            $result = chmod_r($_SESSION['abspath'].'/files', 0775, 0774);
                         if  ($result)
-                            $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
+                            $result = chmod_r($_SESSION['abspath'].'/upload', 0775, 0774);
                     }
 
                     if ($result === false) {
