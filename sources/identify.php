@@ -354,11 +354,14 @@ function identifyUser($sentData)
             }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
-                $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd']);
-                if ($debugLdap == 1) {
-                    fputs($dbgLdap, "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "\n");
+                if (($_SESSION['settings']['ldap_bind_dn'] != "" && $_SESSION['settings']['ldap_bind_passwd'] != "")) {
+                    $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd']);
+                    if ($debugLdap == 1) {
+                        fputs($dbgLdap, "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "\n");
+                    }
                 }
-                if ($ldapbind) {
+                
+                if (($_SESSION['settings']['ldap_bind_dn'] == "" && $_SESSION['settings']['ldap_bind_passwd'] == "") || $ldapbind) {
                     $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=" . $_SESSION['settings']['ldap_object_class'] ."))";
                     $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
