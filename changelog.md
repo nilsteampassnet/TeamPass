@@ -8,6 +8,7 @@
  Fix: Global saltkey change
  Fix: Copy folder does'nt copy included items
  Fix: Encrypt/Decrypt attachments feature from admin page
+ Fix: SQL injection corrected in users.queries.php (author: Pang@ADLab of Venustech)
  #1742 Fix for issue #1539 verifying LDAP groups properly
  #1740 Missing buttons on Users page
  #1737 Cannot import files
