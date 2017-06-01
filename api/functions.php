@@ -479,6 +479,79 @@ function rest_get () {
                     }
                 }
             }
+            else if($GLOBALS['request'][1] == "userpw") {
+				$username = $GLOBALS['request'][2];
+				if(strcmp($username,"admin")==0) {
+					//maybe forbid admin access
+				}
+				$response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                foreach ($response as $data)
+                {
+					$role_str = $data['fonction_id'];
+                }
+				$folder_arr = array();
+				$roles = explode(";", $role_str);
+				foreach ($roles as $role)
+				{
+					$response = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
+					foreach ($response as $data)
+                	{
+						$folder_id = $data['folder_id'];
+						if(!array_key_exists($folder_id,$folder_arr)) {
+							array_push($folder_arr,$folder_id);
+						}
+	                }
+				}
+				$folder_str = implode(";",$folder_arr);
+				
+
+				//REGULAR CODE FROM read/category:
+                // get ids
+                if (strpos($folder_str,";") > 0) {
+                    $condition = "id_tree IN %ls";
+                    $condition_value = explode(';', $folder_str);
+                } else {
+                    $condition = "id_tree = %s";
+                    $condition_value = $folder_str;
+                }
+                DB::debugMode(false);
+				$data = "";
+                // get items in this module
+				// deleted passwords should not be shown, therefore 'WHERE inactif=0'
+                $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND ".$condition, $condition_value);
+                foreach ($response as $data)
+                {
+                    // prepare output
+                    $id = $data['id'];
+                    $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['u']), 'UTF-8');
+                    $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                    $json[$id]['pw'] = $crypt_pw['string'];
+                }
+
+                /* load folders */
+                $response = DB::query(
+                    "SELECT id,parent_id,title,nleft,nright,nlevel FROM ".prefix_table("nested_tree")." WHERE parent_id=%i ORDER BY `title` ASC",
+                    $folder_str
+                );
+                $rows = array();
+                $i = 0;
+                foreach ($response as $row)
+                {
+                    $response = DB::query("SELECT id,label,url,login,pw, pw_iv FROM ".prefix_table("items")." WHERE inactif='0' AND id_tree=%i", $row['id']);
+                    foreach ($response as $data)
+                    {
+                        // prepare output
+                        $id = $data['id'];
+                        $json[$id]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                        $json[$id]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                        $json[$id]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                        $crypt_pw = cryption($data['pw'], SALT, $data['pw_iv'], "decrypt" );
+                        $json[$id]['pw'] = $crypt_pw['string'];
+                    }
+                }
+            }
             elseif($GLOBALS['request'][1] == "items") {
                 /*
                 * READ ITEMS asked
