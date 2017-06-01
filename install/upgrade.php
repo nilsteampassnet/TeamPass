@@ -96,6 +96,15 @@ if (
                     $("#but_next").prop("disabled", true);
                 }
             });
+
+            $("#no_key_selection").change(function() {
+                if ($("#no_key_selection").val() === "no_previous_sk_sel") {
+                    $("#previous_sk_div").hide();
+                    $("#previous_sk").val("");
+                } else if ($("#no_key_selection").val() === "previous_sk_sel") {
+                    $("#previous_sk_div").show();
+                }
+            });
         });
 
         function aes_encrypt(text)
@@ -126,8 +135,9 @@ if (
                     }
                     var data = "type="+step+
                     "&no_maintenance_mode="+maintenance+
-                    "&session_salt="+escape(document.getElementById("session_salt").value)
-                    "&previous_sk="+escape(document.getElementById("previous_sk").value);
+                    "&session_salt="+escape(document.getElementById("session_salt").value)+
+                    "&previous_sk="+escape(document.getElementById("previous_sk").value)+
+                    "&no_previous_sk="+document.getElementById("no_key_selection").value;
                 } else
                 if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
@@ -467,11 +477,19 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                     // teampass_version = 2.1.27 and no encrypt_key in db
                      echo '
                      <div id="no_encrypt_key" style="display:none;">
-                     <fieldset><legend>Previous SALTKEY</legend>
-                        <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
-                        </p>
-                        <label for="previous_sk">Previous SaltKey:&nbsp</label>
-                        <input type="text" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                     <fieldset>
+                        <legend>Database Origine</legend>
+                        Please select:&nbsp;<select id="no_key_selection">
+                            <option value="false">-- select --</option>
+                            <option value="no_previous_sk_sel">We have never used Teampass in an older version than 2.1.27(.x)</option>
+                            <option value="previous_sk_sel">We have user Teampass in an older version (example: 2.1.26)</option>
+                        </select>
+                        <div id="previous_sk_div" style="display:none;">
+                            <p>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
+                            </p>
+                            <label for="previous_sk">Previous SaltKey:&nbsp</label>
+                            <input type="text" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                        </div>
                      </fieldset>
                      </div>';
 

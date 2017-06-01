@@ -434,36 +434,58 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("but_next").disabled = "";';
 
                 // check in db if previous saltk exists
-                $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
-                WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
-                if (!empty($_POST['previous_sk']) || !empty($_POST['session_salt'])) {
-                    // get sk
-                    if (!empty($_POST['session_salt'])) {
-                        $sk_val = filter_var($_POST['session_salt'], FILTER_SANITIZE_STRING);
-                    } else {
-                        $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
-                    }
+                if ($_POST['no_previous_sk'] === "false" || $_POST['no_previous_sk'] === "previous_sk_sel") {
+                    $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
+                    WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
+                    if (!empty($_POST['previous_sk']) || !empty($_POST['session_salt'])) {
+                        // get sk
+                        if (!empty($_POST['session_salt'])) {
+                            $sk_val = filter_var($_POST['session_salt'], FILTER_SANITIZE_STRING);
+                        } else {
+                            $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
+                        }
 
-                    // upidate
-                    if (!empty($db_sk[0])) {
+                        // upidate
+                        if (!empty($db_sk[0])) {
+                            mysqli_query($dbTmp,
+                                "UPDATE `".$_SESSION['pre']."misc`
+                                SET `valeur` = '".$sk_val."'
+                                WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                            );
+                        } else {
+                            mysqli_query($dbTmp,
+                                "INSERT INTO `".$_SESSION['pre']."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
+                            );
+                        }
+                    } elseif (empty($db_sk[0])) {
+                        $res = "Please provide Teampass instance history.";
+                        echo 'document.getElementById("but_next").disabled = "disabled";';
+                        echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
+                        echo 'document.getElementById("loader").style.display = "none";';
+                        echo 'document.getElementById("no_encrypt_key").style.display = "";';
+                    }
+                } else {
+                    // user said that database has not being used for an older version
+                    // no old sk is available
+                     $tmp = mysqli_num_rows(mysqli_query(
+                            $dbTmp,
+                            "SELECT * FROM `".$var['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                        ));
+                    if ($tmp === "0") {
                         mysqli_query($dbTmp,
-                            "UPDATE `".$_SESSION['pre']."misc`
-                            SET `valeur` = '".$sk_val."'
-                            WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                            "INSERT INTO `".$_SESSION['pre']."misc`
+                            (`valeur`, `type`, `intitule`)
+                            VALUES ('none', 'admin', 'saltkey_ante_2127')"
                         );
                     } else {
                         mysqli_query($dbTmp,
                             "INSERT INTO `".$_SESSION['pre']."misc`
                             (`valeur`, `type`, `intitule`)
-                            VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
+                            VALUES ('none', 'admin', 'saltkey_ante_2127')"
                         );
                     }
-                } elseif (empty($db_sk[0])) {
-                    $res = "Please provide the previous saltkey.";
-                    echo 'document.getElementById("but_next").disabled = "disabled";';
-                    echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
-                    echo 'document.getElementById("loader").style.display = "none";';
-                    echo 'document.getElementById("no_encrypt_key").style.display = "";';
                 }
 
                 //What CPM version

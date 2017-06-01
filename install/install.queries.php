@@ -429,7 +429,9 @@ global \$SETTINGS;
                             array('admin','create_item_without_password','0'),
                             array('admin','otv_is_enabled','0'),
                             array('admin','agses_authentication_enabled','0'),
-                            array('admin','item_extra_fields','0')
+                            array('admin','item_extra_fields','0'),
+                            array('admin','saltkey_ante_2127','none'),
+                            array('admin','migration_to_2127','done')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -848,7 +850,7 @@ global \$SETTINGS;
                         }
 
                         // check that API doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
                         if ($tmp === "0") {
                             $mysqli_result = mysqli_query($dbTmp,
                                 "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".API_USER_ID."', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
@@ -856,7 +858,7 @@ global \$SETTINGS;
                         }
 
                         // check that OTV doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$var['tbl_prefix']."users` WHERE id = '".OTV_USER_ID."'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE id = '".OTV_USER_ID."'"));
                         if ($tmp === "0") {
                             $mysqli_result = mysqli_query($dbTmp,
                                 "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".OTV_USER_ID."', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"

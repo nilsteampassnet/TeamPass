@@ -127,6 +127,15 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         }
     }
 
+    // 2.1.27
+    if ($k['version'] === "2.1.27") {
+        mysqli_query($dbTmp,
+            "UPDATE ".$_SESSION['pre']."misc
+            SET migration_to_2127 = 'done'
+            WHERE type = 'admin'"
+        );
+    }
+
     $finish = 1;
 }
 

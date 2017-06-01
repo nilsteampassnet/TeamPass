@@ -64,7 +64,7 @@ if (!$rows) {
 }
 
 while ($data = mysqli_fetch_array($rows)) {
-    if ($data['encryption_type'] !== "defuse") {
+    if ($data['encryption_type'] !== "defuse" && substr($data['data'], 0, 3) !== "def") {
         // decrypt with phpCrypt
         $old_pw = cryption_phpCrypt(
             $data['data'],
@@ -84,6 +84,12 @@ while ($data = mysqli_fetch_array($rows)) {
         mysqli_query($dbTmp,
             "UPDATE ".$_SESSION['pre']."categories_items
             SET data = '".$new_pw['string']."', data_iv = '', encryption_type = 'defuse'
+            WHERE id = ".$data['id']
+        );
+    } else if ($data['encryption_type'] !== "defuse" && substr($data['data'], 0, 3) === "def") {
+        mysqli_query($dbTmp,
+            "UPDATE ".$_SESSION['pre']."categories_items
+            SET data_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
     }

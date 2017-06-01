@@ -642,7 +642,7 @@ $res8 = mysqli_query($dbTmp,
 if ($res8) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -664,7 +664,7 @@ if ($res8) {
         ADD `field_1` VARCHAR(250) NOT NULL"
     );
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LOG_SYSTEM!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LOG_SYSTEM! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -685,7 +685,7 @@ $res9 = mysqli_query($dbTmp,
 if ($res9) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -764,7 +764,7 @@ if ($res8) {
         );
     }
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CACHE!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CACHE! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -782,6 +782,13 @@ $res9 = mysqli_query($dbTmp,
     `creator_id` int(11) NOT null DEFAULT '0'
     );"
 );
+if ($res9) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_title! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 addColumnIfNotExist(
     $_SESSION['pre']."roles_title",
     "allow_pw_change",
@@ -804,6 +811,13 @@ $res10 = mysqli_query($dbTmp,
     `folder_id` int(12) NOT NULL
     );"
 );
+if ($res10) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_values! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 if (tableExists($_SESSION['pre']."functions")) {
     $tableFunctionExists = true;
 } else {
@@ -856,7 +870,7 @@ if ($res9 && $res10 && $tableFunctionExists == true) {
     //Drop old table
     mysqli_query($dbTmp,"DROP TABLE ".$_SESSION['pre']."functions");
 } elseif ($tableFunctionExists == false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -876,7 +890,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -892,7 +906,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -907,7 +921,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -925,7 +939,7 @@ $res = addIndexIfNotExist($_SESSION['pre'].'restriction_to_roles', 'role_id_idx'
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -940,6 +954,13 @@ $res = mysqli_query($dbTmp,
     `flag` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
+if ($res) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 $resTmp = mysqli_fetch_row(
     mysqli_query($dbTmp,"SELECT COUNT(*) FROM ".$_SESSION['pre']."languages")
 );
@@ -965,13 +986,6 @@ mysqli_query($dbTmp,
     ('', 'vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
     ('', 'estonian', 'Estonian' , 'ee', 'ee.png');"
 );
-if ($res) {
-    //
-} else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES!"}]';
-    mysqli_close($dbTmp);
-    exit();
-}
 
 ## TABLE EMAILS
 $res = mysqli_query($dbTmp,
@@ -986,7 +1000,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1003,7 +1017,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1019,7 +1033,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1040,7 +1054,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1058,7 +1072,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1073,7 +1087,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1092,7 +1106,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1111,7 +1125,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1134,7 +1148,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1150,6 +1164,13 @@ mysqli_query($dbTmp,
     `path` varchar(255) NOT NULL
     ) CHARSET=utf8;"
 );
+if ($res) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table export! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 
 //CLEAN UP ITEMS TABLE
 $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.

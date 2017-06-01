@@ -56,7 +56,7 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query($dbTmp,
-    "SELECT id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['pre']."log_items
+    "SELECT increment_id, id_item, raison, raison_iv, encryption_type FROM ".$_SESSION['pre']."log_items
     WHERE raison_iv IS NOT NULL
     LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
@@ -68,27 +68,35 @@ if (!$rows) {
 while ($data = mysqli_fetch_array($rows)) {
     if ($data['encryption_type'] !== "defuse") {
         $tmp = explode('at_pw :', $data['raison']);
-        // decrypt with phpCrypt
-        $old_pw = cryption_phpCrypt(
-            $tmp[0],
-            $_POST['session_salt'],
-            $data['raison_iv'],
-            "decrypt"
-        );
+        if (substr($tmp[0], 0, 3) !== "def") {
+            // decrypt with phpCrypt
+            $old_pw = cryption_phpCrypt(
+                $tmp[0],
+                $_POST['session_salt'],
+                $data['raison_iv'],
+                "decrypt"
+            );
 
-        // encrypt with Defuse
-        $new_pw = cryption(
-            $old_pw['string'],
-            $_SESSION['new_salt'],
-            "encrypt"
-        );
+            // encrypt with Defuse
+            $new_pw = cryption(
+                $old_pw['string'],
+                $_SESSION['new_salt'],
+                "encrypt"
+            );
 
-        // store Password
-        mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['pre']."categories_items
-            SET raison = '".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
-            WHERE id_item = ".$data['id_item']
-        );
+            // store Password
+            mysqli_query($dbTmp,
+                "UPDATE ".$_SESSION['pre']."log_items
+                SET raison = 'at_pw :".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
+                WHERE increment_id = ".$data['increment_id']
+            );
+        } else {
+            mysqli_query($dbTmp,
+                "UPDATE ".$_SESSION['pre']."log_items
+                SET raison_iv = '', encryption_type = 'defuse'
+                WHERE increment_id = ".$data['increment_id']
+            );
+        }
     }
 }
 

@@ -139,6 +139,15 @@ if (count($tmp[0]) === 0 || empty($tmp[0])) {
     );
 }
 
+// add new admin setting "migration_to_2127"
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'migration_to_2127'"));
+if ($tmp === "0") {
+    mysqli_query($dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'migration_to_2127', '0')"
+    );
+}
+
+
 // check if library defuse already on-going here
 // if yes, then don't execute re-encryption
 $_SESSION['tp_defuse_installed'] = false;
@@ -418,48 +427,48 @@ if ($res === false) {
 
 
 // add new admin setting "manager_move_item"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'manager_move_item'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'manager_move_item'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'manager_move_item', '0')"
     );
 }
 
 // add new admin setting "create_item_without_password"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'create_item_without_password'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'create_item_without_password'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'create_item_without_password', '0')"
     );
 }
 
 // add new admin setting "send_statistics_items"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'send_statistics_items'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'send_statistics_items'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;')"
     );
 }
 
 // add new admin setting "send_stats_time"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'send_stats_time'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'send_stats_time'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'send_stats_time', '".(time()-2592000)."')"
     );
 }
 
 // add new admin setting "agses_authentication_enabled"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'agses_authentication_enabled'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'agses_authentication_enabled'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'agses_authentication_enabled', '0')"
     );
 }
 
 // add new language "portuges_br"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."languages` WHERE name = 'portuguese_br'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."languages` WHERE name = 'portuguese_br'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."languages` (`name`, `label`, `code`, `flag`) VALUES ('portuguese_br', 'Portuguese_br', 'pr-bt', 'pr-bt.png')"
     );
@@ -508,8 +517,8 @@ mysqli_query(
 
 
 // add new admin setting "otv_is_enabled"
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'otv_is_enabled', '0')"
     );
@@ -564,14 +573,14 @@ if (!empty($tmp[0])) {
 
 
 // add 2 generic users
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."users` WHERE id = '9999991' AND login = 'OTV'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."users` WHERE id = '9999991' AND login = 'OTV'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('9999991', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
     );
 }
-$tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."users` WHERE id = '9999991' AND login = 'OTV'"));
-if ($tmp[0] == 0 || empty($tmp[0])) {
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."users` WHERE id = '9999991' AND login = 'OTV'"));
+if ($tmp === "0") {
     mysqli_query($dbTmp,
         "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('9999999', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
     );
