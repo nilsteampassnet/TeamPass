@@ -18,12 +18,12 @@
     "require": {
         "php": ">=5.5.0",
         "mysqli": ">=5.1.0",
-        "mcrypt": "*",
-        "mbstring": "*",
-        "openssl": "*",
-        "bcmath": "*",
-        "iconv": "*",
-        "xml": "*",
-        "gd": "*"
+        "ext-mcrypt": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "ext-bcmath": "*",
+        "ext-iconv": "*",
+        "ext-xml": "*",
+        "ext-gd": "*"
     }
 }

@@ -209,7 +209,6 @@ $htmlHeaders .= '
             "sources/identify.php",
             {
                 type : "identify_user",
-                tst : "'.$_SESSION['CPM'].'",
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
