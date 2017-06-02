@@ -17,7 +17,7 @@
     },
     "require": {
         "php": ">=5.5.0",
-        "mysqli": ">=5.1.0",
+        "mysql": ">=5.1.0",
         "ext-mcrypt": "*",
         "ext-mbstring": "*",
         "ext-openssl": "*",
