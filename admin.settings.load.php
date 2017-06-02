@@ -227,7 +227,7 @@ function LaunchAdminActions(action, option)
     var option;
 
     $("#div_loading").show();
-    $("#email_testing_results").hide();
+    $("#email_testing_results, #result_admin_script_backup").hide();
     $("#result_admin_action_db_backup").html("");
     if (action === "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
     else if (action === "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
@@ -322,7 +322,13 @@ function LaunchAdminActions(action, option)
                     } else {
                         $("#ldap_test_msg").html(data[0].results).show();
                     }
+                // for BCK DECRYPT
+                } else if (data[0].result === "backup_decrypt_fails") {
+                    $("#result_admin_script_backup").html(data[0].msg).show();
+                } else if (data[0].result === "backup_decrypt_success") {
+                    $("#result_admin_script_backup").html("<span class='fa fa-check mi-green'></span>&nbsp;<?php echo addslashes($LANG['file_is_now_ready']);?> - " + data[0].msg).show(1).delay(5000).fadeOut(500);
                 }
+                //--
             }
         },
         "json"

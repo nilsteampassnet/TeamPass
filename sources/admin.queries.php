@@ -490,28 +490,70 @@ switch ($_POST['type']) {
     * Decrypt a backup file
     */
     case "admin_action_backup_decrypt":
+        $msg = "";
+        $result = "";
         //get backups infos
-        $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s", "settings");
+        $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s", "admin");
         foreach ($rows as $record) {
-            $settings[$record['intitule']] = $record['valeur'];
+            $tp_settings[$record['intitule']] = $record['valeur'];
         }
+
+        // check if backup file is in DB.
+        // If YES then it is encrypted with DEFUSE
+        $bck = DB::queryFirstRow("SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "backup", "filename");
 
         //read file
         $return = "";
-        $Fnm = $settings['bck_script_path'].'/'.$_POST['option'].'.sql';
+        $Fnm = $tp_settings['bck_script_path'].'/'.$_POST['option'].'.sql';
         if (file_exists($Fnm)) {
-            $inF = fopen($Fnm, "r");
-            while (!feof($inF)) {
-                $return .= fgets($inF, 4096);
-            }
-            fclose($inF);
-            $return = Encryption\Crypt\aesctr::decrypt($return, $settings['bck_script_key'], 256);
+            if (!empty($bck) && $bck['valeur'] === $_POST['option']) {
+                $err = "";
 
-            //save the file
-            $handle = fopen($settings['bck_script_path'].'/'.$_POST['option'].'_DECRYPTED'.'.sql', 'w+');
-            fwrite($handle, $return);
-            fclose($handle);
+                // it means that file is DEFUSE encrypted
+                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
+                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
+                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
+
+                try {
+                    \Defuse\Crypto\File::decryptFileWithPassword(
+                        $_SESSION['settings']['bck_script_path'].'/'.$_POST['option'].'.sql',
+                        $_SESSION['settings']['bck_script_path'].'/'.str_replace('encrypted', 'clear', $_POST['option']).'.sql',
+                        $_SESSION['settings']['bck_script_key']
+                    );
+                }
+                catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                    $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+                }
+
+                if (!empty($err)) {
+                    echo '[{ "result":"backup_decrypt_fails" , "msg":"'.$err.'"}]';
+                    break;
+                }
+            } else {
+                    // file is bCrypt encrypted
+                $inF = fopen($Fnm, "r");
+                while (!feof($inF)) {
+                    $return .= fgets($inF, 4096);
+                }
+                fclose($inF);
+
+
+                $return = Encryption\Crypt\aesctr::decrypt($return, $tp_settings['bck_script_key'], 256);
+
+                //save the file
+                $handle = fopen($tp_settings['bck_script_path'].'/'.$_POST['option'].'.clear'.'.sql', 'w+');
+                fwrite($handle, $return);
+                fclose($handle);
+            }
+            $result = "backup_decrypt_success";
+            $msg = $tp_settings['bck_script_path'].'/'.$_POST['option'].'.clear'.'.sql';
+        } else {
+            $result = "backup_decrypt_fails";
+            $msg = "File not found: ".$Fnm;
         }
+        echo '[{ "result":"'.$result.'" , "msg":"'.$msg.'"}]';
         break;
 
     /*

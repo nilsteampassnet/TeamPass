@@ -1306,7 +1306,7 @@ echo '
                         </td>
                         <td>
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
-                        <input id="bck_script_filename" name="bck_script_filename" type="text" size="50px" value="', isset($_SESSION['settings']['bck_script_filename']) ? $_SESSION['settings']['bck_script_filename'] : 'bck_cpassman', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
+                        <input id="bck_script_filename" name="bck_script_filename" type="text" size="50px" value="', isset($_SESSION['settings']['bck_script_filename']) ? $_SESSION['settings']['bck_script_filename'] : 'bck_teampass', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
 // Backups script encryption
@@ -1338,6 +1338,14 @@ echo '
                             <i class="fa fa-square fa-stack-2x"></i>
                             <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                         </span>
+                        </td>
+                    </tr>';
+
+echo '
+                    <tr>
+                        <td></td>
+                        <td>
+                            <div id="result_admin_script_backup" class="ui-state-focus ui-corner-all" style="padding:3px; display:none;"></div>
                         </td>
                     </tr>';
 

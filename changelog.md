@@ -1,6 +1,7 @@
 2.1.27
 
  #1769 Installation issue - no admin account is created
+ #1775 Can not decrypt a created crypted Backup - Improved encryption with Defuse
 
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)

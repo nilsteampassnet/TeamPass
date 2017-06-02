@@ -421,7 +421,7 @@ global \$SETTINGS;
                             array('admin','enable_server_password_change','0'),
                             array('admin','ldap_object_class','0'),
                             array('admin','bck_script_path', $var['abspath']."/backups"),
-                            array('admin','bck_script_filename', 'bck_cpassman'),
+                            array('admin','bck_script_filename', 'bck_teampass'),
                             array('admin','syslog_enable','0'),
                             array('admin','syslog_host','localhost'),
                             array('admin','syslog_port','514'),
