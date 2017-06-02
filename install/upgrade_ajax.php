@@ -486,6 +486,7 @@ if (isset($_POST['type'])) {
                             VALUES ('none', 'admin', 'saltkey_ante_2127')"
                         );
                     }
+                    $_SESSION['tp_defuse_installed'] = true;
                 }
 
                 //What CPM version
