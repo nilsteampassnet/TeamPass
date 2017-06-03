@@ -289,7 +289,7 @@ function LaunchAdminActions(action, option)
                 } else if (data[0].result == "db_optimize") {
                     $("#result_admin_action_db_optimize").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "purge_old_files") {
-                    $("#result_admin_action_purge_old_files").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result']; ?>").show();
+                    $("#result_admin_action_purge_old_files").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_files_deleted+"&nbsp;<?php echo $LANG['admin_action_purge_old_files_result']; ?>").show();
                 } else if (data[0].result == "db_clean_items") {
                     $("#result_admin_action_db_clean_items").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result']; ?>").show();
                 } else if (data[0].result == "changed_salt_key") {
