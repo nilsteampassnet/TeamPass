@@ -480,10 +480,9 @@ class adLDAP {
     public function setUseSSL($useSSL) {
             $this->useSSL = $useSSL;
             // Set the default port correctly 
-            if($this->useSSL) { 
+            if ($this->useSSL) { 
             $this->setPort(self::ADLDAP_LDAPS_PORT); 
-            }
-            else { 
+            } else { 
             $this->setPort(self::ADLDAP_LDAP_PORT); 
             } 
     }
@@ -641,8 +640,7 @@ class adLDAP {
                 if ($this->useSSL && !$this->useTLS) {
                     // If you have problems troubleshooting, remove the @ character from the ldapldapBind command above to get the actual error message
                     throw new adLDAPException('Bind to Active Directory failed. Either the LDAPs connection failed or the login credentials are incorrect. AD said: '.$this->getLastError());
-                }
-                else {
+                } else {
                     throw new adLDAPException('Bind to Active Directory failed. Check the login credentials and/or server details. AD said: '.$this->getLastError());
                 }
             }
@@ -652,8 +650,7 @@ class adLDAP {
             $this->ldapBind = @ldap_sasl_bind($this->ldapConnection, NULL, NULL, "GSSAPI"); 
             if (!$this->ldapBind) { 
                 throw new adLDAPException('Rebind to Active Directory failed. AD said: '.$this->getLastError()); 
-            } 
-            else {
+            } else {
                 return true;
             }
         }
@@ -694,8 +691,7 @@ class adLDAP {
             $this->ldapBind = @ldap_sasl_bind($this->ldapConnection, NULL, NULL, "GSSAPI");
             if (!$this->ldapBind) {
                 throw new adLDAPException('Rebind to Active Directory failed. AD said: '.$this->getLastError());
-            }
-            else {
+            } else {
                 return true;
             }
         }
@@ -755,11 +751,11 @@ class adLDAP {
     }
 
     /**
-    * Returns objectClass in an array
-    *
-    * @param string $distinguishedName The full DN of a contact
-    * @return array
-    */
+     * Returns objectClass in an array
+     *
+     * @param string $distinguishedName The full DN of a contact
+     * @return array
+     */
     public function getObjectClass($distinguishedName) {
         if ($distinguishedName === NULL) { return false; }
         if (!$this->getLdapBind()) { return false; }
@@ -778,21 +774,21 @@ class adLDAP {
     }
 
     /**
-    * Find the Base DN of your domain controller
-    * 
-    * @return string
-    */
+     * Find the Base DN of your domain controller
+     * 
+     * @return string
+     */
     public function findBaseDn() {
         $namingContext = $this->getRootDse(array('defaultnamingcontext'));   
         return $namingContext[0]['defaultnamingcontext'][0];
     }
     
     /**
-    * Get the RootDSE properties from a domain controller
-    * 
-    * @param string[] $attributes The attributes you wish to query e.g. defaultnamingcontext
-    * @return array
-    */
+     * Get the RootDSE properties from a domain controller
+     * 
+     * @param string[] $attributes The attributes you wish to query e.g. defaultnamingcontext
+     * @return array
+     */
     public function getRootDse($attributes = array("*", "+")) {
         if (!$this->ldapBind) { return (false); }
         

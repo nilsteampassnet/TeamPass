@@ -150,7 +150,7 @@ abstract class Cipher extends Core
      */
     public function operation($op = 0)
     {
-        if($op == self::ENCRYPT || $op == self::DECRYPT)
+        if ($op == self::ENCRYPT || $op == self::DECRYPT)
             $this->operation = $op;
 
         return $this->operation;
@@ -164,7 +164,7 @@ abstract class Cipher extends Core
      */
     public function name($name = "")
     {
-        if($name != "")
+        if ($name != "")
             $this->cipher_name = $name;
 
         return $this->cipher_name;
@@ -179,12 +179,12 @@ abstract class Cipher extends Core
      */
     public function blockSize($bytes = 0)
     {
-        if($bytes > 0)
+        if ($bytes > 0)
             $this->block_size = $bytes;
 
         // in some cases a blockSize is not set, such as stream ciphers.
         // so just return 0 for the block size
-        if(!isset($this->block_size))
+        if (!isset($this->block_size))
             return 0;
 
         return $this->block_size;
@@ -217,27 +217,27 @@ abstract class Cipher extends Core
      */
     public function key($key = "", $req_sz = 0)
     {
-        if($key != "" && $key != null)
+        if ($key != "" && $key != null)
         {
             // in the case where the key is changed changed after
             // creating a new Cipher object and the $req_sz was not
             // given, we need to make sure the new key meets the size
             // requirements. This can be determined from the $this->key_len
             // member set from the previous key
-            if($this->key_len > 0 && $req_sz == 0)
+            if ($this->key_len > 0 && $req_sz == 0)
                 $req_sz = $this->key_len;
             else
                 $this->key_len = strlen($key);
 
-            if($req_sz > 0)
+            if ($req_sz > 0)
             {
-                if($this->key_len > $req_sz)
+                if ($this->key_len > $req_sz)
                 {
                     // shorten the key length
                     $key = substr($key, 0, $req_sz);
                     $this->key_len = $req_sz;
                 }
-                else if($this->key_len < $req_sz)
+                else if ($this->key_len < $req_sz)
                 {
                     // send a notice that the key was too small
                     // NEVER PAD THE KEY, THIS WOULD BE INSECURE!!!!!

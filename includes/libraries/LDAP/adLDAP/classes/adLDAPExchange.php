@@ -53,18 +53,18 @@ class adLDAPExchange {
     }
     
     /**
-    * Create an Exchange account
-    * 
-    * @param string $username The username of the user to add the Exchange account to
-    * @param array $storageGroup The mailbox, Exchange Storage Group, for the user account, this must be a full CN
-    *                            If the storage group has a different base_dn to the adLDAP configuration, set it using $base_dn
-    * @param string $emailAddress The primary email address to add to this user
-    * @param string $mailNickname The mail nick name.  If mail nickname is blank, the username will be used
-    * @param bool $useDefaults Indicates whether the store should use the default quota, rather than the per-mailbox quota.
-    * @param string $baseDn Specify an alternative base_dn for the Exchange storage group
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Create an Exchange account
+     * 
+     * @param string $username The username of the user to add the Exchange account to
+     * @param array $storageGroup The mailbox, Exchange Storage Group, for the user account, this must be a full CN
+     *                            If the storage group has a different base_dn to the adLDAP configuration, set it using $base_dn
+     * @param string $emailAddress The primary email address to add to this user
+     * @param string $mailNickname The mail nick name.  If mail nickname is blank, the username will be used
+     * @param bool $useDefaults Indicates whether the store should use the default quota, rather than the per-mailbox quota.
+     * @param string $baseDn Specify an alternative base_dn for the Exchange storage group
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function createMailbox($username, $storageGroup, $emailAddress, $mailNickname = NULL, $useDefaults = TRUE, $baseDn = NULL, $isGUID = false) {
         if ($username === NULL) {  return "Missing compulsory field [username]"; }     
         if ($storageGroup === NULL) { return "Missing compulsory array [storagegroup]"; }
@@ -96,20 +96,20 @@ class adLDAPExchange {
     }
     
     /**
-    * Add an X400 address to Exchange
-    * See http://tools.ietf.org/html/rfc1685 for more information.
-    * An X400 Address looks similar to this X400:c=US;a= ;p=Domain;o=Organization;s=Doe;g=John;
-    * 
-    * @param string $username The username of the user to add the X400 to to
-    * @param string $country Country
-    * @param string $admd Administration Management Domain
-    * @param string $pdmd Private Management Domain (often your AD domain)
-    * @param string $org Organization
-    * @param string $surname Surname
-    * @param string $givenName Given name
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Add an X400 address to Exchange
+     * See http://tools.ietf.org/html/rfc1685 for more information.
+     * An X400 Address looks similar to this X400:c=US;a= ;p=Domain;o=Organization;s=Doe;g=John;
+     * 
+     * @param string $username The username of the user to add the X400 to to
+     * @param string $country Country
+     * @param string $admd Administration Management Domain
+     * @param string $pdmd Private Management Domain (often your AD domain)
+     * @param string $org Organization
+     * @param string $surname Surname
+     * @param string $givenName Given name
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function addX400($username, $country, $admd, $pdmd, $org, $surname, $givenName, $isGUID = false) {
         if ($username === NULL) { return "Missing compulsory field [username]"; }     
         
@@ -139,14 +139,14 @@ class adLDAPExchange {
     }
     
     /**
-    * Add an address to Exchange
-    * 
-    * @param string $username The username of the user to add the Exchange account to
-    * @param string $emailAddress The email address to add to this user
-    * @param bool $default Make this email address the default address, this is a bit more intensive as we have to demote any existing default addresses
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Add an address to Exchange
+     * 
+     * @param string $username The username of the user to add the Exchange account to
+     * @param string $emailAddress The email address to add to this user
+     * @param bool $default Make this email address the default address, this is a bit more intensive as we have to demote any existing default addresses
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function addAddress($username, $emailAddress, $default = FALSE, $isGUID = false) {
         if ($username === NULL) { return "Missing compulsory field [username]"; }     
         if ($emailAddress === NULL) { return "Missing compulsory fields [emailAddress]"; }
@@ -202,15 +202,15 @@ class adLDAPExchange {
     }
     
     /**
-    * Remove an address to Exchange
-    * If you remove a default address the account will no longer have a default, 
-    * we recommend changing the default address first
-    * 
-    * @param string $username The username of the user to add the Exchange account to
-    * @param string $emailAddress The email address to add to this user
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Remove an address to Exchange
+     * If you remove a default address the account will no longer have a default, 
+     * we recommend changing the default address first
+     * 
+     * @param string $username The username of the user to add the Exchange account to
+     * @param string $emailAddress The email address to add to this user
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function deleteAddress($username, $emailAddress, $isGUID = false) {
         if ($username === NULL) { return "Missing compulsory field [username]"; }     
         if ($emailAddress === NULL) { return "Missing compulsory fields [emailAddress]"; }
@@ -225,8 +225,7 @@ class adLDAPExchange {
             for ($i = 0; $i < $user[0]['proxyaddresses']['count']; $i++) {
                 if (strpos($user[0]['proxyaddresses'][$i], 'SMTP:') !== false && $user[0]['proxyaddresses'][$i] == 'SMTP:'.$emailAddress) {
                     $mod['proxyAddresses'][0] = 'SMTP:'.$emailAddress;
-                }
-                elseif (strpos($user[0]['proxyaddresses'][$i], 'smtp:') !== false && $user[0]['proxyaddresses'][$i] == 'smtp:'.$emailAddress) {
+                } elseif (strpos($user[0]['proxyaddresses'][$i], 'smtp:') !== false && $user[0]['proxyaddresses'][$i] == 'smtp:'.$emailAddress) {
                     $mod['proxyAddresses'][0] = 'smtp:'.$emailAddress;
                 }
             }
@@ -280,14 +279,14 @@ class adLDAPExchange {
     }
     
     /**
-    * Mail enable a contact
-    * Allows email to be sent to them through Exchange
-    * 
-    * @param string $distinguishedName The contact to mail enable
-    * @param string $emailAddress The email address to allow emails to be sent through
-    * @param string $mailNickname The mailnickname for the contact in Exchange.  If NULL this will be set to the display name
-    * @return string|boolean
-    */
+     * Mail enable a contact
+     * Allows email to be sent to them through Exchange
+     * 
+     * @param string $distinguishedName The contact to mail enable
+     * @param string $emailAddress The email address to allow emails to be sent through
+     * @param string $mailNickname The mailnickname for the contact in Exchange.  If NULL this will be set to the display name
+     * @return string|boolean
+     */
     public function contactMailEnable($distinguishedName, $emailAddress, $mailNickname = NULL) {
         if ($distinguishedName === NULL) { return "Missing compulsory field [distinguishedName]"; }   
         if ($emailAddress === NULL) { return "Missing compulsory field [emailAddress]"; }  
@@ -320,11 +319,11 @@ class adLDAPExchange {
      * @param array $attributes An array of the AD attributes you wish to return
      * @return array
      */
-    public function servers($attributes = array('cn','distinguishedname','serialnumber')) {
+    public function servers($attributes = array('cn', 'distinguishedname', 'serialnumber')) {
         if (!$this->adldap->getLdapBind()) { return false; }
         
         $configurationNamingContext = $this->adldap->getRootDse(array('configurationnamingcontext'));
-        $sr = @ldap_search($this->adldap->getLdapConnection(), $configurationNamingContext[0]['configurationnamingcontext'][0],'(&(objectCategory=msExchExchangeServer))', $attributes);
+        $sr = @ldap_search($this->adldap->getLdapConnection(), $configurationNamingContext[0]['configurationnamingcontext'][0], '(&(objectCategory=msExchExchangeServer))', $attributes);
         $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
         return $entries;
     }
@@ -337,7 +336,7 @@ class adLDAPExchange {
      * @param bool $recursive If enabled this will automatically query the databases within a storage group
      * @return array
      */
-    public function storageGroups($exchangeServer, $attributes = array('cn','distinguishedname'), $recursive = NULL) {
+    public function storageGroups($exchangeServer, $attributes = array('cn', 'distinguishedname'), $recursive = NULL) {
         if (!$this->adldap->getLdapBind()) { return false; }
         if ($exchangeServer === NULL) { return "Missing compulsory field [exchangeServer]"; }
         if ($recursive === NULL) { $recursive = $this->adldap->getRecursiveGroups(); }
@@ -361,7 +360,7 @@ class adLDAPExchange {
      * @param array $attributes An array of the AD attributes you wish to return
      * @return array
      */
-    public function storageDatabases($storageGroup, $attributes = array('cn','distinguishedname','displayname')) {
+    public function storageDatabases($storageGroup, $attributes = array('cn', 'distinguishedname', 'displayname')) {
         if (!$this->adldap->getLdapBind()) { return false; }
         if ($storageGroup === NULL) { return "Missing compulsory field [storageGroup]"; }
         

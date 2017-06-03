@@ -96,13 +96,13 @@ class adLDAPComputers {
     }
     
     /**
-    * Check if a computer is in a group
-    * 
-    * @param string $computerName The name of the computer
-    * @param string $group The group to check
-    * @param bool $recursive Whether to check recursively
-    * @return boolean
-    */
+     * Check if a computer is in a group
+     * 
+     * @param string $computerName The name of the computer
+     * @param string $group The group to check
+     * @param bool $recursive Whether to check recursively
+     * @return boolean
+     */
     public function inGroup($computerName, $group, $recursive = NULL) {
         if ($computerName === NULL) { return false; }
         if ($group === NULL) { return false; }
@@ -129,14 +129,14 @@ class adLDAPComputers {
     public function groups($computerName, $recursive = NULL) {
         if ($computerName === NULL) { return false; }
         if ($recursive === NULL) { $recursive = $this->adldap->getRecursiveGroups(); } //use the default option if they haven't set it
-        if (!$this->adldap->getLdapBind()){ return false; }
+        if (!$this->adldap->getLdapBind()) { return false; }
 
         //search the directory for their information
         $info = @$this->info($computerName, array("memberof", "primarygroupid"));
         $groups = $this->adldap->utilities()->niceNames($info[0]["memberof"]); //presuming the entry returned is our guy (unique usernames)
 
         if ($recursive === true) {
-            foreach ($groups as $id => $groupName){
+            foreach ($groups as $id => $groupName) {
                 $extraGroups = $this->adldap->group()->recursiveGroups($groupName);
                 $groups = array_merge($groups, $extraGroups);
             }

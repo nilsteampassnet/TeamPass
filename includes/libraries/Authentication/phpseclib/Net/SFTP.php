@@ -437,8 +437,8 @@ class SFTP extends SSH2
         $response = $this->_get_channel_packet(self::CHANNEL);
         if ($response === false) {
             // from PuTTY's psftp.exe
-            $command = "test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n" .
-                        "test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n" .
+            $command = "test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n".
+                        "test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n".
                         "exec sftp-server";
             // we don't do $this->exec($command, false) because exec() operates on a different channel and plus the SSH_MSG_CHANNEL_OPEN that exec() does
             // is redundant
@@ -2785,18 +2785,17 @@ class SFTP extends SSH2
     function _send_sftp_packet($type, $data)
     {
         $packet = $this->request_id !== false ?
-            pack('NCNa*', strlen($data) + 5, $type, $this->request_id, $data) :
-            pack('NCa*',  strlen($data) + 1, $type, $data);
+            pack('NCNa*', strlen($data) + 5, $type, $this->request_id, $data) : pack('NCa*', strlen($data) + 1, $type, $data);
 
         $start = strtok(microtime(), ' ') + strtok(''); // http://php.net/microtime#61838
         $result = $this->_send_channel_packet(self::CHANNEL, $packet);
         $stop = strtok(microtime(), ' ') + strtok('');
 
         if (defined('NET_SFTP_LOGGING')) {
-            $packet_type = '-> ' . $this->packet_types[$type] .
-                            ' (' . round($stop - $start, 4) . 's)';
+            $packet_type = '-> '.$this->packet_types[$type].
+                            ' ('.round($stop - $start, 4).'s)';
             if (NET_SFTP_LOGGING == self::LOG_REALTIME) {
-                echo "<pre>\r\n" . $this->_format_log(array($data), array($packet_type)) . "\r\n</pre>\r\n";
+                echo "<pre>\r\n".$this->_format_log(array($data), array($packet_type))."\r\n</pre>\r\n";
                 flush();
                 ob_flush();
             } else {
@@ -2861,18 +2860,18 @@ class SFTP extends SSH2
 
         if ($this->request_id !== false) {
             Strings::shift($this->packet_buffer, 4); // remove the request id
-            $length-= 5; // account for the request id and the packet type
+            $length -= 5; // account for the request id and the packet type
         } else {
-            $length-= 1; // account for the packet type
+            $length -= 1; // account for the packet type
         }
 
         $packet = Strings::shift($this->packet_buffer, $length);
 
         if (defined('NET_SFTP_LOGGING')) {
-            $packet_type = '<- ' . $this->packet_types[$this->packet_type] .
-                            ' (' . round($stop - $start, 4) . 's)';
+            $packet_type = '<- '.$this->packet_types[$this->packet_type].
+                            ' ('.round($stop - $start, 4).'s)';
             if (NET_SFTP_LOGGING == self::LOG_REALTIME) {
-                echo "<pre>\r\n" . $this->_format_log(array($packet), array($packet_type)) . "\r\n</pre>\r\n";
+                echo "<pre>\r\n".$this->_format_log(array($packet), array($packet_type))."\r\n</pre>\r\n";
                 flush();
                 ob_flush();
             } else {

@@ -48,7 +48,7 @@ class Mode_NCFB extends Mode
         parent::__construct(PHP_Crypt::MODE_NCFB, $cipher);
 
         // this works with only block Ciphers
-        if($cipher->type() != Cipher::BLOCK)
+        if ($cipher->type() != Cipher::BLOCK)
             trigger_error("NCFB mode requires a block cipher", E_USER_WARNING);
     }
 
@@ -80,7 +80,7 @@ class Mode_NCFB extends Mode
         // if $len is less than blockSize() this will still work, as even
         // a fraction is greater than 0
         $max = $len / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // current position in the text
             $pos = $i * $blocksz;
@@ -88,7 +88,7 @@ class Mode_NCFB extends Mode
             // make sure we don't extend past the length of $text
             $byte_len = $blocksz;
 
-            if(($pos + $byte_len) > $len)
+            if (($pos + $byte_len) > $len)
                 $byte_len -= ($pos + $byte_len) - $len;
 
             // encrypt the register
@@ -99,7 +99,7 @@ class Mode_NCFB extends Mode
             $block = substr($text, $pos, $byte_len);
 
             // xor the block
-            for($j = 0; $j < $byte_len; ++$j)
+            for ($j = 0; $j < $byte_len; ++$j)
                 $block[$j] = $block[$j] ^ $this->enc_register[$j];
 
             // replace the plain text block with the encrypted block
@@ -128,14 +128,14 @@ class Mode_NCFB extends Mode
         // if $len is less than blockSize() this will still work, as even
         // a fraction is greater than 0
         $max = $len / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // get the current position in text
             $pos = $i * $blocksz;
 
             // make sure we don't extend past the length of $text
             $byte_len = $blocksz;
-            if(($pos + $byte_len) > $len)
+            if (($pos + $byte_len) > $len)
                 $byte_len -= ($pos + $byte_len) - $len;
 
             // encrypt the register
@@ -147,7 +147,7 @@ class Mode_NCFB extends Mode
             $this->register = $block;
 
             // xor the block
-            for($j = 0; $j < $byte_len; ++$j)
+            for ($j = 0; $j < $byte_len; ++$j)
                 $block[$j] = $block[$j] ^ $this->enc_register[$j];
 
             // replace the encrypted block with the plain text block

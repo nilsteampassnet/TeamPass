@@ -68,7 +68,7 @@ class Cipher_RC2 extends Cipher
         // the key must be between 1 and 128 bytes, keys larger than
         // 128 bytes are truncated in expandedKey()
         $keylen = strlen($key);
-        if($keylen < 1)
+        if ($keylen < 1)
         {
             $err = "Key size is $keylen bits, Key size must be between 1 and 128 bytes";
             trigger_error($err, E_USER_WARNING);
@@ -115,7 +115,7 @@ class Cipher_RC2 extends Cipher
         $k = self::splitBytes($this->xkey);
         $j = 0; // the key index
 
-        for($i = 0; $i < 16; ++$i)
+        for ($i = 0; $i < 16; ++$i)
         {
             $j = $i * 4;
 
@@ -145,7 +145,7 @@ class Cipher_RC2 extends Cipher
             $w[3]  = parent::uInt32($w[3]);
 
             // rounds 5 and 11 get rc2's Mash
-            if($i == 4 || $i == 10)
+            if ($i == 4 || $i == 10)
             {
                 $w[0] += $k[$w[3] & 63];
                 $w[1] += $k[$w[0] & 63];
@@ -160,11 +160,11 @@ class Cipher_RC2 extends Cipher
 		 * correct results in PHP I needed to do this as well
 		 */
         $max = count($w);
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             $pos = $i * 2;
             $text[$pos]   = chr($w[$i]);
-            $text[$pos+1] = chr($w[$i] >> 8);
+            $text[$pos + 1] = chr($w[$i] >> 8);
         }
 
         return true;
@@ -187,7 +187,7 @@ class Cipher_RC2 extends Cipher
         $k = self::splitBytes($this->xkey);
         $j = 0; // the key index
 
-        for($i = 15; $i >= 0; --$i)
+        for ($i = 15; $i >= 0; --$i)
         {
             $j = $i * 4;
 
@@ -218,7 +218,7 @@ class Cipher_RC2 extends Cipher
             $w[0] -= parent::uInt($w[1] & ~$w[3]) + parent::uInt($w[2] & $w[3]) + $k[$j + 0];
             $w[0]  = parent::uInt32($w[0]);
 
-            if($i == 5 || $i == 11)
+            if ($i == 5 || $i == 11)
             {
                 $w[3] -= $k[$w[2] & 63];
                 $w[2] -= $k[$w[1] & 63];
@@ -234,11 +234,11 @@ class Cipher_RC2 extends Cipher
 		 * correct results in PHP I needed to do this as well
 		 */
         $max = count($w);
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             $pos = $i * 2;
             $text[$pos]   = chr($w[$i]);
-            $text[$pos+1] = chr($w[$i] >> 8);
+            $text[$pos + 1] = chr($w[$i] >> 8);
         }
 
         return true;
@@ -256,7 +256,7 @@ class Cipher_RC2 extends Cipher
     {
         $arr = str_split($str, 2);
 
-        return array_map(function($b){
+        return array_map(function($b) {
             return Core::str2Dec($b[1].$b[0]);
         }, $arr);
     }
@@ -276,11 +276,11 @@ class Cipher_RC2 extends Cipher
         $len = $this->keySize();
 
         // the max length of the key is 128 bytes
-        if($len > 128)
+        if ($len > 128)
             $this->xkey = substr($this->xkey, 0, 128);
 
         // now expanded the rest of the key to 128 bytes, using the sbox
-        for($i = $len; $i < 128; ++$i)
+        for ($i = $len; $i < 128; ++$i)
         {
             $byte1 = ord($this->xkey[$i - $len]);
             $byte2 = ord($this->xkey[$i - 1]);
@@ -288,7 +288,7 @@ class Cipher_RC2 extends Cipher
 
             // the sbox is only 255 bytes, so if we extend past that
             // we need to modulo 256 so we have a valid position
-            if($pos > 255)
+            if ($pos > 255)
                 $pos -= 256;
 
             $this->xkey .= chr(self::$_sbox[$pos]);

@@ -75,14 +75,14 @@ class Cipher_Blowfish extends Cipher
     {
         // the max length of the key is 448 bits (56 bytes)
         $keylen = strlen($key);
-        if($keylen > 56)
+        if ($keylen > 56)
         {
             $key = substr($key, 0, 56);
             $keylen = 56;
         }
-        else if($keylen < 1)
+        else if ($keylen < 1)
         {
-            $msg  = "No key given. The key must be between 1 - 56 bytes.";
+            $msg = "No key given. The key must be between 1 - 56 bytes.";
             trigger_error($msg, E_USER_WARNING);
         }
 
@@ -146,12 +146,12 @@ class Cipher_Blowfish extends Cipher
         $xl = parent::str2Dec(substr($data, 0, 4));
         $xr = parent::str2Dec(substr($data, 4, 4));
 
-        for($i = 0; $i < 16; ++$i)
+        for ($i = 0; $i < 16; ++$i)
         {
-            if($this->operation() == parent::ENCRYPT)
+            if ($this->operation() == parent::ENCRYPT)
                 $xl ^= self::$_p[$i];
             else
-                $xl ^= self::$_p[17-$i];
+                $xl ^= self::$_p[17 - $i];
 
             // perform F() on the left half, and XOR with the right half
             $xr = $this->F($xl) ^ $xr;
@@ -168,12 +168,11 @@ class Cipher_Blowfish extends Cipher
         $xr  = $tmp;
 
         // XOR the final two elements of $_p
-        if($this->operation() == parent::ENCRYPT)
+        if ($this->operation() == parent::ENCRYPT)
         {
             $xr ^= self::$_p[16];
             $xl  = $xl ^ self::$_p[17];
-        }
-        else // parent::DECRYPT
+        } else // parent::DECRYPT
         {
             $xr ^= self::$_p[1];
             $xl ^= self::$_p[0];
@@ -195,7 +194,7 @@ class Cipher_Blowfish extends Cipher
     {
         // split the 32 bits into four 8 bit parts
         $x[0] = $i & 0xff; // first byte
-        $x[1] = ($i >> 8)  & 0xff; // second byte
+        $x[1] = ($i >> 8) & 0xff; // second byte
         $x[2] = ($i >> 16) & 0xff; // third byte
         $x[3] = ($i >> 24) & 0xff; // fourth byte
 
@@ -217,7 +216,7 @@ class Cipher_Blowfish extends Cipher
     private function subKeys()
     {
         // now xor each element of $_p with 32 bits from the key
-        for($i = 0; $i < 18; ++$i)
+        for ($i = 0; $i < 18; ++$i)
         {
             $c = $this->keyChunk(4);
             self::$_p[$i] ^= parent::str2Dec($c);
@@ -228,7 +227,7 @@ class Cipher_Blowfish extends Cipher
 
         // now we loop, each loop replacing elements of $_p, or an $_sbox with the
         // repeatedly encrypted zero string
-        for($i = 0; $i < 1042; $i += 2)
+        for ($i = 0; $i < 1042; $i += 2)
         {
             // encrypt the 64 bit null string
             $this->encrypt($zero);
@@ -239,29 +238,29 @@ class Cipher_Blowfish extends Cipher
 
             // now fill the $_p, $_sbox1, $_sbox2, $_sbox3, $_sbox4
             // with 4 bytes from the repeatedly encrypted 8 byte null string
-            if($i < 18)
+            if ($i < 18)
             {
                 self::$_p[$i] = $z0;
                 self::$_p[$i + 1] = $z1;
             }
-            else if($i >= 18 && $i < 274)
+            else if ($i >= 18 && $i < 274)
             {
                 self::$_sbox1[$i - 18] = $z0;
                 self::$_sbox1[$i - 18 + 1] = $z1;
             }
-            else if($i >= 274 && $i < 530)
+            else if ($i >= 274 && $i < 530)
             {
                 self::$_sbox2[$i - 274] = $z0;
                 self::$_sbox2[$i - 274 + 1] = $z1;
             }
-            else if($i >= 530 && $i < 786)
+            else if ($i >= 530 && $i < 786)
             {
                 self::$_sbox3[$i - 530] = $z0;
                 self::$_sbox3[$i - 530 + 1] = $z1;
             }
-            else if($i >= 786 && $i < 1042)
+            else if ($i >= 786 && $i < 1042)
             {
-                self::$_sbox4[$i -786] = $z0;
+                self::$_sbox4[$i - 786] = $z0;
                 self::$_sbox4[$i - 786 + 1] = $z1;
             }
         }
@@ -284,18 +283,18 @@ class Cipher_Blowfish extends Cipher
      */
     private function keyChunk($size = 1, $reset = false)
     {
-        if($reset || $this->key_pos >= $this->keySize())
+        if ($reset || $this->key_pos >= $this->keySize())
             $this->key_pos = 0;
 
         $bytes = substr($this->key(), $this->key_pos, $size);
         $len = strlen($bytes);
-        if($len < $size)
+        if ($len < $size)
         {
             $bytes .= substr($this->key(), 0, $size - $len);
             $this->key_pos = $size - $len;
+        } else {
+                    $this->key_pos += $size;
         }
-        else
-            $this->key_pos += $size;
 
         return $bytes;
     }

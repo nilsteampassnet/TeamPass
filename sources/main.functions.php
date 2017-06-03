@@ -1330,12 +1330,24 @@ function GenerateCryptKey($size = "", $secure = "", $numerals = "", $capitalize 
     $pwgen = new Encryption\PwGen\pwgen();
 
     // init
-    if (!empty($size)) $pwgen->setLength($size);
-    if (!empty($secure)) $pwgen->setSecure($secure);
-    if (!empty($numerals)) $pwgen->setNumerals($numerals);
-    if (!empty($capitalize)) $pwgen->setCapitalize($capitalize);
-    if (!empty($ambiguous)) $pwgen->setAmbiguous($ambiguous);
-    if (!empty($symbols)) $pwgen->setSymbols($symbols);
+    if (!empty($size)) {
+        $pwgen->setLength($size);
+    }
+    if (!empty($secure)) {
+        $pwgen->setSecure($secure);
+    }
+    if (!empty($numerals)) {
+        $pwgen->setNumerals($numerals);
+    }
+    if (!empty($capitalize)) {
+        $pwgen->setCapitalize($capitalize);
+    }
+    if (!empty($ambiguous)) {
+        $pwgen->setAmbiguous($ambiguous);
+    }
+    if (!empty($symbols)) {
+        $pwgen->setSymbols($symbols);
+    }
 
     // generate and send back
     return $pwgen->generate();
@@ -1347,11 +1359,11 @@ function GenerateCryptKey($size = "", $secure = "", $numerals = "", $capitalize 
 /**
  * @param string $message
  */
-function send_syslog($message, $component = "teampass", $program = "php", $host , $port)
+function send_syslog($message, $component = "teampass", $program = "php", $host, $port)
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
-    $syslog_message = "<123>" . date('M d H:i:s ') . $component . ": " . $message;
+    $syslog_message = "<123>".date('M d H:i:s ').$component.": ".$message;
         socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
     socket_close($sock);
 }
@@ -1446,20 +1458,21 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
  */
 function get_client_ip_server() {
     $ipaddress = '';
-    if (getenv('HTTP_CLIENT_IP'))
-        $ipaddress = getenv('HTTP_CLIENT_IP');
-    else if (getenv('HTTP_X_FORWARDED_FOR'))
-        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
-    else if (getenv('HTTP_X_FORWARDED'))
-        $ipaddress = getenv('HTTP_X_FORWARDED');
-    else if (getenv('HTTP_FORWARDED_FOR'))
-        $ipaddress = getenv('HTTP_FORWARDED_FOR');
-    else if (getenv('HTTP_FORWARDED'))
-        $ipaddress = getenv('HTTP_FORWARDED');
-    else if (getenv('REMOTE_ADDR'))
-        $ipaddress = getenv('REMOTE_ADDR');
-    else
-        $ipaddress = 'UNKNOWN';
+    if (getenv('HTTP_CLIENT_IP')) {
+            $ipaddress = getenv('HTTP_CLIENT_IP');
+    } else if (getenv('HTTP_X_FORWARDED_FOR')) {
+            $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+    } else if (getenv('HTTP_X_FORWARDED')) {
+            $ipaddress = getenv('HTTP_X_FORWARDED');
+    } else if (getenv('HTTP_FORWARDED_FOR')) {
+            $ipaddress = getenv('HTTP_FORWARDED_FOR');
+    } else if (getenv('HTTP_FORWARDED')) {
+            $ipaddress = getenv('HTTP_FORWARDED');
+    } else if (getenv('REMOTE_ADDR')) {
+            $ipaddress = getenv('REMOTE_ADDR');
+    } else {
+            $ipaddress = 'UNKNOWN';
+    }
 
     return $ipaddress;
 }
@@ -1526,7 +1539,9 @@ function handleConfigFile($action, $field = null, $value = null)
         $x = 0;
         $bFound = false;
         foreach ($data as $line) {
-            if (stristr($line, ");")) break;
+            if (stristr($line, ");")) {
+                break;
+            }
             if (stristr($line, "'".$field."' => '")) {
                 $data[$x] = "    '".$field."' => '".$value."',\n";
                 $bFound = true;

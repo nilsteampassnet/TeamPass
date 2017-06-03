@@ -87,15 +87,15 @@ class Aes
     {
         // shift row r of state S left by r bytes [é5.1.2]
         $t = array(4);
-        for ($r=1; $r<4; $r++) {
-            for ($c=0; $c<4; $c++) {
-                $t[$c] = $s[$r][($c+$r)%$Nb];  // shift into temp copy
+        for ($r = 1; $r < 4; $r++) {
+            for ($c = 0; $c < 4; $c++) {
+                $t[$c] = $s[$r][($c + $r) % $Nb]; // shift into temp copy
             }
-            for ($c=0; $c<4; $c++) {
-                $s[$r][$c] = $t[$c];           // and copy back
+            for ($c = 0; $c < 4; $c++) {
+                $s[$r][$c] = $t[$c]; // and copy back
             }
         }          // note that this will work for Nb=4,5,6, but not 7,8 (always 4 for AES):
-        return $s;  // see fp.gladman.plus.com/cryptography_technology/rijndael/aes.spec.311.pdf
+        return $s; // see fp.gladman.plus.com/cryptography_technology/rijndael/aes.spec.311.pdf
     }
 
     /**
@@ -104,12 +104,12 @@ class Aes
     private static function mixColumns($s, $Nb)
     {
         // combine bytes of each col of state S [é5.1.3]
-        for ($c=0; $c<4; $c++) {
-            $a = array(4);  // 'a' is a copy of the current column from 's'
-            $b = array(4);  // 'b' is aé{02} in GF(2^8)
-            for ($i=0; $i<4; $i++) {
+        for ($c = 0; $c < 4; $c++) {
+            $a = array(4); // 'a' is a copy of the current column from 's'
+            $b = array(4); // 'b' is aé{02} in GF(2^8)
+            for ($i = 0; $i < 4; $i++) {
                 $a[$i] = $s[$i][$c];
-                $b[$i] = $s[$i][$c]&0x80 ? $s[$i][$c]<<1 ^ 0x011b : $s[$i][$c]<<1;
+                $b[$i] = $s[$i][$c] & 0x80 ? $s[$i][$c] << 1 ^ 0x011b : $s[$i][$c] << 1;
             }
             // a[n] ^ b[n] is aé{03} in GF(2^8)
             $s[0][$c] = $b[0] ^ $a[1] ^ $b[1] ^ $a[2] ^ $a[3]; // 2*a0 + 3*a1 + a2 + a3
@@ -227,16 +227,16 @@ class aesctr extends Aes
 {
 
     /**
-    * Encrypt a text using AES encryption in Counter mode of operation
-    *  - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
-    *
-    * Unicode multi-byte character safe
-    *
-    * @param plaintext string text to be encrypted
-    * @param password  the password to use to generate a key
-    * @param nBits     integer of bits to be used in the key (128, 192, or 256)
-    * @return          string text
-    */
+     * Encrypt a text using AES encryption in Counter mode of operation
+     *  - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
+     *
+     * Unicode multi-byte character safe
+     *
+     * @param plaintext string text to be encrypted
+     * @param password  the password to use to generate a key
+     * @param nBits     integer of bits to be used in the key (128, 192, or 256)
+     * @return          string text
+     */
     public static function encrypt($plaintext, $password, $nBits)
     {
         $blockSize = 16; // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
@@ -311,13 +311,13 @@ class aesctr extends Aes
     }
 
     /**
-    * Decrypt a text encrypted by AES in counter mode of operation
-    *
-    * @param ciphertext source text to be decrypted
-    * @param password   the password to use to generate a key
-    * @param nBits      integer of bits to be used in the key (128, 192, or 256)
-    * @return           string text
-    */
+     * Decrypt a text encrypted by AES in counter mode of operation
+     *
+     * @param ciphertext source text to be decrypted
+     * @param password   the password to use to generate a key
+     * @param nBits      integer of bits to be used in the key (128, 192, or 256)
+     * @return           string text
+     */
     public static function decrypt($ciphertext, $password, $nBits)
     {
         $blockSize = 16; // block size fixed at 16 bytes / 128 bits (Nb=4) for AES

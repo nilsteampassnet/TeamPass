@@ -1,7 +1,7 @@
 <?php
-$name='DejaVuSansCondensed';
-$type='TTF';
-$desc=array (
+$name = 'DejaVuSansCondensed';
+$type = 'TTF';
+$desc = array(
     'Ascent' => 928.0,
     'Descent' => -236.0,
     'CapHeight' => 928.0,

@@ -262,8 +262,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
          */
         private static function failedValidationAction()
         {
-            if (!file_exists(__DIR__."/../".self::$config['logDirectory']))
-                throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found!");
+            if (!file_exists(__DIR__."/../".self::$config['logDirectory'])) {
+                            throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found!");
+            }
 
             //call the logging function
             static::logCSRFattack();
@@ -522,8 +523,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
             foreach (self::$config['verifyGetFor'] as $key => $value) {
                 $value = str_replace(array('/', '*'), array('\/', '(.*)'), $value);
                 preg_match('/'.$value.'/', self::getCurrentUrl(), $output);
-                if (count($output) > 0)
-                    return false;
+                if (count($output) > 0) {
+                                    return false;
+                }
             }
             return true;
         }

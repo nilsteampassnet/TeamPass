@@ -49,7 +49,7 @@ class Mode_NOFB extends Mode
         parent::__construct(PHP_Crypt::MODE_NOFB, $cipher);
 
         // this works with only block Ciphers
-        if($cipher->type() != Cipher::BLOCK)
+        if ($cipher->type() != Cipher::BLOCK)
             trigger_error("NOFB mode requires a block cipher", E_USER_WARNING);
     }
 
@@ -77,14 +77,14 @@ class Mode_NOFB extends Mode
         $blocksz = $this->cipher->blockSize();
 
         $max = $len / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // current position in the text
             $pos = $i * $blocksz;
 
             // make sure we don't extend past the length of $text
             $byte_len = $blocksz;
-            if(($pos + $blocksz) > $len)
+            if (($pos + $blocksz) > $len)
                 $byte_len -= ($pos + $blocksz) - $len;
 
             // encrypt the register
@@ -93,7 +93,7 @@ class Mode_NOFB extends Mode
 
             // now grab a block of text and a block of from the register, and XOR them
             $block = substr($text, $pos, $byte_len);
-            for($j = 0; $j < $byte_len; ++$j)
+            for ($j = 0; $j < $byte_len; ++$j)
                 $block[$j] = $block[$j] ^ $this->enc_register[$j];
 
             // replace the plain text block with encrypted text
@@ -120,14 +120,14 @@ class Mode_NOFB extends Mode
         $blocksz = $this->cipher->blockSize();
 
         $max = $len / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // current position within $text
             $pos = $i * $blocksz;
 
             // make sure we don't extend past the length of $text
             $byte_len = $blocksz;
-            if(($pos + $byte_len) > $len)
+            if (($pos + $byte_len) > $len)
                 $byte_len -= ($pos + $byte_len) - $len;
 
             // encrypt the register
@@ -140,7 +140,7 @@ class Mode_NOFB extends Mode
 
             // now grab a block of text and xor with the register
             $block = substr($text, $pos, $byte_len);
-            for($j = 0; $j < $byte_len; ++$j)
+            for ($j = 0; $j < $byte_len; ++$j)
                 $block[$j] = $block[$j] ^ $this->enc_register[$j];
 
             // replace the encrypted block with plain text

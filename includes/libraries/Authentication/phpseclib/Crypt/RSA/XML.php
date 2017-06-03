@@ -118,15 +118,15 @@ class XML
         if (count($primes) != 2) {
             return false;
         }
-        return "<RSAKeyValue>\r\n" .
-                '  <Modulus>' . Base64::encode($n->toBytes()) . "</Modulus>\r\n" .
-                '  <Exponent>' . Base64::encode($e->toBytes()) . "</Exponent>\r\n" .
-                '  <P>' . Base64::encode($primes[1]->toBytes()) . "</P>\r\n" .
-                '  <Q>' . Base64::encode($primes[2]->toBytes()) . "</Q>\r\n" .
-                '  <DP>' . Base64::encode($exponents[1]->toBytes()) . "</DP>\r\n" .
-                '  <DQ>' . Base64::encode($exponents[2]->toBytes()) . "</DQ>\r\n" .
-                '  <InverseQ>' . Base64::encode($coefficients[2]->toBytes()) . "</InverseQ>\r\n" .
-                '  <D>' . Base64::encode($d->toBytes()) . "</D>\r\n" .
+        return "<RSAKeyValue>\r\n".
+                '  <Modulus>'.Base64::encode($n->toBytes())."</Modulus>\r\n".
+                '  <Exponent>'.Base64::encode($e->toBytes())."</Exponent>\r\n".
+                '  <P>'.Base64::encode($primes[1]->toBytes())."</P>\r\n".
+                '  <Q>'.Base64::encode($primes[2]->toBytes())."</Q>\r\n".
+                '  <DP>'.Base64::encode($exponents[1]->toBytes())."</DP>\r\n".
+                '  <DQ>'.Base64::encode($exponents[2]->toBytes())."</DQ>\r\n".
+                '  <InverseQ>'.Base64::encode($coefficients[2]->toBytes())."</InverseQ>\r\n".
+                '  <D>'.Base64::encode($d->toBytes())."</D>\r\n".
                 '</RSAKeyValue>';
     }
 
@@ -140,9 +140,9 @@ class XML
      */
     static function savePublicKey(BigInteger $n, BigInteger $e)
     {
-        return "<RSAKeyValue>\r\n" .
-                '  <Modulus>' . Base64::encode($n->toBytes()) . "</Modulus>\r\n" .
-                '  <Exponent>' . Base64::encode($e->toBytes()) . "</Exponent>\r\n" .
+        return "<RSAKeyValue>\r\n".
+                '  <Modulus>'.Base64::encode($n->toBytes())."</Modulus>\r\n".
+                '  <Exponent>'.Base64::encode($e->toBytes())."</Exponent>\r\n".
                 '</RSAKeyValue>';
     }
 }

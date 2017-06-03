@@ -140,7 +140,7 @@ class Cipher_Enigma extends Cipher
         $this->nr2 = 0;
 
         $max = strlen($str);
-        for($j = 0; $j < $max; ++$j)
+        for ($j = 0; $j < $max; ++$j)
         {
             $i = ord($str[$j]);
             $this->nr1 = $this->n1;
@@ -153,12 +153,12 @@ class Cipher_Enigma extends Cipher
             $str[$j] = chr($i);
             $this->n1++;
 
-            if($this->n1 == self::ROTORSZ)
+            if ($this->n1 == self::ROTORSZ)
             {
                 $this->n1 = 0;
                 $this->n2++;
 
-                if($this->n2 == self::ROTORSZ)
+                if ($this->n2 == self::ROTORSZ)
                     $this->n2 = 0;
 
                 $this->nr2 = $this->n2;
@@ -189,22 +189,22 @@ class Cipher_Enigma extends Cipher
         $klen = $this->keySize();
 
         // get the key to exactly 13 bytes if it's less than 13
-        if($klen < 13)
+        if ($klen < 13)
             $this->xkey = str_pad($this->xkey, 13, chr(0), STR_PAD_RIGHT);
 
         $seed = 123;
-        for($i = 0; $i < 13; ++$i)
+        for ($i = 0; $i < 13; ++$i)
             $seed = parent::sInt32($seed) * ord($this->xkey[$i]) + $i;
 
         // sets $t1 and $deck
-        for($i = 0; $i < self::ROTORSZ; ++$i)
+        for ($i = 0; $i < self::ROTORSZ; ++$i)
         {
             $this->t1[] = $i;
             $this->deck[] = $i;
         }
 
         // sets $t3
-        for($i = 0; $i < self::ROTORSZ; ++$i)
+        for ($i = 0; $i < self::ROTORSZ; ++$i)
         {
             // make sure the return values are 32 bit
             $seed = 5 * parent::sInt32($seed) + ord($this->xkey[$i % 13]);
@@ -223,11 +223,11 @@ class Cipher_Enigma extends Cipher
             $temp = $this->t1[$k];
             $this->t1[$k] = $this->t1[$ic];
             $this->t1[$ic] = $temp;
-            if($this->t3[$k] != 0)
+            if ($this->t3[$k] != 0)
                 continue;
 
             $ic = ($random & self::MASK) % $k;
-            while($this->t3[$ic] != 0)
+            while ($this->t3[$ic] != 0)
                 $ic = ($ic + 1) % $k;
 
             $this->t3[$k] = $ic;
@@ -235,7 +235,7 @@ class Cipher_Enigma extends Cipher
         }
 
         // sets $t2
-        for($i = 0; $i < self::ROTORSZ; ++$i)
+        for ($i = 0; $i < self::ROTORSZ; ++$i)
         {
             $pos = $this->t1[$i] & self::MASK;
             $this->t2[$pos] = $i;

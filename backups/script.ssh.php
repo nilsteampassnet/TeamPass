@@ -85,7 +85,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
         $ssh = new Net_SSH2($parse['host'], $parse['port']);
         if (!$ssh->login($record['login'], $oldPwClear['string'])) {
             $log .= "   ERR - Login failed.\n   Error description:".$_SESSION['sshError']."\n\n";
-        }else{
+        } else {
             // send ssh script for user change
             $ret_server = $ssh->exec('echo -e "'.$new_pwd.'\n'.$new_pwd.'" | passwd '.$record['login']);
             if (strpos($ret_server, "updated successfully") !== false) {

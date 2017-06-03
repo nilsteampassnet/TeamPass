@@ -201,10 +201,11 @@ class Cipher_DES extends Cipher
 		{
 			$l[$n] = $r[$n - 1];
 
-			if ($this->operation() == parent::DECRYPT)
-				$f = $this->F($r[$n - 1], $this->sub_keys[16 - $n]);
-			else
-				$f = $this->F($r[$n - 1], $this->sub_keys[$n - 1]);
+			if ($this->operation() == parent::DECRYPT) {
+							$f = $this->F($r[$n - 1], $this->sub_keys[16 - $n]);
+			} else {
+							$f = $this->F($r[$n - 1], $this->sub_keys[$n - 1]);
+			}
 
 			// XOR F with Ln
 			$r[$n] = $this->xorBin($l[$n - 1], $f);
@@ -240,8 +241,9 @@ class Cipher_DES extends Cipher
 		$binkey = parent::str2Bin($this->key());
 
 		// reduce the key down to 56bits based on table $_pc1
-		for ($i = 0; $i < 56; ++$i)
-            $pc1m[$i] = $binkey[self::$_pc1[$i] - 1];
+		for ($i = 0; $i < 56; ++$i) {
+		            $pc1m[$i] = $binkey[self::$_pc1[$i] - 1];
+		}
 
 		// split $pc1m in half (C0 and D0)
 		$c[0] = array_slice($pc1m, 0, 28);
@@ -270,8 +272,9 @@ class Cipher_DES extends Cipher
 			// of these.
 			$CnDn = array_merge($c[$i], $d[$i]);
 			$this->sub_keys[$i - 1] = "";
-			for ($j = 0; $j < 48; ++$j)
-				$this->sub_keys[$i - 1] .= $CnDn[self::$_pc2[$j] - 1];
+			for ($j = 0; $j < 48; ++$j) {
+							$this->sub_keys[$i - 1] .= $CnDn[self::$_pc2[$j] - 1];
+			}
 		}
 
 		// the sub_keys are created, we are done with the key permutation
@@ -303,8 +306,9 @@ class Cipher_DES extends Cipher
 		$ip = "";
 
 		// loop through the 64 bit block, ordering it occording to $_ip
-		for ($i = 0; $i < 64; ++$i)
-			$ip .= $text[self::$_ip[$i] - 1];
+		for ($i = 0; $i < 64; ++$i) {
+					$ip .= $text[self::$_ip[$i] - 1];
+		}
 
 		return $ip;
 	}
@@ -340,14 +344,15 @@ class Cipher_DES extends Cipher
 	 * to the self::$_e[] table.
 	 * This is only used in the F() function
 	 *
-	 * @param array $r 32 bit binary, each bit in an array element
+	 * @param string $r 32 bit binary, each bit in an array element
 	 * @return string 48 bit binary string
 	 */
 	private function e($r)
 	{
 		$e = "";
-		for ($i = 0; $i < 48; ++$i)
-			$e .= $r[self::$_e[$i] - 1];
+		for ($i = 0; $i < 48; ++$i) {
+					$e .= $r[self::$_e[$i] - 1];
+		}
 
 		return $e;
 	}
@@ -402,8 +407,9 @@ class Cipher_DES extends Cipher
 	private function p($s)
 	{
 		$p = "";
-		for ($i = 0; $i < 32; ++$i)
-			$p .= $s[self::$_p[$i] - 1];
+		for ($i = 0; $i < 32; ++$i) {
+					$p .= $s[self::$_p[$i] - 1];
+		}
 
 		return $p;
 	}
@@ -420,8 +426,9 @@ class Cipher_DES extends Cipher
 	private function fp($bin)
 	{
 		$fp = "";
-		for ($i = 0; $i < 64; ++$i)
-			$fp .= $bin[self::$_fp[$i] - 1];
+		for ($i = 0; $i < 64; ++$i) {
+					$fp .= $bin[self::$_fp[$i] - 1];
+		}
 
 		return $fp;
 	}

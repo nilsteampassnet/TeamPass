@@ -23,14 +23,16 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
     $dp = opendir($dir);
     $res = true;
     while ($file = readdir($dp)) {
-        if (($file == ".") || ($file == ".."))
-            continue;
+        if (($file == ".") || ($file == "..")) {
+                    continue;
+        }
 
         $fullPath = $dir."/".$file;
 
         if (is_dir($fullPath)) {
-            if ($res = @chmod($fullPath, $dirPermissions))
-                $res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
+            if ($res = @chmod($fullPath, $dirPermissions)) {
+                            $res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
+            }
         } else {
             $res = chmod($fullPath, $filePermissions);
         }
@@ -997,10 +999,12 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
                         // Change directory permissions
                         $result = chmod_r($_SESSION['abspath'], 0770, 0740);
-                        if ($result)
-                            $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0770);
-                        if ($result)
-                            $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
+                        if ($result) {
+                                                    $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0770);
+                        }
+                        if ($result) {
+                                                    $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
+                        }
                     }
 
                     if ($result === false) {

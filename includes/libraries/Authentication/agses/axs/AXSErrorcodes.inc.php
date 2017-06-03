@@ -19,10 +19,12 @@ class AXSErrorcodes {
      */
     function getErrorcode($message) {
         $errorcode = -10000;
-        if (($begin = strpos($message, "ERROR (")) === FALSE)
-            $begin = -1;
-        if (($end = strpos($message, ")")) === FALSE)
-            $end = -1;
+        if (($begin = strpos($message, "ERROR (")) === FALSE) {
+                    $begin = -1;
+        }
+        if (($end = strpos($message, ")")) === FALSE) {
+                    $end = -1;
+        }
 		
         if ($begin >= 0 && $end >= 0) {
             $realBegin = $begin + 7;

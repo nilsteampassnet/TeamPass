@@ -140,12 +140,12 @@ class Cipher_3Way extends Cipher
         $key = array_map("parent::str2Dec", $key);
 
         // determine which round constant to use
-        if($this->operation() == parent::ENCRYPT)
+        if ($this->operation() == parent::ENCRYPT)
             $rcon = self::$_rcon_enc;
         else
             $rcon = self::$_rcon_dec;
 
-        if($this->operation() == parent::DECRYPT)
+        if ($this->operation() == parent::DECRYPT)
         {
             $this->theta($key);
             $this->invertBits($key);
@@ -153,7 +153,7 @@ class Cipher_3Way extends Cipher
         }
 
         // 3Way uses 11 rounds
-        for($i = 0; $i < self::ROUNDS; ++$i)
+        for ($i = 0; $i < self::ROUNDS; ++$i)
         {
             $data[0] = parent::uInt32($data[0] ^ $key[0] ^ ($rcon[$i] << 16));
             $data[1] = parent::uInt32($data[1] ^ $key[1]);
@@ -168,7 +168,7 @@ class Cipher_3Way extends Cipher
 
         $this->theta($data);
 
-        if($this->operation() == parent::DECRYPT)
+        if ($this->operation() == parent::DECRYPT)
             $this->invertBits($data);
 
         // assemble the three 32 bit parts back to a 96 bit string
@@ -239,102 +239,102 @@ class Cipher_3Way extends Cipher
 
 		$d = $tmp;
 		*/
-	}
+    }
 
 
-	/**
-	 * Applies several of 3Way's functions used for encryption and decryption
-	 * NOTE: Please read the comments in the $this->gamma() function. This
-	 * function calls the $this->gamma() function which does not do anything.
-	 *
-	 * @param integer[] $d A 3 element 32 bit integer array
-	 * @return void
-	 */
-	private function rho(&$d)
-	{
-		$this->theta($d);
-		$this->pi1($d);
-		$this->gamma($d);
-		$this->pi2($d);
-	}
+    /**
+     * Applies several of 3Way's functions used for encryption and decryption
+     * NOTE: Please read the comments in the $this->gamma() function. This
+     * function calls the $this->gamma() function which does not do anything.
+     *
+     * @param integer[] $d A 3 element 32 bit integer array
+     * @return void
+     */
+    private function rho(&$d)
+    {
+        $this->theta($d);
+        $this->pi1($d);
+        $this->gamma($d);
+        $this->pi2($d);
+    }
 
 
-	/**
-	 * 3Way's PI_1 function
-	 * This was taken from mcrypt's 3-way pi_1() function
-	 *
-	 * @param array $d A 3 element 32 bit integer array
-	 * @return void
-	 */
-	private function pi1(&$d)
-	{
-		$d[0] = parent::uInt32(($d[0] >> 10) ^ ($d[0] << 22));
-		$d[2] = parent::uInt32(($d[2] << 1) ^ ($d[2] >> 31));
-	}
+    /**
+     * 3Way's PI_1 function
+     * This was taken from mcrypt's 3-way pi_1() function
+     *
+     * @param array $d A 3 element 32 bit integer array
+     * @return void
+     */
+    private function pi1(&$d)
+    {
+        $d[0] = parent::uInt32(($d[0] >> 10) ^ ($d[0] << 22));
+        $d[2] = parent::uInt32(($d[2] << 1) ^ ($d[2] >> 31));
+    }
 
 
-	/**
-	 * 3Way's PI_2 function
-	 * This was taken from mcrypt's 3-way pi_2() function
-	 *
-	 * @param array $d A 3 element 32 bit integer array
-	 * @return void
-	 */
-	private function pi2(&$d)
-	{
-		$d[0] = parent::uInt32(($d[0] << 1) ^ ($d[0] >> 31));
-		$d[2] = parent::uInt32(($d[2] >> 10) ^ ($d[2] << 22));
-	}
+    /**
+     * 3Way's PI_2 function
+     * This was taken from mcrypt's 3-way pi_2() function
+     *
+     * @param array $d A 3 element 32 bit integer array
+     * @return void
+     */
+    private function pi2(&$d)
+    {
+        $d[0] = parent::uInt32(($d[0] << 1) ^ ($d[0] >> 31));
+        $d[2] = parent::uInt32(($d[2] >> 10) ^ ($d[2] << 22));
+    }
 
 
-	/**
-	 * Reverse the bits of each element of array $d, and
-	 * reverses the order of array $d, used only during
-	 * decryption
-	 *
-	 * @param array $d A 3 element array of a 32 bit integers
-	 * @return void
-	 */
-	private function invertBits(&$d)
-	{
-		$d = array_map("parent::dec2Bin", $d);
-		$d = array_map("strrev", $d);
-		$d = array_map("parent::bin2Dec", $d);
-		$d = array_reverse($d);
-	}
+    /**
+     * Reverse the bits of each element of array $d, and
+     * reverses the order of array $d, used only during
+     * decryption
+     *
+     * @param array $d A 3 element array of a 32 bit integers
+     * @return void
+     */
+    private function invertBits(&$d)
+    {
+        $d = array_map("parent::dec2Bin", $d);
+        $d = array_map("strrev", $d);
+        $d = array_map("parent::bin2Dec", $d);
+        $d = array_reverse($d);
+    }
 
 
-	/**
-	 * Initialize the tables used in 3Way Encryption.
-	 *
-	 * @return void
-	 */
-	private function initTables()
-	{
-		// round constants for encryption
-		self::$_rcon_enc = array(
-			0x0B0B, 0x1616, 0x2C2C, 0x5858,
-			0xB0B0, 0x7171, 0xE2E2, 0xD5D5,
-			0xBBBB, 0x6767, 0xCECE, 0x8D8D
-		);
+    /**
+     * Initialize the tables used in 3Way Encryption.
+     *
+     * @return void
+     */
+    private function initTables()
+    {
+        // round constants for encryption
+        self::$_rcon_enc = array(
+            0x0B0B, 0x1616, 0x2C2C, 0x5858,
+            0xB0B0, 0x7171, 0xE2E2, 0xD5D5,
+            0xBBBB, 0x6767, 0xCECE, 0x8D8D
+        );
 
-		// round constants for decryption
-		self::$_rcon_dec = array(
-			0xB1B1, 0x7373, 0xE6E6, 0xDDDD,
-			0xABAB, 0x4747, 0x8E8E, 0x0D0D,
-			0x1A1A, 0x3434, 0x6868, 0xD0D0
-		);
-	}
+        // round constants for decryption
+        self::$_rcon_dec = array(
+            0xB1B1, 0x7373, 0xE6E6, 0xDDDD,
+            0xABAB, 0x4747, 0x8E8E, 0x0D0D,
+            0x1A1A, 0x3434, 0x6868, 0xD0D0
+        );
+    }
 
 
-	/**
-	 * Indicates this is a block cipher
-	 *
-	 * @return integer Returns Cipher::BLOCK
-	 */
-	public function type()
-	{
-		return parent::BLOCK;
-	}
+    /**
+     * Indicates this is a block cipher
+     *
+     * @return integer Returns Cipher::BLOCK
+     */
+    public function type()
+    {
+        return parent::BLOCK;
+    }
 }
 ?>

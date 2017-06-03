@@ -149,12 +149,12 @@ class PKCS8 extends PKCS
 
             $RSAPrivateKey = pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($RSAPrivateKey)), $RSAPrivateKey);
 
-            $RSAPrivateKey = "-----BEGIN ENCRYPTED PRIVATE KEY-----\r\n" .
-                    chunk_split(Base64::encode($RSAPrivateKey), 64) .
+            $RSAPrivateKey = "-----BEGIN ENCRYPTED PRIVATE KEY-----\r\n".
+                    chunk_split(Base64::encode($RSAPrivateKey), 64).
                     '-----END ENCRYPTED PRIVATE KEY-----';
         } else {
-            $RSAPrivateKey = "-----BEGIN PRIVATE KEY-----\r\n" .
-                    chunk_split(Base64::encode($RSAPrivateKey), 64) .
+            $RSAPrivateKey = "-----BEGIN PRIVATE KEY-----\r\n".
+                    chunk_split(Base64::encode($RSAPrivateKey), 64).
                     '-----END PRIVATE KEY-----';
         }
 

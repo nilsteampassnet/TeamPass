@@ -57,8 +57,9 @@ function create_hash($password)
 function validate_password($password, $correct_hash)
 {
     $params = explode(":", $correct_hash);
-    if (count($params) < HASH_SECTIONS)
-        return false;
+    if (count($params) < HASH_SECTIONS) {
+            return false;
+    }
     $pbkdf2 = base64_decode($params[HASH_PBKDF2_INDEX]);
     return slow_equals(
         $pbkdf2,
@@ -108,10 +109,12 @@ function slow_equals($a, $b)
 function pbkdf2($algorithm, $password, $salt, $count, $key_length, $raw_output = false)
 {
     $algorithm = strtolower($algorithm);
-    if (!in_array($algorithm, hash_algos(), true))
-        trigger_error('PBKDF2 ERROR: Invalid hash algorithm.', E_USER_ERROR);
-    if ($count <= 0 || $key_length <= 0)
-        trigger_error('PBKDF2 ERROR: Invalid parameters.', E_USER_ERROR);
+    if (!in_array($algorithm, hash_algos(), true)) {
+            trigger_error('PBKDF2 ERROR: Invalid hash algorithm.', E_USER_ERROR);
+    }
+    if ($count <= 0 || $key_length <= 0) {
+            trigger_error('PBKDF2 ERROR: Invalid parameters.', E_USER_ERROR);
+    }
 
     if (function_exists("hash_pbkdf2")) {
         // The output length is in NIBBLES (4-bits) if $raw_output is false!
@@ -137,9 +140,10 @@ function pbkdf2($algorithm, $password, $salt, $count, $key_length, $raw_output =
         $output .= $xorsum;
     }
 
-    if ($raw_output)
-        return substr($output, 0, $key_length);
-    else
-        return bin2hex(substr($output, 0, $key_length));
-}
+    if ($raw_output) {
+            return substr($output, 0, $key_length);
+    } else {
+            return bin2hex(substr($output, 0, $key_length));
+    }
+    }
 ?>

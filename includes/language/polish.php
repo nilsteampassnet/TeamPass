@@ -879,7 +879,8 @@ $LANG = array(
     'error_url_missing' => 'Nie podano adresu URL!',
     'error_ssh_credentials_missing' => 'Poświadczenia SSH są niepoprawne.',
     'error_url_must_be_ssh' => 'URL musi zawierać protokół SSH!',
-    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do serwera wykorzystując dane logowania i pole `URL`, < / li > <li > Zmiana hasła użytkownika na serwerze < /il > <li > Zachowanie nowego hasła w Teampass < /il > <li > Zakończenie połączenia SSH < /li > < / ul > <br / > < b > Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze(jeśli nie, określ hasło użytkownika root) przed uruchomieniem.< / b > ',
+    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do {
+    serwera wykorzystując dane logowania i pole `URL`, < / li > <li > Zmiana hasła użytkownika na serwerze < /il > <li > Zachowanie nowego hasła w Teampass < /il > <li > Zakończenie połączenia SSH < /li > < / ul > <br / > < b > Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze(jeśli nie, określ hasło użytkownika root) przed uruchomieniem.< / b > ',
     'update_server_password' => 'Zaktualizuj hasło serwera',
     'error_personal_sk_expected' => 'Musisz najpierw wprowadzić swój prywatny saltkety!',
     'click_to_generate' => 'Kliknij by wygenerować',
@@ -1047,4 +1048,5 @@ $LANG = array(
     'no_username_needed' => 'No username needed',
     '' => ''
 );
+}
 }

@@ -48,7 +48,7 @@ class Mode_OFB extends Mode
         parent::__construct(PHP_Crypt::MODE_OFB, $cipher);
 
         // this works with only block Ciphers
-        if($cipher->type() != Cipher::BLOCK)
+        if ($cipher->type() != Cipher::BLOCK)
             trigger_error("OFB mode requires a block cipher", E_USER_WARNING);
     }
 
@@ -73,7 +73,7 @@ class Mode_OFB extends Mode
     public function encrypt(&$text)
     {
         $max = strlen($text);
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             $this->enc_register = $this->register;
             $this->cipher->encrypt($this->enc_register);
@@ -97,7 +97,7 @@ class Mode_OFB extends Mode
     public function decrypt(&$text)
     {
         $max = strlen($text);
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             $this->enc_register = $this->register;
             $this->cipher->encrypt($this->enc_register);

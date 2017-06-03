@@ -51,7 +51,7 @@ class Mode_Stream extends Mode_Raw
         parent::__construct1(PHP_Crypt::MODE_STREAM, $cipher);
 
         // this works with only stream Ciphers
-        if($cipher->type() != Cipher::STREAM)
+        if ($cipher->type() != Cipher::STREAM)
             trigger_error("Stream mode requires a stream cipher", E_USER_WARNING);
     }
 

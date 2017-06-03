@@ -17,17 +17,17 @@ class Duo {
     const ERR_SKEY = 'ERR|The Duo secret key passed to sign_request() is invalid.';
     const ERR_AKEY = 'ERR|The application secret key passed to sign_request() must be at least 40 characters.';
 
-    private static function sign_vals($key, $vals, $prefix, $expire, $time=NULL) {
+    private static function sign_vals($key, $vals, $prefix, $expire, $time = NULL) {
         $exp = ($time ? $time : time()) + $expire;
-        $val = $vals . '|' . $exp;
+        $val = $vals.'|'.$exp;
         $b64 = base64_encode($val);
-        $cookie = $prefix . '|' . $b64;
+        $cookie = $prefix.'|'.$b64;
 
         $sig = hash_hmac("sha1", $cookie, $key);
-        return $cookie . '|' . $sig;
+        return $cookie.'|'.$sig;
     }
 
-    private static function parse_vals($key, $val, $prefix, $ikey, $time=NULL) {
+    private static function parse_vals($key, $val, $prefix, $ikey, $time = NULL) {
         $ts = ($time ? $time : time());
 
         $parts = explode('|', $val);
@@ -36,7 +36,7 @@ class Duo {
         }
         list($u_prefix, $u_b64, $u_sig) = $parts;
 
-        $sig = hash_hmac("sha1", $u_prefix . '|' . $u_b64, $key);
+        $sig = hash_hmac("sha1", $u_prefix.'|'.$u_b64, $key);
         if (hash_hmac("sha1", $sig, $key) !== hash_hmac("sha1", $u_sig, $key)) {
             return null;
         }
@@ -61,7 +61,7 @@ class Duo {
         return $user;
     }
 
-    public static function signRequest($ikey, $skey, $akey, $username, $time=NULL) {
+    public static function signRequest($ikey, $skey, $akey, $username, $time = NULL) {
         if (!isset($username) || strlen($username) === 0) {
             return self::ERR_USER;
         }
@@ -78,15 +78,15 @@ class Duo {
             return self::ERR_AKEY;
         }
 
-        $vals = $username . '|' . $ikey;
+        $vals = $username.'|'.$ikey;
 
         $duo_sig = self::sign_vals($skey, $vals, self::DUO_PREFIX, self::DUO_EXPIRE, $time);
         $app_sig = self::sign_vals($akey, $vals, self::APP_PREFIX, self::APP_EXPIRE, $time);
 
-        return $duo_sig . ':' . $app_sig;
+        return $duo_sig.':'.$app_sig;
     }
 
-    public static function verifyResponse($ikey, $skey, $akey, $sig_response, $time=NULL) {
+    public static function verifyResponse($ikey, $skey, $akey, $sig_response, $time = NULL) {
         list($auth_sig, $app_sig) = explode(':', $sig_response);
 
         $auth_user = self::parse_vals($skey, $auth_sig, self::AUTH_PREFIX, $ikey, $time);

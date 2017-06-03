@@ -1588,7 +1588,7 @@ class X509
      *
      * @param array ref $root
      * @param string $path
-     * @param object $asn1
+     * @param ASN1 $asn1
      * @access private
      */
     function _mapInExtensions(&$root, $path, $asn1)
@@ -1638,7 +1638,7 @@ class X509
      *
      * @param array ref $root
      * @param string $path
-     * @param object $asn1
+     * @param ASN1 $asn1
      * @access private
      */
     function _mapOutExtensions(&$root, $path, $asn1)
