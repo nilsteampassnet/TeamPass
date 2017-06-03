@@ -872,14 +872,14 @@ $LANG = array(
     'error_bad_credentials' => 'Poświadczenia logowania nie odpowiadają!',
     'reload_page_after_user_account_creation' => 'Twoje konto zostało dodane. Strona zostanie automatycznie przekierowana w ciągu 3 sekund ...',
     'settings_ldap_usergroup' => 'Grupa LDAP do przeszukiwania',
-    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa?,
+    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa?',
     'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze(używając połączenia SSH)',
     'error_login_missing' => 'Nie podano loginu!',
     'error_pwd_missing' => 'Nie podano hasła!',
     'error_url_missing' => 'Nie podano adresu URL!',
     'error_ssh_credentials_missing' => 'Poświadczenia SSH są niepoprawne.',
     'error_url_must_be_ssh' => 'URL musi zawierać protokół SSH!',
-    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do {
+    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do 
     serwera wykorzystując dane logowania i pole `URL`, < / li > <li > Zmiana hasła użytkownika na serwerze < /il > <li > Zachowanie nowego hasła w Teampass < /il > <li > Zakończenie połączenia SSH < /li > < / ul > <br / > < b > Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze(jeśli nie, określ hasło użytkownika root) przed uruchomieniem.< / b > ',
     'update_server_password' => 'Zaktualizuj hasło serwera',
     'error_personal_sk_expected' => 'Musisz najpierw wprowadzić swój prywatny saltkety!',
