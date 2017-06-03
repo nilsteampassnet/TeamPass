@@ -1747,7 +1747,7 @@ function fileDelete($file) {
     if (is_file($file)) {
         try {
             close($file);
-        } catch(Exception $e){
+        } catch (Exception $e) {
             print_r($e);
         }
         // define if we under Windows

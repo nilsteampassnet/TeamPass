@@ -232,7 +232,7 @@ if (strpos($contentType, "multipart") !== false) {
             fclose($out);
             try {
                 unlink($_FILES['file']['tmp_name']);
-            } catch(Exception $e){
+            } catch (Exception $e) {
                 print_r($e);
             }
         } else {

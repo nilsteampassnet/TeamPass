@@ -2692,7 +2692,7 @@ if (isset($_POST['type'])) {
                 // Delete file from server
                 try {
                     unlink($_SESSION['settings']['path_to_upload_folder']."/".$data['file']);
-                } catch(Exception $e){
+                } catch (Exception $e) {
                     print_r($e);
                 }
             }
@@ -3372,7 +3372,7 @@ if (isset($_POST['type'])) {
 
             try {
                 unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'].$_POST['file_suffix']);
-            } catch(Exception $e){
+            } catch (Exception $e) {
                 print_r($e);
             }
 

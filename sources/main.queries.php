@@ -1162,7 +1162,7 @@ switch ($_POST['type']) {
 
         try {
             unlink($_POST['filename']);
-        } catch(Exception $e){
+        } catch (Exception $e) {
             print_r($e);
         }
 

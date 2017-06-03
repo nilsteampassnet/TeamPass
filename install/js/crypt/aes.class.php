@@ -50,7 +50,9 @@ class Aes
      */
     private static function addRoundKey($state, $w, $rnd, $Nb) {  // xor Round Key into state S [é5.1.4]
     for ($r = 0; $r < 4; $r++) {
-        for ($c = 0; $c < $Nb; $c++) $state[$r][$c] ^= $w[$rnd * 4 + $c][$r];
+        for ($c = 0; $c < $Nb; $c++) {
+            $state[$r][$c] ^= $w[$rnd * 4 + $c][$r];
+        }
     }
 
     return $state;
