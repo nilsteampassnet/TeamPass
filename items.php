@@ -47,7 +47,7 @@ foreach ($rows as $record) {
         "id" => $record['id'],
         "login" => $record['login'],
         "email" => $record['email'],
-       );
+        );
     $usersString .= $record['id']."#".$record['login'].";";
 }
 // Get list of roles
@@ -58,7 +58,7 @@ foreach ($rows as $reccord) {
     $arrRoles[$reccord['title']] = array(
         'id' => $reccord['id'],
         'title' => $reccord['title']
-       );
+        );
     if (empty($listRoles)) {
         $listRoles = $reccord['id'].'#'.$reccord['title'];
     } else {
@@ -115,8 +115,8 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 }
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['session_psk']) && !empty($_SESSION['user_settings']['session_psk']) ? '1':'0', '" />
-<input type="hidden" id="personal_upgrade_needed" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1':'0', '" />';
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['session_psk']) && !empty($_SESSION['user_settings']['session_psk']) ? '1' : '0', '" />
+<input type="hidden" id="personal_upgrade_needed" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1' : '0', '" />';
 // define what group todisplay in Tree
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
     $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
@@ -147,9 +147,9 @@ echo '
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         <li onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
-                        ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '' ,
-                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '' ,
-                        (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '' , '
+                        ', isset($_SESSION['settings']['allow_import']) && $_SESSION['settings']['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '',
+                        (isset($_SESSION['settings']['allow_print']) && $_SESSION['settings']['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] == true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '',
+                        (isset($_SESSION['settings']['settings_offline_mode']) && $_SESSION['settings']['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '', '
                     </ul>
                 </li>
             </ul>
@@ -172,7 +172,7 @@ echo '
                         <li><i class="fa fa-bars"></i>
                             <ul class="menu_250">
                                 <li id="menu_button_add_item" onclick="open_add_item_div()"><i class="fa fa-plus fa-fw"></i>&nbsp; '.$LANG['item_menu_add_elem'].'</li>
-                                <li id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0 , ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</li>
+                                <li id="menu_button_edit_item" onclick="open_edit_item_div(', isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1 ? 1 : 0, ')"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_elem'].'</li>
                                 <li id="menu_button_del_item" onclick="open_del_item_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_elem'].'</li>
                                 <li id="menu_button_copy_item" onclick="open_copy_item_to_folder_div()"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['item_menu_copy_elem'].'</li>
                             </ul>
@@ -228,7 +228,7 @@ echo '
                                         (isset($_SESSION['settings']['otv_is_enabled']) && $_SESSION['settings']['otv_is_enabled'] == 1) ? '<li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>' : '', '
                                         ', isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] == 1 ? '
                                         <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</li>' : '', '
-                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 && isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] !== "1"? '
+                                        ', isset($_SESSION['settings']['enable_server_password_change']) && $_SESSION['settings']['enable_server_password_change'] == 1 && isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] !== "1" ? '
                                         <li onclick="serverAutoChangePwd()"><i class="fa fa-server fa-fw"></i>&nbsp; '.$LANG['update_server_password'].'</li>' : '', '
                                         ', isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1 ? '
                                         <li onclick="OpenDialog(\'div_suggest_change\', \'false\')"><i class="fa fa-random fa-fw"></i>&nbsp; '.$LANG['suggest_password_change'].'</li>' : '', '
@@ -397,8 +397,7 @@ echo '
             <li><a href="#tabs-02">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a></li>
             <li><a href="#tabs-03">'.$LANG['files_&_images'].'</a></li>
             ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
-            '<li id="form_tab_fields"><a href="#tabs-04">'.$LANG['more'].'</a></li>' :
-            '', '
+            '<li id="form_tab_fields"><a href="#tabs-04">'.$LANG['more'].'</a></li>' : '', '
         </ul>
         <div id="tabs-01">';
 // Line for LABEL
@@ -491,7 +490,7 @@ echo '
             <input type="text" name="item_tags" id="item_tags" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for Item modification
 echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : 'display:none;', '">
                 <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify"',
                     isset($_SESSION['settings']['anyone_can_modify_bydefault'])
                     && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
@@ -500,7 +499,7 @@ echo '
             </div>';
 // Line for Item automatically deleted
 echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '' : 'display:none;', '">
                 <input type="checkbox" name="enable_delete_after_consultation" id="enable_delete_after_consultation" />
                 <label for="enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
                 <input type="text" value="1" size="1" id="times_before_deletion" />&nbsp;'.$LANG['times'].'&nbsp;
@@ -585,8 +584,7 @@ echo '
             <li><a href="#tabs-2">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a></li>
             <li><a href="#tabs-3">'.$LANG['files_&_images'].'</a></li>
             ', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ?
-            '<li id="form_edit_tab_fields"><a href="#tabs-4">'.$LANG['more'].'</a></li>' :
-            '', '
+            '<li id="form_edit_tab_fields"><a href="#tabs-4">'.$LANG['more'].'</a></li>' : '', '
         </ul>
         <div id="tabs-1">
             <label for="" class="cpm_label">'.$LANG['label'].' : </label>
@@ -679,7 +677,7 @@ echo '
             <input type="text" size="50" name="edit_tags" id="edit_tags" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for Item modification
 echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':'display:none;', '">
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : 'display:none;', '">
                 <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify"',
                     isset($_SESSION['settings']['anyone_can_modify_bydefault'])
                     && $_SESSION['settings']['anyone_can_modify_bydefault'] == 1 ?
@@ -688,7 +686,7 @@ echo '
             </div>';
 // Line for Item automatically deleted
 echo '
-            <div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '':'display:none;', '">
+            <div id="edit_to_be_deleted" style="width:100%;margin:0px 0px 6px 0px;', isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1 ? '' : 'display:none;', '">
                 <input type="checkbox" name="edit_enable_delete_after_consultation" id="edit_enable_delete_after_consultation" />
                 <label for="edit_enable_delete_after_consultation">'.$LANG['enable_delete_after_consultation'].'</label>
                 <input type="text" value="" size="1" id="edit_times_before_deletion" onchange="$(\'#edit_deletion_after_date\').val(\'\')" />&nbsp;'.$LANG['times'].'&nbsp;
@@ -901,7 +899,7 @@ echo '
         <div>'.$LANG['item_copy_to_folder'].'</div>
         <div style="margin:10px;">
             <select id="copy_in_folder" style="width:300px;">
-                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', '' .
+                ', (isset($_SESSION['can_create_root_folder']) && $_SESSION['can_create_root_folder'] == 1) ? '<option value="0">'.$LANG['root'].'</option>' : '', ''.
             '</select>
         </div>
     </div>

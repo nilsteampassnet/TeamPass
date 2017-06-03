@@ -18,42 +18,42 @@ include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 global $k;
 //ENGLISH
 $english_vals = array(
-    array('at_modification',"Modification"),
-    array('at_creation',"Creation"),
-    array('at_delete',"Deletion"),
-    array('at_pw',"Password changed."),
-    array('at_category',"Group"),
-    array('at_personnel',"Personnal"),
-    array('at_description',"Description"),
-    array('at_url',"Url"),
-    array('at_login',"Login"),
-    array('at_label',"Label")
+    array('at_modification', "Modification"),
+    array('at_creation', "Creation"),
+    array('at_delete', "Deletion"),
+    array('at_pw', "Password changed."),
+    array('at_category', "Group"),
+    array('at_personnel', "Personnal"),
+    array('at_description', "Description"),
+    array('at_url', "Url"),
+    array('at_login', "Login"),
+    array('at_label', "Label")
 );
 //FRENCH
 $french_vals = array(
-    array('at_modification',"Modification"),
-    array('at_creation',"Création"),
-    array('at_delete',"Suppression"),
-    array('at_pw',"Mot de passe changé."),
-    array('at_category',"Group"),
-    array('at_personnel',"Personnel"),
-    array('at_description',"Description."),
-    array('at_url',"Url"),
-    array('at_login',"Login"),
-    array('at_label',"Label")
+    array('at_modification', "Modification"),
+    array('at_creation', "Création"),
+    array('at_delete', "Suppression"),
+    array('at_pw', "Mot de passe changé."),
+    array('at_category', "Group"),
+    array('at_personnel', "Personnel"),
+    array('at_description', "Description."),
+    array('at_url', "Url"),
+    array('at_login', "Login"),
+    array('at_label', "Label")
 );
 //SPANISH
 $spanish_vals = array(
-    array('at_modification',"Modificacion"),
-    array('at_creation',"Creacion"),
-    array('at_delete',"Borrado"),
-    array('at_pw',"Contraseéa cambiada."),
-    array('at_category',"Grupo"),
-    array('at_personnel',"Personal"),
-    array('at_description',"Descripcion."),
-    array('at_url',"Url"),
-    array('at_login',"Login"),
-    array('at_label',"Etiqueta")
+    array('at_modification', "Modificacion"),
+    array('at_creation', "Creacion"),
+    array('at_delete', "Borrado"),
+    array('at_pw', "Contraseéa cambiada."),
+    array('at_category', "Grupo"),
+    array('at_personnel', "Personal"),
+    array('at_description', "Descripcion."),
+    array('at_url', "Url"),
+    array('at_login', "Login"),
+    array('at_label', "Etiqueta")
 );
 
 changeDB();
@@ -79,9 +79,9 @@ function changeDB()
                 mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
                 $found = true;
             } else
-            if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
-                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+            if ($lang[1] == trim(substr($data['raison'], 0, strpos($data['raison'], ":"))) && !empty($data['raison'])) {
+                $data1 = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'], strpos($data['raison'], ":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }
@@ -98,9 +98,9 @@ function changeDB()
                 mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
                 $found = true;
             } else
-            if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
-                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+            if ($lang[1] == trim(substr($data['raison'], 0, strpos($data['raison'], ":"))) && !empty($data['raison'])) {
+                $data1 = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'], strpos($data['raison'], ":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }
@@ -117,9 +117,9 @@ function changeDB()
                 mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data['action']."'");
                 $found = true;
             } else
-            if ($lang[1] == trim(substr($data['raison'],0,strpos($data['raison'],":"))) && !empty($data['raison'])) {
-                $data1= mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
-                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'],strpos($data['raison'],":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
+            if ($lang[1] == trim(substr($data['raison'], 0, strpos($data['raison'], ":"))) && !empty($data['raison'])) {
+                $data1 = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT action FROM ".$_SESSION['pre']."log_items WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$action."'"));
+                mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."log_items SET raison = '".$lang[0]." ".substr($data['raison'], strpos($data['raison'], ":"))."' WHERE id_item=".$data['id_item']." AND date =".$data['date']." AND id_user =".$data['id_user']." AND raison ='".$data['raison']."' AND action ='".$data1[0]."'");
                 $found = true;
             }
         }

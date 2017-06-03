@@ -25,7 +25,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
-$link= mysqli_connect($server, $user, $pass, $database, $port);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -39,7 +39,7 @@ foreach ($rows as $record) {
 if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_path'])) {
     //get all of the tables
     $tables = array();
-    $result = mysqli_query($link,'SHOW TABLES');
+    $result = mysqli_query($link, 'SHOW TABLES');
     while ($row = mysqli_fetch_row($result)) {
         $tables[] = $row[0];
     }
@@ -47,32 +47,32 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 
     //cycle through each table and format the data
     foreach ($tables as $table) {
-        $result = mysqli_query($link,'SELECT * FROM '.$table);
+        $result = mysqli_query($link, 'SELECT * FROM '.$table);
         $num_fields = mysqli_num_fields($result);
 
-        $return.= 'DROP TABLE '.$table.';';
-        $row2 = mysqli_fetch_row(mysqli_query($link,'SHOW CREATE TABLE '.$table));
-        $return.= "\n\n".$row2[1].";\n\n";
+        $return .= 'DROP TABLE '.$table.';';
+        $row2 = mysqli_fetch_row(mysqli_query($link, 'SHOW CREATE TABLE '.$table));
+        $return .= "\n\n".$row2[1].";\n\n";
 
         for ($i = 0; $i < $num_fields; $i++) {
             while ($row = mysqli_fetch_row($result)) {
-                $return.= 'INSERT INTO '.$table.' VALUES(';
-                for ($j=0; $j<$num_fields; $j++) {
+                $return .= 'INSERT INTO '.$table.' VALUES(';
+                for ($j = 0; $j < $num_fields; $j++) {
                     $row[$j] = addslashes($row[$j]);
                     $row[$j] = preg_replace('/\n/', '/\\n/', $row[$j]);
                     if (isset($row[$j])) {
-                        $return.= '"'.$row[$j].'"' ;
+                        $return .= '"'.$row[$j].'"';
                     } else {
-                        $return.= '""';
+                        $return .= '""';
                     }
-                    if ($j<($num_fields-1)) {
-                        $return.= ',';
+                    if ($j < ($num_fields - 1)) {
+                        $return .= ',';
                     }
                 }
-                $return.= ");\n";
+                $return .= ");\n";
             }
         }
-        $return.="\n\n\n";
+        $return .= "\n\n\n";
     }
 
     // Encrypt file is required

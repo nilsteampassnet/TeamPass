@@ -147,7 +147,7 @@ class Hash
      * As set by the constructor or by the setHash() method.
      *
      * @access public
-     * @return string
+     * @return integer
      */
     function getHash()
     {
@@ -209,8 +209,7 @@ class Hash
                 array(
                     '22312194FC2BF72C', '9F555FA3C84C64C2', '2393B86B6F53B151', '963877195940EABD',
                     '96283EE2A88EFFE3', 'BE5E1E2553863992', '2B0199FC2C85B8AA', '0EB72DDC81C52CA2'
-                ) :
-                array(
+                ) : array(
                     '8C3D37C819544DA2', '73E1996689DCD4D6', '1DFAB7AE32FF9C82', '679DD514582F9FCF',
                     '0F6D2B697BD44DA8', '77E36F7304C48942', '3F9D85A86A1D36C8', '1112E6AD91D692A1'
                 );
@@ -244,19 +243,18 @@ class Hash
                     -- http://tools.ietf.org/html/rfc2104#section-2 */
                 $key = strlen($this->key) > $this->b ? self::_sha512($this->key, $this->initial) : $this->key;
 
-                $key    = str_pad($this->key, 128, chr(0));       // step 1
-                $temp   = $this->ipad ^ $this->key;               // step 2
-                $temp  .= $text;                                  // step 3
-                $temp   = self::_sha512($temp, $this->initial);   // step 4
-                $output = $this->opad ^ $this->key;               // step 5
-                $output.= $temp;                                  // step 6
+                $key    = str_pad($this->key, 128, chr(0)); // step 1
+                $temp   = $this->ipad ^ $this->key; // step 2
+                $temp  .= $text; // step 3
+                $temp   = self::_sha512($temp, $this->initial); // step 4
+                $output = $this->opad ^ $this->key; // step 5
+                $output .= $temp; // step 6
                 $output = self::_sha512($output, $this->initial); // step 7
 
                 return substr($output, 0, $this->length);
         }
         $output = !empty($this->key) || is_string($this->key) ?
-            hash_hmac($this->hash, $text, $this->key, true) :
-            hash($this->hash, $text, true);
+            hash_hmac($this->hash, $text, $this->key, true) : hash($this->hash, $text, true);
 
         return strlen($output) > $this->length
             ? substr($output, 0, $this->length)
@@ -318,10 +316,10 @@ class Hash
         // Pre-processing
         $length = strlen($m);
         // to round to nearest 112 mod 128, we'll add 128 - (length + (128 - 112)) % 128
-        $m.= str_repeat(chr(0), 128 - (($length + 16) & 0x7F));
+        $m .= str_repeat(chr(0), 128 - (($length + 16) & 0x7F));
         $m[$length] = chr(0x80);
         // we don't support hashing strings 512MB long
-        $m.= pack('N4', 0, 0, 0, $length << 3);
+        $m .= pack('N4', 0, 0, 0, $length << 3);
 
         // Process the message in successive 1024-bit chunks
         $chunks = str_split($m, 128);
@@ -336,16 +334,16 @@ class Hash
             // Extend the sixteen 32-bit words into eighty 32-bit words
             for ($i = 16; $i < 80; $i++) {
                 $temp = array(
-                          $w[$i - 15]->bitwise_rightRotate(1),
-                          $w[$i - 15]->bitwise_rightRotate(8),
-                          $w[$i - 15]->bitwise_rightShift(7)
+                            $w[$i - 15]->bitwise_rightRotate(1),
+                            $w[$i - 15]->bitwise_rightRotate(8),
+                            $w[$i - 15]->bitwise_rightShift(7)
                 );
                 $s0 = $temp[0]->bitwise_xor($temp[1]);
                 $s0 = $s0->bitwise_xor($temp[2]);
                 $temp = array(
-                          $w[$i - 2]->bitwise_rightRotate(19),
-                          $w[$i - 2]->bitwise_rightRotate(61),
-                          $w[$i - 2]->bitwise_rightShift(6)
+                            $w[$i - 2]->bitwise_rightRotate(19),
+                            $w[$i - 2]->bitwise_rightRotate(61),
+                            $w[$i - 2]->bitwise_rightShift(6)
                 );
                 $s1 = $temp[0]->bitwise_xor($temp[1]);
                 $s1 = $s1->bitwise_xor($temp[2]);
@@ -425,8 +423,8 @@ class Hash
 
         // Produce the final hash value (big-endian)
         // (\phpseclib\Crypt\Hash::hash() trims the output for hashes but not for HMACs.  as such, we trim the output here)
-        $temp = $hash[0]->toBytes() . $hash[1]->toBytes() . $hash[2]->toBytes() . $hash[3]->toBytes() .
-                $hash[4]->toBytes() . $hash[5]->toBytes() . $hash[6]->toBytes() . $hash[7]->toBytes();
+        $temp = $hash[0]->toBytes().$hash[1]->toBytes().$hash[2]->toBytes().$hash[3]->toBytes().
+                $hash[4]->toBytes().$hash[5]->toBytes().$hash[6]->toBytes().$hash[7]->toBytes();
 
         return $temp;
     }

@@ -19,7 +19,6 @@ use ParagonIE\ConstantTime\Base64;
 use ParagonIE\ConstantTime\Hex;
 use phpseclib\Crypt\Common\BlockCipher;
 use phpseclib\Crypt\AES;
-use phpseclib\Crypt\Base;
 use phpseclib\Crypt\DES;
 use phpseclib\Crypt\TripleDES;
 use phpseclib\Math\BigInteger;
@@ -150,7 +149,7 @@ abstract class PKCS
         $symkey = '';
         $iv = substr($iv, 0, 8);
         while (strlen($symkey) < $length) {
-            $symkey.= md5($symkey . $password . $iv, true);
+            $symkey .= md5($symkey.$password.$iv, true);
         }
         return substr($symkey, 0, $length);
     }

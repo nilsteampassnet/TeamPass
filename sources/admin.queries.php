@@ -66,7 +66,7 @@ switch ($_POST['type']) {
     # connection to author's cpassman website
     case "cpm_status":
         $text = "<ul>";
-        $error ="";
+        $error = "";
         if (!isset($k['admin_no_info']) || (isset($k['admin_no_info']) && $k['admin_no_info'] == 0)) {
             if (isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1) {
                 $handleDistant = array();
@@ -93,7 +93,7 @@ switch ($_POST['type']) {
                 }
 
                 if (count($handleDistant) > 0) {
-                    while (list($cle,$val) = each($handleDistant)) {
+                    while (list($cle, $val) = each($handleDistant)) {
                         if (substr($val, 0, 3) == "nom") {
                             $tab = explode('|', $val);
                             foreach ($tab as $elem) {
@@ -118,7 +118,7 @@ switch ($_POST['type']) {
         }
         $text .= "</ul>";
 
-        echo '[{"error":"'.$error.'" , "output":"'. str_replace(array("\n", "\t", "\r"), '', $text).'"}]';
+        echo '[{"error":"'.$error.'" , "output":"'.str_replace(array("\n", "\t", "\r"), '', $text).'"}]';
         break;
 
     ###########################################################
@@ -136,7 +136,7 @@ switch ($_POST['type']) {
                 prefix_table("users"),
                 array(
                     'personal_folder' => '1'
-               ),
+                ),
                 "id = %i",
                 $record['id']
             );
@@ -158,7 +158,7 @@ switch ($_POST['type']) {
                         'parent_id' => '0',
                         'title' => $record['id'],
                         'personal_folder' => '1'
-                   )
+                    )
                 );
 
                 //rebuild fuild tree folder
@@ -169,10 +169,10 @@ switch ($_POST['type']) {
                     prefix_table("nested_tree"),
                     array(
                         'personal_folder' => '1'
-                   ),
-                   "title=%s AND parent_id=%i",
-                   $record['id'],
-                   0
+                    ),
+                    "title=%s AND parent_id=%i",
+                    $record['id'],
+                    0
                 );
                 //rebuild fuild tree folder
                 $tree->rebuild();
@@ -180,12 +180,12 @@ switch ($_POST['type']) {
                 // Get an array of all folders
                 $folders = $tree->getDescendants($data['id'], false, true, true);
                 foreach ($folders as $folder) {
-                 //update PF field for user
+                    //update PF field for user
                     DB::update(
                         prefix_table("nested_tree"),
                         array(
                             'personal_folder' => '1'
-                       ),
+                        ),
                         "id = %s",
                         $folder
                     );
@@ -284,30 +284,30 @@ switch ($_POST['type']) {
                 $numFields = DB::count();
 
                 // prepare a drop table
-                $return.= 'DROP TABLE '.$table.';';
+                $return .= 'DROP TABLE '.$table.';';
                 $row2 = DB::queryfirstrow('SHOW CREATE TABLE '.$table);
-                $return.= "\n\n".$row2["Create Table"].";\n\n";
+                $return .= "\n\n".$row2["Create Table"].";\n\n";
 
                 //prepare all fields and datas
                 for ($i = 0; $i < $numFields; $i++) {
                     while ($row = $result->fetch_row()) {
-                        $return.= 'INSERT INTO '.$table.' VALUES(';
-                        for ($j=0; $j<$numFields; $j++) {
+                        $return .= 'INSERT INTO '.$table.' VALUES(';
+                        for ($j = 0; $j < $numFields; $j++) {
                             $row[$j] = addslashes($row[$j]);
                             $row[$j] = preg_replace("/\n/", "\\n", $row[$j]);
                             if (isset($row[$j])) {
-                                $return.= '"'.$row[$j].'"';
+                                $return .= '"'.$row[$j].'"';
                             } else {
-                                $return.= 'NULL';
+                                $return .= 'NULL';
                             }
-                            if ($j<($numFields-1)) {
-                                $return.= ',';
+                            if ($j < ($numFields - 1)) {
+                                $return .= ',';
                             }
                         }
-                        $return.= ");\n";
+                        $return .= ");\n";
                     }
                 }
-                $return.="\n\n\n";
+                $return .= "\n\n\n";
             }
         }
 
@@ -370,7 +370,7 @@ switch ($_POST['type']) {
         if ($handle = fopen($file, "r")) {
             $query = "";
             while (!feof($handle)) {
-                $query.= fgets($handle, 4096);
+                $query .= fgets($handle, 4096);
                 if (substr(rtrim($query), -1) == ';') {
                     //launch query
                     DB::queryRaw($query);
@@ -426,11 +426,11 @@ switch ($_POST['type']) {
                     prefix_table("log_items"),
                     array(
                         'id_item'     => $item['id'],
-                        'date'         => $rowTmp['date']-1,
+                        'date'         => $rowTmp['date'] - 1,
                         'id_user'     => "",
                         'action'     => "at_creation",
                         'raison'    => ""
-                   )
+                    )
                 );
             }
         }
@@ -449,7 +449,7 @@ switch ($_POST['type']) {
 
         //delete file
         while ($f = readdir($dir)) {
-            if (is_file($dir.$f) && (time()-filectime($dir.$f)) > 604800) {
+            if (is_file($dir.$f) && (time() - filectime($dir.$f)) > 604800) {
                 deleteFile($dir.$f);
                 $nbFilesDeleted++;
             }
@@ -477,10 +477,13 @@ switch ($_POST['type']) {
         $error = "";
 
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-        $ret = handleConfigFile ("rebuild");
+        $ret = handleConfigFile("rebuild");
 
-        if ($ret !== true) $error = $ret;
-        else $error = "rebuild_config_file";
+        if ($ret !== true) {
+            $error = $ret;
+        } else {
+            $error = "rebuild_config_file";
+        }
 
         echo '[{"result":"'.$error.'"}]';
         break;
@@ -522,8 +525,7 @@ switch ($_POST['type']) {
                         $_SESSION['settings']['bck_script_path'].'/'.str_replace('encrypted', 'clear', $_POST['option']).'.sql',
                         $_SESSION['settings']['bck_script_key']
                     );
-                }
-                catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
                     $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
                 }
 
@@ -593,7 +595,7 @@ switch ($_POST['type']) {
             prefix_table("misc"),
             array(
                 'valeur' => '1',
-           ),
+            ),
             "intitule = %s AND type= %s",
             "maintenance_mode", "admin"
         );
@@ -635,8 +637,8 @@ switch ($_POST['type']) {
 
         // delete previous backup files
         $files = glob($_SESSION['settings']['path_to_upload_folder'].'/*'); // get all file names
-        foreach($files as $file){ // iterate files
-            if(is_file($file)) {
+        foreach ($files as $file) { // iterate files
+            if (is_file($file)) {
                 $file_parts = pathinfo($file);
                 if (strpos($file_parts['filename'], ".bck-change-sk") !== false) {
                     unlink($file); // delete file
@@ -681,7 +683,7 @@ switch ($_POST['type']) {
                     SELECT id, pw, pw_iv
                     FROM ".prefix_table("items")."
                     WHERE perso = %s
-                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
                     "0"
                 );
                 foreach ($rows as $record) {
@@ -718,7 +720,7 @@ switch ($_POST['type']) {
                         array(
                             'pw' => $encrypt['string'],
                             'pw_iv' => ""
-                       ),
+                        ),
                         "id = %i",
                         $record['id']
                     );
@@ -728,7 +730,7 @@ switch ($_POST['type']) {
                         prefix_table('sk_reencrypt_backup'),
                         array(
                             'result' => "ok"
-                           ),
+                            ),
                         "id=%i",
                         $newID
                     );
@@ -740,7 +742,7 @@ switch ($_POST['type']) {
                     SELECT raison, increment_id
                     FROM ".prefix_table("log_items")."
                     WHERE action = %s AND raison LIKE 'at_pw :%'
-                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT),
                     "at_modification"
                 );
                 foreach ($rows as $record) {
@@ -790,7 +792,7 @@ switch ($_POST['type']) {
                             prefix_table('sk_reencrypt_backup'),
                             array(
                                 'result' => "ok"
-                               ),
+                                ),
                             "id=%i",
                             $newID
                         );
@@ -802,7 +804,7 @@ switch ($_POST['type']) {
                 $rows = DB::query("
                     SELECT id, data
                     FROM ".prefix_table("categories_items")."
-                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 foreach ($rows as $record) {
                     // backup data
@@ -838,7 +840,7 @@ switch ($_POST['type']) {
                         array(
                             'data' => $encrypt['string'],
                             'encryption_type' => 'defuse'
-                       ),
+                        ),
                         "id = %i",
                         $record['id']
                     );
@@ -848,7 +850,7 @@ switch ($_POST['type']) {
                         prefix_table('sk_reencrypt_backup'),
                         array(
                             'result' => "ok"
-                           ),
+                            ),
                         "id=%i",
                         $newID
                     );
@@ -872,7 +874,7 @@ switch ($_POST['type']) {
                     SELECT id, file
                     FROM ".prefix_table("files")."
                     WHERE status = 'encrypted'
-                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
+                    LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 foreach ($rows as $record) {
                     // backup data
@@ -976,7 +978,7 @@ switch ($_POST['type']) {
                             array(
                                 'value2' => $backup_filename,
                                 'result' => "ok"
-                               ),
+                                ),
                             "id=%i",
                             $newID
                         );
@@ -1035,7 +1037,7 @@ switch ($_POST['type']) {
             prefix_table("misc"),
             array(
                 'valeur' => '0',
-           ),
+            ),
             "intitule = %s AND type= %s",
             "maintenance_mode", "admin"
         );
@@ -1161,7 +1163,7 @@ switch ($_POST['type']) {
                     prefix_table("emails"),
                     array(
                         'status' => "not_sent"
-                   ),
+                    ),
                     "timestamp = %s",
                     $record['timestamp']
                 );
@@ -1186,7 +1188,7 @@ switch ($_POST['type']) {
         $jCryption = new jCryption();
         $numberOfPairs = 100;
         $arrKeyPairs = array();
-        for ($i=0; $i < $numberOfPairs; $i++) {
+        for ($i = 0; $i < $numberOfPairs; $i++) {
             $arrKeyPairs[] = $jCryption->generateKeypair($keyLength);
         }
         $file = array();
@@ -1194,7 +1196,7 @@ switch ($_POST['type']) {
         $file[] = '$arrKeys = ';
         $file[] = var_export($arrKeyPairs, true);
         $file[] = ';';
-        file_put_contents(SECUREPATH."/".$numberOfPairs . "_". $keyLength . "_keys.inc.php", implode("\n", $file));
+        file_put_contents(SECUREPATH."/".$numberOfPairs."_".$keyLength."_keys.inc.php", implode("\n", $file));
 
         echo '[{"result":"generated_keys_file", "error":""}]';
         break;
@@ -1339,7 +1341,7 @@ switch ($_POST['type']) {
             foreach ($filesList as $file) {
                 if ($cpt < 5) {
                     // skip file is Coherancey not respected
-                    if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$file)){
+                    if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$file)) {
                         $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, "rb");
                         $line = fgets($fp);
                         $skipFile = false;
@@ -1385,12 +1387,12 @@ switch ($_POST['type']) {
                                 prefix_table('files'),
                                 array(
                                     'status' => $_POST['option'] === "decrypt" ? "0" : "encrypted"
-                                   ),
+                                    ),
                                 "file=%s",
                                 $file
                             );
 
-                            $cpt ++;
+                            $cpt++;
                         }
                     }
                 } else {
@@ -1403,9 +1405,11 @@ switch ($_POST['type']) {
                 }
             }
 
-            if (empty($newFilesList)) $continu = false;
+            if (empty($newFilesList)) {
+                $continu = false;
+            }
 
-            echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($_POST['cpt']+$cpt).'"}]';
+            echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($_POST['cpt'] + $cpt).'"}]';
             break;
 
         /*
@@ -1425,8 +1429,7 @@ switch ($_POST['type']) {
                         'timestamp' => time()
                     )
                 );
-            }
-            else
+            } else
             // update existing key
             if (isset($_POST['action']) && $_POST['action'] == "update") {
                 DB::update(
@@ -1438,8 +1441,7 @@ switch ($_POST['type']) {
                     "id=%i",
                     $_POST['id']
                 );
-            }
-            else
+            } else
             // delete existing key
             if (isset($_POST['action']) && $_POST['action'] == "delete") {
                 DB::query("DELETE FROM ".prefix_table("api")." WHERE id = %i", $_POST['id']);
@@ -1464,8 +1466,7 @@ switch ($_POST['type']) {
                     'timestamp' => time()
                 )
             );
-        }
-        else
+        } else
             // update existing key
             if (isset($_POST['action']) && $_POST['action'] == "update") {
                 DB::update(
@@ -1478,8 +1479,7 @@ switch ($_POST['type']) {
                     "id=%i",
                     $_POST['id']
                 );
-            }
-        else
+            } else
             // delete existing key
             if (isset($_POST['action']) && $_POST['action'] == "delete") {
                 DB::query("DELETE FROM ".prefix_table("api")." WHERE id=%i", $_POST['id']);
@@ -1497,14 +1497,14 @@ switch ($_POST['type']) {
                     'type' => "admin",
                     "intitule" => "api",
                     'valeur' => intval($_POST['status'])
-                   )
+                    )
             );
         } else {
             DB::update(
                 prefix_table("misc"),
                 array(
                     'valeur' => intval($_POST['status'])
-                   ),
+                    ),
                 "type = %s AND intitule = %s",
                 "admin",
                 "api"
@@ -1523,14 +1523,14 @@ switch ($_POST['type']) {
                     'type' => "admin",
                     "intitule" => "duo",
                     'valeur' => intval($_POST['status'])
-                   )
+                    )
             );
         } else {
             DB::update(
                 prefix_table("misc"),
                 array(
                     'valeur' => intval($_POST['status'])
-                   ),
+                    ),
                 "type = %s AND intitule = %s",
                 "admin",
                 "duo"
@@ -1559,9 +1559,9 @@ switch ($_POST['type']) {
         if (file_exists($filename)) {
             // get sk.php file path
             $settingsFile = file($filename);
-            while (list($key,$val) = each($settingsFile)) {
-                if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-                    $tmp_skfile = substr($val, 14, strpos($val, '";')-14);
+            while (list($key, $val) = each($settingsFile)) {
+                if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
+                    $tmp_skfile = substr($val, 14, strpos($val, '";') - 14);
                 }
             }
 
@@ -1621,8 +1621,11 @@ switch ($_POST['type']) {
         $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
         // Google Authentication
-        if (htmlspecialchars_decode($dataReceived['google_authentication']) == "false") $tmp = 0;
-        else $tmp = 1;
+        if (htmlspecialchars_decode($dataReceived['google_authentication']) == "false") {
+            $tmp = 0;
+        } else {
+            $tmp = 1;
+        }
         DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "google_authentication");
         $counter = DB::count();
         if ($counter == 0) {
@@ -1805,7 +1808,7 @@ switch ($_POST['type']) {
                     'valeur' => $dataReceived['value'],
                     'type' => $type,
                     'intitule' => $dataReceived['field']
-                   )
+                    )
             );
             // in case of stats enabled, add the actual time
             if ($dataReceived['field'] == 'send_stats') {
@@ -1815,7 +1818,7 @@ switch ($_POST['type']) {
                         'valeur' => time(),
                         'type' => $type,
                         'intitule' => $dataReceived['field'].'_time'
-                       )
+                        )
                 );
             }
         } else {
@@ -1823,7 +1826,7 @@ switch ($_POST['type']) {
                 prefix_table("misc"),
                 array(
                     'valeur' => $dataReceived['value']
-                   ),
+                    ),
                 "type = %s AND intitule = %s",
                 $type,
                 $dataReceived['field']
@@ -1845,14 +1848,14 @@ switch ($_POST['type']) {
                             'valeur' => 0,
                             'type' => $type,
                             'intitule' => $dataReceived['field'].'_time'
-                           )
+                            )
                     );
                 } else {
                     DB::update(
                         prefix_table("misc"),
                         array(
                             'valeur' => 0
-                           ),
+                            ),
                         "type = %s AND intitule = %s",
                         $type,
                         $dataReceived['field']
@@ -1878,7 +1881,7 @@ switch ($_POST['type']) {
                 prefix_table("misc"),
                 array(
                     'valeur' => 0
-                   ),
+                    ),
                 "type = %s AND intitule = %s",
                 $type,
                 'restricted_to_roles'
@@ -1907,7 +1910,7 @@ switch ($_POST['type']) {
         $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];
 
         // save change in config file
-        handleConfigFile ("update", $dataReceived['field'], $dataReceived['value']);
+        handleConfigFile("update", $dataReceived['field'], $dataReceived['value']);
 
         // Encrypt data to return
         echo prepareExchangedData(
@@ -2029,21 +2032,20 @@ switch ($_POST['type']) {
         }
         if ($dataReceived[0]['ldap_type'] === 'posix-search') {
             $ldapURIs = "";
-            foreach(explode(",", $dataReceived[0]['ldap_domain_controler']) as $domainControler) {
-                if($dataReceived[0]['ldap_ssl_input'] == 1) {
+            foreach (explode(",", $dataReceived[0]['ldap_domain_controler']) as $domainControler) {
+                if ($dataReceived[0]['ldap_ssl_input'] == 1) {
                     $ldapURIs .= "ldaps://".$domainControler.":".$dataReceived[0]['ldap_port']." ";
-                }
-                else {
+                } else {
                     $ldapURIs .= "ldap://".$domainControler.":".$dataReceived[0]['ldap_port']." ";
                 }
             }
 
-            $debug_ldap .= "LDAP URIs : " . $ldapURIs . "<br/>";
+            $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
 
             $ldapconn = ldap_connect($ldapURIs);
 
             if ($dataReceived[0]['ldap_tls_input']) {
-               ldap_start_tls($ldapconn);
+                ldap_start_tls($ldapconn);
             }
 
             $debug_ldap .= "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "<br/>";
@@ -2058,15 +2060,15 @@ switch ($_POST['type']) {
                     $filter="(&(" . $dataReceived[0]['ldap_user_attribute']. "=$username)(objectClass=" . $dataReceived[0]['ldap_object_class'] ."))";
                     $result=ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
-                       $filter_group = "memberUid=".$username;
-                       $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'],$filter_group, array('dn'));
+                        $filter_group = "memberUid=".$username;
+                        $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'],$filter_group, array('dn'));
 
-                       $debug_ldap .= 'Search filter (group): ' . $filter_group . "<br/>" .
+                        $debug_ldap .= 'Search filter (group): ' . $filter_group . "<br/>" .
                                     'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "<br/>";
 
-                       if (!ldap_count_entries($ldapconn, $result_group)) {
-                               $ldapConnection = "Error - No entries found";
-                       }
+                        if (!ldap_count_entries($ldapconn, $result_group)) {
+                                $ldapConnection = "Error - No entries found";
+                        }
                     }
 
                     $debug_ldap .= 'Search filter : ' . $filter . "<br/>" .
@@ -2090,12 +2092,12 @@ switch ($_POST['type']) {
                 $ldapConnection = "Error - Could not connect to server!";
             }
         } else {
-            $debug_ldap .= "Get all ldap params: <br/>" .
-                '  - base_dn : '.$dataReceived[0]['ldap_domain_dn']."<br/>" .
-                '  - account_suffix : '.$dataReceived[0]['ldap_suffix']."<br/>" .
-                '  - domain_controllers : '.$dataReceived[0]['ldap_domain_controler']."<br/>" .
-                '  - port : '.$dataReceived[0]['ldap_port']."<br/>" .
-                '  - use_ssl : '.$dataReceived[0]['ldap_ssl_input']."<br/>" .
+            $debug_ldap .= "Get all ldap params: <br/>".
+                '  - base_dn : '.$dataReceived[0]['ldap_domain_dn']."<br/>".
+                '  - account_suffix : '.$dataReceived[0]['ldap_suffix']."<br/>".
+                '  - domain_controllers : '.$dataReceived[0]['ldap_domain_controler']."<br/>".
+                '  - port : '.$dataReceived[0]['ldap_port']."<br/>".
+                '  - use_ssl : '.$dataReceived[0]['ldap_ssl_input']."<br/>".
                 '  - use_tls : '.$dataReceived[0]['ldap_tls_input']."<br/>*********<br/>";
 
             $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
@@ -2104,8 +2106,7 @@ switch ($_POST['type']) {
             // Posix style LDAP handles user searches a bit differently
             if ($dataReceived[0]['ldap_type'] === 'posix') {
                 $ldap_suffix = ','.$dataReceived[0]['ldap_suffix'].','.$dataReceived[0]['ldap_domain_dn'];
-            }
-            elseif ($dataReceived[0]['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
+            } elseif ($dataReceived[0]['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
                 $ldap_suffix = $dataReceived[0]['ldap_suffix'];
             }
             $adldap = new adLDAP\adLDAP(
@@ -2135,7 +2136,7 @@ switch ($_POST['type']) {
                 $ldapConnection = "Not possible to get connected with this user";
             }
 
-            $debug_ldap .= "After authenticate : ".$adldap->getLastError()."<br/><br/>" .
+            $debug_ldap .= "After authenticate : ".$adldap->getLastError()."<br/><br/>".
                 "ldap status : ".$ldapConnection; //Debug
         }
 
@@ -2151,7 +2152,7 @@ switch ($_POST['type']) {
         }
 
         if ($result = DB::query("SHOW TABLES LIKE '".prefix_table("sk_reencrypt_backup")."'")) {
-            if(DB::count() === 1) {
+            if (DB::count() === 1) {
                 echo "1";
             } else {
                 echo "0";

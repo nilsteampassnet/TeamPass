@@ -43,7 +43,7 @@ $_SESSION['settings']['loaded'] = "";
 
 $dbgDuo = fopen("upgrade.log", "w");
 $finish = false;
-$next = ($_POST['nb']+$_POST['start']);
+$next = ($_POST['nb'] + $_POST['start']);
 
 $dbTmp = mysqli_connect(
     $_SESSION['server'],
@@ -68,7 +68,7 @@ while ($record = mysqli_fetch_array($resData)) {echo decrypt($record['pw'])." ";
         decrypt($record['pw']),
         strlen($record['pw_iv'])
     );
-    if (isUTF8($tmpData ) && !empty($tmpData)) {
+    if (isUTF8($tmpData) && !empty($tmpData)) {
         $encrypt = cryption_phpCrypt(
             $tmpData,
             SALT,

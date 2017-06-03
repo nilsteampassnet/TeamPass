@@ -38,32 +38,32 @@ require_once(dirname(__FILE__)."/Raw.php");
  */
 class Mode_Stream extends Mode_Raw
 {
-	/**
-	 * Constructor
-	 * Sets the cipher object that will be used for encryption
-	 *
-	 * @param object $cipher one of the phpCrypt encryption cipher objects
-	 * @return void
-	 */
-	public function __construct($cipher)
-	{
-		// call the secondary 'constructor' from the parent
-		parent::__construct1(PHP_Crypt::MODE_STREAM, $cipher);
+    /**
+     * Constructor
+     * Sets the cipher object that will be used for encryption
+     *
+     * @param object $cipher one of the phpCrypt encryption cipher objects
+     * @return void
+     */
+    public function __construct($cipher)
+    {
+        // call the secondary 'constructor' from the parent
+        parent::__construct1(PHP_Crypt::MODE_STREAM, $cipher);
 
-		// this works with only stream Ciphers
-		if($cipher->type() != Cipher::STREAM)
-			trigger_error("Stream mode requires a stream cipher", E_USER_WARNING);
-	}
+        // this works with only stream Ciphers
+        if($cipher->type() != Cipher::STREAM)
+            trigger_error("Stream mode requires a stream cipher", E_USER_WARNING);
+    }
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 }
 ?>

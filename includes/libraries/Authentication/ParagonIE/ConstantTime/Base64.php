@@ -52,10 +52,10 @@ abstract class Base64 implements EncoderInterface
             $b2 = $chunk[3];
 
             $dest .=
-                static::encode6Bits(               $b0 >> 2       ) .
-                static::encode6Bits((($b0 << 4) | ($b1 >> 4)) & 63) .
-                static::encode6Bits((($b1 << 2) | ($b2 >> 6)) & 63) .
-                static::encode6Bits(  $b2                     & 63);
+                static::encode6Bits($b0 >> 2).
+                static::encode6Bits((($b0 << 4) | ($b1 >> 4)) & 63).
+                static::encode6Bits((($b1 << 2) | ($b2 >> 6)) & 63).
+                static::encode6Bits($b2 & 63);
         }
         // The last chunk, which may have padding:
         if ($i < $srcLen) {
@@ -64,13 +64,13 @@ abstract class Base64 implements EncoderInterface
             if ($i + 1 < $srcLen) {
                 $b1 = $chunk[2];
                 $dest .=
-                    static::encode6Bits(               $b0 >> 2       ) .
-                    static::encode6Bits((($b0 << 4) | ($b1 >> 4)) & 63) .
-                    static::encode6Bits( ($b1 << 2)               & 63) . '=';
+                    static::encode6Bits($b0 >> 2).
+                    static::encode6Bits((($b0 << 4) | ($b1 >> 4)) & 63).
+                    static::encode6Bits(($b1 << 2) & 63).'=';
             } else {
                 $dest .=
-                    static::encode6Bits( $b0 >> 2) .
-                    static::encode6Bits(($b0 << 4) & 63) . '==';
+                    static::encode6Bits($b0 >> 2).
+                    static::encode6Bits(($b0 << 4) & 63).'==';
             }
         }
         return $dest;
@@ -82,7 +82,7 @@ abstract class Base64 implements EncoderInterface
      * Base64 character set "./[A-Z][a-z][0-9]"
      *
      * @param string $src
-     * @return string|bool
+     * @return string|false
      * @throws \RangeException
      */
     public static function decode($src, $strictPadding = false)
@@ -125,7 +125,7 @@ abstract class Base64 implements EncoderInterface
                 'CCC',
                 ((($c0 << 2) | ($c1 >> 4)) & 0xff),
                 ((($c1 << 4) | ($c2 >> 2)) & 0xff),
-                ((($c2 << 6) |  $c3      ) & 0xff)
+                ((($c2 << 6) | $c3) & 0xff)
             );
             $err |= ($c0 | $c1 | $c2 | $c3) >> 8;
         }
@@ -142,7 +142,7 @@ abstract class Base64 implements EncoderInterface
                     ((($c1 << 4) | ($c2 >> 2)) & 0xff)
                 );
                 $err |= ($c0 | $c1 | $c2) >> 8;
-            } elseif($i + 1 < $srcLen) {
+            } elseif ($i + 1 < $srcLen) {
                 $c1 = static::decode6Bits($chunk[2]);
                 $dest .= \pack(
                     'C',

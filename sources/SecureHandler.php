@@ -25,13 +25,13 @@ class SecureHandler extends SessionHandler
      */
     public function __construct()
     {
-        if (! extension_loaded('openssl')) {
+        if (!extension_loaded('openssl')) {
             throw new \RuntimeException(sprintf(
                 "You need the OpenSSL extension to use %s",
                 __CLASS__
             ));
         }
-        if (! extension_loaded('mbstring')) {
+        if (!extension_loaded('mbstring')) {
             throw new \RuntimeException(sprintf(
                 "You need the Multibytes extension to use %s",
                 __CLASS__
@@ -48,7 +48,7 @@ class SecureHandler extends SessionHandler
      */
     public function open($save_path, $session_name)
     {
-        $this->key = $this->getKey('KEY_' . $session_name);
+        $this->key = $this->getKey('KEY_'.$session_name);
         return parent::open($save_path, $session_name);
     }
 
@@ -95,11 +95,11 @@ class SecureHandler extends SessionHandler
         // Authentication
         $hmac = hash_hmac(
             'SHA256',
-            $iv . $ciphertext,
+            $iv.$ciphertext,
             mb_substr($key, 32, null, '8bit'),
             true
         );
-        return $hmac . $iv . $ciphertext;
+        return $hmac.$iv.$ciphertext;
     }
 
     /**
@@ -117,11 +117,11 @@ class SecureHandler extends SessionHandler
         // Authentication
         $hmacNew = hash_hmac(
             'SHA256',
-            $iv . $ciphertext,
+            $iv.$ciphertext,
             mb_substr($key, 32, null, '8bit'),
             true
         );
-        if (! $this->hash_equals($hmac, $hmacNew)) {
+        if (!$this->hash_equals($hmac, $hmacNew)) {
             throw new \RuntimeException('Authentication failed');
         }
         // Decrypt

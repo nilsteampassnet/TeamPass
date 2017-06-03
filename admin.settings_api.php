@@ -182,13 +182,13 @@ echo '
  	 	    </td>
       	<td>
         <div id="api_ips_list">';
-          $data = DB::query(
+            $data = DB::query(
             "SELECT id, label, value FROM ".prefix_table("api")."
             WHERE type = %s",
             'ip'
-          );
-          $counter = DB::count();
-          if ($counter != 0) {
+            );
+            $counter = DB::count();
+            if ($counter != 0) {
             echo '
             <table id="tbl_ips">
               <thead>
@@ -206,7 +206,7 @@ echo '
                     'ip'
                 );
                 foreach ($rows as $record) {
-                  echo '
+                    echo '
                   <tr id="apiid'.$record['id'].'">
                     <td id="apiid'.$record['id'].'label">'.$record['label'].'</td>
                     <td id="apiid'.$record['id'].'value">'.$record['value'].'</td>
@@ -215,13 +215,13 @@ echo '
                       <i class="fa fa-trash mi-red tip" onclick="deleteApiKey(\''.$record['id'].'\')" title="'.htmlentities(strip_tags($LANG['del_button']), ENT_QUOTES).'"></i></td>
                   </tr>';
                 }
-              echo '
+                echo '
               </tbody>
             </table>
             ';
-          }else {
+            }else {
             echo $LANG['settings_api_world_open'];
-          }
+            }
         echo '
         </div>
         <br />

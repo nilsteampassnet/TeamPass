@@ -217,7 +217,7 @@ class Rijndael extends BlockCipher
                 $this->key_length = $length >> 3;
                 break;
             default:
-                throw new \LengthException('Key size of ' . $length . ' bits is not supported by this algorithm. Only keys of sizes 128, 160, 192, 224 or 256 bits are supported');
+                throw new \LengthException('Key size of '.$length.' bits is not supported by this algorithm. Only keys of sizes 128, 160, 192, 224 or 256 bits are supported');
         }
 
         parent::setKeyLength($length);
@@ -243,7 +243,7 @@ class Rijndael extends BlockCipher
             case 32:
                 break;
             default:
-                throw new \LengthException('Key of size ' . strlen($key) . ' not supported by this algorithm. Only keys of sizes 16, 20, 24, 28 or 32 are supported');
+                throw new \LengthException('Key of size '.strlen($key).' not supported by this algorithm. Only keys of sizes 16, 20, 24, 28 or 32 are supported');
         }
 
         parent::setKey($key);
@@ -267,7 +267,7 @@ class Rijndael extends BlockCipher
             case 256:
                 break;
             default:
-                throw new \LengthException('Key size of ' . $length . ' bits is not supported by this algorithm. Only keys of sizes 128, 160, 192, 224 or 256 bits are supported');
+                throw new \LengthException('Key size of '.$length.' bits is not supported by this algorithm. Only keys of sizes 128, 160, 192, 224 or 256 bits are supported');
         }
 
         $this->Nb = $length >> 5;
@@ -293,11 +293,11 @@ class Rijndael extends BlockCipher
                 if ($this->block_size != 16) {
                     return false;
                 }
-                $this->cipher_name_openssl_ecb = 'aes-' . ($this->key_length << 3) . '-ecb';
-                $this->cipher_name_openssl = 'aes-' . ($this->key_length << 3) . '-' . $this->_openssl_translate_mode();
+                $this->cipher_name_openssl_ecb = 'aes-'.($this->key_length << 3).'-ecb';
+                $this->cipher_name_openssl = 'aes-'.($this->key_length << 3).'-'.$this->_openssl_translate_mode();
                 break;
             case self::ENGINE_MCRYPT:
-                $this->cipher_name_mcrypt = 'rijndael-' . ($this->block_size << 3);
+                $this->cipher_name_mcrypt = 'rijndael-'.($this->block_size << 3);
                 if ($this->key_length % 8) { // is it a 160/224-bit key?
                     // mcrypt is not usable for them, only for 128/192/256-bit keys
                     return false;
@@ -358,8 +358,8 @@ class Rijndael extends BlockCipher
             while ($i < $Nb) {
                 $temp[$i] = $t0[$state[$i] >> 24 & 0x000000FF] ^
                             $t1[$state[$j] >> 16 & 0x000000FF] ^
-                            $t2[$state[$k] >>  8 & 0x000000FF] ^
-                            $t3[$state[$l]       & 0x000000FF] ^
+                            $t2[$state[$k] >> 8 & 0x000000FF] ^
+                            $t3[$state[$l] & 0x000000FF] ^
                             $w[++$wc];
                 ++$i;
                 $j = ($j + 1) % $Nb;
@@ -372,9 +372,9 @@ class Rijndael extends BlockCipher
         // subWord
         for ($i = 0; $i < $Nb; ++$i) {
             $state[$i] =   $sbox[$state[$i]       & 0x000000FF]        |
-                          ($sbox[$state[$i] >>  8 & 0x000000FF] <<  8) |
-                          ($sbox[$state[$i] >> 16 & 0x000000FF] << 16) |
-                          ($sbox[$state[$i] >> 24 & 0x000000FF] << 24);
+                            ($sbox[$state[$i] >>  8 & 0x000000FF] <<  8) |
+                            ($sbox[$state[$i] >> 16 & 0x000000FF] << 16) |
+                            ($sbox[$state[$i] >> 24 & 0x000000FF] << 24);
         }
 
         // shiftRows + addRoundKey
@@ -387,7 +387,7 @@ class Rijndael extends BlockCipher
                         ($state[$j] & 0x00FF0000) ^
                         ($state[$k] & 0x0000FF00) ^
                         ($state[$l] & 0x000000FF) ^
-                         $w[$i];
+                            $w[$i];
             ++$i;
             $j = ($j + 1) % $Nb;
             $k = ($k + 1) % $Nb;
@@ -451,8 +451,8 @@ class Rijndael extends BlockCipher
             while ($i < $Nb) {
                 $temp[$i] = $dt0[$state[$i] >> 24 & 0x000000FF] ^
                             $dt1[$state[$j] >> 16 & 0x000000FF] ^
-                            $dt2[$state[$k] >>  8 & 0x000000FF] ^
-                            $dt3[$state[$l]       & 0x000000FF] ^
+                            $dt2[$state[$k] >> 8 & 0x000000FF] ^
+                            $dt3[$state[$l] & 0x000000FF] ^
                             $dw[++$wc];
                 ++$i;
                 $j = ($j + 1) % $Nb;
@@ -475,9 +475,9 @@ class Rijndael extends BlockCipher
                     ($state[$l] & 0x000000FF);
 
             $temp[$i] = $dw[$i] ^ ($isbox[$word       & 0x000000FF]        |
-                                  ($isbox[$word >>  8 & 0x000000FF] <<  8) |
-                                  ($isbox[$word >> 16 & 0x000000FF] << 16) |
-                                  ($isbox[$word >> 24 & 0x000000FF] << 24));
+                                    ($isbox[$word >>  8 & 0x000000FF] <<  8) |
+                                    ($isbox[$word >> 16 & 0x000000FF] << 16) |
+                                    ($isbox[$word >> 24 & 0x000000FF] << 24));
             ++$i;
             $j = ($j + 1) % $Nb;
             $k = ($k + 1) % $Nb;
@@ -582,8 +582,8 @@ class Rijndael extends BlockCipher
                         $dw = $this->_subWord($this->w[$row][$j]);
                         $temp[$j] = $dt0[$dw >> 24 & 0x000000FF] ^
                                     $dt1[$dw >> 16 & 0x000000FF] ^
-                                    $dt2[$dw >>  8 & 0x000000FF] ^
-                                    $dt3[$dw       & 0x000000FF];
+                                    $dt2[$dw >> 8 & 0x000000FF] ^
+                                    $dt3[$dw & 0x000000FF];
                         $j++;
                     }
                     $this->dw[$row] = $temp;
@@ -625,9 +625,9 @@ class Rijndael extends BlockCipher
         }
 
         return  $sbox[$word       & 0x000000FF]        |
-               ($sbox[$word >>  8 & 0x000000FF] <<  8) |
-               ($sbox[$word >> 16 & 0x000000FF] << 16) |
-               ($sbox[$word >> 24 & 0x000000FF] << 24);
+                ($sbox[$word >>  8 & 0x000000FF] <<  8) |
+                ($sbox[$word >> 16 & 0x000000FF] << 16) |
+                ($sbox[$word >> 24 & 0x000000FF] << 24);
     }
 
     /**
@@ -684,9 +684,9 @@ class Rijndael extends BlockCipher
             ));
 
             foreach ($t3 as $t3i) {
-                $t0[] = (($t3i << 24) & 0xFF000000) | (($t3i >>  8) & 0x00FFFFFF);
+                $t0[] = (($t3i << 24) & 0xFF000000) | (($t3i >> 8) & 0x00FFFFFF);
                 $t1[] = (($t3i << 16) & 0xFFFF0000) | (($t3i >> 16) & 0x0000FFFF);
-                $t2[] = (($t3i <<  8) & 0xFFFFFF00) | (($t3i >> 24) & 0x000000FF);
+                $t2[] = (($t3i << 8) & 0xFFFFFF00) | (($t3i >> 24) & 0x000000FF);
             }
 
             $tables = array(
@@ -768,9 +768,9 @@ class Rijndael extends BlockCipher
             ));
 
             foreach ($dt3 as $dt3i) {
-                $dt0[] = (($dt3i << 24) & 0xFF000000) | (($dt3i >>  8) & 0x00FFFFFF);
+                $dt0[] = (($dt3i << 24) & 0xFF000000) | (($dt3i >> 8) & 0x00FFFFFF);
                 $dt1[] = (($dt3i << 16) & 0xFFFF0000) | (($dt3i >> 16) & 0x0000FFFF);
-                $dt2[] = (($dt3i <<  8) & 0xFFFFFF00) | (($dt3i >> 24) & 0x000000FF);
+                $dt2[] = (($dt3i << 8) & 0xFFFFFF00) | (($dt3i >> 24) & 0x000000FF);
             };
 
             $tables = array(
@@ -815,17 +815,17 @@ class Rijndael extends BlockCipher
         // So here we are'nt under the same heavy timing-stress as we are in _de/encryptBlock() or de/encrypt().
         // However...the here generated function- $code, stored as php callback in $this->inline_crypt, must work as fast as even possible.
 
-        $lambda_functions =& self::_getLambdaFunctions();
+        $lambda_functions = & self::_getLambdaFunctions();
 
         // We create max. 10 hi-optimized code for memory reason. Means: For each $key one ultra fast inline-crypt function.
         // (Currently, for Crypt_Rijndael/AES, one generated $lambda_function cost on php5.5@32bit ~80kb unfreeable mem and ~130kb on php5.5@64bit)
         // After that, we'll still create very fast optimized code but not the hi-ultimative code, for each $mode one.
-        $gen_hi_opt_code = (bool)(count($lambda_functions) < 10);
+        $gen_hi_opt_code = (bool) (count($lambda_functions) < 10);
 
         // Generation of a uniqe hash for our generated code
         $code_hash = "Crypt_Rijndael, {$this->mode}, {$this->Nr}, {$this->Nb}";
         if ($gen_hi_opt_code) {
-            $code_hash = str_pad($code_hash, 32) . $this->_hashInlineCryptFunction($this->key);
+            $code_hash = str_pad($code_hash, 32).$this->_hashInlineCryptFunction($this->key);
         }
 
         if (!isset($lambda_functions[$code_hash])) {
@@ -839,8 +839,8 @@ class Rijndael extends BlockCipher
                     break;
                 default:
                     for ($i = 0, $cw = count($this->w); $i < $cw; ++$i) {
-                        $w[]  = '$w['  . $i . ']';
-                        $dw[] = '$dw[' . $i . ']';
+                        $w[]  = '$w['.$i.']';
+                        $dw[] = '$dw['.$i.']';
                     }
                     $init_encrypt = '$w  = $self->w;';
                     $init_decrypt = '$dw = $self->dw;';
@@ -851,7 +851,7 @@ class Rijndael extends BlockCipher
             $c  = $this->c;
 
             // Generating encrypt code:
-            $init_encrypt.= '
+            $init_encrypt .= '
                 static $tables;
                 if (empty($tables)) {
                     $tables = &$self->_getTables();
@@ -877,9 +877,9 @@ class Rijndael extends BlockCipher
             for ($round = 1; $round < $Nr; ++$round) {
                 list($s, $e) = array($e, $s);
                 for ($i = 0; $i < $Nb; ++$i) {
-                    $encrypt_block.=
+                    $encrypt_block .=
                         '$'.$e.$i.' =
-                        $t0[($'.$s.$i                  .' >> 24) & 0xff] ^
+                        $t0[($'.$s.$i.' >> 24) & 0xff] ^
                         $t1[($'.$s.(($i + $c[1]) % $Nb).' >> 16) & 0xff] ^
                         $t2[($'.$s.(($i + $c[2]) % $Nb).' >>  8) & 0xff] ^
                         $t3[ $'.$s.(($i + $c[3]) % $Nb).'        & 0xff] ^
@@ -889,7 +889,7 @@ class Rijndael extends BlockCipher
 
             // Finalround: subWord + shiftRows + addRoundKey
             for ($i = 0; $i < $Nb; ++$i) {
-                $encrypt_block.=
+                $encrypt_block .=
                     '$'.$e.$i.' =
                      $sbox[ $'.$e.$i.'        & 0xff]        |
                     ($sbox[($'.$e.$i.' >>  8) & 0xff] <<  8) |
@@ -898,8 +898,8 @@ class Rijndael extends BlockCipher
             }
             $encrypt_block .= '$in = pack("N*"'."\n";
             for ($i = 0; $i < $Nb; ++$i) {
-                $encrypt_block.= ',
-                    ($'.$e.$i                  .' & '.((int)0xFF000000).') ^
+                $encrypt_block .= ',
+                    ($'.$e.$i.' & '.((int) 0xFF000000).') ^
                     ($'.$e.(($i + $c[1]) % $Nb).' &         0x00FF0000   ) ^
                     ($'.$e.(($i + $c[2]) % $Nb).' &         0x0000FF00   ) ^
                     ($'.$e.(($i + $c[3]) % $Nb).' &         0x000000FF   ) ^
@@ -908,7 +908,7 @@ class Rijndael extends BlockCipher
             $encrypt_block .= ');';
 
             // Generating decrypt code:
-            $init_decrypt.= '
+            $init_decrypt .= '
                 static $invtables;
                 if (empty($invtables)) {
                     $invtables = &$self->_getInvTables();
@@ -934,9 +934,9 @@ class Rijndael extends BlockCipher
             for ($round = 1; $round < $Nr; ++$round) {
                 list($s, $e) = array($e, $s);
                 for ($i = 0; $i < $Nb; ++$i) {
-                    $decrypt_block.=
+                    $decrypt_block .=
                         '$'.$e.$i.' =
-                        $dt0[($'.$s.$i                        .' >> 24) & 0xff] ^
+                        $dt0[($'.$s.$i.' >> 24) & 0xff] ^
                         $dt1[($'.$s.(($Nb + $i - $c[1]) % $Nb).' >> 16) & 0xff] ^
                         $dt2[($'.$s.(($Nb + $i - $c[2]) % $Nb).' >>  8) & 0xff] ^
                         $dt3[ $'.$s.(($Nb + $i - $c[3]) % $Nb).'        & 0xff] ^
@@ -946,7 +946,7 @@ class Rijndael extends BlockCipher
 
             // Finalround: subWord + shiftRows + addRoundKey
             for ($i = 0; $i < $Nb; ++$i) {
-                $decrypt_block.=
+                $decrypt_block .=
                     '$'.$e.$i.' =
                      $isbox[ $'.$e.$i.'        & 0xff]        |
                     ($isbox[($'.$e.$i.' >>  8) & 0xff] <<  8) |
@@ -955,8 +955,8 @@ class Rijndael extends BlockCipher
             }
             $decrypt_block .= '$in = pack("N*"'."\n";
             for ($i = 0; $i < $Nb; ++$i) {
-                $decrypt_block.= ',
-                    ($'.$e.$i.                        ' & '.((int)0xFF000000).') ^
+                $decrypt_block .= ',
+                    ($'.$e.$i.' & '.((int) 0xFF000000).') ^
                     ($'.$e.(($Nb + $i - $c[1]) % $Nb).' &         0x00FF0000   ) ^
                     ($'.$e.(($Nb + $i - $c[2]) % $Nb).' &         0x0000FF00   ) ^
                     ($'.$e.(($Nb + $i - $c[3]) % $Nb).' &         0x000000FF   ) ^
@@ -966,11 +966,11 @@ class Rijndael extends BlockCipher
 
             $lambda_functions[$code_hash] = $this->_createInlineCryptFunction(
                 array(
-                   'init_crypt'    => '',
-                   'init_encrypt'  => $init_encrypt,
-                   'init_decrypt'  => $init_decrypt,
-                   'encrypt_block' => $encrypt_block,
-                   'decrypt_block' => $decrypt_block
+                    'init_crypt'    => '',
+                    'init_encrypt'  => $init_encrypt,
+                    'init_decrypt'  => $init_decrypt,
+                    'encrypt_block' => $encrypt_block,
+                    'decrypt_block' => $decrypt_block
                 )
             );
         }

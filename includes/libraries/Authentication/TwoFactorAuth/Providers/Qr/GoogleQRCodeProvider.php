@@ -11,8 +11,9 @@ class GoogleQRCodeProvider extends BaseHTTPQRCodeProvider
 
     function __construct($verifyssl = false, $errorcorrectionlevel = 'L', $margin = 1)
     {
-        if (!is_bool($verifyssl))
-            throw new QRException('VerifySSL must be bool');
+        if (!is_bool($verifyssl)) {
+                    throw new QRException('VerifySSL must be bool');
+        }
 
         $this->verifyssl = $verifyssl;
 
@@ -33,8 +34,8 @@ class GoogleQRCodeProvider extends BaseHTTPQRCodeProvider
     public function getUrl($qrtext, $size)
     {
         return 'https://chart.googleapis.com/chart?cht=qr'
-            . '&chs=' . $size . 'x' . $size
-            . '&chld=' . $this->errorcorrectionlevel . '|' . $this->margin
-            . '&chl=' . rawurlencode($qrtext);
+            . '&chs='.$size.'x'.$size
+            . '&chld='.$this->errorcorrectionlevel.'|'.$this->margin
+            . '&chl='.rawurlencode($qrtext);
     }
 }

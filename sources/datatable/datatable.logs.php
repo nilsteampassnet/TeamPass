@@ -46,7 +46,7 @@ if (isset($_GET['action'])) {
     //Paging
     $sLimit = "";
     if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-        $sLimit = "LIMIT ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)) ;
+        $sLimit = "LIMIT ".mysqli_real_escape_string($link, filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT));
     }
 }
 
@@ -57,13 +57,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -82,7 +82,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = "WHERE l.type = 'user_connection'";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i = 0; $i < count($aColumns); $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -139,7 +139,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
@@ -163,13 +163,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -183,7 +183,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = " WHERE l.type = 'error'";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i = 0; $i < count($aColumns); $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -238,7 +238,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
@@ -262,13 +262,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -282,7 +282,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = " WHERE l.action = 'at_shown'";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i = 0; $i < count($aColumns); $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -339,7 +339,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'"';
@@ -363,13 +363,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -383,7 +383,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = " WHERE l.action = 'at_copy'";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i = 0; $i < count($aColumns); $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -464,13 +464,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -486,7 +486,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = "WHERE l.type = 'admin_action'";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i = 0; $i < count($aColumns); $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3);
@@ -565,13 +565,13 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -587,7 +587,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sWhere = "";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " WHERE (";
-        for ($i=1; $i<count($aColumns)-1; $i++) {
+        for ($i = 1; $i < count($aColumns) - 1; $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3);
@@ -658,9 +658,9 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 
         //col5
         if ($record['perso'] == 1) {
-            $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['yes']), ENT_QUOTES). '"';
+            $sOutput_item .= '"'.htmlspecialchars(stripslashes($LANG['yes']), ENT_QUOTES).'"';
         } else {
-            $sOutput_item .= '"'. htmlspecialchars(stripslashes($LANG['no']), ENT_QUOTES). '"';
+            $sOutput_item .= '"'.htmlspecialchars(stripslashes($LANG['no']), ENT_QUOTES).'"';
         }
 
         //Finish the line
@@ -684,13 +684,13 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -704,7 +704,7 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     $sWhere = " WHERE l.type = 'failed_auth'";
     if ($_GET['sSearch'] != "") {
         $sWhere .= " AND (";
-        for ($i=0; $i<count($aColumns); $i++) {
+        for ($i = 0; $i < count($aColumns); $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
         }
         $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -757,7 +757,7 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
         $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['auth_date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10),CHR(13)),array(' ',' '),htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['who']), ENT_QUOTES).'"';

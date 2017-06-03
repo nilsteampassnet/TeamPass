@@ -43,7 +43,7 @@ $_SESSION['settings']['loaded'] = "";
 
 $dbgDuo = fopen("upgrade.log", "a");
 $finish = false;
-$next = ($_POST['nb']+$_POST['start']);
+$next = ($_POST['nb'] + $_POST['start']);
 
 
 $dbTmp = mysqli_connect(
@@ -93,7 +93,7 @@ while ($data = mysqli_fetch_array($rows)) {
             $pw = decrypt($data['pw']);
             if (empty($pw)) {
                 // used protocol is #1
-                $pw = decryptOld($data['pw']);  // decrypt using protocol #1
+                $pw = decryptOld($data['pw']); // decrypt using protocol #1
             }
 
             // get key for this pw
@@ -131,7 +131,7 @@ while ($data = mysqli_fetch_array($rows)) {
     }
 
     // does tables KEYS exists
-    if(mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['pre']."keys'")) == 1) {
+    if (mysqli_num_rows(mysqli_query("SHOW TABLES LIKE '".$_SESSION['pre']."keys'")) == 1) {
         $table_keys_exists = 1;
     } else {
         $table_keys_exists = 0;
@@ -162,7 +162,7 @@ while ($data = mysqli_fetch_array($rows)) {
                     fputs($dbgDuo, "\n/ step1 : ".$pw);
                     if (empty($pw)) {
                         // used protocol is #1
-                        $pw = decryptOld(trim($reason[1]));  // decrypt using protocol #1
+                        $pw = decryptOld(trim($reason[1])); // decrypt using protocol #1
                         fputs($dbgDuo, " / step2 : ".$pw);
                     }
 
@@ -185,7 +185,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
                     // store new encryption
                     if (isUTF8($pw) && !empty($pw)) {
-                        $encrypt = cryption_phpCrypt($pw , SALT, "", "encrypt");
+                        $encrypt = cryption_phpCrypt($pw, SALT, "", "encrypt");
                         fputs($dbgDuo, " / Final : ".$encrypt['string']);
                         mysqli_query($dbTmp,
                             "UPDATE ".$_SESSION['pre']."log_items
@@ -217,8 +217,8 @@ while ($data = mysqli_fetch_array($rows)) {
 
         while ($record = mysqli_fetch_array($resData)) {
             $tmpData = substr(decrypt($record['data']), strlen($record['rndKey']));
-            if (isUTF8($tmpData ) && !empty($tmpData )) {
-                $encrypt = cryption_phpCrypt($tmpData , SALT, "", "encrypt");
+            if (isUTF8($tmpData) && !empty($tmpData)) {
+                $encrypt = cryption_phpCrypt($tmpData, SALT, "", "encrypt");
 
                 // store Password
                 $resData_tmp2 = mysqli_query($dbTmp,

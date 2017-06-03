@@ -116,35 +116,35 @@ echo '
         $("#offline_password").simplePassMeter({
             "requirements": {},
             "container": "#offline_pw_strength",
-            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+            "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
             "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "<?php echo $LANG['complex_level0'];?>"
+                    "text": "<?php echo $LANG['complex_level0']; ?>"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level1'];?>"
+                    "text": "<?php echo $LANG['complex_level1']; ?>"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level2'];?>"
+                    "text": "<?php echo $LANG['complex_level2']; ?>"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level3'];?>"
+                    "text": "<?php echo $LANG['complex_level3']; ?>"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level4'];?>"
+                    "text": "<?php echo $LANG['complex_level4']; ?>"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level5'];?>"
+                    "text": "<?php echo $LANG['complex_level5']; ?>"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level6'];?>"
+                    "text": "<?php echo $LANG['complex_level6']; ?>"
                 }
             ]
         });
@@ -162,7 +162,7 @@ echo '
      */
     function generateOfflineFile()
     {
-        $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>').attr("class","").show();
+        $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>').attr("class","").show();
 
         //Get list of selected folders
         var ids = "";
@@ -172,19 +172,19 @@ echo '
         });
 
         if (ids == "") {
-            $("#offline_information").show().html("<?php echo $LANG['error_no_selected_folder'];?>").attr("class","ui-state-error");
+            $("#offline_information").show().html("<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         if ($("#offline_password").val() == "") {
-            $("#offline_information").show().html("<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
+            $("#offline_information").show().html("<?php echo $LANG['pdf_password_warning']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         if ($("#offline_pw_strength_value").val() < $("#min_offline_pw_strength_value").val()) {
-            $("#offline_information").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought'];?>");
+            $("#offline_information").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;
         }
@@ -216,7 +216,7 @@ echo '
     {
         // prpare list of ids to treat during this run
         if (idsList != "") {
-            $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
+            $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
 
             tab = idsList.split(';');
             idTree = tab[0];

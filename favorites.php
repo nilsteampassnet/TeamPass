@@ -35,7 +35,7 @@ if (empty($_SESSION['favourites'])) {
         </tr></thead>
         <tbody>';
     //Get favourites
-    $cpt= 0 ;
+    $cpt = 0;
     foreach ($_SESSION['favourites'] as $fav) {
         if (!empty($fav)) {
             $data = DB::queryFirstRow(
@@ -47,7 +47,7 @@ if (empty($_SESSION['favourites'])) {
             );
             if (!empty($data['label'])) {
                 echo '
-                    <tr class="ligne'.($cpt%2).'" id="row-'.$data['id'].'">
+                    <tr class="ligne'.($cpt % 2).'" id="row-'.$data['id'].'">
                         <td>
                             <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;
@@ -55,7 +55,7 @@ if (empty($_SESSION['favourites'])) {
                         </td>
                         <td align="left">'.stripslashes($data['label']).'</td>
                         <td align="center">'.stripslashes($data['description']).'</td>
-                        <td align="center">',$data['title'] == $_SESSION['user_id']?$_SESSION['login']:$data['title'],'</td>
+                        <td align="center">',$data['title'] == $_SESSION['user_id'] ? $_SESSION['login'] : $data['title'], '</td>
                     </tr>';
                 $cpt++;
             }

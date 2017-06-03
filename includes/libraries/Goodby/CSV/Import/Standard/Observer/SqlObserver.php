@@ -57,6 +57,6 @@ class SqlObserver
         }, $line);
 
         return 'INSERT INTO ' . $this->table . '(' . join(', ', $this->columns) . ')' .
-               ' VALUES(' . join(', ', $line) . ');';
+                ' VALUES(' . join(', ', $line) . ');';
     }
 }

@@ -155,7 +155,6 @@ class Cipher_DES extends Cipher
 	/**
 	 * Encrypt plain text data using DES
 	 *
-	 * @param string $data A plain text string
 	 * @return boolean Returns true
 	 */
 	public function encrypt(&$text)
@@ -168,7 +167,6 @@ class Cipher_DES extends Cipher
 	/**
 	 * Decrypt a DES encrypted string
 	 *
-	 * @param string $encrypted A DES encrypted string
 	 * @return boolean Returns true
 	 */
 	public function decrypt(&$text)
@@ -199,17 +197,17 @@ class Cipher_DES extends Cipher
 		$l[0] = substr($data, 0, 32);
 		$r[0] = substr($data, 32, 32);
 
-		for($n = 1; $n <= 16; ++$n)
+		for ($n = 1; $n <= 16; ++$n)
 		{
-			$l[$n] = $r[$n-1];
+			$l[$n] = $r[$n - 1];
 
-			if($this->operation() == parent::DECRYPT)
-				$f = $this->F($r[$n-1], $this->sub_keys[16-$n]);
+			if ($this->operation() == parent::DECRYPT)
+				$f = $this->F($r[$n - 1], $this->sub_keys[16 - $n]);
 			else
-				$f = $this->F($r[$n-1], $this->sub_keys[$n-1]);
+				$f = $this->F($r[$n - 1], $this->sub_keys[$n - 1]);
 
 			// XOR F with Ln
-			$r[$n] = $this->xorBin($l[$n-1], $f);
+			$r[$n] = $this->xorBin($l[$n - 1], $f);
 		}
 
 		// now we combine L[16] and R[16] back into a 64-bit string, but we reverse
@@ -242,7 +240,7 @@ class Cipher_DES extends Cipher
 		$binkey = parent::str2Bin($this->key());
 
 		// reduce the key down to 56bits based on table $_pc1
-		for($i = 0; $i < 56; ++$i)
+		for ($i = 0; $i < 56; ++$i)
             $pc1m[$i] = $binkey[self::$_pc1[$i] - 1];
 
 		// split $pc1m in half (C0 and D0)
@@ -251,13 +249,13 @@ class Cipher_DES extends Cipher
 
 		// now that $c[0] and $d[0] are defined, create 16 blocks for Cn and Dn
 		// where 1 <= n <= 16
-		for($i = 1; $i <= 16; ++$i)
+		for ($i = 1; $i <= 16; ++$i)
 		{
 			// now set the next Cn and Dn as the previous Cn and Dn
-			$c[$i] = $c[$i-1];
-			$d[$i] = $d[$i-1];
+			$c[$i] = $c[$i - 1];
+			$d[$i] = $d[$i - 1];
 
-			for($j = 0; $j < self::$_key_sched[$i-1]; ++$j)
+			for ($j = 0; $j < self::$_key_sched[$i - 1]; ++$j)
 			{
 				// do a left shift, move each bit one place to the left,
 				// except for the first bit, which is cycled to the end
@@ -271,9 +269,9 @@ class Cipher_DES extends Cipher
 			// pairs CnDn. Each pair has 56 bits, but PC-2 only uses 48
 			// of these.
 			$CnDn = array_merge($c[$i], $d[$i]);
-			$this->sub_keys[$i-1] = "";
-			for($j = 0; $j < 48; ++$j)
-				$this->sub_keys[$i-1] .= $CnDn[self::$_pc2[$j] - 1];
+			$this->sub_keys[$i - 1] = "";
+			for ($j = 0; $j < 48; ++$j)
+				$this->sub_keys[$i - 1] .= $CnDn[self::$_pc2[$j] - 1];
 		}
 
 		// the sub_keys are created, we are done with the key permutation
@@ -296,8 +294,8 @@ class Cipher_DES extends Cipher
 	 * the IP and FP are part of the DES standard and not implementing it would deviate from
 	 * the standard, so we will do it here in phpCrypt.
 	 *
-	 * @param string $m The plain text message
-	 * @return array the Initial Permutation (IP)
+	 * @param string $text
+	 * @return string the Initial Permutation (IP)
 	 */
 	private function ip($text)
 	{
@@ -305,7 +303,7 @@ class Cipher_DES extends Cipher
 		$ip = "";
 
 		// loop through the 64 bit block, ordering it occording to $_ip
-		for($i = 0; $i < 64; ++$i)
+		for ($i = 0; $i < 64; ++$i)
 			$ip .= $text[self::$_ip[$i] - 1];
 
 		return $ip;
@@ -318,7 +316,7 @@ class Cipher_DES extends Cipher
 	 * call the use of this selection table the function E. Thus E(Rn-1) has a 32 bit input
 	 * block, and a 48 bit output block.
 	 *
-	 * @param array $r  32 bit binary, each bit in an array element
+	 * @param string $r  32 bit binary, each bit in an array element
 	 * @param string $k 48 bit binary string
 	 * @return string 48 bit binary string
 	 */
@@ -348,7 +346,7 @@ class Cipher_DES extends Cipher
 	private function e($r)
 	{
 		$e = "";
-		for($i = 0; $i < 48; ++$i)
+		for ($i = 0; $i < 48; ++$i)
 			$e .= $r[self::$_e[$i] - 1];
 
 		return $e;
@@ -368,7 +366,7 @@ class Cipher_DES extends Cipher
 	{
 		$s = "";
 
-		for($i = 0; $i <= 42; $i += 6)
+		for ($i = 0; $i <= 42; $i += 6)
 		{
 			$sbits = substr($bits, $i, 6);
 
@@ -383,7 +381,7 @@ class Cipher_DES extends Cipher
 			$pos = ($row * 16) + $col;
 
 			// get the integer from the S-Box and convert it to binary
-			$bin = decbin(self::$_s[($i/6)][$pos]);
+			$bin = decbin(self::$_s[($i / 6)][$pos]);
 			$s .= str_pad($bin, 4, "0", STR_PAD_LEFT);
 		}
 
@@ -404,7 +402,7 @@ class Cipher_DES extends Cipher
 	private function p($s)
 	{
 		$p = "";
-		for($i = 0; $i < 32; ++$i)
+		for ($i = 0; $i < 32; ++$i)
 			$p .= $s[self::$_p[$i] - 1];
 
 		return $p;
@@ -422,7 +420,7 @@ class Cipher_DES extends Cipher
 	private function fp($bin)
 	{
 		$fp = "";
-		for($i = 0; $i < 64; ++$i)
+		for ($i = 0; $i < 64; ++$i)
 			$fp .= $bin[self::$_fp[$i] - 1];
 
 		return $fp;
@@ -439,23 +437,23 @@ class Cipher_DES extends Cipher
 		// permuted choice 1 (PC1)
 		// these values are chars and should be run through chr() when used
 		self::$_pc1 = array(
-			57, 49, 41, 33, 25, 17,  9,
+			57, 49, 41, 33, 25, 17, 9,
 			 1, 58, 50, 42, 34, 26, 18,
-			10,  2, 59, 51, 43, 35, 27,
-			19, 11,  3, 60, 52, 44, 36,
+			10, 2, 59, 51, 43, 35, 27,
+			19, 11, 3, 60, 52, 44, 36,
 			63, 55, 47, 39, 31, 23, 15,
 			 7, 62, 54, 46, 38, 30, 22,
-			14,  6, 61, 53, 45, 37, 29,
-			21, 13,  5, 28, 20, 12,  4
+			14, 6, 61, 53, 45, 37, 29,
+			21, 13, 5, 28, 20, 12, 4
 		);
 
 		// permuted choice 2 (PC2)
 		// these values are chars and should be run through chr() when used
 		self::$_pc2 = array(
-			14, 17, 11, 24,  1,  5,
-			 3, 28, 15,  6, 21, 10,
-			23, 19, 12,  4, 26,  8,
-			16,  7, 27, 20, 13,  2,
+			14, 17, 11, 24, 1, 5,
+			 3, 28, 15, 6, 21, 10,
+			23, 19, 12, 4, 26, 8,
+			16, 7, 27, 20, 13, 2,
 			41, 52, 31, 37, 47, 55,
 			30, 40, 51, 45, 33, 48,
 			44, 49, 39, 56, 34, 53,
@@ -468,7 +466,7 @@ class Cipher_DES extends Cipher
 			60, 52, 44, 36, 28, 20, 12, 4,
 			62, 54, 46, 38, 30, 22, 14, 6,
 			64, 56, 48, 40, 32, 24, 16, 8,
-			57, 49, 41, 33, 25, 17,  9, 1,
+			57, 49, 41, 33, 25, 17, 9, 1,
 			59, 51, 43, 35, 27, 19, 11, 3,
 			61, 53, 45, 37, 29, 21, 13, 5,
 			63, 55, 47, 39, 31, 23, 15, 7
@@ -476,93 +474,93 @@ class Cipher_DES extends Cipher
 
 		// expansion (E)
 		self::$_e = array(
-			32,  1,  2,  3,  4,  5,
-			 4,  5,  6,  7,  8,  9,
-			 8,  9, 10, 11, 12, 13,
+			32, 1, 2, 3, 4, 5,
+			 4, 5, 6, 7, 8, 9,
+			 8, 9, 10, 11, 12, 13,
 			12, 13, 14, 15, 16, 17,
 			16, 17, 18, 19, 20, 21,
 			20, 21, 22, 23, 24, 25,
 			24, 25, 26, 27, 28, 29,
-			28, 29, 30, 31, 32,  1
+			28, 29, 30, 31, 32, 1
 		);
 
 		// substition box (S)
 		self::$_s = array(
 			/* S1 */
 			array(
-				14,  4, 13,  1,  2, 15, 11,  8,  3, 10,  6, 12,  5,  9,  0,  7,
-				 0, 15,  7,  4, 14,  2, 13,  1, 10,  6, 12, 11,  9,  5,  3,  8,
-				 4,  1, 14,  8, 13,  6,  2, 11, 15, 12,  9,  7,  3, 10,  5,  0,
-				15, 12,  8,  2,  4,  9,  1,  7,  5, 11,  3, 14, 10,  0,  6, 13
+				14, 4, 13, 1, 2, 15, 11, 8, 3, 10, 6, 12, 5, 9, 0, 7,
+				 0, 15, 7, 4, 14, 2, 13, 1, 10, 6, 12, 11, 9, 5, 3, 8,
+				 4, 1, 14, 8, 13, 6, 2, 11, 15, 12, 9, 7, 3, 10, 5, 0,
+				15, 12, 8, 2, 4, 9, 1, 7, 5, 11, 3, 14, 10, 0, 6, 13
 			),
 
 			/* S2 */
 			array(
-				15,  1,  8, 14,  6, 11,  3,  4,  9,  7,  2, 13, 12,  0,  5, 10,
-				 3, 13,  4,  7, 15,  2,  8, 14, 12,  0,  1, 10,  6,  9, 11,  5,
-				 0, 14,  7, 11, 10,  4, 13,  1,  5,  8, 12,  6,  9,  3,  2, 15,
-				13,  8, 10,  1,  3, 15,  4,  2, 11,  6,  7, 12,  0,  5, 14,  9
+				15, 1, 8, 14, 6, 11, 3, 4, 9, 7, 2, 13, 12, 0, 5, 10,
+				 3, 13, 4, 7, 15, 2, 8, 14, 12, 0, 1, 10, 6, 9, 11, 5,
+				 0, 14, 7, 11, 10, 4, 13, 1, 5, 8, 12, 6, 9, 3, 2, 15,
+				13, 8, 10, 1, 3, 15, 4, 2, 11, 6, 7, 12, 0, 5, 14, 9
 			),
 
 			/* S3 */
 			array(
-				10,  0,  9, 14,  6,  3, 15,  5,  1, 13, 12,  7, 11,  4,  2,  8,
-				13,  7,  0,  9,  3,  4,  6, 10,  2,  8,  5, 14, 12, 11, 15,  1,
-				13,  6,  4,  9,  8, 15,  3,  0, 11,  1,  2, 12,  5, 10, 14,  7,
-				 1, 10, 13,  0,  6,  9,  8,  7,  4, 15, 14,  3, 11,  5,  2, 12
+				10, 0, 9, 14, 6, 3, 15, 5, 1, 13, 12, 7, 11, 4, 2, 8,
+				13, 7, 0, 9, 3, 4, 6, 10, 2, 8, 5, 14, 12, 11, 15, 1,
+				13, 6, 4, 9, 8, 15, 3, 0, 11, 1, 2, 12, 5, 10, 14, 7,
+				 1, 10, 13, 0, 6, 9, 8, 7, 4, 15, 14, 3, 11, 5, 2, 12
 			),
 
 			/* S4 */
 			array(
-				 7, 13, 14,  3,  0,  6,  9, 10,  1,  2,  8,  5, 11, 12,  4, 15,
-				13,  8, 11,  5,  6, 15,  0,  3,  4,  7,  2, 12,  1, 10, 14,  9,
-				10,  6,  9,  0, 12, 11,  7, 13, 15,  1,  3, 14,  5,  2,  8,  4,
-				 3, 15,  0,  6, 10,  1, 13,  8,  9,  4,  5, 11, 12,  7,  2, 14
+				 7, 13, 14, 3, 0, 6, 9, 10, 1, 2, 8, 5, 11, 12, 4, 15,
+				13, 8, 11, 5, 6, 15, 0, 3, 4, 7, 2, 12, 1, 10, 14, 9,
+				10, 6, 9, 0, 12, 11, 7, 13, 15, 1, 3, 14, 5, 2, 8, 4,
+				 3, 15, 0, 6, 10, 1, 13, 8, 9, 4, 5, 11, 12, 7, 2, 14
 			),
 
 			/* S5 */
 			array(
-				 2, 12,  4,  1,  7, 10, 11,  6,  8,  5,  3, 15, 13,  0, 14,  9,
-				14, 11,  2, 12,  4,  7, 13,  1,  5,  0, 15, 10,  3,  9,  8,  6,
-				 4,  2,  1, 11, 10, 13,  7,  8, 15,  9, 12,  5,  6,  3,  0, 14,
-				11,  8, 12,  7,  1, 14,  2, 13,  6, 15,  0,  9, 10,  4,  5,  3
+				 2, 12, 4, 1, 7, 10, 11, 6, 8, 5, 3, 15, 13, 0, 14, 9,
+				14, 11, 2, 12, 4, 7, 13, 1, 5, 0, 15, 10, 3, 9, 8, 6,
+				 4, 2, 1, 11, 10, 13, 7, 8, 15, 9, 12, 5, 6, 3, 0, 14,
+				11, 8, 12, 7, 1, 14, 2, 13, 6, 15, 0, 9, 10, 4, 5, 3
 			),
 
 			/* S6 */
 			array(
-				12,  1, 10, 15,  9,  2,  6,  8,  0, 13,  3,  4, 14,  7,  5, 11,
-				10, 15,  4,  2,  7, 12,  9,  5,  6,  1, 13, 14,  0, 11,  3,  8,
-				 9, 14, 15,  5,  2,  8, 12,  3,  7,  0,  4, 10,  1, 13, 11,  6,
-				 4,  3,  2, 12,  9,  5, 15, 10, 11, 14,  1,  7,  6,  0,  8, 13
+				12, 1, 10, 15, 9, 2, 6, 8, 0, 13, 3, 4, 14, 7, 5, 11,
+				10, 15, 4, 2, 7, 12, 9, 5, 6, 1, 13, 14, 0, 11, 3, 8,
+				 9, 14, 15, 5, 2, 8, 12, 3, 7, 0, 4, 10, 1, 13, 11, 6,
+				 4, 3, 2, 12, 9, 5, 15, 10, 11, 14, 1, 7, 6, 0, 8, 13
 			),
 
 			/* S7 */
 			array(
-				 4, 11,  2, 14, 15,  0,  8, 13,  3, 12,  9,  7,  5, 10,  6,  1,
-				13,  0, 11,  7,  4,  9,  1, 10, 14,  3,  5, 12,  2, 15,  8,  6,
-				 1,  4, 11, 13, 12,  3,  7, 14, 10, 15,  6,  8,  0,  5,  9,  2,
-				 6, 11, 13,  8,  1,  4, 10,  7,  9,  5,  0, 15, 14,  2,  3, 12
+				 4, 11, 2, 14, 15, 0, 8, 13, 3, 12, 9, 7, 5, 10, 6, 1,
+				13, 0, 11, 7, 4, 9, 1, 10, 14, 3, 5, 12, 2, 15, 8, 6,
+				 1, 4, 11, 13, 12, 3, 7, 14, 10, 15, 6, 8, 0, 5, 9, 2,
+				 6, 11, 13, 8, 1, 4, 10, 7, 9, 5, 0, 15, 14, 2, 3, 12
 			),
 
 			/* S8 */
 			array(
-				13,  2,  8,  4,  6, 15, 11,  1, 10,  9,  3, 14,  5,  0, 12,  7,
-				 1, 15, 13,  8, 10,  3,  7,  4, 12,  5,  6, 11,  0, 14,  9,  2,
-				 7, 11,  4,  1,  9, 12, 14,  2,  0,  6, 10, 13, 15,  3,  5,  8,
-				 2,  1, 14,  7,  4, 10,  8, 13, 15, 12,  9,  0,  3,  5,  6, 11
+				13, 2, 8, 4, 6, 15, 11, 1, 10, 9, 3, 14, 5, 0, 12, 7,
+				 1, 15, 13, 8, 10, 3, 7, 4, 12, 5, 6, 11, 0, 14, 9, 2,
+				 7, 11, 4, 1, 9, 12, 14, 2, 0, 6, 10, 13, 15, 3, 5, 8,
+				 2, 1, 14, 7, 4, 10, 8, 13, 15, 12, 9, 0, 3, 5, 6, 11
 			)
 		);
 
 		// permutation (P)
 		self::$_p = array(
-			16,  7, 20, 21,
+			16, 7, 20, 21,
 			29, 12, 28, 17,
 			 1, 15, 23, 26,
 			 5, 18, 31, 10,
-			 2,  8, 24, 14,
-			32, 27,  3,  9,
-			19, 13, 30,  6,
-			22, 11,  4, 25
+			 2, 8, 24, 14,
+			32, 27, 3, 9,
+			19, 13, 30, 6,
+			22, 11, 4, 25
 		);
 
 		// final permutation (FP)
@@ -574,11 +572,11 @@ class Cipher_DES extends Cipher
 			36, 4, 44, 12, 52, 20, 60, 28,
 			35, 3, 43, 11, 51, 19, 59, 27,
 			34, 2, 42, 10, 50, 18, 58, 26,
-			33, 1, 41,  9, 49, 17, 57, 25
+			33, 1, 41, 9, 49, 17, 57, 25
 		);
 
 		// key schedule used in KeyPermutation()
-		self::$_key_sched = array(1,1,2,2,2,2,2,2,1,2,2,2,2,2,2,1);
+		self::$_key_sched = array(1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 1);
 	}
 
 

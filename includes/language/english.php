@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array (
+$LANG = array(
     'file_is_now_ready' => 'File is now ready.',
     'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Email Google Authentication to user',

@@ -61,9 +61,9 @@ class Cipher_3DES extends Cipher_DES
 	{
 		$key_len = strlen($key);
 
-		if($key_len == 8 || $key_len == 16)
+		if ($key_len == 8 || $key_len == 16)
 			$key = self::expandKey($key, $key_len);
-		else if($key_len < self::BYTES_KEY)
+		else if ($key_len < self::BYTES_KEY)
 		{
 			$msg  = PHP_Crypt::CIPHER_3DES." requires an 8, 16, or 24 byte key. ";
 			$msg .= "$key_len bytes received.";
@@ -98,19 +98,18 @@ class Cipher_3DES extends Cipher_DES
 	 * it into 3 64 bit parts, and then does the following
 	 * DES ENCRYPT(key1) -> DES DECRYPT(key2) -> DES ENCRYPT(key3)
 	 *
-	 * @param string $data A plain text string
 	 * @return boolean Returns true
 	 */
 	public function encrypt(&$text)
 	{
 		$blocksz = $this->blockSize();
 
-		for($i = 0; $i < 3; ++$i)
+		for ($i = 0; $i < 3; ++$i)
 		{
 			$key = substr($this->key(), ($i * 8), $blocksz);
 			$this->keyPermutation($key);
 
-			if($i % 2) // round 1
+			if ($i % 2) // round 1
 				$this->operation(parent::DECRYPT);
 			else // rounds 0 and 2
 				$this->operation(parent::ENCRYPT);
@@ -128,19 +127,18 @@ class Cipher_3DES extends Cipher_DES
 	 * it into 3 64 bit parts, and then does the following
 	 * DES DECRYPT(key1) -> DES ENCRYPT(key2) -> DES DECRYPT(key3)
 	 *
-	 * @param string $encrypted A DES encrypted string
 	 * @return boolean Returns true
 	 */
 	public function decrypt(&$text)
 	{
 		$blocksz = $this->blockSize();
 
-		for($i = 2; $i >= 0; --$i)
+		for ($i = 2; $i >= 0; --$i)
 		{
 			$key = substr($this->key(), ($i * 8), $blocksz);
 			$this->keyPermutation($key);
 
-			if($i % 2) // round 1
+			if ($i % 2) // round 1
 				$this->operation(parent::ENCRYPT);
 			else // round 0 and 2
 				$this->operation(parent::DECRYPT);
@@ -179,7 +177,7 @@ class Cipher_3DES extends Cipher_DES
 		$binkey = parent::str2Bin($key);
 
 		// reduce the key down to 56bits based on table $_pc1
-		for($i = 0; $i < 56; ++$i)
+		for ($i = 0; $i < 56; ++$i)
 		{
 			$pos = parent::$_pc1[$i] - 1;
             $pc1m[$i] = $binkey[$pos];
@@ -191,13 +189,13 @@ class Cipher_3DES extends Cipher_DES
 
 		// now that $c[0] and $d[0] are defined, create 16 blocks for Cn and Dn
 		// where 1 <= n <= 16
-		for($i = 1; $i <= 16; ++$i)
+		for ($i = 1; $i <= 16; ++$i)
 		{
 			// now set the next Cn and Dn as the previous Cn and Dn
-			$c[$i] = $c[$i-1];
-			$d[$i] = $d[$i-1];
+			$c[$i] = $c[$i - 1];
+			$d[$i] = $d[$i - 1];
 
-			for($j = 0; $j < parent::$_key_sched[$i-1]; ++$j)
+			for ($j = 0; $j < parent::$_key_sched[$i - 1]; ++$j)
 			{
 				// do a left shift, move each bit one place to the left,
 				// except for the first bit, which is cycled to the end
@@ -211,9 +209,9 @@ class Cipher_3DES extends Cipher_DES
 			// pairs CnDn. Each pair has 56 bits, but PC-2 only uses 48
 			// of these.
 			$CnDn = array_merge($c[$i], $d[$i]);
-			$this->sub_keys[$i-1] = "";
-			for($j = 0; $j < 48; ++$j)
-				$this->sub_keys[$i-1] .= $CnDn[parent::$_pc2[$j] - 1];
+			$this->sub_keys[$i - 1] = "";
+			for ($j = 0; $j < 48; ++$j)
+				$this->sub_keys[$i - 1] .= $CnDn[parent::$_pc2[$j] - 1];
 		}
 
 		// the sub_keys are created, we are done with the key permutation
@@ -229,6 +227,7 @@ class Cipher_3DES extends Cipher_DES
 	 * to make a 24 byte key
 	 *
 	 * @param string $key The 8 or 16 byte key to expand
+	 * @param integer $len
 	 * @return string If the key given is 8 or 16 bytes it returns the
 	 *	expanded 24 byte key, else it returns the original key unexpanded
 	 */
@@ -236,12 +235,12 @@ class Cipher_3DES extends Cipher_DES
 	{
 		// if we were given an 8 byte key, repeat it
 		// 3 times to produce a 24 byte key
-		if($len == 8)
+		if ($len == 8)
 			$key = str_repeat($key, 3);
 
 		// if we were given a 16 byte key, add the first
 		// 8 bytes to the end of the key to produce 24 bytes
-		if($len == 16)
+		if ($len == 16)
 			$key .= substr($key, 0, 8);
 
 		// return the key

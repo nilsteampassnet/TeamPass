@@ -51,8 +51,8 @@
 
 class GibberishAES {
 
-    protected static $key_size = 256;            // The default key size in bits
-    protected static $valid_key_sizes = array(128, 192, 256);   // Sizes in bits
+    protected static $key_size = 256; // The default key size in bits
+    protected static $valid_key_sizes = array(128, 192, 256); // Sizes in bits
 
     protected static $openssl_random_pseudo_bytes_exists;
     protected static $openssl_encrypt_exists;
@@ -94,7 +94,7 @@ class GibberishAES {
         $key = substr($salted, 0, $key_length);
         $iv = substr($salted, $key_length, $block_length);
 
-        return base64_encode('Salted__' . $salt . self::aes_cbc_encrypt($string, $key, $iv));
+        return base64_encode('Salted__'.$salt.self::aes_cbc_encrypt($string, $key, $iv));
     }
 
     /**
@@ -236,7 +236,7 @@ class GibberishAES {
             mcrypt_module_close($cipher);
 
             return $encrypted;
-	}
+    }
 
         return false;
     }
@@ -263,7 +263,7 @@ class GibberishAES {
             mcrypt_module_close($cipher);
 
             return self::remove_pkcs7_pad($decrypted);
-	}
+    }
 
         return false;
     }
@@ -272,7 +272,7 @@ class GibberishAES {
 
     protected static function pkcs7_pad($string) {
 
-        $block_length = 16;    // 128 bits: $block_length = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
+        $block_length = 16; // 128 bits: $block_length = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
         $pad = $block_length - (strlen($string) % $block_length);
 
         return $string.str_repeat(chr($pad), $pad);
@@ -280,7 +280,7 @@ class GibberishAES {
 
     protected static function remove_pkcs7_pad($string) {
 
-        $block_length = 16;    // 128 bits: $block_length = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
+        $block_length = 16; // 128 bits: $block_length = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, MCRYPT_MODE_CBC);
         $len = strlen($string);
         $pad = ord($string[$len - 1]);
 

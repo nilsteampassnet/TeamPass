@@ -50,25 +50,25 @@ final class Core
     {
         if (Core::ourStrlen($ctr) !== Core::BLOCK_BYTE_SIZE) {
             throw new Ex\EnvironmentIsBrokenException(
-              'Trying to increment a nonce of the wrong size.'
+                'Trying to increment a nonce of the wrong size.'
             );
         }
 
-        if (! \is_int($inc)) {
+        if (!\is_int($inc)) {
             throw new Ex\EnvironmentIsBrokenException(
-              'Trying to increment nonce by a non-integer.'
+                'Trying to increment nonce by a non-integer.'
             );
         }
 
         if ($inc < 0) {
             throw new Ex\EnvironmentIsBrokenException(
-              'Trying to increment nonce by a negative amount.'
+                'Trying to increment nonce by a negative amount.'
             );
         }
 
         if ($inc > PHP_INT_MAX - 255) {
             throw new Ex\EnvironmentIsBrokenException(
-              'Integer overflow may occur.'
+                'Integer overflow may occur.'
             );
         }
 
@@ -80,9 +80,9 @@ final class Core
             $sum = \ord($ctr[$i]) + $inc;
 
             /* Detect integer overflow and fail. */
-            if (! \is_int($sum)) {
+            if (!\is_int($sum)) {
                 throw new Ex\EnvironmentIsBrokenException(
-                  'Integer overflow in CTR mode nonce increment.'
+                    'Integer overflow in CTR mode nonce increment.'
                 );
             }
 
@@ -132,7 +132,7 @@ final class Core
         $digest_length = Core::ourStrlen(\hash_hmac($hash, '', '', true));
 
         // Sanity-check the desired output length.
-        if (empty($length) || ! \is_int($length) ||
+        if (empty($length) || !\is_int($length) ||
             $length < 0 || $length > 255 * $digest_length) {
             throw new Ex\EnvironmentIsBrokenException(
                 'Bad output length requested of HKDF.'
@@ -163,7 +163,7 @@ final class Core
             // T(i) = HMAC-Hash(PRK, T(i-1) | info | 0x??)
             $last_block = \hash_hmac(
                 $hash,
-                $last_block . $info . \chr($block_index),
+                $last_block.$info.\chr($block_index),
                 $prk,
                 true
             );
@@ -227,7 +227,7 @@ final class Core
      */
     public static function ensureConstantExists($name)
     {
-        if (! \defined($name)) {
+        if (!\defined($name)) {
             throw new Ex\EnvironmentIsBrokenException();
         }
     }
@@ -244,9 +244,9 @@ final class Core
         // manage specific case of random_bytes
         if ($name === "random_bytes") {
             // random_bytes is a PHP7 new function required
-            require_once(substr(realpath(dirname(__FILE__)),0, strpos(realpath(dirname(__FILE__)), "Encryption")).'/misc/random_compat/random.php');
+            require_once(substr(realpath(dirname(__FILE__)), 0, strpos(realpath(dirname(__FILE__)), "Encryption")).'/misc/random_compat/random.php');
         }
-        if (! \function_exists($name)) {
+        if (!\function_exists($name)) {
             throw new Ex\EnvironmentIsBrokenException();
         }
     }
@@ -304,7 +304,7 @@ final class Core
         if ($exists) {
             // mb_substr($str, 0, NULL, '8bit') returns an empty string on PHP
             // 5.3, so we have to find the length ourselves.
-            if (! isset($length)) {
+            if (!isset($length)) {
                 if ($start >= 0) {
                     $length = Core::ourStrlen($str) - $start;
                 } else {
@@ -363,17 +363,17 @@ final class Core
     public static function pbkdf2($algorithm, $password, $salt, $count, $key_length, $raw_output = false)
     {
         // Type checks:
-        if (! \is_string($algorithm)) {
+        if (!\is_string($algorithm)) {
             throw new \InvalidArgumentException(
                 'pbkdf2(): algorithm must be a string'
             );
         }
-        if (! \is_string($password)) {
+        if (!\is_string($password)) {
             throw new \InvalidArgumentException(
                 'pbkdf2(): password must be a string'
             );
         }
-        if (! \is_string($salt)) {
+        if (!\is_string($salt)) {
             throw new \InvalidArgumentException(
                 'pbkdf2(): salt must be a string'
             );
@@ -383,7 +383,7 @@ final class Core
         $key_length += 0;
 
         $algorithm = \strtolower($algorithm);
-        if (! \in_array($algorithm, \hash_algos(), true)) {
+        if (!\in_array($algorithm, \hash_algos(), true)) {
             throw new Ex\EnvironmentIsBrokenException(
                 'Invalid or unsupported hash algorithm.'
             );
@@ -394,7 +394,7 @@ final class Core
             'sha1', 'sha224', 'sha256', 'sha384', 'sha512',
             'ripemd160', 'ripemd256', 'ripemd320', 'whirlpool',
         ];
-        if (! \in_array($algorithm, $ok_algorithms, true)) {
+        if (!\in_array($algorithm, $ok_algorithms, true)) {
             throw new Ex\EnvironmentIsBrokenException(
                 'Algorithm is not a secure cryptographic hash function.'
             );
@@ -408,7 +408,7 @@ final class Core
 
         if (\function_exists('hash_pbkdf2')) {
             // The output length is in NIBBLES (4-bits) if $raw_output is false!
-            if (! $raw_output) {
+            if (!$raw_output) {
                 $key_length = $key_length * 2;
             }
             return \hash_pbkdf2($algorithm, $password, $salt, $count, $key_length, $raw_output);
@@ -420,7 +420,7 @@ final class Core
         $output = '';
         for ($i = 1; $i <= $block_count; $i++) {
             // $i encoded as 4 bytes, big endian.
-            $last = $salt . \pack('N', $i);
+            $last = $salt.\pack('N', $i);
             // first iteration
             $last = $xorsum = \hash_hmac($algorithm, $last, $password, true);
             // perform the other $count - 1 iterations

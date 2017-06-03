@@ -124,16 +124,16 @@ final class Encoding
         // being a prefix of another type's header, leading to ambiguity.
         if (Core::ourStrlen($header) !== self::SERIALIZE_HEADER_BYTES) {
             throw new Ex\EnvironmentIsBrokenException(
-                'Header must be ' . self::SERIALIZE_HEADER_BYTES . ' bytes.'
+                'Header must be '.self::SERIALIZE_HEADER_BYTES.' bytes.'
             );
         }
 
         return Encoding::binToHex(
-            $header .
-            $bytes .
+            $header.
+            $bytes.
             \hash(
                 self::CHECKSUM_HASH_ALGO,
-                $header . $bytes,
+                $header.$bytes,
                 true
             )
         );
@@ -197,7 +197,7 @@ final class Encoding
         $checksum_b = \hash(self::CHECKSUM_HASH_ALGO, $checked_bytes, true);
 
         /* Check if the checksum matches. */
-        if (! Core::hashEquals($checksum_a, $checksum_b)) {
+        if (!Core::hashEquals($checksum_a, $checksum_b)) {
             throw new Ex\BadFormatException(
                 "Data is corrupted, the checksum doesn't match"
             );

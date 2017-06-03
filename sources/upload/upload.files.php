@@ -67,7 +67,7 @@ if (!isset($_POST['user_token'])) {
 
 // HTTP headers for no cache etc
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+header("Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
@@ -80,9 +80,9 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_pho
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9';	//accept only those characters
+$valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
-$max_file_size_in_bytes = 2147483647;   //2Go
+$max_file_size_in_bytes = 2147483647; //2Go
 
 @date_default_timezone_set($_POST['timezone']);
 
@@ -90,7 +90,7 @@ $max_file_size_in_bytes = 2147483647;   //2Go
 $POST_MAX_SIZE = ini_get('post_max_size');
 $unit = strtoupper(substr($POST_MAX_SIZE, -1));
 $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
-if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier*(int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
+if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
     handleError('POST exceeded maximum allowed size.', 111);
 }
 
@@ -161,19 +161,19 @@ $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
 $fileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
-if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
+if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileNameA = substr($fileName, 0, $ext);
     $fileNameB = substr($fileName, $ext);
 
     $count = 1;
-    while (file_exists($targetDir . DIRECTORY_SEPARATOR . $fileNameA . '_' . $count . $fileNameB)) {
+    while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
         $count++;
     }
 
-    $fileName = $fileNameA . '_' . $count . $fileNameB;
+    $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$filePath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+$filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
@@ -183,7 +183,7 @@ if (!file_exists($targetDir)) {
 // Remove old temp files
 if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
     while (($file = readdir($dir)) !== false) {
-        $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $file;
+        $tmpfilePath = $targetDir.DIRECTORY_SEPARATOR.$file;
 
         // Remove temp file if it is older than the max age and is not the current file
         if (preg_match('/\.part$/', $file)
@@ -270,9 +270,9 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["csvFile"]);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$_POST["csvFile"]);
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["xmlFile"]);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$_POST["xmlFile"]);
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
     $newFileName = preg_replace('/[^\w\._]+/', '_', $_POST['newFileName']);
@@ -282,13 +282,13 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
 
     // rename the file
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext);
 
     // make thumbnail
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     make_thumb(
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext,
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName ."_thumb" . '.' . $ext,
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext,
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName."_thumb".'.'.$ext,
         40
     );
 
@@ -307,13 +307,13 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 
     // get current avatar and delete it
     $data = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
-    @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar']);
-    @unlink($targetDir . DIRECTORY_SEPARATOR .$data['avatar_thumb']);
+    @unlink($targetDir.DIRECTORY_SEPARATOR.$data['avatar']);
+    @unlink($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb']);
 
     // store in DB the new avatar
     DB::query(
         "UPDATE ".$pre."users
-        SET avatar='".$newFileName . '.' . $ext."', avatar_thumb='".$newFileName ."_thumb" . '.' . $ext."'
+        SET avatar='".$newFileName.'.'.$ext."', avatar_thumb='".$newFileName."_thumb".'.'.$ext."'
         WHERE id=%i",
         $_SESSION['user_id']
     );
@@ -326,7 +326,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     exit();
 
 } else {
-    rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $_POST["File"]);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$_POST["File"]);
 }
 
 // Return JSON-RPC response
@@ -339,7 +339,7 @@ function getFileExtension($f)
         return $f;
     }
 
-    return substr($f, strrpos($f, '.')+1);
+    return substr($f, strrpos($f, '.') + 1);
 }
 
 /* Handles the error output. */

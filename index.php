@@ -161,8 +161,9 @@ if (isset($_SESSION['CPM'])) {
 <?php
 
 // load HEADERS
-if (isset($_SESSION['CPM']))
+if (isset($_SESSION['CPM'])) {
     echo $htmlHeaders;
+}
 ?>
     </head>
 
@@ -266,8 +267,7 @@ if (isset($_SESSION['login'])) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == true) ? '' :
-                                isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == true) ? '' : isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
@@ -535,7 +535,7 @@ if (
             if ($_SESSION['user_admin'] == 1) {
                 include($mngPages[$_GET['page']]);
             } elseif ($_SESSION['user_manager'] == 1) {
-                if (($_GET['page'] != "manage_main" &&  $_GET['page'] != "manage_settings")) {
+                if (($_GET['page'] != "manage_main" && $_GET['page'] != "manage_settings")) {
                     include($mngPages[$_GET['page']]);
                 } else {
                     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -667,7 +667,7 @@ if (
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60" ,'" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                         </div>
 
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
@@ -713,7 +713,7 @@ echo '
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
         </div><div id="countdown2"></div>
         <div style="float:right;text-align:right;">
-            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
+            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']).'
         </div>
     </div>';
 // PAGE LOADING
@@ -773,7 +773,7 @@ echo '
 echo '
 <div id="div_increase_session_time" style="display:none;padding:4px;">
     <b>'.$LANG['index_session_duration'].':</b>
-    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration']/60 : 60, '" />
+    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
     <b>'.$LANG['minutes'].'</b>
     <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="input_session_duration_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';

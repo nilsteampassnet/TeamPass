@@ -34,7 +34,7 @@ function killEntry(type, id)
             {
                 type    : "free_item_for_edition",
                 id      : id,
-                key     : "<?php echo $_SESSION["key"];?>"
+                key     : "<?php echo $_SESSION["key"]; ?>"
             },
             function(data) {
                 oTable1.fnDraw(false);
@@ -46,7 +46,7 @@ function killEntry(type, id)
                 {
                     type    : "disconnect_user",
                     user_id : id,
-                    key     : "<?php echo $_SESSION["key"];?>"
+                    key     : "<?php echo $_SESSION["key"]; ?>"
                 },
                 function(data) {
                     oTable2.fnDraw(false);
@@ -86,7 +86,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.item_edition.php",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#items_edited_page input").focus();
@@ -102,7 +102,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.users_logged.php",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_users_logged_page input").focus();
@@ -121,14 +121,14 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
+            "<?php echo $LANG["ok"]; ?>": function() {
                 $.post(
                     "sources/users.queries.php",
                     {
                         type   : "disconnect_all_users",
-                        key    : "<?php echo $_SESSION["key"];?>"
+                        key    : "<?php echo $_SESSION["key"]; ?>"
                     },
                     function(data) {
                         oTable2.fnDraw(false);
@@ -136,14 +136,14 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
     });
 
     $("#but_disconnect_all_users").click(function() {
-        $("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"];?>");
+        $("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"]; ?>");
         $("#div_dialog_message").dialog("open");
     });
 });

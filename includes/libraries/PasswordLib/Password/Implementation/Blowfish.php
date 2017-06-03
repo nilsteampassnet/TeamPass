@@ -78,7 +78,7 @@ class Blowfish extends Crypt {
         if (!static::detect($hash)) {
             throw new \InvalidArgumentException('Hash Not Created Here');
         }
-        list(, , $iterations) = explode('$', $hash, 4);
+        list(,, $iterations) = explode('$', $hash, 4);
         return new static(array('cost' => $iterations));
     }
 
@@ -106,6 +106,6 @@ class Blowfish extends Crypt {
         $salt    = parent::generateSalt();
         $prefix  = static::getPrefix();
         $prefix .= str_pad($this->options['cost'], 2, '0', STR_PAD_LEFT);
-        return $prefix . '$' . $salt;
+        return $prefix.'$'.$salt;
     }
 }

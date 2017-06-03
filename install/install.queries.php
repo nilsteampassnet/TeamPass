@@ -22,13 +22,13 @@ $_SESSION['CPM'] = 1;
 function chmod_r($dir, $dirPermissions, $filePermissions) {
     $dp = opendir($dir);
     $res = true;
-    while($file = readdir($dp)) {
+    while ($file = readdir($dp)) {
         if (($file == ".") || ($file == ".."))
             continue;
 
         $fullPath = $dir."/".$file;
 
-        if(is_dir($fullPath)) {
+        if (is_dir($fullPath)) {
             if ($res = @chmod($fullPath, $dirPermissions))
                 $res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
         } else {
@@ -40,8 +40,9 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
         }
     }
     closedir($dp);
-    if (is_dir($dir) && $res)
-        $res = @chmod($dir, $dirPermissions);
+    if (is_dir($dir) && $res) {
+            $res = @chmod($dir, $dirPermissions);
+    }
 
     return $res;
 }
@@ -50,6 +51,7 @@ function chmod_r($dir, $dirPermissions, $filePermissions) {
  * genHash()
  *
  * Generate a hash for user login
+ * @param string $password
  */
 function bCrypt($password, $cost)
 {
@@ -57,9 +59,9 @@ function bCrypt($password, $cost)
     if (function_exists('openssl_random_pseudo_bytes')) {
         $salt .= bin2hex(openssl_random_pseudo_bytes(11));
     } else {
-        $chars='./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for ($i=0; $i<22; $i++) {
-            $salt.=$chars[mt_rand(0, 63)];
+        $chars = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for ($i = 0; $i < 22; $i++) {
+            $salt .= $chars[mt_rand(0, 63)];
         }
     }
     return crypt($password, $salt);
@@ -69,7 +71,7 @@ if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "step_2":
             //decrypt
-            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
@@ -78,8 +80,8 @@ if (isset($_POST['type'])) {
             $data = array_merge($data, array("task" => $json));
 
             $abspath = str_replace('\\', '/', $data['root_path']);
-            if (substr($abspath, strlen($abspath)-1) == "/") {
-                $abspath = substr($abspath, 0, strlen($abspath)-1);
+            if (substr($abspath, strlen($abspath) - 1) == "/") {
+                $abspath = substr($abspath, 0, strlen($abspath) - 1);
             }
             $_SESSION['abspath'] = $abspath;
             $_SESSION['url_path'] = $data['url_path'];
@@ -121,7 +123,7 @@ if (isset($_POST['type'])) {
             }
 
             if (isset($data['activity']) && $data['activity'] == "ini") {
-                if (ini_get($data['task'])>=60) {
+                if (ini_get($data['task']) >= 60) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'"}]';
                 } else {
                     echo '[{"error" : "PHP \"Maximum execution time\" is set to '.ini_get('max_execution_time').' seconds. Please try to set to 60s at least during installation.", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
@@ -132,7 +134,7 @@ if (isset($_POST['type'])) {
 
         case "step_3":
             //decrypt
-            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -148,7 +150,7 @@ if (isset($_POST['type'])) {
                     ) CHARSET=utf8;"
                 );
                 // store values
-                foreach($data as $key=>$value) {
+                foreach ($data as $key=>$value) {
                     $_SESSION[$key] = $value;
                     $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = '".$key."'"));
                     if ($tmp[0] == 0 || empty($tmp[0])) {
@@ -161,13 +163,13 @@ if (isset($_POST['type'])) {
                 if ($tmp[0] == 0 || empty($tmp[0])) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'], "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'],"' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'], "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'abspath'"));
                 if ($tmp[0] == 0 || empty($tmp[0])) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'],"');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'], "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'],"' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'], "' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -179,7 +181,7 @@ if (isset($_POST['type'])) {
 
         case "step_4":
             //decrypt
-            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data = json_decode($json, true);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -188,8 +190,8 @@ if (isset($_POST['type'])) {
             $dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
 
             // prepare data
-            foreach($data as $key=>$value) {
-                $data[$key] = str_replace(array('&quot;', '&#92;'), array('""','\\\\'), $value);
+            foreach ($data as $key=>$value) {
+                $data[$key] = str_replace(array('&quot;', '&#92;'), array('""', '\\\\'), $value);
             }
 
             // check skpath
@@ -198,13 +200,13 @@ if (isset($_POST['type'])) {
             } else {
                 $data['sk_path'] = str_replace("&#92;", "/", $data['sk_path']);
             }
-            if (substr($data['sk_path'], strlen($data['sk_path'])-1) == "/" || substr($data['sk_path'], strlen($data['sk_path'])-1) == "\"") {
-                $data['sk_path'] = substr($data['sk_path'], 0, strlen($data['sk_path'])-1);
+            if (substr($data['sk_path'], strlen($data['sk_path']) - 1) == "/" || substr($data['sk_path'], strlen($data['sk_path']) - 1) == "\"") {
+                $data['sk_path'] = substr($data['sk_path'], 0, strlen($data['sk_path']) - 1);
             }
             if (is_dir($data['sk_path'])) {
                 if (is_writable($data['sk_path'])) {
                     // store all variables in SESSION
-                    foreach($data as $key=>$value) {
+                    foreach ($data as $key=>$value) {
                         $_SESSION[$key] = $value;
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = '".$key."'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {
@@ -225,7 +227,7 @@ if (isset($_POST['type'])) {
 
         case "step_5":
             //decrypt
-            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
@@ -341,97 +343,97 @@ global \$SETTINGS;
                             array('admin', 'path_to_files_folder', $var['abspath'].'/files'),
                             array('admin', 'url_to_files_folder', $var['url_path'].'/files'),
                             array('admin', 'activate_expiration', '0'),
-                            array('admin','pw_life_duration','0'),
-                            array('admin','maintenance_mode','1'),
-                            array('admin','enable_sts','0'),
-                            array('admin','encryptClientServer','1'),
-                            array('admin','cpassman_version',$k['version']),
-                            array('admin','ldap_mode','0'),
-                            array('admin','ldap_type','0'),
-                            array('admin','ldap_suffix','0'),
-                            array('admin','ldap_domain_dn','0'),
-                            array('admin','ldap_domain_controler','0'),
-                            array('admin','ldap_user_attribute','0'),
-                            array('admin','ldap_ssl','0'),
-                            array('admin','ldap_tls','0'),
-                            array('admin','ldap_elusers','0'),
-                            array('admin','ldap_search_base','0'),
-                            array('admin','richtext','0'),
-                            array('admin','allow_print','0'),
-                            array('admin','roles_allowed_to_print','0'),
-                            array('admin','show_description','1'),
-                            array('admin','anyone_can_modify','0'),
-                            array('admin','anyone_can_modify_bydefault','0'),
-                            array('admin','nb_bad_authentication','0'),
-                            array('admin','utf8_enabled','1'),
-                            array('admin','restricted_to','0'),
-                            array('admin','restricted_to_roles','0'),
-                            array('admin','enable_send_email_on_user_login','0'),
-                            array('admin','enable_user_can_create_folders','0'),
-                            array('admin','insert_manual_entry_item_history','0'),
-                            array('admin','enable_kb','0'),
-                            array('admin','enable_email_notification_on_item_shown','0'),
-                            array('admin','enable_email_notification_on_user_pw_change','0'),
-                            array('admin','custom_logo',''),
-                            array('admin','custom_login_text',''),
-                            array('admin','default_language','english'),
-                            array('admin','send_stats', '0'),
-                            array('admin','send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),
-                            array('admin','send_stats_time', time()-2592000),
-                            array('admin','get_tp_info', '1'),
-                            array('admin','send_mail_on_user_login', '0'),
+                            array('admin', 'pw_life_duration', '0'),
+                            array('admin', 'maintenance_mode', '1'),
+                            array('admin', 'enable_sts', '0'),
+                            array('admin', 'encryptClientServer', '1'),
+                            array('admin', 'cpassman_version', $k['version']),
+                            array('admin', 'ldap_mode', '0'),
+                            array('admin', 'ldap_type', '0'),
+                            array('admin', 'ldap_suffix', '0'),
+                            array('admin', 'ldap_domain_dn', '0'),
+                            array('admin', 'ldap_domain_controler', '0'),
+                            array('admin', 'ldap_user_attribute', '0'),
+                            array('admin', 'ldap_ssl', '0'),
+                            array('admin', 'ldap_tls', '0'),
+                            array('admin', 'ldap_elusers', '0'),
+                            array('admin', 'ldap_search_base', '0'),
+                            array('admin', 'richtext', '0'),
+                            array('admin', 'allow_print', '0'),
+                            array('admin', 'roles_allowed_to_print', '0'),
+                            array('admin', 'show_description', '1'),
+                            array('admin', 'anyone_can_modify', '0'),
+                            array('admin', 'anyone_can_modify_bydefault', '0'),
+                            array('admin', 'nb_bad_authentication', '0'),
+                            array('admin', 'utf8_enabled', '1'),
+                            array('admin', 'restricted_to', '0'),
+                            array('admin', 'restricted_to_roles', '0'),
+                            array('admin', 'enable_send_email_on_user_login', '0'),
+                            array('admin', 'enable_user_can_create_folders', '0'),
+                            array('admin', 'insert_manual_entry_item_history', '0'),
+                            array('admin', 'enable_kb', '0'),
+                            array('admin', 'enable_email_notification_on_item_shown', '0'),
+                            array('admin', 'enable_email_notification_on_user_pw_change', '0'),
+                            array('admin', 'custom_logo', ''),
+                            array('admin', 'custom_login_text', ''),
+                            array('admin', 'default_language', 'english'),
+                            array('admin', 'send_stats', '0'),
+                            array('admin', 'send_statistics_items', 'stat_country;stat_users;stat_items;stat_items_shared;stat_folders;stat_folders_shared;stat_admins;stat_managers;stat_ro;stat_mysqlversion;stat_phpversion;stat_teampassversion;stat_languages;stat_kb;stat_suggestion;stat_customfields;stat_api;stat_2fa;stat_agses;stat_duo;stat_ldap;stat_syslog;stat_stricthttps;stat_fav;stat_pf;'),
+                            array('admin', 'send_stats_time', time() - 2592000),
+                            array('admin', 'get_tp_info', '1'),
+                            array('admin', 'send_mail_on_user_login', '0'),
                             array('cron', 'sending_emails', '0'),
-                            array('admin','nb_items_by_query', 'auto'),
-                            array('admin','enable_delete_after_consultation', '0'),
-                            array('admin','enable_personal_saltkey_cookie', '0'),
-                            array('admin','personal_saltkey_cookie_duration', '31'),
-                            array('admin','email_smtp_server', ''),
-                            array('admin','email_smtp_auth', ''),
-                            array('admin','email_auth_username', ''),
-                            array('admin','email_auth_pwd', ''),
-                            array('admin','email_port', ''),
-                            array('admin','email_security',''),
-                            array('admin','email_server_url', ''),
-                            array('admin','email_from', ''),
-                            array('admin','email_from_name', ''),
-                            array('admin','pwd_maximum_length', '40'),
-                            array('admin','google_authentication', '0'),
-                            array('admin','delay_item_edition', '0'),
-                            array('admin','allow_import','0'),
-                            array('admin','proxy_ip',''),
-                            array('admin','proxy_port',''),
-                            array('admin','upload_maxfilesize','10mb'),
-                            array('admin','upload_docext','doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx'),
-                            array('admin','upload_imagesext','jpg,jpeg,gif,png'),
-                            array('admin','upload_pkgext','7z,rar,tar,zip'),
-                            array('admin','upload_otherext','sql,xml'),
-                            array('admin','upload_imageresize_options','1'),
-                            array('admin','upload_imageresize_width','800'),
-                            array('admin','upload_imageresize_height','600'),
-                            array('admin','upload_imageresize_quality','90'),
-                            array('admin','use_md5_password_as_salt','0'),
-                            array('admin','ga_website_name','TeamPass for ChangeMe'),
-                            array('admin','api','0'),
-                            array('admin','subfolder_rights_as_parent','0'),
-                            array('admin','show_only_accessible_folders','0'),
-                            array('admin','enable_suggestion','0'),
-                            array('admin','otv_expiration_period','7'),
-                            array('admin','default_session_expiration_time','60'),
-                            array('admin','duo','0'),
-                            array('admin','enable_server_password_change','0'),
-                            array('admin','ldap_object_class','0'),
-                            array('admin','bck_script_path', $var['abspath']."/backups"),
-                            array('admin','bck_script_filename', 'bck_teampass'),
-                            array('admin','syslog_enable','0'),
-                            array('admin','syslog_host','localhost'),
-                            array('admin','syslog_port','514'),
-                            array('admin','manager_move_item','0'),
-                            array('admin','create_item_without_password','0'),
-                            array('admin','otv_is_enabled','0'),
-                            array('admin','agses_authentication_enabled','0'),
-                            array('admin','item_extra_fields','0'),
-                            array('admin','saltkey_ante_2127','none'),
-                            array('admin','migration_to_2127','done')
+                            array('admin', 'nb_items_by_query', 'auto'),
+                            array('admin', 'enable_delete_after_consultation', '0'),
+                            array('admin', 'enable_personal_saltkey_cookie', '0'),
+                            array('admin', 'personal_saltkey_cookie_duration', '31'),
+                            array('admin', 'email_smtp_server', ''),
+                            array('admin', 'email_smtp_auth', ''),
+                            array('admin', 'email_auth_username', ''),
+                            array('admin', 'email_auth_pwd', ''),
+                            array('admin', 'email_port', ''),
+                            array('admin', 'email_security', ''),
+                            array('admin', 'email_server_url', ''),
+                            array('admin', 'email_from', ''),
+                            array('admin', 'email_from_name', ''),
+                            array('admin', 'pwd_maximum_length', '40'),
+                            array('admin', 'google_authentication', '0'),
+                            array('admin', 'delay_item_edition', '0'),
+                            array('admin', 'allow_import', '0'),
+                            array('admin', 'proxy_ip', ''),
+                            array('admin', 'proxy_port', ''),
+                            array('admin', 'upload_maxfilesize', '10mb'),
+                            array('admin', 'upload_docext', 'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx'),
+                            array('admin', 'upload_imagesext', 'jpg,jpeg,gif,png'),
+                            array('admin', 'upload_pkgext', '7z,rar,tar,zip'),
+                            array('admin', 'upload_otherext', 'sql,xml'),
+                            array('admin', 'upload_imageresize_options', '1'),
+                            array('admin', 'upload_imageresize_width', '800'),
+                            array('admin', 'upload_imageresize_height', '600'),
+                            array('admin', 'upload_imageresize_quality', '90'),
+                            array('admin', 'use_md5_password_as_salt', '0'),
+                            array('admin', 'ga_website_name', 'TeamPass for ChangeMe'),
+                            array('admin', 'api', '0'),
+                            array('admin', 'subfolder_rights_as_parent', '0'),
+                            array('admin', 'show_only_accessible_folders', '0'),
+                            array('admin', 'enable_suggestion', '0'),
+                            array('admin', 'otv_expiration_period', '7'),
+                            array('admin', 'default_session_expiration_time', '60'),
+                            array('admin', 'duo', '0'),
+                            array('admin', 'enable_server_password_change', '0'),
+                            array('admin', 'ldap_object_class', '0'),
+                            array('admin', 'bck_script_path', $var['abspath']."/backups"),
+                            array('admin', 'bck_script_filename', 'bck_teampass'),
+                            array('admin', 'syslog_enable', '0'),
+                            array('admin', 'syslog_host', 'localhost'),
+                            array('admin', 'syslog_port', '514'),
+                            array('admin', 'manager_move_item', '0'),
+                            array('admin', 'create_item_without_password', '0'),
+                            array('admin', 'otv_is_enabled', '0'),
+                            array('admin', 'agses_authentication_enabled', '0'),
+                            array('admin', 'item_extra_fields', '0'),
+                            array('admin', 'saltkey_ante_2127', 'none'),
+                            array('admin', 'migration_to_2127', 'done')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -448,7 +450,7 @@ global \$SETTINGS;
                                     (`type`, `intitule`, `valeur`) VALUES
                                     ('".$elem[0]."', '".$elem[1]."', '".
                                     str_replace("'", "", $elem[2])."');"
-                                );    // or die(mysqli_error($dbTmp))
+                                ); // or die(mysqli_error($dbTmp))
                             }
 
                             // append new setting in config file
@@ -843,10 +845,10 @@ global \$SETTINGS;
                         $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
                         if ($tmp === "0") {
                             $mysqli_result = mysqli_query($dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'],'13' )."', '1', '0', '0', '', '', '')"
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'], '13')."', '1', '0', '0', '', '', '')"
                             );
                         } else {
-                            $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'],'13' )."' WHERE login = 'admin' AND id = '1'");
+                            $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'], '13')."' WHERE login = 'admin' AND id = '1'");
                         }
 
                         // check that API doesn't exist
@@ -878,13 +880,13 @@ global \$SETTINGS;
 
             mysqli_close($dbTmp);
             // Destroy session without writing to disk
-            define('NODESTROY_SESSION','true');
+            define('NODESTROY_SESSION', 'true');
             session_destroy();
             break;
 
         case "step_6":
             //decrypt
-            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $data_sent = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
             $data_sent = json_decode($data_sent, true);
@@ -995,9 +997,9 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
                         // Change directory permissions
                         $result = chmod_r($_SESSION['abspath'], 0770, 0740);
-                        if ($result )
+                        if ($result)
                             $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0770);
-                        if  ($result)
+                        if ($result)
                             $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
                     }
 
@@ -1039,8 +1041,8 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                             $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
                         }
                     }
-                    unlink($csrfp_file);    // delete existing csrfp.config file
-                    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+                    unlink($csrfp_file); // delete existing csrfp.config file
+                    copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
                     $data = file_get_contents($csrfp_file);
                     $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
                     $jsUrl = $data_sent['url_path'].'/includes/libraries/csrfp/js/csrfprotector.js';
@@ -1053,13 +1055,13 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
 
             mysqli_close($dbTmp);
             // Destroy session without writing to disk
-            define('NODESTROY_SESSION','true');
+            define('NODESTROY_SESSION', 'true');
             session_destroy();
             break;
         case "step_7":
 
             //decrypt
-            require_once 'libs/aesctr.php';  // AES Counter Mode implementation
+            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
             // launch
@@ -1068,7 +1070,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             if ($activity == "file") {
                 if ($task == "deleteInstall") {
                     function delTree($dir) {
-                        $files = array_diff(scandir($dir), array('.','..'));
+                        $files = array_diff(scandir($dir), array('.', '..'));
 
                         foreach ($files as $file) {
                             (is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
@@ -1076,7 +1078,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                         return rmdir($dir);
                     }
 
-                    $result=true;
+                    $result = true;
                     $errorMsg = "Cannot delete installation directory";
                     if (file_exists($_SESSION['abspath'].'/install')) {
                         // set the permissions on the install directory and delete
@@ -1102,7 +1104,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
             //
             mysqli_close($dbTmp);
             // Destroy session without writing to disk
-            define('NODESTROY_SESSION','true');
+            define('NODESTROY_SESSION', 'true');
             session_destroy();
             break;
     }

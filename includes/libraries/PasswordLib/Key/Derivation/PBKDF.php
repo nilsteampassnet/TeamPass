@@ -35,10 +35,9 @@ interface PBKDF {
     /**
      * Derive a key from the supplied arguments
      *
-     * @param string $password   The password to derive from
      * @param string $salt       The salt string to use
      * @param int    $iterations The number of iterations to use
-     * @param int    $length     The size of the string to generate
+     * @param integer $klen
      *
      * @return string The derived key
      */

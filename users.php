@@ -47,7 +47,7 @@ $foldersList = "";
 foreach ($treeDesc as $t) {
     if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
         $ident = "";
-        for ($y = 1;$y < $t->nlevel;$y++) {
+        for ($y = 1; $y < $t->nlevel; $y++) {
             $ident .= "&nbsp;&nbsp;";
         }
         $foldersList .= '<option value="'.$t->id.'">'.$ident.@htmlspecialchars($t->title, ENT_COMPAT, "UTF-8").'</option>';
@@ -159,8 +159,7 @@ echo '
     <label for="new_login" class="label_cpm">'.$LANG['login'].'&nbsp;<span id="new_login_status"></span></label>
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />
 
-    ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' :
-'<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
+    ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />', '
 
     <label for="new_email" class="label_cpm">'.$LANG['email'].'</label>
@@ -193,7 +192,7 @@ $my_functions = explode(';', $_SESSION['fonction_id']);
 
 $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
 foreach ($rows as $record) {
-    if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+    if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
         $functionsList .= '<option value="'.$record['id'].'" class="folder_rights_role">'.$record['title'].'</option>';
     }
 }
@@ -233,7 +232,7 @@ foreach ($rows as $record) {
             </tr>
             <tr>
                 <td>
-                    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"':'', ' />
+                    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' />
                     <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
                 </td>
             </tr>

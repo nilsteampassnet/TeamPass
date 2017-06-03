@@ -101,8 +101,12 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         }
 
         // temp data
-        if (!isset($record['login'])) $record['login'] = "";
-        if (!isset($resNT['renewal_period'])) $resNT['renewal_period'] = "0";
+        if (!isset($record['login'])) {
+            $record['login'] = "";
+        }
+        if (!isset($resNT['renewal_period'])) {
+            $resNT['renewal_period'] = "0";
+        }
 
         // store data
         $res = mysqli_query($dbTmp,

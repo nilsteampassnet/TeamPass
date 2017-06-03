@@ -40,7 +40,7 @@ $rows = DB::query(
     "SELECT id, login FROM ".prefix_table("users")." ORDER BY login ASC"
 );
 $counter = DB::count();
-if ($counter>0) {
+if ($counter > 0) {
     foreach ($rows as $reccord) {
         $tab_users[$reccord['login']] = array(
             'id'=>$reccord['id'],

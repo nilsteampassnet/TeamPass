@@ -41,7 +41,6 @@ class Mode_ECB extends Mode
 	 * Sets the cipher object that will be used for encryption
 	 *
 	 * @param object $cipher one of the phpCrypt encryption cipher objects
-	 * @param int $block_size The size of blocks (in bits) used for encryption
 	 * @return void
 	 */
 	public function __construct($cipher)
@@ -49,7 +48,7 @@ class Mode_ECB extends Mode
 		parent::__construct(PHP_Crypt::MODE_ECB, $cipher);
 
 		// this works with only block Ciphers
-		if($cipher->type() != Cipher::BLOCK)
+		if ($cipher->type() != Cipher::BLOCK)
 			trigger_error("ECB mode requires a block cipher", E_USER_WARNING);
 	}
 
@@ -78,7 +77,7 @@ class Mode_ECB extends Mode
 		$blocksz = $this->cipher->blockSize();
 
 		$max = strlen($text) / $blocksz;
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
 			// get the current position within $text
 			$pos = $i * $blocksz;
@@ -109,7 +108,7 @@ class Mode_ECB extends Mode
 		$blocksz = $this->cipher->blockSize();
 
 		$max = strlen($text) / $blocksz;
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
 			// get the current position within $text
 			$pos = $i * $blocksz;

@@ -94,7 +94,7 @@ final class KeyProtectedByPassword
              * here in order to make the API simpler, avoiding the need to
              * document that this method might throw an Ex\BadFormatException. */
             throw new Ex\WrongKeyOrModifiedCiphertextException(
-                "The decrypted key was found to be in an invalid format. " .
+                "The decrypted key was found to be in an invalid format. ".
                 "This very likely indicates it was modified by an attacker."
             );
         }

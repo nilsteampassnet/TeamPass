@@ -43,8 +43,8 @@ if ($_POST['type'] === "identify_duo_user") {
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig request : ".$_POST['login']."\n" .
-            'resp : ' . $sig_request . "\n"
+            "sig request : ".$_POST['login']."\n".
+            'resp : '.$sig_request."\n"
         );
     }
 
@@ -89,12 +89,12 @@ if ($_POST['type'] === "identify_duo_user") {
             prefix_table('users'),
             array(
                 'agses-usercardid' =>  filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT)
-               ),
+                ),
             "login = %s",
             $_POST['login']
         );
         $row['agses-usercardid'] = filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT);
-    }else {
+    } else {
         // error
         echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
         return false;
@@ -155,7 +155,7 @@ if ($_POST['type'] === "identify_duo_user") {
         if (empty($ret_agses_apikey['valeur']) || empty($ret_agses_url['valeur']) || empty($ret_agses_id['valeur'])) {
             echo '[{"error" : "no_agses_info" , "agses_message" : ""}]';
         } else {
-            echo '[{"error" : "something_wrong" , "agses_message" : ""}]';  // user not found but not displayed as this in the error message
+            echo '[{"error" : "something_wrong" , "agses_message" : ""}]'; // user not found but not displayed as this in the error message
         }
     }
 } elseif ($_POST['type'] == "identify_duo_user_check") {
@@ -170,12 +170,12 @@ if ($_POST['type'] === "identify_duo_user") {
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
 
     if ($debugDuo == 1) {
-        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
+        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");
         fputs(
             $dbgDuo,
-            "\n\n-----\n\n" .
-            "sig response : " . $_POST['sig_response'] . "\n" .
-            'resp : ' . $resp . "\n"
+            "\n\n-----\n\n".
+            "sig response : ".$_POST['sig_response']."\n".
+            'resp : '.$resp."\n"
         );
     }
 
@@ -192,7 +192,7 @@ if ($_POST['type'] === "identify_duo_user") {
 
     // increment counter of login attempts
     if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
-    else $_SESSION["pwd_attempts"] ++;
+    else $_SESSION["pwd_attempts"]++;
 
     // manage brute force
     if ($_SESSION["pwd_attempts"] <= 3) {
@@ -236,13 +236,13 @@ function identifyUser($sentData)
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     if ($debugDuo == 1) {
-        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder'] . "/duo.debug.txt", "a");
+        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");
     }
 
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Content of data sent '" . $sentData . "'\n"
+            "Content of data sent '".$sentData."'\n"
         );
     }
 
@@ -282,7 +282,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Starting authentication of '" . $username . "'\n"
+            "Starting authentication of '".$username."'\n"
         );
     }
 
@@ -300,18 +300,18 @@ function identifyUser($sentData)
         $dbgLdap = fopen($_SESSION['settings']['path_to_files_folder']."/ldap.debug.txt", "w");
         fputs(
             $dbgLdap,
-            "Get all LDAP params : \n" .
-            'mode : ' . $_SESSION['settings']['ldap_mode'] . "\n" .
-            'type : ' . $_SESSION['settings']['ldap_type'] . "\n" .
-            'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
-            'search_base : ' . $_SESSION['settings']['ldap_search_base']."\n" .
-            'bind_dn : ' . $_SESSION['settings']['ldap_bind_dn']."\n" .
-            'bind_passwd : ' . $_SESSION['settings']['ldap_bind_passwd']."\n" .
-            'user_attribute : ' . $_SESSION['settings']['ldap_user_attribute']."\n" .
-            'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
-            'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
-            'port : '.$_SESSION['settings']['ldap_port']."\n" .
-            'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+            "Get all LDAP params : \n".
+            'mode : '.$_SESSION['settings']['ldap_mode']."\n".
+            'type : '.$_SESSION['settings']['ldap_type']."\n".
+            'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n".
+            'search_base : '.$_SESSION['settings']['ldap_search_base']."\n".
+            'bind_dn : '.$_SESSION['settings']['ldap_bind_dn']."\n".
+            'bind_passwd : '.$_SESSION['settings']['ldap_bind_passwd']."\n".
+            'user_attribute : '.$_SESSION['settings']['ldap_user_attribute']."\n".
+            'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n".
+            'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n".
+            'port : '.$_SESSION['settings']['ldap_port']."\n".
+            'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n".
             'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
         );
     }
@@ -319,7 +319,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "LDAP status: " . $_SESSION['settings']['ldap_mode'] . "\n"
+            "LDAP status: ".$_SESSION['settings']['ldap_mode']."\n"
         );
     }
 
@@ -328,13 +328,13 @@ function identifyUser($sentData)
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') == true) {
-            $ldap_suffix="@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
-            $username=substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
+            $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+            $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
             $ldapURIs = "";
-            foreach(explode(",", $_SESSION['settings']['ldap_domain_controler']) as $domainControler) {
-                if($_SESSION['settings']['ldap_ssl'] == 1) {
+            foreach (explode(",", $_SESSION['settings']['ldap_domain_controler']) as $domainControler) {
+                if ($_SESSION['settings']['ldap_ssl'] == 1) {
                     $ldapURIs .= "ldaps://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
                 }
                 else {
@@ -342,12 +342,12 @@ function identifyUser($sentData)
                 }
             }
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "LDAP URIs : " . $ldapURIs . "\n");
+                fputs($dbgLdap, "LDAP URIs : ".$ldapURIs."\n");
             }
             $ldapconn = ldap_connect($ldapURIs);
 
             if ($_SESSION['settings']['ldap_tls']) {
-               ldap_start_tls($ldapconn);
+                ldap_start_tls($ldapconn);
             }
             if ($debugLdap == 1) {
                 fputs($dbgLdap, "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "\n");
@@ -366,9 +366,9 @@ function identifyUser($sentData)
                         $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'],$filter_group, array('dn'));
                         if ($debugLdap == 1) {
                                 fputs(
-                                     $dbgLdap,
-                                     'Search filter (group): ' . $filter_group . "\n" .
-                                     'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "\n"
+                                        $dbgLdap,
+                                        'Search filter (group): ' . $filter_group . "\n" .
+                                        'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "\n"
                                 );
                         }
                         if (!ldap_count_entries($ldapconn, $result_group)) {
@@ -380,8 +380,8 @@ function identifyUser($sentData)
                     if ($debugLdap == 1) {
                         fputs(
                             $dbgLdap,
-                            'Search filter : ' . $filter . "\n" .
-                            'Results : ' . print_r(ldap_get_entries($ldapconn, $result), true) . "\n"
+                            'Search filter : '.$filter."\n".
+                            'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
                         );
                     }
                     if ($ldapConnection && ldap_count_entries($ldapconn, $result)) {
@@ -405,12 +405,12 @@ function identifyUser($sentData)
             if ($debugLdap == 1) {
                 fputs(
                     $dbgLdap,
-                    "Get all ldap params : \n" .
-                    'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n" .
-                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n" .
-                    'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n" .
-                    'port : '.$_SESSION['settings']['ldap_port']."\n" .
-                    'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n" .
+                    "Get all ldap params : \n".
+                    'base_dn : '.$_SESSION['settings']['ldap_domain_dn']."\n".
+                    'account_suffix : '.$_SESSION['settings']['ldap_suffix']."\n".
+                    'domain_controllers : '.$_SESSION['settings']['ldap_domain_controler']."\n".
+                    'port : '.$_SESSION['settings']['ldap_port']."\n".
+                    'use_ssl : '.$_SESSION['settings']['ldap_ssl']."\n".
                     'use_tls : '.$_SESSION['settings']['ldap_tls']."\n*********\n\n"
                 );
             }
@@ -465,7 +465,7 @@ function identifyUser($sentData)
             if ($debugLdap == 1) {
                 fputs(
                     $dbgLdap,
-                    "After authenticate : ".$adldap->getLastError()."\n\n\n" .
+                    "After authenticate : ".$adldap->getLastError()."\n\n\n".
                     "ldap status : ".$ldapConnection."\n\n\n"
                 ); //Debug
             }
@@ -485,7 +485,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "USer exists: " . $counter . "\n"
+            "USer exists: ".$counter."\n"
         );
     }
 
@@ -520,7 +520,7 @@ function identifyUser($sentData)
             && ($_SESSION['settings']['ldap_elusers'] == 0)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
-        $data['pw'] = $pwdlib->createPasswordHash($passwordClear);  // create passwordhash
+        $data['pw'] = $pwdlib->createPasswordHash($passwordClear); // create passwordhash
 
         // get user info from LDAP
         if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
@@ -584,7 +584,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "User exists (confirm): " . $counter . "\n"
+            "User exists (confirm): ".$counter."\n"
         );
     }
 
@@ -642,7 +642,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Proceed with Ident: " . $proceedIdentification . "\n"
+            "Proceed with Ident: ".$proceedIdentification."\n"
         );
     }
 
@@ -679,17 +679,17 @@ function identifyUser($sentData)
                 unset($_SESSION['flickercode']);
             } else {
                 if ($result < -10) {
-                    $logError =  "ERROR: ".$result;
+                    $logError = "ERROR: ".$result;
                 } else if ($result == -4) {
-                    $logError =  "Wrong response code, no more tries left.";
+                    $logError = "Wrong response code, no more tries left.";
                 } else if ($result == -3) {
-                    $logError =  "Wrong response code, try to reenter.";
+                    $logError = "Wrong response code, try to reenter.";
                 } else if ($result == -2) {
-                    $logError =  "Timeout. The response code is not valid anymore.";
+                    $logError = "Timeout. The response code is not valid anymore.";
                 } else if ($result == -1) {
-                    $logError =  "Security Error. Did you try to verify the response from a different computer?";
+                    $logError = "Security Error. Did you try to verify the response from a different computer?";
                 } else if ($result == 1) {
-                    $logError =  "Authentication successful, response code correct.
+                    $logError = "Authentication successful, response code correct.
                           <br /><br />Authentification Method for SecureBrowser updated!";
                     // Add necessary code here for accessing your Business Application
                 }
@@ -776,7 +776,7 @@ function identifyUser($sentData)
         if ($debugDuo == 1) {
             fputs(
                 $dbgDuo,
-                "User's password verified: " . $userPasswordVerified . "\n"
+                "User's password verified: ".$userPasswordVerified."\n"
             );
         }
 
@@ -811,7 +811,7 @@ function identifyUser($sentData)
             if ($debugDuo == 1) {
                 fputs(
                     $dbgDuo,
-                    "User's token: " . $key . "\n"
+                    "User's token: ".$key."\n"
                 );
             }
 
@@ -933,7 +933,7 @@ function identifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)),    //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)), //bCrypt(htmlspecialchars_decode($psk), COST)
                     'user_ip' =>  get_client_ip_server()
                 ),
                 "id=%i",
@@ -1080,8 +1080,8 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "\n\n----\n" .
-            "Identified : " . $return . "\n\n"
+            "\n\n----\n".
+            "Identified : ".$return."\n\n"
         );
     }
 

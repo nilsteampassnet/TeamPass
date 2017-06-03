@@ -187,7 +187,7 @@ class RC4 extends StreamCipher
     function setKeyLength($length)
     {
         if ($length < 8 || $length > 2048) {
-            throw new \LengthException('Key size of ' . $length . ' bits is not supported by this algorithm. Only keys between 1 and 256 bytes are supported');
+            throw new \LengthException('Key size of '.$length.' bits is not supported by this algorithm. Only keys between 1 and 256 bytes are supported');
         }
 
         $this->key_length = $length >> 3;
@@ -201,14 +201,14 @@ class RC4 extends StreamCipher
      * Keys can be between 1 and 256 bytes long.
      *
      * @access public
-     * @param int $length
      * @throws \LengthException if the key length is invalid
+     * @param string $key
      */
     function setKey($key)
     {
         $length = strlen($key);
         if ($length < 1 || $length > 256) {
-            throw new \LengthException('Key size of ' . $length . ' bytes is not supported by RC4. Keys must be between 1 and 256 bytes long');
+            throw new \LengthException('Key size of '.$length.' bytes is not supported by RC4. Keys must be between 1 and 256 bytes long');
         }
 
         parent::setKey($key);

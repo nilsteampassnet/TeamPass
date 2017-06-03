@@ -144,17 +144,19 @@ foreach ($treeDesc as $t) {
         );
 
         //col7
-        if (isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1)
-            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-0\"></i>"';
-        else
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-1\"></i>"';
+        if (isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1) {
+                    $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-0\"></i>"';
+        } else {
+                    $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-1\"></i>"';
+        }
         $sOutput .= ',';
 
         //col8
-        if (isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1)
-            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
-        else
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
+        if (isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1) {
+                    $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
+        } else {
+                    $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
+        }
         $sOutput .= '<input type=\"hidden\" id=\"parent_id_'.$t->id.'\" value=\"'.$t->parent_id.'\" /><input type=\"hidden\"  id=\"renewal_id_'.$t->id.'\" value=\"'.$node_data['valeur'].'\" /><input type=\"hidden\"  id=\"block_creation_'.$t->id.'\" value=\"'.$node_data['bloquer_creation'].'\" /><input type=\"hidden\"  id=\"block_modif_'.$t->id.'\" value=\"'.$node_data['bloquer_modification'].'\" />"';
 
         //Finish the line
@@ -166,7 +168,9 @@ foreach ($treeDesc as $t) {
 }
 
 if (count($treeDesc) > 0) {
-    if (strrchr($sOutput, "[") != '[') $sOutput = substr_replace($sOutput, "", -1);
+    if (strrchr($sOutput, "[") != '[') {
+        $sOutput = substr_replace($sOutput, "", -1);
+    }
     $sOutput .= ']}';
 } else {
     $sOutput .= '[] }';

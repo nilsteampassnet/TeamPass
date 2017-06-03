@@ -119,7 +119,7 @@ class OpenSSH
         // mpint     e
         // mpint     n
         $RSAPublicKey = pack('Na*Na*Na*', strlen('ssh-rsa'), 'ssh-rsa', strlen($publicExponent), $publicExponent, strlen($modulus), $modulus);
-        $RSAPublicKey = 'ssh-rsa ' . Base64::encode($RSAPublicKey) . ' ' . self::$comment;
+        $RSAPublicKey = 'ssh-rsa '.Base64::encode($RSAPublicKey).' '.self::$comment;
 
         return $RSAPublicKey;
     }

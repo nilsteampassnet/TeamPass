@@ -40,7 +40,7 @@ $dbTmp = mysqli_connect(
     $_SESSION['port']
 );
 // are files encrypted? get the setting ongoing in teampass
-$set = mysqli_fetch_row(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='enable_attachment_encryption'"));
+$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='enable_attachment_encryption'"));
 $enable_attachment_encryption = $set[0];
 
 // if no encryption then stop
@@ -51,11 +51,11 @@ if ($enable_attachment_encryption === "0") {
 }
 
 // get path to upload
-$set = mysqli_fetch_row(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='path_to_upload_folder'"));
+$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='path_to_upload_folder'"));
 $path_to_upload_folder = $set[0];
 
 // get previous saltkey
-$set = mysqli_fetch_row(mysqli_query($dbTmp,"SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='saltkey_ante_2127'"));
+$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='saltkey_ante_2127'"));
 $saltkey_ante_2127 = $set[0];
 
 

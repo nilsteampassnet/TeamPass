@@ -108,7 +108,7 @@ class Cipher_Simple_XOR extends Cipher
 	 * this function contains the code to do both. The SimpleXOR::Encrypt()
 	 * and SimpleXOR::Decrypt() function above just call this function
 	 *
-	 * @param string $input
+	 * @param string $text
 	 * @return boolean Always returns true
 	 */
 	private function simpleXOR(&$text)
@@ -117,11 +117,11 @@ class Cipher_Simple_XOR extends Cipher
 		$max = strlen($text);
 		$key = $this->key();
 
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
 			// if the current position in the key reaches the end of the key,
 			// start over at position 0 of the key
-			if($pos >= $this->keySize())
+			if ($pos >= $this->keySize())
 				$pos = 0;
 
 			$text[$i] = $text[$i] ^ $key[$pos];

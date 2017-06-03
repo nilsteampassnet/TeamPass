@@ -64,7 +64,7 @@ $sWhere = $sOrder = $sLimit = "";
 //Paging
 $sLimit = "";
 if (isset($_GET['length']) && $_GET['length'] != '-1') {
-    $sLimit = "LIMIT ". filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT)."";
+    $sLimit = "LIMIT ".filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
@@ -73,8 +73,8 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
     if (
         preg_match("#^(asc|desc)\$#i", $_GET['order'][0]['column'])
     ) {
-        $sOrder .= "".$aColumns[ filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT) ]." "
-        .mysqli_escape_string($link, $_GET['order'][0]['column']) .", ";
+        $sOrder .= "".$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)]." "
+        .mysqli_escape_string($link, $_GET['order'][0]['column']).", ";
     }
 
     $sOrder = substr_replace($sOrder, "", -2);
@@ -90,13 +90,16 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
    * on very large tables, and MySQL's regex functionality is very limited
 */
 if (isset($_GET['letter']) && $_GET['letter'] != "" && $_GET['letter'] != "None") {
-    if (empty($sWhere)) $sWhere = " WHERE ";
+    if (empty($sWhere)) {
+        $sWhere = " WHERE ";
+    }
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' ";
-}
-elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
-    if (empty($sWhere)) $sWhere = " WHERE ";
+} elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
+    if (empty($sWhere)) {
+        $sWhere = " WHERE ";
+    }
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' ";
@@ -104,8 +107,11 @@ elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
 
 // enlarge the query in case of Manager
 if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
-    if (empty($sWhere)) $sWhere = " WHERE ";
-    else $sWhere .= " AND ";
+    if (empty($sWhere)) {
+        $sWhere = " WHERE ";
+    } else {
+        $sWhere .= " AND ";
+    }
     $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
 }
 db::debugmode(false);
@@ -213,8 +219,9 @@ foreach ($rows as $record) {
         } else {
             $sOutput .= '"';
         }
-        if ($record['id'] != API_USER_ID && $record['id'] != OTV_USER_ID)
-            $sOutput .= '<span class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></span>';
+        if ($record['id'] != API_USER_ID && $record['id'] != OTV_USER_ID) {
+                    $sOutput .= '<span class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></span>';
+        }
 
         // pwd change
         $sOutput .= '&nbsp;<span class=\"fa fa-key tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['change_password'], '"\\/').'\"></span>';
@@ -229,8 +236,9 @@ foreach ($rows as $record) {
             $sOutput .= '&nbsp;<span class=\"fa fa-qrcode mi-green tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['user_ga_code'], '"\\/').'\"></span>';
         }
 
-        if ($record['admin'] !== "1")
-            $sOutput .= '&nbsp;<span class=\"fa fa-sitemap tip\" style=\"cursor:pointer;\" onclick=\"user_folders_rights(\''.$record['id'].'\')\" title=\"'.$LANG['user_folders_rights'].' ['.$record['id'].']'.'\"></span>';
+        if ($record['admin'] !== "1") {
+                    $sOutput .= '&nbsp;<span class=\"fa fa-sitemap tip\" style=\"cursor:pointer;\" onclick=\"user_folders_rights(\''.$record['id'].'\')\" title=\"'.$LANG['user_folders_rights'].' ['.$record['id'].']'.'\"></span>';
+        }
 
         $sOutput .= '",';
 
@@ -265,29 +273,38 @@ foreach ($rows as $record) {
 
         //col9
         if ($_SESSION['user_can_manage_all_users'] === "1" || $_SESSION['is_admin'] === "1") {
-            if ($record['admin'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
-            else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
+            if ($record['admin'] === "1") {
+                $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
+            } else {
+                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
+            }
         } else {
             $sOutput .= '""';
         }
         $sOutput .= ',';
 
         //col10
-        if ($record['gestionnaire'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\"  tp=\"'.$record['id'].'-gestionnaire-0\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-gestionnaire-1\"></i>"';
+        if ($record['gestionnaire'] === "1") {
+            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\"  tp=\"'.$record['id'].'-gestionnaire-0\"></i>"';
+        } else {
+            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-gestionnaire-1\"></i>"';
+        }
         $sOutput .= ',';
 
         //col11
-        if ($record['read_only'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
+        if ($record['read_only'] === "1") {
+            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
+        } else {
+            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
+        }
         $sOutput .= ',';
 
         //col11
         if ($_SESSION['is_admin'] === "1" || $_SESSION['user_can_manage_all_users'] == 1) {
             if ($record['can_manage_all_users'] === "1") {
-                $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"' . $record['id'] . '-can_manage_all_users-0\"></i>"';
+                $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_manage_all_users-0\"></i>"';
             } else {
-                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"' . $record['id'] . '-can_manage_all_users-1\"></i>"';
+                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_manage_all_users-1\"></i>"';
             }
         } else {
             $sOutput .= '""';
@@ -295,24 +312,32 @@ foreach ($rows as $record) {
         $sOutput .= ',';
 
         //col12
-        if ($record['can_create_root_folder'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-0\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-1\"></i>"';
+        if ($record['can_create_root_folder'] === "1") {
+            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-0\"></i>"';
+        } else {
+            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-1\"></i>"';
+        }
         $sOutput .= ',';
 
         //col13
-        if ($record['personal_folder'] === "1") $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-0\"></i>"';
-        else $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
+        if ($record['personal_folder'] === "1") {
+            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-0\"></i>"';
+        } else {
+            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
+        }
 
 
         //Finish the line
         $sOutput .= '],';
 
-        $iFilteredTotal ++;
+        $iFilteredTotal++;
     }
 }
 
 if (count($rows) > 0) {
-    if (strrchr($sOutput, "[") != '[') $sOutput = substr_replace($sOutput, "", -1);
+    if (strrchr($sOutput, "[") != '[') {
+        $sOutput = substr_replace($sOutput, "", -1);
+    }
     $sOutput .= '] }';
 } else {
     $sOutput .= '[] }';

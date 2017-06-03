@@ -47,24 +47,24 @@ $(function() {
         selectedList: 7,
         minWidth: 550,
         height: 145,
-        checkAllText: "<?php echo $LANG['check_all_text'];?>",
-        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+        checkAllText: "<?php echo $LANG['check_all_text']; ?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text']; ?>"
     });
     $("#new_is_admin_by").multiselect({
         selectedList: 7,
         multiple:false,
         minWidth: 550,
         height: 145,
-        checkAllText: "<?php echo $LANG['check_all_text'];?>",
-        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+        checkAllText: "<?php echo $LANG['check_all_text']; ?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text']; ?>"
     });
     $("#share_rights_from, #share_rights_to").multiselect({
         selectedList: 7,
         multiple:false,
         minWidth: 350,
         height: 145,
-        checkAllText: "<?php echo $LANG['check_all_text'];?>",
-        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+        checkAllText: "<?php echo $LANG['check_all_text']; ?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text']; ?>"
     });
 
     //Launch the datatables pluggin
@@ -81,7 +81,7 @@ $(function() {
             }
         },
         "language": {
-            "url": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+            "url": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "columns": [
             {"width": "13%", className: "dt-body-left"},
@@ -139,10 +139,10 @@ $(function() {
                     type    : tmp[1],
                     value   : tmp[2],
                     id      : tmp[0],
-                    key        : "<?php echo $_SESSION['key'];?>"
+                    key        : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                     $("#div_loading").hide();
 
                     // manage not allowed
@@ -170,35 +170,35 @@ $(function() {
     $("#change_user_pw_newpw").simplePassMeter({
         "requirements": {},
           "container": "#pw_strength",
-          "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+          "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
         "ratings": [
             {"minScore": 0,
                 "className": "meterFail",
-                "text": "<?php echo $LANG['complex_level0'];?>"
+                "text": "<?php echo $LANG['complex_level0']; ?>"
             },
             {"minScore": 25,
                 "className": "meterWarn",
-                "text": "<?php echo $LANG['complex_level1'];?>"
+                "text": "<?php echo $LANG['complex_level1']; ?>"
             },
             {"minScore": 50,
                 "className": "meterWarn",
-                "text": "<?php echo $LANG['complex_level2'];?>"
+                "text": "<?php echo $LANG['complex_level2']; ?>"
             },
             {"minScore": 60,
                 "className": "meterGood",
-                "text": "<?php echo $LANG['complex_level3'];?>"
+                "text": "<?php echo $LANG['complex_level3']; ?>"
             },
             {"minScore": 70,
                 "className": "meterGood",
-                "text": "<?php echo $LANG['complex_level4'];?>"
+                "text": "<?php echo $LANG['complex_level4']; ?>"
             },
             {"minScore": 80,
                 "className": "meterExcel",
-                "text": "<?php echo $LANG['complex_level5'];?>"
+                "text": "<?php echo $LANG['complex_level5']; ?>"
             },
             {"minScore": 90,
                 "className": "meterExcel",
-                "text": "<?php echo $LANG['complex_level6'];?>"
+                "text": "<?php echo $LANG['complex_level6']; ?>"
             }
         ]
     });
@@ -214,13 +214,13 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 400,
-        title: "<?php echo $LANG['change_user_functions_title'];?>",
+        title: "<?php echo $LANG['change_user_functions_title']; ?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 Change_user_rights(document.getElementById("selected_user").value,"functions");
                 $(this).dialog("close");
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -232,13 +232,13 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 400,
-        title: "<?php echo $LANG['change_user_autgroups_title'];?>",
+        title: "<?php echo $LANG['change_user_autgroups_title']; ?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 Change_user_rights(document.getElementById("selected_user").value,"autgroups");
                 $(this).dialog("close");
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -250,13 +250,13 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 400,
-        title: "<?php echo $LANG['change_user_forgroups_title'];?>",
+        title: "<?php echo $LANG['change_user_forgroups_title']; ?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 Change_user_rights(document.getElementById("selected_user").value,"forgroups");
                 $(this).dialog("close");
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -268,21 +268,21 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 200,
-        title: "<?php echo $LANG['is_administrated_by_role'];?>",
+        title: "<?php echo $LANG['is_administrated_by_role']; ?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 $.post(
                     "sources/users.queries.php",
                     {
                         type    :"change_user_adminby",
                         userId : $("#selected_user").val(),
                         isAdministratedByRole : $("#user_admin_by").val(),
-                        key    : "<?php echo $_SESSION['key'];?>"
+                        key    : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         if ($("#user_admin_by").val() == "0") {
                             $("#list_adminby_"+$("#selected_user").val()).
-                            html("<?php echo $LANG['admin_small'];?>");
+                            html("<?php echo $LANG['admin_small']; ?>");
                         } else {
                             $("#list_adminby_"+$("#selected_user").val()).
                             html($("#user_admin_by option:selected").text().match(/"([^"]+)"/)[1]);
@@ -291,7 +291,7 @@ $(function() {
                     }
                )
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -303,13 +303,13 @@ $(function() {
         autoOpen: false,
         width: 590,
         height: 620,
-        title: "<?php echo $LANG['new_user_title'];?>",
+        title: "<?php echo $LANG['new_user_title']; ?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 if ($("#new_login").val() == "" || $("#new_pwd").val()=="" || $("#new_email").val()=="") {
-                    $("#add_new_user_error").show(1).html("<?php echo $LANG['error_must_enter_all_fields'];?>").delay(1000).fadeOut(1000);
+                    $("#add_new_user_error").show(1).html("<?php echo $LANG['error_must_enter_all_fields']; ?>").delay(1000).fadeOut(1000);
                 } else {
-                    $("#add_new_user_info").show().html("<span class=\'fa fa-cog fa-spin fa-lg\'></span>&nbsp;<?php echo $LANG['please_wait'];?>");
+                    $("#add_new_user_info").show().html("<span class=\'fa fa-cog fa-spin fa-lg\'></span>&nbsp;<?php echo $LANG['please_wait']; ?>");
 
                     // get lists
                     var forbidFld = "", authFld = "", groups = "";
@@ -344,8 +344,8 @@ $(function() {
                         "sources/users.queries.php",
                         {
                             type    :"add_new_user",
-                            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                            key    : "<?php echo $_SESSION['key'];?>"
+                            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key    : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             $("#add_new_user_info").hide().html("");
@@ -366,7 +366,7 @@ $(function() {
                    )
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -378,16 +378,16 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG['admin_action'];?>",
+        title: "<?php echo $LANG['admin_action']; ?>",
         buttons: {
-            "<?php echo $LANG['ok'];?>": function() {
+            "<?php echo $LANG['ok']; ?>": function() {
                 $.post(
                     "sources/users.queries.php",
                     {
                         type    : "delete_user",
                         id        : $("#delete_user_id").val(),
                         action    : $("#delete_user_action").val(),
-                        key        : "<?php echo $_SESSION['key'];?>"
+                        key        : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         window.location.href = "index.php?page=manage_users";
@@ -395,7 +395,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -407,9 +407,9 @@ $(function() {
         autoOpen: false,
         width: 380,
         height: 300,
-        title: "<?php echo $LANG['admin_action'];?>",
+        title: "<?php echo $LANG['admin_action']; ?>",
         buttons: {
-            "<?php echo $LANG['pw_generate'];?>": function() {
+            "<?php echo $LANG['pw_generate']; ?>": function() {
                 $("#generated_user_pw").html("");
                 $("#change_user_pw_wait").show();
                 $.post(
@@ -437,19 +437,19 @@ $(function() {
                         }
                    );
             },
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 if ($("#change_user_pw_newpw_confirm").val() === "" || $("#change_user_pw_newpw").val() === "") {
                 // check if empty
-                    $("#change_user_pw_error").html("<?php echo $LANG['error_must_enter_all_fields'];?>").show(1).delay(1000).fadeOut(1000);
+                    $("#change_user_pw_error").html("<?php echo $LANG['error_must_enter_all_fields']; ?>").show(1).delay(1000).fadeOut(1000);
                 } else if ($("#change_user_pw_newpw").val() === $("#change_user_pw_newpw_confirm").val()) {
                 // check if egual
-                    var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key'];?>\"}";
+                    var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key']; ?>\"}";
                     $.post(
                         "sources/main.queries.php",
                         {
                             type    : "change_pw",
                             change_pw_origine    : "admin_change",
-                            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
+                            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>")
                         },
                         function(data) {
                             if (data[0].error == "none") {
@@ -465,10 +465,10 @@ $(function() {
                         "json"
                    );
                 } else {
-                    $("#change_user_pw_error").html("<?php echo $LANG['error_password_confirmation'];?>").show(1).delay(1000).fadeOut(1000);
+                    $("#change_user_pw_error").html("<?php echo $LANG['error_password_confirmation']; ?>").show(1).delay(1000).fadeOut(1000);
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#change_user_pw_newpw_confirm, #change_user_pw_newpw").val("");
                 $(this).dialog("close");
             }
@@ -485,9 +485,9 @@ $(function() {
         autoOpen: false,
         width: 850,
         height: 500,
-        title: "<?php echo $LANG["logs"];?>",
+        title: "<?php echo $LANG["logs"]; ?>",
         buttons: {
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#span_user_activity_option").hide();
                 $("#activity").val(0);
                 $("#tbody_logs").empty();
@@ -522,9 +522,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 200,
-        title: "<?php echo $LANG['admin_action'];?>",
+        title: "<?php echo $LANG['admin_action']; ?>",
         buttons: {
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -536,10 +536,10 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 280,
-        title: "<?php echo $LANG['admin_action'];?>",
+        title: "<?php echo $LANG['admin_action']; ?>",
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
-                $("#user_edit_login_dialog_message").html("<?php echo $LANG['please_wait'];?>");
+            "<?php echo $LANG['save_button']; ?>": function() {
+                $("#user_edit_login_dialog_message").html("<?php echo $LANG['please_wait']; ?>");
                 $.post(
                     "sources/users.queries.php",
                     {
@@ -548,7 +548,7 @@ $(function() {
                         login   : $("#edit_login").val(),
                         name    : $("#edit_name").val(),
                         lastname: $("#edit_lastname").val(),
-                        key     : "<?php echo $_SESSION['key'];?>"
+                        key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         $("#name_"+$("#selected_user").html()).html($("#edit_name").val());
@@ -558,7 +558,7 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         },
@@ -611,9 +611,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 200,
-        title: "<?php echo $LANG['admin_action'];?>",
+        title: "<?php echo $LANG['admin_action']; ?>",
         buttons: {
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -625,20 +625,20 @@ $(function() {
         autoOpen: false,
         width: 600,
         height: 550,
-        title: "<?php echo $LANG['dialog_admin_user_edit_title'];?>",
+        title: "<?php echo $LANG['dialog_admin_user_edit_title']; ?>",
         open:  function() {
             $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").empty();
-            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
+            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button']; ?>')").button("disable");
             $.post(
                 "sources/users.queries.php",
                 {
                     type : "get_user_info",
                     id   : $('#user_edit_id').val(),
-                    key  : "<?php echo $_SESSION['key'];?>"
+                    key  : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
                     if (data.error == "no") {
-                        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+                        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button']; ?>')").button("enable");
 
                         $("#user_edit_login").val(data.log);
                         $("#user_edit_name").val(data.name);
@@ -652,8 +652,8 @@ $(function() {
                         $("#user_edit_managedby").append(data.managedby);
                         $("#user_edit_managedby").multiselect({
                             multiple: false,
-                            header: "<?php echo $LANG['select'];?>",
-                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            header: "<?php echo $LANG['select']; ?>",
+                            noneSelectedText: "<?php echo $LANG['select']; ?>",
                             selectedList: 1
                         }, 'refresh');
 
@@ -666,7 +666,7 @@ $(function() {
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
                     } else {
-                        $("#user_edit_error").html("<?php echo $LANG['error_unknown'];?>")
+                        $("#user_edit_error").html("<?php echo $LANG['error_unknown']; ?>")
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
                     }
@@ -677,7 +677,7 @@ $(function() {
             $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
         },
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
+            "<?php echo $LANG['save_button']; ?>": function() {
                 var functions = managedby = allowFld = forbidFld = action_on_user = "";
                 // manage the multiselect boxes
                 $("#user_edit_functions_list option:selected").each(function () {
@@ -718,8 +718,8 @@ $(function() {
                     {
                         type    : "store_user_changes",
                         id      : $('#user_edit_id').val(),
-                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                        key     : "<?php echo $_SESSION['key'];?>"
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         if (data[0].error == "no") {
@@ -732,7 +732,7 @@ $(function() {
                     "json"
                 );
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#user_edit_error, #user_edit_warning_bottom").hide().html("");
                 $(this).dialog("close");
             }
@@ -746,25 +746,25 @@ $(function() {
         autoOpen: false,
         width: 600,
         height: 400,
-        title: "<?php echo $LANG['share_user_rights'];?>",
+        title: "<?php echo $LANG['share_user_rights']; ?>",
         open:  function() {
-            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("disable");
+            $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button']; ?>')").button("disable");
             $.post(
                 "sources/users.queries.php",
                 {
                     type : "get_list_of_users_for_sharing",
-                    key  : "<?php echo $_SESSION['key'];?>"
+                    key  : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                     if (data.error === "") {
-                        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button'];?>')").button("enable");
+                        $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button']; ?>')").button("enable");
 
                         $("#share_rights_from").append(data.users_list_from);
                         $("#share_rights_from").multiselect({
                             multiple: false,
-                            header: "<?php echo $LANG['select'];?>",
-                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            header: "<?php echo $LANG['select']; ?>",
+                            noneSelectedText: "<?php echo $LANG['select']; ?>",
                             selectedList: 1,
                             maxWidth: "300px;"
                         }, 'refresh');
@@ -772,15 +772,15 @@ $(function() {
                         $("#share_rights_to").append(data.users_list_to);
                         $("#share_rights_to").multiselect({
                             multiple: true,
-                            header: "<?php echo $LANG['select'];?>",
-                            noneSelectedText: "<?php echo $LANG['select'];?>",
+                            header: "<?php echo $LANG['select']; ?>",
+                            noneSelectedText: "<?php echo $LANG['select']; ?>",
                             selectedList: 7,
                             maxWidth: "300px;"
                         }, 'refresh');
 
                         get_user_rights();
                     } else {
-                        $("#share_rights_dialog_error").html("<?php echo $LANG['error_unknown'];?>");
+                        $("#share_rights_dialog_error").html("<?php echo $LANG['error_unknown']; ?>");
                     }
                 }
             );
@@ -791,8 +791,8 @@ $(function() {
             $("#share_rights_details_ids_1, #share_rights_details_ids_2, #share_rights_details_ids_3, #share_rights_details_ids_4").val("");
         },
         buttons: {
-            "<?php echo $LANG['save_button'];?>": function() {
-                $("#share_rights_dialog_msg").html("<?php echo '<i class=\"fa fa-cog fa-spin fa-2x\"></i>&nbsp;'.$LANG['please_wait'];?>").show();
+            "<?php echo $LANG['save_button']; ?>": function() {
+                $("#share_rights_dialog_msg").html("<?php echo '<i class=\"fa fa-cog fa-spin fa-2x\"></i>&nbsp;'.$LANG['please_wait']; ?>").show();
 
                 // destination users
                 var destination_ids = '';
@@ -822,7 +822,7 @@ $(function() {
                         user_fldallowed : $("#share_rights_details_ids_3").val(),
                         user_fldforbid  : $("#share_rights_details_ids_4").val(),
                         user_otherrights: $("#share_rights_details_other").val(),
-                        key             : "<?php echo $_SESSION['key'];?>"
+                        key             : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         $("#share_rights_dialog_msg").hide();
@@ -835,11 +835,11 @@ $(function() {
                         // unselect destination users
                         $("#share_rights_to").multiselect("uncheckAll");
 
-                        $("#share_rights_dialog_msg").html("<?php echo '<i class=\"fa fa-check-circle fa-2x mi-green\"></i>&nbsp;'.$LANG['alert_message_done'];?>").show(0).delay(2000).hide(0);
+                        $("#share_rights_dialog_msg").html("<?php echo '<i class=\"fa fa-check-circle fa-2x mi-green\"></i>&nbsp;'.$LANG['alert_message_done']; ?>").show(0).delay(2000).hide(0);
                     }
                 );
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -852,9 +852,9 @@ $(function() {
         autoOpen: false,
         width: 380,
         height: 600,
-        title: "<?php echo $LANG['user_s_rights_on_folders'];?>",
+        title: "<?php echo $LANG['user_s_rights_on_folders']; ?>",
         buttons: {
-            "<?php echo $LANG['close'];?>": function() {
+            "<?php echo $LANG['close']; ?>": function() {
                 $(this).dialog("close");
             }
         },
@@ -866,10 +866,10 @@ $(function() {
                 {
                     type    : "user_folders_rights",
                     id      : $('#user_folders_rights_dialog_id').val(),
-                    key     : "<?php echo $_SESSION['key'];?>"
+                    key     : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                     $("#user_folders_rights_dialog_txt").html(data.html);
                     $("#user_folders_rights_dialog_wait").hide();
                 }
@@ -887,10 +887,10 @@ function confirmDeletion()
         if ($("#confirm_deletion").val() == "") {
             $("#account_delete").prop("checked", false);
             $("#confirm_deletion").val("1");
-            $("#user_edit_error").show().html("<?php echo $LANG['user_info_delete'];?>");
+            $("#user_edit_error").show().html("<?php echo $LANG['user_info_delete']; ?>");
         } else {
             $("#user_edit_error").hide().html("");
-            $("#user_edit_warning_bottom").show().html("<?php echo $LANG['user_info_delete_warning'];?>");
+            $("#user_edit_warning_bottom").show().html("<?php echo $LANG['user_info_delete_warning']; ?>");
         }
     } else {
         $("#confirm_deletion").val("");
@@ -914,7 +914,7 @@ function pwGenerate(elem)
             force    : false
         },
         function(data) {
-            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
             if (data.error == "true") {
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
@@ -928,9 +928,9 @@ function pwGenerate(elem)
 function action_on_user(id, action)
 {
     if (action == "lock") {
-        $("#user_action_html").html("<?php echo $LANG['confirm_lock_account'];?>");
+        $("#user_action_html").html("<?php echo $LANG['confirm_lock_account']; ?>");
     } else {
-        $("#user_action_html").html("<?php echo $LANG['confirm_del_account'];?>");
+        $("#user_action_html").html("<?php echo $LANG['confirm_del_account']; ?>");
     }
     $("#delete_user_action").val(action);
     $("#delete_user_login").val($("#login_"+id).text());
@@ -954,10 +954,10 @@ function ChangeUserParm(id, parameter, new_value)
             type    : parameter,
             value   : new_value,
             id      : id,
-            key        : "<?php echo $_SESSION['key'];?>"
+            key        : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            $("#div_dialog_message_text").html("<div style=\"font-size:16px; text-align:center;\"><span class=\"ui-icon ui-icon-info\" style=\"float: left; margin-right: .3em;\"></span><?php echo $LANG['alert_message_done'];?></div>");$("#div_dialog_message").dialog("open");
+            $("#div_dialog_message_text").html("<div style=\"font-size:16px; text-align:center;\"><span class=\"ui-icon ui-icon-info\" style=\"float: left; margin-right: .3em;\"></span><?php echo $LANG['alert_message_done']; ?></div>");$("#div_dialog_message").dialog("open");
 
         }
    );
@@ -970,7 +970,7 @@ function Open_Div_Change(id,type)
         {
             type    : "open_div_"+type,
             id      : id,
-            key        : "<?php echo $_SESSION['key'];?>"
+            key        : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             data = $.parseJSON(data);
@@ -1020,7 +1020,7 @@ function Change_user_rights(id,type)
             type    : "change_user_"+type,
             id      : id,
             list    : list,
-            key     : "<?php echo $_SESSION['key'];?>"
+            key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             if (type == "functions") {
@@ -1042,7 +1042,7 @@ function unlock_user(id)
         {
             type    : "unlock_account",
             id      : id,
-            key        : "<?php echo $_SESSION['key'];?>"
+            key        : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             document.form_utilisateurs.submit();
@@ -1120,12 +1120,12 @@ function user_action_ga_code(id)
     },
     function(data) {
         if (data[0].error == "0") {
-            $("#manager_dialog_error").html("<div><?php echo $LANG['share_sent_ok'];?></div>");
+            $("#manager_dialog_error").html("<div><?php echo $LANG['share_sent_ok']; ?></div>");
         } else {
             if (data[0].error == "no_email") {
-                $("#manager_dialog_error").html("<?php echo $LANG['error_no_email'];?>");
+                $("#manager_dialog_error").html("<?php echo $LANG['error_no_email']; ?>");
             } else if (data[0].error == "no_user") {
-                $("#manager_dialog_error").html("<?php echo $LANG['error_no_user'];?>");
+                $("#manager_dialog_error").html("<?php echo $LANG['error_no_user']; ?>");
             }
         }
         $("#manager_dialog").dialog('open');
@@ -1178,7 +1178,7 @@ function get_user_rights()
         {
             type : "get_user_info",
             id   : user_id,
-            key  : "<?php echo $_SESSION['key'];?>"
+            key  : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             if (data.error == "no") {
@@ -1234,7 +1234,7 @@ function get_user_rights()
                         }
                     }
                 });
-                $("#share_rights_details_3").html(tmp === "" ? "<?php echo $LANG['none'];?>" : tmp);
+                $("#share_rights_details_3").html(tmp === "" ? "<?php echo $LANG['none']; ?>" : tmp);
                 $("#share_rights_details_ids_3").val(tmp2);
 
                 // allowed
@@ -1252,7 +1252,7 @@ function get_user_rights()
                         }
                     }
                 });
-                $("#share_rights_details_4").html(tmp === "" ? "<?php echo $LANG['none'];?>" : tmp);
+                $("#share_rights_details_4").html(tmp === "" ? "<?php echo $LANG['none']; ?>" : tmp);
                 $("#share_rights_details_ids_4").val(tmp2);
 
                 $("#share_rights_details_other").val(data.gestionnaire + ";" + data.read_only + ";" + data.can_create_root_folder + ";" + data.personal_folder + ";" + data.can_manage_all_users + ";" + data.admin);
@@ -1303,7 +1303,7 @@ function login_exists(text) {
         {
             type    : "is_login_available",
             login   : text,
-            key     : "<?php echo $_SESSION['key'];?>"
+            key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             if (data[0].error === "") {
@@ -1320,7 +1320,7 @@ function login_exists(text) {
 
 function aes_decrypt(text)
 {
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
 }
 
 function htmlspecialchars_decode (string, quote_style)

@@ -56,7 +56,7 @@ class XML
         $use_errors = libxml_use_internal_errors(true);
 
         $dom = new \DOMDocument();
-        if (!$dom->loadXML('<xml>' . $key . '</xml>')) {
+        if (!$dom->loadXML('<xml>'.$key.'</xml>')) {
             return false;
         }
         $xpath = new \DOMXPath($dom);
@@ -119,15 +119,15 @@ class XML
             return false;
         }
         return "<RSAKeyValue>\r\n" .
-               '  <Modulus>' . Base64::encode($n->toBytes()) . "</Modulus>\r\n" .
-               '  <Exponent>' . Base64::encode($e->toBytes()) . "</Exponent>\r\n" .
-               '  <P>' . Base64::encode($primes[1]->toBytes()) . "</P>\r\n" .
-               '  <Q>' . Base64::encode($primes[2]->toBytes()) . "</Q>\r\n" .
-               '  <DP>' . Base64::encode($exponents[1]->toBytes()) . "</DP>\r\n" .
-               '  <DQ>' . Base64::encode($exponents[2]->toBytes()) . "</DQ>\r\n" .
-               '  <InverseQ>' . Base64::encode($coefficients[2]->toBytes()) . "</InverseQ>\r\n" .
-               '  <D>' . Base64::encode($d->toBytes()) . "</D>\r\n" .
-               '</RSAKeyValue>';
+                '  <Modulus>' . Base64::encode($n->toBytes()) . "</Modulus>\r\n" .
+                '  <Exponent>' . Base64::encode($e->toBytes()) . "</Exponent>\r\n" .
+                '  <P>' . Base64::encode($primes[1]->toBytes()) . "</P>\r\n" .
+                '  <Q>' . Base64::encode($primes[2]->toBytes()) . "</Q>\r\n" .
+                '  <DP>' . Base64::encode($exponents[1]->toBytes()) . "</DP>\r\n" .
+                '  <DQ>' . Base64::encode($exponents[2]->toBytes()) . "</DQ>\r\n" .
+                '  <InverseQ>' . Base64::encode($coefficients[2]->toBytes()) . "</InverseQ>\r\n" .
+                '  <D>' . Base64::encode($d->toBytes()) . "</D>\r\n" .
+                '</RSAKeyValue>';
     }
 
     /**
@@ -141,8 +141,8 @@ class XML
     static function savePublicKey(BigInteger $n, BigInteger $e)
     {
         return "<RSAKeyValue>\r\n" .
-               '  <Modulus>' . Base64::encode($n->toBytes()) . "</Modulus>\r\n" .
-               '  <Exponent>' . Base64::encode($e->toBytes()) . "</Exponent>\r\n" .
-               '</RSAKeyValue>';
+                '  <Modulus>' . Base64::encode($n->toBytes()) . "</Modulus>\r\n" .
+                '  <Exponent>' . Base64::encode($e->toBytes()) . "</Exponent>\r\n" .
+                '</RSAKeyValue>';
     }
 }
