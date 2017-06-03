@@ -508,7 +508,7 @@ if (isset($_POST['newtitle'])) {
                         || ($isPersonal != 1 && $parentId === "0")
                     ) {
                         //Get user's rights
-                        @identifyUserRights(
+                        identifyUserRights(
                             $_SESSION['groupes_visibles'].';'.$newId,
                             $_SESSION['groupes_interdits'],
                             $_SESSION['is_admin'],

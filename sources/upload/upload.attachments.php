@@ -218,8 +218,10 @@ $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
-    try{
+    try {
         mkdir($targetDir);
+    } catch(Exception $e){
+        print_r($e);
     }
 }
 

@@ -123,10 +123,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
         <link rel="icon" href="'.$_SESSION['settings']['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
-// get some init
-//if (!isset($_SESSION["key"])) $_SESSION["key"] = "nothing";
-//if (!isset($_SESSION["user_id"])) $_SESSION["user_id"] = "";
-
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[

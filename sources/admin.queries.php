@@ -409,7 +409,6 @@ switch ($_POST['type']) {
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
-            //$row = DB::fetchRow("SELECT COUNT(*) FROM ".prefix_table("log_items")." WHERE id_item=".$item['id']." AND action = 'at_creation'");
             DB::query(
                 "SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s",
                 $item['id'],
@@ -1043,7 +1042,7 @@ switch ($_POST['type']) {
         );
 
         // redefine SALT
-        @define(SALT, $new_salt_key);
+        define(SALT, $new_salt_key);
 
         echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
         break;
@@ -1886,25 +1885,7 @@ switch ($_POST['type']) {
                 $type,
                 'restricted_to_roles'
             );
-        }/* else
-        if ($dataReceived['field'] == "use_md5_password_as_salt" && $dataReceived['value'] == "0") {
-            // in case this option is changed, we need to warn the users to adapt
-            $rows = DB::query(
-                "SELECT id FROM ".prefix_table("users")."
-                WHERE admin != %i",
-                "",
-                "1"
-            );
-            foreach ($rows as $record) {
-                DB::update(
-                    prefix_table("users"),
-                    array(
-                        'upgrade_needed' => "1"
-                    ),
-                    "id = %i"
-                );
-            }
-        }*/
+        }
 
         // store in SESSION
         $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];

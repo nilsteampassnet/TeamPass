@@ -628,7 +628,6 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
             '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
-    //DB::debugMode(true);
     $iFilteredTotal = DB::count();
 
     /*

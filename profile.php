@@ -41,8 +41,8 @@ header("Pragma: no-cache");
 
 // reload user avatar
 $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("users")." WHERE id=%i", $_SESSION['user_id']);
-@$_SESSION['user_avatar'] = $userData['avatar'];
-@$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
+$_SESSION['user_avatar'] = $userData['avatar'];
+$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
 // prepare avatar
 if (isset($userData['avatar']) && !empty($userData['avatar'])) {

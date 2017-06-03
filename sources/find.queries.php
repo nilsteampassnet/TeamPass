@@ -226,7 +226,7 @@ if (!isset($_GET['type'])) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-//echo $_SESSION['fonction_id'];
+            
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
                     "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",

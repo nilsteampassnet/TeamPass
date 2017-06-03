@@ -580,7 +580,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 array_push($_SESSION['groupes_visibles'], $pf['id']);
                 array_push($_SESSION['personal_visible_groups'], $pf['id']);
                 // get all descendants
-                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($pf['id']);
                 foreach ($tst as $t) {
@@ -677,7 +677,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
         // => Build final lists
         // Clean arrays
-        $allowedFoldersTmp = array();
         $listAllowedFolders = array_unique($listAllowedFolders);
         $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
         // Add user allowed folders
@@ -1351,7 +1350,7 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
 /**
  * @param string $message
  */
-function send_syslog($message, $component = "teampass", $program = "php", $host, $port)
+function send_syslog($message, $component = "teampass", $host, $port)
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
@@ -1694,7 +1693,6 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
                     $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
                     $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
             )) {
-                $error = "Copy not possible";
                 exit;
             } else {
                 // do a bck

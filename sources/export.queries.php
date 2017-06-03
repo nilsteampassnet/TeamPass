@@ -57,10 +57,6 @@ switch ($_POST['type']) {
 
     //CASE export to PDF format
     case "export_to_pdf_format":
-        /*
-        $ids = explode(',', $_POST['ids']);
-        foreach ($ids as $id) {
-        */
         $id = $_POST['id'];
         if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
             // get path
@@ -421,10 +417,11 @@ switch ($_POST['type']) {
         $csv_file = '/print_out_csv_'.time().'_'.generateKey().'.csv';
         //print_r($full_listing);
         $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$csv_file, "w");
-        function outPutCsv(&$vals, $key, $filehandler)
-        {
+
+        function outPutCsv(&$vals, $filehandler) {
             fputcsv($filehandler, $vals, ";"); // add parameters if you want
         }
+
         array_walk($full_listing, "outPutCsv", $outstream);
         fclose($outstream);
 
