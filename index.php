@@ -115,13 +115,13 @@ if (isset($_GET['language'])) {
     } elseif (isset($_SESSION['settings']['default_language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
-} elseif ($_SESSION['user_language'] === "0") {
+} elseif ($_SESSION['user_language'] == "0") {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 }
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    @require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -133,8 +133,8 @@ if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings
 }
 
 // Load links, css and javascripts
-if (isset($_SESSION['CPM'])) {
-    @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+if (isset($_SESSION['CPM']) && isset($_SESSION['settings']['cpassman_dir'])) {
+    require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
 }
 
 ?>

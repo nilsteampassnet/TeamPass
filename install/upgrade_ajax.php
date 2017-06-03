@@ -111,7 +111,7 @@ function tableExists($tablename, $database = false)
     }
 
 //define pbkdf2 iteration count
-@define('ITCOUNT', '2072');
+define('ITCOUNT', '2072');
 
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -479,7 +479,7 @@ if (isset($_POST['type'])) {
                             $dbTmp,
                             "SELECT * FROM `".$var['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                         ));
-                    if ($tmp === "0") {
+                    if ($tmp == 0) {
                         mysqli_query($dbTmp,
                             "INSERT INTO `".$_SESSION['pre']."misc`
                             (`valeur`, `type`, `intitule`)
@@ -496,7 +496,7 @@ if (isset($_POST['type'])) {
                 }
 
                 //What CPM version
-                if (@mysqli_query($dbTmp,
+                if (mysqli_query($dbTmp,
                     "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                     WHERE type='admin' AND intitule = 'cpassman_version'"
                 )) {

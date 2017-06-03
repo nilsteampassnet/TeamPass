@@ -3326,7 +3326,7 @@ if (isset($_POST['type'])) {
             // should we decrypt the attachment?
             if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
 
-                @unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension);
+                fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension);
 
                 // Open the file
                 $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
@@ -3370,11 +3370,7 @@ if (isset($_POST['type'])) {
             // get file info
             $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
-            try {
-                unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'].$_POST['file_suffix']);
-            } catch (Exception $e) {
-                print_r($e);
-            }
+            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'].$_POST['file_suffix']);
 
             break;
 
