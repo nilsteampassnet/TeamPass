@@ -49,7 +49,7 @@ if (!empty($_GET['term'])) {
 }
 $counter = DB::count();
 
-if ($counter>0) {
+if ($counter > 0) {
     foreach ($rows as $record) {
         if (empty($sOutput)) {
             $sOutput = '"'.$record['category'].'"';

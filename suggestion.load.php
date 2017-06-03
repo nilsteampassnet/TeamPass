@@ -31,7 +31,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             {
                 type    : "open_kb",
                 id      : id,
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 data = $.parseJSON(data);
@@ -71,7 +71,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             {
                 type    : "duplicate_suggestion",
                 id      : $("#suggestion_id").val(),
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 if (data[0].status == "no") {
@@ -101,12 +101,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             {
                 type        : "get_complexity_level",
                 folder_id   : $("#suggestion_folder").val(),
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 if (data[0].status == "ok") {
                     $("#complexity_required").val(data[0].complexity);
-                    $("#complexity_required_text").html("[<?php echo $LANG['complex_asked'];?>&nbsp;&nbsp;<span style=\"color:#D04806; font-weight:bold;\">"+data[0].complexity_text+"</span>]");
+                    $("#complexity_required_text").html("[<?php echo $LANG['complex_asked']; ?>&nbsp;&nbsp;<span style=\"color:#D04806; font-weight:bold;\">"+data[0].complexity_text+"</span>]");
                 }
                 $("#pw_wait").hide();
             },
@@ -138,7 +138,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                     "sAjaxSource": "sources/datatable/datatable.suggestion.php",
                     "bJQueryUI": true,
                     "oLanguage": {
-                        "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                        "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
                     },
                     "columns": [
                         {"width": "7%", className: "dt-body-left"},
@@ -164,7 +164,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         "sAjaxSource": "sources/datatable/datatable.suggestion.php",
                         "bJQueryUI": true,
                         "oLanguage": {
-                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
                         },
                         "columns": [
                             {"width": "7%", className: "dt-body-left"},
@@ -186,7 +186,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         "sAjaxSource": "sources/datatable/datatable.items_change.php",
                         "bJQueryUI": true,
                         "oLanguage": {
-                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
                         },
                         "columns": [
                             {"width": "5%", className: "dt-body-left"},
@@ -211,15 +211,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 300,
             height: 150,
-            title: "<?php echo $LANG['suggestion_delete_confirm'];?>",
+            title: "<?php echo $LANG['suggestion_delete_confirm']; ?>",
             buttons: {
-                "<?php echo $LANG['del_button'];?>": function() {
+                "<?php echo $LANG['del_button']; ?>": function() {
                     $.post(
                         "sources/suggestion.queries.php",
                         {
                             type    : "delete_suggestion",
                             id      : $("#suggestion_id").val(),
-                            key     : "<?php echo $_SESSION['key'];?>"
+                            key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             $("#div_suggestion_delete").dialog("close");
@@ -228,7 +228,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         }
                     )
                 },
-                "<?php echo $LANG['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button']; ?>": function() {
                     $(this).dialog("close");
                 }
             }
@@ -241,19 +241,19 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 400,
             height: 240,
-            title: "<?php echo $LANG['suggestion_validate_confirm'];?>",
+            title: "<?php echo $LANG['suggestion_validate_confirm']; ?>",
             open: function( event, ui ) {
                 $("#suggestion_edit_wait").hide();
             },
             buttons: {
-                "<?php echo $LANG['confirm'];?>": function() {
+                "<?php echo $LANG['confirm']; ?>": function() {
                     $("#suggestion_edit_wait").show();
                     $.post(
                         "sources/suggestion.queries.php",
                         {
                             type    : "validate_suggestion",
                             id      : $("#suggestion_id").val(),
-                            key     : "<?php echo $_SESSION['key'];?>"
+                            key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             if (data[0].status == "done") {
@@ -261,13 +261,13 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                                 oTable.fnDraw();
                                 $("#div_suggestion_validate").dialog("close");
                             } else if (data[0].status = "error_when_creating") {
-                                $("#suggestion_error").show().html("<?php echo $LANG['suggestion_error_cannot_add'];?>").addClass("ui-state-error");
+                                $("#suggestion_error").show().html("<?php echo $LANG['suggestion_error_cannot_add']; ?>").addClass("ui-state-error");
                             }
                         },
                         "json"
                     )
                 },
-                "<?php echo $LANG['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button']; ?>": function() {
                     $(this).dialog("close");
                 }
             }
@@ -280,9 +280,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 450,
             height: 550,
-            title: "<?php echo $LANG['suggestion_add'];?>",
+            title: "<?php echo $LANG['suggestion_add']; ?>",
             buttons: {
-                "<?php echo $LANG['save_button'];?>": function() {
+                "<?php echo $LANG['save_button']; ?>": function() {
                     $("#suggestion_error").hide();
                     if ($("#suggestion_label").val() == "") {
                         $("#suggestion_label").addClass("ui-state-error");
@@ -291,7 +291,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                     } else if ($("#suggestion_folder").val() == "") {
                         $("#suggestion_folder").addClass("ui-state-error");
                     } else if (parseInt($("#password_complexity").val()) < parseInt($("#complexity_required").val())) {
-                        $("#suggestion_error").show().html("<?php echo $LANG['error_complex_not_enought'];?>").addClass("ui-state-error");
+                        $("#suggestion_error").show().html("<?php echo $LANG['error_complex_not_enought']; ?>").addClass("ui-state-error");
                     } else {
                         $("#add_suggestion_wait").show();
                         var data = '{"label":"'+sanitizeString($("#suggestion_label").val())+
@@ -303,8 +303,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         $.post("sources/suggestion.queries.php",
                             {
                                 type     : "add_new",
-                                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                                key      : "<?php echo $_SESSION['key'];?>"
+                                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                                key      : "<?php echo $_SESSION['key']; ?>"
                             },
                             function(data) {
                                 if (data[0].status == "done") {
@@ -312,7 +312,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                                     oTable.fnDraw();
                                     $("#suggestion_form").dialog("close");
                                 } else if (data[0].status = "duplicate_suggestion") {
-                                    $("#suggestion_error").show().html("<?php echo $LANG['suggestion_error_duplicate'];?>").addClass("ui-state-error");
+                                    $("#suggestion_error").show().html("<?php echo $LANG['suggestion_error_duplicate']; ?>").addClass("ui-state-error");
                                 }
                                 $("#add_suggestion_wait").hide();
                             },
@@ -320,7 +320,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         );
                     }
                 },
-                "<?php echo $LANG['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button']; ?>": function() {
                     $(this).dialog("close");
                 }
             },
@@ -343,10 +343,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 700,
             height: 400,
-            title: "<?php echo $LANG['suggestion_delete_confirm'];?>",
+            title: "<?php echo $LANG['suggestion_delete_confirm']; ?>",
             buttons: {
-                "<?php echo $LANG['approve'];?>": function() {
-                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
+                "<?php echo $LANG['approve']; ?>": function() {
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show();
 
                     // select fields to update
                     var fields_to_update = "";
@@ -362,7 +362,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                             type    : "approve_item_change",
                             id      : $("#suggestion_id").val(),
                             data    : fields_to_update,
-                            key     : "<?php echo $_SESSION['key'];?>"
+                            key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             if (data[0].error === "") {
@@ -382,18 +382,18 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         "json"
                     )
                 },
-                "<?php echo $LANG['reject'];?>": function() {
-                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>").show();
+                "<?php echo $LANG['reject']; ?>": function() {
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show();
                     $.post(
                         "sources/suggestion.queries.php",
                         {
                             type    : "reject_item_change",
                             id      : $("#suggestion_id").val(),
-                            key     : "<?php echo $_SESSION['key'];?>"
+                            key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
 
-                            $("#suggestion_view_wait").html("<?php echo $LANG['alert_message_done'];?>");
+                            $("#suggestion_view_wait").html("<?php echo $LANG['alert_message_done']; ?>");
                             oTable = $("#t_change").dataTable();
                             oTable.fnDraw();
                             setTimeout(
@@ -405,24 +405,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         }
                     )
                 },
-                "<?php echo $LANG['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button']; ?>": function() {
                     $(this).dialog("close");
                 }
             },
             open: function (event, ui) {
-                $("#div_suggestion_html").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."...";?>");
+                $("#div_suggestion_html").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>");
 
                 // load change
                 $.post("sources/suggestion.queries.php",
                     {
                         type     : "get_item_change_detail",
                         id       : $("#suggestion_id").val(),
-                        key      : "<?php echo $_SESSION['key'];?>"
+                        key      : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         //decrypt data
                         try {
-                            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                         } catch (e) {
                             // error
                             return;
@@ -451,35 +451,35 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
         $("#suggestion_pwd").simplePassMeter({
             "requirements": {},
             "container": "#pw_strength",
-            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+            "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
             "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "<?php echo $LANG['complex_level0'];?>"
+                    "text": "<?php echo $LANG['complex_level0']; ?>"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level1'];?>"
+                    "text": "<?php echo $LANG['complex_level1']; ?>"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level2'];?>"
+                    "text": "<?php echo $LANG['complex_level2']; ?>"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level3'];?>"
+                    "text": "<?php echo $LANG['complex_level3']; ?>"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level4'];?>"
+                    "text": "<?php echo $LANG['complex_level4']; ?>"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level5'];?>"
+                    "text": "<?php echo $LANG['complex_level5']; ?>"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level6'];?>"
+                    "text": "<?php echo $LANG['complex_level6']; ?>"
                 }
             ]
         });

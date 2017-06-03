@@ -35,8 +35,8 @@ class NestedTree
         $this->table = $table;
 
         $this->fields = array('id'     => $idField,
-                              'parent' => $parentField,
-                              'sort'   => $sortField
+                                'parent' => $parentField,
+                                'sort'   => $sortField
         );
     }
 
@@ -49,7 +49,7 @@ class NestedTree
     public function getFields()
     {
         return array($this->fields['id'], $this->fields['parent'], $this->fields['sort'],
-                     'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation');
+                        'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation');
     }
 
     /**
@@ -356,12 +356,12 @@ class NestedTree
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
 
-		$query = sprintf(
-			'select %s from %s order by %s',
-			join(',', $this->getFields()),
-			$this->table,
-			$this->fields['sort']
-		);
+        $query = sprintf(
+            'select %s from %s order by %s',
+            join(',', $this->getFields()),
+            $this->table,
+            $this->fields['sort']
+        );
 
         $result = mysqli_query($link, $query);
 
@@ -443,6 +443,7 @@ class NestedTree
      * @param int $id    The ID of the current node to process
      * @param int $level The nlevel to assign to the current node
      * @param   int     &$n     A reference to the running tally for the n-value
+     * @param integer $n
      */
     public function generateTreeData(&$arr, $id, $level, &$n)
     {

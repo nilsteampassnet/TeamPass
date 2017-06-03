@@ -77,12 +77,12 @@ class Cipher_CAST_256 extends Cipher
 	{
 		$keylen = strlen($key);
 
-		if($keylen > self::BYTES_KEY_MAX)
+		if ($keylen > self::BYTES_KEY_MAX)
 		{
 			$key = substr($key, 0, self::BYTES_KEY_MAX);
 			$keylen = self::BYTES_KEY_MAX;
 		}
-		else if(!in_array($keylen, self::$_req_key_sizes))
+		else if (!in_array($keylen, self::$_req_key_sizes))
 		{
 			$msg  = PHP_Crypt::CIPHER_CAST_256." requires a key size of 16, ";
 			$msg .= "20, 24, 28, or 32 bytes.";
@@ -131,7 +131,7 @@ class Cipher_CAST_256 extends Cipher
 		$data = array_map("parent::str2Dec", $data);
 
 		// do the first 6 loops
-		for($i = 0; $i < 6; ++$i)
+		for ($i = 0; $i < 6; ++$i)
 		{
 
 			$data[2] ^= $this->f1($data[3], $this->_mkey[$i][0], $this->_rkey[$i][0]);
@@ -141,7 +141,7 @@ class Cipher_CAST_256 extends Cipher
 		}
 
 		// the second 6 loops are done in a different order
-		for($i = 6; $i < 12; ++$i)
+		for ($i = 6; $i < 12; ++$i)
 		{
 
 			$data[3] ^= $this->f1($data[0], $this->_mkey[$i][3], $this->_rkey[$i][3]);
@@ -182,7 +182,7 @@ class Cipher_CAST_256 extends Cipher
 		$data = array_map("parent::str2Dec", $data);
 
 		// do the first 6 loops
-		for($i = 11; $i >= 6; --$i)
+		for ($i = 11; $i >= 6; --$i)
 		{
 			$data[2] ^= $this->f1($data[3], $this->_mkey[$i][0], $this->_rkey[$i][0]);
 			$data[1] ^= $this->f2($data[2], $this->_mkey[$i][1], $this->_rkey[$i][1]);
@@ -191,7 +191,7 @@ class Cipher_CAST_256 extends Cipher
 		}
 
 		// the second 6 loops are done in a different order
-		for($i = 5; $i >= 0; --$i)
+		for ($i = 5; $i >= 0; --$i)
 		{
 			$data[3] ^= $this->f1($data[0], $this->_mkey[$i][3], $this->_rkey[$i][3]);
 			$data[0] ^= $this->f3($data[1], $this->_mkey[$i][2], $this->_rkey[$i][2]);
@@ -237,7 +237,7 @@ class Cipher_CAST_256 extends Cipher
 	/**
 	 * CAST-256 F2 function
 	 *
-	 * @param $d integer The the data input
+	 * @param integer $d integer The the data input
 	 * @param $m integer The 32 bit masking key
 	 * @param $r integer The round number
 	 * @return integer The value after the F2 calculation
@@ -258,7 +258,7 @@ class Cipher_CAST_256 extends Cipher
 	/**
 	 * CAST-256 F3 function
 	 *
-	 * @param $d integer The the data input
+	 * @param integer $d integer The the data input
 	 * @param $m integer The 32 bit masking key
 	 * @param $r integer The round number
 	 * @return integer The value after the F3 calculation
@@ -298,7 +298,7 @@ class Cipher_CAST_256 extends Cipher
 
 		// if the key is less than 32 bytes, pad it to 32 bytes
 		// for the key expansion
-		if($this->keySize() < 32)
+		if ($this->keySize() < 32)
 			$xkey = str_pad($xkey, 32, "\0", STR_PAD_RIGHT);
 
 		// split the key up into 4 byte parts, reverse the string,
@@ -308,12 +308,12 @@ class Cipher_CAST_256 extends Cipher
 		$xkey = array_map("parent::str2Dec", $xkey);
 
 		// set up the values need for creating round and masking keys
-		for($i = 0; $i < 24; ++$i)
+		for ($i = 0; $i < 24; ++$i)
 		{
 			$tm[$i] = array();
 			$tr[$i] = array();
 
-			for($j = 0; $j < 8; ++$j)
+			for ($j = 0; $j < 8; ++$j)
 			{
 				$tm[$i][$j] = $cm;
 				$cm = parent::uInt32($cm + $mm);
@@ -323,7 +323,7 @@ class Cipher_CAST_256 extends Cipher
 		}
 
 		// now create the round and masking keys
-		for($i = 0; $i < 12; ++$i)
+		for ($i = 0; $i < 12; ++$i)
 		{
 			$j = 2 * $i;
 
@@ -336,7 +336,7 @@ class Cipher_CAST_256 extends Cipher
 			$xkey[0] = parent::uInt32($xkey[0] ^ $this->f1($xkey[1], $tm[$j][6], $tr[$j][6]));
 			$xkey[7] = parent::uInt32($xkey[7] ^ $this->f2($xkey[0], $tm[$j][7], $tr[$j][7]));
 
-			$j =  (2 * $i) + 1;
+			$j = (2 * $i) + 1;
 			$xkey[6] = parent::uInt32($xkey[6] ^ $this->f1($xkey[7], $tm[$j][0], $tr[$j][0]));
 			$xkey[5] = parent::uInt32($xkey[5] ^ $this->f2($xkey[6], $tm[$j][1], $tr[$j][1]));
 			$xkey[4] = parent::uInt32($xkey[4] ^ $this->f3($xkey[5], $tm[$j][2], $tr[$j][2]));

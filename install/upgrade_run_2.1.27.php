@@ -31,10 +31,13 @@ $_SESSION['settings']['loaded'] = "";
 ################
 ## Function permits to get the value from a line
 ################
+/**
+ * @param string $val
+ */
 function getSettingValue($val)
 {
     $val = trim(strstr($val, "="));
-    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
 }
 
 ################
@@ -45,7 +48,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     global $dbTmp;
     $exists = false;
     $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc( $columns)) {
+    while ($c = mysqli_fetch_assoc($columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
             return true;
@@ -58,7 +61,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
-function addIndexIfNotExist($table, $index, $sql ) {
+function addIndexIfNotExist($table, $index, $sql) {
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
@@ -66,7 +69,7 @@ function addIndexIfNotExist($table, $index, $sql ) {
 
     // if index does not exist, then add it
     if (!$res) {
-        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` " . $sql);
+        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` ".$sql);
     }
 
     return $res;
@@ -83,16 +86,27 @@ function tableExists($tablename, $database = false)
         AND table_name = '$tablename'"
     );
 
-    if ($res > 0) return true;
-    else return false;
-}
+    if ($res > 0) {
+        return true;
+    } else {
+        return false;
+    }
+    }
 
 function cleanFields($txt) {
     $tmp = str_replace(",", ";", trim($txt));
-    if (empty($tmp)) return $tmp;
-    if ($tmp === ";") return "";
-    if (strpos($tmp, ';') === 0) $tmp = substr($tmp, 1);
-    if (substr($tmp, -1) !== ";") $tmp = $tmp.";";
+    if (empty($tmp)) {
+        return $tmp;
+    }
+    if ($tmp === ";") {
+        return "";
+    }
+    if (strpos($tmp, ';') === 0) {
+        $tmp = substr($tmp, 1);
+    }
+    if (substr($tmp, -1) !== ";") {
+        $tmp = $tmp.";";
+    }
     return $tmp;
 }
 
@@ -152,7 +166,7 @@ if ($tmp === "0") {
 // if yes, then don't execute re-encryption
 $_SESSION['tp_defuse_installed'] = false;
 $columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['pre']."items");
-while ($c = mysqli_fetch_assoc( $columns)) {
+while ($c = mysqli_fetch_assoc($columns)) {
     if ($c['Field'] === "encryption_type") {
         $_SESSION['tp_defuse_installed'] = true;
     }
@@ -211,9 +225,9 @@ mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."otv` CHANGE originator or
 // do clean of users table
 $fieldsToUpdate = ['groupes_visibles', 'fonction_id', 'groupes_interdits'];
 $result = mysqli_query($dbTmp, "SELECT id, groupes_visibles, fonction_id, groupes_interdits FROM `".$_SESSION['pre']."users`");
-while($row = mysqli_fetch_assoc($result)) {
+while ($row = mysqli_fetch_assoc($result)) {
     // check if field contains , instead of ;
-    foreach($fieldsToUpdate as $field) {
+    foreach ($fieldsToUpdate as $field) {
         $tmp = cleanFields($row[$field]);
         if ($tmp !== $row[$field]) {
             mysqli_query($dbTmp,
@@ -334,9 +348,9 @@ if ($res === false) {
 if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed'] === false) {
     $filename = "../includes/config/settings.php";
     $settingsFile = file($filename);
-    while (list($key,$val) = each($settingsFile)) {
-        if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-            $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
+    while (list($key, $val) = each($settingsFile)) {
+        if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
+            $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";') - 14);
         }
     }
 
@@ -380,7 +394,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
             $dbTmp,
             "SELECT id FROM `".$_SESSION['pre']."users`"
         );
-        while($row_user = mysqli_fetch_assoc($result)) {
+        while ($row_user = mysqli_fetch_assoc($result)) {
             $result_items = mysqli_query(
                 $dbTmp,
                 "SELECT i.id AS item_id
@@ -454,7 +468,7 @@ if ($tmp === "0") {
 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'send_stats_time'"));
 if ($tmp === "0") {
     mysqli_query($dbTmp,
-        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'send_stats_time', '".(time()-2592000)."')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'send_stats_time', '".(time() - 2592000)."')"
     );
 }
 

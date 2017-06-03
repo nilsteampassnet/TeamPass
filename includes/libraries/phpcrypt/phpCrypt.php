@@ -41,46 +41,46 @@ class PHP_Crypt
 	const CIPHER_AES_128		= "AES-128";
 	const CIPHER_AES_192		= "AES-192";
 	const CIPHER_AES_256		= "AES-256";
-	const CIPHER_ARC4			= "ARC4"; // Alternative RC4
+	const CIPHER_ARC4 = "ARC4"; // Alternative RC4
 	const CIPHER_BLOWFISH		= "Blowfish";
 	const CIPHER_CAST_128		= "CAST-128";
 	const CIPHER_CAST_256		= "CAST-256";
 	const CIPHER_DES			= "DES";
-	const CIPHER_ENIGMA			= "Enigma";
-	const CIPHER_GOST			= "GOST";
+	const CIPHER_ENIGMA = "Enigma";
+	const CIPHER_GOST = "GOST";
 	const CIPHER_RC2			= "RC2";
 	const CIPHER_RIJNDAEL_128	= "Rijndael-128";
 	const CIPHER_RIJNDAEL_192	= "Rijndael-192";
 	const CIPHER_RIJNDAEL_256	= "Rijndael-256";
 	const CIPHER_SKIPJACK		= "Skipjack";
-	const CIPHER_SIMPLEXOR		= "SimpleXOR";
+	const CIPHER_SIMPLEXOR = "SimpleXOR";
 	const CIPHER_VIGENERE		= "Vigenere"; // historical
 
 	// Modes
 	const MODE_CBC	= "CBC";
-	const MODE_CFB	= "CFB";  // 8 bit cfb mode
+	const MODE_CFB	= "CFB"; // 8 bit cfb mode
 	const MODE_CTR	= "CTR";
 	const MODE_ECB	= "ECB";
 	const MODE_NCFB	= "NCFB"; // blocksize cfb mode
 	const MODE_NOFB	= "NOFB"; // blocksize ofb mode
-	const MODE_OFB	= "OFB";  // 8 bit ofb mode
+	const MODE_OFB	= "OFB"; // 8 bit ofb mode
 	const MODE_PCBC	= "PCBC";
-	const MODE_RAW	= "Raw";  // raw encryption, with no mode
+	const MODE_RAW	= "Raw"; // raw encryption, with no mode
 	const MODE_STREAM = "Stream"; // used only for stream ciphers
 
 	// The source of random data used to create keys and IV's
 	// Used for PHP_Crypt::createKey(), PHP_Crypt::createIV()
-	const RAND			= "rand"; // uses mt_rand(), windows & unix
+	const RAND = "rand"; // uses mt_rand(), windows & unix
 	const RAND_DEV_RAND	= "/dev/random"; // unix only
-	const RAND_DEV_URAND= "/dev/urandom";// unix only
-	const RAND_WIN_COM	= "wincom";		 // windows only, COM extension
-	const RAND_DEFAULT_SZ = 32;			 // the default number of bytes returned
+	const RAND_DEV_URAND = "/dev/urandom"; // unix only
+	const RAND_WIN_COM = "wincom"; // windows only, COM extension
+	const RAND_DEFAULT_SZ = 32; // the default number of bytes returned
 
 	// Padding types
-	const PAD_ZERO			= 0;
+	const PAD_ZERO = 0;
 	const PAD_ANSI_X923		= 1;
 	const PAD_ISO_10126		= 2;
-	const PAD_PKCS7			= 3;
+	const PAD_PKCS7 = 3;
 	const PAD_ISO_7816_4	= 4;
 
 
@@ -97,144 +97,144 @@ class PHP_Crypt
 	 * @param string $key The key to use for the selected Cipher
 	 * @param string $cipher The type of cipher to use
 	 * @param string $mode The encrypt mode to use with the cipher
-	 * @param string $padding The padding type to use. Defaults to PAD_ZERO
-	 * @return void
+	 * @param integer $padding The padding type to use. Defaults to PAD_ZERO
+	 * @return string
 	 */
 	public function __construct($key, $cipher = self::CIPHER_AES_128, $mode = self::MODE_ECB, $padding = self::PAD_ZERO)
 	{
 		/*
 		 * CIPHERS
 		 */
-		switch($cipher)
+		switch ($cipher)
 		{
-		case self::CIPHER_3DES:
-			$this->cipher = new Cipher_3DES($key);
-			break;
+		    case self::CIPHER_3DES:
+			    $this->cipher = new Cipher_3DES($key);
+			    break;
 
-		case self::CIPHER_3WAY:
-			$this->cipher = new Cipher_3WAY($key);
-			break;
+		    case self::CIPHER_3WAY:
+			    $this->cipher = new Cipher_3WAY($key);
+			    break;
 
-		case self::CIPHER_AES_128:
-			$this->cipher = new Cipher_AES_128($key);
-			break;
+		    case self::CIPHER_AES_128:
+			    $this->cipher = new Cipher_AES_128($key);
+			    break;
 
-		case self::CIPHER_AES_192:
-			$this->cipher = new Cipher_AES_192($key);
-			break;
+		    case self::CIPHER_AES_192:
+			    $this->cipher = new Cipher_AES_192($key);
+			    break;
 
-		case self::CIPHER_AES_256:
-			$this->cipher = new Cipher_AES_256($key);
-			break;
+		    case self::CIPHER_AES_256:
+			    $this->cipher = new Cipher_AES_256($key);
+			    break;
 
-		case self::CIPHER_ARC4: // an alternative to RC4
-			$this->cipher = new Cipher_ARC4($key);
-			break;
+		    case self::CIPHER_ARC4: // an alternative to RC4
+			    $this->cipher = new Cipher_ARC4($key);
+			    break;
 
-		case self::CIPHER_BLOWFISH:
-			$this->cipher = new Cipher_Blowfish($key);
-			break;
+		    case self::CIPHER_BLOWFISH:
+			    $this->cipher = new Cipher_Blowfish($key);
+			    break;
 
-		case self::CIPHER_CAST_128:
-			$this->cipher = new Cipher_CAST_128($key);
-			break;
+		    case self::CIPHER_CAST_128:
+			    $this->cipher = new Cipher_CAST_128($key);
+			    break;
 
-		case self::CIPHER_CAST_256:
-			$this->cipher = new Cipher_CAST_256($key);
-			break;
+		    case self::CIPHER_CAST_256:
+			    $this->cipher = new Cipher_CAST_256($key);
+			    break;
 
-		case self::CIPHER_DES:
-			$this->cipher = new Cipher_DES($key);
-			break;
+		    case self::CIPHER_DES:
+			    $this->cipher = new Cipher_DES($key);
+			    break;
 
-		case self::CIPHER_ENIGMA:
-			$this->cipher = new Cipher_Enigma($key);
-			break;
+		    case self::CIPHER_ENIGMA:
+			    $this->cipher = new Cipher_Enigma($key);
+			    break;
 
-		case self::CIPHER_GOST:
-			$this->cipher = new Cipher_GOST($key);
-			break;
+		    case self::CIPHER_GOST:
+			    $this->cipher = new Cipher_GOST($key);
+			    break;
 
-		case self::CIPHER_RC2:
-			$this->cipher = new Cipher_RC2($key);
-			break;
+		    case self::CIPHER_RC2:
+			    $this->cipher = new Cipher_RC2($key);
+			    break;
 
-		case self::CIPHER_RIJNDAEL_128:
-			$this->cipher = new Cipher_Rijndael_128($key);
-			break;
+		    case self::CIPHER_RIJNDAEL_128:
+			    $this->cipher = new Cipher_Rijndael_128($key);
+			    break;
 
-		case self::CIPHER_RIJNDAEL_192:
-			$this->cipher = new Cipher_Rijndael_192($key);
-			break;
+		    case self::CIPHER_RIJNDAEL_192:
+			    $this->cipher = new Cipher_Rijndael_192($key);
+			    break;
 
-		case self::CIPHER_RIJNDAEL_256:
-			$this->cipher = new Cipher_Rijndael_256($key);
-			break;
+		    case self::CIPHER_RIJNDAEL_256:
+			    $this->cipher = new Cipher_Rijndael_256($key);
+			    break;
 
-		case self::CIPHER_SIMPLEXOR:
-			$this->cipher = new Cipher_Simple_XOR($key);
-			break;
+		    case self::CIPHER_SIMPLEXOR:
+			    $this->cipher = new Cipher_Simple_XOR($key);
+			    break;
 
-		case self::CIPHER_SKIPJACK:
-			$this->cipher = new Cipher_Skipjack($key);
-			break;
+		    case self::CIPHER_SKIPJACK:
+			    $this->cipher = new Cipher_Skipjack($key);
+			    break;
 
-		case self::CIPHER_VIGENERE:
-			$this->cipher = new Cipher_Vigenere($key);
-			break;
+		    case self::CIPHER_VIGENERE:
+			    $this->cipher = new Cipher_Vigenere($key);
+			    break;
 
-		default:
-			trigger_error("$cipher is not a valid cipher", E_USER_WARNING);
+		    default:
+			    trigger_error("$cipher is not a valid cipher", E_USER_WARNING);
 		}
 
 
 		/*
 		 * MODES
 		 */
-		switch($mode)
+		switch ($mode)
 		{
-		case self::MODE_CBC:
-			$this->mode = new Mode_CBC($this->cipher);
-			break;
+		    case self::MODE_CBC:
+			    $this->mode = new Mode_CBC($this->cipher);
+			    break;
 
-		case self::MODE_CFB:
-			$this->mode = new Mode_CFB($this->cipher);
-			break;
+		    case self::MODE_CFB:
+			    $this->mode = new Mode_CFB($this->cipher);
+			    break;
 
-		case self::MODE_CTR:
-			$this->mode = new Mode_CTR($this->cipher);
-			break;
+		    case self::MODE_CTR:
+			    $this->mode = new Mode_CTR($this->cipher);
+			    break;
 
-		case self::MODE_ECB:
-			$this->mode = new Mode_ECB($this->cipher);
-			break;
+		    case self::MODE_ECB:
+			    $this->mode = new Mode_ECB($this->cipher);
+			    break;
 
-		case self::MODE_NCFB:
-			$this->mode = new Mode_NCFB($this->cipher);
-			break;
+		    case self::MODE_NCFB:
+			    $this->mode = new Mode_NCFB($this->cipher);
+			    break;
 
-		case self::MODE_NOFB:
-			$this->mode = new Mode_NOFB($this->cipher);
-			break;
+		    case self::MODE_NOFB:
+			    $this->mode = new Mode_NOFB($this->cipher);
+			    break;
 
-		case self::MODE_OFB:
-			$this->mode = new Mode_OFB($this->cipher);
-			break;
+		    case self::MODE_OFB:
+			    $this->mode = new Mode_OFB($this->cipher);
+			    break;
 
-		case self::MODE_PCBC:
-			$this->mode = new Mode_PCBC($this->cipher);
-			break;
+		    case self::MODE_PCBC:
+			    $this->mode = new Mode_PCBC($this->cipher);
+			    break;
 
-		case self::MODE_RAW:
-			$this->mode = new Mode_RAW($this->cipher);
-			break;
+		    case self::MODE_RAW:
+			    $this->mode = new Mode_RAW($this->cipher);
+			    break;
 
-		case self::MODE_STREAM:
-			$this->mode = new Mode_Stream($this->cipher);
-			break;
+		    case self::MODE_STREAM:
+			    $this->mode = new Mode_Stream($this->cipher);
+			    break;
 
-		default:
-			trigger_error("$mode is not a valid mode", E_USER_WARNING);
+		    default:
+			    trigger_error("$mode is not a valid mode", E_USER_WARNING);
 		}
 
 		// set the default padding

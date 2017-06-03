@@ -84,7 +84,7 @@ if (isset($_POST['newtitle'])) {
             prefix_table("nested_tree"),
             array(
                 'renewal_period' => mysqli_escape_string($link, stripslashes(($_POST['renewal_period'])))
-           ),
+            ),
             "id=%i",
             $id[1]
         );
@@ -103,7 +103,7 @@ if (isset($_POST['newtitle'])) {
         prefix_table("nested_tree"),
         array(
             'parent_id' => $_POST['newparent_id']
-       ),
+        ),
         "id=%i",
         $id[1]
     );
@@ -138,7 +138,7 @@ if (isset($_POST['newtitle'])) {
                 'type' => 'complex',
                 'intitule' => $id[1],
                 'valeur' => $_POST['changer_complexite']
-           )
+            )
         );
     } else {
         //update DB
@@ -146,7 +146,7 @@ if (isset($_POST['newtitle'])) {
             prefix_table("misc"),
             array(
                 'valeur' => $_POST['changer_complexite']
-           ),
+            ),
             "type=%s AND  intitule = %i",
             "complex",
             $id[1]
@@ -209,7 +209,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             foreach ($folders as $folder) {
-                if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id'] ) {
+                if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
                     //Store the deleted folder (recycled bin)
                     if ($pf === false) {
                         DB::insert(
@@ -220,7 +220,7 @@ if (isset($_POST['newtitle'])) {
                                 'valeur' => $folder->id.', '.$folder->parent_id.', '.
                                     $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.
                                     $folder->nlevel.', 0, 0, 0, 0'
-                           )
+                            )
                         );
 
                         //array for delete folder
@@ -265,12 +265,12 @@ if (isset($_POST['newtitle'])) {
                     );
 
                     //Actualize the variable
-                    $_SESSION['nb_folders'] --;
+                    $_SESSION['nb_folders']--;
                 }
             }
 
             // delete folder from SESSION
-            if(($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
+            if (($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
                 unset($folders[$key]);
             }
 
@@ -280,7 +280,7 @@ if (isset($_POST['newtitle'])) {
 
             // delete folders
             $folderForDel = array_unique($folderForDel);
-            foreach ($folderForDel as $fol){
+            foreach ($folderForDel as $fol) {
                 DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
             }
 
@@ -346,7 +346,7 @@ if (isset($_POST['newtitle'])) {
                                 );
 
                                 // delete folder from SESSION
-                                if(($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
+                                if (($key = array_search($item['id'], $_SESSION['groupes_visibles'])) !== false) {
                                     unset($_SESSION['groupes_visibles'][$item['id']]);
                                 }
 
@@ -355,13 +355,13 @@ if (isset($_POST['newtitle'])) {
                             }
 
                             //Actualize the variable
-                            $_SESSION['nb_folders'] --;
+                            $_SESSION['nb_folders']--;
                         }
                     }
 
                     // delete folders
-                    $folderForDel=array_unique($folderForDel);
-                    foreach ($folderForDel as $fol){
+                    $folderForDel = array_unique($folderForDel);
+                    foreach ($folderForDel as $fol) {
                         DB::delete(prefix_table("nested_tree"), "id = %i", $fol);
                     }
                 }
@@ -476,7 +476,7 @@ if (isset($_POST['newtitle'])) {
                             'renewal_period' => $renewalPeriod,
                             'bloquer_creation' => isset($dataReceived['block_creation']) && $dataReceived['block_creation'] == 1 ? '1' : $parentBloquerCreation,
                             'bloquer_modification' => isset($dataReceived['block_modif']) && $dataReceived['block_modif'] == 1 ? '1' : $parentBloquerModification
-                       )
+                        )
                     );
                     $newId = DB::insertId();
 
@@ -506,7 +506,7 @@ if (isset($_POST['newtitle'])) {
                         && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                         && $_SESSION['is_admin'] !== 0
                         || ($isPersonal != 1 && $parentId === "0")
-                    ){
+                    ) {
                         //Get user's rights
                         @identifyUserRights(
                             $_SESSION['groupes_visibles'].';'.$newId,
@@ -582,7 +582,7 @@ if (isset($_POST['newtitle'])) {
                         }
                     }
                 }
-                else{
+                else {
                     $error = $LANG['error_not_allowed_to'];
                 }
             }
@@ -625,7 +625,7 @@ if (isset($_POST['newtitle'])) {
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
                 $data = DB::queryfirstrow(
                     "SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
-                if (!empty($data['id']) && $dataReceived['id'] != $data['id'] && $title != $data['title'] ) {
+                if (!empty($data['id']) && $dataReceived['id'] != $data['id'] && $title != $data['title']) {
                     echo '[ { "error" : "error_group_exist" } ]';
                     break;
                 }
@@ -728,29 +728,29 @@ if (isset($_POST['newtitle'])) {
                         'tree_id' => $val[0],
                         'fonction_id' => $val[1],
                         'authorized' => 1
-                   )
+                    )
                 );
             } else {
                 //Update DB
-                if ($data['authorized']==1) {
+                if ($data['authorized'] == 1) {
                     DB::update(
                         prefix_table("rights"),
                         array(
                             'authorized' => 0
-                       ),
-                       "id = %i AND fonction_id=%i",
-                       $val[0],
-                       $val[1]
+                        ),
+                        "id = %i AND fonction_id=%i",
+                        $val[0],
+                        $val[1]
                     );
                 } else {
                     DB::update(
                         prefix_table("rights"),
                         array(
                             'authorized' => 1
-                       ),
-                       "id = %i AND fonction_id=%i",
-                       $val[0],
-                       $val[1]
+                        ),
+                        "id = %i AND fonction_id=%i",
+                        $val[0],
+                        $val[1]
                     );
                 }
             }
@@ -832,10 +832,10 @@ if (isset($_POST['newtitle'])) {
             // Get through each subfolder
             $folders = $tree->getDescendants($_POST['id'], false);
             foreach ($folders as $folder) {
-                if($subfolders === "") {
+                if ($subfolders === "") {
                     $subfolders = $folder->id;
                 } else {
-                    $subfolders .= ";" . $folder->id;
+                    $subfolders .= ";".$folder->id;
                 }
             }
 
@@ -869,7 +869,7 @@ if (isset($_POST['newtitle'])) {
                 if (in_array($t->id, $_SESSION['groupes_visibles'])) {
                     if (!is_numeric($t->title)) {
                         $ident = "&nbsp;&nbsp;";
-                        for ($x=1; $x<$t->nlevel; $x++) {
+                        for ($x = 1; $x < $t->nlevel; $x++) {
                             $ident .= "&nbsp;&nbsp;";
                         }
 
@@ -941,7 +941,7 @@ if (isset($_POST['newtitle'])) {
                         'renewal_period' => $nodeInfo->renewal_period,
                         'bloquer_creation' => $nodeInfo->bloquer_creation,
                         'bloquer_modification' => $nodeInfo->bloquer_modification
-                   )
+                    )
                 );
                 $newFolderId = DB::insertId();
 
@@ -970,7 +970,7 @@ if (isset($_POST['newtitle'])) {
                     && isset($_SESSION['settings']['subfolder_rights_as_parent'])
                     && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                     && $_SESSION['is_admin'] !== 0
-                ){
+                ) {
                     //Get user's rights
                     @identifyUserRights(
                         $_SESSION['groupes_visibles'].';'.$newFolderId,
@@ -1121,7 +1121,7 @@ if (isset($_POST['newtitle'])) {
                                     'extension' => $record2['extension'],
                                     'type' => $record2['type'],
                                     'file' => $record2['file']
-                                   )
+                                    )
                             );
                         }
                         // Add this duplicate in logs

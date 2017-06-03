@@ -77,7 +77,7 @@ abstract class AbstractPassword implements \PasswordLib\Password\Password {
      * Build a new instance
      *
      * @param array     $options    An array of options for the password isntance
-     * @param Generator $generator  The random generator to use for seeds
+     * @param \PasswordLib\Random\Generator $generator  The random generator to use for seeds
      *
      * @return void
      */
@@ -124,7 +124,7 @@ abstract class AbstractPassword implements \PasswordLib\Password\Password {
     /**
      * Set the random number generator to use
      *
-     * @param Generator $generator  The random generator to use for seeds
+     * @param \PasswordLib\Random\Generator $generator  The random generator to use for seeds
      *
      * @return void     
      */

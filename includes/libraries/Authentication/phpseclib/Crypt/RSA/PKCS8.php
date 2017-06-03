@@ -88,11 +88,11 @@ class PKCS8 extends PKCS
                 //     coefficient       INTEGER   -- ti
                 // }
                 $OtherPrimeInfo = pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($primes[$i]->toBytes(true))), $primes[$i]->toBytes(true));
-                $OtherPrimeInfo.= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($exponents[$i]->toBytes(true))), $exponents[$i]->toBytes(true));
-                $OtherPrimeInfo.= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($coefficients[$i]->toBytes(true))), $coefficients[$i]->toBytes(true));
-                $OtherPrimeInfos.= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfo)), $OtherPrimeInfo);
+                $OtherPrimeInfo .= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($exponents[$i]->toBytes(true))), $exponents[$i]->toBytes(true));
+                $OtherPrimeInfo .= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($coefficients[$i]->toBytes(true))), $coefficients[$i]->toBytes(true));
+                $OtherPrimeInfos .= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfo)), $OtherPrimeInfo);
             }
-            $RSAPrivateKey.= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfos)), $OtherPrimeInfos);
+            $RSAPrivateKey .= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfos)), $OtherPrimeInfos);
         }
 
         $RSAPrivateKey = pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($RSAPrivateKey)), $RSAPrivateKey);
@@ -150,12 +150,12 @@ class PKCS8 extends PKCS
             $RSAPrivateKey = pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($RSAPrivateKey)), $RSAPrivateKey);
 
             $RSAPrivateKey = "-----BEGIN ENCRYPTED PRIVATE KEY-----\r\n" .
-                 chunk_split(Base64::encode($RSAPrivateKey), 64) .
-                 '-----END ENCRYPTED PRIVATE KEY-----';
+                    chunk_split(Base64::encode($RSAPrivateKey), 64) .
+                    '-----END ENCRYPTED PRIVATE KEY-----';
         } else {
             $RSAPrivateKey = "-----BEGIN PRIVATE KEY-----\r\n" .
-                 chunk_split(Base64::encode($RSAPrivateKey), 64) .
-                 '-----END PRIVATE KEY-----';
+                    chunk_split(Base64::encode($RSAPrivateKey), 64) .
+                    '-----END PRIVATE KEY-----';
         }
 
         return $RSAPrivateKey;
@@ -194,18 +194,18 @@ class PKCS8 extends PKCS
 
         // sequence(oid(1.2.840.113549.1.1.1), null)) = rsaEncryption.
         $rsaOID = "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00"; // hex version of MA0GCSqGSIb3DQEBAQUA
-        $RSAPublicKey = chr(0) . $RSAPublicKey;
-        $RSAPublicKey = chr(3) . ASN1::encodeLength(strlen($RSAPublicKey)) . $RSAPublicKey;
+        $RSAPublicKey = chr(0).$RSAPublicKey;
+        $RSAPublicKey = chr(3).ASN1::encodeLength(strlen($RSAPublicKey)).$RSAPublicKey;
 
         $RSAPublicKey = pack(
             'Ca*a*',
             self::ASN1_SEQUENCE,
-            ASN1::encodeLength(strlen($rsaOID . $RSAPublicKey)),
-            $rsaOID . $RSAPublicKey
+            ASN1::encodeLength(strlen($rsaOID.$RSAPublicKey)),
+            $rsaOID.$RSAPublicKey
         );
 
-        $RSAPublicKey = "-----BEGIN PUBLIC KEY-----\r\n" .
-                        chunk_split(Base64::encode($RSAPublicKey), 64) .
+        $RSAPublicKey = "-----BEGIN PUBLIC KEY-----\r\n".
+                        chunk_split(Base64::encode($RSAPublicKey), 64).
                         '-----END PUBLIC KEY-----';
 
         return $RSAPublicKey;

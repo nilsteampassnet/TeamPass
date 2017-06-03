@@ -295,7 +295,7 @@ class RC2 extends BlockCipher
                     return false;
                 }
                 $this->cipher_name_openssl_ecb = 'rc2-ecb';
-                $this->cipher_name_openssl = 'rc2-' . $this->_openssl_translate_mode();
+                $this->cipher_name_openssl = 'rc2-'.$this->_openssl_translate_mode();
         }
 
         return parent::isValidEngine($engine);
@@ -315,7 +315,7 @@ class RC2 extends BlockCipher
     function setKeyLength($length)
     {
         if ($length < 8 || $length > 1024) {
-            throw new \LengthException('Key size of ' . $length . ' bits is not supported by this algorithm. Only keys between 1 and 1024 bits, inclusive, are supported');
+            throw new \LengthException('Key size of '.$length.' bits is not supported by this algorithm. Only keys between 1 and 1024 bits, inclusive, are supported');
         }
 
         $this->default_key_length = $this->current_key_length = $length;
@@ -358,7 +358,7 @@ class RC2 extends BlockCipher
         }
 
         if ($t1 < 1 || $t1 > 1024) {
-            throw new \LengthException('Key size of ' . $length . ' bits is not supported by this algorithm. Only keys between 1 and 1024 bits, inclusive, are supported');
+            throw new \LengthException('Key size of '.$length.' bits is not supported by this algorithm. Only keys between 1 and 1024 bits, inclusive, are supported');
         }
 
         $this->current_key_length = $t1;
@@ -575,18 +575,18 @@ class RC2 extends BlockCipher
      */
     function _setupInlineCrypt()
     {
-        $lambda_functions =& self::_getLambdaFunctions();
+        $lambda_functions = & self::_getLambdaFunctions();
 
         // The first 10 generated $lambda_functions will use the $keys hardcoded as integers
         // for the mixing rounds, for better inline crypt performance [~20% faster].
         // But for memory reason we have to limit those ultra-optimized $lambda_functions to an amount of 10.
         // (Currently, for Crypt_RC2, one generated $lambda_function cost on php5.5@32bit ~60kb unfreeable mem and ~100kb on php5.5@64bit)
-        $gen_hi_opt_code = (bool)(count($lambda_functions) < 10);
+        $gen_hi_opt_code = (bool) (count($lambda_functions) < 10);
 
         // Generation of a unique hash for our generated code
         $code_hash = "Crypt_RC2, {$this->mode}";
         if ($gen_hi_opt_code) {
-            $code_hash = str_pad($code_hash, 32) . $this->_hashInlineCryptFunction($this->key);
+            $code_hash = str_pad($code_hash, 32).$this->_hashInlineCryptFunction($this->key);
         }
 
         // Is there a re-usable $lambda_functions in there?
@@ -601,7 +601,7 @@ class RC2 extends BlockCipher
                 default:
                     $keys = array();
                     foreach ($this->keys as $k => $v) {
-                        $keys[$k] = '$keys[' . $k . ']';
+                        $keys[$k] = '$keys['.$k.']';
                     }
             }
 
@@ -622,16 +622,16 @@ class RC2 extends BlockCipher
             for (;;) {
                 // Mixing round.
                 $encrypt_block .= '
-                    $r0 = (($r0 + ' . $keys[$j++] . ' +
+                    $r0 = (($r0 + ' . $keys[$j++].' +
                            ((($r1 ^ $r2) & $r3) ^ $r1)) & 0xFFFF) << 1;
                     $r0 |= $r0 >> 16;
-                    $r1 = (($r1 + ' . $keys[$j++] . ' +
+                    $r1 = (($r1 + ' . $keys[$j++].' +
                            ((($r2 ^ $r3) & $r0) ^ $r2)) & 0xFFFF) << 2;
                     $r1 |= $r1 >> 16;
-                    $r2 = (($r2 + ' . $keys[$j++] . ' +
+                    $r2 = (($r2 + ' . $keys[$j++].' +
                            ((($r3 ^ $r0) & $r1) ^ $r3)) & 0xFFFF) << 3;
                     $r2 |= $r2 >> 16;
-                    $r3 = (($r3 + ' . $keys[$j++] . ' +
+                    $r3 = (($r3 + ' . $keys[$j++].' +
                            ((($r0 ^ $r1) & $r2) ^ $r0)) & 0xFFFF) << 5;
                     $r3 |= $r3 >> 16;';
 
@@ -661,16 +661,16 @@ class RC2 extends BlockCipher
                 // R-mixing round.
                 $decrypt_block .= '
                     $r3 = ($r3 | ($r3 << 16)) >> 5;
-                    $r3 = ($r3 - ' . $keys[--$j] . ' -
+                    $r3 = ($r3 - ' . $keys[--$j].' -
                            ((($r0 ^ $r1) & $r2) ^ $r0)) & 0xFFFF;
                     $r2 = ($r2 | ($r2 << 16)) >> 3;
-                    $r2 = ($r2 - ' . $keys[--$j] . ' -
+                    $r2 = ($r2 - ' . $keys[--$j].' -
                            ((($r3 ^ $r0) & $r1) ^ $r3)) & 0xFFFF;
                     $r1 = ($r1 | ($r1 << 16)) >> 2;
-                    $r1 = ($r1 - ' . $keys[--$j] . ' -
+                    $r1 = ($r1 - ' . $keys[--$j].' -
                            ((($r2 ^ $r3) & $r0) ^ $r2)) & 0xFFFF;
                     $r0 = ($r0 | ($r0 << 16)) >> 1;
-                    $r0 = ($r0 - ' . $keys[--$j] . ' -
+                    $r0 = ($r0 - ' . $keys[--$j].' -
                            ((($r1 ^ $r2) & $r3) ^ $r1)) & 0xFFFF;';
 
                 if ($j === $limit) {
@@ -693,9 +693,9 @@ class RC2 extends BlockCipher
             // Creates the inline-crypt function
             $lambda_functions[$code_hash] = $this->_createInlineCryptFunction(
                 array(
-                   'init_crypt'    => $init_crypt,
-                   'encrypt_block' => $encrypt_block,
-                   'decrypt_block' => $decrypt_block
+                    'init_crypt'    => $init_crypt,
+                    'encrypt_block' => $encrypt_block,
+                    'decrypt_block' => $decrypt_block
                 )
             );
         }

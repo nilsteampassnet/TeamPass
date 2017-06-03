@@ -196,7 +196,7 @@ echo '
                 <td>
                       <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                       <label>' .
-                          $LANG['settings_enable_sts'] . '
+                            $LANG['settings_enable_sts'] . '
                           &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_enable_sts_tip']), ENT_QUOTES).'"></i>
                       </label>
                 </td>
@@ -289,14 +289,14 @@ echo '
                     </td>
                     <td>
                         <select id="date_format" name="date_format" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
-                            <option value="d/m/Y"', !isset($_SESSION['settings']['date_format']) || $_SESSION['settings']['date_format'] == "d/m/Y" ? ' selected="selected"':"", '>d/m/Y</option>
-                            <option value="m/d/Y"', $_SESSION['settings']['date_format'] == "m/d/Y" ? ' selected="selected"':"", '>m/d/Y</option>
-                            <option value="d-M-Y"', $_SESSION['settings']['date_format'] == "d-M-Y" ? ' selected="selected"':"", '>d-M-Y</option>
-                            <option value="d/m/y"', $_SESSION['settings']['date_format'] == "d/m/y" ? ' selected="selected"':"", '>d/m/y</option>
-                            <option value="m/d/y"', $_SESSION['settings']['date_format'] == "m/d/y" ? ' selected="selected"':"", '>m/d/y</option>
-                            <option value="d-M-y"', $_SESSION['settings']['date_format'] == "d-M-y" ? ' selected="selected"':"", '>d-M-y</option>
-                            <option value="d-m-y"', $_SESSION['settings']['date_format'] == "d-m-y" ? ' selected="selected"':"", '>d-m-y</option>
-                            <option value="Y-m-d"', $_SESSION['settings']['date_format'] == "Y-m-d" ? ' selected="selected"':"", '>Y-m-d</option>
+                            <option value="d/m/Y"', !isset($_SESSION['settings']['date_format']) || $_SESSION['settings']['date_format'] == "d/m/Y" ? ' selected="selected"' : "", '>d/m/Y</option>
+                            <option value="m/d/Y"', $_SESSION['settings']['date_format'] == "m/d/Y" ? ' selected="selected"' : "", '>m/d/Y</option>
+                            <option value="d-M-Y"', $_SESSION['settings']['date_format'] == "d-M-Y" ? ' selected="selected"' : "", '>d-M-Y</option>
+                            <option value="d/m/y"', $_SESSION['settings']['date_format'] == "d/m/y" ? ' selected="selected"' : "", '>d/m/y</option>
+                            <option value="m/d/y"', $_SESSION['settings']['date_format'] == "m/d/y" ? ' selected="selected"' : "", '>m/d/y</option>
+                            <option value="d-M-y"', $_SESSION['settings']['date_format'] == "d-M-y" ? ' selected="selected"' : "", '>d-M-y</option>
+                            <option value="d-m-y"', $_SESSION['settings']['date_format'] == "d-m-y" ? ' selected="selected"' : "", '>d-m-y</option>
+                            <option value="Y-m-d"', $_SESSION['settings']['date_format'] == "Y-m-d" ? ' selected="selected"' : "", '>Y-m-d</option>
                         </select>
                     </td>
                 </tr>';
@@ -309,10 +309,10 @@ echo '
                     </td>
                     <td>
                         <select id="time_format" name="time_format" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
-                            <option value="H:i:s"', !isset($_SESSION['settings']['time_format']) || $_SESSION['settings']['time_format'] == "H:i:s" ? ' selected="selected"':"", '>H:i:s</option>
-                            <option value="h:m:s a"', $_SESSION['settings']['time_format'] == "h:i:s a" ? ' selected="selected"':"", '>h:i:s a</option>
-                            <option value="g:i:s a"', $_SESSION['settings']['time_format'] == "g:i:s a" ? ' selected="selected"':"", '>g:i:s a</option>
-                            <option value="G:i:s"', $_SESSION['settings']['time_format'] == "G:i:s" ? ' selected="selected"':"", '>G:i:s</option>
+                            <option value="H:i:s"', !isset($_SESSION['settings']['time_format']) || $_SESSION['settings']['time_format'] == "H:i:s" ? ' selected="selected"' : "", '>H:i:s</option>
+                            <option value="h:m:s a"', $_SESSION['settings']['time_format'] == "h:i:s a" ? ' selected="selected"' : "", '>h:i:s a</option>
+                            <option value="g:i:s a"', $_SESSION['settings']['time_format'] == "g:i:s a" ? ' selected="selected"' : "", '>g:i:s a</option>
+                            <option value="G:i:s"', $_SESSION['settings']['time_format'] == "G:i:s" ? ' selected="selected"' : "", '>G:i:s</option>
                         </select>
                     </td>
                 </tr>';
@@ -862,7 +862,7 @@ echo '
                 </td></tr>';
 // Enable Item modification by anyone by default
 echo '
-                <tr id="tr_option_anyone_can_modify_bydefault"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '':' style="display:none;"', '><td>
+                <tr id="tr_option_anyone_can_modify_bydefault"', isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] == 1 ? '' : ' style="display:none;"', '><td>
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.htmlentities(strip_tags($LANG['settings_anyone_can_modify_bydefault'])).'</label>
                     </td><td>
@@ -878,7 +878,7 @@ echo '
                 </td></tr>';
 // enable restricted_to_roles
 echo '
-                <tr id="tr_option_restricted_to_roles" style="display:', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'inline':'none', ';"><td>
+                <tr id="tr_option_restricted_to_roles" style="display:', isset($_SESSION['settings']['restricted_to']) && $_SESSION['settings']['restricted_to'] == 1 ? 'inline' : 'none', ';"><td>
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['restricted_to_roles'].'</label>
                     </td><td>
@@ -1067,7 +1067,7 @@ if (!extension_loaded('ldap')) {
 }
 // LDAP inputs
 echo '
-            <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '':' style="display:none;"' , '>
+            <div id="div_ldap_configuration" ', (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) ? '' : ' style="display:none;"', '>
                 <div style="font-weight:bold;font-size:14px;margin:15px 0px 8px 0px;">'.$LANG['admin_ldap_configuration'].'</div>
                 <table id="ldap_config_values">';
 // Type
@@ -1086,14 +1086,14 @@ echo '
                     </tr>';
 // Domain
 echo '
-                    <tr style="display:', (isset($ldap_type)) ? '' : 'none' , '" class="tr-windows tr-ldap tr-posix tr-posix-search">
+                    <tr style="display:', (isset($ldap_type)) ? '' : 'none', '" class="tr-windows tr-ldap tr-posix tr-posix-search">
                         <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
                         <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_suffix']) ? $_SESSION['settings']['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
 
 // Domain DN
 echo '
-                    <tr style="display:', (isset($ldap_type) && $ldap_type != 'posix-search') ? '' : 'none' , '" class="tr-windows tr-posix tr-ldap">
+                    <tr style="display:', (isset($ldap_type) && $ldap_type != 'posix-search') ? '' : 'none', '" class="tr-windows tr-posix tr-ldap">
                         <td><label for="ldap_domain_dn">'.$LANG['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($_SESSION['settings']['ldap_domain_dn']) ? $_SESSION['settings']['ldap_domain_dn'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
@@ -1108,39 +1108,39 @@ echo '
 // LDAP username attribute
         // LDAP Object Class
         echo '
-                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_object_class">'.$LANG['settings_ldap_object_class'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_object_class_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_object_class" name="ldap_object_class" class="text ui-widget-content" title="Person" value="',
                     isset($_SESSION['settings']['ldap_object_class']) ? $_SESSION['settings']['ldap_object_class'] : 'posixAccount', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
         echo '
-                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_user_attribute">'.$LANG['settings_ldap_user_attribute'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_user_attribute_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_user_attribute" name="ldap_user_attribute" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_user_attribute']) ? $_SESSION['settings']['ldap_user_attribute'] : 'uid', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP
                 echo '
-                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_usergroup_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
                         isset($_SESSION['settings']['ldap_usergroup']) ? $_SESSION['settings']['ldap_usergroup'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND DN for search
                 echo '
-                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_bind_dn">'.$LANG['settings_ldap_bind_dn'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_bind_dn_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_bind_dn" name="ldap_bind_dn" class="text ui-widget-content" title="uid=teampass,ou=people,dc=mydomain,dc=local" value="', isset($_SESSION['settings']['ldap_bind_dn']) ? $_SESSION['settings']['ldap_bind_dn'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND PASSWD for search
                 echo '
-                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_bind_passwd">'.$LANG['settings_ldap_bind_passwd'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_bind_passwd_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_bind_passwd" name="ldap_bind_passwd" class="text ui-widget-content" title="123password456" value="', isset($_SESSION['settings']['ldap_bind_passwd']) ? $_SESSION['settings']['ldap_bind_passwd'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BASE for search
                 echo '
-                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none' , '" class="tr-posix-search tr-ldap">
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_search_base">'.$LANG['settings_ldap_search_base'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_search_base_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="ou=people,dc=octopoos,dc=local" value="', isset($_SESSION['settings']['ldap_search_base']) ? $_SESSION['settings']['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
@@ -1153,7 +1153,7 @@ echo '
                 </tr>';
 
 // AD Port
- echo '
+    echo '
                 <tr>
                     <td><label for="ldap_port">'.$LANG['settings_ldap_port'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_port_tip']), ENT_QUOTES).'"></i></label></td>
                     <td><input type="text" size="50" id="ldap_port" name="ldap_port" class="text ui-widget-content" title="389" value="', isset($_SESSION['settings']['ldap_port']) ? $_SESSION['settings']['ldap_port'] : '389', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
@@ -1440,9 +1440,9 @@ echo '
                         </td>
                         <td>
                             <select id="email_security" name="email_security" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
-                            <option value="none"', !isset($_SESSION['settings']['email_security']) || $_SESSION['settings']['email_security'] == "none" ? ' selected="selected"':"", '>None</option>
-                            <option value="ssl"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "ssl" ? ' selected="selected"':"", '>SSL</option>
-                            <option value="tls"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "tls" ? ' selected="selected"':"", '>TLS</option>
+                            <option value="none"', !isset($_SESSION['settings']['email_security']) || $_SESSION['settings']['email_security'] == "none" ? ' selected="selected"' : "", '>None</option>
+                            <option value="ssl"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "ssl" ? ' selected="selected"' : "", '>SSL</option>
+                            <option value="tls"', isset($_SESSION['settings']['email_security']) && $_SESSION['settings']['email_security'] == "tls" ? ' selected="selected"' : "", '>TLS</option>
                         </select>
                         </td>
                     </tr>';
@@ -1594,8 +1594,7 @@ echo '
                     '</label>
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_width" name="upload_imageresize_width" value="',
-                        isset($_SESSION['settings']['upload_imageresize_width']) ? $_SESSION['settings']['upload_imageresize_width'] :
-                        '800', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
+                        isset($_SESSION['settings']['upload_imageresize_width']) ? $_SESSION['settings']['upload_imageresize_width'] : '800', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
                     </td>
                 </tr>
                 <tr><td>
@@ -1604,8 +1603,7 @@ echo '
                     '</label>
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_height" name="upload_imageresize_height" value="',
-                        isset($_SESSION['settings']['upload_imageresize_height']) ? $_SESSION['settings']['upload_imageresize_height'] :
-                        '600', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
+                        isset($_SESSION['settings']['upload_imageresize_height']) ? $_SESSION['settings']['upload_imageresize_height'] : '600', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
                     </td>
                 </tr>
                 <tr><td>
@@ -1614,8 +1612,7 @@ echo '
                     '</label>
                     </td><td>
                     <input type="text" size="5" id="upload_imageresize_quality" name="upload_imageresize_quality" value="',
-                        isset($_SESSION['settings']['upload_imageresize_quality']) ? $_SESSION['settings']['upload_imageresize_quality'] :
-                        '90', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
+                        isset($_SESSION['settings']['upload_imageresize_quality']) ? $_SESSION['settings']['upload_imageresize_quality'] : '90', '" class="text ui-widget-content upl_img_opt" onchange="updateSetting($(this).attr(\'id\'));" />
                 </td></tr>';
 echo '
                 <tr><td colspan="3"><hr /></td></tr>';

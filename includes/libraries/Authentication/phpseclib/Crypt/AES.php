@@ -91,7 +91,7 @@ class AES extends Rijndael
             case 256:
                 break;
             default:
-                throw new \LengthException('Key of size ' . $length . ' not supported by this algorithm. Only keys of sizes 128, 192 or 256 supported');
+                throw new \LengthException('Key of size '.$length.' not supported by this algorithm. Only keys of sizes 128, 192 or 256 supported');
         }
         parent::setKeyLength($length);
     }
@@ -115,7 +115,7 @@ class AES extends Rijndael
             case 32:
                 break;
             default:
-                throw new \LengthException('Key of size ' . strlen($key) . ' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
+                throw new \LengthException('Key of size '.strlen($key).' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
         }
 
         parent::setKey($key);

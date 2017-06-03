@@ -151,7 +151,7 @@ class Generator {
         } elseif (empty($characters)) {
             // Default to base 64
             $characters = '0123456789abcdefghijklmnopqrstuvwxyz' .
-                          'ABCDEFGHIJKLMNOPQRSTUVWXYZ./';
+                            'ABCDEFGHIJKLMNOPQRSTUVWXYZ./';
         }
         // determine how many bytes to generate
         // This is basically doing floor(log(strlen($characters)))

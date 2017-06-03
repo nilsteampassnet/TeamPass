@@ -20,7 +20,7 @@ namespace PasswordLib;
  * is in use.  So if it does not exist at this point, we know we must bootstrap
  * the libraries.
  */
- /*
+    /*
 if (!class_exists('\\PasswordLib\Core\AutoLoader', true)) {
     require_once 'bootstrap.php';
 }

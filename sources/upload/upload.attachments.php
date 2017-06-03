@@ -73,7 +73,7 @@ if (!isset($_POST['user_token'])) {
             prefix_table('tokens'),
             array(
                 'end_timestamp' => time() + 10
-               ),
+                ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
             $_POST['user_token']
@@ -89,7 +89,7 @@ if (!isset($_POST['user_token'])) {
                 prefix_table('tokens'),
                 array(
                     'end_timestamp' => time() + 30
-                   ),
+                    ),
                 "user_id = %i AND token = %s",
                 $_SESSION['user_id'],
                 $_POST['user_token']
@@ -128,7 +128,7 @@ if (!isset($_POST['user_token'])) {
 
 // HTTP headers for no cache etc
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
-header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
+header("Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
@@ -137,9 +137,9 @@ $targetDir = $_SESSION['settings']['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9';   //accept only those characters
+$valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
-$max_file_size_in_bytes = 2147483647;   //2Go
+$max_file_size_in_bytes = 2147483647; //2Go
 
 @date_default_timezone_set($_POST['timezone']);
 
@@ -147,7 +147,7 @@ $max_file_size_in_bytes = 2147483647;   //2Go
 $POST_MAX_SIZE = ini_get('post_max_size');
 $unit = strtoupper(substr($POST_MAX_SIZE, -1));
 $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
-if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier*(int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
+if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
     handleError('POST exceeded maximum allowed size.', 111);
 }
 
@@ -201,20 +201,20 @@ $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
 $fileName = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
-if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
+if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $ext = strrpos($fileName, '.');
     $fileNameA = substr($fileName, 0, $ext);
     $fileNameB = substr($fileName, $ext);
 
     $count = 1;
-    while (file_exists($targetDir . DIRECTORY_SEPARATOR . $fileNameA . '_' . $count . $fileNameB)) {
+    while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
         $count++;
     }
 
-    $fileName = $fileNameA . '_' . $count . $fileNameB;
+    $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$filePath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+$filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
@@ -224,7 +224,7 @@ if (!file_exists($targetDir)) {
 // Remove old temp files
 if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
     while (($file = readdir($dir)) !== false) {
-        $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $file;
+        $tmpfilePath = $targetDir.DIRECTORY_SEPARATOR.$file;
 
         // Remove temp file if it is older than the max age and is not the current file
         if (preg_match('/\.part$/', $file)
@@ -339,7 +339,7 @@ if (!$chunks || $chunk == $chunks - 1) {
 
 // Get some variables
 $fileRandomId = md5($fileName.time());
-rename($filePath, $targetDir . DIRECTORY_SEPARATOR . $fileRandomId);
+rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
 
 //Get data from DB
 /*$data = DB::queryfirstrow(
@@ -388,7 +388,7 @@ function getFileExtension($f)
         return $f;
     }
 
-    return substr($f, strrpos($f, '.')+1);
+    return substr($f, strrpos($f, '.') + 1);
 }
 
 /* Handles the error output. */

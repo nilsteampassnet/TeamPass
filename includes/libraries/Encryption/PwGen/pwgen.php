@@ -87,10 +87,10 @@ class pwgen
             if ($this->pw_length < 5) {
                 $this->pwgen = 'pwRand';
             }
-            if ($this->pw_length <=  2) {
+            if ($this->pw_length <= 2) {
                 $this->setCapitalize(false);
             }
-            if ($this->pw_length <=  1) {
+            if ($this->pw_length <= 1) {
                 $this->setNumerals(false);
             }
         } else {
@@ -196,7 +196,7 @@ class pwgen
 
     public function generate()
     {
-        if ($this->pwgen ==  'pwPhonemes') {
+        if ($this->pwgen == 'pwPhonemes') {
             $this->pwPhonemes();
         } else { // $this->pwgen == 'pwRand'
             $this->pwRand();
@@ -217,13 +217,13 @@ class pwgen
             $first = 1;
 
             while ($c < $this->pw_length) {
-                $i = self::myRand(0, count(self::$elements)-1);
+                $i = self::myRand(0, count(self::$elements) - 1);
                 $str = self::$elements[$i]->str;
                 $len = strlen($str);
                 $flags = self::$elements[$i]->flags;
 
                 // Filter on the basic type of the next element
-                if (($flags & $should_be) ==  0) {
+                if (($flags & $should_be) == 0) {
                     continue;
                 }
                 // Handle the NOT_FIRST flag
@@ -239,7 +239,7 @@ class pwgen
                     continue;
                 }
                 // Don't allow us to overflow the buffer
-                if ($len > $this->pw_length-$c) {
+                if ($len > $this->pw_length - $c) {
                     continue;
                 }
 
@@ -255,7 +255,7 @@ class pwgen
                  * let's do it!
                  */
                 for ($j = 0; $j < $len; $j++) {
-                    $this->password[$c+$j] = $str[$j];
+                    $this->password[$c + $j] = $str[$j];
                 }
 
                 // Handle PW_UPPERS
@@ -266,10 +266,10 @@ class pwgen
                     }
                 }
 
-                $c +=  $len;
+                $c += $len;
 
                 // Time to stop?
-                if ($c >=  $this->pw_length) {
+                if ($c >= $this->pw_length) {
                     break;
                 }
 
@@ -294,7 +294,7 @@ class pwgen
                 if ($this->pwgen_flags & self::PW_SYMBOLS) {
                     if (!$first && (self::myRand(0, 9) < 2)) {
                         do {
-                            $ch = self::$pw_symbols[self::myRand(0, strlen(self::$pw_symbols)-1)];
+                            $ch = self::$pw_symbols[self::myRand(0, strlen(self::$pw_symbols) - 1)];
                         } while (($this->pwgen_flags & self::PW_AMBIGUOUS) &&
                             strpos(self::$pw_ambiguous, $ch) !== false);
                         $this->password[$c++] = $ch;
@@ -303,7 +303,7 @@ class pwgen
                 }
 
                 // OK, figure out what the next element should be
-                if ($should_be ==  self::CONSONANT) {
+                if ($should_be == self::CONSONANT) {
                     $should_be = self::VOWEL;
                 } else { // should_be = =  VOWEL
                     if (($prev & self::VOWEL) || ($flags & self::DIPHTHONG) || (self::myRand(0, 9) > 3)
@@ -343,7 +343,7 @@ class pwgen
             $i = 0;
 
             while ($i < $this->pw_length) {
-                $ch = $chars[self::myRand(0, $len-1)];
+                $ch = $chars[self::myRand(0, $len - 1)];
                 if (($this->pwgen_flags & self::PW_AMBIGUOUS) &&
                     strpos(self::$pw_ambiguous, $ch) !== false) {
                     continue;

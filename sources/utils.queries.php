@@ -53,7 +53,7 @@ switch ($_POST['type']) {
 
         foreach (explode(';', $_POST['ids']) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                $rows =DB::query(
+                $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
                     l.date as date,
                     n.renewal_period as renewal_period
@@ -219,7 +219,7 @@ switch ($_POST['type']) {
                     $pw = decrypt($data['pw'], $oldPersonalSaltkey);
                     if (empty($pw)) {
                         // used protocol is #1
-                        $pw = decryptOld($data['pw'], $oldPersonalSaltkey);  // decrypt using protocol #1
+                        $pw = decryptOld($data['pw'], $oldPersonalSaltkey); // decrypt using protocol #1
                     } else {
                         // used protocol is #2
                         // get key for this pw
@@ -252,7 +252,7 @@ switch ($_POST['type']) {
                         array(
                             'pw' => $encrypt['string'],
                             'pw_iv' => ""
-                           ),
+                            ),
                         "id = %i", $data['id']
                     );
                 }
@@ -274,7 +274,7 @@ switch ($_POST['type']) {
                 );
                 if (empty($pw)) {
                     // used protocol is #1
-                    $pw = decryptOld($data['pw'], $_SESSION['user_settings']['clear_psk']);  // decrypt using protocol #1
+                    $pw = decryptOld($data['pw'], $_SESSION['user_settings']['clear_psk']); // decrypt using protocol #1
                 } else {
                     // used protocol is #2
                     // get key for this pw
@@ -305,7 +305,7 @@ switch ($_POST['type']) {
                         'pw' => $encrypt['string'],
                         'pw_iv' => "",
                         "encryption_type" => "defuse"
-                       ),
+                        ),
                     "id = %i", $data['id']
                 );
             } elseif ($data['encryption_type'] === "not_set") {
@@ -333,7 +333,7 @@ switch ($_POST['type']) {
                         'pw' => $encrypt['string'],
                         'pw_iv' => "",
                         "encryption_type" => "defuse"
-                       ),
+                        ),
                     "id = %i", $data['id']
                 );
             } else {
@@ -347,7 +347,7 @@ switch ($_POST['type']) {
             prefix_table('users'),
             array(
                 'upgrade_needed' => 0
-               ),
+                ),
             "id = %i",
             $_SESSION['user_id']
         );
@@ -393,7 +393,7 @@ switch ($_POST['type']) {
         $ret = "";
         require($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/phpseclib/Net/SSH2.php');
         $parse = parse_url($dataItem['url']);
-        if (!isset($parse['host']) || empty($parse['host']) ||!isset($parse['port']) || empty($parse['port'])) {
+        if (!isset($parse['host']) || empty($parse['host']) || !isset($parse['port']) || empty($parse['port'])) {
             // error in parsing the url
             echo prepareExchangedData(
                 array(
@@ -406,7 +406,7 @@ switch ($_POST['type']) {
         } else {
             $ssh = new phpseclib\Net\SSH2($parse['host'], $parse['port']);
             if (!$ssh->login($dataReceived['ssh_root'], $dataReceived['ssh_pwd'])) {
-               echo prepareExchangedData(
+                echo prepareExchangedData(
                     array(
                         "error" => "Login failed.",
                         "text" => ""
@@ -414,7 +414,7 @@ switch ($_POST['type']) {
                     "encode"
                 );
                 break;
-            }else{
+            } else {
                 // send ssh script for user change
                 $ret .= "<br />".$LANG['ssh_answer_from_server'].':&nbsp;<div style="margin-left:20px;font-style: italic;">';
                 $ret_server = $ssh->exec('echo -e "'.$dataReceived['ssh_pwd'].'\n'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
@@ -434,7 +434,7 @@ switch ($_POST['type']) {
                 array(
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv']
-                   ),
+                    ),
                 "id = %i",
                 $dataReceived['currentId']
             );
@@ -448,7 +448,7 @@ switch ($_POST['type']) {
         // finished
         echo prepareExchangedData(
             array(
-                "error" => "" ,
+                "error" => "",
                 "text" => str_replace(array("\n"), array("<br />"), $ret)
             ),
             "encode"
@@ -467,7 +467,7 @@ switch ($_POST['type']) {
             array(
                 'auto_update_pwd_frequency' => $_POST['freq'],
                 'auto_update_pwd_next_date' => time() + (2592000 * intval($_POST['freq']))
-               ),
+                ),
             "id = %i",
             $_POST['id']
         );

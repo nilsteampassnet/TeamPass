@@ -63,7 +63,7 @@ class PdoObserver
         }, $line);
 
         $sql = 'INSERT INTO ' . $this->table . '(' . join(', ', $this->columns) . ')' .
-               ' VALUES(' . join(',', $prepare) . ')';
+                ' VALUES(' . join(',', $prepare) . ')';
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($line);

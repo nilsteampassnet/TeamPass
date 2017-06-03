@@ -51,10 +51,13 @@ $_SESSION['settings']['loaded'] = "";
 ################
 ## Function permits to get the value from a line
 ################
+/**
+ * @param string $val
+ */
 function getSettingValue($val)
 {
     $val = trim(strstr($val, "="));
-    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
 }
 
 ################
@@ -65,7 +68,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     global $dbTmp;
     $exists = false;
     $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc( $columns)) {
+    while ($c = mysqli_fetch_assoc($columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
             return true;
@@ -78,7 +81,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
-function addIndexIfNotExist($table, $index, $sql ) {
+function addIndexIfNotExist($table, $index, $sql) {
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
@@ -86,7 +89,7 @@ function addIndexIfNotExist($table, $index, $sql ) {
 
     // if index does not exist, then add it
     if (!$res) {
-        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` " . $sql);
+        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` ".$sql);
     }
 
     return $res;
@@ -103,9 +106,12 @@ function tableExists($tablename, $database = false)
         AND table_name = '$tablename'"
     );
 
-    if ($res > 0) return true;
-    else return false;
-}
+    if ($res > 0) {
+        return true;
+    } else {
+        return false;
+    }
+    }
 
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
@@ -249,7 +255,7 @@ mysqli_query($dbTmp,
 
 // change to 0 if auto_update_pwd_next_date empty in ITEMS table
 $result = mysqli_query($dbTmp, "SELECT id FROM `".$_SESSION['pre']."items` WHERE auto_update_pwd_next_date = ''");
-while($row = mysqli_fetch_assoc($result)) {
+while ($row = mysqli_fetch_assoc($result)) {
     mysqli_query($dbTmp,
         "UPDATE `".$_SESSION['pre']."items`
         SET `auto_update_pwd_next_date` = '0'
@@ -283,8 +289,8 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
             // "The file $csrfp_file already exist. A copy has been created.<br />";
         }
     }
-    unlink($csrfp_file);    // delete existing csrfp.config file
-    copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+    unlink($csrfp_file); // delete existing csrfp.config file
+    copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
     $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
     $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
     $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
@@ -313,7 +319,7 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     \$SETTINGS = array (";
 
     $result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin'");
-    while($row = mysqli_fetch_assoc($result)) {
+    while ($row = mysqli_fetch_assoc($result)) {
         // append new setting in config file
         $config_text .= "
         '".$row['intitule']."' => '".$row['valeur']."',";
@@ -333,7 +339,7 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
 
 // clean duplicate ldap_object_class from bad update script version
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
-if ($tmp[0] > 1 ) {
+if ($tmp[0] > 1) {
     mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
 }
 // add new setting - ldap_object_class
@@ -346,10 +352,10 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 $tmp_googlecount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'google_authentication'"));
 $tmp_twocount = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'"));
 
-if ($tmp_googlecount[0] > 0 ) {
+if ($tmp_googlecount[0] > 0) {
     mysqli_query($dbTmp, "DELETE FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = '2factors_authentication'");
 } else {
-    if ($tmp_twocount[0] > 0 ) {
+    if ($tmp_twocount[0] > 0) {
         mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."misc` SET intitule = 'google_authentication' WHERE intitule = '2factors_authentication' ");
     } else {
         mysqli_query($dbTmp, "INSERT INTO `".$_SESSION['pre']."misc` VALUES ('admin', 'google_authentication', '0')");
@@ -365,7 +371,7 @@ $result = mysqli_query(
     FROM `".$_SESSION['pre']."nested_tree`
     WHERE personal_folder = '1' AND nlevel = '1' AND parent_id = '0'"
 );
-while($row = mysqli_fetch_assoc($result)) {
+while ($row = mysqli_fetch_assoc($result)) {
     // only change non numeric folder title
     if (!is_numeric($row['title'])) {
         mysqli_query(

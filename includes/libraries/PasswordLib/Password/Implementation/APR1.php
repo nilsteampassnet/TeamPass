@@ -112,7 +112,7 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
      */
     protected function hash($password, $salt, $iterations) {
         $len  = strlen($password);
-        $text = $password . '$apr1$' . $salt;
+        $text = $password.'$apr1$'.$salt;
         $bin  = md5($password.$salt.$password, true);
         for ($i = $len; $i > 0; $i -= 16) {
             $text .= substr($bin, 0, min(16, $i));
@@ -143,23 +143,23 @@ class APR1 extends \PasswordLib\Password\AbstractPassword {
     protected function convertToHash($bin, $salt) {
         $tmp  = '$apr1$'.$salt.'$';
         $tmp .= $this->to64(
-            (ord($bin[0])<<16) | (ord($bin[6])<<8) | ord($bin[12]),
+            (ord($bin[0]) << 16) | (ord($bin[6]) << 8) | ord($bin[12]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[1])<<16) | (ord($bin[7])<<8) | ord($bin[13]),
+            (ord($bin[1]) << 16) | (ord($bin[7]) << 8) | ord($bin[13]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[2])<<16) | (ord($bin[8])<<8) | ord($bin[14]),
+            (ord($bin[2]) << 16) | (ord($bin[8]) << 8) | ord($bin[14]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[3])<<16) | (ord($bin[9])<<8) | ord($bin[15]),
+            (ord($bin[3]) << 16) | (ord($bin[9]) << 8) | ord($bin[15]),
             4
         );
         $tmp .= $this->to64(
-            (ord($bin[4])<<16) | (ord($bin[10])<<8) | ord($bin[5]),
+            (ord($bin[4]) << 16) | (ord($bin[10]) << 8) | ord($bin[5]),
             4
         );
         $tmp .= $this->to64(

@@ -139,11 +139,11 @@ abstract class Cipher_Rijndael extends Cipher
 		// AES will pass in a $len, since it has a fixed key size, other
 		// rijndael implementations can use variable key sizes, supported
 		// sizes are stored in self::$_key_sizes
-		if($len == 0)
+		if ($len == 0)
 		{
 			// the key must be one of the following lengths: 16, 24, 32 bytes
 			$len = strlen($key);
-			if(!in_array($len, self::$_key_sizes))
+			if (!in_array($len, self::$_key_sizes))
 			{
 				$msg  = "Incorrect key length for ".strtoupper($cipher_name).". ";
 				$msg .= "Received $len bytes.";
@@ -188,23 +188,23 @@ abstract class Cipher_Rijndael extends Cipher
 		// if the key and block size is 16, do 10 rounds
 		// if the key or block size is 24, and neither is longer than 24, do 12 rounds
 		// if either key or block size is 32, do 14 rounds
-		if($key_sz == 16 && $blk_sz == 16)
+		if ($key_sz == 16 && $blk_sz == 16)
 			$loops = 10;
-		else if(($key_sz == 24 || $blk_sz == 24) && $key_sz <= 24 && $blk_sz <= 24)
+		else if (($key_sz == 24 || $blk_sz == 24) && $key_sz <= 24 && $blk_sz <= 24)
 			$loops = 12;
-		else if($key_sz == 32 || $blk_sz == 32)
+		else if ($key_sz == 32 || $blk_sz == 32)
 			$loops = 14;
 
 		// now begin the encryption
 		$this->addRoundKey($text, 0);
 
-		for($i = 1; $i <= $loops; ++$i)
+		for ($i = 1; $i <= $loops; ++$i)
 		{
 			$this->byteSub($text);
 			$this->shiftRow($text);
 
 			// the last iteration does not use mixColumn
-			if($i < $loops)
+			if ($i < $loops)
 				$this->mixColumn($text);
 
 			$this->addRoundKey($text, $i);
@@ -232,24 +232,24 @@ abstract class Cipher_Rijndael extends Cipher
 		// if the key and block size is 16, do 10 rounds
 		// if the key or block size is 24, and neither is longer than 24, do 12 rounds
 		// if either key or block size is 32, do 14 rounds
-		if($key_sz == 16 && $blk_sz == 16)
+		if ($key_sz == 16 && $blk_sz == 16)
 			$loops = 10;
-		else if(($key_sz == 24 || $blk_sz == 24) && $key_sz <= 24 && $blk_sz <= 24)
+		else if (($key_sz == 24 || $blk_sz == 24) && $key_sz <= 24 && $blk_sz <= 24)
 			$loops = 12;
-		else if($key_sz == 32 || $blk_sz == 32)
+		else if ($key_sz == 32 || $blk_sz == 32)
 			$loops = 14;
 
 		// now begin the decryption
 		$this->addRoundKey($text, 0);
 
-		for($i = 1; $i <= $loops; ++$i)
+		for ($i = 1; $i <= $loops; ++$i)
 		{
 			$this->shiftRow($text);
 			$this->byteSub($text);
 			$this->addRoundKey($text, $i);
 
 			// the last iteration does not use mixColumn
-			if($i < $loops)
+			if ($i < $loops)
 				$this->mixColumn($text);
 		}
 
@@ -280,7 +280,7 @@ abstract class Cipher_Rijndael extends Cipher
 	protected function mixColumnMultiply($m, $byte)
 	{
 		// if multiplying by 1, then we just return the same number
-		if($m == 0x01)
+		if ($m == 0x01)
 			return $byte;
 
 		$hex = parent::dec2Hex($byte);
@@ -289,27 +289,27 @@ abstract class Cipher_Rijndael extends Cipher
 		$pos = ($row * 16) + $col;
 
 		// multiply by 2 (comes from self::$_matrix_mult during encryption)
-		if($m == 0x02)
+		if ($m == 0x02)
 			return self::$_gm2[$pos];
 
 		// multiply by 3 (comes from self::$_matrix_mult during encryption)
-		if($m == 0x03)
+		if ($m == 0x03)
 			return self::$_gm3[$pos];
 
 		// multiply by 9 (comes from self::$_matrix_mult_inv during decryption)
-		if($m == 0x09)
+		if ($m == 0x09)
 			return self::$_gm9[$pos];
 
 		// multiply by 11 (comes from self::$_matrix_mult_inv during decryption)
-		if($m == 0x0b)
+		if ($m == 0x0b)
 			return self::$_gm11[$pos];
 
 		// multiply by 13 (comes from self::$_matrix_mult_inv during decryption)
-		if($m == 0x0d)
+		if ($m == 0x0d)
 			return self::$_gm13[$pos];
 
 		// multiply by 14 (comes from self::$_matrix_mult_inv during decryption)
-		if($m == 0x0e)
+		if ($m == 0x0e)
 			return self::$_gm14[$pos];
 	}
 
@@ -331,12 +331,12 @@ abstract class Cipher_Rijndael extends Cipher
 		$ek_len = strlen($this->xkey);
 		$len = $this->blockSize();
 
-		if($this->operation() == parent::ENCRYPT)
+		if ($this->operation() == parent::ENCRYPT)
 			$offset = $round * $len;
 		else
 			$offset = ($ek_len - ($round * $len)) - $len;
 
-		for($i = 0; $i < $len; ++$i)
+		for ($i = 0; $i < $len; ++$i)
 			$text[$i] = $text[$i] ^ $this->xkey[$offset + $i];
 	}
 
@@ -351,7 +351,7 @@ abstract class Cipher_Rijndael extends Cipher
 	private function byteSub(&$text)
 	{
 		$max = strlen($text);
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
 			// the sbox is arrange in a 16 x 16 grid, where each row
 			// and column is numbered in hex (from 0 - f)
@@ -361,7 +361,7 @@ abstract class Cipher_Rijndael extends Cipher
 			$pos = ($row * 16) + $col;
 
 			// return the corresponding value from the sbox
-			if($this->operation() == parent::ENCRYPT)
+			if ($this->operation() == parent::ENCRYPT)
 				$text[$i] = chr(self::$_s[$pos]);
 			else // parent::DECRYPT uses the inverse sbox
 				$text[$i] = chr(self::$_s_inv[$pos]);
@@ -381,7 +381,7 @@ abstract class Cipher_Rijndael extends Cipher
 		$tmp = $t;
 
 		// the matrix we use depends on if we are encrypting or decrypting
-		if($this->operation() == parent::ENCRYPT)
+		if ($this->operation() == parent::ENCRYPT)
 			$m = self::$_matrix_mult;
 		else // parent::DECRYPT
 			$m = self::$_matrix_mult_inv;
@@ -394,30 +394,30 @@ abstract class Cipher_Rijndael extends Cipher
 		$max_col = ($this->blockSize() * 8) / 32;
 
 		// loop through each column of the matrix
-		for($col = 0; $col < $max_col; ++$col)
+		for ($col = 0; $col < $max_col; ++$col)
 		{
 			$pos = $col * 4;
 
-			$a = $this->mixColumnMultiply($m[0],  ord($tmp[$pos + 0]));
-			$b = $this->mixColumnMultiply($m[4],  ord($tmp[$pos + 1]));
-			$c = $this->mixColumnMultiply($m[8],  ord($tmp[$pos + 2]));
+			$a = $this->mixColumnMultiply($m[0], ord($tmp[$pos + 0]));
+			$b = $this->mixColumnMultiply($m[4], ord($tmp[$pos + 1]));
+			$c = $this->mixColumnMultiply($m[8], ord($tmp[$pos + 2]));
 			$d = $this->mixColumnMultiply($m[12], ord($tmp[$pos + 3]));
 			$t[$pos + 0] = chr($a ^ $b ^ $c ^ $d);
 
-			$a = $this->mixColumnMultiply($m[1],  ord($tmp[$pos + 0]));
-			$b = $this->mixColumnMultiply($m[5],  ord($tmp[$pos + 1]));
-			$c = $this->mixColumnMultiply($m[9],  ord($tmp[$pos + 2]));
+			$a = $this->mixColumnMultiply($m[1], ord($tmp[$pos + 0]));
+			$b = $this->mixColumnMultiply($m[5], ord($tmp[$pos + 1]));
+			$c = $this->mixColumnMultiply($m[9], ord($tmp[$pos + 2]));
 			$d = $this->mixColumnMultiply($m[13], ord($tmp[$pos + 3]));
 			$t[$pos + 1] = chr($a ^ $b ^ $c ^ $d);
 
-			$a = $this->mixColumnMultiply($m[2],  ord($tmp[$pos + 0]));
-			$b = $this->mixColumnMultiply($m[6],  ord($tmp[$pos + 1]));
+			$a = $this->mixColumnMultiply($m[2], ord($tmp[$pos + 0]));
+			$b = $this->mixColumnMultiply($m[6], ord($tmp[$pos + 1]));
 			$c = $this->mixColumnMultiply($m[10], ord($tmp[$pos + 2]));
 			$d = $this->mixColumnMultiply($m[14], ord($tmp[$pos + 3]));
 			$t[$pos + 2] = chr($a ^ $b ^ $c ^ $d);
 
-			$a = $this->mixColumnMultiply($m[3],  ord($tmp[$pos + 0]));
-			$b = $this->mixColumnMultiply($m[7],  ord($tmp[$pos + 1]));
+			$a = $this->mixColumnMultiply($m[3], ord($tmp[$pos + 0]));
+			$b = $this->mixColumnMultiply($m[7], ord($tmp[$pos + 1]));
 			$c = $this->mixColumnMultiply($m[11], ord($tmp[$pos + 2]));
 			$d = $this->mixColumnMultiply($m[15], ord($tmp[$pos + 3]));
 			$t[$pos + 3] = chr($a ^ $b ^ $c ^ $d);
@@ -441,9 +441,9 @@ abstract class Cipher_Rijndael extends Cipher
 		/*
 		 * Rijndael-128 / AES
 		 */
-		if($this->blockSize() == 16)
+		if ($this->blockSize() == 16)
 		{
-			if($this->operation() == parent::ENCRYPT)
+			if ($this->operation() == parent::ENCRYPT)
 			{
 				// create a 4x4 matrix
 				// row 0 is unchanged,
@@ -453,8 +453,7 @@ abstract class Cipher_Rijndael extends Cipher
 				$text = $text[0].$text[5].$text[10].$text[15].$text[4].$text[9].
 						$text[14].$text[3].$text[8].$text[13].$text[2].$text[7].
 						$text[12].$text[1].$text[6].$text[11];
-			}
-			else // parent::DECRYPT
+			} else // parent::DECRYPT
 			{
 				// create a 4x4 matrix
 				// row 0 is unchanged,
@@ -470,9 +469,9 @@ abstract class Cipher_Rijndael extends Cipher
 		/*
 		 * Rijndael-192
 		 */
-		if($this->blockSize() == 24)
+		if ($this->blockSize() == 24)
 		{
-			if($this->operation() == parent::ENCRYPT)
+			if ($this->operation() == parent::ENCRYPT)
 			{
 				// create a 6x4 matrix
 				// row 0 is unchanged
@@ -484,8 +483,7 @@ abstract class Cipher_Rijndael extends Cipher
 						$text[12].$text[17].$text[22].$text[3].$text[16].$text[21].
 						$text[2].$text[7].$text[20].$text[1].$text[6].$text[11];
 
-			}
-			else // parent::DECRYPT
+			} else // parent::DECRYPT
 			{
 				// create a 6x4 matrix
 				// row 0 is unchanged
@@ -502,9 +500,9 @@ abstract class Cipher_Rijndael extends Cipher
 		/*
 		 * Rijndael-256
 		 */
-		if($this->blockSize() == 32)
+		if ($this->blockSize() == 32)
 		{
-			if($this->operation() == parent::ENCRYPT)
+			if ($this->operation() == parent::ENCRYPT)
 			{
 				// create an 8x4 matrix
 				// row 0 is unchanged
@@ -516,8 +514,7 @@ abstract class Cipher_Rijndael extends Cipher
 						$text[26].$text[31].$text[16].$text[21].$text[30].$text[3].$text[20].
 						$text[25].$text[2].$text[7].$text[24].$text[29].$text[6].$text[11].
 						$text[28].$text[1].$text[10].$text[15];
-			}
-			else // parent::DECRYPT
+			} else // parent::DECRYPT
 			{
 				// create an 8x4 matrix
 				// row 0 is unchanged
@@ -546,7 +543,7 @@ abstract class Cipher_Rijndael extends Cipher
 	private function subWord(&$text)
 	{
 		$max = strlen($text);
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
 			// the sbox is arrange in a 16 x 16 grid, where each row
 			// and column is numbered in hex (from 0 - f)
@@ -618,15 +615,15 @@ abstract class Cipher_Rijndael extends Cipher
 	 * Expands the key
 	 * The key expands based on the block size as well as the key size
 	 *
-	 * @return void
+	 * @return boolean|null
 	 */
 	protected function expandKey()
 	{
-		if($this->keySize() == 16)
+		if ($this->keySize() == 16)
 			return $this->expandKey128();
-		else if($this->keySize() == 24)
+		else if ($this->keySize() == 24)
 			return $this->expandKey192();
-		else if($this->keySize() == 32)
+		else if ($this->keySize() == 32)
 			return $this->expandKey256();
 	}
 
@@ -635,7 +632,7 @@ abstract class Cipher_Rijndael extends Cipher
 	 * Expand a 16 byte key, the size it is expanded to varies
 	 * based on the block size of the Rijndael implementation chosen
 	 *
-	 * @return void
+	 * @return boolean
 	 */
 	private function expandKey128()
 	{
@@ -645,19 +642,19 @@ abstract class Cipher_Rijndael extends Cipher
 
 		// the number of rounds we make depends on the block size of the text
 		// used during encryption/decryption
-		if($this->blockSize() == 16)
+		if ($this->blockSize() == 16)
 			$max = 44;
-		if($this->blockSize() == 24)
+		if ($this->blockSize() == 24)
 			$max = 78;
-		if($this->blockSize() == 32)
+		if ($this->blockSize() == 32)
 			$max = 120;
 
 		// 16 byte key expands to 176 bytes
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
-			if($i >= 0 && $i <= 3)
+			if ($i >= 0 && $i <= 3)
 				$this->xkey .= $this->k($i * 4);
-			else if(($i % 4) == 0)
+			else if (($i % 4) == 0)
 			{
 				// rotate the 4 bytes
 				$subword = $this->rotWord($this->ek(($i - 1) * 4));
@@ -677,8 +674,7 @@ abstract class Cipher_Rijndael extends Cipher
 				$h3 = parent::str2Hex($ek);
 				$res = parent::xorHex($h1, $h2, $h3);
 				$this->xkey .= parent::hex2Str($res);
-			}
-			else
+			} else
 			{
 				$h1 = parent::str2Hex($this->ek(($i - 1) * 4));
 				$h2 = parent::str2Hex($this->ek(($i - 4) * 4));
@@ -695,7 +691,7 @@ abstract class Cipher_Rijndael extends Cipher
 	 * Expand a 24 byte key, the size it is expanded to varies
 	 * based on the block size of the Rijndael implementation chosen
 	 *
-	 * @return void
+	 * @return boolean
 	 */
 	private function expandKey192()
 	{
@@ -705,19 +701,19 @@ abstract class Cipher_Rijndael extends Cipher
 
 		// the number of rounds we make depends on the block size of the text
 		// used during encryption/decryption
-		if($this->blockSize() == 16)
+		if ($this->blockSize() == 16)
 			$max = 52;
-		if($this->blockSize() == 24)
+		if ($this->blockSize() == 24)
 			$max = 78;
-		if($this->blockSize() == 32)
+		if ($this->blockSize() == 32)
 			$max = 120;
 
 		// 24 byte key expands to 208 bytes
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
-			if($i >= 0 && $i <= 5)
+			if ($i >= 0 && $i <= 5)
 				$this->xkey .= $this->k($i * 4);
-			else if(($i % 6) == 0)
+			else if (($i % 6) == 0)
 			{
 				// rotate the 4 bytes
 				$subword = $this->rotWord($this->ek(($i - 1) * 4));
@@ -737,8 +733,7 @@ abstract class Cipher_Rijndael extends Cipher
 				$h3 = parent::str2Hex($ek);
 				$res = parent::xorHex($h1, $h2, $h3);
 				$this->xkey .= parent::hex2Str($res);
-			}
-			else
+			} else
 			{
 				$h1 = parent::str2Hex($this->ek(($i - 1) * 4));
 				$h2 = parent::str2Hex($this->ek(($i - 6) * 4));
@@ -755,7 +750,7 @@ abstract class Cipher_Rijndael extends Cipher
 	 * Expand a 32 byte key, the size it is expanded to varies
 	 * based on the block size of the Rijndael implementation chosen
 	 *
-	 * @return void
+	 * @return boolean
 	 */
 	private function expandKey256()
 	{
@@ -765,19 +760,19 @@ abstract class Cipher_Rijndael extends Cipher
 
 		// the number of rounds we make depends on the block size of the text
 		// used during encryption/decryption
-		if($this->blockSize() == 16)
+		if ($this->blockSize() == 16)
 			$max = 60;
-		if($this->blockSize() == 24)
+		if ($this->blockSize() == 24)
 			$max = 90;
-		if($this->blockSize() == 32)
+		if ($this->blockSize() == 32)
 			$max = 120;
 
 		// 32 byte key expands to 240 bytes
-		for($i = 0; $i < $max; ++$i)
+		for ($i = 0; $i < $max; ++$i)
 		{
-			if($i >= 0 && $i <= 7)
+			if ($i >= 0 && $i <= 7)
 				$this->xkey .= $this->k($i * 4);
-			else if($i % 8 == 0)
+			else if ($i % 8 == 0)
 			{
 				// rotate the 4 bytes
 				$subword = $this->rotWord($this->ek(($i - 1) * 4));
@@ -797,7 +792,7 @@ abstract class Cipher_Rijndael extends Cipher
 				$res = parent::xorHex($h1, $h2, $h3);
 				$this->xkey .= parent::hex2Str($res);
 			}
-			else if($i % 4 == 0)
+			else if ($i % 4 == 0)
 			{
 				// get the subsitution from the s-box
 				$subword = $this->ek(($i - 1) * 4);
@@ -811,8 +806,7 @@ abstract class Cipher_Rijndael extends Cipher
 				$h2 = parent::str2Hex($ek);
 				$res = parent::xorHex($h1, $h2);
 				$this->xkey .= parent::hex2Str($res);
-			}
-			else
+			} else
 			{
 				$h1 = parent::str2Hex($this->ek(($i - 1) * 4));
 				$h2 = parent::str2Hex($this->ek(($i - 8) * 4));

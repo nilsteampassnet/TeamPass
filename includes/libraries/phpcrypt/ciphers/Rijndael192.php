@@ -38,39 +38,39 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Cipher_Rijndael_192 extends Cipher_Rijndael
 {
-	/** @type integer BYTES_BLOCK The size of the block, in bytes */
-	const BYTES_BLOCK = 24; // 192 bits
+    /** @type integer BYTES_BLOCK The size of the block, in bytes */
+    const BYTES_BLOCK = 24; // 192 bits
 
-	//const BITS_KEY = 0;
-
-
-	/**
-	 * Constructor
-	 * Sets the key used for encryption. Also sets the requied block size
-	 *
-	 * @param string $key string containing the user supplied encryption key
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// Set up the key
-		parent::__construct(PHP_CRYPT::CIPHER_RIJNDAEL_192, $key);
-
-		// required block size in bits
-		$this->blockSize(self::BYTES_BLOCK);
-
-		// expand the key now that we know the key size, and the bit size
-		$this->expandKey();
-	}
+    //const BITS_KEY = 0;
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Constructor
+     * Sets the key used for encryption. Also sets the requied block size
+     *
+     * @param string $key string containing the user supplied encryption key
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // Set up the key
+        parent::__construct(PHP_CRYPT::CIPHER_RIJNDAEL_192, $key);
+
+        // required block size in bits
+        $this->blockSize(self::BYTES_BLOCK);
+
+        // expand the key now that we know the key size, and the bit size
+        $this->expandKey();
+    }
+
+
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 }

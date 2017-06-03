@@ -331,7 +331,7 @@ class BigInteger
                 switch (MATH_BIGINTEGER_MODE) {
                     case self::MODE_GMP:
                         $sign = $this->is_negative ? '-' : '';
-                        $this->value = gmp_init($sign . '0x' . Hex::encode($x));
+                        $this->value = gmp_init($sign.'0x'.Hex::encode($x));
                         break;
                     case self::MODE_BCMATH:
                         // round $len to the nearest 4 (thanks, DavidMJ!)
@@ -339,13 +339,13 @@ class BigInteger
 
                         $x = str_pad($x, $len, chr(0), STR_PAD_LEFT);
 
-                        for ($i = 0; $i < $len; $i+= 4) {
+                        for ($i = 0; $i < $len; $i += 4) {
                             $this->value = bcmul($this->value, '4294967296', 0); // 4294967296 == 2**32
                             $this->value = bcadd($this->value, 0x1000000 * ord($x[$i]) + ((ord($x[$i + 1]) << 16) | (ord($x[$i + 2]) << 8) | ord($x[$i + 3])), 0);
                         }
 
                         if ($this->is_negative) {
-                            $this->value = '-' . $this->value;
+                            $this->value = '-'.$this->value;
                         }
 
                         break;
@@ -381,18 +381,18 @@ class BigInteger
 
                 switch (MATH_BIGINTEGER_MODE) {
                     case self::MODE_GMP:
-                        $temp = $this->is_negative ? '-0x' . $x : '0x' . $x;
+                        $temp = $this->is_negative ? '-0x'.$x : '0x'.$x;
                         $this->value = gmp_init($temp);
                         $this->is_negative = false;
                         break;
                     case self::MODE_BCMATH:
-                        $x = (strlen($x) & 1) ? '0' . $x : $x;
+                        $x = (strlen($x) & 1) ? '0'.$x : $x;
                         $temp = new static(Hex::decode($x), 256);
-                        $this->value = $this->is_negative ? '-' . $temp->value : $temp->value;
+                        $this->value = $this->is_negative ? '-'.$temp->value : $temp->value;
                         $this->is_negative = false;
                         break;
                     default:
-                        $x = (strlen($x) & 1) ? '0' . $x : $x;
+                        $x = (strlen($x) & 1) ? '0'.$x : $x;
                         $temp = new static(Hex::decode($x), 256);
                         $this->value = $temp->value;
                 }
@@ -452,12 +452,12 @@ class BigInteger
                 $str = '0x';
                 while (strlen($x)) {
                     $part = substr($x, 0, 4);
-                    $str.= dechex(bindec($part));
+                    $str .= dechex(bindec($part));
                     $x = substr($x, 4);
                 }
 
                 if ($this->is_negative) {
-                    $str = '-' . $str;
+                    $str = '-'.$str;
                 }
 
                 $temp = new static($str, 8 * $base); // ie. either -16 or +16
@@ -506,7 +506,7 @@ class BigInteger
             }
 
             if (ord($bytes[0]) & 0x80) {
-                $bytes = chr(0) . $bytes;
+                $bytes = chr(0).$bytes;
             }
 
             return $comparison < 0 ? ~$bytes : $bytes;
@@ -519,12 +519,11 @@ class BigInteger
                 }
 
                 $temp = gmp_strval(gmp_abs($this->value), 16);
-                $temp = (strlen($temp) & 1) ? '0' . $temp : $temp;
+                $temp = (strlen($temp) & 1) ? '0'.$temp : $temp;
                 $temp = Hex::decode($temp);
 
                 return $this->precision > 0 ?
-                    substr(str_pad($temp, $this->precision >> 3, chr(0), STR_PAD_LEFT), -($this->precision >> 3)) :
-                    ltrim($temp, chr(0));
+                    substr(str_pad($temp, $this->precision >> 3, chr(0), STR_PAD_LEFT), -($this->precision >> 3)) : ltrim($temp, chr(0));
             case self::MODE_BCMATH:
                 if ($this->value === '0') {
                     return $this->precision > 0 ? str_repeat(chr(0), ($this->precision + 1) >> 3) : '';
@@ -539,13 +538,12 @@ class BigInteger
 
                 while (bccomp($current, '0', 0) > 0) {
                     $temp = bcmod($current, '16777216');
-                    $value = chr($temp >> 16) . chr($temp >> 8) . chr($temp) . $value;
+                    $value = chr($temp >> 16).chr($temp >> 8).chr($temp).$value;
                     $current = bcdiv($current, '16777216', 0);
                 }
 
                 return $this->precision > 0 ?
-                    substr(str_pad($value, $this->precision >> 3, chr(0), STR_PAD_LEFT), -($this->precision >> 3)) :
-                    ltrim($value, chr(0));
+                    substr(str_pad($value, $this->precision >> 3, chr(0), STR_PAD_LEFT), -($this->precision >> 3)) : ltrim($value, chr(0));
         }
 
         if (!count($this->value)) {
@@ -559,8 +557,7 @@ class BigInteger
         }
 
         return $this->precision > 0 ?
-            str_pad(substr($result, -(($this->precision + 7) >> 3)), ($this->precision + 7) >> 3, chr(0), STR_PAD_LEFT) :
-            $result;
+            str_pad(substr($result, -(($this->precision + 7) >> 3)), ($this->precision + 7) >> 3, chr(0), STR_PAD_LEFT) : $result;
     }
 
     /**
@@ -612,16 +609,16 @@ class BigInteger
     {
         $hex = $this->toHex($twos_compliment);
         $bits = '';
-        for ($i = strlen($hex) - 8, $start = strlen($hex) & 7; $i >= $start; $i-=8) {
-            $bits = str_pad(decbin(hexdec(substr($hex, $i, 8))), 32, '0', STR_PAD_LEFT) . $bits;
+        for ($i = strlen($hex) - 8, $start = strlen($hex) & 7; $i >= $start; $i -= 8) {
+            $bits = str_pad(decbin(hexdec(substr($hex, $i, 8))), 32, '0', STR_PAD_LEFT).$bits;
         }
         if ($start) { // hexdec('') == 0
-            $bits = str_pad(decbin(hexdec(substr($hex, 0, $start))), 8, '0', STR_PAD_LEFT) . $bits;
+            $bits = str_pad(decbin(hexdec(substr($hex, 0, $start))), 8, '0', STR_PAD_LEFT).$bits;
         }
         $result = $this->precision > 0 ? substr($bits, -$this->precision) : ltrim($bits, '0');
 
         if ($twos_compliment && $this->compare(new static()) > 0 && $this->precision <= 0) {
-            return '0' . $result;
+            return '0'.$result;
         }
 
         return $result;
@@ -668,7 +665,7 @@ class BigInteger
         $result = '';
         while (count($temp->value)) {
             list($temp, $mod) = $temp->divide($divisor);
-            $result = str_pad(isset($mod->value[0]) ? $mod->value[0] : '', self::$max10Len, '0', STR_PAD_LEFT) . $result;
+            $result = str_pad(isset($mod->value[0]) ? $mod->value[0] : '', self::$max10Len, '0', STR_PAD_LEFT).$result;
         }
         $result = ltrim($result, '0');
         if (empty($result)) {
@@ -676,7 +673,7 @@ class BigInteger
         }
 
         if ($this->is_negative) {
-            $result = '-' . $result;
+            $result = '-'.$result;
         }
 
         return $result;
@@ -758,10 +755,10 @@ class BigInteger
             $opts[] = 'OpenSSL';
         }
         if (!empty($opts)) {
-            $engine.= ' (' . implode($opts, ', ') . ')';
+            $engine .= ' ('.implode($opts, ', ').')';
         }
         return array(
-            'value' => '0x' . $this->toHex(true),
+            'value' => '0x'.$this->toHex(true),
             'engine' => $engine
         );
     }
@@ -864,7 +861,7 @@ class BigInteger
         $value[count($value)] = 0; // just in case the carry adds an extra digit
 
         $carry = 0;
-        for ($i = 0, $j = 1; $j < $size; $i+=2, $j+=2) {
+        for ($i = 0, $j = 1; $j < $size; $i += 2, $j += 2) {
             $sum = $x_value[$j] * self::$baseFull + $x_value[$i] + $y_value[$j] * self::$baseFull + $y_value[$i] + $carry;
             $carry = $sum >= self::$maxDigit2; // eg. floor($sum / 2**52); only possible values (in any base) are 0 and 1
             $sum = $carry ? $sum - self::$maxDigit2 : $sum;
@@ -998,7 +995,7 @@ class BigInteger
         // at this point, $x_value should be at least as big as - if not bigger than - $y_value
 
         $carry = 0;
-        for ($i = 0, $j = 1; $j < $y_size; $i+=2, $j+=2) {
+        for ($i = 0, $j = 1; $j < $y_size; $i += 2, $j += 2) {
             $sum = $x_value[$j] * self::$baseFull + $x_value[$i] - $y_value[$j] * self::$baseFull - $y_value[$i] - $carry;
             $carry = $sum < 0; // eg. floor($sum / 2**52); only possible values (in any base) are 0 and 1
             $sum = $carry ? $sum + self::$maxDigit2 : $sum;
@@ -1103,8 +1100,7 @@ class BigInteger
 
         return array(
             self::VALUE => min($x_length, $y_length) < 2 * self::KARATSUBA_CUTOFF ?
-                self::_trim(self::_regularMultiply($x_value, $y_value)) :
-                self::_trim(self::_karatsuba($x_value, $y_value)),
+                self::_trim(self::_regularMultiply($x_value, $y_value)) : self::_trim(self::_karatsuba($x_value, $y_value)),
             self::SIGN => $x_negative != $y_negative
         );
     }
@@ -1224,8 +1220,7 @@ class BigInteger
     static function _square($x = false)
     {
         return count($x) < 2 * self::KARATSUBA_CUTOFF ?
-            self::_trim(self::_baseSquare($x)) :
-            self::_trim(self::_karatsubaSquare($x));
+            self::_trim(self::_baseSquare($x)) : self::_trim(self::_karatsubaSquare($x));
     }
 
     /**
@@ -1329,7 +1324,7 @@ class BigInteger
      * </code>
      *
      * @param \phpseclib\Math\BigInteger $y
-     * @return array
+     * @return BigInteger[]
      * @access public
      * @internal This function is based off of {@link http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf#page=9 HAC 14.20}.
      */
@@ -1420,11 +1415,11 @@ class BigInteger
         static $temp, $lhs, $rhs;
         if (!isset($temp)) {
             $temp = new static();
-            $lhs =  new static();
-            $rhs =  new static();
+            $lhs = new static();
+            $rhs = new static();
         }
         $temp_value = &$temp->value;
-        $rhs_value =  &$rhs->value;
+        $rhs_value = &$rhs->value;
 
         // $temp = $y << ($x_max - $y_max-1) in base 2**26
         $temp_value = array_merge($this->_array_repeat(0, $x_max - $y_max), $y_value);
@@ -1626,8 +1621,8 @@ class BigInteger
             );
 
             $RSAPublicKey = "-----BEGIN PUBLIC KEY-----\r\n" .
-                             chunk_split(Base64::encode($encapsulated)) .
-                             '-----END PUBLIC KEY-----';
+                                chunk_split(Base64::encode($encapsulated)) .
+                                '-----END PUBLIC KEY-----';
 
             $plaintext = str_pad($this->toBytes(), strlen($n->toBytes(true)) - 1, "\0", STR_PAD_LEFT);
 
@@ -1679,7 +1674,7 @@ class BigInteger
             if ($n->value[$i]) {
                 $temp = decbin($n->value[$i]);
                 $j = strlen($temp) - strrpos($temp, '1') - 1;
-                $j+= 26 * $i;
+                $j += 26 * $i;
                 break;
             }
         }
@@ -1747,7 +1742,7 @@ class BigInteger
         $e_length = count($e_value) - 1;
         $e_bits = decbin($e_value[$e_length]);
         for ($i = $e_length - 1; $i >= 0; --$i) {
-            $e_bits.= str_pad(decbin($e_value[$i]), self::$base, '0', STR_PAD_LEFT);
+            $e_bits .= str_pad(decbin($e_value[$i]), self::$base, '0', STR_PAD_LEFT);
         }
 
         $e_length = strlen($e_bits);
@@ -1991,7 +1986,7 @@ class BigInteger
 
         $cutoff = $m_length + ($m_length >> 1);
         $lsd = array_slice($n, 0, $cutoff); // m.length + (m.length >> 1)
-        $msd = array_slice($n, $cutoff);    // m.length >> 1
+        $msd = array_slice($n, $cutoff); // m.length >> 1
         $lsd = self::_trim($lsd);
         $temp = self::_multiply($msd, false, $m1, false);
         $n = self::_add($lsd, false, $temp[self::VALUE], false); // m.length + (m.length >> 1) + 1
@@ -2064,7 +2059,7 @@ class BigInteger
             $lhs_value[] = 1;
             $rhs = new static();
             $rhs->value = $n;
-            list($temp, ) = $lhs->divide($rhs); // m.length
+            list($temp,) = $lhs->divide($rhs); // m.length
             $cache[self::DATA][] = $temp->value;
         }
 
@@ -2331,7 +2326,7 @@ class BigInteger
         $x = -$x[0];
         $result = $x & 0x3; // x**-1 mod 2**2
         $result = ($result * (2 - $x * $result)) & 0xF; // x**-1 mod 2**4
-        $result = ($result * (2 - ($x & 0xFF) * $result))  & 0xFF; // x**-1 mod 2**8
+        $result = ($result * (2 - ($x & 0xFF) * $result)) & 0xFF; // x**-1 mod 2**8
         $result = ($result * ((2 - ($x & 0xFFFF) * $result) & 0xFFFF)) & 0xFFFF; // x**-1 mod 2**16
         $result = fmod($result * (2 - fmod($x * $result, self::$baseFull)), self::$baseFull); // x**-1 mod 2**26
         return $result & self::$maxDigit;
@@ -2360,7 +2355,7 @@ class BigInteger
      * </code>
      *
      * @param \phpseclib\Math\BigInteger $n
-     * @return \phpseclib\Math\BigInteger|false
+     * @return BigInteger
      * @access public
      * @internal See {@link http://www.cacr.math.uwaterloo.ca/hac/about/chap14.pdf#page=21 HAC 14.64} for more information.
      */
@@ -2480,7 +2475,7 @@ class BigInteger
         $g = new static();
         $g->value = array(1);
 
-        while (!(($x->value[0] & 1)|| ($y->value[0] & 1))) {
+        while (!(($x->value[0] & 1) || ($y->value[0] & 1))) {
             $x->_rshift(1);
             $y->_rshift(1);
             $g->_lshift(1);
@@ -2692,7 +2687,7 @@ class BigInteger
         }
         $this->precision = $bits;
         if (MATH_BIGINTEGER_MODE != self::MODE_BCMATH) {
-            $this->bitmask = new static(chr((1 << ($bits & 0x7)) - 1) . str_repeat(chr(0xFF), $bits >> 3), 256);
+            $this->bitmask = new static(chr((1 << ($bits & 0x7)) - 1).str_repeat(chr(0xFF), $bits >> 3), 256);
         } else {
             $this->bitmask = new static(bcpow('2', $bits, 0));
         }
@@ -2748,7 +2743,7 @@ class BigInteger
         $result->value = array_slice($result->value, 0, $length);
 
         for ($i = 0; $i < $length; ++$i) {
-            $result->value[$i]&= $x->value[$i];
+            $result->value[$i] &= $x->value[$i];
         }
 
         return $this->_normalize($result);
@@ -2788,7 +2783,7 @@ class BigInteger
         $x->value = array_pad($x->value, $length, 0);
 
         for ($i = 0; $i < $length; ++$i) {
-            $result->value[$i]|= $x->value[$i];
+            $result->value[$i] |= $x->value[$i];
         }
 
         return $this->_normalize($result);
@@ -2828,7 +2823,7 @@ class BigInteger
         $x->value = array_pad($x->value, $length, 0);
 
         for ($i = 0; $i < $length; ++$i) {
-            $result->value[$i]^= $x->value[$i];
+            $result->value[$i] ^= $x->value[$i];
         }
 
         return $this->_normalize($result);
@@ -2865,7 +2860,7 @@ class BigInteger
         }
 
         // generate as many leading 1's as we need to.
-        $leading_ones = chr((1 << ($new_bits & 0x7)) - 1) . str_repeat(chr(0xFF), $new_bits >> 3);
+        $leading_ones = chr((1 << ($new_bits & 0x7)) - 1).str_repeat(chr(0xFF), $new_bits >> 3);
 
         self::_base256_lshift($leading_ones, $current_bits);
 
@@ -2976,13 +2971,13 @@ class BigInteger
             for ($i = 0; $temp >> $i; ++$i) {
             }
             $precision = 8 * strlen($bits) - 8 + $i;
-            $mask = chr((1 << ($precision & 0x7)) - 1) . str_repeat(chr(0xFF), $precision >> 3);
+            $mask = chr((1 << ($precision & 0x7)) - 1).str_repeat(chr(0xFF), $precision >> 3);
         }
 
         if ($shift < 0) {
-            $shift+= $precision;
+            $shift += $precision;
         }
-        $shift%= $precision;
+        $shift %= $precision;
 
         if (!$shift) {
             return clone $this;
@@ -3026,13 +3021,13 @@ class BigInteger
             $random = '';
 
             if ($size & 1) {
-                $random.= chr(mt_rand(0, 255));
+                $random .= chr(mt_rand(0, 255));
             }
 
             $blocks = $size >> 1;
             for ($i = 0; $i < $blocks; ++$i) {
                 // mt_rand(-2147483648, 0x7FFFFFFF) always produces -2147483648 on some systems
-                $random.= pack('n', mt_rand(0, 0xFFFF));
+                $random .= pack('n', mt_rand(0, 0xFFFF));
             }
         }
 
@@ -3048,8 +3043,6 @@ class BigInteger
      * BigInteger::randomRange($min, $max)
      * BigInteger::randomRange($max, $min)
      *
-     * @param \phpseclib\Math\BigInteger $arg1
-     * @param \phpseclib\Math\BigInteger $arg2
      * @return \phpseclib\Math\BigInteger
      * @access public
      */
@@ -3089,7 +3082,7 @@ class BigInteger
 
             http://crypto.stackexchange.com/questions/5708/creating-a-small-number-from-a-cryptographically-secure-random-string
         */
-        $random_max = new static(chr(1) . str_repeat("\0", $size), 256);
+        $random_max = new static(chr(1).str_repeat("\0", $size), 256);
         $random = static::random($size);
 
         list($max_multiple) = $random_max->divide($max);
@@ -3125,8 +3118,8 @@ class BigInteger
         $max = str_repeat(chr(0xFF), $bytes);
         $msb = $bits & 7;
         if ($msb) {
-            $min = chr(1 << ($msb - 1)) . $min;
-            $max = chr((1 << $msb) - 1) . $max;
+            $min = chr(1 << ($msb - 1)).$min;
+            $max = chr((1 << $msb) - 1).$max;
         } else {
             $min[0] = chr(0x80);
         }
@@ -3276,7 +3269,7 @@ class BigInteger
         if (!$t) {
             // see HAC 4.49 "Note (controlling the error probability)"
             // @codingStandardsIgnoreStart
-                 if ($length >= 163) { $t =  2; } // floor(1300 / 8)
+                    if ($length >= 163) { $t =  2; } // floor(1300 / 8)
             else if ($length >= 106) { $t =  3; } // floor( 850 / 8)
             else if ($length >= 81 ) { $t =  4; } // floor( 650 / 8)
             else if ($length >= 68 ) { $t =  5; } // floor( 550 / 8)
@@ -3317,17 +3310,17 @@ class BigInteger
 
         if (!isset($primes)) {
             $primes = array(
-                3,    5,    7,    11,   13,   17,   19,   23,   29,   31,   37,   41,   43,   47,   53,   59,
-                61,   67,   71,   73,   79,   83,   89,   97,   101,  103,  107,  109,  113,  127,  131,  137,
-                139,  149,  151,  157,  163,  167,  173,  179,  181,  191,  193,  197,  199,  211,  223,  227,
-                229,  233,  239,  241,  251,  257,  263,  269,  271,  277,  281,  283,  293,  307,  311,  313,
-                317,  331,  337,  347,  349,  353,  359,  367,  373,  379,  383,  389,  397,  401,  409,  419,
-                421,  431,  433,  439,  443,  449,  457,  461,  463,  467,  479,  487,  491,  499,  503,  509,
-                521,  523,  541,  547,  557,  563,  569,  571,  577,  587,  593,  599,  601,  607,  613,  617,
-                619,  631,  641,  643,  647,  653,  659,  661,  673,  677,  683,  691,  701,  709,  719,  727,
-                733,  739,  743,  751,  757,  761,  769,  773,  787,  797,  809,  811,  821,  823,  827,  829,
-                839,  853,  857,  859,  863,  877,  881,  883,  887,  907,  911,  919,  929,  937,  941,  947,
-                953,  967,  971,  977,  983,  991,  997
+                3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
+                61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137,
+                139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227,
+                229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313,
+                317, 331, 337, 347, 349, 353, 359, 367, 373, 379, 383, 389, 397, 401, 409, 419,
+                421, 431, 433, 439, 443, 449, 457, 461, 463, 467, 479, 487, 491, 499, 503, 509,
+                521, 523, 541, 547, 557, 563, 569, 571, 577, 587, 593, 599, 601, 607, 613, 617,
+                619, 631, 641, 643, 647, 653, 659, 661, 673, 677, 683, 691, 701, 709, 719, 727,
+                733, 739, 743, 751, 757, 761, 769, 773, 787, 797, 809, 811, 821, 823, 827, 829,
+                839, 853, 857, 859, 863, 877, 881, 883, 887, 907, 911, 919, 929, 937, 941, 947,
+                953, 967, 971, 977, 983, 991, 997
             );
 
             if (MATH_BIGINTEGER_MODE != self::MODE_INTERNAL) {
@@ -3553,8 +3546,8 @@ class BigInteger
     /**
      * Array Repeat
      *
-     * @param $input Array
-     * @param $multiplier mixed
+     * @param integer $input Array
+     * @param integer $multiplier mixed
      * @return array
      * @access private
      */
@@ -3569,7 +3562,7 @@ class BigInteger
      * Shifts binary strings $shift bits, essentially multiplying by 2**$shift.
      *
      * @param $x String
-     * @param $shift Integer
+     * @param integer $shift Integer
      * @return string
      * @access private
      */
@@ -3589,7 +3582,7 @@ class BigInteger
             $carry = $temp >> 8;
         }
         $carry = ($carry != 0) ? chr($carry) : '';
-        $x = $carry . $x . str_repeat(chr(0), $num_bytes);
+        $x = $carry.$x.str_repeat(chr(0), $num_bytes);
     }
 
     /**
@@ -3628,7 +3621,7 @@ class BigInteger
         }
         $x = ltrim($x, chr(0));
 
-        $remainder = chr($carry >> $carry_shift) . $remainder;
+        $remainder = chr($carry >> $carry_shift).$remainder;
 
         return ltrim($remainder, chr(0));
     }

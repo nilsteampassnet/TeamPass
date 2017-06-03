@@ -29,7 +29,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$error_handler = 'db_error_handler';
-$link= mysqli_connect($server, $user, $pass, $database, $port);
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 // ssh libraries
 stream_resolve_include_path('../includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
@@ -84,7 +84,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
         $parse = parse_url($record['url']);
         $ssh = new Net_SSH2($parse['host'], $parse['port']);
         if (!$ssh->login($record['login'], $oldPwClear['string'])) {
-           $log .= "   ERR - Login failed.\n   Error description:".$_SESSION['sshError']."\n\n";
+            $log .= "   ERR - Login failed.\n   Error description:".$_SESSION['sshError']."\n\n";
         }else{
             // send ssh script for user change
             $ret_server = $ssh->exec('echo -e "'.$new_pwd.'\n'.$new_pwd.'" | passwd '.$record['login']);
@@ -104,7 +104,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv'],
                     'auto_update_pwd_next_date' => time() + (2592000 * intval($record['auto_update_pwd_frequency']))
-                   ),
+                    ),
                 "id = %i",
                 $record['id']
             );

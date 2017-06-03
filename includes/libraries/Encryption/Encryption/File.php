@@ -186,7 +186,7 @@ final class File
         $if = @\fopen($inputFilename, 'rb');
         if ($if === false) {
             throw new Ex\IOException(
-                'Cannot open input file for encrypting: ' .
+                'Cannot open input file for encrypting: '.
                 self::getLastErrorMessage()
             );
         }
@@ -200,7 +200,7 @@ final class File
         if ($of === false) {
             \fclose($if);
             throw new Ex\IOException(
-                'Cannot open output file for encrypting: ' .
+                'Cannot open output file for encrypting: '.
                 self::getLastErrorMessage()
             );
         }
@@ -250,7 +250,7 @@ final class File
         $if = @\fopen($inputFilename, 'rb');
         if ($if === false) {
             throw new Ex\IOException(
-                'Cannot open input file for decrypting: ' .
+                'Cannot open input file for decrypting: '.
                 self::getLastErrorMessage()
             );
         }
@@ -265,7 +265,7 @@ final class File
         if ($of === false) {
             \fclose($if);
             throw new Ex\IOException(
-                'Cannot open output file for decrypting: ' .
+                'Cannot open output file for decrypting: '.
                 self::getLastErrorMessage()
             );
         }
@@ -312,12 +312,12 @@ final class File
      */
     private static function encryptResourceInternal($inputHandle, $outputHandle, KeyOrPassword $secret)
     {
-        if (! \is_resource($inputHandle)) {
+        if (!\is_resource($inputHandle)) {
             throw new Ex\IOException(
                 'Input handle must be a resource!'
             );
         }
-        if (! \is_resource($outputHandle)) {
+        if (!\is_resource($outputHandle)) {
             throw new Ex\IOException(
                 'Output handle must be a resource!'
             );
@@ -345,7 +345,7 @@ final class File
         /* Write the header, salt, and IV. */
         self::writeBytes(
             $outputHandle,
-            Core::CURRENT_VERSION . $file_salt . $iv,
+            Core::CURRENT_VERSION.$file_salt.$iv,
             Core::HEADER_VERSION_SIZE + Core::SALT_BYTE_SIZE + $ivsize
         );
 
@@ -362,7 +362,7 @@ final class File
 
         /* Loop until we reach the end of the input file. */
         $at_file_end = false;
-        while (! (\feof($inputHandle) || $at_file_end)) {
+        while (!(\feof($inputHandle) || $at_file_end)) {
             /* Find out if we can read a full buffer, or only a partial one. */
             $pos = \ftell($inputHandle);
             if ($pos === false) {
@@ -429,12 +429,12 @@ final class File
      */
     public static function decryptResourceInternal($inputHandle, $outputHandle, KeyOrPassword $secret)
     {
-        if (! \is_resource($inputHandle)) {
+        if (!\is_resource($inputHandle)) {
             throw new Ex\IOException(
                 'Input handle must be a resource!'
             );
         }
-        if (! \is_resource($outputHandle)) {
+        if (!\is_resource($outputHandle)) {
             throw new Ex\IOException(
                 'Output handle must be a resource!'
             );
@@ -528,7 +528,7 @@ final class File
         $hmac2 = \hash_copy($hmac);
 
         $break = false;
-        while (! $break) {
+        while (!$break) {
             $pos = \ftell($inputHandle);
             if ($pos === false) {
                 throw new Ex\IOException(
@@ -560,14 +560,14 @@ final class File
                     'Cannot duplicate a hash context'
                 );
             }
-            $macs []= \hash_final($chunk_mac);
+            $macs [] = \hash_final($chunk_mac);
         }
 
         /* Get the final HMAC, which should match the stored one. */
         $final_mac = \hash_final($hmac, true);
 
         /* Verify the HMAC. */
-        if (! Core::hashEquals($final_mac, $stored_mac)) {
+        if (!Core::hashEquals($final_mac, $stored_mac)) {
             throw new Ex\WrongKeyOrModifiedCiphertextException(
                 'Integrity check failed.'
             );
@@ -583,7 +583,7 @@ final class File
         }
 
         $at_file_end = false;
-        while (! $at_file_end) {
+        while (!$at_file_end) {
             $pos = \ftell($inputHandle);
             if ($pos === false) {
                 throw new Ex\IOException(
@@ -594,7 +594,7 @@ final class File
             /* Read the next buffer-sized chunk (or less). */
             if ($pos + Core::BUFFER_BYTE_SIZE >= $cipher_end) {
                 $at_file_end = true;
-                $read   = self::readBytes(
+                $read = self::readBytes(
                     $inputHandle,
                     $cipher_end - $pos + 1
                 );
@@ -621,7 +621,7 @@ final class File
                 throw new Ex\WrongKeyOrModifiedCiphertextException(
                     'File was modified after MAC verification'
                 );
-            } elseif (! Core::hashEquals(\array_shift($macs), $calc)) {
+            } elseif (!Core::hashEquals(\array_shift($macs), $calc)) {
                 throw new Ex\WrongKeyOrModifiedCiphertextException(
                     'File was modified after MAC verification'
                 );
@@ -678,7 +678,7 @@ final class File
         }
         $buf       = '';
         $remaining = $num_bytes;
-        while ($remaining > 0 && ! \feof($stream)) {
+        while ($remaining > 0 && !\feof($stream)) {
             $read = \fread($stream, $remaining);
 
             if ($read === false) {
@@ -706,7 +706,7 @@ final class File
      *
      * @throws Ex\IOException
      *
-     * @return string
+     * @return integer
      */
     public static function writeBytes($stream, $buf, $num_bytes = null)
     {

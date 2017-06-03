@@ -45,7 +45,7 @@ class Cipher_CAST_128 extends Cipher
 
 	const BYTES_KEY_SMALL = 10;
 	const BYTES_KEY_MAX   = 16;
-	const BYTES_KEY_MIN   =  5;
+	const BYTES_KEY_MIN   = 5;
 
 	/** @type array $_s1 An array of 256 unsigned integers */
 	private static $_s1 = array();
@@ -88,12 +88,12 @@ class Cipher_CAST_128 extends Cipher
 	{
 		// the length of the key is is between 5 - 16 bytes (40 - 128 bits)
 		$keylen = strlen($key);
-		if($keylen > self::BYTES_KEY_MAX)
+		if ($keylen > self::BYTES_KEY_MAX)
 		{
 			$key = substr($key, 0, self::BYTES_KEY_MAX);
 			$keylen = self::BYTES_KEY_MAX;
 		}
-		else if($keylen < self::BYTES_KEY_MIN)
+		else if ($keylen < self::BYTES_KEY_MIN)
 		{
 			$msg  = PHP_Crypt::CIPHER_CAST_128." requires a key size between ";
 			$msg .= "5 - 16 bytes.";
@@ -142,7 +142,7 @@ class Cipher_CAST_128 extends Cipher
 		// We do only 12 rounds if we have a key 10 bytes or less.
 		// If we have a key greater than 10 bytes, we do the 12 rounds
 		// then proceed to the additional 4 rounds for a total of 16
-		for($i = 0; $i < 12; $i += 3)
+		for ($i = 0; $i < 12; $i += 3)
 		{
 			// f1
 			$tmp = $r;
@@ -162,7 +162,7 @@ class Cipher_CAST_128 extends Cipher
 
 		// only do the full 16 rounds if the key is longer than
 		// 10 bytes (80 bits)
-		if($this->keySize() > self::BYTES_KEY_SMALL)
+		if ($this->keySize() > self::BYTES_KEY_SMALL)
 		{
 			// f1
 			$tmp = $r;
@@ -209,7 +209,7 @@ class Cipher_CAST_128 extends Cipher
 
 		// only do the full 16 rounds if the key is longer than
 		// 10 bytes (80 bits)
-		if($this->keySize() > self::BYTES_KEY_SMALL)
+		if ($this->keySize() > self::BYTES_KEY_SMALL)
 		{
 			// f1
 			$tmp = $r;
@@ -233,7 +233,7 @@ class Cipher_CAST_128 extends Cipher
 		}
 
 		// We do only 12 rounds if we have a key 10 bytes or less.
-		for($i = 11; $i >= 2; $i -= 3)
+		for ($i = 11; $i >= 2; $i -= 3)
 		{
 			// f3
 			$tmp = $r;
@@ -262,7 +262,7 @@ class Cipher_CAST_128 extends Cipher
 	 * Cast 128 F1 function
 	 *
 	 * @param $r integer The right half of the data being encrypted in cast_128()
-	 * @param $i integer The round number (1-16) in cast_128()
+	 * @param integer $i integer The round number (1-16) in cast_128()
 	 * @return integer The value after the F1 transformation
 	 */
 	private function f1($r, $i)
@@ -284,7 +284,7 @@ class Cipher_CAST_128 extends Cipher
 	 * Cast 128 F2 function
 	 *
 	 * @param $r integer The right half of the data being encrypted in cast_128()
-	 * @param $i integer The round number (1-16) in cast_128()
+	 * @param integer $i integer The round number (1-16) in cast_128()
 	 * @return integer The value after the F2 transformation
 	 */
 	private function f2($r, $i)
@@ -306,7 +306,7 @@ class Cipher_CAST_128 extends Cipher
 	 * Cast 128 F3 function
 	 *
 	 * @param $r integer The right half of the data being encrypted in cast_128()
-	 * @param $i integer The round number (1-16) in cast_128()
+	 * @param integer $i integer The round number (1-16) in cast_128()
 	 * @return integer The value after the F3 transformation
 	 */
 	private function f3($r, $i)
@@ -341,7 +341,7 @@ class Cipher_CAST_128 extends Cipher
 
 		// the max length of the key is 16 bytes, however if it is
 		// less, pad it with null to get ito to 16 bytes
-		if($this->keySize() < self::BYTES_KEY_MAX)
+		if ($this->keySize() < self::BYTES_KEY_MAX)
 			$x = str_pad($x, self::BYTES_KEY_MAX, "\0", STR_PAD_RIGHT);
 
 		/*
@@ -350,7 +350,7 @@ class Cipher_CAST_128 extends Cipher
 		 */
 
 		 // two loops, each loop does 16 bytes for a total of 32 bytes
-		 for($i = 0; $i < 2; ++$i)
+		 for ($i = 0; $i < 2; ++$i)
 		 {
 			// z0z1z2z3 = x0x1x2x3 ^ S5[xD] ^ S6[xF] ^ S7[xC] ^ S8[xE] ^ S7[x8]
 			$tmp = substr($x, 0x00, 4);
@@ -629,7 +629,7 @@ class Cipher_CAST_128 extends Cipher
 		}
 
 		// create the 16 byte masking and rotate subkeys
-		$this->_mkey = array_slice($skey,  0, 16);
+		$this->_mkey = array_slice($skey, 0, 16);
 		$this->_rkey = array_slice($skey, 16, 16);
 
 		// $_rkey only uses the least significant 5 bits
@@ -639,7 +639,7 @@ class Cipher_CAST_128 extends Cipher
 
 		// there is 4kb in the s5 - s8 sboxes, which are not needed after we
 		// create the subkeys, so free up the memory. unset() doesn't work here
-		for($i = 5; $i <= 8; ++$i)
+		for ($i = 5; $i <= 8; ++$i)
 			self::${"_s$i"} = null;
 	}
 

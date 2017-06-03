@@ -167,7 +167,7 @@ function generate_renewal_pdf()
 $(function() {
     $("#tabs").tabs({
         beforeLoad: function( event, ui ) {
-            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading']; ?>...</div>')
         },
         load: function( event, ui ) {
             $("#loader_tab").remove();
@@ -193,7 +193,7 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG['please_confirm'];?>",
+        title: "<?php echo $LANG['please_confirm']; ?>",
         open : function() {
             // check if one is ticked
             var list_i = "";
@@ -213,13 +213,13 @@ $(function() {
 
             // confirm?
             if ($("#tab2_action").val() == "restoration") {
-                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration'];?>");
+                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration']; ?>");
             } else if ($("#tab2_action").val() == "deletion") {
-                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion'];?>");
+                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion']; ?>");
             }
         },
         buttons: {
-            "<?php echo $LANG['confirm'];?>": function() {
+            "<?php echo $LANG['confirm']; ?>": function() {
                 LoadingPage();
                 var list_i = "";
                 $(".cb_deleted_item:checked").each(function() {
@@ -262,7 +262,7 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }

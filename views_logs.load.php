@@ -65,7 +65,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=connections",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_connections_page input").focus();
@@ -82,7 +82,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=errors",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_errors_page input").focus();
@@ -99,7 +99,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=access",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_access_page input").focus();
@@ -116,7 +116,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=copy",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_copy_page input").focus();
@@ -133,7 +133,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=admin",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_admin_page input").focus();
@@ -150,7 +150,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=items",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_items_page input").focus();
@@ -167,7 +167,7 @@ function loadTable(table_id)
             "sAjaxSource": "sources/datatable/datatable.logs.php?action=failed_auth",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_items_page input").focus();
@@ -194,14 +194,14 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
+            "<?php echo $LANG["ok"]; ?>": function() {
                 $.post(
                     "sources/users.queries.php",
                     {
                         type   : "disconnect_all_users",
-                        key    : "<?php echo $_SESSION["key"];?>"
+                        key    : "<?php echo $_SESSION["key"]; ?>"
                     },
                     function(data) {
                         oTable2.fnDraw(false);
@@ -209,7 +209,7 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -220,9 +220,9 @@ $(function() {
     */
     $("#butPurge").button().click(function(e) {
         // prepare dialogbox
-        $("#div_dialog_message").dialog("option", "title", "<?php echo $LANG['admin_main'];?>");
+        $("#div_dialog_message").dialog("option", "title", "<?php echo $LANG['admin_main']; ?>");
         $("#div_dialog_message").dialog("option", "buttons", {
-            "<?php echo $LANG['ok'];?>": function() {
+            "<?php echo $LANG['ok']; ?>": function() {
                 $(this).dialog("close");
             }
         });
@@ -238,7 +238,7 @@ $(function() {
             },
             function(data) {
                 if (data[0].status == "ok") {
-                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
+                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done']; ?> "+data[0].nb);
                     $("#div_dialog_message").dialog("open");
                     // refresh table
                     if ($("#type_log_displayed").val() == "connections_logs") oTable0.api().ajax.reload();

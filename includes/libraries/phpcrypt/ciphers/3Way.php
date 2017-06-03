@@ -51,186 +51,186 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Cipher_3Way extends Cipher
 {
-	/** @type integer BYTES_BLOCK The size of the block, in bytes */
-	const BYTES_BLOCK = 12; // 96 bits;
+    /** @type integer BYTES_BLOCK The size of the block, in bytes */
+    const BYTES_BLOCK = 12; // 96 bits;
 
-	/** @type integer BYTES_KEY The size of the key, in bytes */
-	const BYTES_KEY = 12; // 96 bits;
+    /** @type integer BYTES_KEY The size of the key, in bytes */
+    const BYTES_KEY = 12; // 96 bits;
 
-	/** @type integer ROUNDS The number of rounds to implement */
-	const ROUNDS = 11;
+    /** @type integer ROUNDS The number of rounds to implement */
+    const ROUNDS = 11;
 
-	/** @type array $_rconst_enc The round constants for encryption */
-	private static $_rcon_enc = array();
+    /** @type array $_rconst_enc The round constants for encryption */
+    private static $_rcon_enc = array();
 
-	/** @type array $_rconst_enc The round constants for decryption */
-	private static $_rcon_dec = array();
-
-
-	/**
-	 * Constructor
-	 *
-	 * @param string $key The key used for Encryption/Decryption
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// set the key, make sure the required length is set in bytes
-		parent::__construct(PHP_Crypt::CIPHER_3WAY, $key, self::BYTES_KEY);
-
-		// set the block size
-		$this->blockSize(self::BYTES_BLOCK);
-
-		// initialize the round constants
-		$this->initTables();
-	}
+    /** @type array $_rconst_enc The round constants for decryption */
+    private static $_rcon_dec = array();
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Constructor
+     *
+     * @param string $key The key used for Encryption/Decryption
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // set the key, make sure the required length is set in bytes
+        parent::__construct(PHP_Crypt::CIPHER_3WAY, $key, self::BYTES_KEY);
+
+        // set the block size
+        $this->blockSize(self::BYTES_BLOCK);
+
+        // initialize the round constants
+        $this->initTables();
+    }
 
 
-	/**
-	 * Encrypt plain text data
-	 *
-	 * @param string $data A 96 bit plain data
-	 * @return boolean Returns true
-	 */
-	public function encrypt(&$data)
-	{
-		$this->operation(parent::ENCRYPT);
-		return $this->threeway($data);
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypt an encrypted string
-	 *
-	 * @param string $data A 96 bit block encrypted data
-	 * @return boolean Returns true
-	 */
-	public function decrypt(&$data)
-	{
-		$this->operation(parent::DECRYPT);
-		return $this->threeway($data);
-	}
+    /**
+     * Encrypt plain text data
+     *
+     * @param string $data A 96 bit plain data
+     * @return boolean Returns true
+     */
+    public function encrypt(&$data)
+    {
+        $this->operation(parent::ENCRYPT);
+        return $this->threeway($data);
+    }
 
 
-	/**
-	 * The same alorigthm is used for both Encryption, and Decryption
-	 *
-	 * @param string $data A 96 bit block of data
-	 * @return boolean Returns true
-	 */
-	private function threeway(&$data)
-	{
-		// first split $data into three 32 bit parts
-		$data = str_split($data, 4);
-		$data = array_map("parent::str2Dec", $data);
-
-		// split the key into three 32 bit parts
-		$key = str_split($this->key(), 4);
-		$key = array_map("parent::str2Dec", $key);
-
-		// determine which round constant to use
-		if($this->operation() == parent::ENCRYPT)
-			$rcon = self::$_rcon_enc;
-		else
-			$rcon = self::$_rcon_dec;
-
-		if($this->operation() == parent::DECRYPT)
-		{
-			$this->theta($key);
-			$this->invertBits($key);
-			$this->invertBits($data);
-		}
-
-		// 3Way uses 11 rounds
-		for($i = 0; $i < self::ROUNDS; ++$i)
-		{
-			$data[0] = parent::uInt32($data[0] ^ $key[0] ^ ($rcon[$i] << 16));
-			$data[1] = parent::uInt32($data[1] ^ $key[1]);
-			$data[2] = parent::uInt32($data[2] ^ $key[2] ^ $rcon[$i]);
-
-			$this->rho($data);
-		}
-
-		$data[0] = parent::uInt32($data[0] ^ $key[0] ^ ($rcon[self::ROUNDS] << 16));
-		$data[1] = parent::uInt32($data[1] ^ $key[1]);
-		$data[2] = parent::uInt32($data[2] ^ $key[2] ^ $rcon[self::ROUNDS]);
-
-		$this->theta($data);
-
-		if($this->operation() == parent::DECRYPT)
-			$this->invertBits($data);
-
-		// assemble the three 32 bit parts back to a 96 bit string
-		$data = parent::dec2Str($data[0], 4).parent::dec2Str($data[1], 4).
-				parent::dec2Str($data[2], 4);
-
-		return true;
-	}
+    /**
+     * Decrypt an encrypted string
+     *
+     * @param string $data A 96 bit block encrypted data
+     * @return boolean Returns true
+     */
+    public function decrypt(&$data)
+    {
+        $this->operation(parent::DECRYPT);
+        return $this->threeway($data);
+    }
 
 
-	/**
-	 * 3-Way's Theta function
-	 * This was translated from mcrypt's 3-Way theta() function
-	 *
-	 * @param array $d A 3 element array of 32 bit integers
-	 * @return void
-	 */
-	private function theta(&$d)
-	{
-		$tmp = array();
+    /**
+     * The same alorigthm is used for both Encryption, and Decryption
+     *
+     * @param string $data A 96 bit block of data
+     * @return boolean Returns true
+     */
+    private function threeway(&$data)
+    {
+        // first split $data into three 32 bit parts
+        $data = str_split($data, 4);
+        $data = array_map("parent::str2Dec", $data);
 
-		$tmp[0] = parent::uInt32(
-					$d[0] ^ ($d[0] >> 16) ^ ($d[1] << 16) ^ ($d[1] >> 16) ^ ($d[2] << 16) ^
-					($d[1] >> 24) ^ ($d[2] << 8) ^ ($d[2] >> 8) ^ ($d[0] << 24) ^ ($d[2] >> 16) ^
-					($d[0] << 16) ^ ($d[2] >> 24) ^ ($d[0] << 8)
-				);
+        // split the key into three 32 bit parts
+        $key = str_split($this->key(), 4);
+        $key = array_map("parent::str2Dec", $key);
 
-		$tmp[1] = parent::uInt32(
-					$d[1] ^ ($d[1] >> 16) ^ ($d[2] << 16) ^ ($d[2] >> 16) ^ ($d[0] << 16) ^
-					($d[2] >> 24) ^ ($d[0] << 8) ^ ($d[0] >> 8) ^ ($d[1] << 24) ^ ($d[0] >> 16) ^
-					($d[1] << 16) ^ ($d[0] >> 24) ^ ($d[1] << 8)
-				);
+        // determine which round constant to use
+        if($this->operation() == parent::ENCRYPT)
+            $rcon = self::$_rcon_enc;
+        else
+            $rcon = self::$_rcon_dec;
 
-		$tmp[2] = parent::uInt32(
-					$d[2] ^ ($d[2] >> 16) ^ ($d[0] << 16) ^ ($d[0] >> 16) ^ ($d[1] << 16) ^
-					($d[0] >> 24) ^ ($d[1] << 8) ^ ($d[1] >> 8) ^ ($d[2] << 24) ^ ($d[1] >> 16) ^
-					($d[2] << 16) ^ ($d[1] >> 24) ^ ($d[2] << 8)
-				);
+        if($this->operation() == parent::DECRYPT)
+        {
+            $this->theta($key);
+            $this->invertBits($key);
+            $this->invertBits($data);
+        }
 
-		$d = $tmp;
-	}
+        // 3Way uses 11 rounds
+        for($i = 0; $i < self::ROUNDS; ++$i)
+        {
+            $data[0] = parent::uInt32($data[0] ^ $key[0] ^ ($rcon[$i] << 16));
+            $data[1] = parent::uInt32($data[1] ^ $key[1]);
+            $data[2] = parent::uInt32($data[2] ^ $key[2] ^ $rcon[$i]);
+
+            $this->rho($data);
+        }
+
+        $data[0] = parent::uInt32($data[0] ^ $key[0] ^ ($rcon[self::ROUNDS] << 16));
+        $data[1] = parent::uInt32($data[1] ^ $key[1]);
+        $data[2] = parent::uInt32($data[2] ^ $key[2] ^ $rcon[self::ROUNDS]);
+
+        $this->theta($data);
+
+        if($this->operation() == parent::DECRYPT)
+            $this->invertBits($data);
+
+        // assemble the three 32 bit parts back to a 96 bit string
+        $data = parent::dec2Str($data[0], 4).parent::dec2Str($data[1], 4).
+                parent::dec2Str($data[2], 4);
+
+        return true;
+    }
 
 
-	/**
-	 * 3-Ways gamma() function
-	 * NOTE: After extensive testing against mcrypt's 3way, it appears
-	 * mcrypt's 3way gamma() function does not modify the array passed into
-	 * it. During testing mcrypt's 3way gamma() function returned the exact
-	 * same values sent into it. I'm confused as to why this is, and
-	 * can't find enough information about 3-Way to know if this is correct
-	 * though I suspect it's not. For compatibility, I am going to make
-	 * phpCrypt's 3way gamma() function leave the values unmodified. I will change
-	 * this at a later date if I find this is incorrect and mcrypt has a bug
-	 *
-	 * This was translated from mcrypt's 3-Way gamma() function
-	 *
-	 * @param array $d A 3 element array of 32 bit integers
-	 * @return void
-	 */
-	private function gamma(&$d)
-	{
-		/*
+    /**
+     * 3-Way's Theta function
+     * This was translated from mcrypt's 3-Way theta() function
+     *
+     * @param array $d A 3 element array of 32 bit integers
+     * @return void
+     */
+    private function theta(&$d)
+    {
+        $tmp = array();
+
+        $tmp[0] = parent::uInt32(
+                    $d[0] ^ ($d[0] >> 16) ^ ($d[1] << 16) ^ ($d[1] >> 16) ^ ($d[2] << 16) ^
+                    ($d[1] >> 24) ^ ($d[2] << 8) ^ ($d[2] >> 8) ^ ($d[0] << 24) ^ ($d[2] >> 16) ^
+                    ($d[0] << 16) ^ ($d[2] >> 24) ^ ($d[0] << 8)
+                );
+
+        $tmp[1] = parent::uInt32(
+                    $d[1] ^ ($d[1] >> 16) ^ ($d[2] << 16) ^ ($d[2] >> 16) ^ ($d[0] << 16) ^
+                    ($d[2] >> 24) ^ ($d[0] << 8) ^ ($d[0] >> 8) ^ ($d[1] << 24) ^ ($d[0] >> 16) ^
+                    ($d[1] << 16) ^ ($d[0] >> 24) ^ ($d[1] << 8)
+                );
+
+        $tmp[2] = parent::uInt32(
+                    $d[2] ^ ($d[2] >> 16) ^ ($d[0] << 16) ^ ($d[0] >> 16) ^ ($d[1] << 16) ^
+                    ($d[0] >> 24) ^ ($d[1] << 8) ^ ($d[1] >> 8) ^ ($d[2] << 24) ^ ($d[1] >> 16) ^
+                    ($d[2] << 16) ^ ($d[1] >> 24) ^ ($d[2] << 8)
+                );
+
+        $d = $tmp;
+    }
+
+
+    /**
+     * 3-Ways gamma() function
+     * NOTE: After extensive testing against mcrypt's 3way, it appears
+     * mcrypt's 3way gamma() function does not modify the array passed into
+     * it. During testing mcrypt's 3way gamma() function returned the exact
+     * same values sent into it. I'm confused as to why this is, and
+     * can't find enough information about 3-Way to know if this is correct
+     * though I suspect it's not. For compatibility, I am going to make
+     * phpCrypt's 3way gamma() function leave the values unmodified. I will change
+     * this at a later date if I find this is incorrect and mcrypt has a bug
+     *
+     * This was translated from mcrypt's 3-Way gamma() function
+     *
+     * @param array $d A 3 element array of 32 bit integers
+     * @return void
+     */
+    private function gamma(&$d)
+    {
+        /*
 		$tmp = array();
 
 		$tmp[0] = parent::uInt32($d[0] ^ ($d[1] | (~$d[2])));
@@ -247,7 +247,7 @@ class Cipher_3Way extends Cipher
 	 * NOTE: Please read the comments in the $this->gamma() function. This
 	 * function calls the $this->gamma() function which does not do anything.
 	 *
-	 * @param array $d A 3 element 32 bit integer array
+	 * @param integer[] $d A 3 element 32 bit integer array
 	 * @return void
 	 */
 	private function rho(&$d)

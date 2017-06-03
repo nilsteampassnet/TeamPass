@@ -99,7 +99,7 @@ if (isset($_POST['type'])) {
                     prefix_table("categories"),
                     array(
                         'title' => $_POST['data']
-                       ),
+                        ),
                     "id=%i",
                     $_POST['id']
                 );
@@ -115,7 +115,7 @@ if (isset($_POST['type'])) {
                     array(
                         'parent_id' => $_POST['data'],
                         'order' => 99
-                       ),
+                        ),
                     "id=%i",
                     $_POST['id']
                 );
@@ -132,7 +132,7 @@ if (isset($_POST['type'])) {
                         prefix_table("categories"),
                         array(
                             'order' => $elem[1]
-                           ),
+                            ),
                         "id=%i",
                         $elem[0]
                     );
@@ -199,7 +199,7 @@ if (isset($_POST['type'])) {
                     }
                 }
             }
-            echo json_encode($arrCategories, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo json_encode($arrCategories, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             break;
 
         case "categoryInFolders":
@@ -215,7 +215,7 @@ if (isset($_POST['type'])) {
                         array(
                             'id_category' => $_POST['id'],
                             'id_folder' => $folder
-                           )
+                            )
                     );
 
                     // prepare a list
@@ -236,7 +236,7 @@ if (isset($_POST['type'])) {
                 prefix_table("categories"),
                 array(
                     'encrypted_data' => $_POST['encrypt']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -271,7 +271,7 @@ if (isset($_POST['type'])) {
                     array(
                         'data' => $encrypt['string'],
                         'data_iv' => ""
-                       ),
+                        ),
                     "id = %i",
                     $recordF['id']
                 );

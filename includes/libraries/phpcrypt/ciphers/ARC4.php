@@ -73,7 +73,6 @@ class Cipher_ARC4 extends Cipher
 	/**
 	 * Encrypt plain text data using ARC4
 	 *
-	 * @param string $data A plain text string, 8 bytes long
 	 * @return boolean Returns true
 	 */
 	public function encrypt(&$text)
@@ -86,7 +85,6 @@ class Cipher_ARC4 extends Cipher
 	/**
 	 * Decrypt a ARC4 encrypted string
 	 *
-	 * @param string $encrypted A ARC4 encrypted string, 8 bytes long
 	 * @return boolean Returns true
 	 */
 	public function decrypt(&$text)
@@ -108,7 +106,7 @@ class Cipher_ARC4 extends Cipher
 		$len = strlen($text);
 		$this->prga($len);
 
-		for($i = 0; $i < $len; ++$i)
+		for ($i = 0; $i < $len; ++$i)
 			$text[$i] = $text[$i] ^ $this->_key_stream[$i];
 
 		return true;
@@ -128,11 +126,11 @@ class Cipher_ARC4 extends Cipher
 		$key = $this->key();
 
 		// fill $this->_s with all the values from 0-255
-		for($i = 0; $i < 256; ++$i)
+		for ($i = 0; $i < 256; ++$i)
 			$this->_s[$i] = $i;
 
 		// the changing S List
-		for($i = 0; $i < 256; ++$i)
+		for ($i = 0; $i < 256; ++$i)
 		{
 			$k = $key[$i % $keylen];
 			$j = ($j + $this->_s[$i] + ord($k)) % 256;
@@ -159,7 +157,7 @@ class Cipher_ARC4 extends Cipher
 		// set up the key schedule
 		$this->ksa();
 
-		for($c = 0; $c < $data_len; ++$c)
+		for ($c = 0; $c < $data_len; ++$c)
 		{
 			$i = ($i + 1) % 256;
 			$j = ($j + $this->_s[$i]) % 256;

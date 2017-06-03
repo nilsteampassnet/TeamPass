@@ -83,7 +83,7 @@ switch ($_POST['type']) {
         $pwdlib = new PasswordLib\PasswordLib();
 
         // Prepare variables
-        $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));    //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
+        $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw'])); //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
 
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] === "user_change" && $_SESSION['user_admin'] !== "1") {
@@ -91,7 +91,7 @@ switch ($_POST['type']) {
             $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
             // check if badly written
-            $data_roles['fonction_id'] = array_filter(explode(',',str_replace(';', ',', $data_roles['fonction_id'])));
+            $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
             if ($data_roles['fonction_id'][0] === "") {
                 //$data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
@@ -99,7 +99,7 @@ switch ($_POST['type']) {
                     prefix_table("users"),
                     array(
                         'fonction_id' => $data_roles['fonction_id']
-                       ),
+                        ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
@@ -166,7 +166,7 @@ switch ($_POST['type']) {
                         'pw' => $newPw,
                         'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
                         'last_pw' => $oldPw
-                       ),
+                        ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
@@ -204,7 +204,7 @@ switch ($_POST['type']) {
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
-                   ),
+                    ),
                 "id = %i",
                 $dataReceived['user_id']
             );
@@ -222,9 +222,9 @@ switch ($_POST['type']) {
                 if (!empty($row['email']) && isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1) {
                     sendEmail(
                         $LANG['forgot_pw_email_subject'],
-                        $LANG['forgot_pw_email_body'] . " " . htmlspecialchars_decode($dataReceived['new_pw']),
+                        $LANG['forgot_pw_email_body']." ".htmlspecialchars_decode($dataReceived['new_pw']),
                         $row[0],
-                        $LANG['forgot_pw_email_altbody_1'] . " " . htmlspecialchars_decode($dataReceived['new_pw'])
+                        $LANG['forgot_pw_email_altbody_1']." ".htmlspecialchars_decode($dataReceived['new_pw'])
                     );
                 }
             }
@@ -240,7 +240,7 @@ switch ($_POST['type']) {
                 array(
                     'pw' => $newPw,
                     'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
-                   ),
+                    ),
                 "id = %i",
                 $_SESSION['user_id']
             );
@@ -261,8 +261,8 @@ switch ($_POST['type']) {
         }
         break;
     /**
-    * This will generate the QR Google Authenticator
-    */
+     * This will generate the QR Google Authenticator
+     */
     case "ga_generate_qr":
         // is this allowed by setting
         if (!isset($_SESSION['settings']['ga_reset_by_user']) || $_SESSION['settings']['ga_reset_by_user'] !== "1") {
@@ -311,14 +311,14 @@ switch ($_POST['type']) {
                     array(
                         'ga' => $gaSecretKey,
                         'ga_temporary_code' => $gaTemporaryCode
-                       ),
+                        ),
                     "id = %i",
                     $data['id']
                 );
 
                 // send mail?
                 if (isset($_POST['send_email']) && $_POST['send_email'] === "1") {
-                    sendEmail (
+                    sendEmail(
                         $LANG['email_ga_subject'],
                         str_replace(
                             "#2FACode#",
@@ -368,7 +368,7 @@ switch ($_POST['type']) {
      */
     case "send_pw_by_email":
         // generate key
-        $key =  GenerateCryptKey(50);
+        $key = GenerateCryptKey(50);
 
         // Get account and pw associated to email
         DB::query(
@@ -457,7 +457,7 @@ switch ($_POST['type']) {
                 prefix_table("users"),
                 array(
                     'pw' => $newPw
-                   ),
+                    ),
                 "login = %s",
                 mysqli_escape_string($link, $login)
             );
@@ -527,7 +527,7 @@ switch ($_POST['type']) {
                 }
             }
         }
-        echo json_encode($arrOutput, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+        echo json_encode($arrOutput, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
         break;
     /**
      * Store the personal saltkey
@@ -551,7 +551,7 @@ switch ($_POST['type']) {
                     prefix_table("users"),
                     array(
                         'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
-                       ),
+                        ),
                     "id = %i",
                     $_SESSION['user_id']
                 );
@@ -635,7 +635,7 @@ switch ($_POST['type']) {
             prefix_table("users"),
             array(
                 'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
-               ),
+                ),
             "id = %i",
             $_SESSION['user_id']
         );
@@ -739,7 +739,7 @@ switch ($_POST['type']) {
                 prefix_table("users"),
                 array(
                     'user_language' => $language
-                   ),
+                    ),
                 "id = %i",
                 $_SESSION['user_id']
             );
@@ -806,7 +806,7 @@ switch ($_POST['type']) {
                         prefix_table("emails"),
                         array(
                             'status' => $status
-                           ),
+                            ),
                         "timestamp = %s",
                         $record['timestamp']
                     );
@@ -820,7 +820,7 @@ switch ($_POST['type']) {
                 prefix_table("misc"),
                 array(
                     'valeur' => time()
-                   ),
+                    ),
                 "intitule = %s AND type = %s",
                 "sending_emails",
                 "cron"
@@ -863,10 +863,10 @@ switch ($_POST['type']) {
             $pwgen->setCapitalize(true);
             $pwgen->setNumerals(true);
         } else {
-            $pwgen->setSecure(($_POST['secure'] == "true")? true : false);
-            $pwgen->setNumerals(($_POST['numerals'] == "true")? true : false);
-            $pwgen->setCapitalize(($_POST['capitalize'] == "true")? true : false);
-            $pwgen->setSymbols(($_POST['symbols'] == "true")? true : false);
+            $pwgen->setSecure(($_POST['secure'] == "true") ? true : false);
+            $pwgen->setNumerals(($_POST['numerals'] == "true") ? true : false);
+            $pwgen->setCapitalize(($_POST['capitalize'] == "true") ? true : false);
+            $pwgen->setSymbols(($_POST['symbols'] == "true") ? true : false);
         }
 
         echo prepareExchangedData(
@@ -927,7 +927,7 @@ switch ($_POST['type']) {
                     prefix_table("statistics"),
                     array(
                         'scope' => 'item',
-                        'view' => $data['view']+1
+                        'view' => $data['view'] + 1
                     ),
                     "item_id = %i",
                     $_POST['id']
@@ -964,7 +964,9 @@ switch ($_POST['type']) {
                     $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
                     $x++;
                     array_push($arrTmp, $record['id']);
-                    if ($x >= 10) break;
+                    if ($x >= 10) {
+                        break;
+                    }
                 }
             }
         }
@@ -985,7 +987,7 @@ switch ($_POST['type']) {
                 "existing_suggestions" => $nb_suggestions_waiting,
                 "text" => handleBackslash($return)
             ),
-            JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP
+            JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
         );
         break;
 
@@ -1023,7 +1025,7 @@ switch ($_POST['type']) {
                 'token' => $token,
                 'reason' => $_POST['reason'],
                 'creation_timestamp' => time(),
-                'end_timestamp' => time()+$_POST['duration']    // in secs
+                'end_timestamp' => time() + $_POST['duration']    // in secs
             )
         );
 
@@ -1137,7 +1139,7 @@ switch ($_POST['type']) {
                 prefix_table("misc"),
                 array(
                     'valeur' => time()
-                   ),
+                    ),
                 "type = %s AND intitule = %s",
                 'admin',
                 'send_stats_time'

@@ -134,7 +134,7 @@ class Agent
                 throw new BadConfigurationException('SSH_AUTH_SOCK not found');
         }
 
-        $this->fsock = fsockopen('unix://' . $address, 0, $errno, $errstr);
+        $this->fsock = fsockopen('unix://'.$address, 0, $errno, $errstr);
         if (!$this->fsock) {
             throw new \RuntimeException("Unable to connect to ssh-agent (Error $errno: $errstr)");
         }
@@ -172,10 +172,10 @@ class Agent
         for ($i = 0; $i < $keyCount; $i++) {
             $length = current(unpack('N', fread($this->fsock, 4)));
             $key_blob = fread($this->fsock, $length);
-            $key_str = 'ssh-rsa ' . Base64::encode($key_blob);
+            $key_str = 'ssh-rsa '.Base64::encode($key_blob);
             $length = current(unpack('N', fread($this->fsock, 4)));
             if ($length) {
-                $key_str.= ' ' . fread($this->fsock, $length);
+                $key_str .= ' '.fread($this->fsock, $length);
             }
             $length = current(unpack('N', substr($key_blob, 0, 4)));
             $key_type = substr($key_blob, 4, $length);
@@ -206,7 +206,7 @@ class Agent
      * be requested when a channel is opened
      *
      * @param Net_SSH2 $ssh
-     * @return bool
+     * @return boolean|null
      * @access public
      */
     function startSSHForwarding($ssh)
@@ -277,14 +277,14 @@ class Agent
      * Forward data to SSH Agent and return data reply
      *
      * @param string $data
-     * @return data from SSH Agent
+     * @return false|string from SSH Agent
      * @throws \RuntimeException on connection errors
      * @access private
      */
     function _forward_data($data)
     {
         if ($this->expected_bytes > 0) {
-            $this->socket_buffer.= $data;
+            $this->socket_buffer .= $data;
             $this->expected_bytes -= strlen($data);
         } else {
             $agent_data_bytes = current(unpack('N', $data));

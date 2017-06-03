@@ -61,7 +61,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'favourites' => $favs
-               ),
+                ),
                 "id = %i",
                 $_SESSION['user_id']
             );

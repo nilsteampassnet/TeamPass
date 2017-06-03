@@ -35,15 +35,15 @@ use adLDAP\adLDAP;
  * @version 5.0.0
  * @link http://github.com/adldap/adLDAP
  */
-require_once(dirname(__FILE__) . '/../adLDAP.php');
-require_once(dirname(__FILE__) . '/../collections/adLDAPContactCollection.php');
+require_once(dirname(__FILE__).'/../adLDAP.php');
+require_once(dirname(__FILE__).'/../collections/adLDAPContactCollection.php');
 
 class adLDAPContacts {
     /**
-    * The current adLDAP connection via dependency injection
-    * 
-    * @var adLDAP
-    */
+     * The current adLDAP connection via dependency injection
+     * 
+     * @var adLDAP
+     */
     protected $adldap;
     
     public function __construct(adLDAP $adldap) {
@@ -58,7 +58,7 @@ class adLDAPContacts {
     * Create a contact
     * 
     * @param array $attributes The attributes to set to the contact
-    * @return bool
+    * @return string|boolean
     */
     public function create($attributes) {
         // Check for compulsory fields
@@ -82,10 +82,10 @@ class adLDAPContacts {
 
         // Determine the container
         $attributes["container"] = array_reverse($attributes["container"]);
-        $container= "OU=" . implode(",OU=", $attributes["container"]);
+        $container = "OU=".implode(",OU=", $attributes["container"]);
 
         // Add the entry
-        $result = @ldap_add($this->adldap->getLdapConnection(), "CN=" . $this->adldap->utilities()->escapeCharacters($add["cn"][0]) . ", " . $container . "," . $this->adldap->getBaseDn(), $add);
+        $result = @ldap_add($this->adldap->getLdapConnection(), "CN=".$this->adldap->utilities()->escapeCharacters($add["cn"][0]).", ".$container.",".$this->adldap->getBaseDn(), $add);
         if ($result != true) { 
             return false; 
         }
@@ -95,14 +95,14 @@ class adLDAPContacts {
     /**
     * Determine the list of groups a contact is a member of
     * 
-    * @param string $distinguisedname The full DN of a contact
+    * @param string $distinguishedName The full DN of a contact
     * @param bool $recursive Recursively check groups
     * @return array
     */
     public function groups($distinguishedName, $recursive = NULL) {
         if ($distinguishedName === NULL) { return false; }
         if ($recursive === NULL) { $recursive = $this->adldap->getRecursiveGroups(); } //use the default option if they haven't set it
-        if (!$this->adldap->getLdapBind()){ return false; }
+        if (!$this->adldap->getLdapBind()) { return false; }
         
         // Search the directory for their information
         $info = @$this->info($distinguishedName, array("memberof", "primarygroupid"));
@@ -120,7 +120,7 @@ class adLDAPContacts {
     /**
     * Get contact information. Returned in a raw array format from AD
     * 
-    * @param string $distinguisedname The full DN of a contact
+    * @param string $distinguishedName The full DN of a contact
     * @param array $fields Attributes to be returned
     * @return array
     */
@@ -129,7 +129,7 @@ class adLDAPContacts {
         if ($distinguishedName === NULL) { return false; }
         if (!$this->adldap->getLdapBind()) { return false; }
 
-        $filter = "distinguishedName=" . $this->adldap->utilities()->ldapSlashes($distinguishedName);
+        $filter = "distinguishedName=".$this->adldap->utilities()->ldapSlashes($distinguishedName);
         if ($fields === NULL) { 
             $fields = array("distinguishedname", "mail", "memberof", "department", "displayname", "telephonenumber", "primarygroupid", "objectsid"); 
         }
@@ -142,7 +142,7 @@ class adLDAPContacts {
                 //$entries[0]["memberof"][]=$this->group_cn($entries[0]["primarygroupid"][0]);
                 $entries[0]["memberof"][] = $this->adldap->group()->getPrimaryGroup($entries[0]["primarygroupid"][0], $entries[0]["objectsid"][0]);
             } else {
-                $entries[0]["memberof"][] = "CN=Domain Users,CN=Users," . $this->adldap->getBaseDn();
+                $entries[0]["memberof"][] = "CN=Domain Users,CN=Users,".$this->adldap->getBaseDn();
             }
         }
         
@@ -151,12 +151,12 @@ class adLDAPContacts {
     }
     
     /**
-    * Find information about the contacts. Returned in a raw array format from AD
-    * 
-    * @param string $distinguishedName The full DN of a contact 
-    * @param array $fields Array of parameters to query
-    * @return mixed
-    */
+     * Find information about the contacts. Returned in a raw array format from AD
+     * 
+     * @param string $distinguishedName The full DN of a contact 
+     * @param array $fields Array of parameters to query
+     * @return mixed
+     */
     public function infoCollection($distinguishedName, $fields = NULL) {
         if ($distinguishedName === NULL) { return false; }
         if (!$this->adldap->getLdapBind()) { return false; }
@@ -171,13 +171,13 @@ class adLDAPContacts {
     }
     
     /**
-    * Determine if a contact is a member of a group
-    * 
-    * @param string $distinguisedName The full DN of a contact
-    * @param string $group The group name to query
-    * @param bool $recursive Recursively check groups
-    * @return bool
-    */
+     * Determine if a contact is a member of a group
+     * 
+     * @param string $distinguisedName The full DN of a contact
+     * @param string $group The group name to query
+     * @param bool $recursive Recursively check groups
+     * @return bool
+     */
     public function inGroup($distinguisedName, $group, $recursive = NULL) {
         if ($distinguisedName === NULL) { return false; }
         if ($group === NULL) { return false; }
@@ -199,7 +199,7 @@ class adLDAPContacts {
     * 
     * @param string $distinguishedName The contact to query
     * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
-    * @return bool
+    * @return string|boolean
     */
     public function modify($distinguishedName, $attributes) {
         if ($distinguishedName === NULL) { return "Missing compulsory field [distinguishedname]"; }
@@ -224,7 +224,7 @@ class adLDAPContacts {
     * Delete a contact
     * 
     * @param string $distinguishedName The contact dn to delete (please be careful here!)
-    * @return array
+    * @return boolean
     */
     public function delete($distinguishedName) {
         $result = $this->folder()->delete($distinguishedName);
@@ -235,27 +235,27 @@ class adLDAPContacts {
     }
     
     /**
-    * Return a list of all contacts
-    * 
-    * @param bool $includeDescription Include a description of a contact
-    * @param string $search The search parameters
-    * @param bool $sorted Whether to sort the results
-    * @return array
-    */
+     * Return a list of all contacts
+     * 
+     * @param bool $includeDescription Include a description of a contact
+     * @param string $search The search parameters
+     * @param bool $sorted Whether to sort the results
+     * @return array
+     */
     public function all($includeDescription = false, $search = "*", $sorted = true) {
         if (!$this->adldap->getLdapBind()) { return false; }
         
         // Perform the search and grab all their details
-        $filter = "(&(objectClass=contact)(cn=" . $search . "))";
-        $fields = array("displayname","distinguishedname");           
+        $filter = "(&(objectClass=contact)(cn=".$search."))";
+        $fields = array("displayname", "distinguishedname");           
         $sr = ldap_search($this->adldap->getLdapConnection(), $this->adldap->getBaseDn(), $filter, $fields);
         $entries = ldap_get_entries($this->adldap->getLdapConnection(), $sr);
 
         $usersArray = array();
-        for ($i=0; $i<$entries["count"]; $i++) {
-            if ($includeDescription && strlen($entries[$i]["displayname"][0])>0){
+        for ($i = 0; $i < $entries["count"]; $i++) {
+            if ($includeDescription && strlen($entries[$i]["displayname"][0]) > 0) {
                 $usersArray[$entries[$i]["distinguishedname"][0]] = $entries[$i]["displayname"][0];
-            } elseif ($includeDescription){
+            } elseif ($includeDescription) {
                 $usersArray[$entries[$i]["distinguishedname"][0]] = $entries[$i]["distinguishedname"][0];
             } else {
                 array_push($usersArray, $entries[$i]["distinguishedname"][0]);
@@ -271,10 +271,10 @@ class adLDAPContacts {
     * Mail enable a contact
     * Allows email to be sent to them through Exchange
     * 
-    * @param string $distinguishedname The contact to mail enable
-    * @param string $emailaddress The email address to allow emails to be sent through
-    * @param string $mailnickname The mailnickname for the contact in Exchange.  If NULL this will be set to the display name
-    * @return bool
+    * @param string $distinguishedName The contact to mail enable
+    * @param string $emailAddress The email address to allow emails to be sent through
+    * @param string $mailNickname The mailnickname for the contact in Exchange.  If NULL this will be set to the display name
+    * @return string|boolean
     */
     public function contactMailEnable($distinguishedName, $emailAddress, $mailNickname = NULL) {
         return $this->adldap->exchange()->contactMailEnable($distinguishedName, $emailAddress, $mailNickname);

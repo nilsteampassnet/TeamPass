@@ -67,10 +67,10 @@ class Padding
 	{
 		// if the size of padding is not greater than 1
 		// just return true, no padding will be done
-		if(!($bytes > 0))
+		if (!($bytes > 0))
 			return true;
 
-		switch($type)
+		switch ($type)
 		{
 			case PHP_Crypt::PAD_ZERO:
 				return self::zeroPad($text, $bytes);
@@ -105,7 +105,7 @@ class Padding
 	 */
 	public static function strip(&$text, $type = PHP_Crypt::ZERO)
 	{
-		switch($type)
+		switch ($type)
 		{
 			case PHP_Crypt::PAD_ZERO:
 				return self::zeroStrip($text);
@@ -173,12 +173,13 @@ class Padding
 	 *
 	 * @param string $text The string to pad
 	 * @param integer The number of bytes to pad
+	 * @param integer $bytes
 	 * @return boolean Returns true
 	 */
 	private static function ansiX923Pad(&$text, $bytes)
 	{
 		$len = $bytes + strlen($text);
-		$text  = str_pad($text, ($len-1), "\0", STR_PAD_RIGHT);
+		$text  = str_pad($text, ($len - 1), "\0", STR_PAD_RIGHT);
 		$text .= chr($bytes);
 		return true;
 	}
@@ -195,9 +196,9 @@ class Padding
 		$pos = strlen($text) - 1;
 		$c = ord($text[$pos]);
 
-		if($c == 0)
+		if ($c == 0)
 			return true;
-		else if($c == 1)
+		else if ($c == 1)
 			$text = substr($text, 0, -1);
 		else
 		{
@@ -217,6 +218,7 @@ class Padding
 	 *
 	 * @param string $text The string to pad
 	 * @param integer The number of bytes to pad
+	 * @param integer $bytes
 	 * @return boolean Returns true
 	 */
 	private static function iso10126Pad(&$text, $bytes)
@@ -224,7 +226,7 @@ class Padding
 		// create the random pad bytes, we do one less than
 		// needed because the last byte is reserved for the
 		// number of padded bytes
-		for($i = 0; $i < ($bytes - 1); ++$i)
+		for ($i = 0; $i < ($bytes - 1); ++$i)
 			$text .= chr(mt_rand(0, 255));
 
 		// add the byte to indicate the padding length
@@ -246,7 +248,7 @@ class Padding
 
 		// if we got a null byte at the end of the string,
 		// just return
-		if($c == 0)
+		if ($c == 0)
 			return true;
 
 		$text = substr($text, 0, $c);
@@ -261,12 +263,13 @@ class Padding
 	 *
 	 * @param string $text The string to pad
 	 * @param integer The number of bytes to pad
+	 * @param integer $bytes
 	 * @return boolean Returns true
 	 */
 	private static function pkcs7Pad(&$text, $bytes)
 	{
 		$len = $bytes + strlen($text);
-		$text  = str_pad($text, $len, chr($bytes), STR_PAD_RIGHT);
+		$text = str_pad($text, $len, chr($bytes), STR_PAD_RIGHT);
 		return true;
 	}
 
@@ -282,7 +285,7 @@ class Padding
 		$pos = strlen($text) - 1;
 		$c = ord($text[$pos]);
 
-		if($c == 0)
+		if ($c == 0)
 			return true;
 
 		$text = preg_replace('/'.preg_quote(chr($c)).'{'.$c.'}$/', "", $text);
@@ -296,6 +299,7 @@ class Padding
 	 *
 	 * @param string $text The string to pad
 	 * @param integer The number of bytes to pad
+	 * @param integer $bytes
 	 * @return boolean Returns true
 	 */
 	private static function iso7816Pad(&$text, $bytes)
@@ -305,8 +309,8 @@ class Padding
 
 		// if we are only padding one byte, then 0x80 is all we need
 		// else we follow up with null bytes
-		if($bytes > 1)
-			$text  = str_pad($text, ($len - 1), chr(0), STR_PAD_RIGHT);
+		if ($bytes > 1)
+			$text = str_pad($text, ($len - 1), chr(0), STR_PAD_RIGHT);
 
 		return true;
 	}

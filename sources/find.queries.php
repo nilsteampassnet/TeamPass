@@ -55,7 +55,7 @@ $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
 $sOrder = $sLimit = "";
-$sWhere = "id_tree IN %ls_idtree";    //limit search to the visible folders
+$sWhere = "id_tree IN %ls_idtree"; //limit search to the visible folders
 
 //Get current user "personal folder" ID
 $row = DB::query(
@@ -93,7 +93,7 @@ if (!empty($row['id'])) {
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
+    $sLimit = "LIMIT ".filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
@@ -103,16 +103,15 @@ if (isset($_GET['iSortCol_0'])) {
         // possible attack - stop
         echo '[{}]';
         exit;
-    }
-    else {
+    } else {
         $sOrder = "ORDER BY  ";
-        for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
             if (
-                $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
             }
         }
 
@@ -131,7 +130,7 @@ if (isset($_GET['iSortCol_0'])) {
  */
 if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
     $sWhere .= " AND (";
-    for ($i=0; $i<count($aColumns); $i++) {
+    for ($i = 0; $i < count($aColumns); $i++) {
         $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -208,9 +207,9 @@ $iFilteredTotal = DB::count();
  */
 if (!isset($_GET['type'])) {
     $sOutput = '{';
-    if (isset($_GET['sEcho'])) $sOutput .= '"sEcho": ' . intval($_GET['sEcho']) . ', ';
-    $sOutput .= '"iTotalRecords": ' . $iFilteredTotal . ', ';
-    $sOutput .= '"iTotalDisplayRecords": ' . $iTotal . ', ';
+    if (isset($_GET['sEcho'])) $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
+    $sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
+    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     $sOutputConst = "";
 
@@ -232,24 +231,29 @@ if (!isset($_GET['type'])) {
                     $role,
                     $record['id_tree']
                 );
-                if ($access['type'] == "R") array_push($arrTmp, 1);
-                else if ($access['type'] == "W") array_push($arrTmp, 0);
-                else array_push($arrTmp, 2);
+                if ($access['type'] == "R") {
+                    array_push($arrTmp, 1);
+                } else if ($access['type'] == "W") {
+                    array_push($arrTmp, 0);
+                } else {
+                    array_push($arrTmp, 2);
+                }
             }
             $accessLevel = min($arrTmp);
-            if ($accessLevel === 0)
-                $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
+            if ($accessLevel === 0) {
+                            $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
+            }
         }
 
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group=' . $record['id_tree'] . '&amp;id=' . $record['id'] . '&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
-            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item(' . $record['id'] . ',' . $record['perso'] . ');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
+        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
+            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item('.$record['id'].','.$record['perso'].');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
-        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">' . htmlspecialchars(stripslashes($record['label']), ENT_QUOTES) . '</span>", ';
+        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'</span>", ';
 
         //col3
-        $sOutputItem .= '"' . str_replace("&amp;", "&", htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)) . '", ';
+        $sOutputItem .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)).'", ';
 
         //col4
         //get restriction from ROles
@@ -281,23 +285,23 @@ if (!isset($_GET['type'])) {
         } else {
             $txt = str_replace(array('\n', '<br />', '\\'), array(' ', ' ', '', ' '), strip_tags($record['description']));
             if (strlen($txt) > 50) {
-                $sOutputItem .= '"' . substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50) . '", ';
+                $sOutputItem .= '"'.substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50).'", ';
             } else {
-                $sOutputItem .= '"' . stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt)) . '", ';
+                $sOutputItem .= '"'.stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt)).'", ';
             }
         }
 
         //col5 - TAGS
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES) . '", ';
+        $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES).'", ';
 
         // col6 - URL
         if ($record['url'] != "0")
-            $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['url']), ENT_QUOTES) . '", ';
+            $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['url']), ENT_QUOTES).'", ';
         else
             $sOutputItem .= '"", ';
 
         //col7 - Prepare the Treegrid
-        $sOutputItem .= '"' . htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES) . '"';
+        $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES).'"';
 
         //Finish the line
         $sOutputItem .= '], ';

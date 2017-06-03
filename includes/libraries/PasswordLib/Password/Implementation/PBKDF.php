@@ -110,7 +110,7 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
     public function create($password) {
         $password = $this->checkPassword($password);
         $size     = $this->options['size'] - 8; // remove size of stored bits
-        $saltSize = floor($size / 5);  //Use 20% of the size for the salt
+        $saltSize = floor($size / 5); //Use 20% of the size for the salt
         $hashSize = $size - $saltSize;
         $salt     = $this->generator->generate($saltSize);
         return $this->hash(
@@ -159,8 +159,8 @@ class PBKDF extends \PasswordLib\Password\AbstractPassword {
     protected function hash($password, $salt, $iterations, $size) {
         $bit = $this->options['kdf']->derive($password, $salt, $iterations, $size);
         $sig = $this->options['kdf']->getSignature();
-        $sig = '$pbkdf$' . $sig . '$' . $iterations . '$' . $size;
-        return $sig . '$' . base64_encode($salt) . '$' . base64_encode($bit);
+        $sig = '$pbkdf$'.$sig.'$'.$iterations.'$'.$size;
+        return $sig.'$'.base64_encode($salt).'$'.base64_encode($bit);
     }
 
 }

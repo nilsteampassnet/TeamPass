@@ -28,7 +28,7 @@ $pagesRights = array(
 
 function curPage()
 {
-    parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?")+1), $result);
+    parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?") + 1), $result);
     return $result['page'];
 }
 
@@ -86,7 +86,7 @@ function checkUser($userId, $userKey, $pageVisited)
 
 function IsInArray($pages, $table)
 {
-    foreach($pages as $page) {
+    foreach ($pages as $page) {
         if (in_array($page, $table)) {
             return true;
         }

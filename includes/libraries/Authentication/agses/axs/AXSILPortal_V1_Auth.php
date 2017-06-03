@@ -35,17 +35,21 @@ class AXSILPortal_V1_Auth {
 		$serviceCall = $this->baseUrl."/authmessage/".$apn."/create/".$hedgeId;
 		
 		$json = file_get_contents($serviceCall);
-		$response = json_decode($json,true);		
+		$response = json_decode($json, true);		
 		
 		return $response['flickerCode'];
 	}
 	
+	/**
+	 * @param string $response
+	 * @param string $hedgeId
+	 */
 	function verifyResponse($apn, $response, $hedgeId) {
 		
 		$serviceCall = $this->baseUrl."/authmessage/".$apn."/verify/".$hedgeId."/".$response;
 		
 		$json = file_get_contents($serviceCall);
-		$response = json_decode($json,true);
+		$response = json_decode($json, true);
 		
 		return $response['response'];
 	}

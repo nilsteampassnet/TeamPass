@@ -144,8 +144,8 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
     public function create($password) {
         $password = $this->checkPassword($password);
         $salt     = $this->to64($this->generator->generate(6));
-        $prefix   = static::encodeIterations($this->options['cost']) . $salt;
-        return static::$prefix . $prefix . $this->hash($password, $salt);
+        $prefix   = static::encodeIterations($this->options['cost']).$salt;
+        return static::$prefix.$prefix.$this->hash($password, $salt);
     }
 
     /**
@@ -185,9 +185,9 @@ class PHPASS extends \PasswordLib\Password\AbstractPassword {
      */
     protected function hash($password, $salt) {
         $count = 1 << $this->options['cost'];
-        $hash  = hash($this->hashFunction, $salt . $password, true);
+        $hash  = hash($this->hashFunction, $salt.$password, true);
         do {
-            $hash = hash($this->hashFunction, $hash . $password, true);
+            $hash = hash($this->hashFunction, $hash.$password, true);
         } while (--$count);
         return $this->to64($hash);
     }

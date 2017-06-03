@@ -163,7 +163,7 @@ abstract class Mode
 	public function createIV($src = PHP_Crypt::RAND)
 	{
 		// if the mode does not use an IV, lets not waste time
-		if(!$this->requiresIV())
+		if (!$this->requiresIV())
 			return false;
 
 		$iv = Core::randBytes($src, $this->block_size);
@@ -180,11 +180,11 @@ abstract class Mode
 	 */
 	public function IV($iv = null)
 	{
-		if($iv != null)
+		if ($iv != null)
 		{
 			// check that the iv is the correct length,
 			$len = strlen($iv);
-			if($len != $this->block_size)
+			if ($len != $this->block_size)
 			{
 				$msg = "Incorrect IV size. Supplied length: $len bytes, Required: {$this->block_size} bytes";
 				trigger_error($msg, E_USER_WARNING);
@@ -207,7 +207,7 @@ abstract class Mode
 	 */
 	public function checkIV()
 	{
-		if($this->requiresIV() && strlen($this->register) == 0)
+		if ($this->requiresIV() && strlen($this->register) == 0)
 		{
 			$msg = strtoupper($this->mode_name)." mode requires an IV or the IV is empty";
 			trigger_error($msg, E_USER_WARNING);
@@ -227,7 +227,7 @@ abstract class Mode
 	 */
 	public function name($name = "")
 	{
-		if($name != "")
+		if ($name != "")
 			$this->mode_name = $name;
 
 		return $this->mode_name;
@@ -240,11 +240,11 @@ abstract class Mode
 	 * returns the the padding type only.
 	 *
 	 * @param string $type One of the predefined padding types
-	 * @return void
+	 * @return string
 	 */
 	public function padding($type = "")
 	{
-		if($type != "")
+		if ($type != "")
 			$this->padding = $type;
 
 		return $this->padding;
@@ -263,7 +263,7 @@ abstract class Mode
 	 */
 	public function cipher($cipher = null)
 	{
-		if(is_object($cipher))
+		if (is_object($cipher))
 			$this->cipher = $cipher;
 
 		return $this->cipher;

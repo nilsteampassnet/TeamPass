@@ -350,15 +350,15 @@ class RSA
     static function _initialize_static_variables()
     {
         if (!isset(self::$zero)) {
-            self::$zero= new BigInteger(0);
+            self::$zero = new BigInteger(0);
             self::$one = new BigInteger(1);
-            self::$configFile = __DIR__ . '/../openssl.cnf';
+            self::$configFile = __DIR__.'/../openssl.cnf';
 
             if (self::$fileFormats === false) {
                 self::$fileFormats = array();
-                foreach (glob(__DIR__ . '/RSA/*.php') as $file) {
+                foreach (glob(__DIR__.'/RSA/*.php') as $file) {
                     $name = pathinfo($file, PATHINFO_FILENAME);
-                    $type = 'phpseclib\Crypt\RSA\\' . $name;
+                    $type = 'phpseclib\Crypt\RSA\\'.$name;
                     $meta = new \ReflectionClass($type);
                     if (!$meta->isAbstract()) {
                         self::$fileFormats[strtolower($name)] = $type;
@@ -402,7 +402,6 @@ class RSA
      * @access public
      * @param int $bits
      * @param int $timeout
-     * @param array $p
      */
     static function createKey($bits = 2048, $timeout = false, $partial = array())
     {
@@ -498,7 +497,7 @@ class RSA
         do {
             for ($i = $i0; $i <= $num_primes; $i++) {
                 if ($timeout !== false) {
-                    $timeout-= time() - $start;
+                    $timeout -= time() - $start;
                     $start = time();
                     if ($timeout <= 0) {
                         return array(
@@ -608,7 +607,7 @@ class RSA
      * @see self::load()
      * @param string $fullname
      * @access public
-     * @return bool
+     * @return boolean|null
      */
     static function addFileFormat($fullname)
     {
@@ -750,7 +749,7 @@ class RSA
      *
      * @see self::load()
      * @access public
-     * @return mixed
+     * @return false|string
      */
     function getLoadedFormat()
     {
@@ -971,7 +970,7 @@ class RSA
      * @access public
      * @param string $algorithm The hashing algorithm to be used. Valid options are 'md5' and 'sha256'. False is returned
      * for invalid values.
-     * @return mixed
+     * @return false|string
      */
     function getPublicKeyFingerprint($algorithm = 'md5')
     {
@@ -1154,7 +1153,6 @@ class RSA
      *    of the hash function Hash) and 0.
      *
      * @access public
-     * @param int $format
      */
     function setSaltLength($sLen)
     {
@@ -1169,7 +1167,7 @@ class RSA
      * @access private
      * @param bool|\phpseclib\Math\BigInteger $x
      * @param int $xLen
-     * @return bool|string
+     * @return false|string
      */
     function _i2osp($x, $xLen)
     {
@@ -1405,7 +1403,6 @@ class RSA
      *
      * @access private
      * @param string $mgfSeed
-     * @param int $mgfLen
      * @return string
      */
     function _mgf1($mgfSeed, $maskLen)
@@ -1416,7 +1413,7 @@ class RSA
         $count = ceil($maskLen / $this->mgfHLen);
         for ($i = 0; $i < $count; $i++) {
             $c = pack('N', $i);
-            $t.= $this->mgfHash->hash($mgfSeed . $c);
+            $t .= $this->mgfHash->hash($mgfSeed.$c);
         }
 
         return substr($t, 0, $maskLen);
@@ -1451,13 +1448,13 @@ class RSA
 
         $lHash = $this->hash->hash($l);
         $ps = str_repeat(chr(0), $this->k - $mLen - 2 * $this->hLen - 2);
-        $db = $lHash . $ps . chr(1) . $m;
+        $db = $lHash.$ps.chr(1).$m;
         $seed = Random::string($this->hLen);
         $dbMask = $this->_mgf1($seed, $this->k - $this->hLen - 1);
         $maskedDB = $db ^ $dbMask;
         $seedMask = $this->_mgf1($maskedDB, $this->hLen);
         $maskedSeed = $seed ^ $seedMask;
-        $em = chr(0) . $maskedSeed . $maskedDB;
+        $em = chr(0).$maskedSeed.$maskedDB;
 
         // RSA encryption
 
@@ -1494,7 +1491,7 @@ class RSA
      * @access private
      * @param string $c
      * @param string $l
-     * @return bool|string
+     * @return false|string
      */
     function _rsaes_oaep_decrypt($c, $l = '')
     {
@@ -1548,7 +1545,7 @@ class RSA
      *
      * @access private
      * @param string $m
-     * @return bool|string
+     * @return false|string
      * @throws \OutOfBoundsException if strlen($m) > $this->k
      */
     function _raw_encrypt($m)
@@ -1571,7 +1568,7 @@ class RSA
      * @param string $m
      * @param bool $pkcs15_compat optional
      * @throws \OutOfBoundsException if strlen($m) > $this->k - 11
-     * @return bool|string
+     * @return false|string
      */
     function _rsaes_pkcs1_v1_5_encrypt($m, $pkcs15_compat = false)
     {
@@ -1590,7 +1587,7 @@ class RSA
         while (strlen($ps) != $psLen) {
             $temp = Random::string($psLen - strlen($ps));
             $temp = str_replace("\x00", '', $temp);
-            $ps.= $temp;
+            $ps .= $temp;
         }
         $type = 2;
         // see the comments of _rsaes_pkcs1_v1_5_decrypt() to understand why this is being done
@@ -1599,7 +1596,7 @@ class RSA
             // "The padding string PS shall consist of k-3-||D|| octets. ... for block type 01, they shall have value FF"
             $ps = str_repeat("\xFF", $psLen);
         }
-        $em = chr(0) . chr($type) . $ps . chr(0) . $m;
+        $em = chr(0).chr($type).$ps.chr(0).$m;
 
         // RSA encryption
         $m = $this->_os2ip($em);
@@ -1629,7 +1626,7 @@ class RSA
      *
      * @access private
      * @param string $c
-     * @return bool|string
+     * @return false|string
      */
     function _rsaes_pkcs1_v1_5_decrypt($c)
     {
@@ -1690,14 +1687,14 @@ class RSA
         }
 
         $salt = Random::string($sLen);
-        $m2 = "\0\0\0\0\0\0\0\0" . $mHash . $salt;
+        $m2 = "\0\0\0\0\0\0\0\0".$mHash.$salt;
         $h = $this->hash->hash($m2);
         $ps = str_repeat(chr(0), $emLen - $sLen - $this->hLen - 2);
-        $db = $ps . chr(1) . $salt;
+        $db = $ps.chr(1).$salt;
         $dbMask = $this->_mgf1($h, $emLen - $this->hLen - 1);
         $maskedDB = $db ^ $dbMask;
         $maskedDB[0] = ~chr(0xFF << ($emBits & 7)) & $maskedDB[0];
-        $em = $maskedDB . $h . chr(0xBC);
+        $em = $maskedDB.$h.chr(0xBC);
 
         return $em;
     }
@@ -1711,7 +1708,7 @@ class RSA
      * @param string $m
      * @param string $em
      * @param int $emBits
-     * @return string
+     * @return boolean
      */
     function _emsa_pss_verify($m, $em, $emBits)
     {
@@ -1744,7 +1741,7 @@ class RSA
             return false;
         }
         $salt = substr($db, $temp + 1); // should be $sLen long
-        $m2 = "\0\0\0\0\0\0\0\0" . $mHash . $salt;
+        $m2 = "\0\0\0\0\0\0\0\0".$mHash.$salt;
         $h2 = $this->hash->hash($m2);
         return $this->_equals($h, $h2);
     }
@@ -1756,7 +1753,7 @@ class RSA
      *
      * @access private
      * @param string $m
-     * @return bool|string
+     * @return false|string
      */
     function _rsassa_pss_sign($m)
     {
@@ -1854,7 +1851,7 @@ class RSA
             case 'sha512/256':
                 $t = "\x30\x31\x30\x0d\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x06\x05\x00\x04\x20";
         }
-        $t.= $h;
+        $t .= $h;
         $tLen = strlen($t);
 
         if ($emLen < $tLen + 11) {
@@ -1876,7 +1873,7 @@ class RSA
      * @access private
      * @param string $m
      * @throws \LengthException if the RSA modulus is too short
-     * @return bool|string
+     * @return false|string
      */
     function _rsassa_pkcs1_v1_5_sign($m)
     {
@@ -2058,7 +2055,7 @@ class RSA
      * @access public
      * @param string $plaintext
      * @param int $padding optional
-     * @return bool|string
+     * @return false|string
      * @throws \LengthException if the RSA modulus is too short
      */
     function encrypt($plaintext, $padding = self::PADDING_OAEP)
@@ -2080,9 +2077,8 @@ class RSA
      *
      * @see self::encrypt()
      * @access public
-     * @param string $plaintext
      * @param int $padding optional
-     * @return bool|string
+     * @return false|string
      */
     function decrypt($ciphertext, $padding = self::PADDING_OAEP)
     {
@@ -2130,7 +2126,7 @@ class RSA
      * @param string $message
      * @param string $signature
      * @param int $padding optional
-     * @return bool
+     * @return boolean|string
      */
     function verify($message, $signature, $padding = self::PADDING_PSS)
     {

@@ -79,7 +79,6 @@ class Mode_Raw extends Mode
 	 * Encrypts an the string using the Cipher with no Mode
 	 * NOTE: The data in $text must be the exact length required by the Cipher
 	 *
-	 * @param string $str the string to be encrypted
 	 * @return boolean Always returns false
 	 */
 	public function encrypt(&$text)
@@ -93,7 +92,6 @@ class Mode_Raw extends Mode
 	 * Decrypts one block of cipher text, not using any mode.
 	 * NOTE: The data in $text must be the exact length required by the Cipher
 	 *
-	 * @param string $str the string to be decrypted
 	 * @return boolean Always returns false
 	 */
 	public function decrypt(&$text)

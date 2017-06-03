@@ -104,7 +104,7 @@ if (!empty($_POST['type'])) {
                         prefix_table("kb_categories"),
                         array(
                             'category' => $category
-                       )
+                        )
                     );
                     $cat_id = DB::insertId();
                 } else {
@@ -123,7 +123,7 @@ if (!empty($_POST['type'])) {
                             'author_id' => $_SESSION['user_id'],
                             'category_id' => $cat_id,
                             'anyone_can_modify' => $anyone_can_modify
-                       ),
+                        ),
                         "id=%i", $id
                     );
                 } else {
@@ -136,7 +136,7 @@ if (!empty($_POST['type'])) {
                             'author_id' => $_SESSION['user_id'],
                             'category_id' => $cat_id,
                             'anyone_can_modify' => $anyone_can_modify
-                       )
+                        )
                     );
                     $id = DB::insertId();
                 }
@@ -151,7 +151,7 @@ if (!empty($_POST['type'])) {
                         array(
                             'kb_id' => $id,
                             'item_id' => $item_id
-                       )
+                        )
                     );
                 }
 
@@ -194,7 +194,7 @@ if (!empty($_POST['type'])) {
                 "options"     => $arrOptions
             );
 
-            echo json_encode($arrOutput, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo json_encode($arrOutput, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             break;
         /**
          * Delete the KB

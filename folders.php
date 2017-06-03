@@ -159,7 +159,7 @@ echo '
 
     <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
     <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">'.
-		$droplist.'
+        $droplist.'
     </select>
 
     <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>

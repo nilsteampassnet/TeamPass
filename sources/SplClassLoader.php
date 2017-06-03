@@ -126,11 +126,11 @@ class SplClassLoader
             if (false !== ($lastNsPos = strripos($className, $this->_namespaceSeparator))) {
                 $namespace = substr($className, 0, $lastNsPos);
                 $className = substr($className, $lastNsPos + 1);
-                $fileName = str_replace($this->_namespaceSeparator, DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR;
+                $fileName = str_replace($this->_namespaceSeparator, DIRECTORY_SEPARATOR, $namespace).DIRECTORY_SEPARATOR;
             }
-            $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className) . $this->_fileExtension;
+            $fileName .= str_replace('_', DIRECTORY_SEPARATOR, $className).$this->_fileExtension;
 
-            require ($this->_includePath !== null ? $this->_includePath . DIRECTORY_SEPARATOR : '') . $fileName;
+            require ($this->_includePath !== null ? $this->_includePath.DIRECTORY_SEPARATOR : '').$fileName;
         }
     }
 }

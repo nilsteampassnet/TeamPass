@@ -228,7 +228,7 @@ $htmlHeaders .= '
                     $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
                 } else if (data[0].value == "psk_required") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("' . addslashes($LANG['psk_required']) . '");
+                    $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
                     $("#connection_error, #connect_psk_confirm").show();
                 } else if (data[0].value == "user_not_exists") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
