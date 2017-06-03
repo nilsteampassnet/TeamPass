@@ -140,10 +140,11 @@ class Cipher_3Way extends Cipher
         $key = array_map("parent::str2Dec", $key);
 
         // determine which round constant to use
-        if ($this->operation() == parent::ENCRYPT)
-            $rcon = self::$_rcon_enc;
-        else
-            $rcon = self::$_rcon_dec;
+        if ($this->operation() == parent::ENCRYPT) {
+                    $rcon = self::$_rcon_enc;
+        } else {
+                    $rcon = self::$_rcon_dec;
+        }
 
         if ($this->operation() == parent::DECRYPT)
         {
@@ -168,8 +169,9 @@ class Cipher_3Way extends Cipher
 
         $this->theta($data);
 
-        if ($this->operation() == parent::DECRYPT)
-            $this->invertBits($data);
+        if ($this->operation() == parent::DECRYPT) {
+                    $this->invertBits($data);
+        }
 
         // assemble the three 32 bit parts back to a 96 bit string
         $data = parent::dec2Str($data[0], 4).parent::dec2Str($data[1], 4).

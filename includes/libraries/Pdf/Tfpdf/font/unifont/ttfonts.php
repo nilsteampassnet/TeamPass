@@ -70,7 +70,7 @@ var $defaultWidth;
 var $maxStrLenRead;
 
     function __construct() {
-        $this->maxStrLenRead = 200000;	// Maximum size of glyf table to read in as string (otherwise reads each glyph from file)
+        $this->maxStrLenRead = 200000; // Maximum size of glyf table to read in as string (otherwise reads each glyph from file)
     }
 
 
@@ -79,7 +79,7 @@ var $maxStrLenRead;
      */
     function getMetrics($file) {
         $this->filename = $file;
-        $this->fh = fopen($file,'rb') or die('Can\'t open file ' . $file);
+        $this->fh = fopen($file, 'rb') or die('Can\'t open file '.$file);
         $this->_pos = 0;
         $this->charWidths = '';
         $this->glyphPos = array();
@@ -90,12 +90,15 @@ var $maxStrLenRead;
         $this->descent = 0;
         $this->TTCFonts = array();
         $this->version = $version = $this->read_ulong();
-        if ($version == 0x4F54544F) 
-            die("Postscript outlines are not supported");
-        if ($version == 0x74746366) 
-            die("ERROR - TrueType Fonts Collections not supported");
-        if (!in_array($version, array(0x00010000, 0x74727565)))
-            die("Not a TrueType font: version=".$version);
+        if ($version == 0x4F54544F) {
+                    die("Postscript outlines are not supported");
+        }
+        if ($version == 0x74746366) {
+                    die("ERROR - TrueType Fonts Collections not supported");
+        }
+        if (!in_array($version, array(0x00010000, 0x74727565))) {
+                    die("Not a TrueType font: version=".$version);
+        }
         $this->readTableDirectory();
         $this->extractInfo();
         fclose($this->fh);
@@ -115,181 +118,181 @@ var $maxStrLenRead;
                 $record['offset'] = $this->read_ulong();
                 $record['length'] = $this->read_ulong();
                 $this->tables[$record['tag']] = $record;
-		}
-	}
+        }
+    }
 
 
-	/**
-	 * @param integer[] $x
-	 * @param integer[] $y
-	 */
-	function sub32($x, $y) {
-		$xlo = $x[1];
-		$xhi = $x[0];
-		$ylo = $y[1];
-		$yhi = $y[0];
-		if ($ylo > $xlo) { $xlo += 1 << 16; $yhi += 1; }
-		$reslo = $xlo - $ylo;
-		if ($yhi > $xhi) { $xhi += 1 << 16; }
-		$reshi = $xhi - $yhi;
-		$reshi = $reshi & 0xFFFF;
-		return array($reshi, $reslo);
-	}
+    /**
+     * @param integer[] $x
+     * @param integer[] $y
+     */
+    function sub32($x, $y) {
+        $xlo = $x[1];
+        $xhi = $x[0];
+        $ylo = $y[1];
+        $yhi = $y[0];
+        if ($ylo > $xlo) { $xlo += 1 << 16; $yhi += 1; }
+        $reslo = $xlo - $ylo;
+        if ($yhi > $xhi) { $xhi += 1 << 16; }
+        $reshi = $xhi - $yhi;
+        $reshi = $reshi & 0xFFFF;
+        return array($reshi, $reslo);
+    }
 
-	function calcChecksum($data) {
-		if (strlen($data) % 4) { $data .= str_repeat("\0", (4 - (strlen($data) % 4))); }
-		$hi = 0x0000;
-		$lo = 0x0000;
-		for ($i = 0; $i < strlen($data); $i += 4) {
-			$hi += (ord($data[$i]) << 8) + ord($data[$i + 1]);
-			$lo += (ord($data[$i + 2]) << 8) + ord($data[$i + 3]);
-			$hi += $lo >> 16;
-			$lo = $lo & 0xFFFF;
-			$hi = $hi & 0xFFFF;
-		}
-		return array($hi, $lo);
-	}
+    function calcChecksum($data) {
+        if (strlen($data) % 4) { $data .= str_repeat("\0", (4 - (strlen($data) % 4))); }
+        $hi = 0x0000;
+        $lo = 0x0000;
+        for ($i = 0; $i < strlen($data); $i += 4) {
+            $hi += (ord($data[$i]) << 8) + ord($data[$i + 1]);
+            $lo += (ord($data[$i + 2]) << 8) + ord($data[$i + 3]);
+            $hi += $lo >> 16;
+            $lo = $lo & 0xFFFF;
+            $hi = $hi & 0xFFFF;
+        }
+        return array($hi, $lo);
+    }
 
-	/**
-	 * @param string $tag
-	 */
-	function get_table_pos($tag) {
-		$offset = $this->tables[$tag]['offset'];
-		$length = $this->tables[$tag]['length'];
-		return array($offset, $length);
-	}
+    /**
+     * @param string $tag
+     */
+    function get_table_pos($tag) {
+        $offset = $this->tables[$tag]['offset'];
+        $length = $this->tables[$tag]['length'];
+        return array($offset, $length);
+    }
 
-	function seek($pos) {
-		$this->_pos = $pos;
-		fseek($this->fh, $this->_pos);
-	}
+    function seek($pos) {
+        $this->_pos = $pos;
+        fseek($this->fh, $this->_pos);
+    }
 
-	/**
-	 * @param integer $delta
-	 */
-	function skip($delta) {
-		$this->_pos = $this->_pos + $delta;
-		fseek($this->fh, $this->_pos);
-	}
+    /**
+     * @param integer $delta
+     */
+    function skip($delta) {
+        $this->_pos = $this->_pos + $delta;
+        fseek($this->fh, $this->_pos);
+    }
 
-	/**
-	 * @param string $tag
-	 */
-	function seek_table($tag, $offset_in_table = 0) {
-		$tpos = $this->get_table_pos($tag);
-		$this->_pos = $tpos[0] + $offset_in_table;
-		fseek($this->fh, $this->_pos);
-		return $this->_pos;
-	}
+    /**
+     * @param string $tag
+     */
+    function seek_table($tag, $offset_in_table = 0) {
+        $tpos = $this->get_table_pos($tag);
+        $this->_pos = $tpos[0] + $offset_in_table;
+        fseek($this->fh, $this->_pos);
+        return $this->_pos;
+    }
 
-	function read_tag() {
-		$this->_pos += 4;
-		return fread($this->fh, 4);
-	}
+    function read_tag() {
+        $this->_pos += 4;
+        return fread($this->fh, 4);
+    }
 
-	function read_short() {
-		$this->_pos += 2;
-		$s = fread($this->fh, 2);
-		$a = (ord($s[0]) << 8) + ord($s[1]);
-		if ($a & (1 << 15)) { $a = ($a - (1 << 16)); }
-		return $a;
-	}
+    function read_short() {
+        $this->_pos += 2;
+        $s = fread($this->fh, 2);
+        $a = (ord($s[0]) << 8) + ord($s[1]);
+        if ($a & (1 << 15)) { $a = ($a - (1 << 16)); }
+        return $a;
+    }
 
-	function unpack_short($s) {
-		$a = (ord($s[0]) << 8) + ord($s[1]);
-		if ($a & (1 << 15)) { 
-			$a = ($a - (1 << 16)); 
-		}
-		return $a;
-	}
+    function unpack_short($s) {
+        $a = (ord($s[0]) << 8) + ord($s[1]);
+        if ($a & (1 << 15)) { 
+            $a = ($a - (1 << 16)); 
+        }
+        return $a;
+    }
 
-	function read_ushort() {
-		$this->_pos += 2;
-		$s = fread($this->fh, 2);
-		return (ord($s[0]) << 8) + ord($s[1]);
-	}
+    function read_ushort() {
+        $this->_pos += 2;
+        $s = fread($this->fh, 2);
+        return (ord($s[0]) << 8) + ord($s[1]);
+    }
 
-	function read_ulong() {
-		$this->_pos += 4;
-		$s = fread($this->fh, 4);
-		// if large uInt32 as an integer, PHP converts it to -ve
-		return (ord($s[0]) * 16777216) + (ord($s[1]) << 16) + (ord($s[2]) << 8) + ord($s[3]); // 	16777216  = 1<<24
-	}
+    function read_ulong() {
+        $this->_pos += 4;
+        $s = fread($this->fh, 4);
+        // if large uInt32 as an integer, PHP converts it to -ve
+        return (ord($s[0]) * 16777216) + (ord($s[1]) << 16) + (ord($s[2]) << 8) + ord($s[3]); // 	16777216  = 1<<24
+    }
 
-	function get_ushort($pos) {
-		fseek($this->fh, $pos);
-		$s = fread($this->fh, 2);
-		return (ord($s[0]) << 8) + ord($s[1]);
-	}
+    function get_ushort($pos) {
+        fseek($this->fh, $pos);
+        $s = fread($this->fh, 2);
+        return (ord($s[0]) << 8) + ord($s[1]);
+    }
 
-	function get_ulong($pos) {
-		fseek($this->fh, $pos);
-		$s = fread($this->fh, 4);
-		// iF large uInt32 as an integer, PHP converts it to -ve
-		return (ord($s[0]) * 16777216) + (ord($s[1]) << 16) + (ord($s[2]) << 8) + ord($s[3]); // 	16777216  = 1<<24
-	}
+    function get_ulong($pos) {
+        fseek($this->fh, $pos);
+        $s = fread($this->fh, 4);
+        // iF large uInt32 as an integer, PHP converts it to -ve
+        return (ord($s[0]) * 16777216) + (ord($s[1]) << 16) + (ord($s[2]) << 8) + ord($s[3]); // 	16777216  = 1<<24
+    }
 
-	function pack_short($val) {
-		if ($val < 0) { 
-			$val = abs($val);
-			$val = ~$val;
-			$val += 1;
-		}
-		return pack("n", $val); 
-	}
+    function pack_short($val) {
+        if ($val < 0) { 
+            $val = abs($val);
+            $val = ~$val;
+            $val += 1;
+        }
+        return pack("n", $val); 
+    }
 
-	/**
-	 * @param string $value
-	 */
-	function splice($stream, $offset, $value) {
-		return substr($stream, 0, $offset).$value.substr($stream, $offset + strlen($value));
-	}
+    /**
+     * @param string $value
+     */
+    function splice($stream, $offset, $value) {
+        return substr($stream, 0, $offset).$value.substr($stream, $offset + strlen($value));
+    }
 
-	/**
-	 * @param string|null $stream
-	 * @param integer $offset
-	 */
-	function _set_ushort($stream, $offset, $value) {
-		$up = pack("n", $value);
-		return $this->splice($stream, $offset, $up);
-	}
+    /**
+     * @param string|null $stream
+     * @param integer $offset
+     */
+    function _set_ushort($stream, $offset, $value) {
+        $up = pack("n", $value);
+        return $this->splice($stream, $offset, $up);
+    }
 
-	function _set_short($stream, $offset, $val) {
-		if ($val < 0) { 
-			$val = abs($val);
-			$val = ~$val;
-			$val += 1;
-		}
-		$up = pack("n", $val); 
-		return $this->splice($stream, $offset, $up);
-	}
+    function _set_short($stream, $offset, $val) {
+        if ($val < 0) { 
+            $val = abs($val);
+            $val = ~$val;
+            $val += 1;
+        }
+        $up = pack("n", $val); 
+        return $this->splice($stream, $offset, $up);
+    }
 
-	function get_chunk($pos, $length) {
-		fseek($this->fh, $pos);
-		if ($length < 1) { return ''; }
-		return (fread($this->fh, $length));
-	}
+    function get_chunk($pos, $length) {
+        fseek($this->fh, $pos);
+        if ($length < 1) { return ''; }
+        return (fread($this->fh, $length));
+    }
 
-	/**
-	 * @param string $tag
-	 */
-	function get_table($tag) {
-		list($pos, $length) = $this->get_table_pos($tag);
-		if ($length == 0) { die('Truetype font ('.$this->filename.'): error reading table: '.$tag); }
-		fseek($this->fh, $pos);
-		return (fread($this->fh, $length));
-	}
+    /**
+     * @param string $tag
+     */
+    function get_table($tag) {
+        list($pos, $length) = $this->get_table_pos($tag);
+        if ($length == 0) { die('Truetype font ('.$this->filename.'): error reading table: '.$tag); }
+        fseek($this->fh, $pos);
+        return (fread($this->fh, $length));
+    }
 
-	/**
-	 * @param string $tag
-	 * @param null|string $data
-	 */
-	function add($tag, $data) {
-		if ($tag == 'head') {
-			$data = $this->splice($data, 8, "\0\0\0\0");
-		}
-		$this->otables[$tag] = $data;
-	}
+    /**
+     * @param string $tag
+     * @param null|string $data
+     */
+    function add($tag, $data) {
+        if ($tag == 'head') {
+            $data = $this->splice($data, 8, "\0\0\0\0");
+        }
+        $this->otables[$tag] = $data;
+    }
 
 
 
@@ -322,13 +325,16 @@ var $maxStrLenRead;
                 $nameId = $this->read_ushort();
                 $length = $this->read_ushort();
                 $offset = $this->read_ushort();
-                if (!in_array($nameId, $K)) continue;
+                if (!in_array($nameId, $K)) {
+                    continue;
+                }
                 $N = '';
                 if ($platformId == 3 && $encodingId == 1 && $languageId == 0x409) { // Microsoft, Unicode, US English, PS Name
                     $opos = $this->_pos;
                     $this->seek($string_data_offset + $offset);
-                    if ($length % 2 != 0)
-                        die("PostScript name is UTF-16BE string of odd length");
+                    if ($length % 2 != 0) {
+                                            die("PostScript name is UTF-16BE string of odd length");
+                    }
                     $length /= 2;
                     $N = '';
                     while ($length > 0) {
@@ -347,19 +353,23 @@ var $maxStrLenRead;
                 if ($N && $names[$nameId] == '') {
                     $names[$nameId] = $N;
                     $nameCount -= 1;
-                    if ($nameCount == 0) break;
+                    if ($nameCount == 0) {
+                        break;
+                    }
                 }
             }
-            if ($names[6])
-                $psName = $names[6];
-            else if ($names[4])
-                $psName = preg_replace('/ /', '-', $names[4]);
-            else if ($names[1])
-                $psName = preg_replace('/ /', '-', $names[1]);
-            else
-                $psName = '';
-            if (!$psName)
-                die("Could not find PostScript font name");
+            if ($names[6]) {
+                            $psName = $names[6];
+            } else if ($names[4]) {
+                            $psName = preg_replace('/ /', '-', $names[4]);
+            } else if ($names[1]) {
+                            $psName = preg_replace('/ /', '-', $names[1]);
+            } else {
+                            $psName = '';
+            }
+            if (!$psName) {
+                            die("Could not find PostScript font name");
+            }
             $this->name = $psName;
             if ($names[1]) { $this->familyName = $names[1]; } else { $this->familyName = $psName; }
             if ($names[2]) { $this->styleName = $names[2]; } else { $this->styleName = 'Regular'; }
@@ -423,21 +433,27 @@ var $maxStrLenRead;
             $this->skip(26);
             $sTypoAscender = $this->read_short();
             $sTypoDescender = $this->read_short();
-            if (!$this->ascent) $this->ascent = ($sTypoAscender * $scale);
-            if (!$this->descent) $this->descent = ($sTypoDescender * $scale);
+            if (!$this->ascent) {
+                $this->ascent = ($sTypoAscender * $scale);
+            }
+            if (!$this->descent) {
+                $this->descent = ($sTypoDescender * $scale);
+            }
             if ($version > 1) {
                 $this->skip(16);
                 $sCapHeight = $this->read_short();
                 $this->capHeight = ($sCapHeight * $scale);
-            }
-            else {
+            } else {
                 $this->capHeight = $this->ascent;
             }
-        }
-        else {
+        } else {
             $usWeightClass = 500;
-            if (!$this->ascent) $this->ascent = ($yMax * $scale);
-            if (!$this->descent) $this->descent = ($yMin * $scale);
+            if (!$this->ascent) {
+                $this->ascent = ($yMax * $scale);
+            }
+            if (!$this->descent) {
+                $this->descent = ($yMin * $scale);
+            }
             $this->capHeight = $this->ascent;
         }
         $this->stemV = 50 + intval(pow(($usWeightClass / 65.0), 2));
@@ -454,12 +470,15 @@ var $maxStrLenRead;
 
         $this->flags = 4;
 
-        if ($this->italicAngle != 0) 
-            $this->flags = $this->flags | 64;
-        if ($usWeightClass >= 600)
-            $this->flags = $this->flags | 262144;
-        if ($isFixedPitch)
-            $this->flags = $this->flags | 1;
+        if ($this->italicAngle != 0) {
+                    $this->flags = $this->flags | 64;
+        }
+        if ($usWeightClass >= 600) {
+                    $this->flags = $this->flags | 262144;
+        }
+        if ($isFixedPitch) {
+                    $this->flags = $this->flags | 1;
+        }
 
         ///////////////////////////////////
         // hhea - Horizontal header table
@@ -498,14 +517,17 @@ var $maxStrLenRead;
             if (($platformID == 3 && $encodingID == 1) || $platformID == 0) { // Microsoft, Unicode
                 $format = $this->get_ushort($cmap_offset + $offset);
                 if ($format == 4) {
-                    if (!$unicode_cmap_offset) $unicode_cmap_offset = $cmap_offset + $offset;
+                    if (!$unicode_cmap_offset) {
+                        $unicode_cmap_offset = $cmap_offset + $offset;
+                    }
                     break;
                 }
             }
             $this->seek($save_pos);
         }
-        if (!$unicode_cmap_offset)
-            die('Font ('.$this->filename.') does not have cmap for Unicode (platform 3, encoding 1, format 4, or platform 0, any encoding, format 4)');
+        if (!$unicode_cmap_offset) {
+                    die('Font ('.$this->filename.') does not have cmap for Unicode (platform 3, encoding 1, format 4, or platform 0, any encoding, format 4)');
+        }
 
 
         $glyphToChar = array();
@@ -589,8 +611,9 @@ var $maxStrLenRead;
             $this->seek($save_pos);
         }
 
-        if (!$unicode_cmap_offset)
-            die('Font ('.$this->filename.') does not have cmap for Unicode (platform 3, encoding 1, format 4, or platform 0, any encoding, format 4)');
+        if (!$unicode_cmap_offset) {
+                    die('Font ('.$this->filename.') does not have cmap for Unicode (platform 3, encoding 1, format 4, or platform 0, any encoding, format 4)');
+        }
 
 
         $glyphToChar = array();
@@ -775,10 +798,12 @@ var $maxStrLenRead;
             $glyphLen = $this->glyphPos[$originalGlyphIdx + 1] - $glyphPos;
             if ($glyfLength < $this->maxStrLenRead) {
                 $data = substr($glyphData, $glyphPos, $glyphLen);
-            }
-            else {
-                if ($glyphLen > 0) $data = $this->get_chunk($glyfOffset + $glyphPos, $glyphLen);
-                else $data = '';
+            } else {
+                if ($glyphLen > 0) {
+                    $data = $this->get_chunk($glyfOffset + $glyphPos, $glyphLen);
+                } else {
+                    $data = '';
+                }
             }
 
             if ($glyphLen > 0) {
@@ -824,8 +849,7 @@ var $maxStrLenRead;
         if ((($pos + 1) >> 1) > 0xFFFF) {
             $indexToLocFormat = 1; // long format
             foreach ($offsets AS $offset) { $locastr .= pack("N", $offset); }
-        }
-        else {
+        } else {
             $indexToLocFormat = 0; // short format
             foreach ($offsets AS $offset) { $locastr .= pack("n", ($offset / 2)); }
         }
@@ -931,14 +955,12 @@ var $maxStrLenRead;
         if (($numberOfHMetrics * 4) < $this->maxStrLenRead) {
             $data = $this->get_chunk($start, ($numberOfHMetrics * 4));
             $arr = unpack("n*", $data);
-        }
-        else { $this->seek($start); }
+        } else { $this->seek($start); }
         for ($glyph = 0; $glyph < $numberOfHMetrics; $glyph++) {
 
             if (($numberOfHMetrics * 4) < $this->maxStrLenRead) {
                 $aw = $arr[($glyph * 2) + 1];
-            }
-            else {
+            } else {
                 $aw = $this->read_ushort();
                 $lsb = $this->read_ushort();
             }
@@ -996,8 +1018,7 @@ var $maxStrLenRead;
         if ($gid < $numberOfHMetrics) {
             $this->seek($start + ($gid * 4));
             $hm = fread($this->fh, 4);
-        }
-        else {
+        } else {
             $this->seek($start + (($numberOfHMetrics - 1) * 4));
             $hm = fread($this->fh, 2);
             $this->seek($start + ($numberOfHMetrics * 2) + ($gid * 2));
@@ -1019,16 +1040,15 @@ var $maxStrLenRead;
             for ($n = 0; $n <= $numGlyphs; $n++) {
                 $this->glyphPos[] = ($arr[$n + 1] * 2);
             }
-        }
-        else if ($indexToLocFormat == 1) {
+        } else if ($indexToLocFormat == 1) {
             $data = $this->get_chunk($start, ($numGlyphs * 4) + 4);
             $arr = unpack("N*", $data);
             for ($n = 0; $n <= $numGlyphs; $n++) {
                 $this->glyphPos[] = ($arr[$n + 1]);
             }
+        } else {
+                    die('Unknown location table format '.$indexToLocFormat);
         }
-        else 
-            die('Unknown location table format '.$indexToLocFormat);
     }
 
 
@@ -1037,7 +1057,7 @@ var $maxStrLenRead;
     /**
      * @param integer $unicode_cmap_offset
      */
-    function getCMAP4($unicode_cmap_offset, &$glyphToChar, &$charToGlyph ) {
+    function getCMAP4($unicode_cmap_offset, &$glyphToChar, &$charToGlyph) {
         $this->maxUniChar = 0;
         $this->seek($unicode_cmap_offset + 2);
         $length = $this->read_ushort();
@@ -1060,17 +1080,18 @@ var $maxStrLenRead;
         for ($n = 0; $n < $segCount; $n++) {
             $endpoint = ($endCount[$n] + 1);
             for ($unichar = $startCount[$n]; $unichar < $endpoint; $unichar++) {
-                if ($idRangeOffset[$n] == 0)
-                    $glyph = ($unichar + $idDelta[$n]) & 0xFFFF;
-                else {
+                if ($idRangeOffset[$n] == 0) {
+                                    $glyph = ($unichar + $idDelta[$n]) & 0xFFFF;
+                } else {
                     $offset = ($unichar - $startCount[$n]) * 2 + $idRangeOffset[$n];
                     $offset = $idRangeOffset_start + 2 * $n + $offset;
-                    if ($offset >= $limit)
-                        $glyph = 0;
-                    else {
+                    if ($offset >= $limit) {
+                                            $glyph = 0;
+                    } else {
                         $glyph = $this->get_ushort($offset);
-                        if ($glyph != 0)
-                            $glyph = ($glyph + $idDelta[$n]) & 0xFFFF;
+                        if ($glyph != 0) {
+                                                    $glyph = ($glyph + $idDelta[$n]) & 0xFFFF;
+                        }
                     }
                 }
                 $charToGlyph[$unichar] = $glyph;
@@ -1101,8 +1122,7 @@ var $maxStrLenRead;
         // Header
         if (_TTF_MAC_HEADER) {
             $stm .= (pack("Nnnnn", 0x74727565, $numTables, $searchRange, $entrySelector, $rangeShift)); // Mac
-        }
-        else {
+        } else {
             $stm .= (pack("Nnnnn", 0x00010000, $numTables, $searchRange, $entrySelector, $rangeShift)); // Windows
         }
 

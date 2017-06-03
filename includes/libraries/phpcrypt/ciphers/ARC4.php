@@ -106,8 +106,9 @@ class Cipher_ARC4 extends Cipher
         $len = strlen($text);
         $this->prga($len);
 
-        for ($i = 0; $i < $len; ++$i)
-            $text[$i] = $text[$i] ^ $this->_key_stream[$i];
+        for ($i = 0; $i < $len; ++$i) {
+                    $text[$i] = $text[$i] ^ $this->_key_stream[$i];
+        }
 
         return true;
     }
@@ -126,8 +127,9 @@ class Cipher_ARC4 extends Cipher
         $key = $this->key();
 
         // fill $this->_s with all the values from 0-255
-        for ($i = 0; $i < 256; ++$i)
-            $this->_s[$i] = $i;
+        for ($i = 0; $i < 256; ++$i) {
+                    $this->_s[$i] = $i;
+        }
 
         // the changing S List
         for ($i = 0; $i < 256; ++$i)

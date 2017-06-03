@@ -67,8 +67,9 @@ class Padding
     {
         // if the size of padding is not greater than 1
         // just return true, no padding will be done
-        if (!($bytes > 0))
-            return true;
+        if (!($bytes > 0)) {
+                    return true;
+        }
 
         switch ($type)
         {
@@ -196,11 +197,11 @@ class Padding
         $pos = strlen($text) - 1;
         $c = ord($text[$pos]);
 
-        if ($c == 0)
-            return true;
-        else if ($c == 1)
-            $text = substr($text, 0, -1);
-        else
+        if ($c == 0) {
+                    return true;
+        } else if ($c == 1) {
+                    $text = substr($text, 0, -1);
+        } else
         {
             // the total null bytes are 1 less than the value of the final byte
             $nc = $c - 1;
@@ -226,8 +227,9 @@ class Padding
         // create the random pad bytes, we do one less than
         // needed because the last byte is reserved for the
         // number of padded bytes
-        for ($i = 0; $i < ($bytes - 1); ++$i)
-            $text .= chr(mt_rand(0, 255));
+        for ($i = 0; $i < ($bytes - 1); ++$i) {
+                    $text .= chr(mt_rand(0, 255));
+        }
 
         // add the byte to indicate the padding length
         $text .= chr($bytes);
@@ -248,8 +250,9 @@ class Padding
 
         // if we got a null byte at the end of the string,
         // just return
-        if ($c == 0)
-            return true;
+        if ($c == 0) {
+                    return true;
+        }
 
         $text = substr($text, 0, $c);
         return true;
@@ -285,8 +288,9 @@ class Padding
         $pos = strlen($text) - 1;
         $c = ord($text[$pos]);
 
-        if ($c == 0)
-            return true;
+        if ($c == 0) {
+                    return true;
+        }
 
         $text = preg_replace('/'.preg_quote(chr($c)).'{'.$c.'}$/', "", $text);
         return true;
@@ -309,8 +313,9 @@ class Padding
 
         // if we are only padding one byte, then 0x80 is all we need
         // else we follow up with null bytes
-        if ($bytes > 1)
-            $text = str_pad($text, ($len - 1), chr(0), STR_PAD_RIGHT);
+        if ($bytes > 1) {
+                    $text = str_pad($text, ($len - 1), chr(0), STR_PAD_RIGHT);
+        }
 
         return true;
     }

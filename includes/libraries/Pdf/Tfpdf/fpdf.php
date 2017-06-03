@@ -163,19 +163,19 @@ class FPDF_Protection extends tFPDF
     }
 
     /**
-    * Get MD5 as binary string
-    * @param string $string
-    */
+     * Get MD5 as binary string
+     * @param string $string
+     */
     function _md5_16($string)
     {
         return pack('H*', md5($string));
     }
 
     /**
-    * Compute O value
-    * @param string $user_pass
-    * @param string $owner_pass
-    */
+     * Compute O value
+     * @param string $user_pass
+     * @param string $owner_pass
+     */
     function _Ovalue($user_pass, $owner_pass)
     {
         $tmp = $this->_md5_16($owner_pass);

@@ -79,8 +79,7 @@ class Cipher_Blowfish extends Cipher
         {
             $key = substr($key, 0, 56);
             $keylen = 56;
-        }
-        else if ($keylen < 1)
+        } else if ($keylen < 1)
         {
             $msg = "No key given. The key must be between 1 - 56 bytes.";
             trigger_error($msg, E_USER_WARNING);
@@ -148,10 +147,11 @@ class Cipher_Blowfish extends Cipher
 
         for ($i = 0; $i < 16; ++$i)
         {
-            if ($this->operation() == parent::ENCRYPT)
-                $xl ^= self::$_p[$i];
-            else
-                $xl ^= self::$_p[17 - $i];
+            if ($this->operation() == parent::ENCRYPT) {
+                            $xl ^= self::$_p[$i];
+            } else {
+                            $xl ^= self::$_p[17 - $i];
+            }
 
             // perform F() on the left half, and XOR with the right half
             $xr = $this->F($xl) ^ $xr;
@@ -242,23 +242,19 @@ class Cipher_Blowfish extends Cipher
             {
                 self::$_p[$i] = $z0;
                 self::$_p[$i + 1] = $z1;
-            }
-            else if ($i >= 18 && $i < 274)
+            } else if ($i >= 18 && $i < 274)
             {
                 self::$_sbox1[$i - 18] = $z0;
                 self::$_sbox1[$i - 18 + 1] = $z1;
-            }
-            else if ($i >= 274 && $i < 530)
+            } else if ($i >= 274 && $i < 530)
             {
                 self::$_sbox2[$i - 274] = $z0;
                 self::$_sbox2[$i - 274 + 1] = $z1;
-            }
-            else if ($i >= 530 && $i < 786)
+            } else if ($i >= 530 && $i < 786)
             {
                 self::$_sbox3[$i - 530] = $z0;
                 self::$_sbox3[$i - 530 + 1] = $z1;
-            }
-            else if ($i >= 786 && $i < 1042)
+            } else if ($i >= 786 && $i < 1042)
             {
                 self::$_sbox4[$i - 786] = $z0;
                 self::$_sbox4[$i - 786 + 1] = $z1;
@@ -283,8 +279,9 @@ class Cipher_Blowfish extends Cipher
      */
     private function keyChunk($size = 1, $reset = false)
     {
-        if ($reset || $this->key_pos >= $this->keySize())
-            $this->key_pos = 0;
+        if ($reset || $this->key_pos >= $this->keySize()) {
+                    $this->key_pos = 0;
+        }
 
         $bytes = substr($this->key(), $this->key_pos, $size);
         $len = strlen($bytes);

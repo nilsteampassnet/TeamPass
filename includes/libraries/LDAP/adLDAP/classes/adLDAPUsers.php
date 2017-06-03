@@ -215,11 +215,9 @@ class adLDAPUsers {
         if ($isGUID === true) {
             $username = $this->adldap->utilities()->strGuidToHex($username);
             $filter = "objectguid=".$username;
-        }
-        else if (strpos($username, "@")) {
+        } else if (strpos($username, "@")) {
                 $filter = "userPrincipalName=".$username;
-        }
-        else {
+        } else {
                 $filter = "samaccountname=".$username;
         }
         $filter = "(&(objectCategory=person)({$filter}))";

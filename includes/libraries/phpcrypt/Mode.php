@@ -163,8 +163,9 @@ abstract class Mode
     public function createIV($src = PHP_Crypt::RAND)
     {
         // if the mode does not use an IV, lets not waste time
-        if (!$this->requiresIV())
-            return false;
+        if (!$this->requiresIV()) {
+                    return false;
+        }
 
         $iv = Core::randBytes($src, $this->block_size);
         return $this->IV($iv);
@@ -227,8 +228,9 @@ abstract class Mode
      */
     public function name($name = "")
     {
-        if ($name != "")
-            $this->mode_name = $name;
+        if ($name != "") {
+                    $this->mode_name = $name;
+        }
 
         return $this->mode_name;
     }
@@ -244,8 +246,9 @@ abstract class Mode
      */
     public function padding($type = "")
     {
-        if ($type != "")
-            $this->padding = $type;
+        if ($type != "") {
+                    $this->padding = $type;
+        }
 
         return $this->padding;
     }
@@ -263,8 +266,9 @@ abstract class Mode
      */
     public function cipher($cipher = null)
     {
-        if (is_object($cipher))
-            $this->cipher = $cipher;
+        if (is_object($cipher)) {
+                    $this->cipher = $cipher;
+        }
 
         return $this->cipher;
     }

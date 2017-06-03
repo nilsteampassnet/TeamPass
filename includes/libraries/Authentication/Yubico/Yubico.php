@@ -148,15 +148,21 @@ class Auth_Yubico
      */
     function getNextURLpart()
     {
-        if ($this->_url_list) $url_list = $this->_url_list;
-        else $url_list = array('api.yubico.com/wsapi/2.0/verify',
+        if ($this->_url_list) {
+            $url_list = $this->_url_list;
+        } else {
+            $url_list = array('api.yubico.com/wsapi/2.0/verify',
                     'api2.yubico.com/wsapi/2.0/verify', 
                     'api3.yubico.com/wsapi/2.0/verify', 
                     'api4.yubico.com/wsapi/2.0/verify',
                     'api5.yubico.com/wsapi/2.0/verify');
+        }
 	  
-        if ($this->_url_index >= count($url_list)) return false;
-        else return $url_list[$this->_url_index++];
+        if ($this->_url_index >= count($url_list)) {
+            return false;
+        } else {
+            return $url_list[$this->_url_index++];
+        }
     }
 
     /**
@@ -291,12 +297,20 @@ class Auth_Yubico
                 'otp'=>$ret['otp'],
                 'nonce'=>md5(uniqid(rand())));
         /* Take care of protocol version 2 parameters */
-        if ($use_timestamp) $params['timestamp'] = 1;
-        if ($sl) $params['sl'] = $sl;
-        if ($timeout) $params['timeout'] = $timeout;
+        if ($use_timestamp) {
+            $params['timestamp'] = 1;
+        }
+        if ($sl) {
+            $params['sl'] = $sl;
+        }
+        if ($timeout) {
+            $params['timeout'] = $timeout;
+        }
         ksort($params);
         $parameters = '';
-        foreach ($params as $p=>$v) $parameters .= "&".$p."=".$v;
+        foreach ($params as $p=>$v) {
+            $parameters .= "&".$p."=".$v;
+        }
         $parameters = ltrim($parameters, "&");
 	  
         /* Generate signature. */
@@ -401,7 +415,9 @@ class Auth_Yubico
             $check = Null;
             foreach ($parameters as $param) {
                 if (array_key_exists($param, $response)) {
-            if ($check) $check = $check.'&';
+            if ($check) {
+                $check = $check.'&';
+            }
             $check = $check.$param.'='.$response[$param];
                 }
             }

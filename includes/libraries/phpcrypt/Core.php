@@ -67,8 +67,9 @@ class Core
     {
         // if we do not have an even number of hex characters
         // append a 0 to the beginning to make it even
-        if (strlen($hex) % 2)
-            $hex = "0$hex";
+        if (strlen($hex) % 2) {
+                    $hex = "0$hex";
+        }
 
         $parts = str_split($hex, 2);
         $parts = array_map(function($v) {
@@ -90,8 +91,9 @@ class Core
     {
         // php version >= 5.4 have a hex2bin function, use it
         // if it exists
-        if (function_exists("hex2bin"))
-            return hex2bin($hex);
+        if (function_exists("hex2bin")) {
+                    return hex2bin($hex);
+        }
 
         $parts = str_split($hex, 2);
         $parts = array_map(function($v) {
@@ -235,14 +237,16 @@ class Core
 
         // if we do not have an even number of hex characters
         // append a 0 to the beginning. dechex() drops leading 0's
-        if (strlen($hex) % 2)
-            $hex = "0$hex";
+        if (strlen($hex) % 2) {
+                    $hex = "0$hex";
+        }
 
         // if the number of bytes in the hex is less than
         // what we need it to be, add null bytes to the
         // front of the hex to padd it to the required size
-        if (($req_bytes * 2) > strlen($hex))
-            $hex = str_pad($hex, ($req_bytes * 2), "0", STR_PAD_LEFT);
+        if (($req_bytes * 2) > strlen($hex)) {
+                    $hex = str_pad($hex, ($req_bytes * 2), "0", STR_PAD_LEFT);
+        }
 
         return $hex;
     }
@@ -306,8 +310,7 @@ class Core
         {
             $width = $len_a;
             $b = str_pad($b, $width, "0", STR_PAD_LEFT);
-        }
-        else if ($len_a < $len_b)
+        } else if ($len_a < $len_b)
         {
             $width = $len_b;
             $a = str_pad($a, $width, "0", STR_PAD_LEFT);
@@ -334,13 +337,15 @@ class Core
         $count = func_num_args();
 
         // we need a minimum of 2 values
-        if ($count < 2)
-            return false;
+        if ($count < 2) {
+                    return false;
+        }
 
         // first get all hex values to an even number
         array_walk($hex, function(&$val, $i) {
-            if (strlen($val) % 2)
-                $val = "0".$val;
+            if (strlen($val) % 2) {
+                            $val = "0".$val;
+            }
         });
 
         $res = 0;
@@ -348,9 +353,9 @@ class Core
         {
             // if this is the first loop, set the 'result' to the first
             // hex value
-            if ($i == 0)
-                $res = $hex[0];
-            else
+            if ($i == 0) {
+                            $res = $hex[0];
+            } else
             {
                 // to make the code easier to follow
                 $h1 = $res;
@@ -362,10 +367,11 @@ class Core
 
                 // now check that both hex values are the same length,
                 // if not pad them with 0's until they are
-                if ($len1 > $len2)
-                    $h2 = str_pad($h2, $len1, "0", STR_PAD_LEFT);
-                else if ($len1 < $len2)
-                    $h1 = str_pad($h1, $len2, "0", STR_PAD_LEFT);
+                if ($len1 > $len2) {
+                                    $h2 = str_pad($h2, $len1, "0", STR_PAD_LEFT);
+                } else if ($len1 < $len2) {
+                                    $h1 = str_pad($h1, $len2, "0", STR_PAD_LEFT);
+                }
 
                 // PHP knows how to XOR each byte in a string, so convert the
                 // hex to a string, XOR, and convert back
@@ -407,8 +413,10 @@ class Core
         // the same negative number given to it, the work around is
         // to use sprintf().
         // Tested with php 5.3.x on Windows XP & Linux 32bit
-        if ($ret < 0)
-            $ret = sprintf("%u", $ret) + 0; // convert from string to int
+        if ($ret < 0) {
+                    $ret = sprintf("%u", $ret) + 0;
+        }
+        // convert from string to int
 
         return $ret;
     }
@@ -422,9 +430,10 @@ class Core
      */
     public static function sInt32($int)
     {
-        if (PHP_INT_SIZE === 4) // 32 bit
+        if (PHP_INT_SIZE === 4) {
+            // 32 bit
             return self::sInt($int);
-        else // PHP_INT_SIZE === 8 // 64 bit
+        } else // PHP_INT_SIZE === 8 // 64 bit
         {
             $arr = unpack("l", pack("l", $int));
             return $arr[1];
@@ -440,9 +449,10 @@ class Core
      */
     public static function uInt32($int)
     {
-        if (PHP_INT_SIZE === 4) // 32 bit
+        if (PHP_INT_SIZE === 4) {
+            // 32 bit
             return self::uInt($int);
-        else // PHP_INT_SIZE === 8  // 64 bit
+        } else // PHP_INT_SIZE === 8  // 64 bit
         {
             $arr = unpack("L", pack("L", $int));
             return $arr[1];
@@ -484,8 +494,9 @@ class Core
      */
     public static function rotBitsLeft32($i, $shifts)
     {
-        if ($shifts <= 0)
-            return $i;
+        if ($shifts <= 0) {
+                    return $i;
+        }
 
         $shifts &= 0x1f; /* higher rotates would not bring anything */
 
@@ -509,8 +520,9 @@ class Core
      */
     public static function rotBitsRight32($i, $shifts)
     {
-        if ($shifts <= 0)
-            return $i;
+        if ($shifts <= 0) {
+                    return $i;
+        }
 
         $shifts &= 0x1f; /* higher rotates would not bring anything */
 
@@ -547,19 +559,19 @@ class Core
 
         if ($src == PHP_Crypt::RAND_DEV_RAND)
         {
-            if (file_exists(PHP_Crypt::RAND_DEV_RAND))
-                $bytes = file_get_contents(PHP_CRYPT::RAND_DEV_RAND, false, null, 0, $byte_len);
-            else
-                $err_msg = PHP_Crypt::RAND_DEV_RAND." not found";
-        }
-        else if ($src == PHP_Crypt::RAND_DEV_URAND)
+            if (file_exists(PHP_Crypt::RAND_DEV_RAND)) {
+                            $bytes = file_get_contents(PHP_CRYPT::RAND_DEV_RAND, false, null, 0, $byte_len);
+            } else {
+                            $err_msg = PHP_Crypt::RAND_DEV_RAND." not found";
+            }
+        } else if ($src == PHP_Crypt::RAND_DEV_URAND)
         {
-            if (file_exists(PHP_Crypt::RAND_DEV_URAND))
-                $bytes = file_get_contents(PHP_CRYPT::RAND_DEV_URAND, false, null, 0, $byte_len);
-            else
-                $err_msg = PHP_Crypt::RAND_DEV_URAND." not found";
-        }
-        else if ($src == PHP_Crypt::RAND_WIN_COM)
+            if (file_exists(PHP_Crypt::RAND_DEV_URAND)) {
+                            $bytes = file_get_contents(PHP_CRYPT::RAND_DEV_URAND, false, null, 0, $byte_len);
+            } else {
+                            $err_msg = PHP_Crypt::RAND_DEV_URAND." not found";
+            }
+        } else if ($src == PHP_Crypt::RAND_WIN_COM)
         {
             if (extension_loaded('com_dotnet'))
             {
@@ -571,22 +583,23 @@ class Core
                     // binary data on Windows
                     $com = @new \COM("CAPICOM.Utilities.1");
                     $bytes = $com->GetRandom($byte_len, 0);
-                }
-                catch (Exception $e)
+                } catch (Exception $e)
                 {
                     $err_msg = "Windows COM exception: ".$e->getMessage();
                 }
 
-                if (!$bytes)
-                    $err_msg = "Windows COM failed to create random string of bytes";
+                if (!$bytes) {
+                                    $err_msg = "Windows COM failed to create random string of bytes";
+                }
+            } else {
+                            $err_msg = "The COM_DOTNET extension is not loaded";
             }
-            else
-                $err_msg = "The COM_DOTNET extension is not loaded";
         }
 
         // trigger a warning if something went wrong
-        if ($err_msg != "")
-            trigger_error("$err_msg. Defaulting to PHP_Crypt::RAND", E_USER_WARNING);
+        if ($err_msg != "") {
+                    trigger_error("$err_msg. Defaulting to PHP_Crypt::RAND", E_USER_WARNING);
+        }
 
         // if the random bytes where not created properly or PHP_Crypt::RAND was
         // passed as the $src param, create the bytes using mt_rand(). It's not
@@ -597,8 +610,9 @@ class Core
 
             // md5() hash a random number to get a 16 byte string, keep looping
             // until we have a string as long or longer than the ciphers block size
-            for ($i = 0; ($i * self::HASH_LEN) < $byte_len; ++$i)
-                $bytes .= md5(mt_rand(), true);
+            for ($i = 0; ($i * self::HASH_LEN) < $byte_len; ++$i) {
+                            $bytes .= md5(mt_rand(), true);
+            }
         }
 
         // because $bytes may have come from mt_rand() or /dev/urandom which are not
@@ -611,8 +625,9 @@ class Core
         // some ciphers which have a block size larger than 16 bytes
         $tmp = "";
         $loop = ceil(strlen($bytes) / self::HASH_LEN);
-        for ($i = 0; $i < $loop; ++$i)
-            $tmp .= md5(substr($bytes, ($i * self::HASH_LEN), self::HASH_LEN), true);
+        for ($i = 0; $i < $loop; ++$i) {
+                    $tmp .= md5(substr($bytes, ($i * self::HASH_LEN), self::HASH_LEN), true);
+        }
 
         // grab the number of bytes equal to the requested $byte_len
         return substr($tmp, 0, $byte_len);

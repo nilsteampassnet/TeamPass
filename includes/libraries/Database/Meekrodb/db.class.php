@@ -161,12 +161,24 @@ class MeekroDB {
 
 
     public function __construct($host = null, $user = null, $password = null, $dbName = null, $port = null, $encoding = null) {
-    if ($host === null) $host = DB::$host;
-    if ($user === null) $user = DB::$user;
-    if ($password === null) $password = DB::$password;
-    if ($dbName === null) $dbName = DB::$dbName;
-    if ($port === null) $port = DB::$port;
-    if ($encoding === null) $encoding = DB::$encoding;
+    if ($host === null) {
+        $host = DB::$host;
+    }
+    if ($user === null) {
+        $user = DB::$user;
+    }
+    if ($password === null) {
+        $password = DB::$password;
+    }
+    if ($dbName === null) {
+        $dbName = DB::$dbName;
+    }
+    if ($port === null) {
+        $port = DB::$port;
+    }
+    if ($encoding === null) {
+        $encoding = DB::$encoding;
+    }
 
     $this->host = $host;
     $this->user = $user;
@@ -180,7 +192,9 @@ class MeekroDB {
     $mysql = $this->internal_mysql;
 
     if (!($mysql instanceof MySQLi)) {
-        if (!$this->port) $this->port = ini_get('mysqli.default_port');
+        if (!$this->port) {
+            $this->port = ini_get('mysqli.default_port');
+        }
         $this->current_db = $this->dbName;
       
         $mysql = new mysqli($this->host, $this->user, $this->password, $this->dbName, $this->port);
@@ -300,8 +314,11 @@ class MeekroDB {
     protected function formatTableName($table) {
     $table = trim($table, '`');
 
-    if (strpos($table, '.')) return implode('.', array_map(array($this, 'formatTableName'), explode('.', $table)));
-    else return '`'.str_replace('`', '``', $table).'`';
+    if (strpos($table, '.')) {
+        return implode('.', array_map(array($this, 'formatTableName'), explode('.', $table)));
+    } else {
+        return '`'.str_replace('`', '``', $table).'`';
+    }
     }
 
     public function update() {
@@ -321,14 +338,14 @@ class MeekroDB {
     /**
      * @param string $which
      */
-    public function insertOrReplace($which, $table, $datas, $options=array()) {
+    public function insertOrReplace($which, $table, $datas, $options = array()) {
     $datas = unserialize(serialize($datas)); // break references within array
     $keys = $values = array();
 
     if (isset($datas[0]) && is_array($datas[0])) {
         foreach ($datas as $datum) {
         ksort($datum);
-        if (! $keys) {
+        if (!$keys) {
             $keys = array_keys($datum);
         }
         $values[] = array_values($datum);
@@ -529,21 +546,31 @@ class MeekroDB {
 
     protected function sanitize($value) {
     if (is_object($value)) {
-        if ($value instanceof MeekroDBEval) return $value->text;
-        else if ($value instanceof DateTime) return $this->escape($value->format('Y-m-d H:i:s'));
-        else return '';
+        if ($value instanceof MeekroDBEval) {
+            return $value->text;
+        } else if ($value instanceof DateTime) {
+            return $this->escape($value->format('Y-m-d H:i:s'));
+        } else {
+            return '';
+        }
     }
 
-    if (is_null($value)) return $this->usenull ? 'NULL' : "''";
-    else if (is_bool($value)) return ($value ? 1 : 0);
-    else if (is_int($value)) return $value;
-    else if (is_float($value)) return $value;
-
-    else if (is_array($value)) {
+    if (is_null($value)) {
+        return $this->usenull ? 'NULL' : "''";
+    } else if (is_bool($value)) {
+        return ($value ? 1 : 0);
+    } else if (is_int($value)) {
+        return $value;
+    } else if (is_float($value)) {
+        return $value;
+    } else if (is_array($value)) {
         // non-assoc array?
         if (array_values($value) === $value) {
-        if (is_array($value[0])) return implode(', ', array_map(array($this, 'sanitize'), $value));
-        else return '('.implode(', ', array_map(array($this, 'sanitize'), $value)).')';
+        if (is_array($value[0])) {
+            return implode(', ', array_map(array($this, 'sanitize'), $value));
+        } else {
+            return '('.implode(', ', array_map(array($this, 'sanitize'), $value)).')';
+        }
         }
 
         $pairs = array();
@@ -591,30 +618,48 @@ class MeekroDB {
 
         if ($type != '?') {
         $is_array_type = in_array($type, $array_types, true);
-        if ($is_array_type && !is_array($arg)) $this->nonSQLError("Badly formatted SQL query: Expected array, got scalar instead!");
-        else if (!$is_array_type && is_array($arg)) $this->nonSQLError("Badly formatted SQL query: Expected scalar, got array instead!");
+        if ($is_array_type && !is_array($arg)) {
+            $this->nonSQLError("Badly formatted SQL query: Expected array, got scalar instead!");
+        } else if (!$is_array_type && is_array($arg)) {
+            $this->nonSQLError("Badly formatted SQL query: Expected scalar, got array instead!");
+        }
         }
 
-        if ($type == 's') $result = $this->escape($arg);
-        else if ($type == 'i') $result = $this->intval($arg);
-        else if ($type == 'd') $result = doubleval($arg);
-        else if ($type == 'b') $result = $this->formatTableName($arg);
-        else if ($type == 'l') $result = $arg;
-        else if ($type == 'ss') $result = $this->escape("%".str_replace(array('%', '_'), array('\%', '\_'), $arg)."%");
-        else if ($type == 't') $result = $this->escape($this->parseTS($arg));
+        if ($type == 's') {
+            $result = $this->escape($arg);
+        } else if ($type == 'i') {
+            $result = $this->intval($arg);
+        } else if ($type == 'd') {
+            $result = doubleval($arg);
+        } else if ($type == 'b') {
+            $result = $this->formatTableName($arg);
+        } else if ($type == 'l') {
+            $result = $arg;
+        } else if ($type == 'ss') {
+            $result = $this->escape("%".str_replace(array('%', '_'), array('\%', '\_'), $arg)."%");
+        } else if ($type == 't') {
+            $result = $this->escape($this->parseTS($arg));
+        } else if ($type == 'ls') {
+            $result = array_map(array($this, 'escape'), $arg);
+        } else if ($type == 'li') {
+            $result = array_map(array($this, 'intval'), $arg);
+        } else if ($type == 'ld') {
+            $result = array_map('doubleval', $arg);
+        } else if ($type == 'lb') {
+            $result = array_map(array($this, 'formatTableName'), $arg);
+        } else if ($type == 'll') {
+            $result = $arg;
+        } else if ($type == 'lt') {
+            $result = array_map(array($this, 'escape'), array_map(array($this, 'parseTS'), $arg));
+        } else if ($type == '?') {
+            $result = $this->sanitize($arg);
+        } else {
+            $this->nonSQLError("Badly formatted SQL query: Invalid MeekroDB param $type");
+        }
 
-        else if ($type == 'ls') $result = array_map(array($this, 'escape'), $arg);
-        else if ($type == 'li') $result = array_map(array($this, 'intval'), $arg);
-        else if ($type == 'ld') $result = array_map('doubleval', $arg);
-        else if ($type == 'lb') $result = array_map(array($this, 'formatTableName'), $arg);
-        else if ($type == 'll') $result = $arg;
-        else if ($type == 'lt') $result = array_map(array($this, 'escape'), array_map(array($this, 'parseTS'), $arg));
-
-        else if ($type == '?') $result = $this->sanitize($arg);
-
-        else $this->nonSQLError("Badly formatted SQL query: Invalid MeekroDB param $type");
-
-        if (is_array($result)) $result = '('.implode(',', $result).')';
+        if (is_array($result)) {
+            $result = '('.implode(',', $result).')';
+        }
 
         $query .= $result;
     }
@@ -720,23 +765,33 @@ class MeekroDB {
     $this->affected_rows = $db->affected_rows;
 
     // mysqli_result->num_rows won't initially show correct results for unbuffered data
-    if ($is_buffered && ($result instanceof MySQLi_Result)) $this->num_rows = $result->num_rows;
-    else $this->num_rows = null;
+    if ($is_buffered && ($result instanceof MySQLi_Result)) {
+        $this->num_rows = $result->num_rows;
+    } else {
+        $this->num_rows = null;
+    }
 
-    if ($row_type == 'raw' || !($result instanceof MySQLi_Result)) return $result;
+    if ($row_type == 'raw' || !($result instanceof MySQLi_Result)) {
+        return $result;
+    }
 
     $return = array();
 
     if ($full_names) {
         $infos = array();
         foreach ($result->fetch_fields() as $info) {
-        if (strlen($info->table)) $infos[] = $info->table.'.'.$info->name;
-        else $infos[] = $info->name;
+        if (strlen($info->table)) {
+            $infos[] = $info->table.'.'.$info->name;
+        } else {
+            $infos[] = $info->name;
+        }
         }
     }
 
     while ($row = ($row_type == 'assoc' ? $result->fetch_assoc() : $result->fetch_row())) {
-        if ($full_names) $row = array_combine($infos, $row);
+        if ($full_names) {
+            $row = array_combine($infos, $row);
+        }
         $return[] = $row;
     }
 
@@ -929,7 +984,9 @@ class DBTransaction {
     DB::startTransaction();
     }
     function __destruct() {
-    if (!$this->committed) DB::rollback();
+    if (!$this->committed) {
+        DB::rollback();
+    }
     }
     function commit() {
     DB::commit();
@@ -963,10 +1020,14 @@ class DBHelper {
 
     $R = array();
     foreach ($array as $obj) {
-        if (!array_key_exists($field, $obj)) die("verticalSlice: array doesn't have requested field\n");
+        if (!array_key_exists($field, $obj)) {
+            die("verticalSlice: array doesn't have requested field\n");
+        }
 
         if ($keyfield) {
-        if (!array_key_exists($keyfield, $obj)) die("verticalSlice: array doesn't have requested field\n");
+        if (!array_key_exists($keyfield, $obj)) {
+            die("verticalSlice: array doesn't have requested field\n");
+        }
         $R[$obj[$keyfield]] = $obj[$field];
         } else {
         $R[] = $obj[$field];
@@ -990,7 +1051,9 @@ class DBHelper {
         $target = & $R;
 
         foreach ($fields as $field) {
-        if (!array_key_exists($field, $obj)) die("reIndex: array doesn't have requested field\n");
+        if (!array_key_exists($field, $obj)) {
+            die("reIndex: array doesn't have requested field\n");
+        }
 
         $nextkey = $obj[$field];
         $target = & $target[$nextkey];

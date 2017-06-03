@@ -48,8 +48,9 @@ class Mode_CBC extends Mode
         parent::__construct(PHP_Crypt::MODE_CBC, $cipher);
 
         // this works with only block Ciphers
-        if ($cipher->type() != Cipher::BLOCK)
-            trigger_error("CBC mode requires a block cipher", E_USER_WARNING);
+        if ($cipher->type() != Cipher::BLOCK) {
+                    trigger_error("CBC mode requires a block cipher", E_USER_WARNING);
+        }
     }
 
 
@@ -92,8 +93,9 @@ class Mode_CBC extends Mode
             $block = substr($text, $pos, $blocksz);
 
             // xor the block with the register
-            for ($j = 0; $j < $blocksz; ++$j)
-                $block[$j] = $block[$j] ^ $this->register[$j];
+            for ($j = 0; $j < $blocksz; ++$j) {
+                            $block[$j] = $block[$j] ^ $this->register[$j];
+            }
 
             // encrypt the block, and save it back to the register
             $this->cipher->encrypt($block);
@@ -139,8 +141,9 @@ class Mode_CBC extends Mode
             $this->cipher->decrypt($block);
 
             // xor the block with the register
-            for ($j = 0; $j < $blocksz; ++$j)
-                $block[$j] = $block[$j] ^ $this->register[$j];
+            for ($j = 0; $j < $blocksz; ++$j) {
+                            $block[$j] = $block[$j] ^ $this->register[$j];
+            }
 
             // replace the block of cipher text with plain text
             $text = substr_replace($text, $block, $pos, $blocksz);

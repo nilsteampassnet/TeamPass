@@ -61,9 +61,9 @@ class Cipher_3DES extends Cipher_DES
     {
         $key_len = strlen($key);
 
-        if ($key_len == 8 || $key_len == 16)
-            $key = self::expandKey($key, $key_len);
-        else if ($key_len < self::BYTES_KEY)
+        if ($key_len == 8 || $key_len == 16) {
+                    $key = self::expandKey($key, $key_len);
+        } else if ($key_len < self::BYTES_KEY)
         {
             $msg  = PHP_Crypt::CIPHER_3DES." requires an 8, 16, or 24 byte key. ";
             $msg .= "$key_len bytes received.";
@@ -109,10 +109,13 @@ class Cipher_3DES extends Cipher_DES
             $key = substr($this->key(), ($i * 8), $blocksz);
             $this->keyPermutation($key);
 
-            if ($i % 2) // round 1
+            if ($i % 2) {
+                // round 1
                 $this->operation(parent::DECRYPT);
-            else // rounds 0 and 2
+            } else {
+                // rounds 0 and 2
                 $this->operation(parent::ENCRYPT);
+            }
 
             $this->des($text);
         }
@@ -138,10 +141,13 @@ class Cipher_3DES extends Cipher_DES
             $key = substr($this->key(), ($i * 8), $blocksz);
             $this->keyPermutation($key);
 
-            if ($i % 2) // round 1
+            if ($i % 2) {
+                // round 1
                 $this->operation(parent::ENCRYPT);
-            else // round 0 and 2
+            } else {
+                // round 0 and 2
                 $this->operation(parent::DECRYPT);
+            }
 
             $this->des($text);
         }
@@ -210,8 +216,9 @@ class Cipher_3DES extends Cipher_DES
             // of these.
             $CnDn = array_merge($c[$i], $d[$i]);
             $this->sub_keys[$i - 1] = "";
-            for ($j = 0; $j < 48; ++$j)
-                $this->sub_keys[$i - 1] .= $CnDn[parent::$_pc2[$j] - 1];
+            for ($j = 0; $j < 48; ++$j) {
+                            $this->sub_keys[$i - 1] .= $CnDn[parent::$_pc2[$j] - 1];
+            }
         }
 
         // the sub_keys are created, we are done with the key permutation
@@ -235,13 +242,15 @@ class Cipher_3DES extends Cipher_DES
     {
         // if we were given an 8 byte key, repeat it
         // 3 times to produce a 24 byte key
-        if ($len == 8)
-            $key = str_repeat($key, 3);
+        if ($len == 8) {
+                    $key = str_repeat($key, 3);
+        }
 
         // if we were given a 16 byte key, add the first
         // 8 bytes to the end of the key to produce 24 bytes
-        if ($len == 16)
-            $key .= substr($key, 0, 8);
+        if ($len == 16) {
+                    $key .= substr($key, 0, 8);
+        }
 
         // return the key
         return $key;

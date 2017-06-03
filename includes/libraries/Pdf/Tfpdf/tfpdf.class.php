@@ -224,15 +224,17 @@ function SetAutoPageBreak($auto, $margin = 0)
 function SetDisplayMode($zoom, $layout = 'default')
 {
     // Set display mode in viewer
-    if ($zoom == 'fullpage' || $zoom == 'fullwidth' || $zoom == 'real' || $zoom == 'default' || !is_string($zoom))
-        $this->ZoomMode = $zoom;
-    else
-        $this->Error('Incorrect zoom display mode: '.$zoom);
-    if ($layout == 'single' || $layout == 'continuous' || $layout == 'two' || $layout == 'default')
-        $this->LayoutMode = $layout;
-    else
-        $this->Error('Incorrect layout display mode: '.$layout);
-}
+    if ($zoom == 'fullpage' || $zoom == 'fullwidth' || $zoom == 'real' || $zoom == 'default' || !is_string($zoom)) {
+            $this->ZoomMode = $zoom;
+    } else {
+            $this->Error('Incorrect zoom display mode: '.$zoom);
+    }
+    if ($layout == 'single' || $layout == 'continuous' || $layout == 'two' || $layout == 'default') {
+            $this->LayoutMode = $layout;
+    } else {
+            $this->Error('Incorrect layout display mode: '.$layout);
+    }
+    }
 
 /**
  * @param boolean $compress
@@ -513,23 +515,23 @@ function AddFont($family, $style = '', $file = '', $uni = false)
     // Add a TrueType, OpenType or Type1 font
     $family = strtolower($family);
     $style = strtoupper($style);
-    if ($style == 'IB')
-        $style = 'BI';
+    if ($style == 'IB') {
+            $style = 'BI';
+    }
     if ($file == '') {
         if ($uni) {
         $file = str_replace(' ', '', $family).strtolower($style).'.ttf';
-        }
-        else {
+        } else {
         $file = str_replace(' ', '', $family).strtolower($style).'.php';
         }
     }
     $fontkey = $family.$style;
-    if (isset($this->fonts[$fontkey]))
-        return;
+    if (isset($this->fonts[$fontkey])) {
+            return;
+    }
 
     if ($uni) {
-        if (defined("_SYSTEM_TTFONTS") && file_exists(_SYSTEM_TTFONTS.$file)) { $ttffilename = _SYSTEM_TTFONTS.$file; }
-        else { $ttffilename = $this->_getfontpath().'unifont/'.$file; }
+        if (defined("_SYSTEM_TTFONTS") && file_exists(_SYSTEM_TTFONTS.$file)) { $ttffilename = _SYSTEM_TTFONTS.$file; } else { $ttffilename = $this->_getfontpath().'unifont/'.$file; }
         $unifilename = $this->_getfontpath().'unifont/'.strtolower(substr($file, 0, (strpos($file, '.'))));
         $name = '';
         $originalsize = 0;
@@ -2410,18 +2412,19 @@ function UTF8StringToArray($str) {
     for ($i = 0; $i < $len; $i++) {
     $uni = -1;
         $h = ord($str[$i]);
-        if ($h <= 0x7F)
-            $uni = $h;
-        elseif ($h >= 0xC2) {
-            if (($h <= 0xDF) && ($i < $len - 1))
-            $uni = ($h & 0x1F) << 6 | (ord($str[++$i]) & 0x3F);
-            elseif (($h <= 0xEF) && ($i < $len - 2))
-            $uni = ($h & 0x0F) << 12 | (ord($str[++$i]) & 0x3F) << 6
+        if ($h <= 0x7F) {
+                    $uni = $h;
+        } elseif ($h >= 0xC2) {
+            if (($h <= 0xDF) && ($i < $len - 1)) {
+                        $uni = ($h & 0x1F) << 6 | (ord($str[++$i]) & 0x3F);
+            } elseif (($h <= 0xEF) && ($i < $len - 2)) {
+                        $uni = ($h & 0x0F) << 12 | (ord($str[++$i]) & 0x3F) << 6
                                         | (ord($str[++$i]) & 0x3F);
-            elseif (($h <= 0xF4) && ($i < $len - 3))
-            $uni = ($h & 0x0F) << 18 | (ord($str[++$i]) & 0x3F) << 12
+            } elseif (($h <= 0xF4) && ($i < $len - 3)) {
+                        $uni = ($h & 0x0F) << 18 | (ord($str[++$i]) & 0x3F) << 12
                                         | (ord($str[++$i]) & 0x3F) << 6
                                         | (ord($str[++$i]) & 0x3F);
+            }
         }
     if ($uni >= 0) {
         $out[] = $uni;

@@ -175,9 +175,9 @@ class Cipher_Vigenere extends Cipher
         // The key must be prepared so that it is the same length as the
         // message. If it is longer or shorter we need to modify it
         // to make it the correct length
-        if ($keylen > $len)
-            $this->expanded_key = substr($this->expanded_key, 0, $len);
-        else if ($len > $keylen)
+        if ($keylen > $len) {
+                    $this->expanded_key = substr($this->expanded_key, 0, $len);
+        } else if ($len > $keylen)
         {
             // if the key is shorter than the message, then we need pad the key
             // by repeating it until it is the correct length
@@ -186,8 +186,9 @@ class Cipher_Vigenere extends Cipher
 
             for ($i = 0; $i < $diff; ++$i)
             {
-                if ($pos >= $keylen)
-                    $pos = 0;
+                if ($pos >= $keylen) {
+                                    $pos = 0;
+                }
 
                 $this->expanded_key .= $this->expanded_key[$pos];
                 ++$pos;
