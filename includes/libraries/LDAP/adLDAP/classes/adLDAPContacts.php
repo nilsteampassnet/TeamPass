@@ -86,7 +86,7 @@ class adLDAPContacts {
 
         // Add the entry
         $result = @ldap_add($this->adldap->getLdapConnection(), "CN=".$this->adldap->utilities()->escapeCharacters($add["cn"][0]).", ".$container.",".$this->adldap->getBaseDn(), $add);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false; 
         }
         return true;
@@ -214,7 +214,7 @@ class adLDAPContacts {
         
         // Do the update
         $result = ldap_modify($this->adldap->getLdapConnection(), $distinguishedName, $mod);
-        if ($result == false) { 
+        if ($result === false) { 
             return false; 
         }
         return true;
@@ -228,7 +228,7 @@ class adLDAPContacts {
      */
     public function delete($distinguishedName) {
         $result = $this->folder()->delete($distinguishedName);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false; 
         }       
         return true;

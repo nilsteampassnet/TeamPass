@@ -115,7 +115,7 @@ class adLDAPUsers {
 
         // Add the entry
         $result = @ldap_add($this->adldap->getLdapConnection(), "CN=".$add["cn"][0].", ".$container.",".$this->adldap->getBaseDn(), $add);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false; 
         }
         return true;
@@ -168,7 +168,7 @@ class adLDAPUsers {
         $userinfo = $this->info($username, array("*"), $isGUID);
         $dn = $userinfo[0]['distinguishedname'][0];
         $result = $this->adldap->folder()->delete($dn);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false;
         }        
         return true;
@@ -407,7 +407,7 @@ class adLDAPUsers {
 
         // Do the update
         $result = @ldap_modify($this->adldap->getLdapConnection(), $userDn, $mod);
-        if ($result == false) { 
+        if ($result === false) { 
             return false; 
         }
         return true;
@@ -424,7 +424,7 @@ class adLDAPUsers {
         if ($username === NULL) { return "Missing compulsory field [username]"; }
         $attributes = array("enabled" => 0);
         $result = $this->modify($username, $attributes, $isGUID);
-        if ($result == false) { return false; }
+        if ($result === false) { return false; }
        
         return true;
     }
@@ -440,7 +440,7 @@ class adLDAPUsers {
         if ($username === NULL) { return "Missing compulsory field [username]"; }
         $attributes = array("enabled" => 1);
         $result = $this->modify($username, $attributes, $isGUID);
-        if ($result == false) { return false; }
+        if ($result === false) { return false; }
         
         return true;
     }

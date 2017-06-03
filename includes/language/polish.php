@@ -1048,5 +1048,3 @@ $LANG = array(
     'no_username_needed' => 'No username needed',
     '' => ''
 );
-}
-}

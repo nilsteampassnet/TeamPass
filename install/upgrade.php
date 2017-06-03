@@ -600,7 +600,7 @@ if (!isset($_POST['step'])) {
                      <input type="button" id="but_launch" onclick="Check(\'step0\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                  </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 == false && $_SESSION['user_granted'] === "1") {
+} elseif ($_POST['step'] == 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
@@ -608,7 +608,7 @@ if (!isset($_POST['step'])) {
                             <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 == true && $_SESSION['user_granted'] === "1") {
+} elseif ($_POST['step'] == 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>

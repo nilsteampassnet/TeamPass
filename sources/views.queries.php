@@ -76,10 +76,10 @@ switch ($_POST['type']) {
         $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(15, 86, 145);
-        $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", 1);
-        $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", 1);
-        $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", 1);
-        $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", 1);
+        $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", true);
+        $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", true);
+        $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", true);
+        $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", true);
         $pdf->SetFont('helvetica', '', 10);
 
         $rows = DB::query(
@@ -283,8 +283,6 @@ switch ($_POST['type']) {
             DB::delete(prefix_table("files"), "id_item=%i", $id);
             //delete from TAGS
             DB::delete(prefix_table("tags"), "item_id=%i", $id);
-            //delete from KEYS
-            //DB::delete(prefix_table("keys"), "`id` =%i AND `sql_table`=%s", $id, "items");
         }
         break;
 
@@ -714,11 +712,11 @@ switch ($_POST['type']) {
         $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(192, 192, 192);
-        $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", 1);
-        $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", 1);
+        $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", true);
+        $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", true);
+        $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", true);
+        $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", true);
+        $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", true);
         $pdf->SetFont('helvetica', '', 9);
 
         foreach (explode('@|@', addslashes($_POST['text'])) as $line) {

@@ -34,8 +34,6 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 
 // Load file
 require_once 'users.load.php';
-// load help
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_admin_help.php';
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');

@@ -72,7 +72,7 @@ $(function() {
         buttons: {
             "<?php echo $LANG['save_button']; ?>": function() {
                 //Check if renewal_period is an integer
-                if (isInteger(document.getElementById("add_node_renewal_period").value) == false) {
+                if (isInteger(document.getElementById("add_node_renewal_period").value) === false) {
                     document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_renawal_period_not_integer']; ?>";
                     $("#addgroup_show_error").show();
                 } else if (document.getElementById("new_rep_complexite").value == "") {
@@ -238,7 +238,7 @@ $(function() {
                 // case of folder selection
                 var selected_cb = $(this);
                 var elem = $(this).attr("id").split("-");
-                if ($(this).prop("checked") == true) {
+                if ($(this).prop("checked") === true) {
                     $("#row_"+elem[1]).css({"font-weight":"bold"});
                     $("#title_"+elem[1]).css({"background-color":"#E9FF00"});
                 } else {
@@ -260,7 +260,7 @@ $(function() {
                         if (data[0].subfolders !== "") {
                             var tmp = data[0].subfolders.split(";");
                             for (var i = tmp.length - 1; i >= 0; i--) {
-                                if (selected_cb.prop("checked") == true) {
+                                if (selected_cb.prop("checked") === true) {
                                     $("#cb_selected-" + tmp[i]).prop("checked", true).prop("disabled", true);
                                     $("#row_" + tmp[i]).css({"font-weight":"bold"});
                                     $("#title_" + tmp[i]).css({"background-color":"#E9FF00"});

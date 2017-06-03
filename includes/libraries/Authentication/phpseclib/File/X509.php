@@ -3107,7 +3107,7 @@ class X509
         // OpenSSL produces SPKAC's that are preceded by the string SPKAC=
         $temp = preg_replace('#(?:SPKAC=)|[ \r\n\\\]#', '', $spkac);
         $temp = preg_match('#^[a-zA-Z\d/+]*={0,2}$#', $temp) ? Base64::decode($temp) : false;
-        if ($temp != false) {
+        if ($temp !== false) {
             $spkac = $temp;
         }
         $orig = $spkac;
@@ -4789,7 +4789,7 @@ class X509
         // remove new lines
         $temp = str_replace(array("\r", "\n", ' '), '', $temp);
         $temp = preg_match('#^[a-zA-Z\d/+]*={0,2}$#', $temp) ? Base64::decode($temp) : false;
-        return $temp != false ? $temp : $str;
+        return $temp !== false ? $temp : $str;
     }
 
     /**

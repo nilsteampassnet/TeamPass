@@ -262,7 +262,7 @@ if (!empty($_POST['type'])) {
                     $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
                 }
                 // Send email to new user
-                @sendEmail(
+                sendEmail(
                     $LANG['email_subject_new_user'],
                     str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
                     $dataReceived['email']
@@ -541,9 +541,6 @@ if (!empty($_POST['type'])) {
                     if (in_array($record['id'], $users_functions)) {
                         $text .= ' checked';
                     }
-                    /*if ((!in_array($record['id'], $my_functions) && $_SESSION['is_admin'] != 1) && !($_SESSION['user_manager'] == 1 && $record['creator_id'] == $_SESSION['user_id'])) {
-                        $text .= ' disabled="disabled"';
-                    }*/
                     $text .= '>&nbsp;'.$record['title'].'<br />';
                 }
             }
@@ -941,17 +938,6 @@ if (!empty($_POST['type'])) {
                 );
                 // Get through each subfolder
                 foreach ($tree->getDescendants($admin_folder['id'], true) as $folder) {
-                    // Create folder if necessary
-                    if ($folder->title != $_SESSION['user_id']) {
-                        // update folder
-                        /*DB::update(
-                            "nested_tree",
-                            array(
-                                'parent_id' => $user_folder['id']
-                           ),
-                            "id='".$folder->id."'"
-                        );*/
-                    }
                     // Get each Items in PF
                     $rows = DB::query(
                         "SELECT i.pw, i.label, l.id_user
@@ -1333,20 +1319,6 @@ if (!empty($_POST['type'])) {
                     // update LOG
                     logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 }
-
-    /*
-                DB::update(
-                    prefix_table("users"),
-                    array(
-                        'disabled' => 0,
-                        'no_bad_attempts' => 0
-                       ),
-                    "id = %i",
-                    $_POST['id']
-                );
-                // update LOG
-        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
-                */
             }
 
             echo '[ { "error" : "no" } ]';
@@ -1643,31 +1615,6 @@ if (!empty($_POST['type'])) {
                     $dest_user_id
                 );
             }
-
-/*
-            $list_users_from = $list_users_to = '';
-
-            $rows = DB::query(
-                "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
-                FROM ".prefix_table("users")."
-                WHERE admin = %i",
-                "0"
-            );
-            foreach ($rows as $record) {
-                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
-                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
-            }
-
-            $return_values = prepareExchangedData(
-                array(
-                    'users_list_from' => $list_users_from,
-                    'users_list_to' => $list_users_to,
-                    'error' => ''
-                ),
-                "encode"
-            );
-            echo $return_values;
-*/
             break;
     }
 }

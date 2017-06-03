@@ -427,6 +427,6 @@ abstract class PKCS
         // remove new lines
         $temp = str_replace(array("\r", "\n", ' '), '', $temp);
         $temp = preg_match('#^[a-zA-Z\d/+]*={0,2}$#', $temp) ? Base64::decode($temp) : false;
-        return $temp != false ? $temp : $str;
+        return $temp !== false ? $temp : $str;
     }
 }

@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array(
+    'knowledge_base' => 'Knowledge Base',
+    'category' => 'Category',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
     'file_is_now_ready' => 'File is now ready.',
     'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Email Google Authentication to user',

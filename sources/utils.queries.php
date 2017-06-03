@@ -78,11 +78,11 @@ switch ($_POST['type']) {
                     $restricted_users_array = explode(';', $record['restricted_to']);
                     //exclude all results except the first one returned by query
                     if (empty($id_managed) || $id_managed != $record['id']) {
-                        if (
-                        (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                        ||
-                        (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
-                    ) {
+                            if (
+                            (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] === "1" && $_SESSION['user_id'] === $record['restricted_to']) && !empty($record['restricted_to']))
+                            ||
+                            (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                        ) {
                             //exclude this case
                         } else {
                             //encrypt PW
@@ -427,7 +427,7 @@ switch ($_POST['type']) {
             }
         }
 
-        if ($err == false) {
+        if ($err === false) {
             // store new password
             DB::update(
                 prefix_table("items"),

@@ -85,7 +85,7 @@ function AgsesFlicker(canvas) {
 
 		$(self._c).attr("width", self.baseWidth);
 
-		if (options.controls == null || options.controls == "undefined" || (options.controls && options.controls == true)) {
+		if (options.controls == null || options.controls == "undefined" || (options.controls && options.controls === true)) {
 			self.agsesInjectControls();	
 		} else {
 			$(self._c).css("padding-bottom","10px");

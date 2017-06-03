@@ -547,7 +547,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         //Finish the line
         $sOutput_item .= '], ';
 
-        if ($get_item_in_list == true) {
+        if ($get_item_in_list === true) {
             $sOutput .= $sOutput_item;
         }
     }
@@ -666,7 +666,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         //Finish the line
         $sOutput_item .= '], ';
 
-        if ($get_item_in_list == true) {
+        if ($get_item_in_list === true) {
             $sOutput .= $sOutput_item;
         }
     }

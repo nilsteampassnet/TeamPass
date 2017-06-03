@@ -158,11 +158,11 @@ $(function() {
                 // get write option
                 var accessoption = "";
                 if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-                    if ($("#right_nodelete").prop("checked") == true && $("#right_noedit").prop("checked") == true) {
+                    if ($("#right_nodelete").prop("checked") === true && $("#right_noedit").prop("checked") === true) {
                         accessoption = "nodelete_noedit";
-                    } else if ($("#right_nodelete").prop("checked") == true) {
+                    } else if ($("#right_nodelete").prop("checked") === true) {
                         accessoption = "nodelete";
-                    } else if ($("#right_noedit").prop("checked") == true) {
+                    } else if ($("#right_noedit").prop("checked") === true) {
                         accessoption = "noedit";
                     }
                 }

@@ -83,7 +83,7 @@ switch ($_POST['type']) {
         $pwdlib = new PasswordLib\PasswordLib();
 
         // Prepare variables
-        $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw'])); //bCrypt(htmlspecialchars_decode($dataReceived['new_pw']), COST);
+        $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));
 
         // User has decided to change is PW
         if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] === "user_change" && $_SESSION['user_admin'] !== "1") {
@@ -93,7 +93,6 @@ switch ($_POST['type']) {
             // check if badly written
             $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
             if ($data_roles['fonction_id'][0] === "") {
-                //$data_roles['fonction_id'] = array_filter($data_roles['fonction_id']);
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 DB::update(
                     prefix_table("users"),
@@ -188,11 +187,6 @@ switch ($_POST['type']) {
                 echo '[ { "error" : "not_admin_or_manager" } ]';
                 break;
             }
-            // Check KEY
-            /*if ($_POST['key'] != $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform '.$_POST['key'].'" } ]';
-                break;
-            }*/
             // adapt
             if ($_POST['change_pw_origine'] == "user_change") {
                 $dataReceived['user_id'] = $_SESSION['user_id'];
@@ -451,7 +445,7 @@ switch ($_POST['type']) {
             $pwdlib = new PasswordLib\PasswordLib();
 
             // Prepare variables
-            $newPw = $pwdlib->createPasswordHash(stringUtf8Decode($newPwNotCrypted)); //$newPw = bCrypt(stringUtf8Decode($newPwNotCrypted), COST);
+            $newPw = $pwdlib->createPasswordHash(stringUtf8Decode($newPwNotCrypted));
             // update DB
             DB::update(
                 prefix_table("users"),
@@ -519,7 +513,7 @@ switch ($_POST['type']) {
                     }
                 }
 
-                if ($displayThisNode == true) {
+                if ($displayThisNode === true) {
                     if ($f->title == $_SESSION['user_id'] && $f->nlevel == 1) {
                         $f->title = $_SESSION['login'];
                     }
@@ -1166,7 +1160,9 @@ switch ($_POST['type']) {
             break;
         }
 
-        @unlink($_POST['filename']);
+        try{
+            unlink($_POST['filename']);
+        }
 
         break;
 }

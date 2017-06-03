@@ -234,16 +234,16 @@ switch ($_POST['type']) {
                     $pdf->SetFont('helvetica', '', 10);
                     $pdf->SetFillColor(192, 192, 192);
                     error_log('key: '.$key.' - paths: '.$record['path']);
-                    $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", 1);
+                    $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", true);
                     $pdf->SetFillColor(222, 222, 222);
-                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, "C", true);
                 }
                 $prev_path = $record['path'];
                 if (!isutf8($record['pw'])) {
@@ -572,7 +572,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
             "at_modification",
             "at_pw :%"
         );
-        //AND i.id_tree IN (".implode(',', $list).")
+
         foreach ($rows as $record) {
             //exclude all results except the first one returned by query
             if (empty($id_managed) || $id_managed != $record['id']) {
@@ -767,8 +767,7 @@ function nbLines($w, $txt)
         if ($c == ' ') {
             $sep = $i;
         }
-        $l += 550; //$cw[$c];
-        //echo $cw[$c].";".$wmax.";".$l."|";
+        $l += 550;
         if ($l > $wmax) {
             if ($sep == -1) {
                 if ($i == $j) {

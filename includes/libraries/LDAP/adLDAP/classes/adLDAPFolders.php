@@ -61,7 +61,7 @@ class adLDAPFolders {
      */
     public function delete($dn) { 
         $result = ldap_delete($this->adldap->getLdapConnection(), $dn);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false; 
         }
         return true;
@@ -162,7 +162,7 @@ class adLDAPFolders {
 
         $containers = "OU=".implode(",OU=", $attributes["container"]);
         $result = ldap_add($this->adldap->getLdapConnection(), "OU=".$add["OU"].", ".$containers.$this->adldap->getBaseDn(), $add);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false; 
         }
         return true;

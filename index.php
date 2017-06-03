@@ -205,7 +205,7 @@ if (isset($_SESSION['login'])) {
         isset($_SESSION['settings']['enable_favourites'])
         && $_SESSION['settings']['enable_favourites'] == 1
         &&
-        ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false))
+        ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false))
     ) {
         echo '
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'favourites\')">
@@ -267,7 +267,7 @@ if (isset($_SESSION['login'])) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == true) ? '' : isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === true) ? '' : isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
@@ -285,7 +285,7 @@ if (isset($_SESSION['login'])) {
                     </ul>
                 </div>';
 
-    if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false)) {
+    if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)) {
         echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
@@ -359,7 +359,7 @@ echo '
             <div id="message_box" style="display:none;width:200px;padding:5px;text-align:center; z-index:999999;" class="ui-widget-content ui-state-error ui-corner-all"></div>
         </div>';
 // Main page
-if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true) {
+if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] === true) {
     // Show menu
     echo '
         <form method="post" name="main_form" action="">
@@ -434,7 +434,7 @@ if (
 }
 // Display UPDATE NEEDED information
 if (
-    isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true
+    isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] === true
         && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
         && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0)
         || !isset($_SESSION['hide_maintenance']))
@@ -490,7 +490,7 @@ if (
         </script>';
     }
 // Display pages
-    elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
+    elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] === true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
         if (!extension_loaded('mcrypt')) {
             $_SESSION['error']['code'] = ERR_NO_MCRYPT;
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -501,7 +501,7 @@ if (
             if (
                 ($_SESSION['user_admin'] != 1)
                 ||
-                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false)
+                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)
             ) {
                 include 'items.php';
             } else {

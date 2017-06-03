@@ -89,7 +89,7 @@ if (isset($_POST['type'])) {
             $_SESSION['url_path'] = $data['url_path'];
 
             if (isset($data['activity']) && $data['activity'] == "folder") {
-                if (is_writable($abspath."/".$data['task']."/") == true) {
+                if (is_writable($abspath."/".$data['task']."/") === true) {
                     echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                 } else {
                     echo '[{"error" : " Path '.$data['task'].' is not writable!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';

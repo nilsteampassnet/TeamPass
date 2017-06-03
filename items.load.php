@@ -836,7 +836,7 @@ function EditerItem()
             var myselect = document.getElementById('edit_annonce_liste_destinataires');
             var diffusion = "";
             for (var loop=0; loop < myselect.options.length; loop++) {
-                if (myselect.options[loop].selected == true) diffusion = diffusion + myselect.options[loop].value + ";";
+                if (myselect.options[loop].selected === true) diffusion = diffusion + myselect.options[loop].value + ";";
             }
             if (diffusion == ";") {
                 diffusion = "";
@@ -1533,7 +1533,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         }
 
                         //Manage double click
-                        if (open_edit == true && (data.restricted == "1" || data.user_can_modify == "1")) {
+                        if (open_edit === true && (data.restricted == "1" || data.user_can_modify == "1")) {
                             open_edit_item_div(
                             <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
     echo 1;

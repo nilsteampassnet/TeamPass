@@ -34,9 +34,10 @@ class NestedTree
     {
         $this->table = $table;
 
-        $this->fields = array('id'     => $idField,
-                                'parent' => $parentField,
-                                'sort'   => $sortField
+        $this->fields = array(
+            'id'     => $idField,
+            'parent' => $parentField,
+            'sort'   => $sortField
         );
     }
 
@@ -159,7 +160,7 @@ class NestedTree
 
         $arr = array();
         while ($row = mysqli_fetch_object($result)) {
-            if ($unique_id_list == false) {
+            if ($unique_id_list === false) {
                 $arr[$row->$idField] = $row;
             } else {
                 array_push($arr, $row->$idField);

@@ -407,11 +407,6 @@ if (!empty($_POST['type'])) {
                 "previous" => $previous
             );
 
-            //Check if is UTF8. IF not send Error
-            /*if (!isUTF8($texte)) {
-                $return_values = array("error" => $LANG['error_string_not_utf8']);
-            }*/
-
             $return_values = json_encode($return_values, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
             //return data

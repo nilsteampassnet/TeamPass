@@ -51,7 +51,7 @@ if ($counter > 0) {
 
 echo '
 <div class="title ui-widget-content ui-corner-all">
-    '.$LANG['kb'].'&nbsp;&nbsp;&nbsp;
+    '.$LANG['knowledge_base'].'&nbsp;&nbsp;&nbsp;
     <button title="'.$LANG['new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
@@ -90,7 +90,7 @@ echo '
             <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" style="width: 300px;" value="" />
         </div>
         <div style="float:right;width:50%;">
-            <label class="modify_kb_label">'.$LANG['kb_anyone_can_modify'].' : </label>
+            <label class="modify_kb_label">'.$LANG['anyone_can_modify_it'].' : </label>
             <span class="div_radio">
                 <input type="radio" id="modify_kb_yes" name="modify_kb" value="1" checked="checked" /><label for="modify_kb_yes">'.$LANG['yes'].'</label>
                 <input type="radio" id="modify_kb_no" name="modify_kb" value="0" /><label for="modify_kb_no">'.$LANG['no'].'</label>

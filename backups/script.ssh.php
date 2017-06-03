@@ -96,7 +96,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
             $log .= "   Answer: ".$ret_server."\n\n";
         }
 
-        if ($err == false) {
+        if ($err === false) {
             // store new password
             DB::update(
                 prefix_table("items"),

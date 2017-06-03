@@ -10,7 +10,7 @@
  */
 
 //define pbkdf2 iteration count
-@define('ITCOUNT', '2072');
+define('ITCOUNT', '2072');
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
@@ -172,7 +172,6 @@ function encrypt($decrypted, $personalSalt = "")
     // Get 64 random bits for the salt for pbkdf2
     $pbkdf2Salt = getBits(64);
     // generate a pbkdf2 key to use for the encryption.
-    //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
     $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
     // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
     // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
@@ -214,7 +213,6 @@ function decrypt($encrypted, $personalSalt = "")
     $pbkdf2Salt = substr($encrypted, -64);
     //remove the salt from the string
     $encrypted = substr($encrypted, 0, -64);
-    //$key = strHashPbkdf2($staticSalt, $pbkdf2Salt, ITCOUNT, 16, 'sha256', 32);
     $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
     // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
     $iv = base64_decode(substr($encrypted, 0, 43).'==');
@@ -326,7 +324,6 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             $string = testHex2Bin(trim($string));
             $iv = testHex2Bin($iv);
         } catch (Exception $e) {
-            // error - $e->getMessage();
             return array(
                 'string' => "",
                 'error' => "ERR_ENCRYPTION_NOT_CORRECT"
@@ -338,7 +335,6 @@ function cryption_phpCrypt($string, $key, $iv, $type)
         // decrypt
         $decrypt = $crypt->decrypt($string);
         // return
-        //return str_replace(chr(0), "", $decrypt);
         return array(
             'string' => str_replace(chr(0), "", $decrypt),
             'error' => ""
@@ -620,7 +616,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
-        $groupesVisibles = array();
         $groupesInterdits = array();
         $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
         if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {
@@ -628,10 +623,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
         $_SESSION['is_admin'] = $isAdmin;
         $fonctionsAssociees = explode(';', trimElement($idFonctions, ";"));
-        $newListeGpVisibles = array();
-        $listeGpInterdits = array();
 
-        $listAllowedFolders = $listForbidenFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = $listNoAccessFolders = array();
+        $listAllowedFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = array();
 
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
         foreach ($fonctionsAssociees as $roleId) {
@@ -643,7 +636,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                     $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".prefix_table("roles_title")." WHERE id = %i", $roleId);
                     foreach ($rows as $record) {
                         if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
-                            array_push($listAllowedFolders, $record['folder_id']); //echo $record['folder_id'].";";
+                            array_push($listAllowedFolders, $record['folder_id']);
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
                         if ($tmp['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
@@ -763,7 +756,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, $listReadOnlyFolders)) {   // || (isset($pf) && $folderId != $pf['id'])
+                if (!in_array($folderId, $listReadOnlyFolders)) {
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
@@ -1135,9 +1128,8 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
 
     // load PHPMailer
-    if (!isset($mail)) {
-        $mail = new PHPMailer();
-    }
+    $mail = new PHPMailer();
+
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
     $mail->SMTPDebug = 0; //value 1 can be used to debug
@@ -1315,14 +1307,14 @@ function prefix_table($table)
         return $safeTable;
     } else {
         // stop error no table
-        return false;
+        return "table_not_exists";
     }
 }
 
 /*
  * Creates a KEY using PasswordLib
  */
-function GenerateCryptKey($size = "", $secure = "", $numerals = "", $capitalize = "", $ambiguous = "", $symbols = "")
+function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capitalize = false, $ambiguous = false, $symbols = false)
 {
     // load library
     $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
@@ -1405,7 +1397,7 @@ function logEvents($type, $label, $who, $login = "", $field_1 = NULL)
             'date' => time(),
             'label' => $label,
             'qui' => $who,
-            'field_1' => $field_1 == null ? "" : $field_1
+            'field_1' => $field_1 === null ? "" : $field_1
         )
     );
     if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
@@ -1457,7 +1449,6 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
 * Function to get the client ip address
  */
 function get_client_ip_server() {
-    $ipaddress = '';
     if (getenv('HTTP_CLIENT_IP')) {
             $ipaddress = getenv('HTTP_CLIENT_IP');
     } else if (getenv('HTTP_X_FORWARDED_FOR')) {
@@ -1533,7 +1524,7 @@ function handleConfigFile($action, $field = null, $value = null)
             array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
         }
         array_push($data, ");");
-        $dat = array_unique($data);
+        $data = array_unique($data);
     } else if ($action == "update" && !empty($field)) {
         $data = file($tp_config_file);
         $x = 0;
@@ -1580,6 +1571,7 @@ function loadSettings()
         $_SESSION['settings']['duplicate_folder'] = 0; //by default, this is false;
         $_SESSION['settings']['duplicate_item'] = 0; //by default, this is false;
         $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
+        $settings = array();
 
         $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
             array(
@@ -1639,7 +1631,6 @@ function checkCFconsistency($source_id, $target_id) {
 */
 function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
-    $tp_config_file = "../includes/config/tp.config.php";
 
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1661,7 +1652,6 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
                     $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
                     $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
             )) {
-                $error = "Copy not possible";
                 exit;
             } else {
                 // do a bck
@@ -1756,7 +1746,9 @@ function debugTeampass($text) {
 */
 function fileDelete($file) {
     if (is_file($file)) {
-        @close($file);
+        try {
+            close($file);
+        }
         // define if we under Windows
         if (strpos(dirname(__FILE__), '/', 0) !== false) {
             unlink($file);
@@ -1765,4 +1757,16 @@ function fileDelete($file) {
             exec("DEL /F/Q \"".$file."\"", $lines, $deleteError);
         }
     }
+}
+
+/*
+* Permits to extract the file extension
+*/
+function getFileExtension($f)
+{
+    if (strpos($f, '.') === false) {
+        return $f;
+    }
+
+    return substr($f, strrpos($f, '.') + 1);
 }

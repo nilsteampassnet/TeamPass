@@ -26,7 +26,7 @@ if (
 require_once '../checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    handleError('Not allowed to ...', 110);
+    handleAttachmentError(('Not allowed to ...', 110);
     exit();
 }
 
@@ -36,7 +36,7 @@ if (isset($_POST['PHPSESSID'])) {
 } elseif (isset($_GET['PHPSESSID'])) {
     session_id($_GET['PHPSESSID']);
 } else {
-    handleError('No Session was found.', 110);
+    handleAttachmentError(('No Session was found.', 110);
 }
 
 
@@ -48,7 +48,7 @@ $fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
 
 // token check
 if (!isset($_POST['user_token'])) {
-    handleError('No user token found.', 110);
+    handleAttachmentError(('No user token found.', 110);
     exit();
 } else {
     //Connect to mysql server
@@ -99,7 +99,7 @@ if (!isset($_POST['user_token'])) {
         } else {
             // no more files to upload, kill session
             unset($_SESSION[$_POST['user_token']]);
-            handleError('No user token found.', 110);
+            handleAttachmentError(('No user token found.', 110);
             die();
         }
 
@@ -120,7 +120,7 @@ if (!isset($_POST['user_token'])) {
         } else {
             // too old
             unset($_SESSION[$_POST['user_token']]);
-            handleError('User token expired.', 110);
+            handleAttachmentError(('User token expired.', 110);
             die();
         }
     }
@@ -133,6 +133,9 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
+// load functions
+require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+
 $targetDir = $_SESSION['settings']['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
@@ -141,40 +144,40 @@ $valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-@date_default_timezone_set($_POST['timezone']);
+date_default_timezone_set($_POST['timezone']);
 
 // Check post_max_size
 $POST_MAX_SIZE = ini_get('post_max_size');
 $unit = strtoupper(substr($POST_MAX_SIZE, -1));
 $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
 if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
-    handleError('POST exceeded maximum allowed size.', 111);
+    handleAttachmentError(('POST exceeded maximum allowed size.', 111);
 }
 
 // Validate the file size (Warning: the largest files supported by this code is 2GB)
 $file_size = @filesize($_FILES['file']['tmp_name']);
 if (!$file_size || $file_size > $max_file_size_in_bytes) {
-    handleError('File exceeds the maximum allowed size', 120);
+    handleAttachmentError(('File exceeds the maximum allowed size', 120);
 }
 if ($file_size <= 0) {
-    handleError('File size outside allowed lower bound', 112);
+    handleAttachmentError(('File size outside allowed lower bound', 112);
 }
 
 // Validate the upload
 if (!isset($_FILES['file'])) {
-    handleError('No upload found in $_FILES for Filedata', 121);
+    handleAttachmentError(('No upload found in $_FILES for Filedata', 121);
 } elseif (isset($_FILES['file']['error']) && $_FILES['file']['error'] != 0) {
-    handleError($uploadErrors[$_FILES['Filedata']['error']], 122);
+    handleAttachmentError(($uploadErrors[$_FILES['Filedata']['error']], 122);
 } elseif (!isset($_FILES['file']['tmp_name']) || !@is_uploaded_file($_FILES['file']['tmp_name'])) {
-    handleError('Upload failed is_uploaded_file test.', 123);
+    handleAttachmentError(('Upload failed is_uploaded_file test.', 123);
 } elseif (!isset($_FILES['file']['name'])) {
-    handleError('File has no name.', 113);
+    handleAttachmentError(('File has no name.', 113);
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
 $file_name = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['file']['name'])));
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
-    handleError('Invalid file name: '.$file_name.'.', 114);
+    handleAttachmentError(('Invalid file name: '.$file_name.'.', 114);
 }
 
 // Validate file extension
@@ -187,14 +190,11 @@ if (!in_array(
         ','.$_SESSION['settings']['upload_pkgext'].','.$_SESSION['settings']['upload_otherext']
     )
 )) {
-    handleError('Invalid file extension.', 115);
+    handleAttachmentError(('Invalid file extension.', 115);
 }
 
 // 5 minutes execution time
-@set_time_limit(5 * 60);
-
-// Uncomment this one to fake upload time
-// usleep(5000);
+set_time_limit(5 * 60);
 
 // Clean the fileName for security reasons
 $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
@@ -218,7 +218,9 @@ $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
-    @mkdir($targetDir);
+    try{
+        mkdir($targetDir);
+    }
 }
 
 // Remove old temp files
@@ -231,7 +233,9 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
-            @unlink($tmpfilePath);
+            try {
+                unlink($tmpfilePath);
+            }
         }
     }
 
@@ -294,7 +298,9 @@ if (strpos($contentType, "multipart") !== false) {
             }
             fclose($in);
             fclose($out);
-            @unlink($_FILES['file']['tmp_name']);
+            try {
+                unlink($_FILES['file']['tmp_name']);
+            }
         } else {
             die('{"jsonrpc" : "2.0", "error" : {"code": 102, "message": "Failed to open output stream."}, "id" : "id"}');
         }
@@ -341,13 +347,6 @@ if (!$chunks || $chunk == $chunks - 1) {
 $fileRandomId = md5($fileName.time());
 rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
 
-//Get data from DB
-/*$data = DB::queryfirstrow(
-    "SELECT valeur FROM ".$pre."misc
-    WHERE type=%s AND intitule=%s",
-    "admin",
-    "path_to_upload_folder"
-);*/
 
 // Case ITEM ATTACHMENTS - Store to database
 if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
@@ -364,7 +363,7 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
         )
     );
     // Log upload into databse only if "item edition"
-    if (isset($_POST['edit_item']) && $_POST['edit_item'] == true) {
+    if (isset($_POST['edit_item']) && $_POST['edit_item'] === true) {
         DB::insert(
             $pre.'log_items',
             array(
@@ -381,18 +380,9 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
 // Return JSON-RPC response
 die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
 
-// Permits to extract the file extension
-function getFileExtension($f)
-{
-    if (strpos($f, '.') === false) {
-        return $f;
-    }
-
-    return substr($f, strrpos($f, '.') + 1);
-}
 
 /* Handles the error output. */
-function handleError($message, $code)
+function handleAttachmentError(($message, $code)
 {
     echo '{"jsonrpc" : "2.0", "error" : {"code": '.$code.', "message": "'.$message.'"}, "id" : "id"}';
     exit(0);

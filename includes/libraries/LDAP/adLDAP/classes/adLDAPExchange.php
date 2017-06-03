@@ -89,7 +89,7 @@ class adLDAPExchange {
             'exchange_usedefaults'=>$mdbUseDefaults
         );
         $result = $this->adldap->user()->modify($username, $attributes, $isGUID);
-        if ($result == false) { 
+        if ($result === false) { 
             return false; 
         }
         return true;
@@ -132,7 +132,7 @@ class adLDAPExchange {
         // Take out the @ to see any errors, usually this error might occur because the address already
         // exists in the list of proxyAddresses
         $result = @ldap_mod_add($this->adldap->getLdapConnection(), $userDn, $add);
-        if ($result == false) { 
+        if ($result === false) { 
             return false; 
         }
         return true;
@@ -175,7 +175,7 @@ class adLDAPExchange {
             $modAddresses['proxyAddresses'][($user[0]['proxyaddresses']['count'] - 1)] = 'SMTP:'.$emailAddress;
             
             $result = @ldap_mod_replace($this->adldap->getLdapConnection(), $userDn, $modAddresses);
-            if ($result == false) { 
+            if ($result === false) { 
                 return false; 
             }
             return true;
@@ -194,7 +194,7 @@ class adLDAPExchange {
             // Take out the @ to see any errors, usually this error might occur because the address already
             // exists in the list of proxyAddresses
             $result = @ldap_mod_add($this->adldap->getLdapConnection(), $userDn, $add);
-            if ($result == false) { 
+            if ($result === false) { 
                 return false; 
             }
             return true;
@@ -231,7 +231,7 @@ class adLDAPExchange {
             }
             
             $result = @ldap_mod_del($this->adldap->getLdapConnection(), $userDn, $mod);
-            if ($result == false) { 
+            if ($result === false) { 
                 return false; 
             }     
             return true;
@@ -271,7 +271,7 @@ class adLDAPExchange {
             }
             
             $result = @ldap_mod_replace($this->adldap->getLdapConnection(), $userDn, $modAddresses);
-            if ($result == false) { 
+            if ($result === false) { 
                 return false; 
             }
             return true;
@@ -308,7 +308,7 @@ class adLDAPExchange {
         
         // Do the update
         $result = ldap_modify($this->adldap->getLdapConnection(), $distinguishedName, $mod);
-        if ($result == false) { return false; }
+        if ($result === false) { return false; }
  
         return true;
     }

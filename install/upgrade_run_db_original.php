@@ -829,7 +829,7 @@ if (tableExists($_SESSION['pre']."functions")) {
 } else {
     $tableFunctionExists = false;
 }
-if ($res9 && $res10 && $tableFunctionExists == true) {
+if ($res9 && $res10 && $tableFunctionExists === true) {
     //Get data from tables FUNCTIONS and populate new ROLES tables
     $rows = mysqli_query($dbTmp,
         "SELECT * FROM ".$_SESSION['pre']."functions"
@@ -875,7 +875,7 @@ if ($res9 && $res10 && $tableFunctionExists == true) {
 
     //Drop old table
     mysqli_query($dbTmp, "DROP TABLE ".$_SESSION['pre']."functions");
-} elseif ($tableFunctionExists == false) {
+} elseif ($tableFunctionExists === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();

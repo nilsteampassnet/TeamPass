@@ -330,7 +330,7 @@ function identifyUser($sentData)
         && $username != "admin"
     ) {
         //Multiple Domain Names
-        if (strpos(html_entity_decode($username), '\\') == true) {
+        if (strpos(html_entity_decode($username), '\\') === true) {
             $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
             $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
@@ -517,14 +517,14 @@ function identifyUser($sentData)
     $proceedIdentification = false;
     if ($counter > 0) {
         $proceedIdentification = true;
-    } elseif ($counter == 0 && $ldapConnection == true && isset($_SESSION['settings']['ldap_elusers'])
+    } elseif ($counter == 0 && $ldapConnection === true && isset($_SESSION['settings']['ldap_elusers'])
             && ($_SESSION['settings']['ldap_elusers'] == 0)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear); // create passwordhash
 
         // get user info from LDAP
-        if ($_SESSION['settings']['ldap_type'] == 'posix-search') {
+        if ($_SESSION['settings']['ldap_type'] === 'posix-search') {
             //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
             $user_info_from_ad = $result;
         } else {
@@ -731,7 +731,7 @@ function identifyUser($sentData)
         exit();
     }
 
-    if ($proceedIdentification === true && $user_initial_creation_through_ldap == false) {
+    if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
         // User exists in the DB
         //$data = $db->fetchArray($row);
 
@@ -788,19 +788,19 @@ function identifyUser($sentData)
         // This in order to allow admin by default to connect even if LDAP is activated
         if (
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
-                && $userPasswordVerified == true && $data['disabled'] == 0
+                && $userPasswordVerified === true && $data['disabled'] == 0
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                && $ldapConnection === true && $data['disabled'] == 0 && $username != "admin"
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
-                && $ldapConnection == true && $data['disabled'] == 0 && $username != "admin"
+                && $ldapConnection === true && $data['disabled'] == 0 && $username != "admin"
                 )
                 ||
                 (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
-                && $username == "admin" && $userPasswordVerified == true && $data['disabled'] == 0
+                && $username == "admin" && $userPasswordVerified === true && $data['disabled'] == 0
                 )
         ) {
             $_SESSION['autoriser'] = true;
@@ -951,7 +951,7 @@ function identifyUser($sentData)
             }
 
             // Get user's rights
-            if ($user_initial_creation_through_ldap != true) {
+            if ($user_initial_creation_through_ldap !== true) {
                 identifyUserRights(
                     $data['groupes_visibles'],
                     $_SESSION['groupes_interdits'],
@@ -1073,7 +1073,7 @@ function identifyUser($sentData)
             }
         }
     } else {
-        if ($user_initial_creation_through_ldap == true) {
+        if ($user_initial_creation_through_ldap === true) {
             $return = "new_ldap_account_created";
         } else {
             $return = "false";

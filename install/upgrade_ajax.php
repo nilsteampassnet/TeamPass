@@ -393,7 +393,7 @@ if (isset($_POST['type'])) {
                     '</span><br />';
             }
 
-            if ($okWritable == true && $okExtensions == true && $okEncryptKey == true) {
+            if ($okWritable === true && $okExtensions === true && $okEncryptKey === true) {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
             } else {
@@ -775,8 +775,8 @@ require_once \"".$skFile."\";
 
                 //Finished
                 if (
-                    $result1 != false
-                    && (!isset($result2) || (isset($result2) && $result2 != false))
+                    $result1 !== false
+                    && (!isset($result2) || (isset($result2) && $result2 !== false))
                 ) {
                     echo 'document.getElementById("but_next").disabled = "";';
                     echo 'document.getElementById("res_step5").innerHTML = '.

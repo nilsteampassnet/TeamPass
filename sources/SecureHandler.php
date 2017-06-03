@@ -143,7 +143,8 @@ class SecureHandler extends SessionHandler
     protected function getKey($name)
     {
         if (empty($_COOKIE[$name])) {
-            $key = random_bytes(64); // 32 for encryption and 32 for authentication
+            // 32 for encryption and 32 for authentication
+            $key = random_bytes(64);
             $cookieParam = session_get_cookie_params();
             setcookie(
                 $name,
