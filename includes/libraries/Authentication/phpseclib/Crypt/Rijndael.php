@@ -371,8 +371,8 @@ class Rijndael extends BlockCipher
 
         // subWord
         for ($i = 0; $i < $Nb; ++$i) {
-            $state[$i] =   $sbox[$state[$i]       & 0x000000FF]        |
-                            ($sbox[$state[$i] >>  8 & 0x000000FF] <<  8) |
+            $state[$i] = $sbox[$state[$i] & 0x000000FF] |
+                            ($sbox[$state[$i] >> 8 & 0x000000FF] << 8) |
                             ($sbox[$state[$i] >> 16 & 0x000000FF] << 16) |
                             ($sbox[$state[$i] >> 24 & 0x000000FF] << 24);
         }
@@ -474,8 +474,8 @@ class Rijndael extends BlockCipher
                     ($state[$k] & 0x0000FF00) |
                     ($state[$l] & 0x000000FF);
 
-            $temp[$i] = $dw[$i] ^ ($isbox[$word       & 0x000000FF]        |
-                                    ($isbox[$word >>  8 & 0x000000FF] <<  8) |
+            $temp[$i] = $dw[$i] ^ ($isbox[$word & 0x000000FF] |
+                                    ($isbox[$word >> 8 & 0x000000FF] << 8) |
                                     ($isbox[$word >> 16 & 0x000000FF] << 16) |
                                     ($isbox[$word >> 24 & 0x000000FF] << 24));
             ++$i;
@@ -621,11 +621,11 @@ class Rijndael extends BlockCipher
     {
         static $sbox;
         if (empty($sbox)) {
-            list(, , , , $sbox) = $this->_getTables();
+            list(,,,, $sbox) = $this->_getTables();
         }
 
-        return  $sbox[$word       & 0x000000FF]        |
-                ($sbox[$word >>  8 & 0x000000FF] <<  8) |
+        return  $sbox[$word & 0x000000FF] |
+                ($sbox[$word >> 8 & 0x000000FF] << 8) |
                 ($sbox[$word >> 16 & 0x000000FF] << 16) |
                 ($sbox[$word >> 24 & 0x000000FF] << 24);
     }

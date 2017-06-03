@@ -462,8 +462,8 @@ class Twofish extends BlockCipher
             case 16:
                 list($s7, $s6, $s5, $s4) = $this->_mdsrem($le_longs[1], $le_longs[2]);
                 list($s3, $s2, $s1, $s0) = $this->_mdsrem($le_longs[3], $le_longs[4]);
-                for ($i = 0, $j = 1; $i < 40; $i+= 2, $j+= 2) {
-                    $A = $m0[$q0[$q0[$i] ^ $key[ 9]] ^ $key[1]] ^
+                for ($i = 0, $j = 1; $i < 40; $i += 2, $j += 2) {
+                    $A = $m0[$q0[$q0[$i] ^ $key[9]] ^ $key[1]] ^
                             $m1[$q0[$q1[$i] ^ $key[10]] ^ $key[2]] ^
                             $m2[$q1[$q0[$i] ^ $key[11]] ^ $key[3]] ^
                             $m3[$q1[$q1[$i] ^ $key[12]] ^ $key[4]];
@@ -486,8 +486,8 @@ class Twofish extends BlockCipher
                 list($sb, $sa, $s9, $s8) = $this->_mdsrem($le_longs[1], $le_longs[2]);
                 list($s7, $s6, $s5, $s4) = $this->_mdsrem($le_longs[3], $le_longs[4]);
                 list($s3, $s2, $s1, $s0) = $this->_mdsrem($le_longs[5], $le_longs[6]);
-                for ($i = 0, $j = 1; $i < 40; $i+= 2, $j+= 2) {
-                    $A = $m0[$q0[$q0[$q1[$i] ^ $key[17]] ^ $key[ 9]] ^ $key[1]] ^
+                for ($i = 0, $j = 1; $i < 40; $i += 2, $j += 2) {
+                    $A = $m0[$q0[$q0[$q1[$i] ^ $key[17]] ^ $key[9]] ^ $key[1]] ^
                             $m1[$q0[$q1[$q1[$i] ^ $key[18]] ^ $key[10]] ^ $key[2]] ^
                             $m2[$q1[$q0[$q0[$i] ^ $key[19]] ^ $key[11]] ^ $key[3]] ^
                             $m3[$q1[$q1[$q0[$i] ^ $key[20]] ^ $key[12]] ^ $key[4]];
@@ -511,8 +511,8 @@ class Twofish extends BlockCipher
                 list($sb, $sa, $s9, $s8) = $this->_mdsrem($le_longs[3], $le_longs[4]);
                 list($s7, $s6, $s5, $s4) = $this->_mdsrem($le_longs[5], $le_longs[6]);
                 list($s3, $s2, $s1, $s0) = $this->_mdsrem($le_longs[7], $le_longs[8]);
-                for ($i = 0, $j = 1; $i < 40; $i+= 2, $j+= 2) {
-                    $A = $m0[$q0[$q0[$q1[$q1[$i] ^ $key[25]] ^ $key[17]] ^ $key[ 9]] ^ $key[1]] ^
+                for ($i = 0, $j = 1; $i < 40; $i += 2, $j += 2) {
+                    $A = $m0[$q0[$q0[$q1[$q1[$i] ^ $key[25]] ^ $key[17]] ^ $key[9]] ^ $key[1]] ^
                             $m1[$q0[$q1[$q1[$q0[$i] ^ $key[26]] ^ $key[18]] ^ $key[10]] ^ $key[2]] ^
                             $m2[$q1[$q0[$q0[$q0[$i] ^ $key[27]] ^ $key[19]] ^ $key[11]] ^ $key[3]] ^
                             $m3[$q1[$q1[$q0[$q1[$i] ^ $key[28]] ^ $key[20]] ^ $key[12]] ^ $key[4]];
@@ -610,27 +610,27 @@ class Twofish extends BlockCipher
 
         $ki = 7;
         while ($ki < 39) {
-            $t0 = $S0[ $R0        & 0xff] ^
-                    $S1[($R0 >>  8) & 0xff] ^
+            $t0 = $S0[$R0 & 0xff] ^
+                    $S1[($R0 >> 8) & 0xff] ^
                     $S2[($R0 >> 16) & 0xff] ^
                     $S3[($R0 >> 24) & 0xff];
             $t1 = $S0[($R1 >> 24) & 0xff] ^
-                    $S1[ $R1        & 0xff] ^
-                    $S2[($R1 >>  8) & 0xff] ^
+                    $S1[$R1 & 0xff] ^
+                    $S2[($R1 >> 8) & 0xff] ^
                     $S3[($R1 >> 16) & 0xff];
-            $R2^= $t0 + $t1 + $K[++$ki];
+            $R2 ^= $t0 + $t1 + $K[++$ki];
             $R2 = ($R2 >> 1 & 0x7fffffff) | ($R2 << 31);
             $R3 = ((($R3 >> 31) & 1) | ($R3 << 1)) ^ ($t0 + ($t1 << 1) + $K[++$ki]);
 
-            $t0 = $S0[ $R2        & 0xff] ^
-                    $S1[($R2 >>  8) & 0xff] ^
+            $t0 = $S0[$R2 & 0xff] ^
+                    $S1[($R2 >> 8) & 0xff] ^
                     $S2[($R2 >> 16) & 0xff] ^
                     $S3[($R2 >> 24) & 0xff];
             $t1 = $S0[($R3 >> 24) & 0xff] ^
-                    $S1[ $R3        & 0xff] ^
-                    $S2[($R3 >>  8) & 0xff] ^
+                    $S1[$R3 & 0xff] ^
+                    $S2[($R3 >> 8) & 0xff] ^
                     $S3[($R3 >> 16) & 0xff];
-            $R0^= ($t0 + $t1 + $K[++$ki]);
+            $R0 ^= ($t0 + $t1 + $K[++$ki]);
             $R0 = ($R0 >> 1 & 0x7fffffff) | ($R0 << 31);
             $R1 = ((($R1 >> 31) & 1) | ($R1 << 1)) ^ ($t0 + ($t1 << 1) + $K[++$ki]);
         }
@@ -666,27 +666,27 @@ class Twofish extends BlockCipher
 
         $ki = 40;
         while ($ki > 8) {
-            $t0 = $S0[$R0       & 0xff] ^
-                    $S1[$R0 >>  8 & 0xff] ^
+            $t0 = $S0[$R0 & 0xff] ^
+                    $S1[$R0 >> 8 & 0xff] ^
                     $S2[$R0 >> 16 & 0xff] ^
                     $S3[$R0 >> 24 & 0xff];
             $t1 = $S0[$R1 >> 24 & 0xff] ^
-                    $S1[$R1       & 0xff] ^
-                    $S2[$R1 >>  8 & 0xff] ^
+                    $S1[$R1 & 0xff] ^
+                    $S2[$R1 >> 8 & 0xff] ^
                     $S3[$R1 >> 16 & 0xff];
-            $R3^= $t0 + ($t1 << 1) + $K[--$ki];
+            $R3 ^= $t0 + ($t1 << 1) + $K[--$ki];
             $R3 = $R3 >> 1 & 0x7fffffff | $R3 << 31;
             $R2 = ($R2 >> 31 & 0x1 | $R2 << 1) ^ ($t0 + $t1 + $K[--$ki]);
 
-            $t0 = $S0[$R2       & 0xff] ^
-                    $S1[$R2 >>  8 & 0xff] ^
+            $t0 = $S0[$R2 & 0xff] ^
+                    $S1[$R2 >> 8 & 0xff] ^
                     $S2[$R2 >> 16 & 0xff] ^
                     $S3[$R2 >> 24 & 0xff];
             $t1 = $S0[$R3 >> 24 & 0xff] ^
-                    $S1[$R3       & 0xff] ^
-                    $S2[$R3 >>  8 & 0xff] ^
+                    $S1[$R3 & 0xff] ^
+                    $S2[$R3 >> 8 & 0xff] ^
                     $S3[$R3 >> 16 & 0xff];
-            $R1^= $t0 + ($t1 << 1) + $K[--$ki];
+            $R1 ^= $t0 + ($t1 << 1) + $K[--$ki];
             $R1 = $R1 >> 1 & 0x7fffffff | $R1 << 31;
             $R0 = ($R0 >> 31 & 0x1 | $R0 << 1) ^ ($t0 + $t1 + $K[--$ki]);
         }

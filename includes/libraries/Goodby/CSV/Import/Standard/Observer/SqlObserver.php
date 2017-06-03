@@ -50,13 +50,13 @@ class SqlObserver
                     return 'false';
                 }
 
-                return '"' . addslashes($value) . '"';
+                return '"'.addslashes($value).'"';
             }
 
-            throw new \InvalidArgumentException('value is invalid: ' . var_export($value, 1));
+            throw new \InvalidArgumentException('value is invalid: '.var_export($value, 1));
         }, $line);
 
-        return 'INSERT INTO ' . $this->table . '(' . join(', ', $this->columns) . ')' .
-                ' VALUES(' . join(', ', $line) . ');';
+        return 'INSERT INTO '.$this->table.'('.join(', ', $this->columns).')'.
+                ' VALUES('.join(', ', $line).');';
     }
 }

@@ -1745,7 +1745,12 @@ function open_move_group_div()
     }
 
     if (
-        $("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) echo $_SESSION['personal_folders'][0]; else echo ""; ?>") {
+        $("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) {
+    echo $_SESSION['personal_folders'][0];
+} else {
+    echo "";
+}
+?>") {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo $LANG['error_not_allowed_to']; ?>");
         return false;
     }
@@ -3848,7 +3853,12 @@ function proceed_list_update(stop_proceeding)
         $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
-        var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) echo 1; else echo 0; ?>;
+        var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
+    echo 1;
+} else {
+    echo 0;
+}
+?>;
 
         // refine users list to the related roles
         $.post(

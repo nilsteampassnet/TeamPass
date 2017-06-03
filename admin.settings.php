@@ -196,7 +196,7 @@ echo '
                 <td>
                       <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                       <label>' .
-                            $LANG['settings_enable_sts'] . '
+                            $LANG['settings_enable_sts'].'
                           &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_enable_sts_tip']), ENT_QUOTES).'"></i>
                       </label>
                 </td>

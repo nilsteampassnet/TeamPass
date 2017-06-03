@@ -581,8 +581,7 @@ if (isset($_POST['newtitle'])) {
                             $prev_level = $t->nlevel;
                         }
                     }
-                }
-                else {
+                } else {
                     $error = $LANG['error_not_allowed_to'];
                 }
             }

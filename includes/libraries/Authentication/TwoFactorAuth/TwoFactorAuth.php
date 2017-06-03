@@ -26,25 +26,30 @@ class TwoFactorAuth
     {
         $this->issuer = $issuer;
 
-        if (!is_int($digits) || $digits <= 0)
-            throw new TwoFactorAuthException('Digits must be int > 0');
+        if (!is_int($digits) || $digits <= 0) {
+                    throw new TwoFactorAuthException('Digits must be int > 0');
+        }
         $this->digits = $digits;
 
-        if (!is_int($period) || $period <= 0)
-            throw new TwoFactorAuthException('Period must be int > 0');
+        if (!is_int($period) || $period <= 0) {
+                    throw new TwoFactorAuthException('Period must be int > 0');
+        }
         $this->period = $period;
 
         $algorithm = strtolower(trim($algorithm));
-        if (!in_array($algorithm, self::$_supportedalgos))
-            throw new TwoFactorAuthException('Unsupported algorithm: '.$algorithm);
+        if (!in_array($algorithm, self::$_supportedalgos)) {
+                    throw new TwoFactorAuthException('Unsupported algorithm: '.$algorithm);
+        }
         $this->algorithm = $algorithm;
 
         // Set default QR Code provider if none was specified
-        if ($qrcodeprovider == null)
-            $qrcodeprovider = new Providers\Qr\GoogleQRCodeProvider();
+        if ($qrcodeprovider == null) {
+                    $qrcodeprovider = new Providers\Qr\GoogleQRCodeProvider();
+        }
 
-        if (!($qrcodeprovider instanceof Providers\Qr\IQRCodeProvider))
-            throw new TwoFactorAuthException('QRCodeProvider must implement IQRCodeProvider');
+        if (!($qrcodeprovider instanceof Providers\Qr\IQRCodeProvider)) {
+                    throw new TwoFactorAuthException('QRCodeProvider must implement IQRCodeProvider');
+        }
 
         $this->qrcodeprovider = $qrcodeprovider;
 
@@ -80,11 +85,14 @@ class TwoFactorAuth
     {
         $secret = '';
         $bytes = ceil($bits / 5); //We use 5 bits of each byte (since we have a 32-character 'alphabet' / BASE32)
-        if ($requirecryptosecure && !$this->rngprovider->isCryptographicallySecure())
-            throw new TwoFactorAuthException('RNG provider is not cryptographically secure');
+        if ($requirecryptosecure && !$this->rngprovider->isCryptographicallySecure()) {
+                    throw new TwoFactorAuthException('RNG provider is not cryptographically secure');
+        }
         $rnd = $this->rngprovider->getRandomBytes($bytes);
-        for ($i = 0; $i < $bytes; $i++)
-            $secret .= self::$_base32[ord($rnd[$i]) & 31]; //Mask out left 3 bits for 0-31 values
+        for ($i = 0; $i < $bytes; $i++) {
+                    $secret .= self::$_base32[ord($rnd[$i]) & 31];
+        }
+        //Mask out left 3 bits for 0-31 values
         return $secret;
     }
 
@@ -168,6 +176,7 @@ class TwoFactorAuth
 
     /**
      * Builds a string to be encoded in a QR code
+     * @param string $label
      */
     public function getQRText($label, $secret)
     {
@@ -181,23 +190,28 @@ class TwoFactorAuth
 
     private function base32Decode($value)
     {
-        if (strlen($value) == 0) return '';
+        if (strlen($value) == 0) {
+            return '';
+        }
 
-        if (preg_match('/[^'.preg_quote(self::$_base32dict).']/', $value) !== 0)
-            throw new TwoFactorAuthException('Invalid base32 string');
+        if (preg_match('/[^'.preg_quote(self::$_base32dict).']/', $value) !== 0) {
+                    throw new TwoFactorAuthException('Invalid base32 string');
+        }
 
         $buffer = '';
         foreach (str_split($value) as $char)
         {
-            if ($char !== '=')
-                $buffer .= str_pad(decbin(self::$_base32lookup[$char]), 5, 0, STR_PAD_LEFT);
+            if ($char !== '=') {
+                            $buffer .= str_pad(decbin(self::$_base32lookup[$char]), 5, 0, STR_PAD_LEFT);
+            }
         }
         $length = strlen($buffer);
         $blocks = trim(chunk_split(substr($buffer, 0, $length - ($length % 8)), 8, ' '));
 
         $output = '';
-        foreach (explode(' ', $blocks) as $block)
-            $output .= chr(bindec(str_pad($block, 8, 0, STR_PAD_RIGHT)));
+        foreach (explode(' ', $blocks) as $block) {
+                    $output .= chr(bindec(str_pad($block, 8, 0, STR_PAD_RIGHT)));
+        }
 
         return $output;
     }

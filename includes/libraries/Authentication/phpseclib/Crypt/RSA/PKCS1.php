@@ -120,15 +120,15 @@ class PKCS1 extends PKCS
             $cipher->setKey(self::generateSymmetricKey($password, $iv, $cipher->getKeyLength() >> 3));
             $cipher->setIV($iv);
             $iv = strtoupper(Hex::encode($iv));
-            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n" .
-                        "Proc-Type: 4,ENCRYPTED\r\n" .
-                        "DEK-Info: " . self::$defaultEncryptionAlgorithm . ",$iv\r\n" .
-                        "\r\n" .
-                        chunk_split(Base64::encode($cipher->encrypt($RSAPrivateKey)), 64) .
+            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n".
+                        "Proc-Type: 4,ENCRYPTED\r\n".
+                        "DEK-Info: ".self::$defaultEncryptionAlgorithm.",$iv\r\n".
+                        "\r\n".
+                        chunk_split(Base64::encode($cipher->encrypt($RSAPrivateKey)), 64).
                         '-----END RSA PRIVATE KEY-----';
         } else {
-            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n" .
-                        chunk_split(Base64::encode($RSAPrivateKey), 64) .
+            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n".
+                        chunk_split(Base64::encode($RSAPrivateKey), 64).
                         '-----END RSA PRIVATE KEY-----';
         }
 

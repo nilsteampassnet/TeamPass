@@ -352,8 +352,7 @@ function rest_get() {
 
                     $x++;
                 }
-            }
-            else if ($GLOBALS['request'][1] == "userpw") {
+            } else if ($GLOBALS['request'][1] == "userpw") {
                 /*
                 * READ USER ITEMS
                 */
@@ -437,8 +436,7 @@ function rest_get() {
 
                     $x++;
                 }
-            }
-            else if ($GLOBALS['request'][1] == "userfolders") {
+            } else if ($GLOBALS['request'][1] == "userfolders") {
                 /*
                 * READ USER FOLDERS
                 * Sends back a list of folders
@@ -481,8 +479,7 @@ function rest_get() {
                         }
                     }
                 }
-            }
-            elseif ($GLOBALS['request'][1] == "items") {
+            } elseif ($GLOBALS['request'][1] == "items") {
                 /*
                 * READ ITEMS asked
                 */
@@ -829,8 +826,11 @@ function rest_get() {
                                 "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
                                 $role
                             );
-                            if (empty($rolesList)) $rolesList = $tmp['id'];
-                            else $rolesList .= ";".$tmp['id'];
+                            if (empty($rolesList)) {
+                                $rolesList = $tmp['id'];
+                            } else {
+                                $rolesList .= ";".$tmp['id'];
+                            }
                         }
 
                         // Add user in DB
@@ -1798,7 +1798,7 @@ function rest_get() {
                                             'type' => 'folder_deleted',
                                             'intitule' => "f".$array_category[$i],
                                             'valeur' => $folder->id.', '.$folder->parent_id.', '.
-                                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '. $folder->nlevel.', 0, 0, 0, 0'
+                                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.$folder->nlevel.', 0, 0, 0, 0'
                                         )
                                     );
                                     //delete folder
@@ -1925,11 +1925,21 @@ function rest_get() {
 
                 // init
                 $pwgen->setLength($params[0]);
-                if ($params[1] === "1") $pwgen->setSecure(true);
-                if ($params[2] === "1") $pwgen->setNumerals(true);
-                if ($params[3] === "1") $pwgen->setCapitalize(true);
-                if ($params[4] === "1") $pwgen->setAmbiguous(true);
-                if ($params[5] === "1" && $params[6] === "1") $pwgen->setSymbols(true);
+                if ($params[1] === "1") {
+                    $pwgen->setSecure(true);
+                }
+                if ($params[2] === "1") {
+                    $pwgen->setNumerals(true);
+                }
+                if ($params[3] === "1") {
+                    $pwgen->setCapitalize(true);
+                }
+                if ($params[4] === "1") {
+                    $pwgen->setAmbiguous(true);
+                }
+                if ($params[5] === "1" && $params[6] === "1") {
+                    $pwgen->setSymbols(true);
+                }
 
                 // generate and send back (generate in base64 if symbols are asked)
                 if ($params[6] === "1") {
@@ -1993,29 +2003,29 @@ function rest_get() {
 
                     echo json_encode($json);
                 } else {
-                    rest_error ('NO_PARAMETERS');
+                    rest_error('NO_PARAMETERS');
                 }
             } else if ($GLOBALS['request'][1] === "version") {
                 echo '{"api-version":"'.$api_version.'"}';
             } else {
-                rest_error ('NO_PARAMETERS');
+                rest_error('NO_PARAMETERS');
             }
         } else {
-            rest_error ('METHOD');
+            rest_error('METHOD');
         }
     }
 }
 
 function rest_put() {
-    if(!@count($GLOBALS['request'])==0){
+    if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
         if (count($matches) == 0) {
-            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+            rest_error('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] = explode('/', $matches[2]);
     }
-    if(apikey_checker($GLOBALS['apikey'])) {
+    if (apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
 
@@ -2025,7 +2035,7 @@ function rest_put() {
 /**
  * @param string $type
  */
-function rest_error ($type,$detail = 'N/A') {
+function rest_error($type, $detail = 'N/A') {
     switch ($type) {
         case 'APIKEY':
             $message = Array('err' => 'This api_key '.$GLOBALS['apikey'].' doesn\'t exist');

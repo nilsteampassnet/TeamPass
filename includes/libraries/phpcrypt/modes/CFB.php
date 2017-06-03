@@ -48,7 +48,7 @@ class Mode_CFB extends Mode
         parent::__construct(PHP_Crypt::MODE_CFB, $cipher);
 
         // this works with only block Ciphers
-        if($cipher->type() != Cipher::BLOCK)
+        if ($cipher->type() != Cipher::BLOCK)
             trigger_error("CFB mode requires a block cipher", E_USER_WARNING);
     }
 
@@ -73,7 +73,7 @@ class Mode_CFB extends Mode
     public function encrypt(&$text)
     {
         $max = strlen($text);
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // copy the register, and then encrypt it
             $this->enc_register = $this->register;
@@ -100,7 +100,7 @@ class Mode_CFB extends Mode
     public function decrypt(&$text)
     {
         $max = strlen($text);
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             $this->enc_register = $this->register;
             $this->cipher->encrypt($this->enc_register);

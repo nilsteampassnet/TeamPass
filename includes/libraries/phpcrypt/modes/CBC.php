@@ -48,7 +48,7 @@ class Mode_CBC extends Mode
         parent::__construct(PHP_Crypt::MODE_CBC, $cipher);
 
         // this works with only block Ciphers
-        if($cipher->type() != Cipher::BLOCK)
+        if ($cipher->type() != Cipher::BLOCK)
             trigger_error("CBC mode requires a block cipher", E_USER_WARNING);
     }
 
@@ -83,7 +83,7 @@ class Mode_CBC extends Mode
         $blocksz = $this->cipher->blockSize();
 
         $max = strlen($text) / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // get the current position in $text
             $pos = $i * $blocksz;
@@ -92,7 +92,7 @@ class Mode_CBC extends Mode
             $block = substr($text, $pos, $blocksz);
 
             // xor the block with the register
-            for($j = 0; $j < $blocksz; ++$j)
+            for ($j = 0; $j < $blocksz; ++$j)
                 $block[$j] = $block[$j] ^ $this->register[$j];
 
             // encrypt the block, and save it back to the register
@@ -126,7 +126,7 @@ class Mode_CBC extends Mode
         $blocksz = $this->cipher->blockSize();
 
         $max = strlen($text) / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // get the current position in $text
             $pos = $i * $blocksz;
@@ -139,7 +139,7 @@ class Mode_CBC extends Mode
             $this->cipher->decrypt($block);
 
             // xor the block with the register
-            for($j = 0; $j < $blocksz; ++$j)
+            for ($j = 0; $j < $blocksz; ++$j)
                 $block[$j] = $block[$j] ^ $this->register[$j];
 
             // replace the block of cipher text with plain text

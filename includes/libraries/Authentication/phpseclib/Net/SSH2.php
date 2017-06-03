@@ -1232,31 +1232,31 @@ class SSH2
             //'arcfour',      // OPTIONAL          the ARCFOUR stream cipher with a 128-bit key
 
             // CTR modes from <http://tools.ietf.org/html/rfc4344#section-4>:
-            'aes128-ctr',     // RECOMMENDED       AES (Rijndael) in SDCTR mode, with 128-bit key
-            'aes192-ctr',     // RECOMMENDED       AES with 192-bit key
-            'aes256-ctr',     // RECOMMENDED       AES with 256-bit key
+            'aes128-ctr', // RECOMMENDED       AES (Rijndael) in SDCTR mode, with 128-bit key
+            'aes192-ctr', // RECOMMENDED       AES with 192-bit key
+            'aes256-ctr', // RECOMMENDED       AES with 256-bit key
 
             'twofish128-ctr', // OPTIONAL          Twofish in SDCTR mode, with 128-bit key
             'twofish192-ctr', // OPTIONAL          Twofish with 192-bit key
             'twofish256-ctr', // OPTIONAL          Twofish with 256-bit key
 
-            'aes128-cbc',     // RECOMMENDED       AES with a 128-bit key
-            'aes192-cbc',     // OPTIONAL          AES with a 192-bit key
-            'aes256-cbc',     // OPTIONAL          AES in CBC mode, with a 256-bit key
+            'aes128-cbc', // RECOMMENDED       AES with a 128-bit key
+            'aes192-cbc', // OPTIONAL          AES with a 192-bit key
+            'aes256-cbc', // OPTIONAL          AES in CBC mode, with a 256-bit key
 
             'twofish128-cbc', // OPTIONAL          Twofish with a 128-bit key
             'twofish192-cbc', // OPTIONAL          Twofish with a 192-bit key
             'twofish256-cbc',
-            'twofish-cbc',    // OPTIONAL          alias for "twofish256-cbc"
+            'twofish-cbc', // OPTIONAL          alias for "twofish256-cbc"
                                 //                   (this is being retained for historical reasons)
 
-            'blowfish-ctr',   // OPTIONAL          Blowfish in SDCTR mode
+            'blowfish-ctr', // OPTIONAL          Blowfish in SDCTR mode
 
-            'blowfish-cbc',   // OPTIONAL          Blowfish in CBC mode
+            'blowfish-cbc', // OPTIONAL          Blowfish in CBC mode
 
-            '3des-ctr',       // RECOMMENDED       Three-key 3DES in SDCTR mode
+            '3des-ctr', // RECOMMENDED       Three-key 3DES in SDCTR mode
 
-            '3des-cbc',       // REQUIRED          three-key 3DES in CBC mode
+            '3des-cbc', // REQUIRED          three-key 3DES in CBC mode
                 //'none'         // OPTIONAL          no encryption; NOT RECOMMENDED
         );
 
@@ -2994,9 +2994,9 @@ class SSH2
 
         if (defined('NET_SSH2_LOGGING')) {
             $current = microtime(true);
-            $message_number = isset($this->message_numbers[ord($payload[0])]) ? $this->message_numbers[ord($payload[0])] : 'UNKNOWN (' . ord($payload[0]) . ')';
-            $message_number = '<- ' . $message_number .
-                                ' (since last: ' . round($current - $this->last_packet, 4) . ', network: ' . round($stop - $start, 4) . 's)';
+            $message_number = isset($this->message_numbers[ord($payload[0])]) ? $this->message_numbers[ord($payload[0])] : 'UNKNOWN ('.ord($payload[0]).')';
+            $message_number = '<- '.$message_number.
+                                ' (since last: '.round($current - $this->last_packet, 4).', network: '.round($stop - $start, 4).'s)';
             $this->_append_log($message_number, $payload);
             $this->last_packet = $current;
         }
@@ -3470,9 +3470,9 @@ class SSH2
 
         if (defined('NET_SSH2_LOGGING')) {
             $current = microtime(true);
-            $message_number = isset($this->message_numbers[ord($data[0])]) ? $this->message_numbers[ord($data[0])] : 'UNKNOWN (' . ord($data[0]) . ')';
-            $message_number = '-> ' . $message_number .
-                                ' (since last: ' . round($current - $this->last_packet, 4) . ', network: ' . round($stop - $start, 4) . 's)';
+            $message_number = isset($this->message_numbers[ord($data[0])]) ? $this->message_numbers[ord($data[0])] : 'UNKNOWN ('.ord($data[0]).')';
+            $message_number = '-> '.$message_number.
+                                ' (since last: '.round($current - $this->last_packet, 4).', network: '.round($stop - $start, 4).'s)';
             $this->_append_log($message_number, isset($logged) ? $logged : $data);
             $this->last_packet = $current;
         }

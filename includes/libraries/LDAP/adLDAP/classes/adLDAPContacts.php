@@ -55,11 +55,11 @@ class adLDAPContacts {
     // * Still work to do in this area, and new functions to write
     
     /**
-    * Create a contact
-    * 
-    * @param array $attributes The attributes to set to the contact
-    * @return string|boolean
-    */
+     * Create a contact
+     * 
+     * @param array $attributes The attributes to set to the contact
+     * @return string|boolean
+     */
     public function create($attributes) {
         // Check for compulsory fields
         if (!array_key_exists("display_name", $attributes)) { return "Missing compulsory field [display_name]"; }
@@ -93,12 +93,12 @@ class adLDAPContacts {
     }  
     
     /**
-    * Determine the list of groups a contact is a member of
-    * 
-    * @param string $distinguishedName The full DN of a contact
-    * @param bool $recursive Recursively check groups
-    * @return array
-    */
+     * Determine the list of groups a contact is a member of
+     * 
+     * @param string $distinguishedName The full DN of a contact
+     * @param bool $recursive Recursively check groups
+     * @return array
+     */
     public function groups($distinguishedName, $recursive = NULL) {
         if ($distinguishedName === NULL) { return false; }
         if ($recursive === NULL) { $recursive = $this->adldap->getRecursiveGroups(); } //use the default option if they haven't set it
@@ -118,12 +118,12 @@ class adLDAPContacts {
     }
     
     /**
-    * Get contact information. Returned in a raw array format from AD
-    * 
-    * @param string $distinguishedName The full DN of a contact
-    * @param array $fields Attributes to be returned
-    * @return array
-    */
+     * Get contact information. Returned in a raw array format from AD
+     * 
+     * @param string $distinguishedName The full DN of a contact
+     * @param array $fields Attributes to be returned
+     * @return array
+     */
     public function info($distinguishedName, $fields = NULL)
     {
         if ($distinguishedName === NULL) { return false; }
@@ -195,12 +195,12 @@ class adLDAPContacts {
     }          
 
     /**
-    * Modify a contact
-    * 
-    * @param string $distinguishedName The contact to query
-    * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
-    * @return string|boolean
-    */
+     * Modify a contact
+     * 
+     * @param string $distinguishedName The contact to query
+     * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
+     * @return string|boolean
+     */
     public function modify($distinguishedName, $attributes) {
         if ($distinguishedName === NULL) { return "Missing compulsory field [distinguishedname]"; }
         
@@ -221,11 +221,11 @@ class adLDAPContacts {
     }
     
     /**
-    * Delete a contact
-    * 
-    * @param string $distinguishedName The contact dn to delete (please be careful here!)
-    * @return boolean
-    */
+     * Delete a contact
+     * 
+     * @param string $distinguishedName The contact dn to delete (please be careful here!)
+     * @return boolean
+     */
     public function delete($distinguishedName) {
         $result = $this->folder()->delete($distinguishedName);
         if ($result != true) { 
@@ -268,14 +268,14 @@ class adLDAPContacts {
     }
     
     /**
-    * Mail enable a contact
-    * Allows email to be sent to them through Exchange
-    * 
-    * @param string $distinguishedName The contact to mail enable
-    * @param string $emailAddress The email address to allow emails to be sent through
-    * @param string $mailNickname The mailnickname for the contact in Exchange.  If NULL this will be set to the display name
-    * @return string|boolean
-    */
+     * Mail enable a contact
+     * Allows email to be sent to them through Exchange
+     * 
+     * @param string $distinguishedName The contact to mail enable
+     * @param string $emailAddress The email address to allow emails to be sent through
+     * @param string $mailNickname The mailnickname for the contact in Exchange.  If NULL this will be set to the display name
+     * @return string|boolean
+     */
     public function contactMailEnable($distinguishedName, $emailAddress, $mailNickname = NULL) {
         return $this->adldap->exchange()->contactMailEnable($distinguishedName, $emailAddress, $mailNickname);
     }

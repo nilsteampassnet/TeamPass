@@ -1610,18 +1610,18 @@ class BigInteger
             );
 
             $rsaOID = "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00"; // hex version of MA0GCSqGSIb3DQEBAQUA
-            $RSAPublicKey = chr(0) . $RSAPublicKey;
-            $RSAPublicKey = chr(3) . self::_encodeASN1Length(strlen($RSAPublicKey)) . $RSAPublicKey;
+            $RSAPublicKey = chr(0).$RSAPublicKey;
+            $RSAPublicKey = chr(3).self::_encodeASN1Length(strlen($RSAPublicKey)).$RSAPublicKey;
 
             $encapsulated = pack(
                 'Ca*a*',
                 48,
-                self::_encodeASN1Length(strlen($rsaOID . $RSAPublicKey)),
-                $rsaOID . $RSAPublicKey
+                self::_encodeASN1Length(strlen($rsaOID.$RSAPublicKey)),
+                $rsaOID.$RSAPublicKey
             );
 
-            $RSAPublicKey = "-----BEGIN PUBLIC KEY-----\r\n" .
-                                chunk_split(Base64::encode($encapsulated)) .
+            $RSAPublicKey = "-----BEGIN PUBLIC KEY-----\r\n".
+                                chunk_split(Base64::encode($encapsulated)).
                                 '-----END PUBLIC KEY-----';
 
             $plaintext = str_pad($this->toBytes(), strlen($n->toBytes(true)) - 1, "\0", STR_PAD_LEFT);
@@ -3269,18 +3269,18 @@ class BigInteger
         if (!$t) {
             // see HAC 4.49 "Note (controlling the error probability)"
             // @codingStandardsIgnoreStart
-                    if ($length >= 163) { $t =  2; } // floor(1300 / 8)
-            else if ($length >= 106) { $t =  3; } // floor( 850 / 8)
-            else if ($length >= 81 ) { $t =  4; } // floor( 650 / 8)
-            else if ($length >= 68 ) { $t =  5; } // floor( 550 / 8)
-            else if ($length >= 56 ) { $t =  6; } // floor( 450 / 8)
-            else if ($length >= 50 ) { $t =  7; } // floor( 400 / 8)
-            else if ($length >= 43 ) { $t =  8; } // floor( 350 / 8)
-            else if ($length >= 37 ) { $t =  9; } // floor( 300 / 8)
-            else if ($length >= 31 ) { $t = 12; } // floor( 250 / 8)
-            else if ($length >= 25 ) { $t = 15; } // floor( 200 / 8)
-            else if ($length >= 18 ) { $t = 18; } // floor( 150 / 8)
-            else                     { $t = 27; }
+                    if ($length >= 163) { $t = 2; } // floor(1300 / 8)
+            else if ($length >= 106) { $t = 3; } // floor( 850 / 8)
+            else if ($length >= 81) { $t = 4; } // floor( 650 / 8)
+            else if ($length >= 68) { $t = 5; } // floor( 550 / 8)
+            else if ($length >= 56) { $t = 6; } // floor( 450 / 8)
+            else if ($length >= 50) { $t = 7; } // floor( 400 / 8)
+            else if ($length >= 43) { $t = 8; } // floor( 350 / 8)
+            else if ($length >= 37) { $t = 9; } // floor( 300 / 8)
+            else if ($length >= 31) { $t = 12; } // floor( 250 / 8)
+            else if ($length >= 25) { $t = 15; } // floor( 200 / 8)
+            else if ($length >= 18) { $t = 18; } // floor( 150 / 8)
+            else { $t = 27; }
             // @codingStandardsIgnoreEnd
         }
 

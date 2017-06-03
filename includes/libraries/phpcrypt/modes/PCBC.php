@@ -48,7 +48,7 @@ class Mode_PCBC extends Mode
         parent::__construct(PHP_Crypt::MODE_PCBC, $cipher);
 
         // this works with only block Ciphers
-        if($cipher->type() != Cipher::BLOCK)
+        if ($cipher->type() != Cipher::BLOCK)
             trigger_error("PCBC mode requires a block cipher", E_USER_WARNING);
     }
 
@@ -76,7 +76,7 @@ class Mode_PCBC extends Mode
         $blocksz = $this->cipher->blockSize();
 
         $max = strlen($text) / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // current position in the text
             $pos = $i * $blocksz;
@@ -86,7 +86,7 @@ class Mode_PCBC extends Mode
             $plain_block = $block;
 
             // xor the register with plain text
-            for($j = 0; $j < $blocksz; ++$j)
+            for ($j = 0; $j < $blocksz; ++$j)
                 $block[$j] = $this->register[$j] ^ $block[$j];
 
             // encrypt the block creating the cipher text
@@ -94,7 +94,7 @@ class Mode_PCBC extends Mode
 
             // xor the encrypted block with the plain text block to create
             // the register in the next round
-            for($j = 0; $j < $blocksz; ++$j)
+            for ($j = 0; $j < $blocksz; ++$j)
                 $this->register[$j] = $block[$j] ^ $plain_block[$j];
 
             // copy the encrypted block back to $text
@@ -116,7 +116,7 @@ class Mode_PCBC extends Mode
         $blocksz = $this->cipher->blockSize();
 
         $max = strlen($text) / $blocksz;
-        for($i = 0; $i < $max; ++$i)
+        for ($i = 0; $i < $max; ++$i)
         {
             // current position in the text
             $pos = $i * $blocksz;
@@ -130,11 +130,11 @@ class Mode_PCBC extends Mode
 
             // xor the decrypted block with the register, to create
             // the plain text block
-            for($j = 0; $j < $blocksz; ++$j)
+            for ($j = 0; $j < $blocksz; ++$j)
                 $block[$j] = $this->register[$j] ^ $block[$j];
 
             // now xor the $enc_block with the unencrypted $block
-            for($j = 0; $j < $blocksz; ++$j)
+            for ($j = 0; $j < $blocksz; ++$j)
                 $this->register[$j] = $block[$j] ^ $enc_block[$j];
 
             // copy the plain text block back to $text

@@ -150,7 +150,7 @@ class Generator {
             return '';
         } elseif (empty($characters)) {
             // Default to base 64
-            $characters = '0123456789abcdefghijklmnopqrstuvwxyz' .
+            $characters = '0123456789abcdefghijklmnopqrstuvwxyz'.
                             'ABCDEFGHIJKLMNOPQRSTUVWXYZ./';
         }
         // determine how many bytes to generate

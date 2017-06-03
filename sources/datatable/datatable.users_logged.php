@@ -48,20 +48,20 @@ $sOrder = $sLimit = "";
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
+    $sLimit = "LIMIT ".filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
 
 if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
-    for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+    for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
         if (
-            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
         ) {
-            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+            $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
         }
     }
 

@@ -287,9 +287,9 @@ class PuTTY
             strlen($n),
             $n
         );
-        $key = "---- BEGIN SSH2 PUBLIC KEY ----\r\n" .
-                'Comment: "' . str_replace(array('\\', '"'), array('\\\\', '\"'), self::$comment) . "\"\r\n";
-                chunk_split(Base64::encode($key), 64) .
+        $key = "---- BEGIN SSH2 PUBLIC KEY ----\r\n".
+                'Comment: "'.str_replace(array('\\', '"'), array('\\\\', '\"'), self::$comment)."\"\r\n";
+                chunk_split(Base64::encode($key), 64).
                 '---- END SSH2 PUBLIC KEY ----';
 
         return $key;

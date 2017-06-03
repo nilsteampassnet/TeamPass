@@ -164,8 +164,11 @@ function buildNodeTree($nodeId)
                 }
 
                 // prepare json return for current node
-                if ($node->parent_id == 0) $parent = "#";
-                else $parent = "li_".$node->parent_id;
+                if ($node->parent_id == 0) {
+                    $parent = "#";
+                } else {
+                    $parent = "li_".$node->parent_id;
+                }
 
                 // special case for READ-ONLY folder
                 if ($_SESSION['user_read_only'] === true && !in_array($node->id, $_SESSION['personal_folders'])) {

@@ -77,11 +77,11 @@ class FPDF_Protection extends tFPDF
      * - If an owner password is set, document can be opened in privilege mode with no
      *   restriction if that password is entered
      */
-    function SetProtection($permissions=array(), $user_pass='', $owner_pass=null)
+    function SetProtection($permissions = array(), $user_pass = '', $owner_pass = null)
     {
-        $options = array('print' => 4, 'modify' => 8, 'copy' => 16, 'annot-forms' => 32 );
+        $options = array('print' => 4, 'modify' => 8, 'copy' => 16, 'annot-forms' => 32);
         $protection = 192;
-        foreach($permissions as $permission)
+        foreach ($permissions as $permission)
         {
             if (!isset($options[$permission])) {
                             $this->Error('Incorrect permission: '.$permission);
@@ -122,9 +122,9 @@ class FPDF_Protection extends tFPDF
     }
 
     /**
-    * Compute key depending on object number where the encrypted data is stored
-    * @param integer $n
-    */
+     * Compute key depending on object number where the encrypted data is stored
+     * @param integer $n
+     */
     function _objectkey($n)
     {
         return substr($this->_md5_16($this->encryption_key.pack('VXxx', $n)), 0, 10);
@@ -164,6 +164,7 @@ class FPDF_Protection extends tFPDF
 
     /**
     * Get MD5 as binary string
+    * @param string $string
     */
     function _md5_16($string)
     {
@@ -183,18 +184,18 @@ class FPDF_Protection extends tFPDF
     }
 
     /**
-    * Compute U value
-    */
+     * Compute U value
+     */
     function _Uvalue()
     {
         return RC4($this->encryption_key, $this->padding);
     }
 
     /**
-    * Compute encryption key
-    * @param string $user_pass
-    * @param integer $protection
-    */
+     * Compute encryption key
+     * @param string $user_pass
+     * @param integer $protection
+     */
     function _generateencryptionkey($user_pass, $owner_pass, $protection)
     {
         // Pad passwords

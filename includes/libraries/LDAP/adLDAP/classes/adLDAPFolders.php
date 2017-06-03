@@ -118,8 +118,7 @@ class adLDAPFolders {
             $ou = $dnType."=".implode(",".$dnType."=", $folderName);
             $filter .= '(!(distinguishedname='.$ou.','.$this->adldap->getBaseDn().')))';
             $searchOu = $ou.','.$this->adldap->getBaseDn();
-        }
-        else {
+        } else {
             $filter .= '(!(distinguishedname='.$this->adldap->getBaseDn().')))';
         }
 
@@ -140,11 +139,11 @@ class adLDAPFolders {
     }
 
     /**
-    * Create an organizational unit
-    * 
-    * @param array $attributes Default attributes of the ou
-    * @return string|boolean
-    */
+     * Create an organizational unit
+     * 
+     * @param array $attributes Default attributes of the ou
+     * @return string|boolean
+     */
     public function create($attributes) {
         if (!is_array($attributes)) { return "Attributes must be an array"; }
         if (!is_array($attributes["container"])) { return "Container attribute must be an array."; }

@@ -219,7 +219,7 @@ echo '
               </tbody>
             </table>
             ';
-            }else {
+            } else {
             echo $LANG['settings_api_world_open'];
             }
         echo '

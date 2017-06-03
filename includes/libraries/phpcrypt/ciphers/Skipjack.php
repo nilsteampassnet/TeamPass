@@ -39,199 +39,199 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Cipher_Skipjack extends Cipher
 {
-	/** @type integer BYTES_BLOCK The size of the block, in bytes */
-	const BYTES_BLOCK = 8; // 64 bits
+    /** @type integer BYTES_BLOCK The size of the block, in bytes */
+    const BYTES_BLOCK = 8; // 64 bits
 
-	/** @type integer BYTES_KEY The size of the key, in bytes */
-	const BYTES_KEY = 10; // 80 bits
+    /** @type integer BYTES_KEY The size of the key, in bytes */
+    const BYTES_KEY = 10; // 80 bits
 
-	/** @type string $expanded_key The expanded key */
-	private $expanded_key = "";
+    /** @type string $expanded_key The expanded key */
+    private $expanded_key = "";
 
-	/** @type array $_f The Skipjack F-Table, this is a constant */
-	private static $_f = array();
-
-
-	/**
-	 * Constructor
-	 *
-	 * @param string $key The key used for Encryption/Decryption
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// set the Skipjack key
-		parent::__construct(PHP_Crypt::CIPHER_SKIPJACK, $key, self::BYTES_KEY);
-
-		// initialize variables
-		$this->initTables();
-
-		// set the block size used
-		$this->blockSize(self::BYTES_BLOCK);
-
-		// expand the key from 10 bytes to 128 bytes
-		$this->expandKey();
-	}
+    /** @type array $_f The Skipjack F-Table, this is a constant */
+    private static $_f = array();
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Constructor
+     *
+     * @param string $key The key used for Encryption/Decryption
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // set the Skipjack key
+        parent::__construct(PHP_Crypt::CIPHER_SKIPJACK, $key, self::BYTES_KEY);
+
+        // initialize variables
+        $this->initTables();
+
+        // set the block size used
+        $this->blockSize(self::BYTES_BLOCK);
+
+        // expand the key from 10 bytes to 128 bytes
+        $this->expandKey();
+    }
 
 
-	/**
-	 * Encrypt plain text data using Skipjack
-	 *
-	 * @return boolean Returns true
-	 */
-	public function encrypt(&$text)
-	{
-		$this->operation(parent::ENCRYPT);
-
-		for ($i = 1; $i <= 32; ++$i)
-		{
-			$pos = (4 * $i) - 4;
-			$subkey = substr($this->expanded_key, $pos, 4);
-
-			if ($i >= 1 && $i <= 8)
-				$this->ruleA($text, $subkey, $i);
-
-			if ($i >= 9 && $i <= 16)
-				$this->ruleB($text, $subkey, $i);
-
-			if ($i >= 17 && $i <= 24)
-				$this->ruleA($text, $subkey, $i);
-
-			if ($i >= 25 && $i <= 32)
-				$this->ruleB($text, $subkey, $i);
-		}
-
-		return true;
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypt a Skipjack encrypted string
-	 *
-	 * @return boolean Returns true
-	 */
-	public function decrypt(&$text)
-	{
-		$this->operation(parent::DECRYPT);
+    /**
+     * Encrypt plain text data using Skipjack
+     *
+     * @return boolean Returns true
+     */
+    public function encrypt(&$text)
+    {
+        $this->operation(parent::ENCRYPT);
 
-		for ($i = 32; $i >= 1; --$i)
-		{
-			$pos = ($i - 1) * 4;
-			$subkey = substr($this->expanded_key, $pos, 4);
+        for ($i = 1; $i <= 32; ++$i)
+        {
+            $pos = (4 * $i) - 4;
+            $subkey = substr($this->expanded_key, $pos, 4);
 
-			if ($i <= 32 && $i >= 25)
-				$this->ruleB($text, $subkey, $i);
+            if ($i >= 1 && $i <= 8)
+                $this->ruleA($text, $subkey, $i);
 
-			if ($i <= 24 && $i >= 17)
-				$this->ruleA($text, $subkey, $i);
+            if ($i >= 9 && $i <= 16)
+                $this->ruleB($text, $subkey, $i);
 
-			if ($i <= 16 && $i >= 9)
-				$this->ruleB($text, $subkey, $i);
+            if ($i >= 17 && $i <= 24)
+                $this->ruleA($text, $subkey, $i);
 
-			if ($i <= 8 && $i >= 1)
-				$this->ruleA($text, $subkey, $i);
-		}
+            if ($i >= 25 && $i <= 32)
+                $this->ruleB($text, $subkey, $i);
+        }
 
-		return true;
-	}
-
-
-	/**
-	 * For the G Permutations, the input data is 2 Bytes The first byte is
-	 * the left side and the second is the right side.The round key is 4 bytes
-	 * long (Indices 8*i-8 to 8*i), which is split as 4 pieces: K0, K1, K2, K3
-	 *
-	 * @param string $bytes A 2 byte string
-	 * @param string $key 4 bytes of $this->expanded_key
-	 * @return string A 2 byte string, the G Permutation of $bytes
-	 */
-	private function gPermutation($bytes, $key)
-	{
-		$left = ord($bytes[0]);
-		$right = ord($bytes[1]);
-
-		if ($this->operation() == parent::ENCRYPT)
-		{
-			for ($i = 0; $i < 4; ++$i)
-			{
-				if ($i == 0 || $i == 2)
-				{
-					$pos = $right ^ $this->str2Dec($key[$i]);
-					$left = $left ^ self::$_f[$pos];
-				} else
-				{
-					$pos = $left ^ $this->str2Dec($key[$i]);
-					$right = $right ^ self::$_f[$pos];
-				}
-			}
-		} else // parent::DECRYPT
-		{
-			// we do the same as in encryption, but apply the key backwards,
-			// from key[3] to key[0]
-			for ($i = 3; $i >= 0; --$i)
-			{
-				if ($i == 0 || $i == 2)
-				{
-					$pos = $right ^ $this->str2Dec($key[$i]);
-					$left = $left ^ self::$_f[$pos];
-				} else
-				{
-					$pos = $left ^ $this->str2Dec($key[$i]);
-					$right = $right ^ self::$_f[$pos];
-				}
-			}
-		}
-
-		return $this->dec2Str($left).$this->dec2Str($right);
-	}
+        return true;
+    }
 
 
-	/**
-	 * Perform SkipJacks RuleA function. Split the data into 4 parts,
-	 * 2 bytes each: W0, W1, W2, W3.
-	 *
-	 * @param string $bytes An 8 byte string
-	 * @param string $key 4 bytes of $this->expanded_key
-	 * @param integer $i The round number
-	 * @return void
-	 */
-	private function ruleA(&$bytes, $key, $i)
-	{
-		$w = str_split($bytes, 2);
+    /**
+     * Decrypt a Skipjack encrypted string
+     *
+     * @return boolean Returns true
+     */
+    public function decrypt(&$text)
+    {
+        $this->operation(parent::DECRYPT);
 
-		if ($this->operation() == parent::ENCRYPT)
-		{
-			/*
+        for ($i = 32; $i >= 1; --$i)
+        {
+            $pos = ($i - 1) * 4;
+            $subkey = substr($this->expanded_key, $pos, 4);
+
+            if ($i <= 32 && $i >= 25)
+                $this->ruleB($text, $subkey, $i);
+
+            if ($i <= 24 && $i >= 17)
+                $this->ruleA($text, $subkey, $i);
+
+            if ($i <= 16 && $i >= 9)
+                $this->ruleB($text, $subkey, $i);
+
+            if ($i <= 8 && $i >= 1)
+                $this->ruleA($text, $subkey, $i);
+        }
+
+        return true;
+    }
+
+
+    /**
+     * For the G Permutations, the input data is 2 Bytes The first byte is
+     * the left side and the second is the right side.The round key is 4 bytes
+     * long (Indices 8*i-8 to 8*i), which is split as 4 pieces: K0, K1, K2, K3
+     *
+     * @param string $bytes A 2 byte string
+     * @param string $key 4 bytes of $this->expanded_key
+     * @return string A 2 byte string, the G Permutation of $bytes
+     */
+    private function gPermutation($bytes, $key)
+    {
+        $left = ord($bytes[0]);
+        $right = ord($bytes[1]);
+
+        if ($this->operation() == parent::ENCRYPT)
+        {
+            for ($i = 0; $i < 4; ++$i)
+            {
+                if ($i == 0 || $i == 2)
+                {
+                    $pos = $right ^ $this->str2Dec($key[$i]);
+                    $left = $left ^ self::$_f[$pos];
+                } else
+                {
+                    $pos = $left ^ $this->str2Dec($key[$i]);
+                    $right = $right ^ self::$_f[$pos];
+                }
+            }
+        } else // parent::DECRYPT
+        {
+            // we do the same as in encryption, but apply the key backwards,
+            // from key[3] to key[0]
+            for ($i = 3; $i >= 0; --$i)
+            {
+                if ($i == 0 || $i == 2)
+                {
+                    $pos = $right ^ $this->str2Dec($key[$i]);
+                    $left = $left ^ self::$_f[$pos];
+                } else
+                {
+                    $pos = $left ^ $this->str2Dec($key[$i]);
+                    $right = $right ^ self::$_f[$pos];
+                }
+            }
+        }
+
+        return $this->dec2Str($left).$this->dec2Str($right);
+    }
+
+
+    /**
+     * Perform SkipJacks RuleA function. Split the data into 4 parts,
+     * 2 bytes each: W0, W1, W2, W3.
+     *
+     * @param string $bytes An 8 byte string
+     * @param string $key 4 bytes of $this->expanded_key
+     * @param integer $i The round number
+     * @return void
+     */
+    private function ruleA(&$bytes, $key, $i)
+    {
+        $w = str_split($bytes, 2);
+
+        if ($this->operation() == parent::ENCRYPT)
+        {
+            /*
 			 * Set the W3 as the old W2
 			 * Set the W2 as the old W1
 			 * Set the W1 as the G(W0)
 			 * Set the W0 as the W1 xor W4 xor i
 			 */
 
-			$w[4] = $w[3];
-			$w[3] = $w[2];
-			$w[2] = $w[1];
-			$w[1] = $this->gPermutation($w[0], $key);
+            $w[4] = $w[3];
+            $w[3] = $w[2];
+            $w[2] = $w[1];
+            $w[1] = $this->gPermutation($w[0], $key);
 
-			$hex1 = $this->str2Hex($w[1]);
-			$hex4 = $this->str2Hex($w[4]);
-			$hexi = $this->dec2Hex($i);
-			$w[0] = $this->xorHex($hex1, $hex4, $hexi);
-			$w[0] = $this->hex2Str($w[0]);
-		} else // parent::DECRYPT
-		{
-			/*
+            $hex1 = $this->str2Hex($w[1]);
+            $hex4 = $this->str2Hex($w[4]);
+            $hexi = $this->dec2Hex($i);
+            $w[0] = $this->xorHex($hex1, $hex4, $hexi);
+            $w[0] = $this->hex2Str($w[0]);
+        } else // parent::DECRYPT
+        {
+            /*
 			 * Set W4 as W0 xor W1 xor i
 			 * Set W0 as Inverse G(W1)
 			 * Set W1 as the old W2
@@ -269,7 +269,7 @@ class Cipher_Skipjack extends Cipher
     {
         $w = str_split($bytes, 2);
 
-        if($this->operation() == parent::ENCRYPT)
+        if ($this->operation() == parent::ENCRYPT)
         {
             /*
 			 * Set the new W3 as the old W2
@@ -289,8 +289,7 @@ class Cipher_Skipjack extends Cipher
 
             $w[1] = $this->gPermutation($w[0], $key);
             $w[0] = $w[4];
-        }
-        else // parent::DECRYPT
+        } else // parent::DECRYPT
         {
             /*
 			 * Set W4 as the old W0
@@ -333,9 +332,9 @@ class Cipher_Skipjack extends Cipher
         $key = $this->key();
         $pos = 0;
 
-        for($i = 0; $i < 128; ++$i)
+        for ($i = 0; $i < 128; ++$i)
         {
-            if($pos == $key_bytes)
+            if ($pos == $key_bytes)
                 $pos = 0;
 
             $this->expanded_key .= $key[$pos];

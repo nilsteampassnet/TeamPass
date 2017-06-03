@@ -191,8 +191,11 @@ if ($_POST['type'] === "identify_duo_user") {
 //--------
 
     // increment counter of login attempts
-    if (empty($_SESSION["pwd_attempts"])) $_SESSION["pwd_attempts"] = 1;
-    else $_SESSION["pwd_attempts"]++;
+    if (empty($_SESSION["pwd_attempts"])) {
+        $_SESSION["pwd_attempts"] = 1;
+    } else {
+        $_SESSION["pwd_attempts"]++;
+    }
 
     // manage brute force
     if ($_SESSION["pwd_attempts"] <= 3) {
@@ -336,8 +339,7 @@ function identifyUser($sentData)
             foreach (explode(",", $_SESSION['settings']['ldap_domain_controler']) as $domainControler) {
                 if ($_SESSION['settings']['ldap_ssl'] == 1) {
                     $ldapURIs .= "ldaps://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
-                }
-                else {
+                } else {
                     $ldapURIs .= "ldap://".$domainControler.":".$_SESSION['settings']['ldap_port']." ";
                 }
             }
@@ -350,25 +352,25 @@ function identifyUser($sentData)
                 ldap_start_tls($ldapconn);
             }
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "\n");
+                fputs($dbgLdap, "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."\n");
             }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
                 $ldapbind = ldap_bind($ldapconn, $_SESSION['settings']['ldap_bind_dn'], $_SESSION['settings']['ldap_bind_passwd']);
                 if ($debugLdap == 1) {
-                    fputs($dbgLdap, "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "\n");
+                    fputs($dbgLdap, "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."\n");
                 }
                 if ($ldapbind) {
-                    $filter="(&(" . $_SESSION['settings']['ldap_user_attribute']. "=$username)(objectClass=" . $_SESSION['settings']['ldap_object_class'] ."))";
-                    $result=ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
+                    $filter = "(&(".$_SESSION['settings']['ldap_user_attribute']."=$username)(objectClass=".$_SESSION['settings']['ldap_object_class']."))";
+                    $result = ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'],$filter_group, array('dn'));
+                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], $filter_group, array('dn'));
                         if ($debugLdap == 1) {
                                 fputs(
                                         $dbgLdap,
-                                        'Search filter (group): ' . $filter_group . "\n" .
-                                        'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "\n"
+                                        'Search filter (group): '.$filter_group."\n".
+                                        'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
                                 );
                         }
                         if (!ldap_count_entries($ldapconn, $result_group)) {
@@ -420,8 +422,7 @@ function identifyUser($sentData)
             // Posix style LDAP handles user searches a bit differently
             if ($_SESSION['settings']['ldap_type'] == 'posix') {
                 $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
-            }
-            elseif ($_SESSION['settings']['ldap_type'] == 'windows' and $ldap_suffix == '') { //Multiple Domain Names
+            } elseif ($_SESSION['settings']['ldap_type'] == 'windows' and $ldap_suffix == '') { //Multiple Domain Names
                 $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
             }
             $adldap = new adLDAP\adLDAP(
@@ -840,7 +841,9 @@ function identifyUser($sentData)
             $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
             $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
             // get personal settings
-            if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) $data['treeloadstrategy'] = "full";
+            if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) {
+                $data['treeloadstrategy'] = "full";
+            }
             $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
             $_SESSION['user_settings']['agses-usercardid'] = $data['agses-usercardid'];
             $_SESSION['user_settings']['user_language'] = $data['user_language'];

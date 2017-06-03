@@ -103,7 +103,7 @@ class adLDAPUtils {
     public function ldapSlashes($str) {
         return preg_replace_callback(
                 '/([\x00-\x1F\*\(\)\\\\])/',
-            function ($matches) {
+            function($matches) {
                 return "\\".join("", unpack("H2", $matches[1]));
             },
             $str
@@ -150,14 +150,14 @@ class adLDAPUtils {
         $auth = hexdec(substr($hex_sid, 4, 12));
         $result = "$rev-$auth";
 
-        for ($x=0;$x < $subcount; $x++) {
+        for ($x = 0; $x < $subcount; $x++) {
             $subauth[$x] =
                 hexdec($this->littleEndian(substr($hex_sid, 16 + ($x * 8), 8)));
-                $result .= "-" . $subauth[$x];
+                $result .= "-".$subauth[$x];
         }
 
         // Cheat by tacking on the S-
-        return 'S-' . $result;
+        return 'S-'.$result;
         }
      
     /**
@@ -241,23 +241,23 @@ class adLDAPUtils {
     }  
     
     /**
-    * Get the current class version number
-    * 
-    * @return string
-    */
+     * Get the current class version number
+     * 
+     * @return string
+     */
     public function getVersion() {
         return self::ADLDAP_VERSION;
     }
     
     /**
-    * Round a Windows timestamp down to seconds and remove the seconds between 1601-01-01 and 1970-01-01
-    * 
-    * @param long $windowsTime
-    * @return double $unixTime
-    */
+     * Round a Windows timestamp down to seconds and remove the seconds between 1601-01-01 and 1970-01-01
+     * 
+     * @param long $windowsTime
+     * @return double $unixTime
+     */
     public static function convertWindowsTimeToUnixTime($windowsTime) {
-      $unixTime = round($windowsTime / 10000000) - 11644473600; 
-      return $unixTime; 
+        $unixTime = round($windowsTime / 10000000) - 11644473600; 
+        return $unixTime; 
     }
 
     /**

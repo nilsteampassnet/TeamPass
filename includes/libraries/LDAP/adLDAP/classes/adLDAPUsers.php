@@ -54,25 +54,25 @@ class adLDAPUsers {
     }
     
     /**
-    * Validate a user's login credentials
-    * 
-    * @param string $username A user's AD username
-    * @param string $password A user's AD password
-    * @param bool optional $prevent_rebind
-    * @return bool
-    */
+     * Validate a user's login credentials
+     * 
+     * @param string $username A user's AD username
+     * @param string $password A user's AD password
+     * @param bool optional $prevent_rebind
+     * @return bool
+     */
     public function authenticate($username, $password, $preventRebind = false) {
         return $this->adldap->authenticate($username, $password, $preventRebind);
     }
     
     /**
-    * Create a user
-    * 
-    * If you specify a password here, this can only be performed over SSL
-    * 
-    * @param array $attributes The attributes to set to the user account
-    * @return string|boolean
-    */
+     * Create a user
+     * 
+     * If you specify a password here, this can only be performed over SSL
+     * 
+     * @param array $attributes The attributes to set to the user account
+     * @return string|boolean
+     */
     public function create($attributes) {
         // Check for compulsory fields
         if (!array_key_exists("username", $attributes)) { return "Missing compulsory field [username]"; }
@@ -122,11 +122,11 @@ class adLDAPUsers {
     }
     
     /**
-    * Account control options
-    *
-    * @param string[] $options The options to convert to int 
-    * @return int
-    */
+     * Account control options
+     *
+     * @param string[] $options The options to convert to int 
+     * @return int
+     */
     protected function accountControl($options) {
         $val = 0;
 
@@ -158,12 +158,12 @@ class adLDAPUsers {
     }
     
     /**
-    * Delete a user account
-    * 
-    * @param string $username The username to delete (please be careful here!)
-    * @param bool $isGUID Is the username a GUID or a samAccountName
-    * @return boolean
-    */
+     * Delete a user account
+     * 
+     * @param string $username The username to delete (please be careful here!)
+     * @param bool $isGUID Is the username a GUID or a samAccountName
+     * @return boolean
+     */
     public function delete($username, $isGUID = false) {      
         $userinfo = $this->info($username, array("*"), $isGUID);
         $dn = $userinfo[0]['distinguishedname'][0];
@@ -214,17 +214,17 @@ class adLDAPUsers {
 
         if ($isGUID === true) {
             $username = $this->adldap->utilities()->strGuidToHex($username);
-            $filter = "objectguid=" . $username;
+            $filter = "objectguid=".$username;
         }
         else if (strpos($username, "@")) {
-                $filter = "userPrincipalName=" . $username;
+                $filter = "userPrincipalName=".$username;
         }
         else {
-                $filter = "samaccountname=" . $username;
+                $filter = "samaccountname=".$username;
         }
         $filter = "(&(objectCategory=person)({$filter}))";
         if ($fields === NULL) { 
-            $fields = array("samaccountname","mail","memberof","department","displayname","telephonenumber","primarygroupid","objectsid"); 
+            $fields = array("samaccountname", "mail", "memberof", "department", "displayname", "telephonenumber", "primarygroupid", "objectsid"); 
         }
         if (!in_array("objectsid", $fields)) {
             $fields[] = "objectsid";
@@ -370,13 +370,13 @@ class adLDAPUsers {
     }
     
     /**
-    * Modify a user
-    * 
-    * @param string $username The username to query
-    * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Modify a user
+     * 
+     * @param string $username The username to query
+     * @param array $attributes The attributes to modify.  Note if you set the enabled attribute you must not specify any other attributes
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function modify($username, $attributes, $isGUID = false) {
         if ($username === NULL) { return "Missing compulsory field [username]"; }
         if (array_key_exists("password", $attributes) && !$this->adldap->getUseSSL() && !$this->adldap->getUseTLS()) { 
@@ -416,12 +416,12 @@ class adLDAPUsers {
     }
     
     /**
-    * Disable a user account
-    * 
-    * @param string $username The username to disable
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Disable a user account
+     * 
+     * @param string $username The username to disable
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function disable($username, $isGUID = false) {
         if ($username === NULL) { return "Missing compulsory field [username]"; }
         $attributes = array("enabled" => 0);
@@ -432,12 +432,12 @@ class adLDAPUsers {
     }
     
     /**
-    * Enable a user account
-    * 
-    * @param string $username The username to enable
-    * @param bool $isGUID Is the username passed a GUID or a samAccountName
-    * @return string|boolean
-    */
+     * Enable a user account
+     * 
+     * @param string $username The username to enable
+     * @param bool $isGUID Is the username passed a GUID or a samAccountName
+     * @return string|boolean
+     */
     public function enable($username, $isGUID = false) {
         if ($username === NULL) { return "Missing compulsory field [username]"; }
         $attributes = array("enabled" => 1);
@@ -508,7 +508,7 @@ class adLDAPUsers {
      * @param bool $isGUID Is the username passed a GUID or a samAccountName
      * @return string
      */
-    public function dn($username, $isGUID=false) {
+    public function dn($username, $isGUID = false) {
         $user = $this->info($username, array("cn"), $isGUID);
         if ($user[0]["dn"] === NULL) { 
             return false; 
@@ -605,19 +605,19 @@ class adLDAPUsers {
             }
         }
         if ($sorted) { 
-          asort($usersArray); 
+            asort($usersArray); 
         }
         return ($usersArray);
     }
     
     /**
-    * Move a user account to a different OU
-    *
-    * @param string $username The username to move (please be careful here!)
-    * @param array $container The container or containers to move the user to (please be careful here!).
-    * accepts containers in 1. parent 2. child order
-    * @return string|boolean
-    */
+     * Move a user account to a different OU
+     *
+     * @param string $username The username to move (please be careful here!)
+     * @param array $container The container or containers to move the user to (please be careful here!).
+     * accepts containers in 1. parent 2. child order
+     * @return string|boolean
+     */
     public function move($username, $container) {
         if (!$this->adldap->getLdapBind()) { return false; }
         if ($username === null) { return "Missing compulsory field [username]"; }

@@ -2048,31 +2048,31 @@ switch ($_POST['type']) {
                 ldap_start_tls($ldapconn);
             }
 
-            $debug_ldap .= "LDAP connection : " . ($ldapconn ? "Connected" : "Failed") . "<br/>";
+            $debug_ldap .= "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."<br/>";
 
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
                 $ldapbind = @ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
 
-                $debug_ldap .= "LDAP bind : " . ($ldapbind ? "Bound" : "Failed") . "<br/>";
+                $debug_ldap .= "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."<br/>";
 
                 if ($ldapbind) {
-                    $filter="(&(" . $dataReceived[0]['ldap_user_attribute']. "=$username)(objectClass=" . $dataReceived[0]['ldap_object_class'] ."))";
-                    $result=ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn','mail','givenname','sn'));
+                    $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))";
+                    $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'],$filter_group, array('dn'));
+                        $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'], $filter_group, array('dn'));
 
-                        $debug_ldap .= 'Search filter (group): ' . $filter_group . "<br/>" .
-                                    'Results : ' . print_r(ldap_get_entries($ldapconn, $result_group), true) . "<br/>";
+                        $debug_ldap .= 'Search filter (group): '.$filter_group."<br/>".
+                                    'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."<br/>";
 
                         if (!ldap_count_entries($ldapconn, $result_group)) {
                                 $ldapConnection = "Error - No entries found";
                         }
                     }
 
-                    $debug_ldap .= 'Search filter : ' . $filter . "<br/>" .
-                            'Results : ' . print_r(ldap_get_entries($ldapconn, $result), true) . "<br/>";
+                    $debug_ldap .= 'Search filter : '.$filter."<br/>".
+                            'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."<br/>";
 
                     if (ldap_count_entries($ldapconn, $result)) {
                         // try auth

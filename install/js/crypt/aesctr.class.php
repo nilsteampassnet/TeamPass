@@ -7,19 +7,19 @@
 
 class AesCtr extends Aes
 {
-  /**
-   * Encrypt a text using AES encryption in Counter mode of operation
-   *  - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
-   *
-   * Unicode multi-byte character safe
-   *
-   * @param plaintext source text to be encrypted
-   * @param password  the password to use to generate a key
-   * @param nBits     number of bits to be used in the key (128, 192, or 256)
-   * @return          string text
-   */
-  public static function encrypt($plaintext, $password, $nBits)
-  {
+    /**
+     * Encrypt a text using AES encryption in Counter mode of operation
+     *  - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
+     *
+     * Unicode multi-byte character safe
+     *
+     * @param plaintext source text to be encrypted
+     * @param password  the password to use to generate a key
+     * @param nBits     number of bits to be used in the key (128, 192, or 256)
+     * @return          string text
+     */
+    public static function encrypt($plaintext, $password, $nBits)
+    {
     $blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
     if (!($nBits==128 || $nBits==192 || $nBits==256)) {
         return '';
@@ -29,30 +29,30 @@ class AesCtr extends Aes
 
     // use AES itself to encrypt password to get cipher key (using plain password as source for
     // key expansion) - gives us well encrypted key
-    $nBytes = $nBits/8;  // no bytes in key
+    $nBytes = $nBits / 8; // no bytes in key
     $pwBytes = array();
-    for ($i=0; $i<$nBytes; $i++) {
-        $pwBytes[$i] = ord(substr($password,$i,1)) & 0xff;
+    for ($i = 0; $i < $nBytes; $i++) {
+        $pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
     }
     $key = Aes::cipher($pwBytes, Aes::keyExpansion($pwBytes));
-    $key = array_merge($key, array_slice($key, 0, $nBytes-16));  // expand key to 16/24/32 bytes long
+    $key = array_merge($key, array_slice($key, 0, $nBytes - 16)); // expand key to 16/24/32 bytes long
 
     // initialise counter block (NIST SP800-38A §B.2): millisecond time-stamp for nonce in
     // 1st 8 bytes, block counter in 2nd 8 bytes
     $counterBlock = array();
-    $nonce = floor(microtime(true)*1000);   // timestamp: milliseconds since 1-Jan-1970
-    $nonceSec = floor($nonce/1000);
-    $nonceMs = $nonce%1000;
+    $nonce = floor(microtime(true) * 1000); // timestamp: milliseconds since 1-Jan-1970
+    $nonceSec = floor($nonce / 1000);
+    $nonceMs = $nonce % 1000;
     // encode nonce with seconds in 1st 4 bytes, and (repeated) ms part filling 2nd 4 bytes
-    for ($i=0; $i<4; $i++) {
-        $counterBlock[$i] = self::urs($nonceSec, $i*8) & 0xff;
+    for ($i = 0; $i < 4; $i++) {
+        $counterBlock[$i] = self::urs($nonceSec, $i * 8) & 0xff;
     }
-    for ($i=0; $i<4; $i++) {
-        $counterBlock[$i+4] = $nonceMs & 0xff;
+    for ($i = 0; $i < 4; $i++) {
+        $counterBlock[$i + 4] = $nonceMs & 0xff;
     }
     // and convert it to a string to go on the front of the ciphertext
     $ctrTxt = '';
-    for ($i=0; $i<8; $i++) {
+    for ($i = 0; $i < 8; $i++) {
         $ctrTxt .= chr($counterBlock[$i]);
     }
 
@@ -60,26 +60,26 @@ class AesCtr extends Aes
     $keySchedule = Aes::keyExpansion($key);
     //print_r($keySchedule);
 
-    $blockCount = ceil(strlen($plaintext)/$blockSize);
-    $ciphertxt = array();  // ciphertext as array of strings
+    $blockCount = ceil(strlen($plaintext) / $blockSize);
+    $ciphertxt = array(); // ciphertext as array of strings
 
-    for ($b=0; $b<$blockCount; $b++) {
+    for ($b = 0; $b < $blockCount; $b++) {
         // set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
         // done in two stages for 32-bit ops: using two words allows us to go past 2^32 blocks (68GB)
-        for ($c=0; $c<4; $c++) $counterBlock[15-$c] = self::urs($b, $c*8) & 0xff;
-        for ($c=0; $c<4; $c++) $counterBlock[15-$c-4] = self::urs($b/0x100000000, $c*8);
+        for ($c = 0; $c < 4; $c++) $counterBlock[15 - $c] = self::urs($b, $c * 8) & 0xff;
+        for ($c = 0; $c < 4; $c++) $counterBlock[15 - $c - 4] = self::urs($b / 0x100000000, $c * 8);
 
-        $cipherCntr = Aes::cipher($counterBlock, $keySchedule);  // -- encrypt counter block --
+        $cipherCntr = Aes::cipher($counterBlock, $keySchedule); // -- encrypt counter block --
 
         // block size is reduced on final block
-        $blockLength = $b<$blockCount-1 ? $blockSize : (strlen($plaintext)-1)%$blockSize+1;
+        $blockLength = $b < $blockCount - 1 ? $blockSize : (strlen($plaintext) - 1) % $blockSize + 1;
         $cipherByte = array();
 
-        for ($i=0; $i<$blockLength; $i++) {  // -- xor plaintext with ciphered counter byte-by-byte --
-        $cipherByte[$i] = $cipherCntr[$i] ^ ord(substr($plaintext, $b*$blockSize+$i, 1));
+        for ($i = 0; $i < $blockLength; $i++) {  // -- xor plaintext with ciphered counter byte-by-byte --
+        $cipherByte[$i] = $cipherCntr[$i] ^ ord(substr($plaintext, $b * $blockSize + $i, 1));
         $cipherByte[$i] = chr($cipherByte[$i]);
         }
-        $ciphertxt[$b] = implode('', $cipherByte);  // escape troublesome characters in ciphertext
+        $ciphertxt[$b] = implode('', $cipherByte); // escape troublesome characters in ciphertext
     }
 
     // implode is more efficient than repeated string concatenation
@@ -87,18 +87,18 @@ class AesCtr extends Aes
     $ciphertext = base64_encode($ciphertext);
 
     return $ciphertext;
-  }
+    }
 
-  /**
-   * Decrypt a text encrypted by AES in counter mode of operation
-   *
-   * @param ciphertext source text to be decrypted
-   * @param password   the password to use to generate a key
-   * @param nBits      number of bits to be used in the key (128, 192, or 256)
-   * @return           string text
-   */
-  public static function decrypt($ciphertext, $password, $nBits)
-  {
+    /**
+     * Decrypt a text encrypted by AES in counter mode of operation
+     *
+     * @param ciphertext source text to be decrypted
+     * @param password   the password to use to generate a key
+     * @param nBits      number of bits to be used in the key (128, 192, or 256)
+     * @return           string text
+     */
+    public static function decrypt($ciphertext, $password, $nBits)
+    {
     $blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
     if (!($nBits==128 || $nBits==192 || $nBits==256)) {
         return '';
@@ -138,8 +138,12 @@ class AesCtr extends Aes
 
     for ($b=0; $b<$nBlocks; $b++) {
         // set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
-        for ($c=0; $c<4; $c++) $counterBlock[15-$c] = self::urs($b, $c*8) & 0xff;
-        for ($c=0; $c<4; $c++) $counterBlock[15-$c-4] = self::urs(($b+1)/0x100000000-1, $c*8) & 0xff;
+        for ($c=0; $c<4; $c++) {
+            $counterBlock[15-$c] = self::urs($b, $c*8) & 0xff;
+        }
+        for ($c=0; $c<4; $c++) {
+            $counterBlock[15-$c-4] = self::urs(($b+1)/0x100000000-1, $c*8) & 0xff;
+        }
 
         $cipherCntr = Aes::cipher($counterBlock, $keySchedule);  // encrypt counter block
 
@@ -168,12 +172,12 @@ class AesCtr extends Aes
    */
     private static function urs($a, $b)
     {
-    $a &= 0xffffffff; $b &= 0x1f;  // (bounds check)
-    if ($a&0x80000000 && $b>0) {   // if left-most bit set
-        $a = ($a>>1) & 0x7fffffff;   //   right-shift one bit & clear left-most bit
-        $a = $a >> ($b-1);           //   remaining right-shifts
+    $a &= 0xffffffff; $b &= 0x1f; // (bounds check)
+    if ($a & 0x80000000 && $b > 0) {   // if left-most bit set
+        $a = ($a >> 1) & 0x7fffffff; //   right-shift one bit & clear left-most bit
+        $a = $a >> ($b - 1); //   remaining right-shifts
     } else {                       // otherwise
-        $a = ($a>>$b);               //   use normal right-shift
+        $a = ($a >> $b); //   use normal right-shift
     }
 
     return $a;

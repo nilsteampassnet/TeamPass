@@ -207,7 +207,9 @@ $iFilteredTotal = DB::count();
  */
 if (!isset($_GET['type'])) {
     $sOutput = '{';
-    if (isset($_GET['sEcho'])) $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
+    if (isset($_GET['sEcho'])) {
+        $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
+    }
     $sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
@@ -295,10 +297,11 @@ if (!isset($_GET['type'])) {
         $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES).'", ';
 
         // col6 - URL
-        if ($record['url'] != "0")
-            $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['url']), ENT_QUOTES).'", ';
-        else
-            $sOutputItem .= '"", ';
+        if ($record['url'] != "0") {
+                    $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['url']), ENT_QUOTES).'", ';
+        } else {
+                    $sOutputItem .= '"", ';
+        }
 
         //col7 - Prepare the Treegrid
         $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['folder']), ENT_QUOTES).'"';
