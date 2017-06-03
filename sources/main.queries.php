@@ -1160,8 +1160,10 @@ switch ($_POST['type']) {
             break;
         }
 
-        try{
+        try {
             unlink($_POST['filename']);
+        } catch(Exception $e){
+            print_r($e);
         }
 
         break;

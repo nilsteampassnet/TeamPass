@@ -78,7 +78,6 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
     // Encrypt file is required
     $bck_filename = $settings['bck_script_filename'].'-'.time();
     if (!empty($settings['bck_script_key'])) {
-        //$return = Encryption\Crypt\aesctr::encrypt($return, $settings['bck_script_key'], 256);
 
         $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
         fwrite($handle, $return);

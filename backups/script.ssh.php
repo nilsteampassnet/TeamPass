@@ -110,7 +110,6 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
             );
             // update log
             logItems($record['id'], $record['label'], "script", 'at_modification', '999998', 'at_pw :'.$record['pw'], $record['pw_iv']);
-            //$log .= "   done.\n\n";
         } else {
             $log .= "   An error occured with password change.\n\n";
         }

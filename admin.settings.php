@@ -204,22 +204,7 @@ echo '
                     <div class="toggle toggle-modern" id="enable_sts" data-toggle-on="', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? 'true' : 'false', '"></div><input type="hidden" name="enable_sts_input" id="enable_sts_input" value="', isset($_SESSION['settings']['enable_sts']) && $_SESSION['settings']['enable_sts'] == 1 ? '1' : '0', '" />
                 </td>
             </tr>';
-//Enable data exchange encryption
-/*
-echo '
-            <tr style="margin-bottom:3px">
-                <td>
-                      <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
-                      <label>' .
-                          $LANG['settings_encryptClientServer'] . '
-                          &nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_encryptClientServer_tip']), ENT_QUOTES).'"></i>
-                      </label>
-                </td>
-                <td>
-                    <div class="toggle toggle-modern" id="encryptClientServer" data-toggle-on="', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="encryptClientServer_input" name="encryptClientServer_input" value="', isset($_SESSION['settings']['encryptClientServer']) && $_SESSION['settings']['encryptClientServer'] == 1 ? '1' : '0', '" />
-                </td>
-            </tr>';
-*/
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 //Proxy
 echo '
@@ -404,16 +389,7 @@ echo '
             </td><td>
                 <div class="toggle toggle-modern" id="enable_pf_feature" data-toggle-on="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_pf_feature_input" name="enable_pf_feature_input" value="', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '1' : '0', '" />
             </td></tr>';
-// enable Use MD5 passowrd as Personal SALTKEY
-/* DISABLED FOR 2.1.27
-echo '
-        <tr><td>
-            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
-            <label>'.$LANG['use_md5_password_as_salt'].'</label>
-        </td><td>
-            <div class="toggle toggle-modern" id="use_md5_password_as_salt" data-toggle-on="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="use_md5_password_as_salt_input" name="use_md5_password_as_salt_input" value="', isset($_SESSION['settings']['use_md5_password_as_salt']) && $_SESSION['settings']['use_md5_password_as_salt'] == 1 ? '1' : '0', '" />
-        </td></tr>';
-*/
+
 // enable PF cookie for Personal SALTKEY
 echo '
             <tr><td>
@@ -572,19 +548,6 @@ echo '
                     </span>
                     <input type="hidden" id="changeMainSaltKey_itemsCount" />
                 </div>';
-/*
-// Correct passwords prefix
-echo '
-                <div style="margin-bottom:3px">
-                    <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'admin_action_pw_prefix_correct\')" style="cursor:pointer;">
-                        <i class="fa fa-square fa-stack-2x"></i>
-                        <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-                    </span>
-                    <label>'.$LANG['admin_action_pw_prefix_correct'].'</label>
-                    <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_action_pw_prefix_correct_tip']), ENT_QUOTES).'"></i></span>
-                    <span id="result_admin_action_pw_prefix_correct" style="margin-left:10px;"></span>
-                </div>';
-*/
 
 // Encrypt / decrypt attachments
 echo '
@@ -728,19 +691,7 @@ echo '
                     </td><td>
                         <div class="toggle toggle-modern" id="create_item_without_password" data-toggle-on="', isset($_SESSION['settings']['create_item_without_password']) && $_SESSION['settings']['create_item_without_password'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="create_item_without_password_input" name="create_item_without_password_input" value="', isset($_SESSION['settings']['create_item_without_password']) && $_SESSION['settings']['create_item_without_password'] == 1 ? '1' : '0', '" />
                 </td></tr>';
-/*
-// Enable extra fields for each Item
-echo '
-                <tr><td>
-                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
-                    <label>
-                        '.$LANG['settings_item_extra_fields'].'
-                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_item_extra_fields_tip']), ENT_QUOTES).'"></i></span>
-                    </label>
-                    </td><td>
-                        <div class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 ? '1' : '0', '" />
-                </td></tr>';
-*/
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // enable FAVOURITES
 echo '
