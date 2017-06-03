@@ -309,7 +309,7 @@ if (isset($_POST['type'])) {
                 }
 
                 // Announce by email?
-                if ($dataReceived['annonce'] == 1) {
+                if ($dataReceived['diffusion'] !== "") {
                     // get links url
                     if (empty($_SESSION['settings']['email_server_url'])) {
                         $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];

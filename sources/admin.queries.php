@@ -1130,8 +1130,12 @@ switch ($_POST['type']) {
     * Test the email configuraiton
     */
     case "admin_email_test_configuration":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-        echo '[{"result":"email_test_conf", '.sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['user_email']).'}]';
+        if (empty($_SESSION['user_email'])) {
+            echo '[{"result":"email_test_conf", "error":"error_mail_not_send" , "message":"User has no email defined!"}]';
+        } else {
+            require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+            echo '[{"result":"email_test_conf", '.sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['user_email']).'}]';
+        }
         break;
 
     /*

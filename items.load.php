@@ -602,9 +602,6 @@ function AjouterItem()
             ||
             $("#create_item_without_password").val() === "1"
       ) {
-            var annonce = 0;
-            if ($('#annonce').is(':checked')) annonce = 1;
-
             //Manage restrictions
             var restriction = restriction_role = "";
             $("#restricted_to_list option:selected").each(function () {console.log($(this).val());
@@ -675,7 +672,7 @@ function AjouterItem()
             '"login":"' + sanitizeString($('#item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
             '"description":"' + (description) + '", "email":"' + $('#email').val() + '", "url":"' + url + '", "categorie":"' + selected_folder + '", ' +
             '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val()+
-            '", "annonce":"' + annonce + '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
+            '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
             '"anyone_can_modify":"' + $('#anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#item_tags').val())+
             '", "random_id_from_files":"' + $('#random_id').val() + '", "to_be_deleted":"' + to_be_deleted + '", "fields":"' + sanitizeString(fields) + '", ' +
             '"complexity_level":"' + parseInt($("#mypassword_complex").val()) + '"}';
