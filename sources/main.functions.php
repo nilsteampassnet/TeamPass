@@ -1349,6 +1349,7 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
 */
 /**
  * @param string $message
+ * @param string $host
  */
 function send_syslog($message, $component = "teampass", $host, $port)
 {
@@ -1401,9 +1402,9 @@ function logEvents($type, $label, $who, $login = "", $field_1 = NULL)
     );
     if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
         if ($type == "user_mngt") {
-            send_syslog("The User ".$login." perform the acction off ".$label." to the user ".$field_1." - ".$type, "teampass", "php", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+            send_syslog("The User ".$login." perform the acction off ".$label." to the user ".$field_1." - ".$type, "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
         } else {
-            send_syslog("The User ".$login." perform the acction off ".$label." - ".$type, "teampass", "php", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+            send_syslog("The User ".$login." perform the acction off ".$label." - ".$type, "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
         }
     }
 }
@@ -1440,7 +1441,7 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
             )
         );
         if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison, "teampass", "php", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+                send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison, "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
         }
 }
 

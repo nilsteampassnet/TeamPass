@@ -220,7 +220,7 @@ $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 if (!file_exists($targetDir)) {
     try {
         mkdir($targetDir);
-    } catch(Exception $e){
+    } catch (Exception $e){
         print_r($e);
     }
 }
@@ -237,7 +237,7 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
         ) {
             try {
                 unlink($tmpfilePath);
-            } catch(Exception $e){
+            } catch (Exception $e){
                 print_r($e);
             }
         }
@@ -304,7 +304,7 @@ if (strpos($contentType, "multipart") !== false) {
             fclose($out);
             try {
                 unlink($_FILES['file']['tmp_name']);
-            } catch(Exception $e){
+            } catch (Exception $e){
                 print_r($e);
             }
         } else {
