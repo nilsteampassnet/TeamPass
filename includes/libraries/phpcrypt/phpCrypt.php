@@ -71,7 +71,7 @@ class PHP_Crypt
     // The source of random data used to create keys and IV's
     // Used for PHP_Crypt::createKey(), PHP_Crypt::createIV()
     const RAND = "rand"; // uses mt_rand(), windows & unix
-    const RAND_DEV_RAND	= "/dev/random"; // unix only
+    const RAND_DEV_RAND = "/dev/random"; // unix only
     const RAND_DEV_URAND = "/dev/urandom"; // unix only
     const RAND_WIN_COM = "wincom"; // windows only, COM extension
     const RAND_DEFAULT_SZ = 32; // the default number of bytes returned

@@ -99,17 +99,21 @@ class Cipher_Skipjack extends Cipher
             $pos = (4 * $i) - 4;
             $subkey = substr($this->expanded_key, $pos, 4);
 
-            if ($i >= 1 && $i <= 8)
-                $this->ruleA($text, $subkey, $i);
+            if ($i >= 1 && $i <= 8) {
+                            $this->ruleA($text, $subkey, $i);
+            }
 
-            if ($i >= 9 && $i <= 16)
-                $this->ruleB($text, $subkey, $i);
+            if ($i >= 9 && $i <= 16) {
+                            $this->ruleB($text, $subkey, $i);
+            }
 
-            if ($i >= 17 && $i <= 24)
-                $this->ruleA($text, $subkey, $i);
+            if ($i >= 17 && $i <= 24) {
+                            $this->ruleA($text, $subkey, $i);
+            }
 
-            if ($i >= 25 && $i <= 32)
-                $this->ruleB($text, $subkey, $i);
+            if ($i >= 25 && $i <= 32) {
+                            $this->ruleB($text, $subkey, $i);
+            }
         }
 
         return true;
@@ -130,17 +134,21 @@ class Cipher_Skipjack extends Cipher
             $pos = ($i - 1) * 4;
             $subkey = substr($this->expanded_key, $pos, 4);
 
-            if ($i <= 32 && $i >= 25)
-                $this->ruleB($text, $subkey, $i);
+            if ($i <= 32 && $i >= 25) {
+                            $this->ruleB($text, $subkey, $i);
+            }
 
-            if ($i <= 24 && $i >= 17)
-                $this->ruleA($text, $subkey, $i);
+            if ($i <= 24 && $i >= 17) {
+                            $this->ruleA($text, $subkey, $i);
+            }
 
-            if ($i <= 16 && $i >= 9)
-                $this->ruleB($text, $subkey, $i);
+            if ($i <= 16 && $i >= 9) {
+                            $this->ruleB($text, $subkey, $i);
+            }
 
-            if ($i <= 8 && $i >= 1)
-                $this->ruleA($text, $subkey, $i);
+            if ($i <= 8 && $i >= 1) {
+                            $this->ruleA($text, $subkey, $i);
+            }
         }
 
         return true;
@@ -334,8 +342,9 @@ class Cipher_Skipjack extends Cipher
 
         for ($i = 0; $i < 128; ++$i)
         {
-            if ($pos == $key_bytes)
-                $pos = 0;
+            if ($pos == $key_bytes) {
+                            $pos = 0;
+            }
 
             $this->expanded_key .= $key[$pos];
             ++$pos;

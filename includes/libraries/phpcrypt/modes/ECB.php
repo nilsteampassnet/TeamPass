@@ -48,8 +48,9 @@ class Mode_ECB extends Mode
         parent::__construct(PHP_Crypt::MODE_ECB, $cipher);
 
         // this works with only block Ciphers
-        if ($cipher->type() != Cipher::BLOCK)
-            trigger_error("ECB mode requires a block cipher", E_USER_WARNING);
+        if ($cipher->type() != Cipher::BLOCK) {
+                    trigger_error("ECB mode requires a block cipher", E_USER_WARNING);
+        }
     }
 
 

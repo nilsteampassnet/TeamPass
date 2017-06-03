@@ -163,7 +163,7 @@ class Cipher_RC2 extends Cipher
         for ($i = 0; $i < $max; ++$i)
         {
             $pos = $i * 2;
-            $text[$pos]   = chr($w[$i]);
+            $text[$pos] = chr($w[$i]);
             $text[$pos + 1] = chr($w[$i] >> 8);
         }
 
@@ -237,7 +237,7 @@ class Cipher_RC2 extends Cipher
         for ($i = 0; $i < $max; ++$i)
         {
             $pos = $i * 2;
-            $text[$pos]   = chr($w[$i]);
+            $text[$pos] = chr($w[$i]);
             $text[$pos + 1] = chr($w[$i] >> 8);
         }
 
@@ -276,8 +276,9 @@ class Cipher_RC2 extends Cipher
         $len = $this->keySize();
 
         // the max length of the key is 128 bytes
-        if ($len > 128)
-            $this->xkey = substr($this->xkey, 0, 128);
+        if ($len > 128) {
+                    $this->xkey = substr($this->xkey, 0, 128);
+        }
 
         // now expanded the rest of the key to 128 bytes, using the sbox
         for ($i = $len; $i < 128; ++$i)
@@ -288,8 +289,9 @@ class Cipher_RC2 extends Cipher
 
             // the sbox is only 255 bytes, so if we extend past that
             // we need to modulo 256 so we have a valid position
-            if ($pos > 255)
-                $pos -= 256;
+            if ($pos > 255) {
+                            $pos -= 256;
+            }
 
             $this->xkey .= chr(self::$_sbox[$pos]);
         }

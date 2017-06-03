@@ -48,8 +48,9 @@ class Mode_CTR extends Mode
         parent::__construct(PHP_CRYPT::MODE_CTR, $cipher);
 
         // this works with only block Ciphers
-        if ($cipher->type() != Cipher::BLOCK)
-            trigger_error("CTR mode requires a block cipher", E_USER_WARNING);
+        if ($cipher->type() != Cipher::BLOCK) {
+                    trigger_error("CTR mode requires a block cipher", E_USER_WARNING);
+        }
     }
 
 
@@ -83,8 +84,9 @@ class Mode_CTR extends Mode
 
             // make sure we don't extend past the length of $text
             $byte_len = $blocksz;
-            if (($pos + $byte_len) > $len)
-                $byte_len -= ($pos + $byte_len) - $len;
+            if (($pos + $byte_len) > $len) {
+                            $byte_len -= ($pos + $byte_len) - $len;
+            }
 
             // encrypt the register
             $this->enc_register = $this->register;
@@ -94,8 +96,9 @@ class Mode_CTR extends Mode
             $block = substr($text, $pos, $byte_len);
 
             // xor the block
-            for ($j = 0; $j < $byte_len; ++$j)
-                $block[$j] = $block[$j] ^ $this->enc_register[$j];
+            for ($j = 0; $j < $byte_len; ++$j) {
+                            $block[$j] = $block[$j] ^ $this->enc_register[$j];
+            }
 
             // replace the plain text block with the encrypted block
             $text = substr_replace($text, $block, $pos, $byte_len);
@@ -127,8 +130,9 @@ class Mode_CTR extends Mode
 
             // make sure we don't extend past the length of $text
             $byte_len = $blocksz;
-            if (($pos + $byte_len) > $len)
-                $byte_len -= ($pos + $byte_len) - $len;
+            if (($pos + $byte_len) > $len) {
+                            $byte_len -= ($pos + $byte_len) - $len;
+            }
 
             // encrypt the register
             $this->enc_register = $this->register;
@@ -138,8 +142,9 @@ class Mode_CTR extends Mode
             $block = substr($text, $pos, $byte_len);
 
             // xor the block with the register (which contains the IV)
-            for ($j = 0; $j < $byte_len; ++$j)
-                $block[$j] = $block[$j] ^ $this->enc_register[$j];
+            for ($j = 0; $j < $byte_len; ++$j) {
+                            $block[$j] = $block[$j] ^ $this->enc_register[$j];
+            }
 
             // replace the encrypted block with the plain text
             $text = substr_replace($text, $block, $pos, $byte_len);
@@ -188,9 +193,9 @@ class Mode_CTR extends Mode
         {
             // if we reached the last byte, set it to 0x00, then
             // loop one more time to increment the next byte
-            if (ord($this->register[$i]) == 0xff)
-                $this->register[$i] = chr(0x00);
-            else
+            if (ord($this->register[$i]) == 0xff) {
+                            $this->register[$i] = chr(0x00);
+            } else
             {
                 // now increment the byte by 1
                 $this->register[$i] = chr(ord($this->register[$i]) + 1);

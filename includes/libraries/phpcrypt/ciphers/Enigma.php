@@ -158,8 +158,9 @@ class Cipher_Enigma extends Cipher
                 $this->n1 = 0;
                 $this->n2++;
 
-                if ($this->n2 == self::ROTORSZ)
-                    $this->n2 = 0;
+                if ($this->n2 == self::ROTORSZ) {
+                                    $this->n2 = 0;
+                }
 
                 $this->nr2 = $this->n2;
             }
@@ -189,12 +190,14 @@ class Cipher_Enigma extends Cipher
         $klen = $this->keySize();
 
         // get the key to exactly 13 bytes if it's less than 13
-        if ($klen < 13)
-            $this->xkey = str_pad($this->xkey, 13, chr(0), STR_PAD_RIGHT);
+        if ($klen < 13) {
+                    $this->xkey = str_pad($this->xkey, 13, chr(0), STR_PAD_RIGHT);
+        }
 
         $seed = 123;
-        for ($i = 0; $i < 13; ++$i)
-            $seed = parent::sInt32($seed) * ord($this->xkey[$i]) + $i;
+        for ($i = 0; $i < 13; ++$i) {
+                    $seed = parent::sInt32($seed) * ord($this->xkey[$i]) + $i;
+        }
 
         // sets $t1 and $deck
         for ($i = 0; $i < self::ROTORSZ; ++$i)
@@ -223,12 +226,14 @@ class Cipher_Enigma extends Cipher
             $temp = $this->t1[$k];
             $this->t1[$k] = $this->t1[$ic];
             $this->t1[$ic] = $temp;
-            if ($this->t3[$k] != 0)
-                continue;
+            if ($this->t3[$k] != 0) {
+                            continue;
+            }
 
             $ic = ($random & self::MASK) % $k;
-            while ($this->t3[$ic] != 0)
-                $ic = ($ic + 1) % $k;
+            while ($this->t3[$ic] != 0) {
+                            $ic = ($ic + 1) % $k;
+            }
 
             $this->t3[$k] = $ic;
             $this->t3[$ic] = $k;

@@ -81,8 +81,7 @@ class Cipher_CAST_256 extends Cipher
         {
             $key = substr($key, 0, self::BYTES_KEY_MAX);
             $keylen = self::BYTES_KEY_MAX;
-        }
-        else if (!in_array($keylen, self::$_req_key_sizes))
+        } else if (!in_array($keylen, self::$_req_key_sizes))
         {
             $msg  = PHP_Crypt::CIPHER_CAST_256." requires a key size of 16, ";
             $msg .= "20, 24, 28, or 32 bytes.";
@@ -298,8 +297,9 @@ class Cipher_CAST_256 extends Cipher
 
         // if the key is less than 32 bytes, pad it to 32 bytes
         // for the key expansion
-        if ($this->keySize() < 32)
-            $xkey = str_pad($xkey, 32, "\0", STR_PAD_RIGHT);
+        if ($this->keySize() < 32) {
+                    $xkey = str_pad($xkey, 32, "\0", STR_PAD_RIGHT);
+        }
 
         // split the key up into 4 byte parts, reverse the string,
         // then convert each part into a 32 bit integer

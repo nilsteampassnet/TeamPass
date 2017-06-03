@@ -92,8 +92,7 @@ class Cipher_CAST_128 extends Cipher
         {
             $key = substr($key, 0, self::BYTES_KEY_MAX);
             $keylen = self::BYTES_KEY_MAX;
-        }
-        else if ($keylen < self::BYTES_KEY_MIN)
+        } else if ($keylen < self::BYTES_KEY_MIN)
         {
             $msg  = PHP_Crypt::CIPHER_CAST_128." requires a key size between ";
             $msg .= "5 - 16 bytes.";
@@ -341,8 +340,9 @@ class Cipher_CAST_128 extends Cipher
 
         // the max length of the key is 16 bytes, however if it is
         // less, pad it with null to get ito to 16 bytes
-        if ($this->keySize() < self::BYTES_KEY_MAX)
-            $x = str_pad($x, self::BYTES_KEY_MAX, "\0", STR_PAD_RIGHT);
+        if ($this->keySize() < self::BYTES_KEY_MAX) {
+                    $x = str_pad($x, self::BYTES_KEY_MAX, "\0", STR_PAD_RIGHT);
+        }
 
         /*
 		 * NOW FOR THE UGLY PART, THIS IS TAKEN FROM PAGE 3-4 OF
@@ -639,8 +639,9 @@ class Cipher_CAST_128 extends Cipher
 
         // there is 4kb in the s5 - s8 sboxes, which are not needed after we
         // create the subkeys, so free up the memory. unset() doesn't work here
-        for ($i = 5; $i <= 8; ++$i)
-            self::${"_s$i"} = null;
+        for ($i = 5; $i <= 8; ++$i) {
+                    self::${"_s$i"} = null;
+        }
     }
 
 
