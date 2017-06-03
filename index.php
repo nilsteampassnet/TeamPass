@@ -122,9 +122,6 @@ if (isset($_GET['language'])) {
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
     @require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    if (isset($_GET['page']) && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === "kb") {
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
-    }
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';

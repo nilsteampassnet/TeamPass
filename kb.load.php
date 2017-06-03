@@ -107,7 +107,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 900,
             height: 600,
-            title: "<?php echo $LANG['kb_form']; ?>",
+            title: "<?php echo $LANG['manage_entries_in_kb']; ?>",
             buttons: {
                 "<?php echo $LANG['save_button']; ?>": function() {
                     if ($("#kb_label").val() == "") {

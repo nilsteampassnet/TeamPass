@@ -31,7 +31,6 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 }
 
 //load language
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
 //build list of categories
@@ -52,7 +51,7 @@ if ($counter > 0) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['knowledge_base'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button" style="font-size:16px;">
+    <button title="'.$LANG['add_new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button" style="font-size:16px;">
         <i class="fa fa-plus"></i>
     </button>
 </div>';
