@@ -1234,8 +1234,8 @@ function get_user_rights()
                         }
                     }
                 });
-                $("#share_rights_details_3").html(tmp === "" ? "<?php echo $LANG['none']; ?>" : tmp);
-                $("#share_rights_details_ids_3").val(tmp2);
+                $("#share_rights_details_4").html(tmp === "" ? "<?php echo $LANG['none']; ?>" : tmp);
+                $("#share_rights_details_ids_4").val(tmp2);
 
                 // allowed
                 tmp = "";
@@ -1252,8 +1252,8 @@ function get_user_rights()
                         }
                     }
                 });
-                $("#share_rights_details_4").html(tmp === "" ? "<?php echo $LANG['none']; ?>" : tmp);
-                $("#share_rights_details_ids_4").val(tmp2);
+                $("#share_rights_details_3").html(tmp === "" ? "<?php echo $LANG['none']; ?>" : tmp);
+                $("#share_rights_details_ids_3").val(tmp2);
 
                 $("#share_rights_details_other").val(data.gestionnaire + ";" + data.read_only + ";" + data.can_create_root_folder + ";" + data.personal_folder + ";" + data.can_manage_all_users + ";" + data.admin);
             }
