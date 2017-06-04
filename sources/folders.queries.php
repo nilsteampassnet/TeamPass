@@ -509,8 +509,8 @@ if (isset($_POST['newtitle'])) {
                     ) {
                         //Get user's rights
                         identifyUserRights(
-                            $_SESSION['groupes_visibles'].';'.$newId,
-                            $_SESSION['groupes_interdits'],
+                            array_push($_SESSION['groupes_visibles'], $newId),
+                            implode(";", $_SESSION['groupes_interdits']),
                             $_SESSION['is_admin'],
                             $_SESSION['fonction_id'],
                             true

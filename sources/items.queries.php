@@ -2688,7 +2688,7 @@ if (isset($_POST['type'])) {
                 // Delete from FILES table
                 DB::delete(prefix_table("files"), "id = %i", $_POST['file_id']);
                 // Update the log
-                logItems($data['id_item'], $dataItem['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_del_file : '.$data['name']);
+                logItems($data['id_item'], $data['name'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_del_file : '.$data['name']);
                 // Delete file from server
                 fileDelete($_SESSION['settings']['path_to_upload_folder']."/".$data['file']);
             }

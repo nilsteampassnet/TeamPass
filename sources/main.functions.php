@@ -1745,18 +1745,7 @@ function debugTeampass($text) {
 */
 function fileDelete($file) {
     if (is_file($file)) {
-        try {
-            close($file);
-        } catch (Exception $e){
-            print_r($e);
-        }
-        // define if we under Windows
-        if (strpos(dirname(__FILE__), '/', 0) !== false) {
-            unlink($file);
-        } else {
-            $lines = array();
-            exec("DEL /F/Q \"".$file."\"", $lines, $deleteError);
-        }
+        unlink($file);
     }
 }
 

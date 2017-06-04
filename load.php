@@ -123,6 +123,13 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
 $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
         <link rel="icon" href="'.$_SESSION['settings']['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
+// get some init
+if (!isset($_SESSION["user_id"])) {
+    $_SESSION["key"] = mt_rand();
+    $_SESSION["user_id"] = "0";
+    $_SESSION["my_sk"] = "0";
+}
+
 $htmlHeaders .= '
 <script type="text/javascript">
 <!-- // --><![CDATA[
@@ -143,7 +150,7 @@ $htmlHeaders .= '
 
     function aes_encrypt(text)
     {
-        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
+        return Aes.Ctr.encrypt(text, "' . $_SESSION['key'] . '", 256);
     }
 
 

@@ -146,9 +146,9 @@ if (isset($_SESSION['CPM']) && isset($_SESSION['settings']['cpassman_dir'])) {
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
-    if (window.location.href.indexOf("page=") === -1 && (window.location.href.indexOf("otv=") === -1 && window.location.href.indexOf("action=") === -1)) {
+    if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
-            location.replace("./index.php?page=items");
+            //location.replace("./index.php?page=items");
         } else {
             location.replace("./logout.php");
         }
