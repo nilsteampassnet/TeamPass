@@ -2690,11 +2690,7 @@ if (isset($_POST['type'])) {
                 // Update the log
                 logItems($data['id_item'], $dataItem['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_del_file : '.$data['name']);
                 // Delete file from server
-                try {
-                    unlink($_SESSION['settings']['path_to_upload_folder']."/".$data['file']);
-                } catch (Exception $e) {
-                    print_r($e);
-                }
+                fileDelete($_SESSION['settings']['path_to_upload_folder']."/".$data['file']);
             }
             break;
 

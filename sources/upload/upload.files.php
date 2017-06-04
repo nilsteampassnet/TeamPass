@@ -190,7 +190,7 @@ if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
             && (filemtime($tmpfilePath) < time() - $maxFileAge)
             && ($tmpfilePath != "{$filePath}.part")
         ) {
-            unlink($tmpfilePath);
+            fileDelete($tmpfilePath);
         }
     }
 
@@ -230,11 +230,7 @@ if (strpos($contentType, "multipart") !== false) {
             }
             fclose($in);
             fclose($out);
-            try {
-                unlink($_FILES['file']['tmp_name']);
-            } catch (Exception $e) {
-                print_r($e);
-            }
+            fileDelete($_FILES['file']['tmp_name']);
         } else {
             die(
                 '{"jsonrpc" : "2.0",
@@ -310,8 +306,8 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 
     // get current avatar and delete it
     $data = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
-    @unlink($targetDir.DIRECTORY_SEPARATOR.$data['avatar']);
-    @unlink($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb']);
+    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar']);
+    fileDelete($targetDir.DIRECTORY_SEPARATOR.$data['avatar_thumb']);
 
     // store in DB the new avatar
     DB::query(

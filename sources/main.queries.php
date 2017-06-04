@@ -1160,11 +1160,7 @@ switch ($_POST['type']) {
             break;
         }
 
-        try {
-            unlink($_POST['filename']);
-        } catch (Exception $e) {
-            print_r($e);
-        }
+        fileDelete($_POST['filename']);
 
         break;
 }
