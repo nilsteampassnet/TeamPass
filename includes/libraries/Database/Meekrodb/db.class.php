@@ -196,7 +196,7 @@ class MeekroDB {
             $this->port = ini_get('mysqli.default_port');
         }
         $this->current_db = $this->dbName;
-      
+
         $mysql = new mysqli($this->host, $this->user, $this->password, $this->dbName, $this->port);
 
         if ($mysql->connect_error) {
@@ -725,14 +725,15 @@ class MeekroDB {
         if ($this->error_handler) {
         $db_error = $db->error;
         $db_errno = $db->errno;
-    $db->query(
-        "INSERT INTO ".$GLOBALS['pre']."log_system SET
-      date=".time().",
-      qui=".$_SESSION['user_id'].",
-      label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".mysqli_real_escape_string($link, filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING))."',
-      type='error'",
-        MYSQLI_USE_RESULT
-    );
+
+        $db->query(
+            "INSERT INTO ".$GLOBALS['pre']."log_system SET
+          date=".time().",
+          qui=".$_SESSION['user_id'].",
+          label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".addslashes(filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING))."',
+          type='error'",
+            MYSQLI_USE_RESULT
+        );
 
         $error_handler = is_callable($this->error_handler) ? $this->error_handler : 'meekrodb_error_handler';
 

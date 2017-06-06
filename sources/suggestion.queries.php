@@ -226,8 +226,6 @@ if (!empty($_POST['type'])) {
                             'raison' => 'at_suggestion'
                         )
                     );
-
-
                     // update cache table
                     updateCacheTable("update_value", $existing_item_id['id']);
 

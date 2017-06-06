@@ -119,6 +119,11 @@ if (isset($_GET['language'])) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 }
 
+if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
+    $_SESSION['settings']['cpassman_dir'] = ".";
+    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
+}
+
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';

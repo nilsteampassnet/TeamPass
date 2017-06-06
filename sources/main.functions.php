@@ -957,7 +957,8 @@ function updateCacheTable($action, $id = "")
             INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
             WHERE i.id = %i
             AND l.action = %s",
-            $id, 'at_creation'
+            $id,
+            'at_creation'
         );
         // Get all TAGS
         $tags = "";
@@ -982,23 +983,23 @@ function updateCacheTable($action, $id = "")
         }
         // finaly update
         DB::insert(
-            $pre."cache",
+            prefix_table("cache"),
             array(
                 'id' => $data['id'],
                 'label' => $data['label'],
                 'description' => $data['description'],
-                'tags' => $tags,
+                'tags' => (isset($tags) && !empty($tags)) ? $tags : "None",
                 'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
-                'url' => $data['url'],
                 'id_tree' => $data['id_tree'],
-                'perso' => $data['perso'],
-                'restricted_to' => $data['restricted_to'],
+                'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== "None") ? $data['perso'] : "0",
+                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : "None",
                 'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                 'timestamp' => $data['date']
-                )
+            )
         );
+
         // DELETE an item
     } elseif ($action === "delete_value") {
         DB::delete($pre."cache", "id = %i", $id);
@@ -1009,7 +1010,7 @@ function updateCacheTable($action, $id = "")
 *
 */
 function getStatisticsData() {
-        DB::query(
+    DB::query(
         "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
         0
     );

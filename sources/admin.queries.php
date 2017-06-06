@@ -442,15 +442,33 @@ switch ($_POST['type']) {
     #CASE for deleted old files in folder "files"
     case "admin_action_purge_old_files":
         $nbFilesDeleted = 0;
+        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         //read folder
         $dir = opendir($_SESSION['settings']['path_to_files_folder']);
 
+        //delete file FILES
+        while (false !== ($f = readdir($dir))) {
+            if ($f != "." && $f !== "..") {
+                if ((time() - filectime($dir.$f)) > 604800) {
+                    fileDelete($_SESSION['settings']['path_to_files_folder']."/".$f);
+                    $nbFilesDeleted++;
+                }
+            }
+        }
+        //Close dir
+        closedir($dir);
+
+        //read folder  UPLOAD
+        $dir = opendir($_SESSION['settings']['path_to_upload_folder']);
+
         //delete file
-        while ($f = readdir($dir)) {
-            if (is_file($dir.$f) && (time() - filectime($dir.$f)) > 604800) {
-                deleteFile($dir.$f);
-                $nbFilesDeleted++;
+        while (false !== ($f = readdir($dir))) {
+            if ($f != "." && $f !== "..") {
+                if (strpos($f, "_delete.") > 0) {
+                    fileDelete($_SESSION['settings']['path_to_upload_folder']."/".$f);
+                    $nbFilesDeleted++;
+                }
             }
         }
         //Close dir
@@ -1040,9 +1058,6 @@ switch ($_POST['type']) {
             "intitule = %s AND type= %s",
             "maintenance_mode", "admin"
         );
-
-        // redefine SALT
-        define(SALT, $new_salt_key);
 
         echo '[{"nextAction":"done" , "error":"'.$error.'"}]';
         break;
