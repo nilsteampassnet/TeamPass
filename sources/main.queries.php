@@ -307,7 +307,7 @@ switch ($_POST['type']) {
                         'ga_temporary_code' => $gaTemporaryCode
                         ),
                     "id = %i",
-                    $data['id']
+                    $_POST['id']
                 );
 
                 // send mail?
