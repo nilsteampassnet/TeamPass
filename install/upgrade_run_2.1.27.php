@@ -242,6 +242,10 @@ while ($row = mysqli_fetch_assoc($result)) {
 mysqli_free_result($result);
 
 
+// alter table KB_ITEMS
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."kb_items` CHANGE `kb_id` `kb_id` INT(12) NOT NULL");
+mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."kb_items` CHANGE `item_id` `item_id` INT(12) NOT NULL");
+
 
 // add field encrypted_data to CATEGORIES table
 $res = addColumnIfNotExist(

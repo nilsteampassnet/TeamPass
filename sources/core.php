@@ -44,9 +44,12 @@ if (
 
 /* LOAD CPASSMAN SETTINGS */
 if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
-    $_SESSION['settings']['duplicate_folder'] = 0; //by default, this is false;
-    $_SESSION['settings']['duplicate_item'] = 0; //by default, this is false;
-    $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
+    //by default, this is false;
+    $_SESSION['settings']['duplicate_folder'] = 0;
+    //by default, this is false;
+    $_SESSION['settings']['duplicate_item'] = 0;
+    //by default, this value is 5;
+    $_SESSION['settings']['number_of_used_pw'] = 5;
 
     $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
         array(

@@ -26,6 +26,12 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
     $_SESSION['settings']['cpassman_dir'] = "..";
 }
 
+// init
+$dbgDuo = $dbgLdap = "";
+$ldap_suffix = "";
+$result = "";
+$adldap = "";
+
 if ($_POST['type'] === "identify_duo_user") {
 //--------
 // DUO AUTHENTICATION
@@ -326,6 +332,16 @@ function identifyUser($sentData)
         );
     }
 
+    // Check if user exists
+    $data = DB::queryFirstRow(
+        "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
+        array(
+            'login' => $username
+        )
+    );
+    $counter = DB::count();
+
+
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
         && $username != "admin"
     ) {
@@ -422,7 +438,8 @@ function identifyUser($sentData)
             // Posix style LDAP handles user searches a bit differently
             if ($_SESSION['settings']['ldap_type'] == 'posix') {
                 $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
-            } elseif ($_SESSION['settings']['ldap_type'] == 'windows' and $ldap_suffix == '') { //Multiple Domain Names
+            } elseif ($_SESSION['settings']['ldap_type'] == 'windows' && $ldap_suffix == '') {
+                //Multiple Domain Names
                 $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
             }
             $adldap = new adLDAP\adLDAP(
@@ -474,15 +491,6 @@ function identifyUser($sentData)
     } else if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2) {
         // nothing
     }
-    // Check if user exists
-    $data = DB::queryFirstRow(
-        "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
-        array(
-            'login' => $username
-        )
-    );
-    $counter = DB::count();
-
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
@@ -518,7 +526,7 @@ function identifyUser($sentData)
     if ($counter > 0) {
         $proceedIdentification = true;
     } elseif ($counter == 0 && $ldapConnection === true && isset($_SESSION['settings']['ldap_elusers'])
-            && ($_SESSION['settings']['ldap_elusers'] == 0)
+        && ($_SESSION['settings']['ldap_elusers'] == 0)
     ) {
         // If LDAP enabled, create user in CPM if doesn't exist
         $data['pw'] = $pwdlib->createPasswordHash($passwordClear); // create passwordhash

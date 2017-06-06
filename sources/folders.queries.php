@@ -971,7 +971,7 @@ if (isset($_POST['newtitle'])) {
                     && $_SESSION['is_admin'] !== 0
                 ) {
                     //Get user's rights
-                    @identifyUserRights(
+                    identifyUserRights(
                         $_SESSION['groupes_visibles'].';'.$newFolderId,
                         $_SESSION['groupes_interdits'],
                         $_SESSION['is_admin'],

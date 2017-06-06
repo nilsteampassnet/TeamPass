@@ -1281,7 +1281,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     $("#pw_shown").val("0");
 
                     // show some info on top
-                    if (data.auto_update_pwd_frequency != "0") var auto_update_pwd = "<i class='fa fa-shield tip' title='<?php echo addslashes($LANG['server_auto_update_password_enabled_tip']);?>'></i>&nbsp;<b>"+data.auto_update_pwd_frequency+"</b>&nbsp;|&nbsp;";
+                    if (data.auto_update_pwd_frequency != "0") var auto_update_pwd = "<i class='fa fa-shield tip' title='<?php echo addslashes($LANG['server_auto_update_password_enabled_tip']); ?>'></i>&nbsp;<b>"+data.auto_update_pwd_frequency+"</b>&nbsp;|&nbsp;";
                     else var auto_update_pwd = "";
                     $("#item_viewed_x_times").html(auto_update_pwd+"&nbsp;<i class='fa fa-sticky-note-o tip' title='Number of times item was displayed'></i>&nbsp;<b>"+data.viewed_no+"</b>");
 

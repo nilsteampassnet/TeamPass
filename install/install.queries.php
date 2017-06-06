@@ -646,8 +646,8 @@ global \$SETTINGS;
                     } else if ($task == "kb_items") {
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."kb_items` (
-                            `kb_id` tinyint(12) NOT NULL,
-                            `item_id` tinyint(12) NOT NULL
+                            `kb_id` int(12) NOT NULL,
+                            `item_id` int(12) NOT NULL
                            ) CHARSET=utf8;"
                         );
                     } else if ($task == "restriction_to_roles") {

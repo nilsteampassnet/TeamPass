@@ -220,7 +220,7 @@ $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 if (!file_exists($targetDir)) {
     try {
         mkdir($targetDir);
-    } catch (Exception $e){
+    } catch (Exception $e) {
         print_r($e);
     }
 }

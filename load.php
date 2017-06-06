@@ -150,7 +150,7 @@ $htmlHeaders .= '
 
     function aes_encrypt(text)
     {
-        return Aes.Ctr.encrypt(text, "' . $_SESSION['key'] . '", 256);
+        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
     }
 
 
