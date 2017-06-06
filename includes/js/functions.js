@@ -195,9 +195,13 @@ function SendMail(cat, content, key, message){
             key     : key
         },
         function(data){
+            if (data[0].error !== undefined && data[0].error !== "") {
+                message = data[0].message;
+            }
             $("#div_dialog_message_text").html(message);
             $("#div_dialog_message").dialog("open");
-        }
+        },
+        "json"
     );
 }
 

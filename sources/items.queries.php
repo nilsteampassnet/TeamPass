@@ -1277,7 +1277,7 @@ if (isset($_POST['type'])) {
             $rows = DB::query("SELECT id, login, email FROM ".prefix_table("users"));
             foreach ($rows as $record) {
                 // Get auhtor
-                if ($record['id'] == $dataItem['id_user']) {
+                if ($record['id'] === $dataItem['id_user']) {
                     $arrData['author'] = $record['login'];
                     $arrData['author_email'] = $record['email'];
                     $arrData['id_user'] = $dataItem['id_user'];
@@ -1298,9 +1298,8 @@ if (isset($_POST['type'])) {
                     $listNotificationEmails .= $record['email'].",";
                 }
             }
-
             // manage case of API user
-            if (empty($dataItem['l.description'])) {
+            if ($dataItem['id_user'] === API_USER_ID) {
                 $arrData['author'] = "API [".$dataItem['description']."]";
                 $arrData['id_user'] = API_USER_ID;
                 $arrData['author_email'] = "";
@@ -3068,7 +3067,7 @@ if (isset($_POST['type'])) {
                 if ($_POST['cat'] === "request_access_to_author") {
                     $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".prefix_table("users")." WHERE id= ".$content[1]);
                     $dataItem = DB::queryfirstrow("SELECT label FROM ".prefix_table("items")." WHERE id= ".$content[0]);
-                    $ret = @sendEmail(
+                    $ret = sendEmail(
                         $LANG['email_request_access_subject'],
                         str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_request_access_mail']),
                         $dataAuthor['email']
@@ -3081,7 +3080,7 @@ if (isset($_POST['type'])) {
                         (mysqli_real_escape_string($link, filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)))
                     );
                     // send email
-                    $ret = @sendEmail(
+                    $ret = sendEmail(
                         $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
