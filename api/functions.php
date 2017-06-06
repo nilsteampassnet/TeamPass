@@ -19,17 +19,17 @@ require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
 
 function get_ip() {
-    if ( function_exists( 'apache_request_headers' ) ) {
+    if (function_exists('apache_request_headers')) {
         $headers = apache_request_headers();
     } else {
         $headers = $_SERVER;
     }
-    if ( array_key_exists( 'X-Forwarded-For', $headers ) && filter_var( $headers['X-Forwarded-For'], FILTER_VALIDATE_IP ) ) {
+    if (array_key_exists('X-Forwarded-For', $headers) && filter_var($headers['X-Forwarded-For'], FILTER_VALIDATE_IP)) {
         $the_ip = $headers['X-Forwarded-For'];
-    } elseif ( array_key_exists( 'HTTP_X_FORWARDED_FOR', $headers ) && filter_var( $headers['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP ) ) {
+    } elseif (array_key_exists('HTTP_X_FORWARDED_FOR', $headers) && filter_var($headers['HTTP_X_FORWARDED_FOR'], FILTER_VALIDATE_IP)) {
         $the_ip = $headers['HTTP_X_FORWARDED_FOR'];
     } else {
-        $the_ip = filter_var( $_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP );
+        $the_ip = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP);
     }
     return $the_ip;
 }
@@ -64,7 +64,7 @@ function teampass_connect()
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
+    DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 }
@@ -90,7 +90,7 @@ function teampass_get_keys() {
     return $response;
 }
 
-function rest_head () {
+function rest_head() {
     header('HTTP/1.1 402 Payment Required');
 }
 
@@ -141,6 +141,9 @@ function addToCacheTable($id)
 }
 
 
+/**
+ * @param string $setting
+ */
 function getSettingValue($setting) {
 
     // get default language
@@ -153,32 +156,32 @@ function getSettingValue($setting) {
     return $set['valeur'];
 }
 
-function rest_delete () {
-    if(!@count($GLOBALS['request'])==0){
+function rest_delete() {
+    if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
         if (count($matches) == 0) {
-            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+            rest_error('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] = explode('/', $matches[2]);
     }
-    if(apikey_checker($GLOBALS['apikey'])) {
+    if (apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         include "../sources/main.functions.php";
         teampass_connect();
         $category_query = "";
 
         if ($GLOBALS['request'][0] == "write") {
-            if($GLOBALS['request'][1] == "category") {
-                $array_category = explode(';',$GLOBALS['request'][2]);
+            if ($GLOBALS['request'][1] == "category") {
+                $array_category = explode(';', $GLOBALS['request'][2]);
 
-                foreach($array_category as $category) {
-                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                foreach ($array_category as $category) {
+                    if (!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category, $result)) {
                         rest_error('CATEGORY_MALFORMED');
                     }
                 }
 
-                if(count($array_category) > 1 && count($array_category) < 5) {
+                if (count($array_category) > 1 && count($array_category) < 5) {
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
@@ -191,7 +194,7 @@ function rest_delete () {
                 } elseif (count($array_category) == 1) {
                     $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
                 } else {
-                    rest_error ('NO_CATEGORY');
+                    rest_error('NO_CATEGORY');
                 }
 
                 // Delete items which in category
@@ -203,29 +206,29 @@ function rest_delete () {
 
                 $json['type'] = 'category';
                 $json['category'] = $GLOBALS['request'][2];
-                if($response) {
+                if ($response) {
                     $json['status'] = 'OK';
                 } else {
                     $json['status'] = 'KO';
                 }
 
-            } elseif($GLOBALS['request'][1] == "item") {
-                $array_category = explode(';',$GLOBALS['request'][2]);
+            } elseif ($GLOBALS['request'][1] == "item") {
+                $array_category = explode(';', $GLOBALS['request'][2]);
                 $item = $GLOBALS['request'][3];
 
-                foreach($array_category as $category) {
-                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                foreach ($array_category as $category) {
+                    if (!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category, $result)) {
                         rest_error('CATEGORY_MALFORMED');
                     }
                 }
 
-                if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item,$result)) {
+                if (!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item, $result)) {
                     rest_error('ITEM_MALFORMED');
                 } elseif (empty($item) || count($array_category) == 0) {
                     rest_error('MALFORMED');
                 }
 
-                if(count($array_category) > 1 && count($array_category) < 5) {
+                if (count($array_category) > 1 && count($array_category) < 5) {
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
@@ -238,7 +241,7 @@ function rest_delete () {
                 } elseif (count($array_category) == 1) {
                     $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
                 } else {
-                    rest_error ('NO_CATEGORY');
+                    rest_error('NO_CATEGORY');
                 }
 
                 // Delete item
@@ -246,7 +249,7 @@ function rest_delete () {
                 $json['type'] = 'item';
                 $json['item'] = $item;
                 $json['category'] = $GLOBALS['request'][2];
-                if($response) {
+                if ($response) {
                     $json['status'] = 'OK';
                 } else {
                     $json['status'] = 'KO';
@@ -256,27 +259,27 @@ function rest_delete () {
             if ($json) {
                 echo json_encode($json);
             } else {
-                rest_error ('EMPTY');
+                rest_error('EMPTY');
             }
         } else {
-            rest_error ('METHOD');
+            rest_error('METHOD');
         }
     }
 }
 
-function rest_get () {
+function rest_get() {
     global $api_version;
 
-    if(!@count($GLOBALS['request'])==0){
+    if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
         preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
         if (count($matches) == 0) {
-            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+            rest_error('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] = explode('/', $matches[2]);
     }
 
-    if(apikey_checker($GLOBALS['apikey'])) {
+    if (apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
         $category_query = "";
@@ -290,7 +293,7 @@ function rest_get () {
         );
 
         if ($GLOBALS['request'][0] == "read") {
-            if($GLOBALS['request'][1] == "folder") {
+            if ($GLOBALS['request'][1] == "folder") {
                 /*
                 * READ FOLDERS
                 */
@@ -303,7 +306,7 @@ function rest_get () {
                 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
                 // get ids
-                if (strpos($GLOBALS['request'][2],";") > 0) {
+                if (strpos($GLOBALS['request'][2], ";") > 0) {
                     $condition = "id_tree IN %ls";
                     $condition_value = explode(';', $GLOBALS['request'][2]);
                 } else {
@@ -349,8 +352,7 @@ function rest_get () {
 
                     $x++;
                 }
-            }
-            else if($GLOBALS['request'][1] == "userpw") {
+            } else if ($GLOBALS['request'][1] == "userpw") {
                 /*
                 * READ USER ITEMS
                 */
@@ -364,7 +366,7 @@ function rest_get () {
 
                 // about the user
                 $username = $GLOBALS['request'][2];
-                if(strcmp($username,"admin")==0) {
+                if (strcmp($username, "admin") == 0) {
                     // forbid admin access
                 }
                 $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
@@ -383,8 +385,8 @@ function rest_get () {
                     foreach ($response as $data)
                     {
                         $folder_id = $data['folder_id'];
-                        if(!array_key_exists($folder_id,$folder_arr)) {
-                            array_push($folder_arr,$folder_id);
+                        if (!array_key_exists($folder_id, $folder_arr)) {
+                            array_push($folder_arr, $folder_id);
                         }
                     }
                 }
@@ -434,15 +436,14 @@ function rest_get () {
 
                     $x++;
                 }
-            }
-            else if($GLOBALS['request'][1] == "userfolders") {
+            } else if ($GLOBALS['request'][1] == "userfolders") {
                 /*
                 * READ USER FOLDERS
                 * Sends back a list of folders
                 */
                 $json = "";
                 $username = $GLOBALS['request'][2];
-                if(strcmp($username,"admin")==0) {
+                if (strcmp($username, "admin") == 0) {
                     // forbid admin access
                 }
                 $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
@@ -463,8 +464,8 @@ function rest_get () {
                     foreach ($response as $data)
                     {
                         $folder_id = $data['folder_id'];
-                        if(!array_key_exists($folder_id,$folder_arr)) {
-                            array_push($folder_arr,$folder_id);
+                        if (!array_key_exists($folder_id, $folder_arr)) {
+                            array_push($folder_arr, $folder_id);
 
                             $response2 = DB::queryFirstRow("SELECT title, nlevel FROM ".prefix_table("nested_tree")." WHERE id='".$folder_id."'");
 
@@ -478,8 +479,7 @@ function rest_get () {
                         }
                     }
                 }
-            }
-            elseif($GLOBALS['request'][1] == "items") {
+            } elseif ($GLOBALS['request'][1] == "items") {
                 /*
                 * READ ITEMS asked
                 */
@@ -492,16 +492,16 @@ function rest_get () {
                 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
                 // get parameters
-                $array_items = explode(';',$GLOBALS['request'][2]);
+                $array_items = explode(';', $GLOBALS['request'][2]);
 
                 // check if not empty
                 if (count($array_items) == 0) {
-                    rest_error ('NO_ITEM');
+                    rest_error('NO_ITEM');
                 }
 
                 // only accepts numeric
-                foreach($array_items as $item) {
-                    if(!is_numeric($item)) {
+                foreach ($array_items as $item) {
+                    if (!is_numeric($item)) {
                         rest_error('ITEM_MALFORMED');
                     }
                 }
@@ -544,10 +544,10 @@ function rest_get () {
             if (isset($json) && $json) {
                 echo json_encode($json);
             } else {
-                rest_error ('EMPTY');
+                rest_error('EMPTY');
             }
         } elseif ($GLOBALS['request'][0] == "find") {
-            if($GLOBALS['request'][1] == "item") {
+            if ($GLOBALS['request'][1] == "item") {
                 /*
                 * FIND ITEMS in FOLDERS
                 */
@@ -562,20 +562,20 @@ function rest_get () {
                 // get parameters
                 $array_category = explode(';', $GLOBALS['request'][2]);
                 $item = $GLOBALS['request'][3];
-                foreach($array_category as $category) {
-                    if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category,$result)) {
+                foreach ($array_category as $category) {
+                    if (!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $category, $result)) {
                         rest_error('CATEGORY_MALFORMED');
                     }
                 }
 
-                if(!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item, $result)) {
+                if (!preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $item, $result)) {
                     rest_error('ITEM_MALFORMED');
                 } elseif (empty($item) || count($array_category) == 0) {
                     rest_error('MALFORMED');
                 }
 
-                if(count($array_category) === 0) {
-                    rest_error ('NO_CATEGORY');
+                if (count($array_category) === 0) {
+                    rest_error('NO_CATEGORY');
                 }
 
                 DB::debugMode(false);
@@ -621,15 +621,15 @@ function rest_get () {
                 if (isset($json) && $json) {
                     echo json_encode($json);
                 } else {
-                    rest_error ('EMPTY');
+                    rest_error('EMPTY');
                 }
             }
         } elseif ($GLOBALS['request'][0] == "add") {
-            if($GLOBALS['request'][1] == "item") {
+            if ($GLOBALS['request'][1] == "item") {
                 // get sent parameters
                 $params = explode(';', base64_decode($GLOBALS['request'][2]));
                 if (count($params) != 9) {
-                    rest_error ('ITEMBADDEFINITION');
+                    rest_error('ITEMBADDEFINITION');
                 }
 
                 $item_label = $params[0];
@@ -646,14 +646,14 @@ function rest_get () {
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                     // Check length
                     if (strlen($item_pwd) > 50) {
-                        rest_error ('PASSWORDTOOLONG');
+                        rest_error('PASSWORDTOOLONG');
                     }
 
                     // Check Folder ID
                     DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
                     $counter = DB::count();
                     if ($counter == 0) {
-                        rest_error ('NOSUCHFOLDER');
+                        rest_error('NOSUCHFOLDER');
                     }
 
                     // check if element doesn't already exist
@@ -665,7 +665,7 @@ function rest_get () {
                             $itemExists = 1;
                             // prevent the error if the label already exists
                             // so lets just add the time() as a random factor
-                            $item_label .= " (" . time() .")";
+                            $item_label .= " (".time().")";
                         } else {
                             $itemExists = 0;
                         }
@@ -679,7 +679,7 @@ function rest_get () {
                             "encrypt"
                         );
                         if (empty($encrypt['string'])) {
-                            rest_error ('PASSWORDEMPTY');
+                            rest_error('PASSWORDEMPTY');
                         }
 
                         // ADD item
@@ -717,7 +717,7 @@ function rest_get () {
 
                             // Add tags
                             $tags = explode(' ', $item_tags);
-                            foreach ((array)$tags as $tag) {
+                            foreach ((array) $tags as $tag) {
                                 if (!empty($tag)) {
                                     DB::insert(
                                         prefix_table("tags"),
@@ -750,14 +750,14 @@ function rest_get () {
                             );
 
                             echo '{"status":"item added" , "new_item_id" : "'.$newID.'"}';
-                        } catch(PDOException $ex) {
-                            echo '<br />' . $ex->getMessage();
+                        } catch (PDOException $ex) {
+                            echo '<br />'.$ex->getMessage();
                         }
                     } else {
-                        rest_error ('ITEMEXISTS');
+                        rest_error('ITEMEXISTS');
                     }
                 } else {
-                    rest_error ('ITEMMISSINGDATA');
+                    rest_error('ITEMMISSINGDATA');
                 }
             }
             /*
@@ -771,12 +771,12 @@ function rest_get () {
              * Example: /api/index.php/add/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers,Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
              *
              */
-            elseif($GLOBALS['request'][1] == "user") {
+            elseif ($GLOBALS['request'][1] == "user") {
 
                 // get user definition
                 $array_user = explode(';', base64_decode($GLOBALS['request'][2]));
                 if (count($array_user) != 11) {
-                    rest_error ('USERBADDEFINITION');
+                    rest_error('USERBADDEFINITION');
                 }
 
                 $login = $array_user[0];
@@ -793,7 +793,7 @@ function rest_get () {
 
                 // Empty user
                 if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
-                    rest_error ('USERLOGINEMPTY');
+                    rest_error('USERLOGINEMPTY');
                 }
                 // Check if user already exists
                 $data = DB::query(
@@ -826,8 +826,11 @@ function rest_get () {
                                 "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
                                 $role
                             );
-                            if (empty($rolesList)) $rolesList = $tmp['id'];
-                            else $rolesList .= ";" . $tmp['id'];
+                            if (empty($rolesList)) {
+                                $rolesList = $tmp['id'];
+                            } else {
+                                $rolesList .= ";".$tmp['id'];
+                            }
                         }
 
                         // Add user in DB
@@ -882,37 +885,41 @@ function rest_get () {
                         logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
 
                         echo '{"status":"user added"}';
-                    } catch(PDOException $ex) {
-                        echo '<br />' . $ex->getMessage();
+                    } catch (PDOException $ex) {
+                        echo '<br />'.$ex->getMessage();
                     }
                 } else {
-                    rest_error ('USERALREADYEXISTS');
+                    rest_error('USERALREADYEXISTS');
                 }
             }
             /*
             * ADDING A FOLDER
             * <url to teampass>/api/index.php/add/folder/<title>;<complexity_level>;<parent_id>;<renewal_period>;<personal>?apikey=<valid api key>
             */
-            elseif($GLOBALS['request'][1] == "folder") {
+            elseif ($GLOBALS['request'][1] == "folder") {
                 if (!empty($GLOBALS['request'][2])) {
                     // get sent parameters
                     $params = explode(';', base64_decode($GLOBALS['request'][2]));
 
                     if (!empty($params[0]) && !empty($params[1])) {
-                        if (empty($params[3])) $params[3] = 0;
-                        if (empty($params[4])) $params[4] = 0;
+                        if (empty($params[3])) {
+                            $params[3] = 0;
+                        }
+                        if (empty($params[4])) {
+                            $params[4] = 0;
+                        }
                         if ($params[2] < 0) {
-                            rest_error ('NO_DATA_EXIST');
+                            rest_error('NO_DATA_EXIST');
                         }
 
                         //Check if title doesn't contains html codes
                         if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $params[0], $out)) {
-                            rest_error ('HTML_CODES_NOT_ALLOWED');
+                            rest_error('HTML_CODES_NOT_ALLOWED');
                         }
 
                         // check if title is numeric
                         if (is_numeric($params[0]) === true) {
-                            rest_error ('TITLE_ONLY_WITH_NUMBERS');
+                            rest_error('TITLE_ONLY_WITH_NUMBERS');
                         }
 
                         //Check if duplicate folders name are allowed
@@ -928,7 +935,7 @@ function rest_get () {
                             DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE title = %s", $params[0]);
                             $counter = DB::count();
                             if ($counter != 0) {
-                                rest_error ('ALREADY_EXISTS');
+                                rest_error('ALREADY_EXISTS');
                             }
                         }
 
@@ -957,7 +964,7 @@ function rest_get () {
                                 "complex"
                             );
                             if (intval($params[1]) < intval($data['valeur'])) {
-                                rest_error ('COMPLEXICITY_LEVEL_NOT_REACHED');
+                                rest_error('COMPLEXICITY_LEVEL_NOT_REACHED');
                             }
                         }
 
@@ -972,7 +979,7 @@ function rest_get () {
                                     'renewal_period' => $params[3],
                                     'bloquer_creation' => '0',
                                     'bloquer_modification' => '0'
-                               )
+                                )
                             );
                             $newId = DB::insertId();
 
@@ -987,11 +994,11 @@ function rest_get () {
                             );
 
                             echo '{"status":"folder created" , "new_folder_id":"'.$newId.'"}';
-                        } catch(PDOException $ex) {
-                            echo '<br />' . $ex->getMessage();
+                        } catch (PDOException $ex) {
+                            echo '<br />'.$ex->getMessage();
                         }
                     } else {
-                        rest_error ('NO_DATA_EXIST');
+                        rest_error('NO_DATA_EXIST');
                     }
                 } else {
                     rest_error('SET_NO_DATA');
@@ -1012,14 +1019,14 @@ function rest_get () {
                     if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
                         // Check length
                         if (strlen($params[1]) > 50) {
-                            rest_error ('PASSWORDTOOLONG');
+                            rest_error('PASSWORDTOOLONG');
                         }
 
                         // Check Folder ID
                         DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $params[3]);
                         $counter = DB::count();
                         if ($counter == 0) {
-                            rest_error ('NOSUCHFOLDER');
+                            rest_error('NOSUCHFOLDER');
                         }
 
                         // check if item exists
@@ -1036,7 +1043,7 @@ function rest_get () {
                                 "encrypt"
                             );
                             if (empty($encrypt['string'])) {
-                                rest_error ('PASSWORDEMPTY');
+                                rest_error('PASSWORDEMPTY');
                             }
 
                             // ADD item
@@ -1071,7 +1078,7 @@ function rest_get () {
 
                                 // Add tags
                                 $tags = explode(' ', $params[7]);
-                                foreach ((array)$tags as $tag) {
+                                foreach ((array) $tags as $tag) {
                                     if (!empty($tag)) {
                                         // check if already exists
                                         DB::query(
@@ -1114,14 +1121,14 @@ function rest_get () {
                                 );
 
                                 echo '{"status":"item updated"}';
-                            } catch(PDOException $ex) {
-                                echo '<br />' . $ex->getMessage();
+                            } catch (PDOException $ex) {
+                                echo '<br />'.$ex->getMessage();
                             }
                         } else {
-                            rest_error ('NO_DATA_EXIST');
+                            rest_error('NO_DATA_EXIST');
                         }
                     } else {
-                        rest_error ('ITEMMISSINGDATA');
+                        rest_error('ITEMMISSINGDATA');
                     }
                 } else {
                     rest_error('NO_ITEM');
@@ -1131,32 +1138,34 @@ function rest_get () {
             * UPDATING A FOLDER
             * <url to teampass>/api/index.php/update/folder/<folder_id>/<title>;<complexity_level>;<renewal_period>?apikey=<valid api key>
             */
-            else if($GLOBALS['request'][1] == "folder") {
+            else if ($GLOBALS['request'][1] == "folder") {
                 if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
                     // get sent parameters
                     $params = explode(';', base64_decode($GLOBALS['request'][3]));
 
                     if (!empty($params[0])) {
                         if ($params[1] < 0) {
-                            rest_error ('NO_DATA_EXIST');
+                            rest_error('NO_DATA_EXIST');
                         }
-                        if (empty($params[2])) $params[2] = 0;
+                        if (empty($params[2])) {
+                            $params[2] = 0;
+                        }
 
                         // check if folder exists and get folder data
                         $data_folder = DB::queryfirstrow("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %s", $GLOBALS['request'][2]);
                         $counter = DB::count();
                         if ($counter === 0) {
-                            rest_error ('NO_DATA_EXIST');
+                            rest_error('NO_DATA_EXIST');
                         }
 
                         //Check if title doesn't contains html codes
                         if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $params[0], $out)) {
-                            rest_error ('HTML_CODES_NOT_ALLOWED');
+                            rest_error('HTML_CODES_NOT_ALLOWED');
                         }
 
                         // check if title is numeric
                         if (is_numeric($params[0]) === true) {
-                            rest_error ('TITLE_ONLY_WITH_NUMBERS');
+                            rest_error('TITLE_ONLY_WITH_NUMBERS');
                         }
 
                         // get complexity level for this folder
@@ -1168,7 +1177,7 @@ function rest_get () {
                             "complex"
                         );
                         if (intval($params[1]) < intval($data['valeur'])) {
-                            rest_error ('COMPLEXICITY_LEVEL_NOT_REACHED');
+                            rest_error('COMPLEXICITY_LEVEL_NOT_REACHED');
                         }
 
                         try {
@@ -1198,11 +1207,11 @@ function rest_get () {
                             );
 
                             echo '{"status":"folder updated"}';
-                        } catch(PDOException $ex) {
-                            echo '<br />' . $ex->getMessage();
+                        } catch (PDOException $ex) {
+                            echo '<br />'.$ex->getMessage();
                         }
                     } else {
-                        rest_error ('ITEMMISSINGDATA');
+                        rest_error('ITEMMISSINGDATA');
                     }
                 } else {
                     rest_error('NO_ITEM');
@@ -1227,9 +1236,9 @@ function rest_get () {
             **
             */
             // get user credentials
-            if(isset($GLOBALS['request'][3]) && isset($GLOBALS['request'][4])) {
+            if (isset($GLOBALS['request'][3]) && isset($GLOBALS['request'][4])) {
                 // get url
-                if(isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2])) {
+                if (isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
@@ -1292,21 +1301,21 @@ function rest_get () {
                             }
                             // prepare answer. If no access then inform
                             if (empty($json)) {
-                                rest_error ('AUTH_NO_DATA');
+                                rest_error('AUTH_NO_DATA');
                             } else {
                                 echo json_encode($json);
                             }
                         } else {
-                            rest_error ('NO_DATA_EXIST');
+                            rest_error('NO_DATA_EXIST');
                         }
                     } else {
-                        rest_error ('AUTH_NOT_GRANTED');
+                        rest_error('AUTH_NOT_GRANTED');
                     }
                 } else {
-                    rest_error ('AUTH_NO_URL');
+                    rest_error('AUTH_NO_URL');
                 }
             } else {
-                rest_error ('AUTH_NO_IDENTIFIER');
+                rest_error('AUTH_NO_IDENTIFIER');
             }
         } elseif ($GLOBALS['request'][0] == "auth_tpc") {
             /*
@@ -1314,9 +1323,9 @@ function rest_get () {
             **
             */
             // get user credentials
-            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3]) && isset($GLOBALS['request'][4])) {
+            if (isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3]) && isset($GLOBALS['request'][4])) {
                 // get url
-                if(isset($GLOBALS['request'][1])) {
+                if (isset($GLOBALS['request'][1])) {
                     // decode base64 criterium
                     $tpc_url = base64_decode($GLOBALS['request'][1]);
                     $user_pwd = base64_decode($GLOBALS['request'][3]);
@@ -1336,7 +1345,7 @@ function rest_get () {
                     );
                     if (strpos($user_saltkey, "Error ") !== false) {
                         // error
-                        rest_error ('AUTH_NO_DATA');
+                        rest_error('AUTH_NO_DATA');
                     }
 
                     // load passwordLib library
@@ -1393,7 +1402,7 @@ function rest_get () {
                                 ) {
                                     // prepare export
                                     $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                                    $json[$data['id']]['login'] =  mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
                                     if ($data['perso'] === "0") {
                                         $crypt_pw = cryption(
                                             $data['pw'],
@@ -1415,21 +1424,21 @@ function rest_get () {
                             }
                             // prepare answer. If no access then inform
                             if (empty($json)) {
-                                rest_error ('AUTH_NO_DATA');
+                                rest_error('AUTH_NO_DATA');
                             } else {
                                 echo json_encode($json);
                             }
                         } else {
-                            rest_error ('NO_DATA_EXIST');
+                            rest_error('NO_DATA_EXIST');
                         }
                     } else {
-                        rest_error ('AUTH_NOT_GRANTED');
+                        rest_error('AUTH_NOT_GRANTED');
                     }
                 } else {
-                    rest_error ('AUTH_NO_URL');
+                    rest_error('AUTH_NO_URL');
                 }
             } else {
-                rest_error ('AUTH_NO_IDENTIFIER');
+                rest_error('AUTH_NO_IDENTIFIER');
             }
         } elseif ($GLOBALS['request'][0] == "set") {
             /*
@@ -1439,16 +1448,16 @@ function rest_get () {
              * NEW ITEM WILL BE STORED IN SPECIFIC FOLDER
              */
             // get user credentials
-            if(isset($GLOBALS['request'][4]) && isset($GLOBALS['request'][5])) {
+            if (isset($GLOBALS['request'][4]) && isset($GLOBALS['request'][5])) {
                 // get url
                 if (isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM " . $pre . "users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][4]
                     );
                     if (DB::count() == 0) {
-                        rest_error ('AUTH_NO_IDENTIFIER');
+                        rest_error('AUTH_NO_IDENTIFIER');
                     }
 
                     // load passwordLib library
@@ -1463,7 +1472,7 @@ function rest_get () {
                         // does the personal folder of this user exists?
                         DB::queryFirstRow(
                             "SELECT `id`
-                            FROM " . $pre . "nested_tree
+                            FROM " . $pre."nested_tree
                             WHERE title = %s AND personal_folder = 1",
                             $userData['id']
                         );
@@ -1472,7 +1481,7 @@ function rest_get () {
                             // if not create it
                             $folder = DB::queryFirstRow(
                                 "SELECT `id`
-                                FROM " . $pre . "nested_tree
+                                FROM " . $pre."nested_tree
                                 WHERE title = %s",
                                 "teampass-connect"
                             );
@@ -1552,37 +1561,37 @@ function rest_get () {
                             $json['status'] = "ok";
                             // prepare answer. If no access then inform
                             if (empty($json)) {
-                                rest_error ('AUTH_NO_DATA');
+                                rest_error('AUTH_NO_DATA');
                             } else {
                                 echo json_encode($json);
                             }
                         } else {
-                            rest_error ('NO_PF_EXIST_FOR_USER');
+                            rest_error('NO_PF_EXIST_FOR_USER');
                         }
                     } else {
-                        rest_error ('AUTH_NOT_GRANTED');
+                        rest_error('AUTH_NOT_GRANTED');
                     }
                 } else {
-                    rest_error ('SET_NO_DATA');
+                    rest_error('SET_NO_DATA');
                 }
             } else {
-                rest_error ('AUTH_NO_IDENTIFIER');
+                rest_error('AUTH_NO_IDENTIFIER');
             }
         } elseif ($GLOBALS['request'][0] == "set_tpc") {
             /*
              * TO BE USED ONLY BY TEAMPASS-CONNECT
              */
             // get user credentials
-            if(isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
+            if (isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
                 // get url
                 if (isset($GLOBALS['request'][1])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk` FROM " . $pre . "users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][2]
                     );
                     if (DB::count() == 0) {
-                        rest_error ('AUTH_NO_IDENTIFIER');
+                        rest_error('AUTH_NO_IDENTIFIER');
                     }
 
                     // load passwordLib library
@@ -1617,7 +1626,7 @@ function rest_get () {
                             );
                             if (strpos($user_key_encoded, "Error ") !== false) {
                                 // error
-                                rest_error ('AUTH_NO_DATA');
+                                rest_error('AUTH_NO_DATA');
                             }
 
 
@@ -1627,7 +1636,7 @@ function rest_get () {
                             // does the personal folder of this user exists?
                             $user_folder = DB::queryFirstRow(
                                 "SELECT `id`
-                                FROM " . $pre . "nested_tree
+                                FROM " . $pre."nested_tree
                                 WHERE title = %s AND personal_folder = 1",
                                 $userData['id']
                             );
@@ -1636,7 +1645,7 @@ function rest_get () {
                                 // if not create it
                                 $folder = DB::queryFirstRow(
                                     "SELECT `id`
-                                    FROM " . $pre . "nested_tree
+                                    FROM " . $pre."nested_tree
                                     WHERE title = %s",
                                     "teampass-connect"
                                 );
@@ -1673,7 +1682,7 @@ function rest_get () {
                             }
                         } else {
                             // there is an error in PSALT
-                            rest_error ('NO_PSALTK_PROVIDED');
+                            rest_error('NO_PSALTK_PROVIDED');
                         }
 
                         // now we continue
@@ -1725,18 +1734,18 @@ function rest_get () {
                         $json['new_item_id'] = $newID;
                         // prepare answer. If no access then inform
                         if (empty($json)) {
-                            rest_error ('AUTH_NO_DATA');
+                            rest_error('AUTH_NO_DATA');
                         } else {
                             echo json_encode($json);
                         }
                     } else {
-                        rest_error ('AUTH_NOT_GRANTED');
+                        rest_error('AUTH_NOT_GRANTED');
                     }
                 } else {
-                    rest_error ('SET_NO_DATA');
+                    rest_error('SET_NO_DATA');
                 }
             } else {
-                rest_error ('AUTH_NO_IDENTIFIER');
+                rest_error('AUTH_NO_IDENTIFIER');
             }
         }
         /*
@@ -1747,13 +1756,13 @@ function rest_get () {
         */
         elseif ($GLOBALS['request'][0] == "delete") {
             $_SESSION['settings']['cpassman_dir'] = "..";
-            if($GLOBALS['request'][1] == "folder") {
+            if ($GLOBALS['request'][1] == "folder") {
                 $array_category = explode(';', $GLOBALS['request'][2]);
 
                 // get user info
                 if (isset($GLOBALS['request'][3]) && !empty($GLOBALS['request'][3])) {
                     $userData = DB::queryFirstRow(
-                        "SELECT `id` FROM " . $pre . "users WHERE login = %s",
+                        "SELECT `id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
                     if (DB::count() == 0) {
@@ -1765,7 +1774,7 @@ function rest_get () {
                     $user_id = API_USER_ID;
                 }
 
-                if(count($array_category) > 0 && count($array_category) < 5) {
+                if (count($array_category) > 0 && count($array_category) < 5) {
                     // load passwordLib library
                     require_once '../sources/SplClassLoader.php';
 
@@ -1775,7 +1784,7 @@ function rest_get () {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
 
                     // this will delete all sub folders and items associated
-                    for ($i=0; $i < count($array_category); $i ++) {echo "\n".$array_category[$i]."\n";
+                    for ($i = 0; $i < count($array_category); $i++) {echo "\n".$array_category[$i]."\n";
                         // Get through each subfolder
                         $folders = $tree->getDescendants($array_category[$i], true);
                         print_r($folders);
@@ -1789,8 +1798,8 @@ function rest_get () {
                                             'type' => 'folder_deleted',
                                             'intitule' => "f".$array_category[$i],
                                             'valeur' => $folder->id.', '.$folder->parent_id.', '.
-                                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '. $folder->nlevel.', 0, 0, 0, 0'
-                                       )
+                                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.$folder->nlevel.', 0, 0, 0, 0'
+                                        )
                                     );
                                     //delete folder
                                     DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
@@ -1829,18 +1838,18 @@ function rest_get () {
                         }
                     }
                 } else {
-                    rest_error ('NO_CATEGORY');
+                    rest_error('NO_CATEGORY');
                 }
 
                 $json['status'] = 'OK';
 
-            } elseif($GLOBALS['request'][1] == "item") {
+            } elseif ($GLOBALS['request'][1] == "item") {
                 $array_items = explode(';', $GLOBALS['request'][2]);
 
                 // get user info
                 if (isset($GLOBALS['request'][3]) && !empty($GLOBALS['request'][3])) {
                     $userData = DB::queryFirstRow(
-                        "SELECT `id` FROM " . $pre . "users WHERE login = %s",
+                        "SELECT `id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
                     if (DB::count() == 0) {
@@ -1850,7 +1859,7 @@ function rest_get () {
                     }
                 }
 
-                for ($i=0; $i < count($array_items); $i ++) {
+                for ($i = 0; $i < count($array_items); $i++) {
                     DB::update(
                         prefix_table("items"),
                         array(
@@ -1880,19 +1889,33 @@ function rest_get () {
             if ($json) {
                 echo json_encode($json);
             } else {
-                rest_error ('EMPTY');
+                rest_error('EMPTY');
             }
         } else if ($GLOBALS['request'][0] == "new_password") {
             if (!empty($GLOBALS['request'][1])) {
                 $params = explode(";", $GLOBALS['request'][1]);
 
-                if (empty($params[0])) $params[0] = 8;
-                if (empty($params[1])) $params[1] = 0;
-                if (empty($params[2])) $params[2] = 0;
-                if (empty($params[3])) $params[3] = 0;
-                if (empty($params[4])) $params[4] = 0;
-                if (empty($params[5])) $params[5] = 0;
-                if (empty($params[6])) $params[6] = 0;
+                if (empty($params[0])) {
+                    $params[0] = 8;
+                }
+                if (empty($params[1])) {
+                    $params[1] = 0;
+                }
+                if (empty($params[2])) {
+                    $params[2] = 0;
+                }
+                if (empty($params[3])) {
+                    $params[3] = 0;
+                }
+                if (empty($params[4])) {
+                    $params[4] = 0;
+                }
+                if (empty($params[5])) {
+                    $params[5] = 0;
+                }
+                if (empty($params[6])) {
+                    $params[6] = 0;
+                }
 
                 // load library
                 require_once '../sources/SplClassLoader.php';
@@ -1902,11 +1925,21 @@ function rest_get () {
 
                 // init
                 $pwgen->setLength($params[0]);
-                if($params[1] === "1") $pwgen->setSecure(true);
-                if($params[2] === "1") $pwgen->setNumerals(true);
-                if($params[3] === "1") $pwgen->setCapitalize(true);
-                if($params[4] === "1") $pwgen->setAmbiguous(true);
-                if($params[5] === "1" && $params[6] === "1") $pwgen->setSymbols(true);
+                if ($params[1] === "1") {
+                    $pwgen->setSecure(true);
+                }
+                if ($params[2] === "1") {
+                    $pwgen->setNumerals(true);
+                }
+                if ($params[3] === "1") {
+                    $pwgen->setCapitalize(true);
+                }
+                if ($params[4] === "1") {
+                    $pwgen->setAmbiguous(true);
+                }
+                if ($params[5] === "1" && $params[6] === "1") {
+                    $pwgen->setSymbols(true);
+                }
 
                 // generate and send back (generate in base64 if symbols are asked)
                 if ($params[6] === "1") {
@@ -1915,7 +1948,7 @@ function rest_get () {
                     echo '{"password" : "'.($pwgen->generate()).'"}';
                 }
             } else {
-                rest_error ('NO_PARAMETERS');
+                rest_error('NO_PARAMETERS');
             }
         } else if ($GLOBALS['request'][0] === "info") {
             if ($GLOBALS['request'][1] === "complexicity_levels_list") {
@@ -1935,11 +1968,11 @@ function rest_get () {
             } else if ($GLOBALS['request'][1] === "folder") {
                 if (!empty($GLOBALS['request'][2]) && is_numeric($GLOBALS['request'][2])) {
                     $data = DB::queryFirstRow(
-                        "SELECT * FROM " . $pre . "nested_tree WHERE id = %i",
+                        "SELECT * FROM ".$pre."nested_tree WHERE id = %i",
                         $GLOBALS['request'][2]
                     );
                     if (DB::count() == 0) {
-                        rest_error ('NOSUCHFOLDER');
+                        rest_error('NOSUCHFOLDER');
                     }
 
                     // form id_tree to full foldername
@@ -1970,36 +2003,39 @@ function rest_get () {
 
                     echo json_encode($json);
                 } else {
-                    rest_error ('NO_PARAMETERS');
+                    rest_error('NO_PARAMETERS');
                 }
             } else if ($GLOBALS['request'][1] === "version") {
                 echo '{"api-version":"'.$api_version.'"}';
             } else {
-                rest_error ('NO_PARAMETERS');
+                rest_error('NO_PARAMETERS');
             }
         } else {
-            rest_error ('METHOD');
+            rest_error('METHOD');
         }
     }
 }
 
 function rest_put() {
-    if(!@count($GLOBALS['request'])==0){
+    if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',$request_uri,$matches);
+        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
         if (count($matches) == 0) {
-            rest_error ('REQUEST_SENT_NOT_UNDERSTANDABLE');
+            rest_error('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
-        $GLOBALS['request'] =  explode('/',$matches[2]);
+        $GLOBALS['request'] = explode('/', $matches[2]);
     }
-    if(apikey_checker($GLOBALS['apikey'])) {
+    if (apikey_checker($GLOBALS['apikey'])) {
         global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
 
     }
 }
 
-function rest_error ($type,$detail = 'N/A') {
+/**
+ * @param string $type
+ */
+function rest_error($type, $detail = 'N/A') {
     switch ($type) {
         case 'APIKEY':
             $message = Array('err' => 'This api_key '.$GLOBALS['apikey'].' doesn\'t exist');
@@ -2116,13 +2152,13 @@ function rest_error ($type,$detail = 'N/A') {
     exit(0);
 }
 
-function apikey_checker ($apikey_used) {
+function apikey_checker($apikey_used) {
     teampass_connect();
     $apikey_pool = teampass_get_keys();
     if (in_array($apikey_used, $apikey_pool)) {
         return(1);
     } else {
-        rest_error('APIKEY',$apikey_used);
+        rest_error('APIKEY', $apikey_used);
     }
 }
 
@@ -2132,7 +2168,7 @@ function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
     $dk = '';
 
     for ($block = 1; $block <= $kb; $block++) {
-        $ib = $h = hash_hmac($a, $s . pack('N', $block), $p, true);
+        $ib = $h = hash_hmac($a, $s.pack('N', $block), $p, true);
         for ($i = 1; $i < $c; $i++) {
             $ib ^= ($h = hash_hmac($a, $h, $p, true));
         }

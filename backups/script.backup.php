@@ -24,8 +24,8 @@ DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
-DB::$error_handler = 'db_error_handler';
-$link= mysqli_connect($server, $user, $pass, $database, $port);
+DB::$error_handler = true;
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -39,7 +39,7 @@ foreach ($rows as $record) {
 if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_path'])) {
     //get all of the tables
     $tables = array();
-    $result = mysqli_query($link,'SHOW TABLES');
+    $result = mysqli_query($link, 'SHOW TABLES');
     while ($row = mysqli_fetch_row($result)) {
         $tables[] = $row[0];
     }
@@ -47,40 +47,79 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 
     //cycle through each table and format the data
     foreach ($tables as $table) {
-        $result = mysqli_query($link,'SELECT * FROM '.$table);
+        $result = mysqli_query($link, 'SELECT * FROM '.$table);
         $num_fields = mysqli_num_fields($result);
 
-        $return.= 'DROP TABLE '.$table.';';
-        $row2 = mysqli_fetch_row(mysqli_query($link,'SHOW CREATE TABLE '.$table));
-        $return.= "\n\n".$row2[1].";\n\n";
+        $return .= 'DROP TABLE '.$table.';';
+        $row2 = mysqli_fetch_row(mysqli_query($link, 'SHOW CREATE TABLE '.$table));
+        $return .= "\n\n".$row2[1].";\n\n";
 
         for ($i = 0; $i < $num_fields; $i++) {
             while ($row = mysqli_fetch_row($result)) {
-                $return.= 'INSERT INTO '.$table.' VALUES(';
-                for ($j=0; $j<$num_fields; $j++) {
+                $return .= 'INSERT INTO '.$table.' VALUES(';
+                for ($j = 0; $j < $num_fields; $j++) {
                     $row[$j] = addslashes($row[$j]);
                     $row[$j] = preg_replace('/\n/', '/\\n/', $row[$j]);
                     if (isset($row[$j])) {
-                        $return.= '"'.$row[$j].'"' ;
+                        $return .= '"'.$row[$j].'"';
                     } else {
-                        $return.= '""';
+                        $return .= '""';
                     }
-                    if ($j<($num_fields-1)) {
-                        $return.= ',';
+                    if ($j < ($num_fields - 1)) {
+                        $return .= ',';
                     }
                 }
-                $return.= ");\n";
+                $return .= ");\n";
             }
         }
-        $return.="\n\n\n";
+        $return .= "\n\n\n";
     }
 
+    // Encrypt file is required
+    $bck_filename = $settings['bck_script_filename'].'-'.time();
     if (!empty($settings['bck_script_key'])) {
-        $return = Encryption\Crypt\aesctr::encrypt($return, $settings['bck_script_key'], 256);
+
+        $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
+        fwrite($handle, $return);
+        fclose($handle);
+
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Encoding.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Key.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/RuntimeTests.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
+
+        \Defuse\Crypto\File::encryptFileWithPassword(
+            $settings['bck_script_path'].'/'.$bck_filename.'.sql',
+            $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
+            $settings['bck_script_key']
+        );
+
+        // delete clear file
+        unlink($settings['bck_script_path'].'/'.$bck_filename.'.sql');
+
+        // change the file name
+        $bck_filename .= '.encrypted';
+    } else {
+        //save the file
+        $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
+        fwrite($handle, $return);
+        fclose($handle);
     }
 
-    //save the file
-    $handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql', 'w+');
-    fwrite($handle, $return);
-    fclose($handle);
+    // store this file in DB
+    $tmp = mysqli_num_rows(mysqli_query($link, "SELECT * FROM `".$pre."misc` WHERE type = 'backup' AND intitule = 'filename'"));
+    if ($tmp === 0) {
+        $mysqli_result = mysqli_query($link,
+            "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('backup', 'filename', '".$bck_filename."')"
+        );
+    } else {
+        $mysqli_result = mysqli_query($link,
+            "UPDATE `".$pre."misc` SET `valeur` = '".$bck_filename."' WHERE type = 'backup' AND intitule = 'filename'"
+        );
+    }
 }

@@ -48,7 +48,6 @@
 
 namespace phpseclib\Net;
 
-use ParagonIE\ConstantTime\Hex;
 use phpseclib\Crypt\DES;
 use phpseclib\Crypt\Random;
 use phpseclib\Crypt\TripleDES;
@@ -554,7 +553,7 @@ class SSH1
 
         if (defined('NET_SSH1_LOGGING')) {
             $this->_append_log('<-', $this->server_identification);
-            $this->_append_log('->', $this->identifier . "\r\n");
+            $this->_append_log('->', $this->identifier."\r\n");
         }
 
         if (!preg_match('#SSH-([0-9\.]+)-(.+)#', $init_line, $parts)) {
@@ -611,7 +610,7 @@ class SSH1
             }
         }
 
-        $session_id = md5($host_key_public_modulus->toBytes() . $server_key_public_modulus->toBytes() . $anti_spoofing_cookie, true);
+        $session_id = md5($host_key_public_modulus->toBytes().$server_key_public_modulus->toBytes().$anti_spoofing_cookie, true);
 
         $session_key = Random::string(32);
         $double_encrypted_session_key = $session_key ^ str_pad($session_id, 32, chr(0));
@@ -663,7 +662,7 @@ class SSH1
                 $this->crypto = new DES(DES::MODE_CBC);
                 $this->crypto->disablePadding();
                 $this->crypto->enableContinuousBuffer();
-                $this->crypto->setKey(substr($session_key, 0,  8));
+                $this->crypto->setKey(substr($session_key, 0, 8));
                 // "The iv (initialization vector) is initialized to all zeroes."
                 $this->crypto->setIV(str_repeat("\0", 8));
                 break;
@@ -791,7 +790,7 @@ class SSH1
      * @see self::interactiveRead()
      * @see self::interactiveWrite()
      * @param string $cmd
-     * @return mixed
+     * @return boolean|string
      * @throws \RuntimeException on error sending command
      * @access public
      */
@@ -816,7 +815,7 @@ class SSH1
 
         if ($response !== false) {
             do {
-                $output.= substr($response[self::RESPONSE_DATA], 4);
+                $output .= substr($response[self::RESPONSE_DATA], 4);
                 $response = $this->_get_binary_packet();
             } while (is_array($response) && $response[self::RESPONSE_TYPE] != NET_SSH1_SMSG_EXITSTATUS);
         }
@@ -899,7 +898,7 @@ class SSH1
      * @see self::write()
      * @param string $expect
      * @param int $mode
-     * @return bool
+     * @return string|null
      * @throws \RuntimeException on connection error
      * @access public
      */
@@ -928,7 +927,7 @@ class SSH1
             if ($response === true) {
                 return Strings::shift($this->interactiveBuffer, strlen($this->interactiveBuffer));
             }
-            $this->interactiveBuffer.= substr($response[self::RESPONSE_DATA], 4);
+            $this->interactiveBuffer .= substr($response[self::RESPONSE_DATA], 4);
         }
     }
 
@@ -1081,7 +1080,7 @@ class SSH1
                 return true;
             }
             $elapsed = strtok(microtime(), ' ') + strtok('') - $start;
-            $this->curTimeout-= $elapsed;
+            $this->curTimeout -= $elapsed;
         }
 
         $start = strtok(microtime(), ' ') + strtok(''); // http://php.net/microtime#61838
@@ -1093,8 +1092,8 @@ class SSH1
 
         while ($length > 0) {
             $temp = fread($this->fsock, $length);
-            $raw.= $temp;
-            $length-= strlen($temp);
+            $raw .= $temp;
+            $length -= strlen($temp);
         }
         $stop = strtok(microtime(), ' ') + strtok('');
 
@@ -1117,8 +1116,8 @@ class SSH1
 
         if (defined('NET_SSH1_LOGGING')) {
             $temp = isset($this->protocol_flags[$type]) ? $this->protocol_flags[$type] : 'UNKNOWN';
-            $temp = '<- ' . $temp .
-                    ' (' . round($stop - $start, 4) . 's)';
+            $temp = '<- '.$temp.
+                    ' ('.round($stop - $start, 4).'s)';
             $this->_append_log($temp, $data);
         }
 
@@ -1150,8 +1149,8 @@ class SSH1
         $padding = Random::string(8 - ($length & 7));
 
         $orig = $data;
-        $data = $padding . $data;
-        $data.= pack('N', $this->_crc($data));
+        $data = $padding.$data;
+        $data .= pack('N', $this->_crc($data));
 
         if ($this->crypto !== false) {
             $data = $this->crypto->encrypt($data);
@@ -1165,8 +1164,8 @@ class SSH1
 
         if (defined('NET_SSH1_LOGGING')) {
             $temp = isset($this->protocol_flags[ord($orig[0])]) ? $this->protocol_flags[ord($orig[0])] : 'UNKNOWN';
-            $temp = '-> ' . $temp .
-                    ' (' . round($stop - $start, 4) . 's)';
+            $temp = '-> '.$temp.
+                    ' ('.round($stop - $start, 4).'s)';
             $this->_append_log($temp, $orig);
         }
 
@@ -1260,7 +1259,7 @@ class SSH1
         $crc = 0x00000000;
         $length = strlen($data);
 
-        for ($i=0; $i<$length; $i++) {
+        for ($i = 0; $i < $length; $i++) {
             // We AND $crc >> 8 with 0x00FFFFFF because we want the eight newly added bits to all
             // be zero.  PHP, unfortunately, doesn't always do this.  0x80000000 >> 8, as an example,
             // yields 0xFF800000 - not 0x00800000.  The following link elaborates:
@@ -1282,8 +1281,8 @@ class SSH1
      *
      * @see self::__construct()
      * @param BigInteger $m
-     * @param array $key
-     * @return BigInteger
+     * @param BigInteger[] $key
+     * @return string
      * @access private
      */
     function _rsa_crypt($m, $key)
@@ -1314,9 +1313,9 @@ class SSH1
         while (strlen($random) != $length) {
             $block = Random::string($length - strlen($random));
             $block = str_replace("\x00", '', $block);
-            $random.= $block;
+            $random .= $block;
         }
-        $temp = chr(0) . chr(2) . $random . chr(0) . $m;
+        $temp = chr(0).chr(2).$random.chr(0).$m;
 
         $m = new BigInteger($temp, 256);
         $m = $m->modPow($key[0], $key[1]);
@@ -1331,7 +1330,6 @@ class SSH1
      * named constants from it, using the value as the name of the constant and the index as the value of the constant.
      * If any of the constants that would be defined already exists, none of the constants will be defined.
      *
-     * @param array $array
      * @access private
      */
     function _define_array()
@@ -1386,12 +1384,12 @@ class SSH1
     {
         $output = '';
         for ($i = 0; $i < count($message_log); $i++) {
-            $output.= $message_number_log[$i] . "\r\n";
+            $output .= $message_number_log[$i]."\r\n";
             $current_log = $message_log[$i];
             $j = 0;
             do {
                 if (strlen($current_log)) {
-                    $output.= str_pad(dechex($j), 7, '0', STR_PAD_LEFT) . '0  ';
+                    $output .= str_pad(dechex($j), 7, '0', STR_PAD_LEFT).'0  ';
                 }
                 $fragment = Strings::shift($current_log, $this->log_short_width);
                 $hex = substr(preg_replace_callback('#.#s', array($this, '_format_log_helper'), $fragment), strlen($this->log_boundary));
@@ -1399,10 +1397,10 @@ class SSH1
                 // http://en.wikipedia.org/wiki/ASCII#ASCII_printable_characters
                 // also replace < with a . since < messes up the output on web browsers
                 $raw = preg_replace('#[^\x20-\x7E]|<#', '.', $fragment);
-                $output.= str_pad($hex, $this->log_long_width - $this->log_short_width, ' ') . $raw . "\r\n";
+                $output .= str_pad($hex, $this->log_long_width - $this->log_short_width, ' ').$raw."\r\n";
                 $j++;
             } while (strlen($current_log));
-            $output.= "\r\n";
+            $output .= "\r\n";
         }
 
         return $output;
@@ -1419,7 +1417,7 @@ class SSH1
      */
     function _format_log_helper($matches)
     {
-        return $this->log_boundary . str_pad(dechex(ord($matches[0])), 2, '0', STR_PAD_LEFT);
+        return $this->log_boundary.str_pad(dechex(ord($matches[0])), 2, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -1530,8 +1528,9 @@ class SSH1
      *
      * Makes sure that only the last 1MB worth of packets will be logged
      *
-     * @param string $data
      * @access private
+     * @param string $protocol_flags
+     * @param string $message
      */
     function _append_log($protocol_flags, $message)
     {
@@ -1544,10 +1543,10 @@ class SSH1
             case self::LOG_COMPLEX:
                 $this->protocol_flags_log[] = $protocol_flags;
                 Strings::shift($message);
-                $this->log_size+= strlen($message);
+                $this->log_size += strlen($message);
                 $this->message_log[] = $message;
                 while ($this->log_size > self::LOG_MAX_SIZE) {
-                    $this->log_size-= strlen(array_shift($this->message_log));
+                    $this->log_size -= strlen(array_shift($this->message_log));
                     array_shift($this->protocol_flags_log);
                 }
                 break;
@@ -1555,7 +1554,7 @@ class SSH1
             // passwords won't be filtered out and select other packets may not be correctly
             // identified
             case self::LOG_REALTIME:
-                echo "<pre>\r\n" . $this->_format_log(array($message), array($protocol_flags)) . "\r\n</pre>\r\n";
+                echo "<pre>\r\n".$this->_format_log(array($message), array($protocol_flags))."\r\n</pre>\r\n";
                 @flush();
                 @ob_flush();
                 break;
@@ -1576,10 +1575,10 @@ class SSH1
                 $entry = $this->_format_log(array($message), array($protocol_flags));
                 if ($this->realtime_log_wrap) {
                     $temp = "<<< START >>>\r\n";
-                    $entry.= $temp;
+                    $entry .= $temp;
                     fseek($this->realtime_log_file, ftell($this->realtime_log_file) - strlen($temp));
                 }
-                $this->realtime_log_size+= strlen($entry);
+                $this->realtime_log_size += strlen($entry);
                 if ($this->realtime_log_size > self::LOG_MAX_SIZE) {
                     fseek($this->realtime_log_file, 0);
                     $this->realtime_log_size = strlen($entry);

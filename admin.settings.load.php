@@ -62,7 +62,7 @@ function categoryAdd() {
             $("#tbl_categories").append(
                 '<tr id="t_cat_'+data[0].id+'"><td colspan="2">'+
                 '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;&nbsp;'+
-                '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+
+                '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category']; ?>" onclick="fieldAdd('+
                 data[0].id+')" style="cursor:pointer;">'+
                 '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
                 '</span>&nbsp;'+
@@ -70,10 +70,10 @@ function categoryAdd() {
                 '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
                 $("#new_category_label").val()+'</label>'+
                 '</td><td>'+
-                '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
+                '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders']; ?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
                 '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
                 '</span>&nbsp;'+
-                '<?php echo $LANG['category_in_folders_title'];?>:'+
+                '<?php echo $LANG['category_in_folders_title']; ?>:'+
                 '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
                 '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
@@ -94,7 +94,7 @@ function renameItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
     $("#post_id").val(data[1]);
     $("#post_type").val("renameItem");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_rename'];?>");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_rename']; ?>");
     $("#category_confirm").dialog("open");
 }
 
@@ -105,7 +105,7 @@ function deleteItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
     $("#post_id").val(data[1]);
     $("#post_type").val("deleteCategory");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_deletion'];?>");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_deletion']; ?>");
     $("#category_confirm").dialog("open");
 }
 
@@ -116,7 +116,7 @@ function moveItem() {
     var data = $("input[name=sel_item]:checked").attr("id").split('_');
     $("#post_id").val(data[1]);
     $("#post_type").val("moveItem");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_moveto'];?>");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_moveto']; ?>");
     $("#category_confirm").dialog("open");
 }
 
@@ -167,7 +167,7 @@ function loadFieldsList() {
         "sources/categories.queries.php",
         {
             type    : "loadFieldsList",
-            title   : prepareExchangedData(sanitizeString($("#new_category_label").val()), "encode", "<?php echo $_SESSION['key'];?>")
+            title   : prepareExchangedData(sanitizeString($("#new_category_label").val()), "encode", "<?php echo $_SESSION['key']; ?>")
         },
         function(data) {
             var newList = '<table id="tbl_categories" style="">';
@@ -177,17 +177,17 @@ function loadFieldsList() {
                 if (val[0] === "1") {
                     newList += '<tr id="t_cat_'+val[1]+'"><td colspan="2">'+
                     '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
-                    '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category'];?>" onclick="fieldAdd('+
+                    '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category']; ?>" onclick="fieldAdd('+
                     val[1]+')" style="cursor:pointer;">'+
                     '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
                     '</span>&nbsp;'+
                     '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
                     '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>'+
                     '</td><td>'+
-                    '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders'];?>" onclick="catInFolders('+val[1]+')" style="cursor:pointer;">'+
+                    '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders']; ?>" onclick="catInFolders('+val[1]+')" style="cursor:pointer;">'+
                     '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
                     '</span>&nbsp;'+
-                    '<?php echo $LANG['category_in_folders_title'];?>:'+
+                    '<?php echo $LANG['category_in_folders_title']; ?>:'+
                     '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
                     '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
                 } else {
@@ -199,9 +199,9 @@ function loadFieldsList() {
                     if (val[4] !== "") {
                         newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
                         if (val[4] === "1") {
-                            newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 1)"></i>';
+                            newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>" onclick="changeEncrypMode('+val[1]+', 1)"></i>';
                         } else if (val[4] === "0") {
-                            newList += '<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 0)"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>';
+                            newList += '<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data']; ?>" onclick="changeEncrypMode('+val[1]+', 0)"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>';
                         }
                         newList += '</span>'
                     }
@@ -227,14 +227,14 @@ function LaunchAdminActions(action, option)
     var option;
 
     $("#div_loading").show();
-    $("#email_testing_results").hide();
+    $("#email_testing_results, #result_admin_script_backup").hide();
     $("#result_admin_action_db_backup").html("");
     if (action === "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
     else if (action === "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
     else if (action === "admin_action_change_salt_key") {
         option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
     } else if (action === "admin_email_send_backlog") {
-        $("#email_testing_results").show().html("<?php echo addslashes($LANG['please_wait']);?>").attr("class","ui-corner-all ui-state-focus");
+        $("#email_testing_results").show().html("<?php echo addslashes($LANG['please_wait']); ?>").attr("class","ui-corner-all ui-state-focus");
     } else if (action === "admin_action_attachments_cryption") {
         option = $("input[name=attachments_cryption]:checked").val();
         if (option === "" || option === undefined) {
@@ -261,7 +261,7 @@ function LaunchAdminActions(action, option)
         if (option === "" || option.length === 0) return;
 
         // convert to json string
-        option = prepareExchangedData(JSON.stringify(option) , "encode", "<?php echo $_SESSION['key'];?>");
+        option = prepareExchangedData(JSON.stringify(option) , "encode", "<?php echo $_SESSION['key']; ?>");
     }
     //Lauchn ajax query
     $.post(
@@ -274,7 +274,7 @@ function LaunchAdminActions(action, option)
             $("#div_loading").hide();
             if (data != null) {
                 if (data[0].result == "db_backup") {
-                    $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download'];?></a>").show();
+                    $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download']; ?></a>").show();
                 } else if (data[0].result == "pf_done") {
                     $("#result_admin_action_check_pf").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_restore") {
@@ -289,9 +289,9 @@ function LaunchAdminActions(action, option)
                 } else if (data[0].result == "db_optimize") {
                     $("#result_admin_action_db_optimize").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "purge_old_files") {
-                    $("#result_admin_action_purge_old_files").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_files_deleted+"&nbsp;<? echo $LANG['admin_action_purge_old_files_result'];?>").show();
+                    $("#result_admin_action_purge_old_files").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_files_deleted+"&nbsp;<?php echo $LANG['admin_action_purge_old_files_result']; ?>").show();
                 } else if (data[0].result == "db_clean_items") {
-                    $("#result_admin_action_db_clean_items").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result'];?>").show();
+                    $("#result_admin_action_db_clean_items").html("<span class='fa fa-check mi-green'></span>&nbsp;"+data[0].nb_items_deleted+"&nbsp;<?php echo $LANG['admin_action_db_clean_items_result']; ?>").show();
                 } else if (data[0].result == "changed_salt_key") {
                     //deconnect user
                     $("#menu_action").val("deconnexion");
@@ -299,14 +299,14 @@ function LaunchAdminActions(action, option)
                     window.location.href = "logout.php"
                 } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
                     if (data[0].error != "") {
-                        $("#email_testing_results").html("<?php echo addslashes($LANG['admin_email_result_nok']);?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
+                        $("#email_testing_results").html("<?php echo addslashes($LANG['admin_email_result_nok']); ?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
                     } else {
-                        $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $LANG['admin_email_result_ok']));?>").show().attr("class","ui-corner-all ui-state-focus");
+                        $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $LANG['admin_email_result_ok'])); ?>").show().attr("class","ui-corner-all ui-state-focus");
                     }
                 } else if (data[0].result == "pw_prefix_correct") {
                     $("result_admin_action_pw_prefix_correct").html(data[0].ret).show();
                 } else if (data[0].result == "attachments_cryption") {
-                    if (data[0].continu == true) {
+                    if (data[0].continu === true) {
                         $("#result_admin_action_attachments_cryption").html('').show();
                         manageEncryptionOfAttachments(data[0].list, data[0].cpt);
                     } else if (data[0].error == "file_not_encrypted") {
@@ -322,7 +322,13 @@ function LaunchAdminActions(action, option)
                     } else {
                         $("#ldap_test_msg").html(data[0].results).show();
                     }
+                // for BCK DECRYPT
+                } else if (data[0].result === "backup_decrypt_fails") {
+                    $("#result_admin_script_backup").html(data[0].msg).show();
+                } else if (data[0].result === "backup_decrypt_success") {
+                    $("#result_admin_script_backup").html("<span class='fa fa-check mi-green'></span>&nbsp;<?php echo addslashes($LANG['file_is_now_ready']); ?> - " + data[0].msg).show(1).delay(5000).fadeOut(500);
                 }
+                //--
             }
         },
         "json"
@@ -333,7 +339,7 @@ function LaunchAdminActions(action, option)
 *
 */
 function confirmChangingSk() {
-    if (confirm("<?php echo addslashes($LANG['confirm_database_reencryption']);?>")) {
+    if (confirm("<?php echo addslashes($LANG['confirm_database_reencryption']); ?>")) {
         changeMainSaltKey('starting', '');
     }
 }
@@ -354,14 +360,14 @@ function changeMainSaltKey(start, object)
     // start change
     if (start === "starting") {
         // inform
-        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['starting'];?>").show();
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['starting']; ?>").show();
 
         // launch query
         $.post(
             "sources/admin.queries.php",
             {
                 type     : "admin_action_change_salt_key___start",
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 if (data[0].error == "" && data[0].nextAction == "encrypt_items") {
@@ -373,7 +379,7 @@ function changeMainSaltKey(start, object)
                     //changeMainSaltKey(0, "files");
                 } else {
                     // error mngt
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back'];?> : "+data[0].error);
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back']; ?> : "+data[0].error);
                 }
             },
             "json"
@@ -382,7 +388,7 @@ function changeMainSaltKey(start, object)
     } else if (isFinite(start) && object !== "") {
         console.log("Step Encrypt - " +start+" ; "+nb+" ; "+$("#changeMainSaltKey_itemsCount").val());
 
-        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items'];?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items'];?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
+        $("#changeMainSaltKey_message").html("<i class=\"fa fa-cog fa-spin fa\"></i>&nbsp;<?php echo $LANG['treating_items']; ?>...&nbsp;"+start+" > "+(parseInt(start)+parseInt(nb))+" (<?php echo $LANG['total_number_of_items']; ?> : "+$("#changeMainSaltKey_itemsCount").val()+")");
 
         $.post(
             "sources/admin.queries.php",
@@ -392,7 +398,7 @@ function changeMainSaltKey(start, object)
                 start        : start,
                 length       : nb,
                 nbItems      : $("#changeMainSaltKey_itemsCount").val(),
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 console.log("Next action: "+data[0].nextAction);
@@ -406,11 +412,11 @@ function changeMainSaltKey(start, object)
                     }
                     changeMainSaltKey(data[0].nextStart, object);
                 } else if (data[0].nextAction === "finishing") {
-                    $("#changeMainSaltKey_message").html("<?php echo $LANG['finalizing'];?>...");
+                    $("#changeMainSaltKey_message").html("<?php echo $LANG['finalizing']; ?>...");
                     changeMainSaltKey("finishing");
                 } else {
                     // error mngt
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back'];?> : "+data[0].error);
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back']; ?> : "+data[0].error);
                 }
             },
             "json"
@@ -421,12 +427,12 @@ function changeMainSaltKey(start, object)
             "sources/admin.queries.php",
             {
                 type     : "admin_action_change_salt_key___end",
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 if (data[0].nextAction === "done") {
                     console.log("done");
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated'];?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p><?php echo $LANG['check_data_after_reencryption'];?><p><div style=\"margin-top:5px;\"><a href=\"#\" onclick=\"encryption_show_revert()\"><?php echo $LANG['revert'];?></a></div>');
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated']; ?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p><?php echo $LANG['check_data_after_reencryption']; ?><p><div style=\"margin-top:5px;\"><a href=\"#\" onclick=\"encryption_show_revert()\"><?php echo $LANG['revert']; ?></a></div>');
                 } else {
                     // error mngt
                 }
@@ -438,13 +444,13 @@ function changeMainSaltKey(start, object)
 }
 
 function encryption_show_revert() {
-    if (confirm('<?php echo $LANG['revert_the_database'];?>')) {
-        $("#changeMainSaltKey_message").append('<div style="margin-top:5px;"><i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']);?>...</div>')
+    if (confirm('<?php echo $LANG['revert_the_database']; ?>')) {
+        $("#changeMainSaltKey_message").append('<div style="margin-top:5px;"><i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']); ?>...</div>')
         $.post(
             "sources/admin.queries.php",
             {
                 type    : "admin_action_change_salt_key___restore_backup",
-                key     : "<?php echo $_SESSION['key'];?>"
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 $("#changeMainSaltKey_message").html('').hide();
@@ -468,8 +474,8 @@ function updateSetting(field)
         "sources/admin.queries.php",
         {
             type    : "save_option_change",
-            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-            key     : "<?php echo $_SESSION['key'];?>"
+            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             // force page reload in case of encryptClientServer
@@ -479,7 +485,7 @@ function updateSetting(field)
             }
             //decrypt data
             try {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             } catch (e) {
                 // error
                 $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
@@ -518,8 +524,8 @@ $(function() {
         drag: true, // allow dragging the toggle between positions
         click: true, // allow clicking on the toggle
         text: {
-            on: '<?php echo $LANG['yes'];?>', // text for the ON position
-            off: '<?php echo $LANG['no'];?>' // and off
+            on: '<?php echo $LANG['yes']; ?>', // text for the ON position
+            off: '<?php echo $LANG['no']; ?>' // and off
         },
         on: true, // is the toggle ON on init
         animate: 250, // animation time (ms)
@@ -544,8 +550,8 @@ $(function() {
             "sources/admin.queries.php",
             {
                 type    : "save_option_change",
-                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                key     : "<?php echo $_SESSION['key'];?>"
+                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 // force page reload in case of encryptClientServer
@@ -555,7 +561,7 @@ $(function() {
                 }
                 //decrypt data
                 try {
-                    data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                    data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                 } catch (e) {
                     // error
                     $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
@@ -599,7 +605,7 @@ $(function() {
             }
         },
         beforeLoad: function( event, ui ) {
-            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading']; ?>...</div>')
         },
         load: function( event, ui ) {
             $("#loader_tab").remove();
@@ -632,9 +638,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 120,
-        title: "<?php echo $LANG['confirm'];?>",
+        title: "<?php echo $LANG['confirm']; ?>",
         buttons: {
-            "<?php echo $LANG['confirm'];?>": function() {
+            "<?php echo $LANG['confirm']; ?>": function() {
                 $("#div_loading").show();
                 var $this = $(this);
                 // prepare data to send
@@ -669,7 +675,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
@@ -682,9 +688,9 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 150,
-        title: "<?php echo $LANG['category_in_folders'];?>",
+        title: "<?php echo $LANG['category_in_folders']; ?>",
         buttons: {
-            "<?php echo $LANG['confirm'];?>": function() {
+            "<?php echo $LANG['confirm']; ?>": function() {
                 if ($("#new_field_title").val() != "" && $("#post_id").val() != "") {
                     $("#div_loading").show();
                     var $this = $(this);
@@ -706,7 +712,7 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
@@ -716,8 +722,8 @@ $(function() {
     $("#cat_folders_selection").multiselect({
         selectedList: 7,
         multiple:true,
-        checkAllText: "<?php echo $LANG['check_all_text'];?>",
-        uncheckAllText: "<?php echo $LANG['uncheck_all_text'];?>"
+        checkAllText: "<?php echo $LANG['check_all_text']; ?>",
+        uncheckAllText: "<?php echo $LANG['uncheck_all_text']; ?>"
     });
 
     $("#category_in_folder").dialog({
@@ -726,12 +732,12 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 350,
-        title: "<?php echo $LANG['category_in_folders'];?>",
+        title: "<?php echo $LANG['category_in_folders']; ?>",
         open: function() {
             $("#cat_folders_selection").multiselect('refresh');
         },
         buttons: {
-            "<?php echo $LANG['confirm'];?>": function() {
+            "<?php echo $LANG['confirm']; ?>": function() {
                 // get list of selected folders
                 var ids = "";
                 $("#cat_folders_selection :selected").each(function(i, selected) {
@@ -761,7 +767,7 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
@@ -774,12 +780,12 @@ $(function() {
         autoOpen: false,
         width:250,
         height:150,
-        title: "<?php echo $LANG['admin_action_db_restore_key'];?>",
+        title: "<?php echo $LANG['admin_action_db_restore_key']; ?>",
         buttons: {
-            "<?php echo $LANG['ok'];?>": function() {
+            "<?php echo $LANG['ok']; ?>": function() {
                 LaunchAdminActions("admin_action_db_restore", $("#restore_bck_fileObj").val()+"&"+$("#restore_bck_encryption_key").val());
             },
-            "<?php echo $LANG['cancel_button'];?>'": function() {
+            "<?php echo $LANG['cancel_button']; ?>'": function() {
                 $(this).dialog("close");
             }
         }
@@ -905,11 +911,11 @@ $(function() {
     $.post("sources/admin.queries.php",
         {
             type        : "is_backup_table_existing",
-            key         : "<?php echo $_SESSION['key'];?>"
+            key         : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             if (data === "1") {
-                $("#changeMainSaltKey_message").show().html('<?php echo addslashes($LANG['previous_backup_exists']);?>&nbsp;&nbsp;<b><a href="#" id="but_bck_restore"><?php echo $LANG['yes'];?></a></b><br /><?php echo $LANG['previous_backup_exists_delete'];?>&nbsp;&nbsp;<b><a href="#" id="but_bck_delete"><?php echo $LANG['yes'];?></a></b>');
+                $("#changeMainSaltKey_message").show().html('<?php echo addslashes($LANG['previous_backup_exists']); ?>&nbsp;&nbsp;<b><a href="#" id="but_bck_restore"><?php echo $LANG['yes']; ?></a></b><br /><?php echo $LANG['previous_backup_exists_delete']; ?>&nbsp;&nbsp;<b><a href="#" id="but_bck_delete"><?php echo $LANG['yes']; ?></a></b>');
 
                 // Restore the backup
                 $("#but_bck_restore").click(function(e) {
@@ -918,13 +924,13 @@ $(function() {
 
                 // Delete the backup
                 $("#but_bck_delete").click(function(e) {
-                    if (confirm("<?php echo $LANG['wipe_backup_data'];?>")) {
-                        $("#changeMainSaltKey_message").append('<div style="margin-top:5px;"><i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']);?>...</div>')
+                    if (confirm("<?php echo $LANG['wipe_backup_data']; ?>")) {
+                        $("#changeMainSaltKey_message").append('<div style="margin-top:5px;"><i class="fa fa-cog fa-spin fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']); ?>...</div>')
                         $.post(
                             "sources/admin.queries.php",
                             {
                                 type    : "admin_action_change_salt_key___delete_backup",
-                                key     : "<?php echo $_SESSION['key'];?>"
+                                key     : "<?php echo $_SESSION['key']; ?>"
                             },
                             function(data) {
                                 $("#changeMainSaltKey_message").html('').hide();
@@ -989,9 +995,9 @@ function changeEncrypMode(id, encrypted_data) {
             // show to user
             if (data[0].error === ""){
                 if (encrypted_data === "1") {
-                    $("#encryt_data_"+id).html('<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode(\''+id+'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>');
+                    $("#encryt_data_"+id).html('<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data']; ?>" onclick="changeEncrypMode(\''+id+'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>');
                 } else {
-                    $("#encryt_data_"+id).html('<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode(\''+id+'\', \'1\')"></i>');
+                    $("#encryt_data_"+id).html('<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>" onclick="changeEncrypMode(\''+id+'\', \'1\')"></i>');
                 }
             }
             $("#div_loading").hide();

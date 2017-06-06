@@ -70,7 +70,7 @@ class SCP
     /**
      * SSH2 is being used.
      */
-    const MODE_SSH2 =  2;
+    const MODE_SSH2 = 2;
     /**#@-*/
 
     /**
@@ -148,7 +148,7 @@ class SCP
             return false;
         }
 
-        if (!$this->ssh->exec('scp -t ' . escapeshellarg($remote_file), false)) { // -t = to
+        if (!$this->ssh->exec('scp -t '.escapeshellarg($remote_file), false)) { // -t = to
             return false;
         }
 
@@ -177,7 +177,7 @@ class SCP
             $size = filesize($data);
         }
 
-        $this->_send('C0644 ' . $size . ' ' . $remote_file . "\n");
+        $this->_send('C0644 '.$size.' '.$remote_file."\n");
 
         $temp = $this->_receive();
         if ($temp !== chr(0)) {
@@ -188,7 +188,7 @@ class SCP
         while ($sent < $size) {
             $temp = $mode & self::SOURCE_STRING ? substr($data, $sent, $this->packet_size) : fread($fp, $this->packet_size);
             $this->_send($temp);
-            $sent+= strlen($temp);
+            $sent += strlen($temp);
 
             if (is_callable($callback)) {
                 call_user_func($callback, $sent);
@@ -212,7 +212,7 @@ class SCP
      *
      * @param string $remote_file
      * @param string $local_file
-     * @return mixed
+     * @return boolean|string
      * @access public
      */
     function get($remote_file, $local_file = false)
@@ -221,7 +221,7 @@ class SCP
             return false;
         }
 
-        if (!$this->ssh->exec('scp -f ' . escapeshellarg($remote_file), false)) { // -f = from
+        if (!$this->ssh->exec('scp -f '.escapeshellarg($remote_file), false)) { // -f = from
             return false;
         }
 
@@ -246,10 +246,10 @@ class SCP
         while ($size < $info['size']) {
             $data = $this->_receive();
             // SCP usually seems to split stuff out into 16k chunks
-            $size+= strlen($data);
+            $size += strlen($data);
 
             if ($local_file === false) {
-                $content.= $data;
+                $content .= $data;
             } else {
                 fputs($fp, $data);
             }

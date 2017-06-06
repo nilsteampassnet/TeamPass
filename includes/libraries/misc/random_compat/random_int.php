@@ -123,7 +123,7 @@ function random_int($min, $max)
          */
         while ($range > 0) {
             if ($bits % 8 === 0) {
-               ++$bytes;
+                ++$bytes;
             }
             ++$bits;
             $range >>= 1;

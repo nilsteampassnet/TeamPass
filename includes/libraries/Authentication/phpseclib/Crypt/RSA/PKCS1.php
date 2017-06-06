@@ -26,10 +26,8 @@ namespace phpseclib\Crypt\RSA;
 
 use ParagonIE\ConstantTime\Base64;
 use ParagonIE\ConstantTime\Hex;
-use phpseclib\Crypt\AES;
 use phpseclib\Crypt\DES;
 use phpseclib\Crypt\Random;
-use phpseclib\Crypt\TripleDES;
 use phpseclib\Math\BigInteger;
 use phpseclib\Common\Functions\ASN1;
 
@@ -107,11 +105,11 @@ class PKCS1 extends PKCS
                 //     coefficient       INTEGER   -- ti
                 // }
                 $OtherPrimeInfo = pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($primes[$i]->toBytes(true))), $primes[$i]->toBytes(true));
-                $OtherPrimeInfo.= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($exponents[$i]->toBytes(true))), $exponents[$i]->toBytes(true));
-                $OtherPrimeInfo.= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($coefficients[$i]->toBytes(true))), $coefficients[$i]->toBytes(true));
-                $OtherPrimeInfos.= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfo)), $OtherPrimeInfo);
+                $OtherPrimeInfo .= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($exponents[$i]->toBytes(true))), $exponents[$i]->toBytes(true));
+                $OtherPrimeInfo .= pack('Ca*a*', self::ASN1_INTEGER, ASN1::encodeLength(strlen($coefficients[$i]->toBytes(true))), $coefficients[$i]->toBytes(true));
+                $OtherPrimeInfos .= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfo)), $OtherPrimeInfo);
             }
-            $RSAPrivateKey.= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfos)), $OtherPrimeInfos);
+            $RSAPrivateKey .= pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($OtherPrimeInfos)), $OtherPrimeInfos);
         }
 
         $RSAPrivateKey = pack('Ca*a*', self::ASN1_SEQUENCE, ASN1::encodeLength(strlen($RSAPrivateKey)), $RSAPrivateKey);
@@ -122,16 +120,16 @@ class PKCS1 extends PKCS
             $cipher->setKey(self::generateSymmetricKey($password, $iv, $cipher->getKeyLength() >> 3));
             $cipher->setIV($iv);
             $iv = strtoupper(Hex::encode($iv));
-            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n" .
-                     "Proc-Type: 4,ENCRYPTED\r\n" .
-                     "DEK-Info: " . self::$defaultEncryptionAlgorithm . ",$iv\r\n" .
-                     "\r\n" .
-                     chunk_split(Base64::encode($cipher->encrypt($RSAPrivateKey)), 64) .
-                     '-----END RSA PRIVATE KEY-----';
+            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n".
+                        "Proc-Type: 4,ENCRYPTED\r\n".
+                        "DEK-Info: ".self::$defaultEncryptionAlgorithm.",$iv\r\n".
+                        "\r\n".
+                        chunk_split(Base64::encode($cipher->encrypt($RSAPrivateKey)), 64).
+                        '-----END RSA PRIVATE KEY-----';
         } else {
-            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n" .
-                     chunk_split(Base64::encode($RSAPrivateKey), 64) .
-                     '-----END RSA PRIVATE KEY-----';
+            $RSAPrivateKey = "-----BEGIN RSA PRIVATE KEY-----\r\n".
+                        chunk_split(Base64::encode($RSAPrivateKey), 64).
+                        '-----END RSA PRIVATE KEY-----';
         }
 
         return $RSAPrivateKey;
@@ -168,8 +166,8 @@ class PKCS1 extends PKCS
             $components['publicExponent']
         );
 
-        $RSAPublicKey = "-----BEGIN RSA PUBLIC KEY-----\r\n" .
-                        chunk_split(Base64::encode($RSAPublicKey), 64) .
+        $RSAPublicKey = "-----BEGIN RSA PUBLIC KEY-----\r\n".
+                        chunk_split(Base64::encode($RSAPublicKey), 64).
                         '-----END RSA PUBLIC KEY-----';
 
         return $RSAPublicKey;

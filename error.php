@@ -12,8 +12,11 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-//require_once('sources/SecureHandler.php');
-@session_start();
+
+require_once('./sources/SecureHandler.php');
+if (!isset($_SESSION)) {
+    session_start();
+}
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -32,7 +35,7 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
+    DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
@@ -67,13 +70,13 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
         <div class="ui-state-error ui-corner-all error" >'.$LANG['error_not_exists'].'</div>';
     } elseif (@$_SESSION['error']['code'] == ERR_SESS_EXPIRED) {
         echo '
-        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['index_session_expired'].'<br /><br /><a href="index.php" />'.$LANG['home'] .'</a></div>';
+        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['index_session_expired'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
     } elseif (@$_SESSION['error']['code'] == ERR_NO_MCRYPT) {
         echo '
-        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$LANG['home'] .'</a></div>';
+        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
     } elseif (@$_SESSION['error']['code'] == ERR_VALID_SESSION) {
         echo '
-        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_not_authorized'].'<br /><br /><a href="index.php" />'.$LANG['home'] .'</a></div>';
+        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_not_authorized'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
     }
 }
 

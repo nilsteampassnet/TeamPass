@@ -19,38 +19,38 @@ require_once('functions.php');
 header('Content-Type: application/json');
 
 if (teampass_api_enabled() != "1") {
-  echo '{"err":"API access not allowed."}';
-  exit;
+    echo '{"err":"API access not allowed."}';
+    exit;
 }
 
 teampass_whitelist();
 
 if (!isset($_GET['apikey'])) {
-  rest_error('UNKNOWN');
+    rest_error('UNKNOWN');
 } else {
-  $GLOBALS['apikey'] = $_GET['apikey'];
+    $GLOBALS['apikey'] = $_GET['apikey'];
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
 $request = explode("/", substr(@$_SERVER['PATH_INFO'], 1));
 
 switch ($method) {
-  case 'GET':
+    case 'GET':
     rest_get();
     break;
-  case 'PUT':
+    case 'PUT':
     rest_put();
     break;
-  case 'DELETE':
+    case 'DELETE':
     rest_delete();
     break;
-  case 'HEAD':
+    case 'HEAD':
     rest_head();
     break;
-  case 'NEWUSER':
+    case 'NEWUSER':
     rest_newuser();
     break;
-  default:
+    default:
     rest_error('UNKNOWN');
     break;
 }

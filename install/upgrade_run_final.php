@@ -101,8 +101,12 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         }
 
         // temp data
-        if (!isset($record['login'])) $record['login'] = "";
-        if (!isset($resNT['renewal_period'])) $resNT['renewal_period'] = "0";
+        if (!isset($record['login'])) {
+            $record['login'] = "";
+        }
+        if (!isset($resNT['renewal_period'])) {
+            $resNT['renewal_period'] = "0";
+        }
 
         // store data
         $res = mysqli_query($dbTmp,
@@ -125,6 +129,15 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         if (mysqli_error($dbTmp)) {
             echo $res;
         }
+    }
+
+    // 2.1.27
+    if ($k['version'] === "2.1.27") {
+        mysqli_query($dbTmp,
+            "UPDATE ".$_SESSION['pre']."misc
+            SET migration_to_2127 = 'done'
+            WHERE type = 'admin'"
+        );
     }
 
     $finish = 1;

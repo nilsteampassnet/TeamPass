@@ -31,7 +31,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -46,20 +46,20 @@ $sOrder = $sLimit = $sWhere = "";
 //Paging
 $sLimit = "";
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ". filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT) .", ". filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
+    $sLimit = "LIMIT ".filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
 }
 
 //Ordering
 
 if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
-    for ($i=0; $i<intval($_GET['iSortingCols']); $i++) {
+    for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
         if (
-            $_GET[ 'bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
         ) {
-            $sOrder .= "".$aColumns[ filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT) ]." "
-            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]) .", ";
+            $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
+            .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
         }
     }
 
@@ -77,7 +77,7 @@ if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
 */
 if ($_GET['sSearch'] != "") {
     $sWhere = " WHERE (";
-    for ($i=0; $i<count($aColumns); $i++) {
+    for ($i = 0; $i < count($aColumns); $i++) {
         $sWhere .= $aColumns[$i]." LIKE %ss_".$aColumns[$i]." OR ";
     }
     $sWhere = substr_replace($sWhere, "", -3).") ";
@@ -109,7 +109,6 @@ $iFilteredTotal = DB::count();
  * Output
 */
 $sOutput = '{';
-//$sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
 $sOutput .= '"iTotalRecords": '.$iTotal.', ';
 $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
 $sOutput .= '"aaData": [ ';
@@ -125,7 +124,7 @@ foreach ($rows as $record) {
     $time_diff = intval(time() - $record['timestamp']);
     $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
     $minutesDiffRemainder = floor($time_diff % 3600 / 60);
-    $sOutput_item .= '"'.$hoursDiff . "h " . $minutesDiffRemainder . "m".'", ';
+    $sOutput_item .= '"'.$hoursDiff."h ".$minutesDiffRemainder."m".'", ';
 
     //col3
     $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes($record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).']", ';
@@ -136,7 +135,7 @@ foreach ($rows as $record) {
     //Finish the line
     $sOutput_item .= '], ';
 
-    if ($get_item_in_list == true) {
+    if ($get_item_in_list === true) {
         $sOutput .= $sOutput_item;
     }
 }

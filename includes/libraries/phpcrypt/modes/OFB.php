@@ -36,91 +36,92 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Mode_OFB extends Mode
 {
-	/**
-	 * Constructor
-	 * Sets the cipher object that will be used for encryption
-	 *
-	 * @param object $cipher one of the phpCrypt encryption cipher objects
-	 * @return void
-	 */
-	public function __construct($cipher)
-	{
-		parent::__construct(PHP_Crypt::MODE_OFB, $cipher);
+    /**
+     * Constructor
+     * Sets the cipher object that will be used for encryption
+     *
+     * @param object $cipher one of the phpCrypt encryption cipher objects
+     * @return void
+     */
+    public function __construct($cipher)
+    {
+        parent::__construct(PHP_Crypt::MODE_OFB, $cipher);
 
-		// this works with only block Ciphers
-		if($cipher->type() != Cipher::BLOCK)
-			trigger_error("OFB mode requires a block cipher", E_USER_WARNING);
-	}
-
-
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        // this works with only block Ciphers
+        if ($cipher->type() != Cipher::BLOCK) {
+                    trigger_error("OFB mode requires a block cipher", E_USER_WARNING);
+        }
+    }
 
 
-	/**
-	 * Encrypts an the entire string $plain_text using the cipher passed
-	 *
-	 * @param string $text the string to be encrypted
-	 * @return boolean Returns true
-	 */
-	public function encrypt(&$text)
-	{
-		$max = strlen($text);
-		for($i = 0; $i < $max; ++$i)
-		{
-			$this->enc_register = $this->register;
-			$this->cipher->encrypt($this->enc_register);
-			$text[$i] = $text[$i] ^ $this->enc_register[0];
-
-			// shift the register left
-			$this->register = substr($this->register, 1);
-			$this->register .= $this->enc_register[0];
-		}
-
-		return true;
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypts an the entire string $plain_text using the cipher passed
-	 *
-	 * @param string $text the string to be decrypted
-	 * @return boolean Returns true
-	 */
-	public function decrypt(&$text)
-	{
-		$max = strlen($text);
-		for($i = 0; $i < $max; ++$i)
-		{
-			$this->enc_register = $this->register;
-			$this->cipher->encrypt($this->enc_register);
+    /**
+     * Encrypts an the entire string $plain_text using the cipher passed
+     *
+     * @param string $text the string to be encrypted
+     * @return boolean Returns true
+     */
+    public function encrypt(&$text)
+    {
+        $max = strlen($text);
+        for ($i = 0; $i < $max; ++$i)
+        {
+            $this->enc_register = $this->register;
+            $this->cipher->encrypt($this->enc_register);
+            $text[$i] = $text[$i] ^ $this->enc_register[0];
 
-			// shift the register left
-			$this->register = substr($this->register, 1);
-			$this->register .= $this->enc_register[0];
+            // shift the register left
+            $this->register = substr($this->register, 1);
+            $this->register .= $this->enc_register[0];
+        }
 
-			$text[$i] = $text[$i] ^ $this->enc_register[0];
-		}
-
-		return true;
-	}
+        return true;
+    }
 
 
-	/**
-	 * This mode requires an IV
-	 *
-	 * @return boolean true
-	 */
-	public function requiresIV()
-	{
-		return true;
-	}
+    /**
+     * Decrypts an the entire string $plain_text using the cipher passed
+     *
+     * @param string $text the string to be decrypted
+     * @return boolean Returns true
+     */
+    public function decrypt(&$text)
+    {
+        $max = strlen($text);
+        for ($i = 0; $i < $max; ++$i)
+        {
+            $this->enc_register = $this->register;
+            $this->cipher->encrypt($this->enc_register);
+
+            // shift the register left
+            $this->register = substr($this->register, 1);
+            $this->register .= $this->enc_register[0];
+
+            $text[$i] = $text[$i] ^ $this->enc_register[0];
+        }
+
+        return true;
+    }
+
+
+    /**
+     * This mode requires an IV
+     *
+     * @return boolean true
+     */
+    public function requiresIV()
+    {
+        return true;
+    }
 }
 ?>

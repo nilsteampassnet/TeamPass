@@ -33,7 +33,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -59,12 +59,12 @@ if (isset($_POST['type'])) {
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_shown'
-                   )
+                    )
                 );
 
                 // SysLog
                 if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                    send_syslog("The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".","teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+                    send_syslog("The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".", "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
                 }
             }
 
@@ -82,12 +82,12 @@ if (isset($_POST['type'])) {
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_copied'
-                   )
+                    )
                 );
 
                 // SysLog
                 if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                    send_syslog("The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".","teampass","php",$_SESSION['settings']['syslog_host'],$_SESSION['settings']['syslog_port']);
+                    send_syslog("The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".", "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
                 }
             }
 

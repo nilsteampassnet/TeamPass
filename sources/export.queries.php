@@ -36,7 +36,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -57,10 +57,6 @@ switch ($_POST['type']) {
 
     //CASE export to PDF format
     case "export_to_pdf_format":
-        /*
-        $ids = explode(',', $_POST['ids']);
-        foreach ($ids as $id) {
-        */
         $id = $_POST['id'];
         if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
             // get path
@@ -131,13 +127,13 @@ switch ($_POST['type']) {
                             WHERE a.item_id = %i",
                             $record['id']
                         );
-                         foreach ($rows_kb as $rec_kb) {
+                            foreach ($rows_kb as $rec_kb) {
                             if (empty($arr_kbs)) {
                                 $arr_kbs = $rec_kb['label'];
                             } else {
                                 $arr_kbs .= " | ".$rec_kb['label'];
                             }
-                         }
+                            }
 
                         // get TAGS
                         $arr_tags = "";
@@ -147,26 +143,26 @@ switch ($_POST['type']) {
                             WHERE item_id = %i",
                             $record['id']
                         );
-                         foreach ($rows_tag as $rec_tag) {
+                            foreach ($rows_tag as $rec_tag) {
                             if (empty($arr_tags)) {
                                 $arr_tags = $rec_tag['tag'];
                             } else {
                                 $arr_tags .= " ".$rec_tag['tag'];
                             }
-                         }
+                            }
 
                         // store
                         DB::insert(
                             prefix_table("export"),
                             array(
                                 'id' => $record['id'],
-                                'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
-                                'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true),
-                                'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
-                                'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'description' => strip_tags(cleanString(html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                'label' => cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true),
+                                'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF - 8),
+                                'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
                                 'path' => $path,
-                                'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
-                                'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'url' => strip_tags(cleanString(html_entity_decode($record['url'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
+                                'email' => strip_tags(cleanString(html_entity_decode($record['email'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
                                 'kbs' => $arr_kbs,
                                 'tags' => $arr_tags
                             )
@@ -234,19 +230,21 @@ switch ($_POST['type']) {
                     $pdf->SetFont('helvetica', '', 10);
                     $pdf->SetFillColor(192, 192, 192);
                     error_log('key: '.$key.' - paths: '.$record['path']);
-                    $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", 1);
+                    $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", true);
                     $pdf->SetFillColor(222, 222, 222);
-                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, "C", 1);
-                    $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, "C", 1);
+                    $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[1], 6, $LANG['login'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[2], 6, $LANG['pw'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[3], 6, $LANG['description'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[4], 6, $LANG['email'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[5], 6, $LANG['url'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[6], 6, $LANG['kbs'], 1, 0, "C", true);
+                    $pdf->cell($table_col_width[7], 6, $LANG['tags'], 1, 1, "C", true);
                 }
                 $prev_path = $record['path'];
-                if (!isutf8($record['pw'])) $record['pw'] = "";
+                if (!isutf8($record['pw'])) {
+                    $record['pw'] = "";
+                }
                 //row height calculation
                 $nb = 0;
                 $nb = max($nb, nbLines($table_col_width[0], $record['label']));
@@ -257,23 +255,23 @@ switch ($_POST['type']) {
                 $nb = max($nb, nbLines($table_col_width[6], $record['kbs']));
                 $nb = max($nb, nbLines($table_col_width[7], $record['tags']));
 
-                $h=5*$nb;
+                $h = 5 * $nb;
                 //Page break needed?
                 checkPageBreak($h);
                 //Draw cells
                 $pdf->SetFont('helvetica', '', 8);
-                for ($i=0; $i<count($table); $i++) {
-                    $w=$table_col_width[$i];
-                    $a='L';
+                for ($i = 0; $i < count($table); $i++) {
+                    $w = $table_col_width[$i];
+                    $a = 'L';
                     //actual position
-                    $x=$pdf->GetX();
-                    $y=$pdf->GetY();
+                    $x = $pdf->GetX();
+                    $y = $pdf->GetY();
                     //Draw
                     $pdf->Rect($x, $y, $w, $h);
                     //Write
                     $pdf->MultiCell($w, 5, ($record[$table[$i]]), 0, $a);
                     //go to right
-                    $pdf->SetXY($x+$w, $y);
+                    $pdf->SetXY($x + $w, $y);
                 }
                 //return to line
                 $pdf->Ln($h);
@@ -369,9 +367,9 @@ switch ($_POST['type']) {
                                 WHERE a.item_id = %i",
                                 $record['id']
                             );
-                             foreach ($rows_kb as $rec_kb) {
+                                foreach ($rows_kb as $rec_kb) {
                                 array_push($arr_kbs, $rec_kb['label']);
-                             }
+                                }
 
                             // get TAGS
                             $arr_tags = [];
@@ -381,16 +379,16 @@ switch ($_POST['type']) {
                                 WHERE item_id = %i",
                                 $record['id']
                             );
-                             foreach ($rows_tag as $rec_tag) {
+                                foreach ($rows_tag as $rec_tag) {
                                 array_push($arr_tags, $rec_tag['tag']);
-                             }
+                                }
 
                             $full_listing[$i] = array(
                                 'id' => $record['id'],
-                                'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'label' => strip_tags(cleanString(html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
                                 'description' => htmlspecialchars_decode(addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
-                                'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF-8),
-                                'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF-8), true)),
+                                'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF - 8),
+                                'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
                                 'restricted_to' => $record['restricted_to'],
                                 'perso' => $record['perso'] === "0" ? "False" : "True",
                                 'url' => $record['url'] !== "none" ? htmlspecialchars_decode($record['url']) : "",
@@ -419,10 +417,11 @@ switch ($_POST['type']) {
         $csv_file = '/print_out_csv_'.time().'_'.generateKey().'.csv';
         //print_r($full_listing);
         $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$csv_file, "w");
-        function outPutCsv(&$vals, $key, $filehandler)
-        {
+
+        function outPutCsv(&$vals, $filehandler) {
             fputcsv($filehandler, $vals, ";"); // add parameters if you want
         }
+
         array_walk($full_listing, "outPutCsv", $outstream);
         fclose($outstream);
 
@@ -487,13 +486,13 @@ switch ($_POST['type']) {
             }
         }
 
-          // prepare export file
-          //save the file
-          $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
-          //print_r($full_listing);
-          $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$html_file, "w");
-          fwrite(
-              $outstream,
+            // prepare export file
+            //save the file
+            $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
+            //print_r($full_listing);
+            $outstream = fopen($_SESSION['settings']['path_to_files_folder'].$html_file, "w");
+            fwrite(
+                $outstream,
 '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
@@ -530,7 +529,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
         <th style="width:5%;">'.$LANG['user_login'].'</th>
         <th style="width:20%;">'.$LANG['url'].'</th>
     </tr></thead>'
-          );
+            );
 
         fclose($outstream);
 
@@ -570,7 +569,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
             "at_modification",
             "at_pw :%"
         );
-        //AND i.id_tree IN (".implode(',', $list).")
+
         foreach ($rows as $record) {
             //exclude all results except the first one returned by query
             if (empty($id_managed) || $id_managed != $record['id']) {
@@ -588,7 +587,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
                         "decrypt"
                     );
                 }
-                array_push($full_listing,array(
+                array_push($full_listing, array(
                     'id_tree' => $record['id_tree'],
                     'id' => $record['id'],
                     'label' => $record['label'],
@@ -599,7 +598,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
                     'perso' => $record['perso']
                 ));
                 $i++;
-                array_push($items_id_list,$record['id']);
+                array_push($items_id_list, $record['id']);
             }
             $id_managed = $record['id'];
         }
@@ -728,7 +727,7 @@ function checkPageBreak($h)
 {
     global $pdf;
     //Continue on a new page if needed
-    if ($pdf->GetY()+$h>$pdf->PageBreakTrigger) {
+    if ($pdf->GetY() + $h > $pdf->PageBreakTrigger) {
         $pdf->addPage($pdf->CurOrientation);
     }
 }
@@ -737,47 +736,46 @@ function nbLines($w, $txt)
 {
     global $pdf;
     //Calculate the number of lines needed by a Multicell with a width of w
-    $cw=&$pdf->CurrentFont['cw'];
-    if ($w==0) {
-        $w=$pdf->w-$this->rMargin-$pdf->x;
+    $cw = &$pdf->CurrentFont['cw'];
+    if ($w == 0) {
+        $w = $pdf->w - $this->rMargin - $pdf->x;
     }
-    $wmax=($w-2*$pdf->cMargin)*1000/$pdf->FontSize;
-    $s=str_replace("\r", '', $txt);
-    $nb=strlen($s);
-    if ($nb>0 and $s[$nb-1]=="\n") {
+    $wmax = ($w - 2 * $pdf->cMargin) * 1000 / $pdf->FontSize;
+    $s = str_replace("\r", '', $txt);
+    $nb = strlen($s);
+    if ($nb > 0 and $s[$nb - 1] == "\n") {
         $nb--;
     }
-    $sep=-1;
-    $i=0;
-    $j=0;
-    $l=0;
-    $nl=1;
-    while ($i<$nb) {
-        $c=$s[$i];
-        if ($c=="\n") {
+    $sep = -1;
+    $i = 0;
+    $j = 0;
+    $l = 0;
+    $nl = 1;
+    while ($i < $nb) {
+        $c = $s[$i];
+        if ($c == "\n") {
             $i++;
-            $sep=-1;
-            $j=$i;
-            $l=0;
+            $sep = -1;
+            $j = $i;
+            $l = 0;
             $nl++;
             continue;
         }
-        if ($c==' ') {
-            $sep=$i;
+        if ($c == ' ') {
+            $sep = $i;
         }
-        $l+=550;//$cw[$c];
-        //echo $cw[$c].";".$wmax.";".$l."|";
-        if ($l>$wmax) {
-            if ($sep==-1) {
-                if ($i==$j) {
+        $l += 550;
+        if ($l > $wmax) {
+            if ($sep == -1) {
+                if ($i == $j) {
                     $i++;
                 }
             } else {
-                $i=$sep+1;
+                $i = $sep + 1;
             }
-            $sep=-1;
-            $j=$i;
-            $l=0;
+            $sep = -1;
+            $j = $i;
+            $l = 0;
             $nl++;
         } else {
             $i++;

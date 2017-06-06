@@ -81,7 +81,7 @@ class SHA256 extends Crypt {
         if ($option == 'rounds') {
             if ($value < 1000 || $value > 999999999) {
                 throw new \InvalidArgumentException(
-                    'Invalid cost parameter specified, ' .
+                    'Invalid cost parameter specified, '.
                     'must be between 1000 and 999999999'
                 );
             }
@@ -92,7 +92,7 @@ class SHA256 extends Crypt {
 
     protected function generateSalt() {
         $salt = parent::generateSalt();
-        return '$5$rounds=' . $this->options['rounds'] . '$' . $salt;
+        return '$5$rounds='.$this->options['rounds'].'$'.$salt;
     }
 
 }

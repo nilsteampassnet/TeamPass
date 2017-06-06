@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Please login...');
 }
 
@@ -44,9 +44,12 @@ if (
 
 /* LOAD CPASSMAN SETTINGS */
 if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
-    $_SESSION['settings']['duplicate_folder'] = 0;  //by default, this is false;
-    $_SESSION['settings']['duplicate_item'] = 0;  //by default, this is false;
-    $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
+    //by default, this is false;
+    $_SESSION['settings']['duplicate_folder'] = 0;
+    //by default, this is false;
+    $_SESSION['settings']['duplicate_item'] = 0;
+    //by default, this value is 5;
+    $_SESSION['settings']['number_of_used_pw'] = 5;
 
     $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
         array(
@@ -78,13 +81,13 @@ foreach ($rows as $record) {
 if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $_SESSION['settings']['pwComplexity'] = array(
-        0=>array(0,$LANG['complex_level0']),
-        25=>array(25,$LANG['complex_level1']),
-        50=>array(50,$LANG['complex_level2']),
-        60=>array(60,$LANG['complex_level3']),
-        70=>array(70,$LANG['complex_level4']),
-        80=>array(80,$LANG['complex_level5']),
-        90=>array(90,$LANG['complex_level6'])
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
     );
 }
 
@@ -197,7 +200,7 @@ if (
 
 /* CHECK IF UPDATE IS NEEDED */
 if (
-    (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] != false
+    (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] !== false
     || empty($_SESSION['settings']['update_needed'])))
     && (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1)
 ) {
@@ -371,7 +374,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 * CHECK PASSWORD VALIDITY
 * Don't take into consideration if LDAP in use
 */
-$_SESSION['numDaysBeforePwExpiration'] = "";    //initiliaze variable
+$_SESSION['numDaysBeforePwExpiration'] = ""; //initiliaze variable
 if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
@@ -382,7 +385,7 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
             $_SESSION['validite_pw'] = true;
         } else {
             $_SESSION['numDaysBeforePwExpiration'] = $_SESSION['settings']['pw_life_duration'] - round(
-                (mktime(0, 0, 0, date('m'), date('d'), date('y'))-$_SESSION['last_pw_change'])/(24*60*60)
+                (mktime(0, 0, 0, date('m'), date('d'), date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
             );
             if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
                 $_SESSION['validite_pw'] = false;
@@ -398,7 +401,7 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 /*
 * LOAD CATEGORIES
 */
-if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty( $_SESSION['item_fields'])) {
+if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty($_SESSION['item_fields'])) {
     $_SESSION['item_fields'] = array();
     $rows = DB::query("SELECT * FROM ".prefix_table("categories")." WHERE level=%s_level",
         array(

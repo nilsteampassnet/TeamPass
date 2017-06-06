@@ -139,7 +139,7 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
     public function registerMixer($name, $class) {
         $this->registerType(
             'mixers',
-            __NAMESPACE__ . '\\Mixer',
+            __NAMESPACE__.'\\Mixer',
             $name,
             $class
         );
@@ -159,7 +159,7 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
     public function registerSource($name, $class) {
         $this->registerType(
             'sources',
-            __NAMESPACE__ . '\\Source',
+            __NAMESPACE__.'\\Source',
             $name,
             $class
         );
@@ -200,8 +200,8 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
      */
     protected function loadMixers() {
         $this->loadFiles(
-            __DIR__ . '/Mixer',
-            __NAMESPACE__ . '\\Mixer\\',
+            __DIR__.'/Mixer',
+            __NAMESPACE__.'\\Mixer\\',
             array($this, 'registerMixer')
         );
     }
@@ -213,8 +213,8 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
      */
     protected function loadSources() {
         $this->loadFiles(
-            __DIR__ . '/Source',
-            __NAMESPACE__ . '\\Source\\',
+            __DIR__.'/Source',
+            __NAMESPACE__.'\\Source\\',
             array($this, 'registerSource')
         );
     }

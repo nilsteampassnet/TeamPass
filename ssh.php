@@ -23,7 +23,7 @@ if (
 ) {
     die('Hacking attempt...');
 }
-$_SESSION['settings']['enable_server_password_change']  = 1;
+$_SESSION['settings']['enable_server_password_change'] = 1;
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
@@ -48,7 +48,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -136,7 +136,7 @@ function save_cronned_task()
             type    : "server_auto_update_password_frequency",
             id      : $('#selected_items').val(),
             freq    : $('#ssh_freq').val(),
-            key     : "<?php echo $_SESSION['key'];?>"
+            key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             if (data[0].error != "") {
@@ -147,7 +147,7 @@ function save_cronned_task()
                     .addClass( "ui-state-error" );
             } else {
                 $("#cronned_task_error")
-                    .html("<?php echo $LANG['alert_message_done'];?>")
+                    .html("<?php echo $LANG['alert_message_done']; ?>")
                     .show()
                     .removeClass( "ui-state-error" )
                     .addClass( "ui-state-focus" );
@@ -161,37 +161,37 @@ function start_one_shot_change()
 {
     // check if new password is set
     if($("#ausp_pwd").val() == "") {
-        $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_new_pwd_missing'];?>').show();
+        $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_new_pwd_missing']; ?>').show();
         return false;
     }
     // check if new password is set
     if($("#ausp_ssh_root").val() == "" || $("#ausp_ssh_pwd").val() == "") {
-        $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_ssh_credentials_missing'];?>').show();
+        $("#dialog_auto_update_server_pwd_info").html('<i class="fa fa-warning"></i>&nbsp;<?php echo $LANG['error_ssh_credentials_missing']; ?>').show();
         return false;
     }
     // show progress
-    $("#dialog_auto_update_server_pwd_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;').attr("class","").show();
+    $("#dialog_auto_update_server_pwd_status").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>&nbsp;...&nbsp;').attr("class","").show();
     $("#dialog_auto_update_server_pwd_info").html("").hide();
     //prepare data
         var data = '{"currentId":"'+$('#selected_items').val() + '", '+
         '"new_pwd":"'+$('#ausp_pwd').val()+'", '+
         '"ssh_root":"'+$('#ausp_ssh_root').val()+'", '+
         '"ssh_pwd":"'+$('#ausp_ssh_pwd').val()+'", '+
-        '"user_id":"<?php echo $_SESSION['user_id'];?>"}';
+        '"user_id":"<?php echo $_SESSION['user_id']; ?>"}';
 
     $.post(
         "sources/utils.queries.php",
         {
             type        : "server_auto_update_password",
-            data        : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-            key         : "<?php echo $_SESSION['key'];?>"
+            data        : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+            key         : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             //check if format error
             if (data.error != "") {
                 $("#dialog_auto_update_server_pwd_info").html("Error: "+data.error).show();
-                $("#dialog_auto_update_server_pwd_status").html("<?php echo $LANG['auto_update_server_password_info'];?>");
+                $("#dialog_auto_update_server_pwd_status").html("<?php echo $LANG['auto_update_server_password_info']; ?>");
             } else {
                 // tbc
                 $("#dialog_auto_update_server_pwd_status").html("done "+data.text);
@@ -225,7 +225,7 @@ function generate_pw()
             numerals   : true
         },
         function(data) {
-            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
             if (data.error == "true") {
                 $("#dialog_auto_update_server_pwd_info").html(data.error_msg).show();
             } else {

@@ -21,7 +21,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 //<![CDATA[
 function aes_decrypt(text)
 {
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key'];?>", 256);
+    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
 }
 
 /*
@@ -38,10 +38,10 @@ function copy_item(item_id)
         "sources/items.queries.php",
         {
             type    : "refresh_visible_folders",
-            key        : "<?php echo $_SESSION['key'];?>"
+            key        : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             $("#copy_in_folder").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
             $('#div_copy_item_to_folder').dialog('open');
         }
@@ -55,9 +55,9 @@ $("#div_copy_item_to_folder").dialog({
       autoOpen: false,
       width: 400,
       height: 200,
-      title: "<?php echo $LANG['item_menu_copy_elem'];?>",
+      title: "<?php echo $LANG['item_menu_copy_elem']; ?>",
       buttons: {
-          "<?php echo $LANG['ok'];?>": function() {
+          "<?php echo $LANG['ok']; ?>": function() {
               //Send query
                 $.post(
                     "sources/items.queries.php",
@@ -65,7 +65,7 @@ $("#div_copy_item_to_folder").dialog({
                         type    : "copy_item",
                         item_id : $('#id_selected_item').val(),
                         folder_id : $('#copy_in_folder').val(),
-                        key        : "<?php echo $_SESSION['key'];?>"
+                        key        : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         //check if format error
@@ -74,7 +74,7 @@ $("#div_copy_item_to_folder").dialog({
                         }
                         //if OK
                         if (data[0].status == "ok") {
-                            $("#div_dialog_message_text").html("<?php echo $LANG['alert_message_done'];?>");
+                            $("#div_dialog_message_text").html("<?php echo $LANG['alert_message_done']; ?>");
                             $("#div_dialog_message").dialog('open');
                             $("#div_copy_item_to_folder").dialog('close');
                         }
@@ -82,7 +82,7 @@ $("#div_copy_item_to_folder").dialog({
                     "json"
                );
           },
-          "<?php echo $LANG['cancel_button'];?>": function() {
+          "<?php echo $LANG['cancel_button']; ?>": function() {
               $("#copy_item_to_folder_show_error").html("").hide();
               $(this).dialog('close');
           }
@@ -105,10 +105,10 @@ $("#div_item_data").dialog({
       autoOpen: false,
       width: 450,
       height: 220,
-      title: "<?php echo $LANG['see_item_title'];?>",
+      title: "<?php echo $LANG['see_item_title']; ?>",
       open:
         function(event, ui) {
-              $("#div_item_data_show_error").html("<?php echo $LANG['admin_info_loading'];?>").show();
+              $("#div_item_data_show_error").html("<?php echo $LANG['admin_info_loading']; ?>").show();
             $.post(
                 "sources/items.queries.php",
                 {
@@ -117,25 +117,25 @@ $("#div_item_data").dialog({
                     salt_key_required : $('#personalItem').val(),
                     salt_key_set : $('#personal_sk_set').val(),
                     page    : "find",
-                    key        : "<?php echo $_SESSION['key'];?>"
+                    key        : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key'];?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired
-                        return_html = "<?php echo $LANG['not_allowed_to_see_pw_is_expired'];?>";
+                        return_html = "<?php echo $LANG['not_allowed_to_see_pw_is_expired']; ?>";
                     } else if (data.show_details == "0") {
                         //Admin cannot see Item
-                        return_html = "<?php echo $LANG['not_allowed_to_see_pw'];?>";
+                        return_html = "<?php echo $LANG['not_allowed_to_see_pw']; ?>";
                     } else {
                         return_html = "<table>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['label'];?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['description'];?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['pw'];?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['index_login'];?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['url'];?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['label']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['description']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['pw']; ?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['index_login']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['url']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
                         "</table>";
                     }
                     $("#div_item_data_show_error").html("").hide();
@@ -150,7 +150,7 @@ $("#div_item_data").dialog({
         }
         ,
       buttons: {
-          "<?php echo $LANG['ok'];?>": function() {
+          "<?php echo $LANG['ok']; ?>": function() {
               $(this).dialog('close');
           }
       }
@@ -166,7 +166,7 @@ $(function() {
         "sAjaxSource": "sources/find.queries.php",
         "bJQueryUI": true,
         "oLanguage": {
-            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "fnInitComplete": function() {
             $("#find_page input").focus();
@@ -194,7 +194,7 @@ $(function() {
         autoOpen: false,
         width: 500,
         height: 400,
-        title: "<?php echo $LANG['mass_operation'];?>",
+        title: "<?php echo $LANG['mass_operation']; ?>",
         open: function() {
             var html = sel_items = sel_items_txt = item_id = '';
 
@@ -213,7 +213,7 @@ $(function() {
 
             // prepare display
             if ($("#div_mass_op").data('action') === "move") {
-                html = '<?php echo $LANG['you_decided_to_move_items'];?>: ' +
+                html = '<?php echo $LANG['you_decided_to_move_items']; ?>: ' +
                 '<div><ul>' + sel_items_txt + '</ul></div>';
                 var folder_options = '';
 
@@ -222,7 +222,7 @@ $(function() {
                     "sources/folders.queries.php",
                     {
                         type    : "get_list_of_folders",
-                        key     : "<?php echo $_SESSION['key'];?>"
+                        key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
                         $("#div_loading").hide();
@@ -235,7 +235,7 @@ $(function() {
                         }
 
                         // destination folder
-                         html += '<div style=""><?php echo $LANG['import_keepass_to_folder'];?>:&nbsp;&nbsp;' +
+                         html += '<div style=""><?php echo $LANG['import_keepass_to_folder']; ?>:&nbsp;&nbsp;' +
                          '<select id="mass_move_destination_folder_id">' + data[0].list_folders + '</select>' +
                          '</div>';
 
@@ -245,19 +245,19 @@ $(function() {
                     "json"
                 );
             } else if ($("#div_mass_op").data('action') === "delete") {
-                html = '<?php echo $LANG['you_decided_to_delete_items'];?>: ' +
+                html = '<?php echo $LANG['you_decided_to_delete_items']; ?>: ' +
                 '<div><ul>' + sel_items_txt + '</ul></div>' +
-                '<div style="padding:10px;" class="ui-corner-all ui-state-error"><span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['confirm_deletion'];?></div>';
+                '<div style="padding:10px;" class="ui-corner-all ui-state-error"><span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['confirm_deletion']; ?></div>';
                 
                 $("#div_mass_html").html(html);
             }
 
         },
         buttons: {
-            "<?php echo $LANG['ok'];?>": function() {
+            "<?php echo $LANG['ok']; ?>": function() {
                 $("#div_mass_op_msg")
                     .addClass("ui-state-highlight")
-                    .html('<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;<?php echo $LANG['please_wait'];?>')
+                    .html('<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;<?php echo $LANG['please_wait']; ?>')
                     .show();
 
                 var sel_items = '';
@@ -270,7 +270,7 @@ $(function() {
                 if (sel_items === "") {
                     $("#div_mass_op_msg")
                         .addClass("ui-state-error")
-                        .html('<span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['must_select_items'];?>')
+                        .html('<span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['must_select_items']; ?>')
                         .show().delay(2000).fadeOut(1000);
                     return false;
                 }
@@ -285,7 +285,7 @@ $(function() {
                             type        : "mass_move_items",
                             item_ids    : sel_items,
                             folder_id   : $("#mass_move_destination_folder_id").val(),
-                            key         : "<?php echo $_SESSION['key'];?>"
+                            key         : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             //check if format error
@@ -297,7 +297,7 @@ $(function() {
                                 //reload search 
                                 oTable.api().ajax.reload();
 
-                                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done'];?>");
+                                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done']; ?>");
                                     $("#main_info_box").show().position({
                                         my: "center",
                                         at: "center top+75",
@@ -320,7 +320,7 @@ $(function() {
                         {
                             type        : "mass_delete_items",
                             item_ids    : sel_items,
-                            key         : "<?php echo $_SESSION['key'];?>"
+                            key         : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             //check if format error
@@ -332,7 +332,7 @@ $(function() {
                                 //reload search 
                                 oTable.api().ajax.reload();
 
-                                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done'];?>");
+                                $("#main_info_box_text").html("<?php echo $LANG['alert_message_done']; ?>");
                                     $("#main_info_box").show().position({
                                         my: "center",
                                         at: "center top+75",
@@ -348,7 +348,7 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog('close');
             }
         }

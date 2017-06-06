@@ -46,7 +46,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -76,7 +76,7 @@ if (!empty($_POST['type'])) {
 
                 if ($role_id != 0) {
                     //Actualize the variable
-                    $_SESSION['nb_roles'] ++;
+                    $_SESSION['nb_roles']++;
 
                     // get some data
                     $data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
@@ -93,7 +93,7 @@ if (!empty($_POST['type'])) {
                         prefix_table("users"),
                         array(
                             'fonction_id' => $_SESSION['fonction_id']
-                           ),
+                            ),
                         "id = %i",
                         $_SESSION['user_id']
                     );
@@ -115,7 +115,7 @@ if (!empty($_POST['type'])) {
             DB::delete(prefix_table("roles_title"), "id = %i", $_POST['id']);
             DB::delete(prefix_table("roles_values"), "role_id = %i", $_POST['id']);
             //Actualize the variable
-            $_SESSION['nb_roles'] --;
+            $_SESSION['nb_roles']--;
 
             // parse all users to remove this role
             $rows = DB::query(
@@ -132,7 +132,7 @@ if (!empty($_POST['type'])) {
                         prefix_table("users"),
                         array(
                             'fonction_id' => rtrim(implode(";", $tab), ";")
-                           ),
+                            ),
                         "id = %i",
                         $record['id']
                     );
@@ -154,7 +154,7 @@ if (!empty($_POST['type'])) {
                     array(
                         'title' => noHTML($_POST['title']),
                         'complexity' => $_POST['complexity']
-                   ),
+                    ),
                     'id = %i',
                     $_POST['id']
                 );
@@ -172,7 +172,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("roles_title"),
                 array(
                     'allow_pw_change' => $_POST['value']
-               ),
+                ),
                 'id = %i',
                 $_POST['id']
             );
@@ -199,7 +199,7 @@ if (!empty($_POST['type'])) {
                         array(
                             'folder_id' => $node->id,
                             'role_id' => $_POST['role']
-                       )
+                        )
                     );
                 }
             }
@@ -219,8 +219,9 @@ if (!empty($_POST['type'])) {
 
                 if ($_POST['access'] === "read" || $_POST['access'] === "write" || $_POST['access'] === "nodelete") {
                     // define code to use
-                    if ($_POST['access'] == "read") $access = "R";
-                    elseif ($_POST['access'] == "write") {
+                    if ($_POST['access'] == "read") {
+                        $access = "R";
+                    } elseif ($_POST['access'] == "write") {
                         if ($_POST['accessoption'] == "") {
                             $access = "W";
                         } elseif ($_POST['accessoption'] == "nodelete") {
@@ -230,7 +231,9 @@ if (!empty($_POST['type'])) {
                         } elseif ($_POST['accessoption'] == "nodelete_noedit") {
                             $access = "NDNE";
                         }
-                    } else $access = "";
+                    } else {
+                        $access = "";
+                    }
 
                     // loop
                     foreach ($tree_list as $node) {
@@ -244,7 +247,7 @@ if (!empty($_POST['type'])) {
                                 'folder_id' => $node->id,
                                 'role_id' => $role_id,
                                 'type' => $access
-                           )
+                            )
                         );
                     }
                 } else {
@@ -263,13 +266,13 @@ if (!empty($_POST['type'])) {
         case "refresh_roles_matrix":
             //pw complexity levels
             $_SESSION['settings']['pwComplexity'] = array(
-                0=>array(0,$LANG['complex_level0']),
-                25=>array(25,$LANG['complex_level1']),
-                50=>array(50,$LANG['complex_level2']),
-                60=>array(60,$LANG['complex_level3']),
-                70=>array(70,$LANG['complex_level4']),
-                80=>array(80,$LANG['complex_level5']),
-                90=>array(90,$LANG['complex_level6'])
+                0=>array(0, $LANG['complex_level0']),
+                25=>array(25, $LANG['complex_level1']),
+                50=>array(50, $LANG['complex_level2']),
+                60=>array(60, $LANG['complex_level3']),
+                70=>array(70, $LANG['complex_level4']),
+                80=>array(80, $LANG['complex_level5']),
+                90=>array(90, $LANG['complex_level6'])
             );
 
             $tree = $tree->getDescendants();
@@ -285,20 +288,23 @@ if (!empty($_POST['type'])) {
 
             //count nb of roles
             $arrUserRoles = array_filter($_SESSION['user_roles']);
-            if (count($arrUserRoles) == 0 || $_SESSION['is_admin'] == 1) $where = "";
-            else  $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
+            if (count($arrUserRoles) == 0 || $_SESSION['is_admin'] == 1) {
+                $where = "";
+            } else {
+                $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
+            }
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
-            $roles_count =  DB::count();
+            $roles_count = DB::count();
             if ($roles_count > $display_nb) {
                 if (!isset($_POST['start']) || $_POST['start'] == 0) {
                     $start = 0;
                     $previous = 0;
                 } else {
                     $start = intval($_POST['start']);
-                    $previous = $start-$display_nb;
+                    $previous = $start - $display_nb;
                 }
-                $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));
-                $next = $start+$display_nb;
+                $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));
+                $next = $start + $display_nb;
             }
 
             // array of roles for actual user
@@ -310,7 +316,7 @@ if (!empty($_POST['type'])) {
                 $where."
                 ORDER BY title ASC".$sql_limit);
             foreach ($rows as $record) {
-                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     if ($record['allow_pw_change'] == 1) {
                         $allow_pw_change = '&nbsp;<span class=\'fa mi-red fa-2x fa-magic tip\' id=\'img_apcfr_'.$record['id'].'\' onclick=\'allow_pw_change_for_role('.$record['id'].', 0)\' style=\'cursor:pointer;\' title=\''.$LANG['role_cannot_modify_all_seen_items'].'\'></span>';
                     } else {
@@ -332,11 +338,11 @@ if (!empty($_POST['type'])) {
             $texte .= '</tr></thead><tbody>';
 
             //Display each folder with associated rights by role
-            $i=0;
+            $i = 0;
             foreach ($tree as $node) {
                 if (in_array($node->id, $_SESSION['groupes_visibles']) && !in_array($node->id, $_SESSION['personal_visible_groups'])) {
-                    $ident="";
-                    for ($a=1; $a<$node->nlevel; $a++) {
+                    $ident = "";
+                    for ($a = 1; $a < $node->nlevel; $a++) {
                         $ident .= '<i class=\'fa fa-sm fa-caret-right mi-grey-1\'></i>&nbsp;';
                     }
 
@@ -401,12 +407,7 @@ if (!empty($_POST['type'])) {
                 "previous" => $previous
             );
 
-            //Check if is UTF8. IF not send Error
-            /*if (!isUTF8($texte)) {
-                $return_values = array("error" => $LANG['error_string_not_utf8']);
-            }*/
-
-            $return_values = json_encode($return_values, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $return_values = json_encode($return_values, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
             //return data
             echo $return_values;

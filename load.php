@@ -124,8 +124,11 @@ $htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
         <link rel="icon" href="'.$_SESSION['settings']['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
 // get some init
-//if (!isset($_SESSION["key"])) $_SESSION["key"] = "nothing";
-//if (!isset($_SESSION["user_id"])) $_SESSION["user_id"] = "";
+if (!isset($_SESSION["user_id"])) {
+    $_SESSION["key"] = mt_rand();
+    $_SESSION["user_id"] = "0";
+    $_SESSION["my_sk"] = "0";
+}
 
 $htmlHeaders .= '
 <script type="text/javascript">
@@ -209,7 +212,6 @@ $htmlHeaders .= '
             "sources/identify.php",
             {
                 type : "identify_user",
-                tst : "'.$_SESSION['CPM'].'",
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
@@ -229,7 +231,7 @@ $htmlHeaders .= '
                     $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
                 } else if (data[0].value == "psk_required") {
                     $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("' . addslashes($LANG['psk_required']) . '");
+                    $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
                     $("#connection_error, #connect_psk_confirm").show();
                 } else if (data[0].value == "user_not_exists") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();

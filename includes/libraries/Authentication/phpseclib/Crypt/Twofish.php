@@ -402,7 +402,7 @@ class Twofish extends BlockCipher
             case 256:
                 break;
             default:
-                throw new \LengthException('Key of size ' . strlen($key) . ' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
+                throw new \LengthException('Key of size '.strlen($key).' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
         }
 
         parent::setKeyLength($length);
@@ -426,7 +426,7 @@ class Twofish extends BlockCipher
             case 32:
                 break;
             default:
-                throw new \LengthException('Key of size ' . strlen($key) . ' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
+                throw new \LengthException('Key of size '.strlen($key).' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
         }
 
         parent::setKey($key);
@@ -462,18 +462,18 @@ class Twofish extends BlockCipher
             case 16:
                 list($s7, $s6, $s5, $s4) = $this->_mdsrem($le_longs[1], $le_longs[2]);
                 list($s3, $s2, $s1, $s0) = $this->_mdsrem($le_longs[3], $le_longs[4]);
-                for ($i = 0, $j = 1; $i < 40; $i+= 2, $j+= 2) {
-                    $A = $m0[$q0[$q0[$i] ^ $key[ 9]] ^ $key[1]] ^
-                         $m1[$q0[$q1[$i] ^ $key[10]] ^ $key[2]] ^
-                         $m2[$q1[$q0[$i] ^ $key[11]] ^ $key[3]] ^
-                         $m3[$q1[$q1[$i] ^ $key[12]] ^ $key[4]];
+                for ($i = 0, $j = 1; $i < 40; $i += 2, $j += 2) {
+                    $A = $m0[$q0[$q0[$i] ^ $key[9]] ^ $key[1]] ^
+                            $m1[$q0[$q1[$i] ^ $key[10]] ^ $key[2]] ^
+                            $m2[$q1[$q0[$i] ^ $key[11]] ^ $key[3]] ^
+                            $m3[$q1[$q1[$i] ^ $key[12]] ^ $key[4]];
                     $B = $m0[$q0[$q0[$j] ^ $key[13]] ^ $key[5]] ^
-                         $m1[$q0[$q1[$j] ^ $key[14]] ^ $key[6]] ^
-                         $m2[$q1[$q0[$j] ^ $key[15]] ^ $key[7]] ^
-                         $m3[$q1[$q1[$j] ^ $key[16]] ^ $key[8]];
+                            $m1[$q0[$q1[$j] ^ $key[14]] ^ $key[6]] ^
+                            $m2[$q1[$q0[$j] ^ $key[15]] ^ $key[7]] ^
+                            $m3[$q1[$q1[$j] ^ $key[16]] ^ $key[8]];
                     $B = ($B << 8) | ($B >> 24 & 0xff);
-                    $K[] = $A+= $B;
-                    $K[] = (($A+= $B) << 9 | $A >> 23 & 0x1ff);
+                    $K[] = $A += $B;
+                    $K[] = (($A += $B) << 9 | $A >> 23 & 0x1ff);
                 }
                 for ($i = 0; $i < 256; ++$i) {
                     $S0[$i] = $m0[$q0[$q0[$i] ^ $s4] ^ $s0];
@@ -486,18 +486,18 @@ class Twofish extends BlockCipher
                 list($sb, $sa, $s9, $s8) = $this->_mdsrem($le_longs[1], $le_longs[2]);
                 list($s7, $s6, $s5, $s4) = $this->_mdsrem($le_longs[3], $le_longs[4]);
                 list($s3, $s2, $s1, $s0) = $this->_mdsrem($le_longs[5], $le_longs[6]);
-                for ($i = 0, $j = 1; $i < 40; $i+= 2, $j+= 2) {
-                    $A = $m0[$q0[$q0[$q1[$i] ^ $key[17]] ^ $key[ 9]] ^ $key[1]] ^
-                         $m1[$q0[$q1[$q1[$i] ^ $key[18]] ^ $key[10]] ^ $key[2]] ^
-                         $m2[$q1[$q0[$q0[$i] ^ $key[19]] ^ $key[11]] ^ $key[3]] ^
-                         $m3[$q1[$q1[$q0[$i] ^ $key[20]] ^ $key[12]] ^ $key[4]];
+                for ($i = 0, $j = 1; $i < 40; $i += 2, $j += 2) {
+                    $A = $m0[$q0[$q0[$q1[$i] ^ $key[17]] ^ $key[9]] ^ $key[1]] ^
+                            $m1[$q0[$q1[$q1[$i] ^ $key[18]] ^ $key[10]] ^ $key[2]] ^
+                            $m2[$q1[$q0[$q0[$i] ^ $key[19]] ^ $key[11]] ^ $key[3]] ^
+                            $m3[$q1[$q1[$q0[$i] ^ $key[20]] ^ $key[12]] ^ $key[4]];
                     $B = $m0[$q0[$q0[$q1[$j] ^ $key[21]] ^ $key[13]] ^ $key[5]] ^
-                         $m1[$q0[$q1[$q1[$j] ^ $key[22]] ^ $key[14]] ^ $key[6]] ^
-                         $m2[$q1[$q0[$q0[$j] ^ $key[23]] ^ $key[15]] ^ $key[7]] ^
-                         $m3[$q1[$q1[$q0[$j] ^ $key[24]] ^ $key[16]] ^ $key[8]];
+                            $m1[$q0[$q1[$q1[$j] ^ $key[22]] ^ $key[14]] ^ $key[6]] ^
+                            $m2[$q1[$q0[$q0[$j] ^ $key[23]] ^ $key[15]] ^ $key[7]] ^
+                            $m3[$q1[$q1[$q0[$j] ^ $key[24]] ^ $key[16]] ^ $key[8]];
                     $B = ($B << 8) | ($B >> 24 & 0xff);
-                    $K[] = $A+= $B;
-                    $K[] = (($A+= $B) << 9 | $A >> 23 & 0x1ff);
+                    $K[] = $A += $B;
+                    $K[] = (($A += $B) << 9 | $A >> 23 & 0x1ff);
                 }
                 for ($i = 0; $i < 256; ++$i) {
                     $S0[$i] = $m0[$q0[$q0[$q1[$i] ^ $s8] ^ $s4] ^ $s0];
@@ -511,18 +511,18 @@ class Twofish extends BlockCipher
                 list($sb, $sa, $s9, $s8) = $this->_mdsrem($le_longs[3], $le_longs[4]);
                 list($s7, $s6, $s5, $s4) = $this->_mdsrem($le_longs[5], $le_longs[6]);
                 list($s3, $s2, $s1, $s0) = $this->_mdsrem($le_longs[7], $le_longs[8]);
-                for ($i = 0, $j = 1; $i < 40; $i+= 2, $j+= 2) {
-                    $A = $m0[$q0[$q0[$q1[$q1[$i] ^ $key[25]] ^ $key[17]] ^ $key[ 9]] ^ $key[1]] ^
-                         $m1[$q0[$q1[$q1[$q0[$i] ^ $key[26]] ^ $key[18]] ^ $key[10]] ^ $key[2]] ^
-                         $m2[$q1[$q0[$q0[$q0[$i] ^ $key[27]] ^ $key[19]] ^ $key[11]] ^ $key[3]] ^
-                         $m3[$q1[$q1[$q0[$q1[$i] ^ $key[28]] ^ $key[20]] ^ $key[12]] ^ $key[4]];
+                for ($i = 0, $j = 1; $i < 40; $i += 2, $j += 2) {
+                    $A = $m0[$q0[$q0[$q1[$q1[$i] ^ $key[25]] ^ $key[17]] ^ $key[9]] ^ $key[1]] ^
+                            $m1[$q0[$q1[$q1[$q0[$i] ^ $key[26]] ^ $key[18]] ^ $key[10]] ^ $key[2]] ^
+                            $m2[$q1[$q0[$q0[$q0[$i] ^ $key[27]] ^ $key[19]] ^ $key[11]] ^ $key[3]] ^
+                            $m3[$q1[$q1[$q0[$q1[$i] ^ $key[28]] ^ $key[20]] ^ $key[12]] ^ $key[4]];
                     $B = $m0[$q0[$q0[$q1[$q1[$j] ^ $key[29]] ^ $key[21]] ^ $key[13]] ^ $key[5]] ^
-                         $m1[$q0[$q1[$q1[$q0[$j] ^ $key[30]] ^ $key[22]] ^ $key[14]] ^ $key[6]] ^
-                         $m2[$q1[$q0[$q0[$q0[$j] ^ $key[31]] ^ $key[23]] ^ $key[15]] ^ $key[7]] ^
-                         $m3[$q1[$q1[$q0[$q1[$j] ^ $key[32]] ^ $key[24]] ^ $key[16]] ^ $key[8]];
+                            $m1[$q0[$q1[$q1[$q0[$j] ^ $key[30]] ^ $key[22]] ^ $key[14]] ^ $key[6]] ^
+                            $m2[$q1[$q0[$q0[$q0[$j] ^ $key[31]] ^ $key[23]] ^ $key[15]] ^ $key[7]] ^
+                            $m3[$q1[$q1[$q0[$q1[$j] ^ $key[32]] ^ $key[24]] ^ $key[16]] ^ $key[8]];
                     $B = ($B << 8) | ($B >> 24 & 0xff);
-                    $K[] = $A+= $B;
-                    $K[] = (($A+= $B) << 9 | $A >> 23 & 0x1ff);
+                    $K[] = $A += $B;
+                    $K[] = (($A += $B) << 9 | $A >> 23 & 0x1ff);
                 }
                 for ($i = 0; $i < 256; ++$i) {
                     $S0[$i] = $m0[$q0[$q0[$q1[$q1[$i] ^ $sc] ^ $s8] ^ $s4] ^ $s0];
@@ -556,34 +556,34 @@ class Twofish extends BlockCipher
 
             // Shift the others up.
             $B = ($B << 8) | (0xff & ($A >> 24));
-            $A<<= 8;
+            $A <<= 8;
 
             $u = $t << 1;
 
             // Subtract the modular polynomial on overflow.
             if ($t & 0x80) {
-                $u^= 0x14d;
+                $u ^= 0x14d;
             }
 
             // Remove t * (a * x^2 + 1).
             $B ^= $t ^ ($u << 16);
 
             // Form u = a*t + t/a = t*(a + 1/a).
-            $u^= 0x7fffffff & ($t >> 1);
+            $u ^= 0x7fffffff & ($t >> 1);
 
             // Add the modular polynomial on underflow.
             if ($t & 0x01) {
-                $u^= 0xa6 ;
+                $u ^= 0xa6;
             }
 
             // Remove t * (a + 1/a) * (x^3 + x).
-            $B^= ($u << 24) | ($u << 8);
+            $B ^= ($u << 24) | ($u << 8);
         }
 
         return array(
             0xff & $B >> 24,
             0xff & $B >> 16,
-            0xff & $B >>  8,
+            0xff & $B >> 8,
             0xff & $B);
     }
 
@@ -610,36 +610,36 @@ class Twofish extends BlockCipher
 
         $ki = 7;
         while ($ki < 39) {
-            $t0 = $S0[ $R0        & 0xff] ^
-                  $S1[($R0 >>  8) & 0xff] ^
-                  $S2[($R0 >> 16) & 0xff] ^
-                  $S3[($R0 >> 24) & 0xff];
+            $t0 = $S0[$R0 & 0xff] ^
+                    $S1[($R0 >> 8) & 0xff] ^
+                    $S2[($R0 >> 16) & 0xff] ^
+                    $S3[($R0 >> 24) & 0xff];
             $t1 = $S0[($R1 >> 24) & 0xff] ^
-                  $S1[ $R1        & 0xff] ^
-                  $S2[($R1 >>  8) & 0xff] ^
-                  $S3[($R1 >> 16) & 0xff];
-            $R2^= $t0 + $t1 + $K[++$ki];
+                    $S1[$R1 & 0xff] ^
+                    $S2[($R1 >> 8) & 0xff] ^
+                    $S3[($R1 >> 16) & 0xff];
+            $R2 ^= $t0 + $t1 + $K[++$ki];
             $R2 = ($R2 >> 1 & 0x7fffffff) | ($R2 << 31);
             $R3 = ((($R3 >> 31) & 1) | ($R3 << 1)) ^ ($t0 + ($t1 << 1) + $K[++$ki]);
 
-            $t0 = $S0[ $R2        & 0xff] ^
-                  $S1[($R2 >>  8) & 0xff] ^
-                  $S2[($R2 >> 16) & 0xff] ^
-                  $S3[($R2 >> 24) & 0xff];
+            $t0 = $S0[$R2 & 0xff] ^
+                    $S1[($R2 >> 8) & 0xff] ^
+                    $S2[($R2 >> 16) & 0xff] ^
+                    $S3[($R2 >> 24) & 0xff];
             $t1 = $S0[($R3 >> 24) & 0xff] ^
-                  $S1[ $R3        & 0xff] ^
-                  $S2[($R3 >>  8) & 0xff] ^
-                  $S3[($R3 >> 16) & 0xff];
-            $R0^= ($t0 + $t1 + $K[++$ki]);
+                    $S1[$R3 & 0xff] ^
+                    $S2[($R3 >> 8) & 0xff] ^
+                    $S3[($R3 >> 16) & 0xff];
+            $R0 ^= ($t0 + $t1 + $K[++$ki]);
             $R0 = ($R0 >> 1 & 0x7fffffff) | ($R0 << 31);
             $R1 = ((($R1 >> 31) & 1) | ($R1 << 1)) ^ ($t0 + ($t1 << 1) + $K[++$ki]);
         }
 
         // @codingStandardsIgnoreStart
         return pack("V4", $K[4] ^ $R2,
-                          $K[5] ^ $R3,
-                          $K[6] ^ $R0,
-                          $K[7] ^ $R1);
+                            $K[5] ^ $R3,
+                            $K[6] ^ $R0,
+                            $K[7] ^ $R1);
         // @codingStandardsIgnoreEnd
     }
 
@@ -666,36 +666,36 @@ class Twofish extends BlockCipher
 
         $ki = 40;
         while ($ki > 8) {
-            $t0 = $S0[$R0       & 0xff] ^
-                  $S1[$R0 >>  8 & 0xff] ^
-                  $S2[$R0 >> 16 & 0xff] ^
-                  $S3[$R0 >> 24 & 0xff];
+            $t0 = $S0[$R0 & 0xff] ^
+                    $S1[$R0 >> 8 & 0xff] ^
+                    $S2[$R0 >> 16 & 0xff] ^
+                    $S3[$R0 >> 24 & 0xff];
             $t1 = $S0[$R1 >> 24 & 0xff] ^
-                  $S1[$R1       & 0xff] ^
-                  $S2[$R1 >>  8 & 0xff] ^
-                  $S3[$R1 >> 16 & 0xff];
-            $R3^= $t0 + ($t1 << 1) + $K[--$ki];
+                    $S1[$R1 & 0xff] ^
+                    $S2[$R1 >> 8 & 0xff] ^
+                    $S3[$R1 >> 16 & 0xff];
+            $R3 ^= $t0 + ($t1 << 1) + $K[--$ki];
             $R3 = $R3 >> 1 & 0x7fffffff | $R3 << 31;
             $R2 = ($R2 >> 31 & 0x1 | $R2 << 1) ^ ($t0 + $t1 + $K[--$ki]);
 
-            $t0 = $S0[$R2       & 0xff] ^
-                  $S1[$R2 >>  8 & 0xff] ^
-                  $S2[$R2 >> 16 & 0xff] ^
-                  $S3[$R2 >> 24 & 0xff];
+            $t0 = $S0[$R2 & 0xff] ^
+                    $S1[$R2 >> 8 & 0xff] ^
+                    $S2[$R2 >> 16 & 0xff] ^
+                    $S3[$R2 >> 24 & 0xff];
             $t1 = $S0[$R3 >> 24 & 0xff] ^
-                  $S1[$R3       & 0xff] ^
-                  $S2[$R3 >>  8 & 0xff] ^
-                  $S3[$R3 >> 16 & 0xff];
-            $R1^= $t0 + ($t1 << 1) + $K[--$ki];
+                    $S1[$R3 & 0xff] ^
+                    $S2[$R3 >> 8 & 0xff] ^
+                    $S3[$R3 >> 16 & 0xff];
+            $R1 ^= $t0 + ($t1 << 1) + $K[--$ki];
             $R1 = $R1 >> 1 & 0x7fffffff | $R1 << 31;
             $R0 = ($R0 >> 31 & 0x1 | $R0 << 1) ^ ($t0 + $t1 + $K[--$ki]);
         }
 
         // @codingStandardsIgnoreStart
         return pack("V4", $K[0] ^ $R2,
-                          $K[1] ^ $R3,
-                          $K[2] ^ $R0,
-                          $K[3] ^ $R1);
+                            $K[1] ^ $R3,
+                            $K[2] ^ $R0,
+                            $K[3] ^ $R1);
         // @codingStandardsIgnoreEnd
     }
 
@@ -707,16 +707,16 @@ class Twofish extends BlockCipher
      */
     function _setupInlineCrypt()
     {
-        $lambda_functions =& self::_getLambdaFunctions();
+        $lambda_functions = & self::_getLambdaFunctions();
 
         // Max. 10 Ultra-Hi-optimized inline-crypt functions. After that, we'll (still) create very fast code, but not the ultimate fast one.
         // (Currently, for Crypt_Twofish, one generated $lambda_function cost on php5.5@32bit ~140kb unfreeable mem and ~240kb on php5.5@64bit)
-        $gen_hi_opt_code = (bool)(count($lambda_functions) < 10);
+        $gen_hi_opt_code = (bool) (count($lambda_functions) < 10);
 
         // Generation of a unique hash for our generated code
         $code_hash = "Crypt_Twofish, {$this->mode}";
         if ($gen_hi_opt_code) {
-            $code_hash = str_pad($code_hash, 32) . $this->_hashInlineCryptFunction($this->key);
+            $code_hash = str_pad($code_hash, 32).$this->_hashInlineCryptFunction($this->key);
         }
 
         if (!isset($lambda_functions[$code_hash])) {
@@ -736,16 +736,16 @@ class Twofish extends BlockCipher
                     ';
                     break;
                 default:
-                    $K   = array();
+                    $K = array();
                     for ($i = 0; $i < 40; ++$i) {
-                        $K[] = '$K_' . $i;
+                        $K[] = '$K_'.$i;
                     }
                     $init_crypt = '
                         $S0 = $self->S0;
                         $S1 = $self->S1;
                         $S2 = $self->S2;
                         $S3 = $self->S3;
-                        list(' . implode(',', $K) . ') = $self->K;
+                        list(' . implode(',', $K).') = $self->K;
                     ';
             }
 
@@ -758,7 +758,7 @@ class Twofish extends BlockCipher
                 $R3 = '.$K[3].' ^ $in[4];
             ';
             for ($ki = 7, $i = 0; $i < 8; ++$i) {
-                $encrypt_block.= '
+                $encrypt_block .= '
                     $t0 = $S0[ $R0        & 0xff] ^
                           $S1[($R0 >>  8) & 0xff] ^
                           $S2[($R0 >> 16) & 0xff] ^
@@ -784,7 +784,7 @@ class Twofish extends BlockCipher
                     $R1 = ((($R1 >> 31) & 1) | ($R1 << 1)) ^ ($t0 + ($t1 << 1) + '.$K[++$ki].');
                 ';
             }
-            $encrypt_block.= '
+            $encrypt_block .= '
                 $in = pack("V4", '.$K[4].' ^ $R2,
                                  '.$K[5].' ^ $R3,
                                  '.$K[6].' ^ $R0,
@@ -800,7 +800,7 @@ class Twofish extends BlockCipher
                 $R3 = '.$K[7].' ^ $in[4];
             ';
             for ($ki = 40, $i = 0; $i < 8; ++$i) {
-                $decrypt_block.= '
+                $decrypt_block .= '
                     $t0 = $S0[$R0       & 0xff] ^
                           $S1[$R0 >>  8 & 0xff] ^
                           $S2[$R0 >> 16 & 0xff] ^
@@ -826,7 +826,7 @@ class Twofish extends BlockCipher
                     $R0 = ($R0 >> 31 & 0x1 | $R0 << 1) ^ ($t0 + $t1 + '.$K[--$ki].');
                 ';
             }
-            $decrypt_block.= '
+            $decrypt_block .= '
                 $in = pack("V4", '.$K[0].' ^ $R2,
                                  '.$K[1].' ^ $R3,
                                  '.$K[2].' ^ $R0,
@@ -835,11 +835,11 @@ class Twofish extends BlockCipher
 
             $lambda_functions[$code_hash] = $this->_createInlineCryptFunction(
                 array(
-                   'init_crypt'    => $init_crypt,
-                   'init_encrypt'  => '',
-                   'init_decrypt'  => '',
-                   'encrypt_block' => $encrypt_block,
-                   'decrypt_block' => $decrypt_block
+                    'init_crypt'    => $init_crypt,
+                    'init_encrypt'  => '',
+                    'init_decrypt'  => '',
+                    'encrypt_block' => $encrypt_block,
+                    'decrypt_block' => $decrypt_block
                 )
             );
         }

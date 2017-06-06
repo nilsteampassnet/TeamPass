@@ -1,6 +1,10 @@
 2.1.27
 
+ #1776 Allow restricting items to users and roles - Wrong Item Owner
+ #1775 Can not decrypt a created crypted Backup - Improved encryption with Defuse
+ #1774 Announce this Item by email
  #1769 Installation issue - no admin account is created
+ #1762 Share user rights works backwards
 
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)

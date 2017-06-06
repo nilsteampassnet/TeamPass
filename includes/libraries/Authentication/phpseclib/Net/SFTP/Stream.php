@@ -157,14 +157,14 @@ class Stream
         $orig = $path;
         extract(parse_url($path) + array('port' => 22));
         if (isset($query)) {
-            $path.= '?' . $query;
+            $path .= '?'.$query;
         } elseif (preg_match('/(\?|\?#)$/', $orig)) {
-            $path.= '?';
+            $path .= '?';
         }
         if (isset($fragment)) {
-            $path.= '#' . $fragment;
+            $path .= '#'.$fragment;
         } elseif ($orig[strlen($orig) - 1] == '#') {
-            $path.= '#';
+            $path .= '#';
         }
 
         if (!isset($host)) {
@@ -329,7 +329,7 @@ class Stream
             $this->eof = true;
             return false;
         }
-        $this->pos+= strlen($result);
+        $this->pos += strlen($result);
 
         return $result;
     }
@@ -361,7 +361,7 @@ class Stream
         if ($result === false) {
             return false;
         }
-        $this->pos+= strlen($data);
+        $this->pos += strlen($data);
         if ($this->pos > $this->size) {
             $this->size = $this->pos;
         }
@@ -415,10 +415,10 @@ class Stream
                 }
                 break;
             case SEEK_CUR:
-                $offset+= $this->pos;
+                $offset += $this->pos;
                 break;
             case SEEK_END:
-                $offset+= $this->size;
+                $offset += $this->size;
         }
 
         $this->pos = $offset;
@@ -626,7 +626,6 @@ class Stream
      * $options. What does 8 correspond to?
      *
      * @param string $path
-     * @param int $mode
      * @param int $options
      * @return bool
      * @access public
@@ -776,7 +775,7 @@ class Stream
     function __call($name, $arguments)
     {
         if (defined('NET_SFTP_STREAM_LOGGING')) {
-            echo $name . '(';
+            echo $name.'(';
             $last = count($arguments) - 1;
             foreach ($arguments as $i => $argument) {
                 var_export($argument);
@@ -786,7 +785,7 @@ class Stream
             }
             echo ")\r\n";
         }
-        $name = '_' . $name;
+        $name = '_'.$name;
         if (!method_exists($this, $name)) {
             return false;
         }

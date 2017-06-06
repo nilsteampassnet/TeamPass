@@ -28,7 +28,7 @@ $pagesRights = array(
 
 function curPage()
 {
-    parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?")+1), $result);
+    parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?") + 1), $result);
     return $result['page'];
 }
 
@@ -57,7 +57,7 @@ function checkUser($userId, $userKey, $pageVisited)
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
+    DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
@@ -86,7 +86,7 @@ function checkUser($userId, $userKey, $pageVisited)
 
 function IsInArray($pages, $table)
 {
-    foreach($pages as $page) {
+    foreach ($pages as $page) {
         if (in_array($page, $table)) {
             return true;
         }

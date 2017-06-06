@@ -37,7 +37,7 @@ class ASN1
     {
         $length = ord(Strings::shift($string));
         if ($length & 0x80) { // definite length, long form
-            $length&= 0x7F;
+            $length &= 0x7F;
             $temp = Strings::shift($string, $length);
             list(, $length) = unpack('N', substr(str_pad($temp, 4, chr(0), STR_PAD_LEFT), -4));
         }

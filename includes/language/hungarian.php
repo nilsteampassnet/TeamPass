@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array (
+$LANG = array(
     'user_ga_code' => 'Google Hitelesítő küldése a felhasználónak email-ben.',
     'send_ga_code' => 'Google Hitelesítés a felhasználó számára.',
     'error_no_email' => 'Ennek a felhasználónak nincs email beállítva!',

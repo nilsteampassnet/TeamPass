@@ -37,10 +37,13 @@ $_SESSION['settings']['loaded'] = "";
 ################
 ## Function permits to get the value from a line
 ################
+/**
+ * @param string $val
+ */
 function getSettingValue($val)
 {
     $val = trim(strstr($val, "="));
-    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
 }
 
 ################
@@ -51,7 +54,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     global $dbTmp;
     $exists = false;
     $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc( $columns)) {
+    while ($c = mysqli_fetch_assoc($columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
             return true;
@@ -64,7 +67,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
-function addIndexIfNotExist($table, $index, $sql ) {
+function addIndexIfNotExist($table, $index, $sql) {
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
@@ -72,7 +75,7 @@ function addIndexIfNotExist($table, $index, $sql ) {
 
     // if index does not exist, then add it
     if (!$res) {
-        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` " . $sql);
+        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` ".$sql);
     }
 
     return $res;
@@ -89,9 +92,12 @@ function tableExists($tablename, $database = false)
         AND table_name = '$tablename'"
     );
 
-    if ($res > 0) return true;
-    else return false;
-}
+    if ($res > 0) {
+        return true;
+    } else {
+        return false;
+    }
+    }
 
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
@@ -128,7 +134,7 @@ $dbTmp = mysqli_connect(
 // if yes, then don't execute re-encryption
 $_SESSION['tp_defuse_installed'] = false;
 $columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['pre']."items");
-while ($c = mysqli_fetch_assoc( $columns)) {
+while ($c = mysqli_fetch_assoc($columns)) {
     if ($c['Field'] === "encryption_type") {
         $_SESSION['tp_defuse_installed'] = true;
     }
@@ -137,49 +143,49 @@ while ($c = mysqli_fetch_assoc( $columns)) {
 
 ## Populate table MISC
 $val = array(
-    array('admin', 'max_latest_items', '10',0),
-    array('admin', 'enable_favourites', '1',0),
-    array('admin', 'show_last_items', '1',0),
-    array('admin', 'enable_pf_feature', '0',0),
-    array('admin', 'menu_type', 'context',0),
-    array('admin', 'log_connections', '0',0),
-    array('admin', 'time_format', 'H:i:s',0),
-    array('admin', 'date_format', 'd/m/Y',0),
-    array('admin', 'duplicate_folder', '0',0),
-    array('admin', 'duplicate_item', '0',0),
-    array('admin', 'item_duplicate_in_same_folder', '0',0),
-    array('admin', 'number_of_used_pw', '3',0),
-    array('admin', 'manager_edit', '1',0),
-    array('admin', 'cpassman_dir', '',0),
-    array('admin', 'cpassman_url', '',0),
-    array('admin', 'favicon', '',0),
-    array('admin', 'activate_expiration', '0',0),
-    array('admin', 'pw_life_duration','30',0),
+    array('admin', 'max_latest_items', '10', 0),
+    array('admin', 'enable_favourites', '1', 0),
+    array('admin', 'show_last_items', '1', 0),
+    array('admin', 'enable_pf_feature', '0', 0),
+    array('admin', 'menu_type', 'context', 0),
+    array('admin', 'log_connections', '0', 0),
+    array('admin', 'time_format', 'H:i:s', 0),
+    array('admin', 'date_format', 'd/m/Y', 0),
+    array('admin', 'duplicate_folder', '0', 0),
+    array('admin', 'duplicate_item', '0', 0),
+    array('admin', 'item_duplicate_in_same_folder', '0', 0),
+    array('admin', 'number_of_used_pw', '3', 0),
+    array('admin', 'manager_edit', '1', 0),
+    array('admin', 'cpassman_dir', '', 0),
+    array('admin', 'cpassman_url', '', 0),
+    array('admin', 'favicon', '', 0),
+    array('admin', 'activate_expiration', '0', 0),
+    array('admin', 'pw_life_duration', '30', 0),
     //array('admin', 'maintenance_mode','1',1),
-    array('admin', 'cpassman_version',$k['version'],1),
-    array('admin', 'ldap_mode','0',0),
-    array('admin','ldap_type','0',0),
-    array('admin','ldap_suffix','0',0),
-    array('admin','ldap_domain_dn','0',0),
-    array('admin','ldap_domain_controler','0',0),
-    array('admin','ldap_user_attribute','0',0),
-    array('admin','ldap_ssl','0',0),
-    array('admin','ldap_tls','0',0),
-    array('admin','ldap_elusers','0',0),
-    array('admin', 'richtext',0,0),
-    array('admin', 'allow_print',0,0),
-    array('admin', 'roles_allowed_to_print',0,0),
-    array('admin', 'show_description',1,0),
-    array('admin', 'anyone_can_modify',0,0),
-    array('admin', 'anyone_can_modify_bydefault',0,0),
-    array('admin', 'nb_bad_authentication',0,0),
-    array('admin', 'restricted_to',0,0),
-    array('admin', 'restricted_to_roles',0,0),
-    array('admin', 'utf8_enabled',1,0),
-    array('admin', 'custom_logo','',0),
-    array('admin', 'custom_login_text','',0),
-    array('admin', 'log_accessed', '1',1),
-    array('admin', 'default_language', 'english',0),
+    array('admin', 'cpassman_version', $k['version'], 1),
+    array('admin', 'ldap_mode', '0', 0),
+    array('admin', 'ldap_type', '0', 0),
+    array('admin', 'ldap_suffix', '0', 0),
+    array('admin', 'ldap_domain_dn', '0', 0),
+    array('admin', 'ldap_domain_controler', '0', 0),
+    array('admin', 'ldap_user_attribute', '0', 0),
+    array('admin', 'ldap_ssl', '0', 0),
+    array('admin', 'ldap_tls', '0', 0),
+    array('admin', 'ldap_elusers', '0', 0),
+    array('admin', 'richtext', 0, 0),
+    array('admin', 'allow_print', 0, 0),
+    array('admin', 'roles_allowed_to_print', 0, 0),
+    array('admin', 'show_description', 1, 0),
+    array('admin', 'anyone_can_modify', 0, 0),
+    array('admin', 'anyone_can_modify_bydefault', 0, 0),
+    array('admin', 'nb_bad_authentication', 0, 0),
+    array('admin', 'restricted_to', 0, 0),
+    array('admin', 'restricted_to_roles', 0, 0),
+    array('admin', 'utf8_enabled', 1, 0),
+    array('admin', 'custom_logo', '', 0),
+    array('admin', 'custom_login_text', '', 0),
+    array('admin', 'log_accessed', '1', 1),
+    array('admin', 'default_language', 'english', 0),
     array(
         'admin',
         'send_stats',
@@ -195,16 +201,16 @@ $val = array(
         'admin',
         'path_to_upload_folder',
         strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1 ?
-            (strlen($_SERVER['DOCUMENT_ROOT'])-1).substr(
+            (strlen($_SERVER['DOCUMENT_ROOT']) - 1).substr(
                 $_SERVER['PHP_SELF'],
                 0,
-                strlen($_SERVER['PHP_SELF'])-25
+                strlen($_SERVER['PHP_SELF']) - 25
             ).'/upload'
         :
         $_SERVER['DOCUMENT_ROOT'].substr(
             $_SERVER['PHP_SELF'],
             0,
-            strlen($_SERVER['PHP_SELF'])-25
+            strlen($_SERVER['PHP_SELF']) - 25
         ).'/upload',
         0
     ),
@@ -214,7 +220,7 @@ $val = array(
         'http://'.$_SERVER['HTTP_HOST'].substr(
             $_SERVER['PHP_SELF'],
             0,
-            strrpos($_SERVER['PHP_SELF'], '/')-8
+            strrpos($_SERVER['PHP_SELF'], '/') - 8
         ).'/upload',
         0
     ),
@@ -224,16 +230,16 @@ $val = array(
         'admin',
         'path_to_files_folder',
         strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1 ?
-        (strlen($_SERVER['DOCUMENT_ROOT'])-1).substr(
+        (strlen($_SERVER['DOCUMENT_ROOT']) - 1).substr(
             $_SERVER['PHP_SELF'],
             0,
-            strlen($_SERVER['PHP_SELF'])-25
+            strlen($_SERVER['PHP_SELF']) - 25
         ).'/files'
         :
         $_SERVER['DOCUMENT_ROOT'].substr(
             $_SERVER['PHP_SELF'],
             0,
-            strlen($_SERVER['PHP_SELF'])-25
+            strlen($_SERVER['PHP_SELF']) - 25
         ).'/files',
         0
     ),
@@ -243,12 +249,12 @@ $val = array(
         'http://'.$_SERVER['HTTP_HOST'].substr(
             $_SERVER['PHP_SELF'],
             0,
-            strrpos($_SERVER['PHP_SELF'], '/')-8
+            strrpos($_SERVER['PHP_SELF'], '/') - 8
         ).'/files',
         0
     ),
-    array('admin', 'pwd_maximum_length','40',0),
-    array('admin', 'ga_website_name','TeamPass for ChangeMe',0),
+    array('admin', 'pwd_maximum_length', '40', 0),
+    array('admin', 'ga_website_name', 'TeamPass for ChangeMe', 0),
     array('admin', 'email_smtp_server', @$_SESSION['smtp_server'], 0),
     array('admin', 'email_smtp_auth', @$_SESSION['smtp_auth'], 0),
     array('admin', 'email_auth_username', @$_SESSION['smtp_auth_username'], 0),
@@ -259,43 +265,43 @@ $val = array(
     array('admin', 'email_from_name', @$_SESSION['email_from_name'], 0),
     array('admin', 'google_authentication', 0, 0),
     array('admin', 'delay_item_edition', 0, 0),
-    array('admin', 'allow_import',0,0),
-    array('admin', 'proxy_port',0,0),
-    array('admin', 'proxy_port',0,0),
-    array('admin','upload_maxfilesize','10mb',0),
+    array('admin', 'allow_import', 0, 0),
+    array('admin', 'proxy_port', 0, 0),
+    array('admin', 'proxy_port', 0, 0),
+    array('admin', 'upload_maxfilesize', '10mb', 0),
     array(
         'admin',
         'upload_docext',
         'doc,docx,dotx,xls,xlsx,xltx,rtf,csv,txt,pdf,ppt,pptx,pot,dotx,xltx',
         0
     ),
-    array('admin','upload_imagesext','jpg,jpeg,gif,png',0),
-    array('admin','upload_pkgext','7z,rar,tar,zip',0),
-    array('admin','upload_otherext','sql,xml',0),
-    array('admin','upload_imageresize_options','1',0),
-    array('admin','upload_imageresize_width','800',0),
-    array('admin','upload_imageresize_height','600',0),
-    array('admin','upload_imageresize_quality','90',0),
-    array('admin','enable_send_email_on_user_login','0', 0),
-    array('admin','enable_user_can_create_folders','0', 0),
-    array('admin','insert_manual_entry_item_history','0', 0),
-    array('admin','enable_kb','0', 0),
-    array('admin','enable_email_notification_on_item_shown','0', 0),
-    array('admin','enable_email_notification_on_user_pw_change','0', 0),
-    array('admin','enable_sts','0', 0),
-    array('admin','encryptClientServer','1', 0),
-    array('admin','use_md5_password_as_salt','0', 0),
-    array('admin','api','0', 0),
+    array('admin', 'upload_imagesext', 'jpg,jpeg,gif,png', 0),
+    array('admin', 'upload_pkgext', '7z,rar,tar,zip', 0),
+    array('admin', 'upload_otherext', 'sql,xml', 0),
+    array('admin', 'upload_imageresize_options', '1', 0),
+    array('admin', 'upload_imageresize_width', '800', 0),
+    array('admin', 'upload_imageresize_height', '600', 0),
+    array('admin', 'upload_imageresize_quality', '90', 0),
+    array('admin', 'enable_send_email_on_user_login', '0', 0),
+    array('admin', 'enable_user_can_create_folders', '0', 0),
+    array('admin', 'insert_manual_entry_item_history', '0', 0),
+    array('admin', 'enable_kb', '0', 0),
+    array('admin', 'enable_email_notification_on_item_shown', '0', 0),
+    array('admin', 'enable_email_notification_on_user_pw_change', '0', 0),
+    array('admin', 'enable_sts', '0', 0),
+    array('admin', 'encryptClientServer', '1', 0),
+    array('admin', 'use_md5_password_as_salt', '0', 0),
+    array('admin', 'api', '0', 0),
     array('admin', 'subfolder_rights_as_parent', '0', 0),
     array('admin', 'show_only_accessible_folders', '0', 0),
     array('admin', 'enable_suggestion', '0', 0),
     array('admin', 'email_server_url', '', 0),
-    array('admin','otv_expiration_period','7', 0),
-    array('admin','default_session_expiration_time','60', 0),
-    array('admin','duo','0', 0),
-    array('admin','enable_server_password_change','0', 0),
-    array('admin','bck_script_path', $_SESSION['abspath']."/backups", 0),
-    array('admin','bck_script_filename', 'bck_cpassman', 0)
+    array('admin', 'otv_expiration_period', '7', 0),
+    array('admin', 'default_session_expiration_time', '60', 0),
+    array('admin', 'duo', '0', 0),
+    array('admin', 'enable_server_password_change', '0', 0),
+    array('admin', 'bck_script_path', $_SESSION['abspath']."/backups", 0),
+    array('admin', 'bck_script_filename', 'bck_cpassman', 0)
 );
 $res1 = "na";
 foreach ($val as $elem) {
@@ -605,7 +611,7 @@ $res2 = addColumnIfNotExist(
 );
 
 // Clean timestamp for users table
-mysqli_query($dbTmp,"UPDATE ".$_SESSION['pre']."users SET timestamp = ''");
+mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."users SET timestamp = ''");
 
 ## Alter nested_tree table
 $res2 = addColumnIfNotExist(
@@ -642,7 +648,7 @@ $res8 = mysqli_query($dbTmp,
 if ($res8) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -664,7 +670,7 @@ if ($res8) {
         ADD `field_1` VARCHAR(250) NOT NULL"
     );
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LOG_SYSTEM!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LOG_SYSTEM! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -685,7 +691,7 @@ $res9 = mysqli_query($dbTmp,
 if ($res9) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -699,7 +705,7 @@ mysqli_query($dbTmp,
 );
 
 ## TABLE CACHE
-mysqli_query($dbTmp,"DROP TABLE IF EXISTS `".$_SESSION['pre']."cache`");
+mysqli_query($dbTmp, "DROP TABLE IF EXISTS `".$_SESSION['pre']."cache`");
 $res8 = mysqli_query($dbTmp,
     "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."cache` (
     `id` int(12) NOT NULL,
@@ -722,7 +728,7 @@ if ($res8) {
             INNER JOIN ".$_SESSION['pre']."log_items as l ON (l.id_item = i.id)
             AND l.action = 'at_creation'
             WHERE i.inactif=0";
-    $rows = mysqli_query($dbTmp,$sql);
+    $rows = mysqli_query($dbTmp, $sql);
     while ($reccord = mysqli_fetch_array($rows)) {
         //Get all TAGS
         $tags = "";
@@ -734,7 +740,7 @@ if ($res8) {
         if (!empty($itemTags)) {
             foreach ($itemTags as $itemTag) {
                 if (!empty($itemTag['tag'])) {
-                    $tags .= $itemTag['tag']. " ";
+                    $tags .= $itemTag['tag']." ";
                 }
             }
         }
@@ -764,7 +770,7 @@ if ($res8) {
         );
     }
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CACHE!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CACHE! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -782,6 +788,13 @@ $res9 = mysqli_query($dbTmp,
     `creator_id` int(11) NOT null DEFAULT '0'
     );"
 );
+if ($res9) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_title! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 addColumnIfNotExist(
     $_SESSION['pre']."roles_title",
     "allow_pw_change",
@@ -804,12 +817,19 @@ $res10 = mysqli_query($dbTmp,
     `folder_id` int(12) NOT NULL
     );"
 );
+if ($res10) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_values! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 if (tableExists($_SESSION['pre']."functions")) {
     $tableFunctionExists = true;
 } else {
     $tableFunctionExists = false;
 }
-if ($res9 && $res10 && $tableFunctionExists == true) {
+if ($res9 && $res10 && $tableFunctionExists === true) {
     //Get data from tables FUNCTIONS and populate new ROLES tables
     $rows = mysqli_query($dbTmp,
         "SELECT * FROM ".$_SESSION['pre']."functions"
@@ -854,9 +874,9 @@ if ($res9 && $res10 && $tableFunctionExists == true) {
     );
 
     //Drop old table
-    mysqli_query($dbTmp,"DROP TABLE ".$_SESSION['pre']."functions");
-} elseif ($tableFunctionExists == false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES!"}]';
+    mysqli_query($dbTmp, "DROP TABLE ".$_SESSION['pre']."functions");
+} elseif ($tableFunctionExists === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -876,7 +896,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -892,7 +912,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -907,7 +927,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -925,7 +945,7 @@ $res = addIndexIfNotExist($_SESSION['pre'].'restriction_to_roles', 'role_id_idx'
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -940,10 +960,17 @@ $res = mysqli_query($dbTmp,
     `flag` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
+if ($res) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 $resTmp = mysqli_fetch_row(
-    mysqli_query($dbTmp,"SELECT COUNT(*) FROM ".$_SESSION['pre']."languages")
+    mysqli_query($dbTmp, "SELECT COUNT(*) FROM ".$_SESSION['pre']."languages")
 );
-mysqli_query($dbTmp,"TRUNCATE TABLE ".$_SESSION['pre']."languages");
+mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['pre']."languages");
 mysqli_query($dbTmp,
     "INSERT IGNORE INTO `".$_SESSION['pre']."languages`
     (`id`, `name`, `label`, `code`, `flag`) VALUES
@@ -965,13 +992,6 @@ mysqli_query($dbTmp,
     ('', 'vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
     ('', 'estonian', 'Estonian' , 'ee', 'ee.png');"
 );
-if ($res) {
-    //
-} else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES!"}]';
-    mysqli_close($dbTmp);
-    exit();
-}
 
 ## TABLE EMAILS
 $res = mysqli_query($dbTmp,
@@ -986,7 +1006,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1003,7 +1023,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1019,7 +1039,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1040,7 +1060,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1058,7 +1078,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1073,7 +1093,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1092,7 +1112,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1111,7 +1131,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1134,7 +1154,7 @@ $res = mysqli_query($dbTmp,
 if ($res) {
     //
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.mysqli_error($dbTmp).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
@@ -1150,6 +1170,13 @@ mysqli_query($dbTmp,
     `path` varchar(255) NOT NULL
     ) CHARSET=utf8;"
 );
+if ($res) {
+    //
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table export! '.addslashes(mysqli_error($dbTmp)).'"}]';
+    mysqli_close($dbTmp);
+    exit();
+}
 
 //CLEAN UP ITEMS TABLE
 $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.

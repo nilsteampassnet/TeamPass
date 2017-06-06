@@ -14,8 +14,9 @@ class QRServerProvider extends BaseHTTPQRCodeProvider
 
     function __construct($verifyssl = false, $errorcorrectionlevel = 'L', $margin = 4, $qzone = 1, $bgcolor = 'ffffff', $color = '000000', $format = 'png') 
     {
-        if (!is_bool($verifyssl))
-            throw new QRException('VerifySSL must be bool');
+        if (!is_bool($verifyssl)) {
+                    throw new QRException('VerifySSL must be bool');
+        }
 
         $this->verifyssl = $verifyssl;
         
@@ -31,16 +32,16 @@ class QRServerProvider extends BaseHTTPQRCodeProvider
     {
         switch (strtolower($this->format))
         {
-        	case 'png':
+            case 'png':
                 return 'image/png';
-        	case 'gif':
+            case 'gif':
                 return 'image/gif';
-        	case 'jpg':
-        	case 'jpeg':
+            case 'jpg':
+            case 'jpeg':
                 return 'image/jpeg';
-        	case 'svg':
+            case 'svg':
                 return 'image/svg+xml';
-        	case 'eps':
+            case 'eps':
                 return 'application/postscript';
         }
         throw new QRException(sprintf('Unknown MIME-type: %s', $this->format));
@@ -51,6 +52,9 @@ class QRServerProvider extends BaseHTTPQRCodeProvider
         return $this->getContent($this->getUrl($qrtext, $size));
     }
     
+    /**
+     * @param string $value
+     */
     private function decodeColor($value) 
     {
         return vsprintf('%d-%d-%d', sscanf($value, "%02x%02x%02x"));
@@ -59,13 +63,13 @@ class QRServerProvider extends BaseHTTPQRCodeProvider
     public function getUrl($qrtext, $size) 
     {
         return 'https://api.qrserver.com/v1/create-qr-code/'
-            . '?size=' . $size . 'x' . $size
-            . '&ecc=' . strtoupper($this->errorcorrectionlevel)
-            . '&margin=' . $this->margin
-            . '&qzone=' . $this->qzone
-            . '&bgcolor=' . $this->decodeColor($this->bgcolor)
-            . '&color=' . $this->decodeColor($this->color)
-            . '&format=' . strtolower($this->format)
-            . '&data=' . rawurlencode($qrtext);
+            . '?size='.$size.'x'.$size
+            . '&ecc='.strtoupper($this->errorcorrectionlevel)
+            . '&margin='.$this->margin
+            . '&qzone='.$this->qzone
+            . '&bgcolor='.$this->decodeColor($this->bgcolor)
+            . '&color='.$this->decodeColor($this->color)
+            . '&format='.strtolower($this->format)
+            . '&data='.rawurlencode($qrtext);
     }
 }

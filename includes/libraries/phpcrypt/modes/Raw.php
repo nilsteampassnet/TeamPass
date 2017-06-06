@@ -39,78 +39,76 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Mode_Raw extends Mode
 {
-	/**
-	 * Constructor
-	 * Sets the cipher object that will be used for encryption
-	 *
-	 * @param object $cipher one of the phpCrypt encryption cipher objects
-	 * @return void
-	 */
-	public function __construct($cipher)
-	{
-		parent::__construct(PHP_Crypt::MODE_RAW, $cipher);
-	}
+    /**
+     * Constructor
+     * Sets the cipher object that will be used for encryption
+     *
+     * @param object $cipher one of the phpCrypt encryption cipher objects
+     * @return void
+     */
+    public function __construct($cipher)
+    {
+        parent::__construct(PHP_Crypt::MODE_RAW, $cipher);
+    }
 
 
-	/**
-	 * Constructor used by classes that extend this class
-	 * Used by Mode_Stream, which extends this class
-	 *
-	 * @param object $cipher One of phpCrypts cipher objects
-	 * @param integer $mode The mode constant identifier
-	 * @return void
-	 */
-	protected function __construct1($mode, $cipher)
-	{
-		parent::__construct($mode, $cipher);
-	}
+    /**
+     * Constructor used by classes that extend this class
+     * Used by Mode_Stream, which extends this class
+     *
+     * @param object $cipher One of phpCrypts cipher objects
+     * @param integer $mode The mode constant identifier
+     * @return void
+     */
+    protected function __construct1($mode, $cipher)
+    {
+        parent::__construct($mode, $cipher);
+    }
 
 
-	/**
-	 * Destructor
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Destructor
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Encrypts an the string using the Cipher with no Mode
-	 * NOTE: The data in $text must be the exact length required by the Cipher
-	 *
-	 * @param string $str the string to be encrypted
-	 * @return boolean Always returns false
-	 */
-	public function encrypt(&$text)
-	{
-		$this->cipher->encrypt($text);
-		return true;
-	}
+    /**
+     * Encrypts an the string using the Cipher with no Mode
+     * NOTE: The data in $text must be the exact length required by the Cipher
+     *
+     * @return boolean Always returns false
+     */
+    public function encrypt(&$text)
+    {
+        $this->cipher->encrypt($text);
+        return true;
+    }
 
 
-	/**
-	 * Decrypts one block of cipher text, not using any mode.
-	 * NOTE: The data in $text must be the exact length required by the Cipher
-	 *
-	 * @param string $str the string to be decrypted
-	 * @return boolean Always returns false
-	 */
-	public function decrypt(&$text)
-	{
-		$this->cipher->decrypt($text);
-		return true;
-	}
+    /**
+     * Decrypts one block of cipher text, not using any mode.
+     * NOTE: The data in $text must be the exact length required by the Cipher
+     *
+     * @return boolean Always returns false
+     */
+    public function decrypt(&$text)
+    {
+        $this->cipher->decrypt($text);
+        return true;
+    }
 
 
-	/**
-	 * This mode does not require an IV
-	 *
-	 * @return boolean false
-	 */
-	public function requiresIV()
-	{
-		return false;
-	}
+    /**
+     * This mode does not require an IV
+     *
+     * @return boolean false
+     */
+    public function requiresIV()
+    {
+        return false;
+    }
 }
 ?>

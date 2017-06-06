@@ -25,9 +25,9 @@ $(function() {
 function CheckPage()
 {
     var step = $("#page_id").val();
-    var data;
+    var data = "";
     var error = "";
-    var index;
+    var index = "";
     var tasks = [];
     var multiple = "";
     var error_msg = "";

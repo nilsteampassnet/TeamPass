@@ -186,11 +186,11 @@ class Crypto
         $keys = $secret->deriveKeys($salt);
         $ekey = $keys->getEncryptionKey();
         $akey = $keys->getAuthenticationKey();
-        $iv     = Core::secureRandom(Core::BLOCK_BYTE_SIZE);
+        $iv = Core::secureRandom(Core::BLOCK_BYTE_SIZE);
 
-        $ciphertext = Core::CURRENT_VERSION . $salt . $iv . self::plainEncrypt($plaintext, $ekey, $iv);
+        $ciphertext = Core::CURRENT_VERSION.$salt.$iv.self::plainEncrypt($plaintext, $ekey, $iv);
         $auth       = \hash_hmac(Core::HASH_FUNCTION_NAME, $ciphertext, $akey, true);
-        $ciphertext = $ciphertext . $auth;
+        $ciphertext = $ciphertext.$auth;
 
         if ($raw_binary) {
             return $ciphertext;
@@ -214,7 +214,7 @@ class Crypto
     {
         RuntimeTests::runtimeTest();
 
-        if (! $raw_binary) {
+        if (!$raw_binary) {
             try {
                 $ciphertext = Encoding::hexToBin($ciphertext);
             } catch (Ex\BadFormatException $ex) {
@@ -284,7 +284,7 @@ class Crypto
         // or password, whichever it is.
         $keys = $secret->deriveKeys($salt);
 
-        if (self::verifyHMAC($hmac, $header . $salt . $iv . $encrypted, $keys->getAuthenticationKey())) {
+        if (self::verifyHMAC($hmac, $header.$salt.$iv.$encrypted, $keys->getAuthenticationKey())) {
             $plaintext = self::plainDecrypt($encrypted, $keys->getEncryptionKey(), $iv, Core::CIPHER_METHOD);
             return $plaintext;
         } else {

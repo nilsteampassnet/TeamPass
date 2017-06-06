@@ -35,17 +35,17 @@ use adLDAP\adLDAP;
  * @version 5.0.0
  * @link http://github.com/adldap/adLDAP
  */
-require_once(dirname(__FILE__) . '/../adLDAP.php');
+require_once(dirname(__FILE__).'/../adLDAP.php');
 
 /**
 * FOLDER / OU MANAGEMENT FUNCTIONS
 */
 class adLDAPFolders {
     /**
-    * The current adLDAP connection via dependency injection
-    * 
-    * @var adLDAP
-    */
+     * The current adLDAP connection via dependency injection
+     * 
+     * @var adLDAP
+     */
     protected $adldap;
     
     public function __construct(adLDAP $adldap) {
@@ -53,32 +53,32 @@ class adLDAPFolders {
     }
     
     /**
-    * Delete a distinguished name from Active Directory
-    * You should never need to call this yourself, just use the wrapper functions user_delete and contact_delete
-    *
-    * @param string $dn The distinguished name to delete
-    * @return bool
-    */
+     * Delete a distinguished name from Active Directory
+     * You should never need to call this yourself, just use the wrapper functions user_delete and contact_delete
+     *
+     * @param string $dn The distinguished name to delete
+     * @return bool
+     */
     public function delete($dn) { 
         $result = ldap_delete($this->adldap->getLdapConnection(), $dn);
-        if ($result != true) { 
+        if ($result !== true) { 
             return false; 
         }
         return true;
     }
     
     /**
-    * Returns a folder listing for a specific OU
-    * See http://adldap.sourceforge.net/wiki/doku.php?id=api_folder_functions
-    * 
-    * @param array $folderName An array to the OU you wish to list. 
-    *                           If set to NULL will list the root, strongly recommended to set 
-    *                           $recursive to false in that instance!
-    * @param string $dnType The type of record to list.  This can be ADLDAP_FOLDER or ADLDAP_CONTAINER.
-    * @param bool $recursive Recursively search sub folders
-    * @param bool $type Specify a type of object to search for
-    * @return array
-    */
+     * Returns a folder listing for a specific OU
+     * See http://adldap.sourceforge.net/wiki/doku.php?id=api_folder_functions
+     * 
+     * @param array $folderName An array to the OU you wish to list. 
+     *                           If set to NULL will list the root, strongly recommended to set 
+     *                           $recursive to false in that instance!
+     * @param string $dnType The type of record to list.  This can be ADLDAP_FOLDER or ADLDAP_CONTAINER.
+     * @param bool $recursive Recursively search sub folders
+     * @param bool $type Specify a type of object to search for
+     * @return array
+     */
     public function listing($folderName = NULL, $dnType = adLDAP::ADLDAP_FOLDER, $recursive = NULL, $type = NULL) {
         if ($recursive === NULL) { $recursive = $this->adldap->getRecursiveGroups(); } //use the default option if they haven't set it
         if (!$this->adldap->getLdapBind()) { return false; }
@@ -108,20 +108,18 @@ class adLDAPFolders {
                     $filter .= '(objectClass=user)';
                     break;   
             }
-        }
-        else {
+        } else {
             $filter .= '(objectClass=*)';   
         }
         // If the folder name is null then we will search the root level of AD
         // This requires us to not have an OU= part, just the base_dn
         $searchOu = $this->adldap->getBaseDn();
         if (is_array($folderName)) {
-            $ou = $dnType . "=" . implode("," . $dnType . "=", $folderName);
-            $filter .= '(!(distinguishedname=' . $ou . ',' . $this->adldap->getBaseDn() . ')))';
-            $searchOu = $ou . ',' . $this->adldap->getBaseDn();
-        }
-        else {
-            $filter .= '(!(distinguishedname=' . $this->adldap->getBaseDn() . ')))';
+            $ou = $dnType."=".implode(",".$dnType."=", $folderName);
+            $filter .= '(!(distinguishedname='.$ou.','.$this->adldap->getBaseDn().')))';
+            $searchOu = $ou.','.$this->adldap->getBaseDn();
+        } else {
+            $filter .= '(!(distinguishedname='.$this->adldap->getBaseDn().')))';
         }
 
         if ($recursive === true) {
@@ -130,8 +128,7 @@ class adLDAPFolders {
             if (is_array($entries)) {
                 return $entries;
             }
-        }
-        else {
+        } else {
             $sr = ldap_list($this->adldap->getLdapConnection(), $searchOu, $filter, array('objectclass', 'distinguishedname', 'samaccountname'));
             $entries = @ldap_get_entries($this->adldap->getLdapConnection(), $sr);
             if (is_array($entries)) {
@@ -142,30 +139,30 @@ class adLDAPFolders {
     }
 
     /**
-    * Create an organizational unit
-    * 
-    * @param array $attributes Default attributes of the ou
-    * @return bool
-    */
+     * Create an organizational unit
+     * 
+     * @param array $attributes Default attributes of the ou
+     * @return string|boolean
+     */
     public function create($attributes) {
         if (!is_array($attributes)) { return "Attributes must be an array"; }
         if (!is_array($attributes["container"])) { return "Container attribute must be an array."; }
-        if (!array_key_exists("ou_name",$attributes)) { return "Missing compulsory field [ou_name]"; }
-        if (!array_key_exists("container",$attributes)) { return "Missing compulsory field [container]"; }
+        if (!array_key_exists("ou_name", $attributes)) { return "Missing compulsory field [ou_name]"; }
+        if (!array_key_exists("container", $attributes)) { return "Missing compulsory field [container]"; }
         
         $attributes["container"] = array_reverse($attributes["container"]);
 
-        $add=array();
+        $add = array();
         $add["objectClass"] = "organizationalUnit";
         $add["OU"] = $attributes['ou_name'];
         $containers = "";
         if (count($attributes['container']) > 0) {
-            $containers = "OU=" . implode(",OU=", $attributes["container"]) . ",";
+            $containers = "OU=".implode(",OU=", $attributes["container"]).",";
         }
 
-        $containers = "OU=" . implode(",OU=", $attributes["container"]);
-        $result = ldap_add($this->adldap->getLdapConnection(), "OU=" . $add["OU"] . ", " . $containers . $this->adldap->getBaseDn(), $add);
-        if ($result != true) { 
+        $containers = "OU=".implode(",OU=", $attributes["container"]);
+        $result = ldap_add($this->adldap->getLdapConnection(), "OU=".$add["OU"].", ".$containers.$this->adldap->getBaseDn(), $add);
+        if ($result !== true) { 
             return false; 
         }
         return true;

@@ -191,7 +191,7 @@ class TripleDES extends DES
         if ($engine == self::ENGINE_OPENSSL) {
             $this->cipher_name_openssl_ecb = 'des-ede3';
             $mode = $this->_openssl_translate_mode();
-            $this->cipher_name_openssl = $mode == 'ecb' ? 'des-ede3' : 'des-ede3-' . $mode;
+            $this->cipher_name_openssl = $mode == 'ecb' ? 'des-ede3' : 'des-ede3-'.$mode;
         }
 
         return parent::isValidEngine($engine);
@@ -235,7 +235,7 @@ class TripleDES extends DES
             case 192:
                 break;
             default:
-                throw new \LengthException('Key size of ' . $length . ' bits is not supported by this algorithm. Only keys of sizes 128 or 192 bits are supported');
+                throw new \LengthException('Key size of '.$length.' bits is not supported by this algorithm. Only keys of sizes 128 or 192 bits are supported');
         }
 
         parent::setKeyLength($length);
@@ -257,16 +257,16 @@ class TripleDES extends DES
     function setKey($key)
     {
         if ($this->explicit_key_length !== false && strlen($key) != $this->explicit_key_length) {
-            throw new \LengthException('Key length has already been set to ' . $this->explicit_key_length . ' bytes and this key is ' . strlen($key) . ' bytes');
+            throw new \LengthException('Key length has already been set to '.$this->explicit_key_length.' bytes and this key is '.strlen($key).' bytes');
         }
 
         switch (strlen($key)) {
             case 16:
-                $key.= substr($key, 0, 8);
+                $key .= substr($key, 0, 8);
             case 24:
                 break;
             default:
-                throw new \LengthException('Key of size ' . strlen($key) . ' not supported by this algorithm. Only keys of sizes 16 or 24 are supported');
+                throw new \LengthException('Key of size '.strlen($key).' not supported by this algorithm. Only keys of sizes 16 or 24 are supported');
         }
 
         // copied from self::setKey()
@@ -276,8 +276,8 @@ class TripleDES extends DES
         $this->_setEngine();
 
         if ($this->mode_3cbc) {
-            $this->des[0]->setKey(substr($key,  0, 8));
-            $this->des[1]->setKey(substr($key,  8, 8));
+            $this->des[0]->setKey(substr($key, 0, 8));
+            $this->des[1]->setKey(substr($key, 8, 8));
             $this->des[2]->setKey(substr($key, 16, 8));
         }
     }

@@ -65,7 +65,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -115,16 +115,18 @@ if (isset($_GET['language'])) {
     } elseif (isset($_SESSION['settings']['default_language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
-} elseif ($_SESSION['user_language'] === "0") {
+} elseif ($_SESSION['user_language'] == "0") {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+}
+
+if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
+    $_SESSION['settings']['cpassman_dir'] = ".";
+    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
 }
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    @require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    if (isset($_GET['page']) && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === "kb") {
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
-    }
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -136,8 +138,8 @@ if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings
 }
 
 // Load links, css and javascripts
-if (isset($_SESSION['CPM'])) {
-    @require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+if (isset($_SESSION['CPM']) && isset($_SESSION['settings']['cpassman_dir'])) {
+    require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
 }
 
 ?>
@@ -149,9 +151,9 @@ if (isset($_SESSION['CPM'])) {
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
-    if (window.location.href.indexOf("page=") === -1 && (window.location.href.indexOf("otv=") === -1 && window.location.href.indexOf("action=") === -1)) {
+    if (window.location.href.indexOf("page=") == -1 && (window.location.href.indexOf("otv=") == -1 && window.location.href.indexOf("action=") == -1)) {
         if (window.location.href.indexOf("session_over=true") == -1) {
-            location.replace("./index.php?page=items");
+            //location.replace("./index.php?page=items");
         } else {
             location.replace("./logout.php");
         }
@@ -161,8 +163,9 @@ if (isset($_SESSION['CPM'])) {
 <?php
 
 // load HEADERS
-if (isset($_SESSION['CPM']))
+if (isset($_SESSION['CPM'])) {
     echo $htmlHeaders;
+}
 ?>
     </head>
 
@@ -204,7 +207,7 @@ if (isset($_SESSION['login'])) {
         isset($_SESSION['settings']['enable_favourites'])
         && $_SESSION['settings']['enable_favourites'] == 1
         &&
-        ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false))
+        ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false))
     ) {
         echo '
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'favourites\')">
@@ -266,8 +269,7 @@ if (isset($_SESSION['login'])) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == true) ? '' :
-                                isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === true) ? '' : isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
@@ -285,7 +287,7 @@ if (isset($_SESSION['login'])) {
                     </ul>
                 </div>';
 
-    if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false)) {
+    if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)) {
         echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
@@ -359,7 +361,7 @@ echo '
             <div id="message_box" style="display:none;width:200px;padding:5px;text-align:center; z-index:999999;" class="ui-widget-content ui-state-error ui-corner-all"></div>
         </div>';
 // Main page
-if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] == true) {
+if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] === true) {
     // Show menu
     echo '
         <form method="post" name="main_form" action="">
@@ -434,7 +436,7 @@ if (
 }
 // Display UPDATE NEEDED information
 if (
-    isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] == true
+    isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] === true
         && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
         && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0)
         || !isset($_SESSION['hide_maintenance']))
@@ -490,7 +492,7 @@ if (
         </script>';
     }
 // Display pages
-    elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] == true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
+    elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] === true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
         if (!extension_loaded('mcrypt')) {
             $_SESSION['error']['code'] = ERR_NO_MCRYPT;
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -501,7 +503,7 @@ if (
             if (
                 ($_SESSION['user_admin'] != 1)
                 ||
-                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] == false)
+                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)
             ) {
                 include 'items.php';
             } else {
@@ -535,7 +537,7 @@ if (
             if ($_SESSION['user_admin'] == 1) {
                 include($mngPages[$_GET['page']]);
             } elseif ($_SESSION['user_manager'] == 1) {
-                if (($_GET['page'] != "manage_main" &&  $_GET['page'] != "manage_settings")) {
+                if (($_GET['page'] != "manage_main" && $_GET['page'] != "manage_settings")) {
                     include($mngPages[$_GET['page']]);
                 } else {
                     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -667,7 +669,7 @@ if (
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60" ,'" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                         </div>
 
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
@@ -707,13 +709,13 @@ echo '
             &nbsp;|&nbsp;
             <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
             &nbsp;
-            <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['admin_help']).'"><i class="fa fa-reddit-alien"></i></a>
+            <a href="https://www.reddit.com/r/TeamPass/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['admin_help']).'"><i class="fa fa-reddit-alien"></i></a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
         </div><div id="countdown2"></div>
         <div style="float:right;text-align:right;">
-            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']) .'
+            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']).'
         </div>
     </div>';
 // PAGE LOADING
@@ -773,7 +775,7 @@ echo '
 echo '
 <div id="div_increase_session_time" style="display:none;padding:4px;">
     <b>'.$LANG['index_session_duration'].':</b>
-    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration']/60 : 60, '" />
+    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
     <b>'.$LANG['minutes'].'</b>
     <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="input_session_duration_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';

@@ -31,9 +31,6 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
-/* load help*/
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_admin_help.php';
-
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
 $tree->register();
@@ -159,7 +156,7 @@ echo '
 
     <label for="edit_parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
     <select id="edit_parent_id" class="input_text text ui-widget-content ui-corner-all">'.
-		$droplist.'
+        $droplist.'
     </select>
 
     <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>

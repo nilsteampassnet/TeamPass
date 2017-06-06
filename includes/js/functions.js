@@ -72,12 +72,18 @@ function countdown()
     var second = Math.floor(theDay - (today.getTime()/1000));
     var minute = Math.floor(second/60); //Devide "second" into 60 to get the minute
     var hour = Math.floor(minute/60); //Devide "minute" into 60 to get the hour
-    CHour= hour % 24; //Correct hour, after devide into 24, the remainder deposits here.
-    if (CHour<10) {CHour = "0" + CHour;}
-    CMinute= minute % 60; //Correct minute, after devide into 60, the remainder deposits here.
-    if (CMinute<10) {CMinute = "0" + CMinute;}
-    CSecond= second % 60; //Correct second, after devide into 60, the remainder deposits here.
-    if (CSecond<10) {CSecond = "0" + CSecond;}
+    var CHour= hour % 24; //Correct hour, after devide into 24, the remainder deposits here.
+    if (CHour<10) {
+        CHour = "0" + CHour;
+    }
+    var CMinute= minute % 60; //Correct minute, after devide into 60, the remainder deposits here.
+    if (CMinute<10) {
+        CMinute = "0" + CMinute;
+    }
+    var CSecond= second % 60; //Correct second, after devide into 60, the remainder deposits here.
+    if (CSecond<10) {
+        CSecond = "0" + CSecond;
+    }
     DayTill = CHour+":"+CMinute+":"+CSecond;
 
     //Avertir de la fin imminante de la session
@@ -189,9 +195,13 @@ function SendMail(cat, content, key, message){
             key     : key
         },
         function(data){
+            if (data[0].error !== undefined && data[0].error !== "") {
+                message = data[0].message;
+            }
             $("#div_dialog_message_text").html(message);
             $("#div_dialog_message").dialog("open");
-        }
+        },
+        "json"
     );
 }
 

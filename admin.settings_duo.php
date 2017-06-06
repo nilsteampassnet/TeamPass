@@ -46,7 +46,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -56,9 +56,9 @@ $events = "";
 if (file_exists($filename)) {
     //copy some constants from this existing file
     $settingsFile = file($filename);
-    while (list($key,$val) = each($settingsFile)) {
-        if (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-            $tmp_skfile = substr($val, 14, strpos($val, '";')-14);
+    while (list($key, $val) = each($settingsFile)) {
+        if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
+            $tmp_skfile = substr($val, 14, strpos($val, '";') - 14);
         }
     }
 }
@@ -66,18 +66,18 @@ if (file_exists($filename)) {
 // read SK.PHP file
 $tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
 $skFile = file($tmp_skfile);
-while (list($key,$val) = each($skFile)) {
-    if (substr_count($val, "@define('AKEY'")>0) {
-        $tmp_akey = substr($val, 17, strpos($val, '")')-17);
+while (list($key, $val) = each($skFile)) {
+    if (substr_count($val, "@define('AKEY'") > 0) {
+        $tmp_akey = substr($val, 17, strpos($val, '")') - 17);
     } else
-    if (substr_count($val, "@define('IKEY'")>0) {
-        $tmp_ikey = substr($val, 17, strpos($val, '")')-17);
+    if (substr_count($val, "@define('IKEY'") > 0) {
+        $tmp_ikey = substr($val, 17, strpos($val, '")') - 17);
     } else
-    if (substr_count($val, "@define('SKEY'")>0) {
-        $tmp_skey = substr($val, 17, strpos($val, '")')-17);
+    if (substr_count($val, "@define('SKEY'") > 0) {
+        $tmp_skey = substr($val, 17, strpos($val, '")') - 17);
     } else
-    if (substr_count($val, "@define('HOST'")>0) {
-        $tmp_host = substr($val, 17, strpos($val, '")')-17);
+    if (substr_count($val, "@define('HOST'") > 0) {
+        $tmp_host = substr($val, 17, strpos($val, '")') - 17);
     }
 }
 echo '

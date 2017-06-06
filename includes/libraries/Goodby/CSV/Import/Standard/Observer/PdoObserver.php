@@ -55,15 +55,15 @@ class PdoObserver
                 return $value;
             }
 
-            throw new \InvalidArgumentException('value is invalid: ' . var_export($value, 1));
+            throw new \InvalidArgumentException('value is invalid: '.var_export($value, 1));
         }, $line);
 
         $prepare = array_map(function() {
             return '?';
         }, $line);
 
-        $sql = 'INSERT INTO ' . $this->table . '(' . join(', ', $this->columns) . ')' .
-               ' VALUES(' . join(',', $prepare) . ')';
+        $sql = 'INSERT INTO '.$this->table.'('.join(', ', $this->columns).')'.
+                ' VALUES('.join(',', $prepare).')';
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($line);

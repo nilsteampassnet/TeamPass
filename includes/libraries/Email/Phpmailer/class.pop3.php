@@ -169,13 +169,13 @@ class POP3
         if (false === $port) {
             $this->port = $this->POP3_PORT;
         } else {
-            $this->port = (integer)$port;
+            $this->port = (integer) $port;
         }
         // If no timeout value provided, use default
         if (false === $timeout) {
             $this->tval = $this->POP3_TIMEOUT;
         } else {
-            $this->tval = (integer)$timeout;
+            $this->tval = (integer) $timeout;
         }
         $this->do_debug = $debug_level;
         $this->username = $username;
@@ -200,7 +200,7 @@ class POP3
      * Connect to a POP3 server.
      * @access public
      * @param string $host
-     * @param integer|boolean $port
+     * @param integer $port
      * @param integer $tval
      * @return boolean
      */
@@ -276,11 +276,11 @@ class POP3
         }
 
         // Send the Username
-        $this->sendString("USER $username" . self::CRLF);
+        $this->sendString("USER $username".self::CRLF);
         $pop3_response = $this->getResponse();
         if ($this->checkResponse($pop3_response)) {
             // Send the Password
-            $this->sendString("PASS $password" . self::CRLF);
+            $this->sendString("PASS $password".self::CRLF);
             $pop3_response = $this->getResponse();
             if ($this->checkResponse($pop3_response)) {
                 return true;

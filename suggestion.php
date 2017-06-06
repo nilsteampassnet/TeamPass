@@ -82,10 +82,9 @@ foreach ($folders as $folder) {
             }
         }
 
-        if ($displayThisNode == true) {
+        if ($displayThisNode === true) {
             $ident = "";
             for ($x = 1; $x < $folder->nlevel; $x++) {
-                //$ident .= "&nbsp;&nbsp;";
                 $ident .= '<i class="fa fa-angle-right"></i>&nbsp;';
             }
             // get 1st folder
@@ -94,12 +93,6 @@ foreach ($folders as $folder) {
             }
             // If personal Folder, convert id into user name
             if (!($folder->title == $_SESSION['user_id'] && $folder->nlevel == 1)) {
-                // resize title if necessary
-                /*if (strlen($folder->title) > 40) {
-                    $fldTitle = substr(str_replace("&", "&amp;", $folder->title), 0, 37)."...";
-                } else {
-                    $fldTitle = str_replace("&", "&amp;", $folder->title);
-                }*/
                 $fldTitle = str_replace("&", "&amp;", $folder->title);
 
                 // build select for all visible folders

@@ -35,9 +35,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 280,
-        title: "<?php echo $LANG["give_function_title"];?>",
+        title: "<?php echo $LANG["give_function_title"]; ?>",
         buttons: {
-            "<?php echo $LANG["save_button"];?>": function() {
+            "<?php echo $LANG["save_button"]; ?>": function() {
                 $("#new_role_error").hide().html("");
                 if ($("#new_role_complexity").val() != "") {
                     $("#add_role_loader").show();
@@ -61,10 +61,10 @@ $(function() {
                         "json"
                    );
                 } else {
-                    $("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']);?>");
+                    $("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']); ?>");
                 }
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -76,9 +76,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 190,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
+            "<?php echo $LANG["ok"]; ?>": function() {
                 $("#delete_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
@@ -96,7 +96,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -108,9 +108,9 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 300,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
+            "<?php echo $LANG["ok"]; ?>": function() {
                 $("#edit_role_error").hide().html("");
                 $("#edit_role_loader").show();
                 $.post(
@@ -136,7 +136,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $("#edit_role_error").html("").hide();
                 $(this).dialog("close");
             }
@@ -149,20 +149,20 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 270,
-        title: "<?php echo $LANG["change_right_access"];?>",
+        title: "<?php echo $LANG["change_right_access"]; ?>",
         buttons: {
-            "<?php echo $LANG["save_button"];?>": function() {
+            "<?php echo $LANG["save_button"]; ?>": function() {
                 $("#edit_role_error").hide().html("");
                 $("#role_rights_loader").show();
 
                 // get write option
                 var accessoption = "";
                 if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-                    if ($("#right_nodelete").prop("checked") == true && $("#right_noedit").prop("checked") == true) {
+                    if ($("#right_nodelete").prop("checked") === true && $("#right_noedit").prop("checked") === true) {
                         accessoption = "nodelete_noedit";
-                    } else if ($("#right_nodelete").prop("checked") == true) {
+                    } else if ($("#right_nodelete").prop("checked") === true) {
                         accessoption = "nodelete";
-                    } else if ($("#right_noedit").prop("checked") == true) {
+                    } else if ($("#right_noedit").prop("checked") === true) {
                         accessoption = "noedit";
                     }
                 }
@@ -196,7 +196,7 @@ $(function() {
                     "json"
                );
             },
-            "<?php echo $LANG["close"];?>": function() {
+            "<?php echo $LANG["close"]; ?>": function() {
                 $(this).dialog("close");
             }
         },

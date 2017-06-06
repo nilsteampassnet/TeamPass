@@ -47,7 +47,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -81,7 +81,7 @@ foreach ($folders as $f) {
             }
         }
 
-        if ($displayThisNode == true) {
+        if ($displayThisNode === true) {
             if ($f->title == $_SESSION['user_id'] && $f->nlevel == 1) {
                 $f->title = $_SESSION['login'];
             }
@@ -165,7 +165,7 @@ echo '
 
     function exportItemsToFile()
     {
-        $("#export_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="export_progress">0%</span>').attr("class","").show();
+        $("#export_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>&nbsp;...&nbsp;<span id="export_progress">0%</span>').attr("class","").show();
 
         //Get list of selected folders
         var ids = "";
@@ -175,20 +175,20 @@ echo '
         });
 
         if (ids == "") {
-            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder'];?>").attr("class","ui-state-error");
+            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#export_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         if ($("input[name='export_format']:checked").length == 0) {
-            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_export_format_not_selected'];?>").attr("class","ui-state-error");
+            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_export_format_not_selected']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#export_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         // Get PDF encryption password and make sure it is set
         if (($("#export_pdf_password").val() == "") && ($("input[name='export_format']:checked").val() == "pdf")) {
-            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
+            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['pdf_password_warning']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#export_information").effect( "fade", "slow" );}, 1000);
             return;
         }

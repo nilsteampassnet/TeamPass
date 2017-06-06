@@ -41,8 +41,8 @@ header("Pragma: no-cache");
 
 // reload user avatar
 $userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("users")." WHERE id=%i", $_SESSION['user_id']);
-@$_SESSION['user_avatar'] = $userData['avatar'];
-@$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
+$_SESSION['user_avatar'] = $userData['avatar'];
+$_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
 // prepare avatar
 if (isset($userData['avatar']) && !empty($userData['avatar'])) {
@@ -95,8 +95,10 @@ echo '
       <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
          <ul class="menu_250" style="text-align:left;">
             <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
-            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) echo '
+            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) {
+                echo '
             <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
+            }
             echo '
             <li id="but_change_psk"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['menu_title_new_personal_saltkey'].'</li>
             <li id="but_reset_psk"><i class="fa fa-eraser fa-fw"></i> &nbsp;'.$LANG['personal_saltkey_lost'].'</li>
@@ -114,7 +116,7 @@ echo '
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     echo '
     <div style="margin-bottom:6px;">
-        <i class="fa fa-calendar fa-fw fa-lg"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-"). '. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'
+        <i class="fa fa-calendar fa-fw fa-lg"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-").'. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'
     </div>';
 }
 echo '
@@ -157,8 +159,8 @@ echo '
     <div id="filelist_photo" style="display:none;"></div>';
 
 // if DUOSecurity enabled then changing PWD is not allowed
-if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
-   echo '
+if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) {
+    echo '
     <div id="div_change_password" style="display:none; padding:5px;" class="ui-widget ui-state-default">
         <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
         <label for="new_pw" class="form_label">'.$LANG['index_new_pw'].' :</label>
@@ -171,6 +173,7 @@ if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0)
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
         <span id="password_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'</span>
     </div>';
+}
 
 //change the saltkey dialogbox
 echo '
@@ -217,7 +220,7 @@ $(function() {
     $(".tip").tooltipster({multiple: true});
     // password
     $("#but_change_password").click(function() {
-        $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked'];?> : <?php echo $_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1];?>");
+        $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked']; ?> : <?php echo $_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1]; ?>");
         $("#change_pwd_error").hide();
       $("#div_change_psk, #div_reset_psk").hide();
 
@@ -232,35 +235,35 @@ $(function() {
         $("#new_pw").simplePassMeter({
             "requirements": {},
             "container": "#pw_strength",
-            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+            "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
             "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "<?php echo $LANG['complex_level0'];?>"
+                    "text": "<?php echo $LANG['complex_level0']; ?>"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level1'];?>"
+                    "text": "<?php echo $LANG['complex_level1']; ?>"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level2'];?>"
+                    "text": "<?php echo $LANG['complex_level2']; ?>"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level3'];?>"
+                    "text": "<?php echo $LANG['complex_level3']; ?>"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level4'];?>"
+                    "text": "<?php echo $LANG['complex_level4']; ?>"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level5'];?>"
+                    "text": "<?php echo $LANG['complex_level5']; ?>"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level6'];?>"
+                    "text": "<?php echo $LANG['complex_level6']; ?>"
                 }
             ]
         });
@@ -284,32 +287,32 @@ $(function() {
                         type                : "change_pw",
                         change_pw_origine   : "user_change",
                         complexity          : $("#pw_strength_value").val(),
-                        data                : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>")
+                        data                : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>")
                     },
                     function(data) {
                         if (data[0].error == "already_used") {
                             $("#new_pw, #new_pw2").val("");
-                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['pw_used'];?></span>");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['pw_used']; ?></span>");
                         } else if (data[0].error == "complexity_level_not_reached") {
                             $("#new_pw, #new_pw2").val("");
-                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought'];?></span>");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought']; ?></span>");
                         } else {
                             $("#div_change_password").hide();
                             $("#dialog_user_profil").dialog("option", "height", 450);
                             $("#new_pw, #new_pw2").val("");
                         }
                         $("#password_change_wait").hide();
-                        $("#profile_info_box").html("<?php echo $LANG['alert_message_done'];?>").show();
+                        $("#profile_info_box").html("<?php echo $LANG['alert_message_done']; ?>").show();
                         setTimeout(function(){$("#profile_info_box").effect( "fade", "slow" );}, 1000);
                     },
                     "json"
                 );
             } else {
-                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought'];?>");
+                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
                 setTimeout(function(){$("#change_pwd_error").effect( "fade", "slow" );}, 1000);
             }
         } else {
-            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['index_pw_error_identical'];?>");
+            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['index_pw_error_identical']; ?>");
             setTimeout(function(){$("#change_pwd_error").effect( "fade", "slow" );}, 1000);
         }
     });
@@ -362,8 +365,8 @@ $(function() {
                 var tmp = Math.random().toString(36).substring(7);
 
                 up.settings.multipart_params = {
-                    "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
-                    "newFileName":"user<?php echo $_SESSION['user_id'];?>"+tmp,
+                    "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
+                    "newFileName":"user<?php echo $_SESSION['user_id']; ?>"+tmp,
                     "type_upload":"upload_profile_photo",
                     "user_token": $("#profile_user_token").val()
                 };
@@ -373,7 +376,7 @@ $(function() {
 
     // Show runtime status
     uploader_photo.bind("Init", function(up, params) {
-        $("#plupload_runtime2").html("<?php echo $LANG['runtime_upload'];?> " + params.runtime).removeClass('ui-state-error');
+        $("#plupload_runtime2").html("<?php echo $LANG['runtime_upload']; ?> " + params.runtime).removeClass('ui-state-error');
         $("#upload_enabled2").val("1");
     });
 
@@ -421,7 +424,7 @@ $(function() {
     });
     $(".editable_select").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
-        data   : " {'full':'<?php echo $LANG['full'];?>','sequential':'<?php echo $LANG['sequential'];?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy'];?>'}",
+        data   : " {'full':'<?php echo $LANG['full']; ?>','sequential':'<?php echo $LANG['sequential']; ?>', 'selected':'<?php echo $_SESSION['user_settings']['treeloadstrategy']; ?>'}",
         type   : 'select',
         select : true,
         onblur : "cancel",
@@ -431,7 +434,7 @@ $(function() {
     });
     $(".editable_language").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
-        data   : '<?php print json_encode($arraFlags);?>',
+        data   : '<?php print json_encode($arraFlags); ?>',
         type   : 'select',
         select : true,
         onblur : "cancel",
@@ -441,7 +444,7 @@ $(function() {
     });
     $(".editable_timezone").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
-        data : '<?php print json_encode($arrayTimezones);?>',
+        data : '<?php print json_encode($arrayTimezones); ?>',
         type   : 'select',
         select : true,
         onblur : "cancel",
@@ -451,7 +454,7 @@ $(function() {
     });
     $(".editable_yesno").editable("sources/users.queries.php", {
         indicator : "<img src=\'includes/images/loading.gif\' />",
-        data : '{"O":"<?php echo $LANG['no'];?>","1":"<?php echo $LANG['yes'];?>"}',
+        data : '{"O":"<?php echo $LANG['no']; ?>","1":"<?php echo $LANG['yes']; ?>"}',
         type   : 'select',
         select : true,
         onblur : "cancel",
@@ -472,7 +475,7 @@ $(function() {
 
       // prepare fields
       $("#new_personal_saltkey").val("");
-      $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk']));?>");
+      $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk'])); ?>");
 
       $("#div_change_psk").show();
       $("#dialog_user_profil").dialog("option", "height", 600);
@@ -484,7 +487,7 @@ $(function() {
 
         if ($("#new_personal_saltkey").val() === "" || $("#new_personal_saltkey").val() === "") {
             $("#psk_change_wait").hide();
-            $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']);?></div>');
+            $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']); ?></div>');
 
             setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 1000);
             return false;
@@ -499,11 +502,11 @@ $(function() {
             "sources/main.queries.php",
             {
                 type            : "change_personal_saltkey",
-                data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key'];?>"),
-                key             : "<?php echo $_SESSION['key'];?>"
+                data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key']; ?>"),
+                key             : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key'];?>");
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                 if (data.error == "no") {
                     changePersonalSaltKey(data_to_share, data.list, data.nb_total);
                 } else {
@@ -538,12 +541,12 @@ $(function() {
          "sources/main.queries.php",
          {
             type    : "reset_personal_saltkey",
-            data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key'];?>"),
-            key             : "<?php echo $_SESSION['key'];?>"
+            data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key']; ?>"),
+            key             : "<?php echo $_SESSION['key']; ?>"
          },
          function(data) {
             $("#psk_reset_wait").hide();
-            $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done'];?></div>');
+            $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done']; ?></div>');
             setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
          }
       );
@@ -571,14 +574,14 @@ $(function() {
          var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
          var key = event.key;
          if (!regex.test(key)) {
-            $("#field_warning").html("<?php echo addslashes($LANG['character_not_allowed']);?>").stop(true,true).show().fadeOut(1000);
+            $("#field_warning").html("<?php echo addslashes($LANG['character_not_allowed']); ?>").stop(true,true).show().fadeOut(1000);
             event.preventDefault();
             return false;
          }
          break;
       }
    }).bind("paste",function(e){
-      $("#field_warning").html("<?php echo addslashes($LANG['error_not_allowed_to']);?>").stop(true,true).show().fadeOut(1000);
+      $("#field_warning").html("<?php echo addslashes($LANG['error_not_allowed_to']); ?>").stop(true,true).show().fadeOut(1000);
       e.preventDefault();
    });
 });
@@ -603,7 +606,7 @@ function changePersonalSaltKey(credentials, ids, nb_total)
       "sources/main.queries.php",
         {
            type    : "store_personal_saltkey",
-           data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
+           data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
            debug   : true
         },
         function(data){
@@ -617,13 +620,13 @@ function changePersonalSaltKey(credentials, ids, nb_total)
                     "sources/utils.queries.php",
                     {
                         type            : "reencrypt_personal_pwd",
-                        data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key'];?>"),
+                        data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key']; ?>"),
                         currentId       : currentID,
-                        key             : "<?php echo $_SESSION['key'];?>"
+                        key             : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data){
                         if (currentID == "") {
-                            $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done'];?>");
+                            $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done']; ?>");
                             location.reload();
                         } else {
                             if (data[0].error == "") {

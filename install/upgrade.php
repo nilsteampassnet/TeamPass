@@ -7,10 +7,13 @@ $_SESSION['CPM'] = 1;
 ################
 ## Function permits to get the value from a line
 ################
+/**
+ * @param string $val
+ */
 function getSettingValue($val)
 {
     $val = trim(strstr($val, "="));
-    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
 }
 
 //get infos from SETTINGS.PHP file
@@ -19,41 +22,41 @@ $events = "";
 if (file_exists($filename)) {
     //copy some constants from this existing file
     $settings_file = file($filename);
-    while (list($key,$val) = each($settings_file)) {
-        if (substr_count($val,'charset')>0) {
+    while (list($key, $val) = each($settings_file)) {
+        if (substr_count($val, 'charset') > 0) {
             $_SESSION['charset'] = getSettingValue($val);
-        } elseif (substr_count($val,'@define(')>0 && substr_count($val, 'SALT')>0) {
-            $_SESSION['encrypt_key'] = substr($val,17,strpos($val,"')")-17);
-        } elseif (substr_count($val,'$smtp_server = ')>0) {
+        } elseif (substr_count($val, '@define(') > 0 && substr_count($val, 'SALT') > 0) {
+            $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
+        } elseif (substr_count($val, '$smtp_server = ') > 0) {
             $_SESSION['smtp_server'] = getSettingValue($val);
-        } elseif (substr_count($val,'$smtp_auth = ')>0) {
+        } elseif (substr_count($val, '$smtp_auth = ') > 0) {
             $_SESSION['smtp_auth'] = getSettingValue($val);
-        } elseif (substr_count($val,'$smtp_port = ')>0) {
+        } elseif (substr_count($val, '$smtp_port = ') > 0) {
             $_SESSION['smtp_port'] = getSettingValue($val);
-        } elseif (substr_count($val,'$smtp_security = ')>0) {
+        } elseif (substr_count($val, '$smtp_security = ') > 0) {
             $_SESSION['smtp_security'] = getSettingValue($val);
-        } elseif (substr_count($val,'$smtp_auth_username = ')>0) {
+        } elseif (substr_count($val, '$smtp_auth_username = ') > 0) {
             $_SESSION['smtp_auth_username'] = getSettingValue($val);
-        } elseif (substr_count($val,'$smtp_auth_password = ')>0) {
+        } elseif (substr_count($val, '$smtp_auth_password = ') > 0) {
             $_SESSION['smtp_auth_password'] = getSettingValue($val);
-        } elseif (substr_count($val,'$email_from = ')>0) {
+        } elseif (substr_count($val, '$email_from = ') > 0) {
             $_SESSION['email_from'] = getSettingValue($val);
-        } elseif (substr_count($val,'$email_from_name = ')>0) {
+        } elseif (substr_count($val, '$email_from_name = ') > 0) {
             $_SESSION['email_from_name'] = getSettingValue($val);
-        } elseif (substr_count($val,'$server = ')>0) {
+        } elseif (substr_count($val, '$server = ') > 0) {
             $_SESSION['server'] = getSettingValue($val);
-        } elseif (substr_count($val,'$user = ')>0) {
+        } elseif (substr_count($val, '$user = ') > 0) {
             $_SESSION['user'] = getSettingValue($val);
-        } elseif (substr_count($val,'$pass = ')>0) {
+        } elseif (substr_count($val, '$pass = ') > 0) {
             $_SESSION['pass'] = getSettingValue($val);
-        } elseif (substr_count($val,'$port = ')>0) {
+        } elseif (substr_count($val, '$port = ') > 0) {
             $_SESSION['port'] = getSettingValue($val);
-        } elseif (substr_count($val,'$database = ')>0) {
+        } elseif (substr_count($val, '$database = ') > 0) {
             $_SESSION['database'] = getSettingValue($val);
-        } elseif (substr_count($val,'$pre = ')>0) {
+        } elseif (substr_count($val, '$pre = ') > 0) {
             $_SESSION['pre'] = getSettingValue($val);
-        } elseif (substr_count($val,'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-            $_SESSION['sk_path'] = substr($val,14,strpos($val,'";')-14);
+        } elseif (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
+            $_SESSION['sk_path'] = substr($val, 14, strpos($val, '";') - 14);
         }
     }
 }
@@ -63,9 +66,9 @@ if (
 ) {
     //copy some constants from this existing file
     $skFile = file($_SESSION['sk_file']);
-    while (list($key,$val) = each($skFile)) {
-        if (substr_count($val, '@define(')>0) {
-            $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
+    while (list($key, $val) = each($skFile)) {
+        if (substr_count($val, '@define(') > 0) {
+            $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
         }
     }
 }
@@ -94,6 +97,15 @@ if (
                     $("#but_next").prop("disabled", false);
                 } else {
                     $("#but_next").prop("disabled", true);
+                }
+            });
+
+            $("#no_key_selection").change(function() {
+                if ($("#no_key_selection").val() === "no_previous_sk_sel") {
+                    $("#previous_sk_div").hide();
+                    $("#previous_sk").val("");
+                } else if ($("#no_key_selection").val() === "previous_sk_sel") {
+                    $("#previous_sk_div").show();
                 }
             });
         });
@@ -126,8 +138,9 @@ if (
                     }
                     var data = "type="+step+
                     "&no_maintenance_mode="+maintenance+
-                    "&session_salt="+escape(document.getElementById("session_salt").value)
-                    "&previous_sk="+escape(document.getElementById("previous_sk").value);
+                    "&session_salt="+escape(document.getElementById("session_salt").value)+
+                    "&previous_sk="+escape(document.getElementById("previous_sk").value)+
+                    "&no_previous_sk="+document.getElementById("no_key_selection").value;
                 } else
                 if (step == "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
@@ -300,8 +313,8 @@ if (isset($_POST['root_url'])) {
 
 
 //define root path
-$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/') . substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF'])-20);
-if( isset($_SERVER['HTTPS'] ) ) {
+$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/').substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
+if (isset($_SERVER['HTTPS'])) {
     $protocol = 'https://';
 } else {
     $protocol = 'http://';
@@ -324,12 +337,12 @@ echo '
 
 //HIDDEN THINGS
 echo '
-                    <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step']:'', '" />
-                    <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version']:'', '" />
-                    <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8']:'', '" />
+                    <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step'] : '', '" />
+                    <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version'] : '', '" />
+                    <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8'] : '', '" />
                     <input type="hidden" name="menu_action" id="menu_action" value="" />
                     <input type="hidden" name="user_granted" id="user_granted" value="" />
-                    <input type="hidden" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt']:@$_SESSION['encrypt_key'], '" />';
+                    <input type="hidden" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt'] : @$_SESSION['encrypt_key'], '" />';
 
 if (!isset($_GET['step']) && !isset($_POST['step'])) {
     //ETAPE O
@@ -413,8 +426,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <h3>Step 2</h3>
                      <fieldset><legend>DataBase Informations</legend>';
 
-                     // check if all database  info are available
-                     if (
+                        // check if all database  info are available
+                        if (
                         isset($_SESSION['server']) && !empty($_SESSION['server'])
                         && isset($_SESSION['database']) && !empty($_SESSION['database'])
                         && isset($_SESSION['user']) && !empty($_SESSION['user'])
@@ -427,15 +440,15 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         The database information has been retreived from the settings file.<br>
                         If you need to change them, please edit file `/includes/config/settings.php` and relaunch the upgrade process.
                         </div>';
-                     } else {
+                        } else {
                         echo '
                         <div style="">
                         The database information has not been retreived from the settings file.<br>
                         You need to adapt the file `/includes/config/settings.php` and relaunch the upgrade process.
                         </div>';
-                     }
+                        }
 
-                     echo '
+                        echo '
                      <a href="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/install/upgrade.php">Restart upgrade process</a>
                      </fieldset>
 
@@ -465,13 +478,21 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      </div>';
 
                     // teampass_version = 2.1.27 and no encrypt_key in db
-                     echo '
+                        echo '
                      <div id="no_encrypt_key" style="display:none;">
-                     <fieldset><legend>Previous SALTKEY</legend>
-                        <p>It seems that the old saltkey has not been stored inside the database. <br>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
-                        </p>
-                        <label for="previous_sk">Previous SaltKey:&nbsp</label>
-                        <input type="text" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                     <fieldset>
+                        <legend>Database Origine</legend>
+                        Please select:&nbsp;<select id="no_key_selection">
+                            <option value="false">-- select --</option>
+                            <option value="no_previous_sk_sel">We have never used Teampass in an older version than 2.1.27(.x)</option>
+                            <option value="previous_sk_sel">We have user Teampass in an older version (example: 2.1.26)</option>
+                        </select>
+                        <div id="previous_sk_div" style="display:none;">
+                            <p>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
+                            </p>
+                            <label for="previous_sk">Previous SaltKey:&nbsp</label>
+                            <input type="text" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                        </div>
                      </fieldset>
                      </div>';
 
@@ -553,7 +574,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
         echo '<br /><br />
         <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
             <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
-        </label><input type="text" id="sk_path" name="sk_path" value="'.substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path'])-7).'" size="75" /><br />
+        </label><input type="text" id="sk_path" name="sk_path" value="'.substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path']) - 7).'" size="75" /><br />
         ';
     }
     echo '
@@ -579,35 +600,35 @@ if (!isset($_POST['step'])) {
                      <input type="button" id="but_launch" onclick="Check(\'step0\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                  </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 == false && $_SESSION['user_granted'] === "1") {
+} elseif ($_POST['step'] == 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
+                            <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 == true && $_SESSION['user_granted'] === "1") {
+} elseif ($_POST['step'] == 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                            <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                            <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'].'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                            <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
 } elseif ($_POST['step'] == 6 && $_SESSION['user_granted'] === "1") {
     echo '
                  <div style="margin-top:30px; text-align:center; width:100%; font-size:24px;">
-                     <a href="#" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'],0,strrpos($_SERVER['PHP_SELF'],'/')-8).'\';"><b>Open TeamPass</b></a>
+                     <a href="#" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\';"><b>Open TeamPass</b></a>
                  </div>';
 } else {
     echo '
                      <div style="width:900px;margin:auto;margin-top:30px;">
                          <div id="progressbar" style="float:left;margin-top:9px;"></div>
                          <div id="buttons_bottom">
-                             <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'] .'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                             <input type="button" id="but_next" target_id="'. (intval($_POST['step'])+1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                             <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'].'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                             <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                          </div>
                      </div>';
 }

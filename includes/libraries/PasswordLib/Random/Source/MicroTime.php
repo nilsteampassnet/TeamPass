@@ -52,7 +52,7 @@ class MicroTime implements \PasswordLib\Random\Source {
         if (function_exists('posix_times')) {
             $state .= serialize(posix_times());
         }
-        $state      .= getmypid() . memory_get_usage();
+        $state      .= getmypid().memory_get_usage();
         $state      .= serialize($_ENV);
         $this->state = hash('sha512', $state, true);
     }
@@ -66,8 +66,8 @@ class MicroTime implements \PasswordLib\Random\Source {
      */
     public function generate($size) {
         $result      = '';
-        $seed        = microtime() . memory_get_usage();
-        $this->state = hash('sha512', $this->state . $seed, true);
+        $seed        = microtime().memory_get_usage();
+        $this->state = hash('sha512', $this->state.$seed, true);
         /**
          * Make the generated randomness a bit better by forcing a GC run which
          * should complete in a indeterminate amount of time, hence improving
@@ -76,7 +76,7 @@ class MicroTime implements \PasswordLib\Random\Source {
          */
         gc_collect_cycles();
         for ($i = 0; $i < $size; $i += 8) {
-            $seed        = $this->state . microtime() . pack('N', $i);
+            $seed        = $this->state.microtime().pack('N', $i);
             $this->state = hash('sha512', $seed, true);
             /**
              * We only use the first 8 bytes here to prevent exposing the state

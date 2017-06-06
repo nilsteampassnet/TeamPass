@@ -13,7 +13,7 @@
  */
 
 require_once('sources/SecureHandler.php');
-@session_start();
+session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -37,7 +37,7 @@ if (
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
+    DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
@@ -55,7 +55,7 @@ if (
         $data['timestamp'] == intval($_GET['stamp'])
     ) {
         // otv is too old
-        if ($data['timestamp'] < ( time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
+        if ($data['timestamp'] < (time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";
         } else {
             // get from DB
@@ -82,7 +82,7 @@ if (
                             $pre."automatic_del",
                             array(
                                 'del_value' => $dataDelete['del_value'] - 1
-                               ),
+                                ),
                             "item_id = %i",
                             $data['item_id']
                         );
@@ -97,7 +97,7 @@ if (
                             prefix_table("items"),
                             array(
                                 'inactif' => '1',
-                               ),
+                                ),
                             "id = %i",
                             $data['item_id']
                         );
@@ -124,11 +124,11 @@ if (
                 "<div style='font-size:20px;font-weight:bold;'>Welcome to One-Time item view page.</div>".
                 "<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
                 "<div style='margin-top:10px;'><table>".
-                "<tr><td>Label:</td><td>" . $label . "</td></tr>".
-                "<tr><td>Password:</td><td>" . htmlspecialchars($pw['string']) . "</td></tr>".
-                "<tr><td>Description:</td><td>" . $description . "</td></tr>".
-                "<tr><td>login:</td><td>" . $login . "</td></tr>".
-                "<tr><td>URL:</td><td>" . $url ."</td></tr>".
+                "<tr><td>Label:</td><td>".$label."</td></tr>".
+                "<tr><td>Password:</td><td>".htmlspecialchars($pw['string'])."</td></tr>".
+                "<tr><td>Description:</td><td>".$description."</td></tr>".
+                "<tr><td>login:</td><td>".$login."</td></tr>".
+                "<tr><td>URL:</td><td>".$url."</td></tr>".
                 "</table></div>".
                 "<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
                 "</div>";

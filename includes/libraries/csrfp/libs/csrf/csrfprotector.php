@@ -1,10 +1,10 @@
 <?php
 
 if (!defined('__CSRF_PROTECTOR__')) {
-    define('__CSRF_PROTECTOR__', true);     // to avoid multiple declaration errors
+    define('__CSRF_PROTECTOR__', true); // to avoid multiple declaration errors
 
     // name of HTTP POST variable for authentication
-    define("CSRFP_TOKEN","csrfp_token");
+    define("CSRFP_TOKEN", "csrfp_token");
 
     // We insert token name and list of url patterns for which
     // GET requests are validated against CSRF as hidden input fields
@@ -71,7 +71,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
          * Contains list of those parameters that are required to be there
          *  in config file for csrfp to work
          */
-        public static $requiredConfigurations  = array('logDirectory', 'failedAuthAction', 'jsPath', 'jsUrl', 'tokenLength');
+        public static $requiredConfigurations = array('logDirectory', 'failedAuthAction', 'jsPath', 'jsUrl', 'tokenLength');
 
         /*
          *  Function: init
@@ -97,12 +97,13 @@ if (!defined('__CSRF_PROTECTOR__')) {
              * if mod_csrfp already enabled, no verification, no filtering
              * Already done by mod_csrfp
              */
-            if (getenv('mod_csrfp_enabled'))
-                return;
+            if (getenv('mod_csrfp_enabled')) {
+                            return;
+            }
 
             //start session in case its not
             if (session_id() === '') {
-                require_once __DIR__ ."/../../../../../sources/SecureHandler.php";
+                require_once __DIR__."/../../../../../sources/SecureHandler.php";
                 session_start();
             }
 
@@ -112,27 +113,30 @@ if (!defined('__CSRF_PROTECTOR__')) {
              * a config/csrf_config.php file in the root folder
              * for composer installations
              */
-            $standard_config_location = __DIR__ ."/../csrfp.config.php";
-            $composer_config_location = __DIR__ ."/../../../../../config/csrf_config.php";
+            $standard_config_location = __DIR__."/../csrfp.config.php";
+            $composer_config_location = __DIR__."/../../../../../config/csrf_config.php";
 
             if (file_exists($standard_config_location)) {
                 self::$config = include($standard_config_location);
-            } elseif(file_exists($composer_config_location)) {
+            } elseif (file_exists($composer_config_location)) {
                 self::$config = include($composer_config_location);
             } else {
                 throw new configFileNotFoundException("OWASP CSRFProtector: configuration file not found for CSRFProtector!");
             }
 
             //overriding length property if passed in parameters
-            if ($length != null)
-                self::$config['tokenLength'] = intval($length);
+            if ($length != null) {
+                            self::$config['tokenLength'] = intval($length);
+            }
 
             //action that is needed to be taken in case of failed authorisation
-            if ($action != null)
-                self::$config['failedAuthAction'] = $action;
+            if ($action != null) {
+                            self::$config['failedAuthAction'] = $action;
+            }
 
-            if (self::$config['CSRFP_TOKEN'] == '')
-                self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
+            if (self::$config['CSRFP_TOKEN'] == '') {
+                            self::$config['CSRFP_TOKEN'] = CSRFP_TOKEN;
+            }
 
             // Validate the config if everythings filled out
             foreach (self::$requiredConfigurations as $value) {
@@ -152,8 +156,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 || !isset($_SESSION[self::$config['CSRFP_TOKEN']])
                 || !is_array($_SESSION[self::$config['CSRFP_TOKEN']])
                 || !in_array($_COOKIE[self::$config['CSRFP_TOKEN']],
-                    $_SESSION[self::$config['CSRFP_TOKEN']]))
-                self::refreshToken();
+                    $_SESSION[self::$config['CSRFP_TOKEN']])) {
+                            self::refreshToken();
+            }
 
             // Set protected by CSRF Protector header
             header('X-CSRF-Protection: OWASP CSRFP 1.0.0');
@@ -188,7 +193,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                     //action in case of failed validation
                     self::failedValidationAction();
                 } else {
-                    self::refreshToken();   //refresh token for successfull validation
+                    self::refreshToken(); //refresh token for successfull validation
                 }
             } else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
@@ -204,7 +209,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                     //action in case of failed validation
                     self::failedValidationAction();
                 } else {
-                    self::refreshToken();   //refresh token for successfull validation
+                    self::refreshToken(); //refresh token for successfull validation
                 }
             }
         }
@@ -221,14 +226,20 @@ if (!defined('__CSRF_PROTECTOR__')) {
          * bool - true if its valid else false
          */
         private static function isValidToken($token) {
-            if (!isset($_SESSION[self::$config['CSRFP_TOKEN']])) return false;
-            if (!is_array($_SESSION[self::$config['CSRFP_TOKEN']])) return false;
+            if (!isset($_SESSION[self::$config['CSRFP_TOKEN']])) {
+                return false;
+            }
+            if (!is_array($_SESSION[self::$config['CSRFP_TOKEN']])) {
+                return false;
+            }
             foreach ($_SESSION[self::$config['CSRFP_TOKEN']] as $key => $value) {
                 if ($value == $token) {
 
                     // Clear all older tokens assuming they have been consumed
                     foreach ($_SESSION[self::$config['CSRFP_TOKEN']] as $_key => $_value) {
-                        if ($_value == $token) break;
+                        if ($_value == $token) {
+                            break;
+                        }
                         array_shift($_SESSION[self::$config['CSRFP_TOKEN']]);
                     }
                     return true;
@@ -251,8 +262,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
          */
         private static function failedValidationAction()
         {
-            if (!file_exists(__DIR__ ."/../" .self::$config['logDirectory']))
-                throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found!");
+            if (!file_exists(__DIR__."/../".self::$config['logDirectory'])) {
+                            throw new logDirectoryNotFoundException("OWASP CSRFProtector: Log Directory Not Found!");
+            }
 
             //call the logging function
             static::logCSRFattack();
@@ -275,7 +287,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                     break;
                 case 2:
                     //redirect to custom error page
-                    $location  = self::$config['errorRedirectionPage'];
+                    $location = self::$config['errorRedirectionPage'];
                     header("location: $location");
                 case 3:
                     //send custom error message
@@ -283,7 +295,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                     break;
                 case 4:
                     //send 500 header -- internal server error
-                    header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
+                    header($_SERVER['SERVER_PROTOCOL'].' 500 Internal Server Error', true, 500);
                     exit("<h2>500 Internal Server Error!</h2>");
                     break;
                 default:
@@ -312,8 +324,9 @@ if (!defined('__CSRF_PROTECTOR__')) {
             $token = self::generateAuthToken();
 
             if (!isset($_SESSION[self::$config['CSRFP_TOKEN']])
-                || !is_array($_SESSION[self::$config['CSRFP_TOKEN']]))
-                $_SESSION[self::$config['CSRFP_TOKEN']] = array();
+                || !is_array($_SESSION[self::$config['CSRFP_TOKEN']])) {
+                            $_SESSION[self::$config['CSRFP_TOKEN']] = array();
+            }
 
             //set token to session for server side validation
             array_push($_SESSION[self::$config['CSRFP_TOKEN']], $token);
@@ -339,7 +352,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
         {
             //if config tokenLength value is 0 or some non int
             if (intval(self::$config['tokenLength']) == 0) {
-                self::$config['tokenLength'] = 32;  //set as default
+                self::$config['tokenLength'] = 32; //set as default
             }
 
             //#todo - if $length > 128 throw exception
@@ -395,25 +408,26 @@ if (!defined('__CSRF_PROTECTOR__')) {
             //add a <noscript> message to outgoing HTML output,
             //informing the user to enable js for CSRFProtector to work
             //best section to add, after <body> tag
-            $buffer = preg_replace("/<body[^>]*>/", "$0 <noscript>" .self::$config['disabledJavascriptMessage'] .
+            $buffer = preg_replace("/<body[^>]*>/", "$0 <noscript>".self::$config['disabledJavascriptMessage'].
                 "</noscript>", $buffer);
-            $hiddenInput = '<fieldset style="display: none"><legend>CSRF Protection</legend>' .PHP_EOL;
-            $hiddenInput .= '<input type="hidden" id="' . CSRFP_FIELD_TOKEN_NAME.'" value="'
-                            .self::$config['CSRFP_TOKEN'] .'" />' .PHP_EOL;
+            $hiddenInput = '<fieldset style="display: none"><legend>CSRF Protection</legend>'.PHP_EOL;
+            $hiddenInput .= '<input type="hidden" id="'.CSRFP_FIELD_TOKEN_NAME.'" value="'
+                            .self::$config['CSRFP_TOKEN'].'" />'.PHP_EOL;
 
-            $hiddenInput .= '<input type="hidden" id="' .CSRFP_FIELD_URLS .'" value=\''
-                            .json_encode(str_replace("&","%26",self::$config['verifyGetFor'])) .'\' />' .PHP_EOL;
+            $hiddenInput .= '<input type="hidden" id="'.CSRFP_FIELD_URLS.'" value=\''
+                            .json_encode(str_replace("&", "%26", self::$config['verifyGetFor'])).'\' />'.PHP_EOL;
             $hiddenInput .= '</fieldset>';
 
             //implant hidden fields with check url information for reading in javascript
-            $buffer = str_ireplace('</body>', $hiddenInput . '</body>', $buffer);
+            $buffer = str_ireplace('</body>', $hiddenInput.'</body>', $buffer);
 
             //implant the CSRFGuard js file to outgoing script
-            $script = '<script type="text/javascript" src="' . self::$config['jsUrl'] . '"></script>' . PHP_EOL;
-            $buffer = str_ireplace('</body>', $script . '</body>', $buffer, $count);
+            $script = '<script type="text/javascript" src="'.self::$config['jsUrl'].'"></script>'.PHP_EOL;
+            $buffer = str_ireplace('</body>', $script.'</body>', $buffer, $count);
 
-            if (!$count)
-                $buffer .= $script;
+            if (!$count) {
+                            $buffer .= $script;
+            }
 
             return $buffer;
         }
@@ -434,12 +448,13 @@ if (!defined('__CSRF_PROTECTOR__')) {
         private static function logCSRFattack()
         {
             //if file doesnot exist for, create it
-            $logFile = fopen(__DIR__ ."/../" .self::$config['logDirectory']
-            ."/" .date("m-20y") .".log", "a+");
+            $logFile = fopen(__DIR__."/../".self::$config['logDirectory']
+            ."/".date("m-20y").".log", "a+");
 
             //throw exception if above fopen fails
-            if (!$logFile)
-                throw new logFileWriteError("OWASP CSRFProtector: Unable to write to the log file");
+            if (!$logFile) {
+                            throw new logFileWriteError("OWASP CSRFProtector: Unable to write to the log file");
+            }
 
             //miniature version of the log
             $log = array();
@@ -448,15 +463,16 @@ if (!defined('__CSRF_PROTECTOR__')) {
             $log['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
             $log['requestType'] = self::$requestType;
 
-            if (self::$requestType === "GET")
-                $log['query'] = $_GET;
-            else
-                $log['query'] = $_POST;
+            if (self::$requestType === "GET") {
+                            $log['query'] = $_GET;
+            } else {
+                            $log['query'] = $_POST;
+            }
 
             $log['cookie'] = $_COOKIE;
 
             //convert log array to JSON format to be logged
-            $log = json_encode($log) .PHP_EOL;
+            $log = json_encode($log).PHP_EOL;
 
             //append log to the file
             fwrite($logFile, $log);
@@ -489,7 +505,7 @@ if (!defined('__CSRF_PROTECTOR__')) {
                 }
             }
 
-            return $request_scheme . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+            return $request_scheme.'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
         }
 
         /*
@@ -505,10 +521,11 @@ if (!defined('__CSRF_PROTECTOR__')) {
          */
         public static function isURLallowed() {
             foreach (self::$config['verifyGetFor'] as $key => $value) {
-                $value = str_replace(array('/','*'), array('\/','(.*)'), $value);
-                preg_match('/' .$value .'/', self::getCurrentUrl(), $output);
-                if (count($output) > 0)
-                    return false;
+                $value = str_replace(array('/', '*'), array('\/', '(.*)'), $value);
+                preg_match('/'.$value.'/', self::getCurrentUrl(), $output);
+                if (count($output) > 0) {
+                                    return false;
+                }
             }
             return true;
         }

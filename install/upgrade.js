@@ -49,7 +49,7 @@ function httpRequest(file,data,type) {
                 eval(xhr_object.responseText);
                 //Check if query is for user identification. If yes, then reload page.
                 if (data != "" && data !== undefined && data.indexOf('ype=identify_user') > 0 ) {
-                    if (is_chrome == true ) PauseInExecution(100);  //Needed pause for Chrome
+                    if (is_chrome === true ) PauseInExecution(100);  //Needed pause for Chrome
                     if (type == "") {
                         if (document.getElementById('erreur_connexion').style.display == "") {
                             //rise an error in url. This in order to display the eror after refreshing

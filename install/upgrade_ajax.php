@@ -50,10 +50,13 @@ $_SESSION['settings']['loaded'] = "";
 ################
 ## Function permits to get the value from a line
 ################
+/**
+ * @param string $val
+ */
 function getSettingValue($val)
 {
     $val = trim(strstr($val, "="));
-    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";")-1)));
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
 }
 
 ################
@@ -64,7 +67,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     global $dbTmp;
     $exists = false;
     $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc( $columns)) {
+    while ($c = mysqli_fetch_assoc($columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
             break;
@@ -75,7 +78,7 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
-function addIndexIfNotExist($table, $index, $sql ) {
+function addIndexIfNotExist($table, $index, $sql) {
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
@@ -83,7 +86,7 @@ function addIndexIfNotExist($table, $index, $sql ) {
 
     // if index does not exist, then add it
     if (!$res) {
-        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` " . $sql);
+        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` ".$sql);
     }
 
     return $res;
@@ -100,12 +103,15 @@ function tableExists($tablename, $database = false)
         AND table_name = '$tablename'"
     );
 
-    if ($res > 0) return true;
-    else return false;
-}
+    if ($res > 0) {
+        return true;
+    } else {
+        return false;
+    }
+    }
 
 //define pbkdf2 iteration count
-@define('ITCOUNT', '2072');
+define('ITCOUNT', '2072');
 
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -187,13 +193,13 @@ if (isset($_POST['type'])) {
             $_SESSION['fullurl'] = $_POST['fullurl'];
             $abspath = str_replace('\\', '/', $_POST['abspath']);
             $_SESSION['abspath'] = $abspath;
-            if (substr($abspath, strlen($abspath)-1) == "/") {
-                $abspath = substr($abspath, 0, strlen($abspath)-1);
+            if (substr($abspath, strlen($abspath) - 1) == "/") {
+                $abspath = substr($abspath, 0, strlen($abspath) - 1);
             }
             $okWritable = true;
             $okExtensions = true;
             $txt = "";
-            $x=1;
+            $x = 1;
             $tab = array(
                 $abspath."/includes/config/settings.php",
                 $abspath."/includes/libraries/csrfp/libs/",
@@ -206,7 +212,7 @@ if (isset($_POST['type'])) {
             );
             foreach ($tab as $elem) {
                 // try to create it if not existing
-                if(substr($elem, -1) === '/' && !is_dir($elem)) {
+                if (substr($elem, -1) === '/' && !is_dir($elem)) {
                     mkdir($elem);
                 }
                 // check if writable
@@ -284,7 +290,7 @@ if (isset($_POST['type'])) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"curl\"'.
                     '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
             }
-            if (ini_get('max_execution_time')<60) {
+            if (ini_get('max_execution_time') < 60) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP \"Maximum '.
                     'execution time\" is set to '.ini_get('max_execution_time').' seconds.'.
                     ' Please try to set to 60s at least until Upgrade is finished.&nbsp;'.
@@ -311,41 +317,41 @@ if (isset($_POST['type'])) {
             if (file_exists($filename)) {
                 //copy some constants from this existing file
                 $settingsFile = file($filename);
-                while (list($key,$val) = each($settingsFile)) {
-                    if (substr_count($val, 'charset')>0) {
+                while (list($key, $val) = each($settingsFile)) {
+                    if (substr_count($val, 'charset') > 0) {
                         $_SESSION['charset'] = getSettingValue($val);
-                    } elseif (substr_count($val, '@define(')>0 && substr_count($val, 'SALT')>0) {
-                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
-                    } elseif (substr_count($val, '$smtp_server')>0) {
+                    } elseif (substr_count($val, '@define(') > 0 && substr_count($val, 'SALT') > 0) {
+                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
+                    } elseif (substr_count($val, '$smtp_server') > 0) {
                         $_SESSION['smtp_server'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$smtp_auth')>0) {
+                    } elseif (substr_count($val, '$smtp_auth') > 0) {
                         $_SESSION['smtp_auth'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$smtp_auth_username')>0) {
+                    } elseif (substr_count($val, '$smtp_auth_username') > 0) {
                         $_SESSION['smtp_auth_username'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$smtp_auth_password')>0) {
+                    } elseif (substr_count($val, '$smtp_auth_password') > 0) {
                         $_SESSION['smtp_auth_password'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$smtp_port')>0) {
+                    } elseif (substr_count($val, '$smtp_port') > 0) {
                         $_SESSION['smtp_port'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$smtp_security')>0) {
+                    } elseif (substr_count($val, '$smtp_security') > 0) {
                         $_SESSION['smtp_security'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$email_from')>0) {
+                    } elseif (substr_count($val, '$email_from') > 0) {
                         $_SESSION['email_from'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$email_from_name')>0) {
+                    } elseif (substr_count($val, '$email_from_name') > 0) {
                         $_SESSION['email_from_name'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$server')>0) {
+                    } elseif (substr_count($val, '$server') > 0) {
                         $_SESSION['server'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$user')>0) {
+                    } elseif (substr_count($val, '$user') > 0) {
                         $_SESSION['user'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$pass')>0) {
+                    } elseif (substr_count($val, '$pass') > 0) {
                         $_SESSION['pass'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$port')>0) {
+                    } elseif (substr_count($val, '$port') > 0) {
                         $_SESSION['port'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$database')>0) {
+                    } elseif (substr_count($val, '$database') > 0) {
                         $_SESSION['database'] = getSettingValue($val);
-                    } elseif (substr_count($val, '$pre')>0) {
+                    } elseif (substr_count($val, '$pre') > 0) {
                         $_SESSION['pre'] = getSettingValue($val);
-                    } elseif (substr_count($val, 'require_once "')>0 && substr_count($val, 'sk.php')>0) {
-                        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";')-14);
+                    } elseif (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
+                        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";') - 14);
                     }
                 }
             }
@@ -358,9 +364,9 @@ if (isset($_POST['type'])) {
                     '</span><br />';
                 //copy some constants from this existing file
                 $skFile = file($_SESSION['sk_file']);
-                while (list($key,$val) = each($skFile)) {
-                    if (substr_count($val, "@define('SALT'")>0) {
-                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')")-17);
+                while (list($key, $val) = each($skFile)) {
+                    if (substr_count($val, "@define('SALT'") > 0) {
+                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
                         echo '$("#session_salt").val("'.$_SESSION['encrypt_key'].'");';
                     }
                 }
@@ -387,7 +393,7 @@ if (isset($_POST['type'])) {
                     '</span><br />';
             }
 
-            if ($okWritable == true && $okExtensions == true && $okEncryptKey == true) {
+            if ($okWritable === true && $okExtensions === true && $okEncryptKey === true) {
                 echo 'document.getElementById("but_next").disabled = "";';
                 echo 'document.getElementById("res_step1").innerHTML = "Elements are OK.";';
             } else {
@@ -434,40 +440,63 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("but_next").disabled = "";';
 
                 // check in db if previous saltk exists
-                $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
-                WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
-                if (!empty($_POST['previous_sk']) || !empty($_POST['session_salt'])) {
-                    // get sk
-                    if (!empty($_POST['session_salt'])) {
-                        $sk_val = filter_var($_POST['session_salt'], FILTER_SANITIZE_STRING);
-                    } else {
-                        $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
-                    }
+                if ($_POST['no_previous_sk'] === "false" || $_POST['no_previous_sk'] === "previous_sk_sel") {
+                    $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
+                    WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
+                    if (!empty($_POST['previous_sk']) || !empty($_POST['session_salt'])) {
+                        // get sk
+                        if (!empty($_POST['session_salt'])) {
+                            $sk_val = filter_var($_POST['session_salt'], FILTER_SANITIZE_STRING);
+                        } else {
+                            $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
+                        }
 
-                    // upidate
-                    if (!empty($db_sk[0])) {
+                        // upidate
+                        if (!empty($db_sk[0])) {
+                            mysqli_query($dbTmp,
+                                "UPDATE `".$_SESSION['pre']."misc`
+                                SET `valeur` = '".$sk_val."'
+                                WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                            );
+                        } else {
+                            mysqli_query($dbTmp,
+                                "INSERT INTO `".$_SESSION['pre']."misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
+                            );
+                        }
+                    } elseif (empty($db_sk[0])) {
+                        $res = "Please provide Teampass instance history.";
+                        echo 'document.getElementById("but_next").disabled = "disabled";';
+                        echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
+                        echo 'document.getElementById("loader").style.display = "none";';
+                        echo 'document.getElementById("no_encrypt_key").style.display = "";';
+                    }
+                } else {
+                    // user said that database has not being used for an older version
+                    // no old sk is available
+                        $tmp = mysqli_num_rows(mysqli_query(
+                            $dbTmp,
+                            "SELECT * FROM `".$var['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                        ));
+                    if ($tmp == 0) {
                         mysqli_query($dbTmp,
-                            "UPDATE `".$_SESSION['pre']."misc`
-                            SET `valeur` = '".$sk_val."'
-                            WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                            "INSERT INTO `".$_SESSION['pre']."misc`
+                            (`valeur`, `type`, `intitule`)
+                            VALUES ('none', 'admin', 'saltkey_ante_2127')"
                         );
                     } else {
                         mysqli_query($dbTmp,
                             "INSERT INTO `".$_SESSION['pre']."misc`
                             (`valeur`, `type`, `intitule`)
-                            VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
+                            VALUES ('none', 'admin', 'saltkey_ante_2127')"
                         );
                     }
-                } elseif (empty($db_sk[0])) {
-                    $res = "Please provide the previous saltkey.";
-                    echo 'document.getElementById("but_next").disabled = "disabled";';
-                    echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
-                    echo 'document.getElementById("loader").style.display = "none";';
-                    echo 'document.getElementById("no_encrypt_key").style.display = "";';
+                    $_SESSION['tp_defuse_installed'] = true;
                 }
 
                 //What CPM version
-                if (@mysqli_query($dbTmp,
+                if (mysqli_query($dbTmp,
                     "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
                     WHERE type='admin' AND intitule = 'cpassman_version'"
                 )) {
@@ -545,11 +574,11 @@ if (isset($_POST['type'])) {
             if (
                 isset($_POST['prefix_before_convert']) && $_POST['prefix_before_convert'] == "true"
             ) {
-                $tables =mysqli_query($dbTmp,'SHOW TABLES');
+                $tables = mysqli_query($dbTmp, 'SHOW TABLES');
                 while ($table = mysqli_fetch_row($tables)) {
                     if (tableExists("old_".$table[0]) != 1 && substr($table[0], 0, 4) != "old_") {
-                        mysqli_query($dbTmp,"CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
-                        mysqli_query($dbTmp,"INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
+                        mysqli_query($dbTmp, "CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
+                        mysqli_query($dbTmp, "INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
                     }
                 }
             }
@@ -561,7 +590,7 @@ if (isset($_POST['type'])) {
             );
 
             //convert tables
-            $res = mysqli_query($dbTmp,"SHOW TABLES FROM `".$_SESSION['database']."`");
+            $res = mysqli_query($dbTmp, "SHOW TABLES FROM `".$_SESSION['database']."`");
             while ($table = mysqli_fetch_row($res)) {
                 if (substr($table[0], 0, 4) != "old_") {
                     mysqli_query($dbTmp,
@@ -669,16 +698,16 @@ global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPa
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"". $_SESSION['server'] ."\";
-\$user = \"". $_SESSION['user'] ."\";
-\$pass = \"". str_replace("$", "\\$", $_SESSION['pass']) ."\";
-\$database = \"". $_SESSION['database'] ."\";
-\$port = ". $_SESSION['port'] .";
-\$pre = \"". $_SESSION['pre'] ."\";
+\$server = \"". $_SESSION['server']."\";
+\$user = \"". $_SESSION['user']."\";
+\$pass = \"". str_replace("$", "\\$", $_SESSION['pass'])."\";
+\$database = \"". $_SESSION['database']."\";
+\$port = ". $_SESSION['port'].";
+\$pre = \"". $_SESSION['pre']."\";
 \$encoding = \"".$_SESSION['db_encoding']."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile)-7)."');
+@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7)."');
 require_once \"".$skFile."\";
 @define('COST', '13'); // Don't change this."
                     )
@@ -724,8 +753,8 @@ require_once \"".$skFile."\";
                         $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
                     }
                 }
-                unlink($csrfp_file);    // delete existing csrfp.config file
-                copy($csrfp_file_sample, $csrfp_file);  // make a copy of csrfp.config.sample file
+                unlink($csrfp_file); // delete existing csrfp.config file
+                copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
                 $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
                 $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
@@ -746,8 +775,8 @@ require_once \"".$skFile."\";
 
                 //Finished
                 if (
-                    $result1 != false
-                    && (!isset($result2) || (isset($result2) && $result2 != false))
+                    $result1 !== false
+                    && (!isset($result2) || (isset($result2) && $result2 !== false))
                 ) {
                     echo 'document.getElementById("but_next").disabled = "";';
                     echo 'document.getElementById("res_step5").innerHTML = '.
@@ -774,20 +803,20 @@ require_once \"".$skFile."\";
 
             $mysqli = new mysqli($_SESSION['server'], $_SESSION['user'], $_SESSION['pass'], $_SESSION['database'], $_SESSION['port']);
             if ($mysqli->connect_error) {
-                die('Error : ('. $mysqli->connect_errno .') '. $mysqli->connect_error);
+                die('Error : ('.$mysqli->connect_errno.') '.$mysqli->connect_error);
             }
 
             $results = $mysqli->query("SHOW TABLES");
 
-            while($row = $results->fetch_array()){
+            while ($row = $results->fetch_array()) {
                 $mtables[] = $row[0];
             }
 
-            foreach($mtables as $table){
+            foreach ($mtables as $table) {
                 $contents .= "-- Table `".$table."` --\n";
 
                 $results = $mysqli->query("SHOW CREATE TABLE ".$table);
-                while($row = $results->fetch_array()){
+                while ($row = $results->fetch_array()) {
                     $contents .= $row[1].";\n\n";
                 }
 
@@ -797,39 +826,39 @@ require_once \"".$skFile."\";
                 $fields_count = count($fields);
 
                 $insert_head = "INSERT INTO `".$table."` (";
-                for($i=0; $i < $fields_count; $i++){
-                    $insert_head  .= "`".$fields[$i]->name."`";
-                        if($i < $fields_count-1){
-                                $insert_head  .= ', ';
+                for ($i = 0; $i < $fields_count; $i++) {
+                    $insert_head .= "`".$fields[$i]->name."`";
+                        if ($i < $fields_count - 1) {
+                                $insert_head .= ', ';
                             }
                 }
-                $insert_head .=  ")";
+                $insert_head .= ")";
                 $insert_head .= " VALUES\n";
 
-                if($row_count>0){
+                if ($row_count > 0) {
                     $r = 0;
-                    while($row = $results->fetch_array()){
-                        if(($r % 400)  == 0){
+                    while ($row = $results->fetch_array()) {
+                        if (($r % 400) == 0) {
                             $contents .= $insert_head;
                         }
                         $contents .= "(";
-                        for($i=0; $i < $fields_count; $i++){
-                            $row_content =  str_replace("\n","\\n",$mysqli->real_escape_string($row[$i]));
+                        for ($i = 0; $i < $fields_count; $i++) {
+                            $row_content = str_replace("\n", "\\n", $mysqli->real_escape_string($row[$i]));
 
-                            switch($fields[$i]->type){
+                            switch ($fields[$i]->type) {
                                 case 8: case 3:
-                                    $contents .=  $row_content;
+                                    $contents .= $row_content;
                                     break;
                                 default:
-                                    $contents .= "'". $row_content ."'";
+                                    $contents .= "'".$row_content."'";
                             }
-                            if($i < $fields_count-1){
-                                    $contents  .= ', ';
+                            if ($i < $fields_count - 1) {
+                                    $contents .= ', ';
                                 }
                         }
-                        if(($r+1) == $row_count || ($r % 400) == 399){
+                        if (($r + 1) == $row_count || ($r % 400) == 399) {
                             $contents .= ");\n\n";
-                        }else{
+                        } else {
                             $contents .= "),\n";
                         }
                         $r++;
@@ -837,9 +866,9 @@ require_once \"".$skFile."\";
                 }
             }
 
-            $backup_file_name = "sql-backup-".date( "d-m-Y--h-i-s").".sql";
+            $backup_file_name = "sql-backup-".date("d-m-Y--h-i-s").".sql";
 
-            $fp = fopen("../files/".$backup_file_name ,'w+');
+            $fp = fopen("../files/".$backup_file_name, 'w+');
             if (($result = fwrite($fp, $contents))) {
                 echo '[{ "error" : "" , "file" : "files/'.$backup_file_name.'"}]';
             } else {

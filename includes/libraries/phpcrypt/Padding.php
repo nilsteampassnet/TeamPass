@@ -39,290 +39,299 @@ include_once(dirname(__FILE__)."/phpCrypt.php");
  */
 class Padding
 {
-	/**
-	 * Constructor
-	 *
-	 * @return void
-	 */
-	public function __construct() { }
+    /**
+     * Constructor
+     *
+     * @return void
+     */
+    public function __construct() { }
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct() { }
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct() { }
 
 
-	/**
-	 * Returns a string padded using the specified padding scheme
-	 *
-	 * @param string $text The string to pad
-	 * @param integer $bytes The number of bytes to pad
-	 * @param integer $type One of the predefined padding types
-	 * @return boolean True on success, false on error
-	 */
-	public static function pad(&$text, $bytes, $type = PHP_Crypt::ZERO)
-	{
-		// if the size of padding is not greater than 1
-		// just return true, no padding will be done
-		if(!($bytes > 0))
-			return true;
+    /**
+     * Returns a string padded using the specified padding scheme
+     *
+     * @param string $text The string to pad
+     * @param integer $bytes The number of bytes to pad
+     * @param integer $type One of the predefined padding types
+     * @return boolean True on success, false on error
+     */
+    public static function pad(&$text, $bytes, $type = PHP_Crypt::ZERO)
+    {
+        // if the size of padding is not greater than 1
+        // just return true, no padding will be done
+        if (!($bytes > 0)) {
+                    return true;
+        }
 
-		switch($type)
-		{
-			case PHP_Crypt::PAD_ZERO:
-				return self::zeroPad($text, $bytes);
-				break;
-			case PHP_Crypt::PAD_ANSI_X923:
-				return self::ansiX923Pad($text, $bytes);
-				break;
-			case PHP_Crypt::PAD_ISO_10126:
-				return self::iso10126Pad($text, $bytes);
-				break;
-			case PHP_Crypt::PAD_PKCS7:
-				return self::pkcs7Pad($text, $bytes);
-				break;
-			case PHP_Crypt::PAD_ISO_7816_4:
-				return self::iso7816Pad($text, $bytes);
-				break;
-			default:
-				trigger_error("$type is not a valid padding type.", E_USER_NOTICE);
-				return self::zeroPad($text, $bytes);
-		}
+        switch ($type)
+        {
+            case PHP_Crypt::PAD_ZERO:
+                return self::zeroPad($text, $bytes);
+                break;
+            case PHP_Crypt::PAD_ANSI_X923:
+                return self::ansiX923Pad($text, $bytes);
+                break;
+            case PHP_Crypt::PAD_ISO_10126:
+                return self::iso10126Pad($text, $bytes);
+                break;
+            case PHP_Crypt::PAD_PKCS7:
+                return self::pkcs7Pad($text, $bytes);
+                break;
+            case PHP_Crypt::PAD_ISO_7816_4:
+                return self::iso7816Pad($text, $bytes);
+                break;
+            default:
+                trigger_error("$type is not a valid padding type.", E_USER_NOTICE);
+                return self::zeroPad($text, $bytes);
+        }
 
-		return true;
-	}
-
-
-	/**
-	 * Strips padding from a string
-	 *
-	 * @param string $text The string strip padding from
-	 * @param integer $type One of the predefined padding types
-	 * @return boolean True on success, false on error
-	 */
-	public static function strip(&$text, $type = PHP_Crypt::ZERO)
-	{
-		switch($type)
-		{
-			case PHP_Crypt::PAD_ZERO:
-				return self::zeroStrip($text);
-				break;
-			case PHP_Crypt::PAD_ANSI_X923:
-				return self::ansiX923Strip($text);
-				break;
-			case PHP_Crypt::PAD_ISO_10126:
-				return self::iso10126Strip($text);
-				break;
-			case PHP_Crypt::PAD_PKCS7:
-				return self::pkcs7Strip($text);
-				break;
-			case PHP_Crypt::PAD_ISO_7816_4:
-				return self::iso7816Strip($text);
-				break;
-			default:
-				trigger_error("$type is not a valid padding type.", E_USER_NOTICE);
-				return self::zeroStrip($text);
-		}
-
-		return true;
-	}
+        return true;
+    }
 
 
-	/**
-	 * Pads a string with null bytes
-	 *
-	 * @param string $text The string to be padded
-	 * @param integer $bytes The number of bytes to pad
-	 * @return boolean Returns true
-	 */
-	private static function zeroPad(&$text, $bytes)
-	{
-		$len = $bytes + strlen($text);
-		$text = str_pad($text, $len, chr(0), STR_PAD_RIGHT);
-		return true;
-	}
+    /**
+     * Strips padding from a string
+     *
+     * @param string $text The string strip padding from
+     * @param integer $type One of the predefined padding types
+     * @return boolean True on success, false on error
+     */
+    public static function strip(&$text, $type = PHP_Crypt::ZERO)
+    {
+        switch ($type)
+        {
+            case PHP_Crypt::PAD_ZERO:
+                return self::zeroStrip($text);
+                break;
+            case PHP_Crypt::PAD_ANSI_X923:
+                return self::ansiX923Strip($text);
+                break;
+            case PHP_Crypt::PAD_ISO_10126:
+                return self::iso10126Strip($text);
+                break;
+            case PHP_Crypt::PAD_PKCS7:
+                return self::pkcs7Strip($text);
+                break;
+            case PHP_Crypt::PAD_ISO_7816_4:
+                return self::iso7816Strip($text);
+                break;
+            default:
+                trigger_error("$type is not a valid padding type.", E_USER_NOTICE);
+                return self::zeroStrip($text);
+        }
+
+        return true;
+    }
 
 
-	/**
-	 * Strips null padding off a string
-	 * NOTE: This is generally a bad idea as there is no way
-	 * to distinguish a null byte that is not padding from
-	 * a null byte that is padding. Stripping null padding should
-	 *  be handled by the developer at the application level.
-	 *
-	 * @param string $text The string with null padding to strip
-	 * @return boolean Returns true
-	 */
-	private static function zeroStrip(&$text)
-	{
-		// with NULL byte padding, we should not strip off the
-		// null bytes, instead leave this to the developer at the
-		// application level
-		//$text = preg_replace('/\0+$/', '', $text);
-		return true;
-	}
+    /**
+     * Pads a string with null bytes
+     *
+     * @param string $text The string to be padded
+     * @param integer $bytes The number of bytes to pad
+     * @return boolean Returns true
+     */
+    private static function zeroPad(&$text, $bytes)
+    {
+        $len = $bytes + strlen($text);
+        $text = str_pad($text, $len, chr(0), STR_PAD_RIGHT);
+        return true;
+    }
 
 
-	/**
-	 * Pads a string using ANSI X.923
-	 * Adds null padding to the string, except for the last byte
-	 * which indicates the number of bytes padded
-	 *
-	 * @param string $text The string to pad
-	 * @param integer The number of bytes to pad
-	 * @return boolean Returns true
-	 */
-	private static function ansiX923Pad(&$text, $bytes)
-	{
-		$len = $bytes + strlen($text);
-		$text  = str_pad($text, ($len-1), "\0", STR_PAD_RIGHT);
-		$text .= chr($bytes);
-		return true;
-	}
+    /**
+     * Strips null padding off a string
+     * NOTE: This is generally a bad idea as there is no way
+     * to distinguish a null byte that is not padding from
+     * a null byte that is padding. Stripping null padding should
+     *  be handled by the developer at the application level.
+     *
+     * @param string $text The string with null padding to strip
+     * @return boolean Returns true
+     */
+    private static function zeroStrip(&$text)
+    {
+        // with NULL byte padding, we should not strip off the
+        // null bytes, instead leave this to the developer at the
+        // application level
+        //$text = preg_replace('/\0+$/', '', $text);
+        return true;
+    }
 
 
-	/**
-	 * Strips ANSI X.923 padding from a string
-	 *
-	 * @param string $text The string to strip padding from
-	 * @return boolean Returns true
-	 */
-	private static function ansiX923Strip(&$text)
-	{
-		$pos = strlen($text) - 1;
-		$c = ord($text[$pos]);
-
-		if($c == 0)
-			return true;
-		else if($c == 1)
-			$text = substr($text, 0, -1);
-		else
-		{
-			// the total null bytes are 1 less than the value of the final byte
-			$nc = $c - 1;
-			$text = preg_replace('/\0{'.$nc.'}'.preg_quote(chr($c)).'$/', "", $text);
-		}
-
-		return true;
-	}
+    /**
+     * Pads a string using ANSI X.923
+     * Adds null padding to the string, except for the last byte
+     * which indicates the number of bytes padded
+     *
+     * @param string $text The string to pad
+     * @param integer The number of bytes to pad
+     * @param integer $bytes
+     * @return boolean Returns true
+     */
+    private static function ansiX923Pad(&$text, $bytes)
+    {
+        $len = $bytes + strlen($text);
+        $text  = str_pad($text, ($len - 1), "\0", STR_PAD_RIGHT);
+        $text .= chr($bytes);
+        return true;
+    }
 
 
-	/**
-	 * Pads a string using ISO 10126
-	 * Adds random bytes to the end of the string, except for the last
-	 * byte which indicates the number of padded bytes
-	 *
-	 * @param string $text The string to pad
-	 * @param integer The number of bytes to pad
-	 * @return boolean Returns true
-	 */
-	private static function iso10126Pad(&$text, $bytes)
-	{
-		// create the random pad bytes, we do one less than
-		// needed because the last byte is reserved for the
-		// number of padded bytes
-		for($i = 0; $i < ($bytes - 1); ++$i)
-			$text .= chr(mt_rand(0, 255));
+    /**
+     * Strips ANSI X.923 padding from a string
+     *
+     * @param string $text The string to strip padding from
+     * @return boolean Returns true
+     */
+    private static function ansiX923Strip(&$text)
+    {
+        $pos = strlen($text) - 1;
+        $c = ord($text[$pos]);
 
-		// add the byte to indicate the padding length
-		$text .= chr($bytes);
-		return true;
-	}
+        if ($c == 0) {
+                    return true;
+        } else if ($c == 1) {
+                    $text = substr($text, 0, -1);
+        } else
+        {
+            // the total null bytes are 1 less than the value of the final byte
+            $nc = $c - 1;
+            $text = preg_replace('/\0{'.$nc.'}'.preg_quote(chr($c)).'$/', "", $text);
+        }
 
-
-	/**
-	 * Strips ISO 10126 padding from a string
-	 *
-	 * @param string $text The string to strip padding from
-	 * @return boolean Returns true
-	 */
-	private static function iso10126Strip(&$text)
-	{
-		$pos = strlen($text) - 1;
-		$c = ord($text[$pos]) * -1;
-
-		// if we got a null byte at the end of the string,
-		// just return
-		if($c == 0)
-			return true;
-
-		$text = substr($text, 0, $c);
-		return true;
-	}
+        return true;
+    }
 
 
-	/**
-	 * Pads a string using PKCS7
-	 * Adds padding using the bytes with the value of the
-	 * number of bytes need for padding
-	 *
-	 * @param string $text The string to pad
-	 * @param integer The number of bytes to pad
-	 * @return boolean Returns true
-	 */
-	private static function pkcs7Pad(&$text, $bytes)
-	{
-		$len = $bytes + strlen($text);
-		$text  = str_pad($text, $len, chr($bytes), STR_PAD_RIGHT);
-		return true;
-	}
+    /**
+     * Pads a string using ISO 10126
+     * Adds random bytes to the end of the string, except for the last
+     * byte which indicates the number of padded bytes
+     *
+     * @param string $text The string to pad
+     * @param integer The number of bytes to pad
+     * @param integer $bytes
+     * @return boolean Returns true
+     */
+    private static function iso10126Pad(&$text, $bytes)
+    {
+        // create the random pad bytes, we do one less than
+        // needed because the last byte is reserved for the
+        // number of padded bytes
+        for ($i = 0; $i < ($bytes - 1); ++$i) {
+                    $text .= chr(mt_rand(0, 255));
+        }
+
+        // add the byte to indicate the padding length
+        $text .= chr($bytes);
+        return true;
+    }
 
 
-	/**
-	 * Strips PKCS7 padding from a string
-	 *
-	 * @param string $text The string to strip padding from
-	 * @return boolean Returns true
-	 */
-	private static function pkcs7Strip(&$text)
-	{
-		$pos = strlen($text) - 1;
-		$c = ord($text[$pos]);
+    /**
+     * Strips ISO 10126 padding from a string
+     *
+     * @param string $text The string to strip padding from
+     * @return boolean Returns true
+     */
+    private static function iso10126Strip(&$text)
+    {
+        $pos = strlen($text) - 1;
+        $c = ord($text[$pos]) * -1;
 
-		if($c == 0)
-			return true;
+        // if we got a null byte at the end of the string,
+        // just return
+        if ($c == 0) {
+                    return true;
+        }
 
-		$text = preg_replace('/'.preg_quote(chr($c)).'{'.$c.'}$/', "", $text);
-		return true;
-	}
-
-
-	/**
-	 * Pads a string using ISO/IEC 7816-4
-	 * Adds byte 0x80 followed by null bytes to pad a string
-	 *
-	 * @param string $text The string to pad
-	 * @param integer The number of bytes to pad
-	 * @return boolean Returns true
-	 */
-	private static function iso7816Pad(&$text, $bytes)
-	{
-		$text .= chr(0x80);
-		$len = $bytes + strlen($text);
-
-		// if we are only padding one byte, then 0x80 is all we need
-		// else we follow up with null bytes
-		if($bytes > 1)
-			$text  = str_pad($text, ($len - 1), chr(0), STR_PAD_RIGHT);
-
-		return true;
-	}
+        $text = substr($text, 0, $c);
+        return true;
+    }
 
 
-	/**
-	 * Strips ISO/IEC 7816-4 padding from a string
-	 *
-	 * @param string $text The string to strip padding from
-	 * @return boolean Returns true
-	 */
-	private static function iso7816Strip(&$text)
-	{
-		$c = chr(0x80);
-		$text = preg_replace('/'.preg_quote($c).'\0*$/', '', $text);
-		return true;
-	}
+    /**
+     * Pads a string using PKCS7
+     * Adds padding using the bytes with the value of the
+     * number of bytes need for padding
+     *
+     * @param string $text The string to pad
+     * @param integer The number of bytes to pad
+     * @param integer $bytes
+     * @return boolean Returns true
+     */
+    private static function pkcs7Pad(&$text, $bytes)
+    {
+        $len = $bytes + strlen($text);
+        $text = str_pad($text, $len, chr($bytes), STR_PAD_RIGHT);
+        return true;
+    }
+
+
+    /**
+     * Strips PKCS7 padding from a string
+     *
+     * @param string $text The string to strip padding from
+     * @return boolean Returns true
+     */
+    private static function pkcs7Strip(&$text)
+    {
+        $pos = strlen($text) - 1;
+        $c = ord($text[$pos]);
+
+        if ($c == 0) {
+                    return true;
+        }
+
+        $text = preg_replace('/'.preg_quote(chr($c)).'{'.$c.'}$/', "", $text);
+        return true;
+    }
+
+
+    /**
+     * Pads a string using ISO/IEC 7816-4
+     * Adds byte 0x80 followed by null bytes to pad a string
+     *
+     * @param string $text The string to pad
+     * @param integer The number of bytes to pad
+     * @param integer $bytes
+     * @return boolean Returns true
+     */
+    private static function iso7816Pad(&$text, $bytes)
+    {
+        $text .= chr(0x80);
+        $len = $bytes + strlen($text);
+
+        // if we are only padding one byte, then 0x80 is all we need
+        // else we follow up with null bytes
+        if ($bytes > 1) {
+                    $text = str_pad($text, ($len - 1), chr(0), STR_PAD_RIGHT);
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Strips ISO/IEC 7816-4 padding from a string
+     *
+     * @param string $text The string to strip padding from
+     * @return boolean Returns true
+     */
+    private static function iso7816Strip(&$text)
+    {
+        $c = chr(0x80);
+        $text = preg_replace('/'.preg_quote($c).'\0*$/', '', $text);
+        return true;
+    }
 }
 ?>

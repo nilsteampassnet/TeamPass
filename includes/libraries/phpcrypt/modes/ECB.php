@@ -36,107 +36,107 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Mode_ECB extends Mode
 {
-	/**
-	 * Constructor
-	 * Sets the cipher object that will be used for encryption
-	 *
-	 * @param object $cipher one of the phpCrypt encryption cipher objects
-	 * @param int $block_size The size of blocks (in bits) used for encryption
-	 * @return void
-	 */
-	public function __construct($cipher)
-	{
-		parent::__construct(PHP_Crypt::MODE_ECB, $cipher);
+    /**
+     * Constructor
+     * Sets the cipher object that will be used for encryption
+     *
+     * @param object $cipher one of the phpCrypt encryption cipher objects
+     * @return void
+     */
+    public function __construct($cipher)
+    {
+        parent::__construct(PHP_Crypt::MODE_ECB, $cipher);
 
-		// this works with only block Ciphers
-		if($cipher->type() != Cipher::BLOCK)
-			trigger_error("ECB mode requires a block cipher", E_USER_WARNING);
-	}
-
-
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        // this works with only block Ciphers
+        if ($cipher->type() != Cipher::BLOCK) {
+                    trigger_error("ECB mode requires a block cipher", E_USER_WARNING);
+        }
+    }
 
 
-	/**
-	 * Encrypts an the entire string $plain_text using the cipher passed
-	 * to the constructor in ECB mode
-	 *
-	 * @param string $text The string to be encrypted in ECB mode
-	 * @return boolean Returns true
-	 */
-	public function encrypt(&$text)
-	{
-		$this->pad($text);
-		$blocksz = $this->cipher->blockSize();
-
-		$max = strlen($text) / $blocksz;
-		for($i = 0; $i < $max; ++$i)
-		{
-			// get the current position within $text
-			$pos = $i * $blocksz;
-
-			// grab a block of text
-			$block = substr($text, $pos, $blocksz);
-
-			// encrypt the block
-			$this->cipher->encrypt($block);
-
-			// replace the plain text with the cipher text
-			$text = substr_replace($text, $block, $pos, $blocksz);
-		}
-
-		return true;
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypts an the entire string $plain_text using the cipher passed
-	 * to the constructor in ECB mode
-	 *
-	 * @param string $text The string to be decrypted in ECB mode
-	 * @return boolean Returns true
-	 */
-	public function decrypt(&$text)
-	{
-		$blocksz = $this->cipher->blockSize();
+    /**
+     * Encrypts an the entire string $plain_text using the cipher passed
+     * to the constructor in ECB mode
+     *
+     * @param string $text The string to be encrypted in ECB mode
+     * @return boolean Returns true
+     */
+    public function encrypt(&$text)
+    {
+        $this->pad($text);
+        $blocksz = $this->cipher->blockSize();
 
-		$max = strlen($text) / $blocksz;
-		for($i = 0; $i < $max; ++$i)
-		{
-			// get the current position within $text
-			$pos = $i * $blocksz;
+        $max = strlen($text) / $blocksz;
+        for ($i = 0; $i < $max; ++$i)
+        {
+            // get the current position within $text
+            $pos = $i * $blocksz;
 
-			// get a block of cipher text
-			$block = substr($text, $pos, $blocksz);
+            // grab a block of text
+            $block = substr($text, $pos, $blocksz);
 
-			// decrypt the block
-			$this->cipher->decrypt($block);
+            // encrypt the block
+            $this->cipher->encrypt($block);
 
-			// replace the block of cipher text with plain text
-			$text = substr_replace($text, $block, $pos, $blocksz);
-		}
+            // replace the plain text with the cipher text
+            $text = substr_replace($text, $block, $pos, $blocksz);
+        }
 
-		$this->strip($text);
-		return true;
-	}
+        return true;
+    }
 
 
-	/**
-	 * This mode does not require an IV
-	 *
-	 * @return boolean Returns false
-	 */
-	public function requiresIV()
-	{
-		return false;
-	}
+    /**
+     * Decrypts an the entire string $plain_text using the cipher passed
+     * to the constructor in ECB mode
+     *
+     * @param string $text The string to be decrypted in ECB mode
+     * @return boolean Returns true
+     */
+    public function decrypt(&$text)
+    {
+        $blocksz = $this->cipher->blockSize();
+
+        $max = strlen($text) / $blocksz;
+        for ($i = 0; $i < $max; ++$i)
+        {
+            // get the current position within $text
+            $pos = $i * $blocksz;
+
+            // get a block of cipher text
+            $block = substr($text, $pos, $blocksz);
+
+            // decrypt the block
+            $this->cipher->decrypt($block);
+
+            // replace the block of cipher text with plain text
+            $text = substr_replace($text, $block, $pos, $blocksz);
+        }
+
+        $this->strip($text);
+        return true;
+    }
+
+
+    /**
+     * This mode does not require an IV
+     *
+     * @return boolean Returns false
+     */
+    public function requiresIV()
+    {
+        return false;
+    }
 }
 ?>

@@ -52,7 +52,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -115,13 +115,13 @@ foreach ($folders as $t) {
             $t->title = $user['login'];
             $t->id = $t->id."-perso";
         }
-        $ident="&nbsp;&nbsp;";
-        for ($x=1; $x<$t->nlevel; $x++) {
+        $ident = "&nbsp;&nbsp;";
+        for ($x = 1; $x < $t->nlevel; $x++) {
             $ident .= "&nbsp;&nbsp;";
         }
         if (isset($_GET['folder_id']) && filter_var($_GET['folder_id'], FILTER_SANITIZE_NUMBER_INT) == $t->id) {
             $selected = " selected";
-        }else {
+        } else {
             $selected = "";
         }
         if ($prevLevel < $t->nlevel) {
@@ -162,7 +162,7 @@ foreach ($folders as $t) {
 <script type="text/javascript">
     $(function() {
         $("#import_keepass_items_to").select2({
-            language: "<?php echo $_SESSION['user_language_code'];?>"
+            language: "<?php echo $_SESSION['user_language_code']; ?>"
         });
         $("#import_tabs").tabs();
 
@@ -207,7 +207,7 @@ foreach ($folders as $t) {
                 },
                 BeforeUpload: function (up, file) {
                     up.settings.multipart_params = {
-                        "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
+                        "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
                         "csvFile":file.name,
                         "type_upload":"import_items_from_csv",
                         "user_token": $("#import_user_token").val()
@@ -335,7 +335,7 @@ foreach ($folders as $t) {
     //Permits to upload passwords from CSV file
     function ImportCSV(file)
     {
-        $("#import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>').attr("class","").show();
+        $("#import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>').attr("class","").show();
         $("#import_selection").html("");
         $("#div_import_csv_selection").hide();
         $.post(
@@ -347,10 +347,10 @@ foreach ($folders as $t) {
             },
             function(data) {
                 if (data[0].error == "bad_structure") {
-                    $("#import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['import_error_no_read_possible'];?>").show();
+                    $("#import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['import_error_no_read_possible']; ?>").show();
                 } else {
                     $("#div_import_csv_selection").show();
-                    $("#import_selection").html(data[0].output+'<div style="text-align:center;margin-top:8px; display:none;" id="csv_import_information"></div><div style=""><button id="but_csv_start"><?php echo $LANG['import_button'];?></button></div>');
+                    $("#import_selection").html(data[0].output+'<div style="text-align:center;margin-top:8px; display:none;" id="csv_import_information"></div><div style=""><button id="but_csv_start"><?php echo $LANG['import_button']; ?></button></div>');
                     $("#item_all_selection").click(function() {
                         if ($("#item_all_selection").prop("checked")) {
                             $("input[class='item_checkbox']:not([disabled='disabled'])").attr("checked", true);
@@ -363,14 +363,14 @@ foreach ($folders as $t) {
                     });
                     $("#import_items_to").select2({
                         multiple: false,
-                        language: "<?php echo $_SESSION['user_language_code'];?>"
+                        language: "<?php echo $_SESSION['user_language_code']; ?>"
                         /*selectedText: function(numChecked, numTotal, checkedItems){
                             return $(checkedItems[0]).attr('title') + ' checked';
                         }*/
                     });
                     $("button").button();
-                    $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button'];?>')").button("disable");
-                    $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done'];?>").attr("class","ui-state-highlight");
+                    $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button']; ?>')").button("disable");
+                    $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
                     setTimeout(function(){$("#import_information").effect( "fade", "slow" );}, 1000);
                 }
             },
@@ -381,7 +381,7 @@ foreach ($folders as $t) {
     //get list of items checked by user
     function launchCSVItemsImport()
     {
-        $("#csv_import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>').attr("class","").show();
+        $("#csv_import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>').attr("class","").show();
         var items = "";
 
         //Get data checked
@@ -393,7 +393,7 @@ foreach ($folders as $t) {
         });
 
         if (items == "") {
-            $("#csv_import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder'];?>").attr("class","ui-state-error");
+            $("#csv_import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#csv_import_information").effect( "fade", "slow" );}, 1000);
             return;
         }
@@ -418,7 +418,7 @@ foreach ($folders as $t) {
 
                 ListerItems($('#hid_cat').val(), "", 0)
 
-                $("#csv_import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done'];?>").attr("class","ui-state-highlight");
+                $("#csv_import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
                 setTimeout(function(){$("#csv_import_information").effect( "fade", "slow" );}, 1000);
 
             },
@@ -431,7 +431,7 @@ foreach ($folders as $t) {
     //Permits to upload passwords from KEEPASS file
     function ImportKEEPASS(file)
     {
-        $("#import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>').attr("class","").show();
+        $("#import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>').attr("class","").show();
 
         //check if file has good format
         $.post(
@@ -442,8 +442,8 @@ foreach ($folders as $t) {
                 destination        : $("#import_keepass_items_to").val()
             },
             function(data) {
-                $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>';?>");
-                $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done'];?>").attr("class","ui-state-highlight");
+                $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");
+                $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
                 //setTimeout(function(){$("#import_information").effect( "fade", "slow" );document.location = "index.php?page=items"}, 1000);
             },
             "json"

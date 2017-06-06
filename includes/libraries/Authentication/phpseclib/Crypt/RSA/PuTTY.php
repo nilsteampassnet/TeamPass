@@ -55,7 +55,6 @@ class PuTTY
      *
      * @access public
      * @param string $password
-     * @param string $iv
      * @param int $length
      * @return string
      */
@@ -65,7 +64,7 @@ class PuTTY
         $sequence = 0;
         while (strlen($symkey) < $length) {
             $temp = pack('Na*', $sequence++, $password);
-            $symkey.= Hex::decode(sha1($temp));
+            $symkey .= Hex::decode(sha1($temp));
         }
         return substr($symkey, 0, $length);
     }
@@ -205,8 +204,8 @@ class PuTTY
 
         $key = "PuTTY-User-Key-File-2: ssh-rsa\r\nEncryption: ";
         $encryption = (!empty($password) || is_string($password)) ? 'aes256-cbc' : 'none';
-        $key.= $encryption;
-        $key.= "\r\nComment: " . self::$comment . "\r\n";
+        $key .= $encryption;
+        $key .= "\r\nComment: ".self::$comment."\r\n";
         $public = pack(
             'Na*Na*Na*',
             strlen('ssh-rsa'),
@@ -228,8 +227,8 @@ class PuTTY
             $public
         );
         $public = Base64::encode($public);
-        $key.= "Public-Lines: " . ((strlen($public) + 63) >> 6) . "\r\n";
-        $key.= chunk_split($public, 64);
+        $key .= "Public-Lines: ".((strlen($public) + 63) >> 6)."\r\n";
+        $key .= chunk_split($public, 64);
         $private = pack(
             'Na*Na*Na*Na*',
             strlen($raw['privateExponent']),
@@ -242,26 +241,26 @@ class PuTTY
             $raw['coefficient']
         );
         if (empty($password) && !is_string($password)) {
-            $source.= pack('Na*', strlen($private), $private);
+            $source .= pack('Na*', strlen($private), $private);
             $hashkey = 'putty-private-key-file-mac-key';
         } else {
-            $private.= Random::string(16 - (strlen($private) & 15));
-            $source.= pack('Na*', strlen($private), $private);
+            $private .= Random::string(16 - (strlen($private) & 15));
+            $source .= pack('Na*', strlen($private), $private);
             $crypto = new AES();
 
             $crypto->setKey(static::generateSymmetricKey($password, 32));
             $crypto->setIV(str_repeat("\0", $crypto->getBlockLength() >> 3));
             $crypto->disablePadding();
             $private = $crypto->encrypt($private);
-            $hashkey = 'putty-private-key-file-mac-key' . $password;
+            $hashkey = 'putty-private-key-file-mac-key'.$password;
         }
 
         $private = Base64::encode($private);
-        $key.= 'Private-Lines: ' . ((strlen($private) + 63) >> 6) . "\r\n";
-        $key.= chunk_split($private, 64);
+        $key .= 'Private-Lines: '.((strlen($private) + 63) >> 6)."\r\n";
+        $key .= chunk_split($private, 64);
         $hash = new Hash('sha1');
         $hash->setKey(sha1($hashkey, true));
-        $key.= 'Private-MAC: ' . Hex::encode($hash->hash($source)) . "\r\n";
+        $key .= 'Private-MAC: '.Hex::encode($hash->hash($source))."\r\n";
 
         return $key;
     }
@@ -288,10 +287,10 @@ class PuTTY
             strlen($n),
             $n
         );
-        $key = "---- BEGIN SSH2 PUBLIC KEY ----\r\n" .
-               'Comment: "' . str_replace(array('\\', '"'), array('\\\\', '\"'), self::$comment) . "\"\r\n";
-               chunk_split(Base64::encode($key), 64) .
-               '---- END SSH2 PUBLIC KEY ----';
+        $key = "---- BEGIN SSH2 PUBLIC KEY ----\r\n".
+                'Comment: "'.str_replace(array('\\', '"'), array('\\\\', '\"'), self::$comment)."\"\r\n";
+                chunk_split(Base64::encode($key), 64).
+                '---- END SSH2 PUBLIC KEY ----';
 
         return $key;
     }

@@ -46,7 +46,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -64,7 +64,7 @@ switch ($_POST['type']) {
     case "log_generate":
         //Prepare the PDF file
         include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
-        $pdf=new TFPDF();
+        $pdf = new TFPDF();
 
         //Add font for utf-8
         $pdf->AddFont('helvetica', '');
@@ -76,10 +76,10 @@ switch ($_POST['type']) {
         $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(15, 86, 145);
-        $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", 1);
-        $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", 1);
-        $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", 1);
-        $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", 1);
+        $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", true);
+        $pdf->cell(75, 6, $LANG['group'], 1, 0, "C", true);
+        $pdf->cell(21, 6, $LANG['date'], 1, 0, "C", true);
+        $pdf->cell(15, 6, $LANG['author'], 1, 1, "C", true);
         $pdf->SetFont('helvetica', '', 10);
 
         $rows = DB::query(
@@ -154,7 +154,7 @@ switch ($_POST['type']) {
         foreach ($rows as $record) {
             if ($record['id'] !== $prev_id) {
                 if (in_array($record['id_tree'], $arrFolders)) {
-                    if (count($arrFolders[$record['id_tree']])>0) {
+                    if (count($arrFolders[$record['id_tree']]) > 0) {
                         $thisFolder = '<td>'.$arrFolders[$record['id_tree']].'</td>';
                     } else {
                         $thisFolder = "";
@@ -176,7 +176,7 @@ switch ($_POST['type']) {
      */
     case "restore_deleted__items":
         //restore FOLDERS
-        if (count($_POST['list_f'])>0) {
+        if (count($_POST['list_f']) > 0) {
             foreach (explode(';', $_POST['list_f']) as $id) {
                 $data = DB::queryfirstrow(
                     "SELECT valeur
@@ -201,7 +201,7 @@ switch ($_POST['type']) {
                             'bloquer_modification' => $folderData[7],
                             'personal_folder' => $folderData[8],
                             'renewal_period' => $folderData[9]
-                       )
+                        )
                     );
                     //delete log
                     DB::delete(prefix_table("misc"), "type = %s AND intitule = %s", "folder_deleted", $id);
@@ -209,7 +209,7 @@ switch ($_POST['type']) {
             }
         }
         //restore ITEMS
-        if (count($_POST['list_i'])>0) {
+        if (count($_POST['list_i']) > 0) {
             foreach (explode(';', $_POST['list_i']) as $id) {
                 DB::update(
                     prefix_table("items"),
@@ -241,7 +241,7 @@ switch ($_POST['type']) {
      */
     case "really_delete_items":
         $folders = explode(';', $_POST['folders']);
-        if (count($folders)>0) {
+        if (count($folders) > 0) {
             //delete folders
             foreach ($folders as $fId) {
                 //get folder ID
@@ -267,7 +267,7 @@ switch ($_POST['type']) {
                         DB::delete(prefix_table("cache"), "id = %i", $item['id']);
                     }
                     //Actualize the variable
-                    $_SESSION['nb_folders'] --;
+                    $_SESSION['nb_folders']--;
                 }
                 //delete folder
                 DB::delete(prefix_table("misc"), "intitule = %s AND type = %s", $fId, "folder_deleted");
@@ -283,8 +283,6 @@ switch ($_POST['type']) {
             DB::delete(prefix_table("files"), "id_item=%i", $id);
             //delete from TAGS
             DB::delete(prefix_table("tags"), "item_id=%i", $id);
-            //delete from KEYS
-            //DB::delete(prefix_table("keys"), "`id` =%i AND `sql_table`=%s", $id, "items");
         }
         break;
 
@@ -301,19 +299,18 @@ switch ($_POST['type']) {
             "user_connection"
         );
         if (DB::count() != 0) {
-            $nbPages = ceil($data[0]/$nbElements);
-            for ($i=1; $i<=$nbPages; $i++) {
+            $nbPages = ceil($data[0] / $nbElements);
+            for ($i = 1; $i <= $nbPages; $i++) {
                 $pages .= '<td onclick=\'displayLogs(\"connections_logs\", '.
                 $i.', \"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;'.
-                ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:
-                '\'>'.$i).'</span></td>';
+                ($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
         if (isset($_POST['page']) && $_POST['page'] > 1) {
-            $start = ($nbElements*($_POST['page']-1)) + 1;
+            $start = ($nbElements * ($_POST['page'] - 1)) + 1;
         } else {
             $start = 0;
         }
@@ -325,10 +322,10 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
             ORDER BY %s %s
-			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             "user_connection",
-			$_POST['order'],
-			$POST['direction']
+            $_POST['order'],
+            $POST['direction']
         );
 
         foreach ($rows as $record) {
@@ -358,18 +355,18 @@ switch ($_POST['type']) {
             "error"
         );
         if (DB::count() != 0) {
-            $nbPages = ceil($data[0]/$nbElements);
-            for ($i=1; $i<=$nbPages; $i++) {
+            $nbPages = ceil($data[0] / $nbElements);
+            for ($i = 1; $i <= $nbPages; $i++) {
                 $pages .= '<td onclick=\'displayLogs(\"errors_logs\", '.$i.', \"'.$_POST['order'].
                 '\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ?
-                'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
         if (isset($_POST['page']) && $_POST['page'] > 1) {
-            $start = ($nbElements*($_POST['page']-1)) + 1;
+            $start = ($nbElements * ($_POST['page'] - 1)) + 1;
         } else {
             $start = 0;
         }
@@ -381,10 +378,10 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
             ORDER BY %s %s
-            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             "error",
-			$_POST['order'],
-			$_POST['direction']
+            $_POST['order'],
+            $_POST['direction']
         );
         foreach ($rows as $record) {
             $label = explode('@', addslashes(cleanString($record['label'])));
@@ -420,16 +417,16 @@ switch ($_POST['type']) {
             $where
         );
         if ($data[0] != 0) {
-            $nbPages = ceil($data[0]/$nbElements);
-            for ($i=1; $i<=$nbPages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"access_logs\", '.$i.', \"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+            $nbPages = ceil($data[0] / $nbElements);
+            for ($i = 1; $i <= $nbPages; $i++) {
+                $pages .= '<td onclick=\'displayLogs(\"access_logs\", '.$i.', \"'.$_POST['order'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
         if (isset($_POST['page']) && $_POST['page'] > 1) {
-            $start = ($nbElements*($_POST['page']-1)) + 1;
+            $start = ($nbElements * ($_POST['page'] - 1)) + 1;
         } else {
             $start = 0;
         }
@@ -442,7 +439,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY ".$_POST['order']." ".$_POST['direction']."
-            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
         foreach ($rows as $record) {
@@ -479,16 +476,16 @@ switch ($_POST['type']) {
             $where
         );
         if ($data[0] != 0) {
-            $nbPages = ceil($data[0]/$nbElements);
-            for ($i=1; $i<=$nbPages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"copy_logs\", '.$i.', \'\')\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+            $nbPages = ceil($data[0] / $nbElements);
+            for ($i = 1; $i <= $nbPages; $i++) {
+                $pages .= '<td onclick=\'displayLogs(\"copy_logs\", '.$i.', \'\')\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
         if (isset($_POST['page']) && $_POST['page'] > 1) {
-            $start = ($nbElements*($_POST['page']-1)) + 1;
+            $start = ($nbElements * ($_POST['page'] - 1)) + 1;
         } else {
             $start = 0;
         }
@@ -501,7 +498,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
         foreach ($rows as $record) {
@@ -539,16 +536,16 @@ switch ($_POST['type']) {
             $where
         );
         if (DB::count() != 0) {
-            $nbPages = ceil($data[0]/$nbElements);
-            for ($i=1; $i<=$nbPages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"items_logs\", '.$i.', \"\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+            $nbPages = ceil($data[0] / $nbElements);
+            for ($i = 1; $i <= $nbPages; $i++) {
+                $pages .= '<td onclick=\'displayLogs(\"items_logs\", '.$i.', \"\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
         if (isset($_POST['page']) && $_POST['page'] > 1) {
-            $start = ($nbElements*($_POST['page']-1)) + 1;
+            $start = ($nbElements * ($_POST['page'] - 1)) + 1;
         } else {
             $start = 0;
         }
@@ -562,7 +559,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
 
@@ -604,16 +601,16 @@ switch ($_POST['type']) {
             $where
         );
         if ($data[0] != 0) {
-            $nbPages = ceil($data[0]/$nbElements);
-            for ($i=1; $i<=$nbPages; $i++) {
-                $pages .= '<td onclick=\'displayLogs(\"copy_logs\", '.$i.', \'\')\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+            $nbPages = ceil($data[0] / $nbElements);
+            for ($i = 1; $i <= $nbPages; $i++) {
+                $pages .= '<td onclick=\'displayLogs(\"copy_logs\", '.$i.', \'\')\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
             }
         }
         $pages .= '</tr></table>';
 
         //define query limits
         if (isset($_POST['page']) && $_POST['page'] > 1) {
-            $start = ($nbElements*($_POST['page']-1)) + 1;
+            $start = ($nbElements * ($_POST['page'] - 1)) + 1;
         } else {
             $start = 0;
         }
@@ -625,7 +622,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE %l
             ORDER BY date DESC
-            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             $where
         );
 
@@ -644,11 +641,11 @@ switch ($_POST['type']) {
         if ($_POST['period'] == "0") {
             $date = (time());
         } elseif ($_POST['period'] == "1month") {
-            $date = (mktime(date('h'), date('i'), date('s'), date('m')+1, date('d'), date('y')));
+            $date = (mktime(date('h'), date('i'), date('s'), date('m') + 1, date('d'), date('y')));
         } elseif ($_POST['period'] == "6months") {
-            $date = (mktime(date('h'), date('i'), date('s'), date('m')+6, date('d'), date('y')));
+            $date = (mktime(date('h'), date('i'), date('s'), date('m') + 6, date('d'), date('y')));
         } elseif ($_POST['period'] == "1year") {
-            $date = (mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y')+1));
+            $date = (mktime(date('h'), date('i'), date('s'), date('m'), date('d'), date('y') + 1));
         }
         $idItem = "";
         $texte = "<table cellpadding=3><thead><tr><th>".$LANG['label']."</th><th>".$LANG['creation_date']."</th><th>".$LANG['expiration_date']."</th><th>".$LANG['group']."</th><th>".$LANG['auteur']."</th></tr></thead>";
@@ -702,7 +699,7 @@ switch ($_POST['type']) {
     case "generate_renewal_pdf":
         //Prepare the PDF file
         include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
-        $pdf=new tFPDF();
+        $pdf = new tFPDF();
 
         //Add font for utf-8
         $pdf->AddFont('helvetica', '');
@@ -715,11 +712,11 @@ switch ($_POST['type']) {
         $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(192, 192, 192);
-        $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", 1);
-        $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", 1);
-        $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", 1);
+        $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", true);
+        $pdf->cell(25, 6, $LANG['creation_date'], 1, 0, "C", true);
+        $pdf->cell(25, 6, $LANG['expiration_date'], 1, 0, "C", true);
+        $pdf->cell(45, 6, $LANG['group'], 1, 0, "C", true);
+        $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", true);
         $pdf->SetFont('helvetica', '', 9);
 
         foreach (explode('@|@', addslashes($_POST['text'])) as $line) {
@@ -756,11 +753,11 @@ switch ($_POST['type']) {
                 );
                 $counter = DB::count();
                     // Delete
-                 DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+                    DB::delete(prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                     "at_shown",
                     intval(strtotime($_POST['purgeFrom'])),
                     intval(strtotime($_POST['purgeTo']))
-                 );
+                    );
             } elseif ($_POST['logType'] == "connections_logs") {
                 DB::query(
                     "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".

@@ -55,7 +55,7 @@ DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -94,7 +94,7 @@ if (!empty($_POST['type'])) {
             DB::update(
                 prefix_table("users"),
                 array($_POST['type'] => $new_groupes
-                   ),
+                    ),
                 "id = %i",
                 $val[0]
             );
@@ -127,7 +127,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'fonction_id' => $new_fonctions
-                   ),
+                    ),
                 "id = %i",
                 $val[0]
             );
@@ -188,7 +188,7 @@ if (!empty($_POST['type'])) {
                         'groupes_visibles' => $dataReceived['allowed_flds'],
                         'isAdministratedByRole' => $dataReceived['isAdministratedByRole'] === "null" ? "0" : $dataReceived['isAdministratedByRole'],
                         'encrypted_psk' => ''
-                       )
+                        )
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
@@ -201,7 +201,7 @@ if (!empty($_POST['type'])) {
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
                             'personal_folder' => '1'
-                           )
+                            )
                     );
                     $tree->rebuild();
                 }
@@ -217,7 +217,7 @@ if (!empty($_POST['type'])) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0'
-                           )
+                            )
                     );
                     $new_folder_id = DB::insertId();
                     // Add complexity
@@ -227,14 +227,14 @@ if (!empty($_POST['type'])) {
                             'type' => 'complex',
                             'intitule' => $new_folder_id,
                             'valeur' => 50
-                           )
+                            )
                     );
                     // Create role
                     DB::insert(
                         prefix_table("roles_title"),
                         array(
                             'title' => mysqli_escape_string($link, stripslashes(($dataReceived['domain'])))
-                           )
+                            )
                     );
                     $new_role_id = DB::insertId();
                     // Associate new role to new folder
@@ -243,14 +243,14 @@ if (!empty($_POST['type'])) {
                         array(
                             'folder_id' => $new_folder_id,
                             'role_id' => $new_role_id
-                           )
+                            )
                     );
                     // Add the new user to this role
                     DB::update(
                         prefix_table("users"),
                         array(
                             'fonction_id' => is_int($new_role_id)
-                           ),
+                            ),
                         "id=%i",
                         $new_user_id
                     );
@@ -262,7 +262,7 @@ if (!empty($_POST['type'])) {
                     $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
                 }
                 // Send email to new user
-                @sendEmail(
+                sendEmail(
                     $LANG['email_subject_new_user'],
                     str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
                     $dataReceived['email']
@@ -331,7 +331,7 @@ if (!empty($_POST['type'])) {
                     array(
                         'disabled' => 1,
                         'key_tempo' => ""
-                       ),
+                        ),
                     "id=%i",
                     $_POST['id']
                 );
@@ -360,7 +360,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'email' => $_POST['newemail']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -382,7 +382,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'can_create_root_folder' => $_POST['value']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -404,7 +404,7 @@ if (!empty($_POST['type'])) {
                     'admin' => filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
                     'gestionnaire' => $_POST['value'] === "1" ? "0" : "0",
                     'read_only' => $_POST['value'] === "1" ? "0" : "0"
-                   ),
+                    ),
                 "id = %i",
                 filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
@@ -434,12 +434,11 @@ if (!empty($_POST['type'])) {
                     'gestionnaire' => filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
                     'can_manage_all_users' => ($data['can_manage_all_users'] === "0" && $_POST['value'] === "1") ? "0" : (
                         ($data['can_manage_all_users'] === "0" && $_POST['value'] === "0") ? "0" : (
-                        ($data['can_manage_all_users'] === "1" && $_POST['value'] === "0") ? "0" :
-                        "1")
+                        ($data['can_manage_all_users'] === "1" && $_POST['value'] === "0") ? "0" : "1")
                     ),
                     'admin' => $_POST['value'] === "1" ? "0" : "0",
                     'read_only' => $_POST['value'] === "1" ? "0" : "0"
-                   ),
+                    ),
                 "id = %i",
                 filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
@@ -461,7 +460,7 @@ if (!empty($_POST['type'])) {
                     'read_only' => $_POST['value'],
                     'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
                     'admin' => $_POST['value'] == 1 ? "0" : "0"
-                   ),
+                    ),
                 "id = %i",
                 filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
@@ -492,7 +491,7 @@ if (!empty($_POST['type'])) {
                     'gestionnaire' => ($data['gestionnaire'] == 0 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 0) ? "1" : "0")),
                     'admin' => $_POST['value'] == 1 ? "0" : "0",
                     'read_only' => $_POST['value'] == 1 ? "0" : "0"
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -512,7 +511,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'personal_folder' => $_POST['value']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -537,19 +536,16 @@ if (!empty($_POST['type'])) {
 
             $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
             foreach ($rows as $record) {
-                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     $text .= '<input type="checkbox" id="cb_change_function-'.$record['id'].'"';
                     if (in_array($record['id'], $users_functions)) {
                         $text .= ' checked';
                     }
-                    /*if ((!in_array($record['id'], $my_functions) && $_SESSION['is_admin'] != 1) && !($_SESSION['user_manager'] == 1 && $record['creator_id'] == $_SESSION['user_id'])) {
-                        $text .= ' disabled="disabled"';
-                    }*/
                     $text .= '>&nbsp;'.$record['title'].'<br />';
                 }
             }
             // return data
-            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             echo $return_values;
             break;
         /**
@@ -566,7 +562,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'fonction_id' => $_POST['list']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -618,7 +614,7 @@ if (!empty($_POST['type'])) {
                 }
             }
             // return data
-            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             echo $return_values;
             break;
 
@@ -636,7 +632,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'isAdministratedByRole' => $_POST['isAdministratedByRole']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['userId']
             );
@@ -657,7 +653,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'groupes_visibles' => $_POST['list']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -703,7 +699,7 @@ if (!empty($_POST['type'])) {
                 if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
                     $text .= '<input type="checkbox" id="cb_change_forgroup-'.$t->id.'"';
                     $ident = "";
-                    for ($y = 1;$y < $t->nlevel;$y++) {
+                    for ($y = 1; $y < $t->nlevel; $y++) {
                         $ident .= "&nbsp;&nbsp;";
                     }
                     if (in_array($t->id, $user)) {
@@ -714,7 +710,7 @@ if (!empty($_POST['type'])) {
                 }
             }
             // return data
-            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             echo $return_values;
             break;
 
@@ -727,7 +723,7 @@ if (!empty($_POST['type'])) {
                 prefix_table("users"),
                 array(
                     'groupes_interdits' => $_POST['list']
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -762,7 +758,7 @@ if (!empty($_POST['type'])) {
                 array(
                     'disabled' => 0,
                     'no_bad_attempts' => 0
-                   ),
+                    ),
                 "id = %i",
                 $_POST['id']
             );
@@ -864,7 +860,7 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i
                     ORDER BY date DESC
-                    LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)) .", ". mysqli_real_escape_string($link, filter_var($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
+                    LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
                     "user_mngt",
                     filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
@@ -873,7 +869,7 @@ if (!empty($_POST['type'])) {
             if (isset($counter) && $counter != 0) {
                 $nb_pages = ceil($counter / $_POST['nb_items_by_page']);
                 for ($i = 1; $i <= $nb_pages; $i++) {
-                    $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$_POST['scope'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i:'\'>'.$i).'</span></td>';
+                    $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$_POST['scope'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
                 }
             }
             $pages .= '</tr></table>';
@@ -942,17 +938,6 @@ if (!empty($_POST['type'])) {
                 );
                 // Get through each subfolder
                 foreach ($tree->getDescendants($admin_folder['id'], true) as $folder) {
-                    // Create folder if necessary
-                    if ($folder->title != $_SESSION['user_id']) {
-                        // update folder
-                        /*DB::update(
-                            "nested_tree",
-                            array(
-                                'parent_id' => $user_folder['id']
-                           ),
-                            "id='".$folder->id."'"
-                        );*/
-                    }
                     // Get each Items in PF
                     $rows = DB::query(
                         "SELECT i.pw, i.label, l.id_user
@@ -970,7 +955,7 @@ if (!empty($_POST['type'])) {
                             prefix_table("log_items"),
                             array(
                                 'id_user' => $user_id
-                               ),
+                                ),
                             "id_item = %i AND id_user $ %i AND action = %s",
                             $record['id'],
                             $user_id,
@@ -985,8 +970,8 @@ if (!empty($_POST['type'])) {
             break;
 
         /**
-        * delete the timestamp value for specified user => disconnect
-        */
+         * delete the timestamp value for specified user => disconnect
+         */
         case "disconnect_user":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
@@ -1000,15 +985,15 @@ if (!empty($_POST['type'])) {
                     'timestamp' => "",
                     'key_tempo' => "",
                     'session_end' => ""
-                   ),
+                    ),
                 "id = %i",
                 intval($_POST['user_id'])
             );
             break;
 
         /**
-        * delete the timestamp value for all users
-        */
+         * delete the timestamp value for all users
+         */
         case "disconnect_all_users":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
@@ -1029,7 +1014,7 @@ if (!empty($_POST['type'])) {
                         'timestamp' => "",
                         'key_tempo' => "",
                         'session_end' => ""
-                       ),
+                        ),
                     "id = %i",
                     intval($record['id'])
                 );
@@ -1072,7 +1057,7 @@ if (!empty($_POST['type'])) {
 
             $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
             foreach ($rows as $record) {
-                if ($_SESSION['is_admin'] == 1  || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     if (in_array($record['id'], $users_functions)) {
                         $tmp = ' selected="selected"';
 
@@ -1136,7 +1121,7 @@ if (!empty($_POST['type'])) {
                 if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
                     $tmp = "";
                     $ident = "";
-                    for ($y = 1;$y < $t->nlevel;$y++) {
+                    for ($y = 1; $y < $t->nlevel; $y++) {
                         $ident .= "&nbsp;&nbsp;";
                     }
                     if (in_array($t->id, $userForbidFolders)) {
@@ -1201,11 +1186,11 @@ if (!empty($_POST['type'])) {
             $arrData['function'] = $functionsList;
             $arrData['managedby'] = $managedBy;
             $arrData['foldersForbid'] = $forbiddenFolders;
-            $arrData['foldersAllow'] = $allowedFolders;//print_r($arrMngBy);
-            $arrData['share_function'] = json_encode($arrFunction, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-            $arrData['share_managedby'] = json_encode($arrMngBy, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-            $arrData['share_forbidden'] = json_encode($arrFldForbidden, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
-            $arrData['share_allowed'] = json_encode($arrFldAllowed, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $arrData['foldersAllow'] = $allowedFolders; //print_r($arrMngBy);
+            $arrData['share_function'] = json_encode($arrFunction, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+            $arrData['share_managedby'] = json_encode($arrMngBy, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+            $arrData['share_forbidden'] = json_encode($arrFldForbidden, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+            $arrData['share_allowed'] = json_encode($arrFldAllowed, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             $arrData['gestionnaire'] = $rowUser['gestionnaire'];
             $arrData['read_only'] = $rowUser['read_only'];
             $arrData['can_create_root_folder'] = $rowUser['can_create_root_folder'];
@@ -1213,7 +1198,7 @@ if (!empty($_POST['type'])) {
             $arrData['can_manage_all_users'] = $rowUser['can_manage_all_users'];
             $arrData['admin'] = $rowUser['admin'];
 
-            $return_values = json_encode($arrData, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            $return_values = json_encode($arrData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             echo $return_values;
 
             break;
@@ -1313,7 +1298,7 @@ if (!empty($_POST['type'])) {
                         'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
                         'groupes_visibles' => empty($dataReceived['allowFld']) ? '0' : rtrim($dataReceived['allowFld'], ";"),
                         'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ";"),
-                       ),
+                        ),
                     "id = %i",
                     $_POST['id']
                 );
@@ -1334,20 +1319,6 @@ if (!empty($_POST['type'])) {
                     // update LOG
                     logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
                 }
-
-    /*
-                DB::update(
-                    prefix_table("users"),
-                    array(
-                        'disabled' => 0,
-                        'no_bad_attempts' => 0
-                       ),
-                    "id = %i",
-                    $_POST['id']
-                );
-                // update LOG
-        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
-                */
             }
 
             echo '[ { "error" : "no" } ]';
@@ -1443,7 +1414,7 @@ if (!empty($_POST['type'])) {
             foreach ($rows as $record) {
                 $bFound = false;
                 $x = 0;
-                foreach($arrFolders as $fld) {
+                foreach ($arrFolders as $fld) {
                     if ($fld['id'] === $record['folder_id']) {
                         // get the level of access on the folder
                         $arrFolders[$x]['type'] = evaluate_folder_acces_level($record['type'], $arrFolders[$x]['type']);
@@ -1453,13 +1424,13 @@ if (!empty($_POST['type'])) {
                     $x++;
                 }
                 if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
-                    array_push($arrFolders, array("id" => $record['folder_id'] , "type" => $record['type']));
+                    array_push($arrFolders, array("id" => $record['folder_id'], "type" => $record['type']));
                 }
             }
 
             $tree_desc = $tree->getDescendants();
             foreach ($tree_desc as $t) {
-                foreach($arrFolders as $fld) {
+                foreach ($arrFolders as $fld) {
                     if ($fld['id'] === $t->id) {
                         // get folder name
                         $row = DB::queryFirstRow(
@@ -1639,36 +1610,11 @@ if (!empty($_POST['type'])) {
                         'personal_folder' => $user_other_rights[3],
                         'can_manage_all_users' => $user_other_rights[4],
                         'admin' => $user_other_rights[5],
-                       ),
+                        ),
                     "id = %i",
                     $dest_user_id
                 );
             }
-
-/*
-            $list_users_from = $list_users_to = '';
-
-            $rows = DB::query(
-                "SELECT id, login, name, lastname, gestionnaire, read_only, can_manage_all_users
-                FROM ".prefix_table("users")."
-                WHERE admin = %i",
-                "0"
-            );
-            foreach ($rows as $record) {
-                $list_users_from .= '<option id="share_from-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
-                $list_users_to .= '<option id="share_to-'.$record['id'].'">'.$record['name'].' '.$record['lastname'].' ['.$record['login'].']</option>';
-            }
-
-            $return_values = prepareExchangedData(
-                array(
-                    'users_list_from' => $list_users_from,
-                    'users_list_to' => $list_users_to,
-                    'error' => ''
-                ),
-                "encode"
-            );
-            echo $return_values;
-*/
             break;
     }
 }
@@ -1676,14 +1622,14 @@ if (!empty($_POST['type'])) {
 elseif (!empty($_POST['newValue'])) {
     $value = explode('_', $_POST['id']);
     if ($value[0] === "userlanguage") {
-        $value[0]  = "user_language";
+        $value[0] = "user_language";
         $_POST['newValue'] = strtolower($_POST['newValue']);
     }
     DB::update(
         prefix_table("users"),
         array(
             $value[0] => $_POST['newValue']
-           ),
+            ),
         "id = %i",
         $value[1]
     );
@@ -1720,7 +1666,7 @@ elseif (isset($_POST['newadmin'])) {
         prefix_table("users"),
         array(
             'admin' => $_POST['newadmin']
-           ),
+            ),
         "id = %i",
         $id[1]
     );
