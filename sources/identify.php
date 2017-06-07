@@ -27,7 +27,8 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // init
-$dbgDuo = $dbgLdap = "";
+$dbgDuo = "";
+$dbgLdap = "";
 $ldap_suffix = "";
 $result = "";
 $adldap = "";
@@ -55,7 +56,7 @@ if ($_POST['type'] === "identify_duo_user") {
     }
 
     // load csrfprotector
-    $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+    $csrfp_config = require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
@@ -65,7 +66,7 @@ if ($_POST['type'] === "identify_duo_user") {
 //-- AUTHENTICATION WITH AGSES
 //--------
 
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';

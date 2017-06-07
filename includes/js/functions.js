@@ -103,7 +103,13 @@ function countdown()
         $('#countdown').html(DayTill); //Make the particular form chart become "Daytill"
     }
 
-    var counter = setTimeout("countdown()", 1000); //Create the timer "counter" that will automatic restart function countdown() again every second.
+    //Create the timer "counter" that will automatic restart function countdown() again every second.
+    setTimeout(
+        function() {
+            countdown();
+        },
+        1000
+    );
 }
 
 /**
@@ -265,17 +271,15 @@ function prepareExchangedData(data, type, key)
             try {
                 return $.parseJSON(data);
             }
-                catch (e) {
-                console.log("Error: "+e);
-                jsonErrorHdl(e);
+            catch (e) {
+                return "Error: " + jsonErrorHdl(e);
             };
         } else {
             try {
                 return $.parseJSON(aes_decrypt(data, key));
             }
-                catch (e) {
-                console.log("Error: "+e);
-                jsonErrorHdl(e);
+            catch (e) {
+                return "Error: " + jsonErrorHdl(e);
             };
         }
     } else if (type == "encode") {
@@ -284,6 +288,8 @@ function prepareExchangedData(data, type, key)
         } else {
             return aes_encrypt(data, key);
         }
+    } else {
+        return false;
     }
 }
 
