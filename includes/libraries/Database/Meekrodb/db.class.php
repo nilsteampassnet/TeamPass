@@ -726,14 +726,16 @@ class MeekroDB {
         $db_error = $db->error;
         $db_errno = $db->errno;
 
-        $db->query(
-            "INSERT INTO ".$GLOBALS['pre']."log_system SET
-          date=".time().",
-          qui=".$_SESSION['user_id'].",
-          label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".addslashes(filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING))."',
-          type='error'",
-            MYSQLI_USE_RESULT
-        );
+        if (isset($_SESSION['user_id'])) {
+            $db->query(
+                "INSERT INTO ".$GLOBALS['pre']."log_system SET
+              date=".time().",
+              qui=".$_SESSION['user_id'].",
+              label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".addslashes(filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING))."',
+              type='error'",
+                MYSQLI_USE_RESULT
+            );
+        }
 
         $error_handler = is_callable($this->error_handler) ? $this->error_handler : 'meekrodb_error_handler';
 
