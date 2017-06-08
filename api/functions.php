@@ -48,7 +48,7 @@ function teampass_api_enabled() {
 function teampass_whitelist() {
     teampass_connect();
     $apiip_pool = teampass_get_ips();
-    if (count($apiip_pool) > 0 && array_search(get_ip(), $apiip_pool) == false) {
+    if (count($apiip_pool) > 0 && array_search(get_ip(), $apiip_pool) === false) {
         rest_error('IPWHITELIST');
     }
 }
@@ -918,7 +918,7 @@ function rest_get() {
                         }
 
                         // check if title is numeric
-                        if (is_numeric($params[0]) == true) {
+                        if (is_numeric($params[0]) === true) {
                             rest_error('TITLE_ONLY_WITH_NUMBERS');
                         }
 
@@ -1164,7 +1164,7 @@ function rest_get() {
                         }
 
                         // check if title is numeric
-                        if (is_numeric($params[0]) == true) {
+                        if (is_numeric($params[0]) === true) {
                             rest_error('TITLE_ONLY_WITH_NUMBERS');
                         }
 
@@ -1252,7 +1252,7 @@ function rest_get() {
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
 
-                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $userData['pw']) == true) {
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][4], $userData['pw']) === true) {
                         // define the restriction of "id_tree" of this user
                         //db::debugMode(true);
                         $userDef = DB::queryOneColumn('folder_id',
@@ -1355,7 +1355,7 @@ function rest_get() {
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
 
-                    if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) == true) {
+                    if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
                         // define the restriction of "id_tree" of this user
                         //db::debugMode(true);
                         $userDef = DB::queryOneColumn('folder_id',
@@ -1468,7 +1468,7 @@ function rest_get() {
                     $pwdlib = new PasswordLib\PasswordLib();
 
                     // is user identified?
-                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][5], $userData['pw']) == true) {
+                    if ($pwdlib->verifyPasswordHash($GLOBALS['request'][5], $userData['pw']) === true) {
                         // does the personal folder of this user exists?
                         DB::queryFirstRow(
                             "SELECT `id`
@@ -1606,7 +1606,7 @@ function rest_get() {
                     $tpc_param[5] = base64_decode($tpc_param[5]);
 
                     // is user identified?
-                    if ($pwdlib->verifyPasswordHash(base64_decode($GLOBALS['request'][3]), $userData['pw']) == true) {
+                    if ($pwdlib->verifyPasswordHash(base64_decode($GLOBALS['request'][3]), $userData['pw']) === true) {
                         //
                         if ($tpc_param[4] !== "0") {
                             // it is not a personal folder

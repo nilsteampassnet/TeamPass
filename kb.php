@@ -141,7 +141,7 @@ echo '
                     } else if (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
                         $include_item = true;
                     }
-                    if ($include_item == true) {
+                    if ($include_item === true) {
                         echo '
                         <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
                         array_push($items_id_list, $reccord['id']);

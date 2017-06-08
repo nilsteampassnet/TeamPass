@@ -280,7 +280,7 @@ if (!isset($_GET['type'])) {
             )
             ||
             (
-                $restrictedToRole == true
+                $restrictedToRole === true
             )
         ) {
             $getItemInList = false;
@@ -309,7 +309,7 @@ if (!isset($_GET['type'])) {
         //Finish the line
         $sOutputItem .= '], ';
 
-        if ($getItemInList == true) {
+        if ($getItemInList === true) {
             $sOutputConst .= $sOutputItem;
         }
     }
@@ -444,7 +444,7 @@ if (!isset($_GET['type'])) {
                 $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
                 // reinit in case of not personal group
-                if ($init_personal_folder == false) {
+                if ($init_personal_folder === false) {
                     $findPfGroup = "";
                     $init_personal_folder = true;
                 }
@@ -459,7 +459,7 @@ if (!isset($_GET['type'])) {
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
             // reinit in case of not personal group
-            if ($init_personal_folder == false) {
+            if ($init_personal_folder === false) {
                 $findPfGroup = "";
                 $init_personal_folder = true;
             }

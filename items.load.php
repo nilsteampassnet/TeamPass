@@ -167,7 +167,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
 
     // prevent launch of similar query in case of doubleclick
-    if (requestRunning == true) {
+    if (requestRunning === true) {
         return false;
     }
     requestRunning = true;
@@ -832,7 +832,7 @@ function EditerItem()
             var myselect = document.getElementById('edit_annonce_liste_destinataires');
             var diffusion = "";
             for (var loop=0; loop < myselect.options.length; loop++) {
-                if (myselect.options[loop].selected == true) diffusion = diffusion + myselect.options[loop].value + ";";
+                if (myselect.options[loop].selected === true) diffusion = diffusion + myselect.options[loop].value + ";";
             }
             if (diffusion == ";") {
                 diffusion = "";
@@ -1126,7 +1126,7 @@ function AddNewFolder()
 
 function SupprimerFolder()
 {
-    if ($("#delete_rep_groupe_validate").is(':checked') == false) {
+    if ($("#delete_rep_groupe_validate").is(':checked') === false) {
         $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['please_confirm']); ?>").show(1).delay(2000).fadeOut(1000);
     } else if ($("#delete_rep_groupe").val() === "0") {
         $("#del_rep_show_error").html("<?php echo '<span class=\"fa fa-warning fa-lg\"></span>&nbsp;<\span>'.addslashes($LANG['error_group']); ?>").show(1).delay(2000).fadeOut(1000);
@@ -1529,7 +1529,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         }
 
                         //Manage double click
-                        if (open_edit == true && (data.restricted == "1" || data.user_can_modify == "1")) {
+                        if (open_edit === true && (data.restricted == "1" || data.user_can_modify == "1")) {
                             open_edit_item_div(
                             <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
     echo 1;
@@ -3194,7 +3194,7 @@ $(function() {
         browse_button : "item_attach_pickfiles",
         container : "item_upload",
         max_file_size : "<?php
-if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") == false) {
+if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
     echo $_SESSION['settings']['upload_maxfilesize']."mb";
 } else {
     echo $_SESSION['settings']['upload_maxfilesize'];
@@ -3303,7 +3303,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         browse_button : "item_edit_attach_pickfiles",
         container : "item_edit_upload",
         max_file_size : "<?php
-if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") == false) {
+if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
     echo $_SESSION['settings']['upload_maxfilesize']."mb";
 } else {
     echo $_SESSION['settings']['upload_maxfilesize'];

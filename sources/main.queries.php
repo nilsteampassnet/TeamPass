@@ -513,7 +513,7 @@ switch ($_POST['type']) {
                     }
                 }
 
-                if ($displayThisNode == true) {
+                if ($displayThisNode === true) {
                     if ($f->title == $_SESSION['user_id'] && $f->nlevel == 1) {
                         $f->title = $_SESSION['login'];
                     }

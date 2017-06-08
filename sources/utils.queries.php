@@ -427,7 +427,7 @@ switch ($_POST['type']) {
             }
         }
 
-        if ($err == false) {
+        if ($err === false) {
             // store new password
             DB::update(
                 prefix_table("items"),

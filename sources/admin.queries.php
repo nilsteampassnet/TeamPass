@@ -1259,7 +1259,7 @@ switch ($_POST['type']) {
                     // should we store?
                     $storePrefix = true;
                 }
-                if ($storePrefix == true) {
+                if ($storePrefix === true) {
                     // store key prefix
                     DB::insert(
                         prefix_table("keys"),
@@ -1296,7 +1296,7 @@ switch ($_POST['type']) {
                 while (false !== ($entry = readdir($handle))) {
                     $entry = basename($entry);
                     if ($entry != "." && $entry != ".." && $entry != ".htaccess" && $entry != ".gitignore") {
-                        if (strpos($entry, ".") == false) {
+                        if (strpos($entry, ".") === false) {
                             // check if user query is coherant
                             $addfile = 0;
                             if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$entry)) {
@@ -1367,7 +1367,7 @@ switch ($_POST['type']) {
                         }
                         fclose($fp);
 
-                        if ($skipFile == true) {
+                        if ($skipFile === true) {
                             // make a copy of file
                             $backup_filename = $file.".bck-before-change.".time();
                             if (!copy(
@@ -2022,7 +2022,7 @@ switch ($_POST['type']) {
         $debug_ldap = $ldap_suffix = "";
 
         //Multiple Domain Names
-        if (strpos(html_entity_decode($dataReceived[0]['username']), '\\') == true) {
+        if (strpos(html_entity_decode($dataReceived[0]['username']), '\\') === true) {
             $ldap_suffix = "@".substr(html_entity_decode($dataReceived[0]['username']), 0, strpos(html_entity_decode($dataReceived[0]['username']), '\\'));
             $dataReceived[0]['username'] = substr(html_entity_decode($dataReceived[0]['username']), strpos(html_entity_decode($dataReceived[0]['username']), '\\') + 1);
         }

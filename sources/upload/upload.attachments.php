@@ -362,7 +362,7 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
         )
     );
     // Log upload into databse only if "item edition"
-    if (isset($_POST['edit_item']) && $_POST['edit_item'] == true) {
+    if (isset($_POST['edit_item']) && $_POST['edit_item'] === true) {
         DB::insert(
             $pre.'log_items',
             array(

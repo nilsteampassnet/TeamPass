@@ -255,7 +255,7 @@ function bCrypt($password, $cost)
 
 function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "public")
 {
-    if (DEFUSE_ENCRYPTION == true) {
+    if (DEFUSE_ENCRYPTION === true) {
         if ($scope === "perso") {
             return defuse_crypto(
                 $message,
@@ -1198,7 +1198,7 @@ function isDate($date)
 
 function isUTF8($string)
 {
-    if (is_array($string) == true) {
+    if (is_array($string) === true) {
         $string = $string['string'];
     }
     return preg_match(
@@ -1541,7 +1541,7 @@ function handleConfigFile($action, $field = null, $value = null)
             }
             $x++;
         }
-        if ($bFound == false) {
+        if ($bFound === false) {
             $data[($x - 1)] = "    '".$field."' => '".$value."',\n";
         }
     } else {
@@ -1753,7 +1753,7 @@ function fileDelete($file) {
 */
 function getFileExtension($f)
 {
-    if (strpos($f, '.') == false) {
+    if (strpos($f, '.') === false) {
         return $f;
     }
 

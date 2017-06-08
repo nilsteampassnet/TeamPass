@@ -82,7 +82,7 @@ foreach ($folders as $folder) {
             }
         }
 
-        if ($displayThisNode == true) {
+        if ($displayThisNode === true) {
             $ident = "";
             for ($x = 1; $x < $folder->nlevel; $x++) {
                 $ident .= '<i class="fa fa-angle-right"></i>&nbsp;';

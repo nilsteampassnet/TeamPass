@@ -135,7 +135,7 @@ foreach ($rows as $record) {
     //Finish the line
     $sOutput_item .= '], ';
 
-    if ($get_item_in_list == true) {
+    if ($get_item_in_list === true) {
         $sOutput .= $sOutput_item;
     }
 }
