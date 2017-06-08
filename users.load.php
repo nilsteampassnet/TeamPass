@@ -883,7 +883,7 @@ $(function() {
 */
 function confirmDeletion()
 {
-    if ($("#account_delete").prop("checked") === true) {
+    if ($("#account_delete").prop("checked") == true) {
         if ($("#confirm_deletion").val() == "") {
             $("#account_delete").prop("checked", false);
             $("#confirm_deletion").val("1");

@@ -210,7 +210,7 @@ foreach ($rows as $record) {
     }
 
     // Display Grid
-    if ($showUserFolders === true) {
+    if ($showUserFolders == true) {
         $sOutput .= "[";
 
         //col1

@@ -255,7 +255,7 @@ function bCrypt($password, $cost)
 
 function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "public")
 {
-    if (DEFUSE_ENCRYPTION === TRUE) {
+    if (DEFUSE_ENCRYPTION == true) {
         if ($scope === "perso") {
             return defuse_crypto(
                 $message,
@@ -1198,7 +1198,7 @@ function isDate($date)
 
 function isUTF8($string)
 {
-    if (is_array($string) === true) {
+    if (is_array($string) == true) {
         $string = $string['string'];
     }
     return preg_match(
@@ -1541,7 +1541,7 @@ function handleConfigFile($action, $field = null, $value = null)
             }
             $x++;
         }
-        if ($bFound === false) {
+        if ($bFound == false) {
             $data[($x - 1)] = "    '".$field."' => '".$value."',\n";
         }
     } else {
@@ -1645,7 +1645,7 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && $image_status === "clear") {
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && ($image_status === "clear" || $image_status === "0")) {
         // file needs to be encrypted
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
             // make a copy of file
@@ -1671,9 +1671,8 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
 
             // read file and create new one
-            while (($line = fgets($fp)) !== false) {
-                fputs($out, $line);
-            }
+            stream_copy_to_stream($fp, $out);
+
             fclose($fp);
             fclose($out);
 
@@ -1713,9 +1712,8 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
             stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
 
             // read file and create new one
-            while (($line = fgets($fp)) !== false) {
-                fputs($out, $line);
-            }
+            stream_copy_to_stream($fp, $out);
+
             fclose($fp);
             fclose($out);
 
@@ -1755,7 +1753,7 @@ function fileDelete($file) {
 */
 function getFileExtension($f)
 {
-    if (strpos($f, '.') === false) {
+    if (strpos($f, '.') == false) {
         return $f;
     }
 

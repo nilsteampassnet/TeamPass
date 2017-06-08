@@ -298,7 +298,7 @@ if (strpos($contentType, "multipart") !== false) {
             }
             fclose($in);
             fclose($out);
-            
+
             fileDelete($_FILES['file']['tmp_name']);
         } else {
             die('{"jsonrpc" : "2.0", "error" : {"code": 102, "message": "Failed to open output stream."}, "id" : "id"}');
@@ -362,7 +362,7 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
         )
     );
     // Log upload into databse only if "item edition"
-    if (isset($_POST['edit_item']) && $_POST['edit_item'] === true) {
+    if (isset($_POST['edit_item']) && $_POST['edit_item'] == true) {
         DB::insert(
             $pre.'log_items',
             array(

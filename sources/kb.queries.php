@@ -95,7 +95,7 @@ if (!empty($_POST['type'])) {
             } else {
                 $manage_kb = true;
             }
-            if ($manage_kb === true) {
+            if ($manage_kb == true) {
                 //Add category if new
                 DB::query("SELECT * FROM ".prefix_table("kb_categories")." WHERE category = %s", $category);
                 $counter = DB::count();

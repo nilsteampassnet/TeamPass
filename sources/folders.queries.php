@@ -166,7 +166,7 @@ if (isset($_POST['newtitle'])) {
         // CASE where DELETING a group
         case "delete_folder":
             // Check KEY and rights
-            if ($_POST['key'] !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] !== $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -211,7 +211,7 @@ if (isset($_POST['newtitle'])) {
             foreach ($folders as $folder) {
                 if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
                     //Store the deleted folder (recycled bin)
-                    if ($pf === false) {
+                    if ($pf == false) {
                         DB::insert(
                             prefix_table("misc"),
                             array(
@@ -292,7 +292,7 @@ if (isset($_POST['newtitle'])) {
         // CASE where DELETING multiple groups
         case "delete_multiple_folders":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -378,7 +378,7 @@ if (isset($_POST['newtitle'])) {
         //CASE where ADDING a new group
         case "add_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -401,7 +401,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             // check if title is numeric
-            if (is_numeric($title) === true) {
+            if (is_numeric($title) == true) {
                 echo '[ { "error" : "error_title_only_with_numbers"} ]';
                 break;
             }
@@ -417,7 +417,7 @@ if (isset($_POST['newtitle'])) {
                 }
             }
 
-            if ($createNewFolder === true) {
+            if ($createNewFolder == true) {
                 //check if parent folder is personal
                 $data = DB::queryfirstrow(
                     "SELECT personal_folder, bloquer_creation, bloquer_modification
@@ -592,7 +592,7 @@ if (isset($_POST['newtitle'])) {
         //CASE where UPDATING a new group
         case "update_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -614,7 +614,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             // check if title is numeric
-            if (is_numeric($title) === true) {
+            if (is_numeric($title) == true) {
                 echo '[ { "error" : "error_title_only_with_numbers"} ]';
                 break;
             }
@@ -813,7 +813,7 @@ if (isset($_POST['newtitle'])) {
         // CASE where selecting/deselecting sub-folders
         case "select_sub_folders":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -844,7 +844,7 @@ if (isset($_POST['newtitle'])) {
 
         case "get_list_of_folders":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -884,7 +884,7 @@ if (isset($_POST['newtitle'])) {
 
         case "copy_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] == true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }

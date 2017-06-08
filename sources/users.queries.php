@@ -1423,7 +1423,7 @@ if (!empty($_POST['type'])) {
                     }
                     $x++;
                 }
-                if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
+                if ($bFound == false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
                     array_push($arrFolders, array("id" => $record['folder_id'], "type" => $record['type']));
                 }
             }

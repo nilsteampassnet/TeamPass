@@ -226,7 +226,7 @@ if (!isset($_GET['type'])) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-            
+
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
                     "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
@@ -280,7 +280,7 @@ if (!isset($_GET['type'])) {
             )
             ||
             (
-                $restrictedToRole === true
+                $restrictedToRole == true
             )
         ) {
             $getItemInList = false;
@@ -309,7 +309,7 @@ if (!isset($_GET['type'])) {
         //Finish the line
         $sOutputItem .= '], ';
 
-        if ($getItemInList === true) {
+        if ($getItemInList == true) {
             $sOutputConst .= $sOutputItem;
         }
     }
@@ -444,7 +444,7 @@ if (!isset($_GET['type'])) {
                 $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
                 // reinit in case of not personal group
-                if ($init_personal_folder === false) {
+                if ($init_personal_folder == false) {
                     $findPfGroup = "";
                     $init_personal_folder = true;
                 }
@@ -459,14 +459,14 @@ if (!isset($_GET['type'])) {
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
             // reinit in case of not personal group
-            if ($init_personal_folder === false) {
+            if ($init_personal_folder == false) {
                 $findPfGroup = "";
                 $init_personal_folder = true;
             }
         }
 
         // prepare new line
-        $sOutput .= '<li class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search">'.
+        $sOutput .= '<li class="item trunc_line" id="'.$record['id'].'"><a id="fileclass'.$record['id'].'" class="file_search">'.
             '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
             '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
