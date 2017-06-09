@@ -678,8 +678,7 @@ if (isset($_POST['type'])) {
                     if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] === "1") {
                         // check if elem exists in Table. If not add it or update it.
                         DB::query("SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id = %i", $dataReceived['id']);
-                        $counter = DB::count();
-                        if ($counter === "0") {
+                        if (DB::count() === 0) {
                             // No automatic deletion for this item
                             if (!empty($dataReceived['to_be_deleted']) || ($dataReceived['to_be_deleted'] > 0 && is_numeric($dataReceived['to_be_deleted']))) {
                                 // Automatic deletion to be added
@@ -716,6 +715,7 @@ if (isset($_POST['type'])) {
                             logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_automatic_del : '.$dataReceived['to_be_deleted']);
                         }
                     }
+
                     // get readable list of restriction
                     $listOfRestricted = $oldRestrictionList = "";
                     if (!empty($dataReceived['restricted_to']) && $_SESSION['settings']['restricted_to'] === "1") {
@@ -1694,7 +1694,7 @@ if (isset($_POST['type'])) {
 
                 // prepare text to display
                 if (strlen($record['name']) > 60 && strrpos($record['name'], ".") >= 56) {
-                    $filename = substr($record['name'], 0, 50)."(truncated)".substr($record['name'], strrpos($record['name'], "."));
+                    $filename = substr($record['name'], 0, 50)."(...)".substr($record['name'], strrpos($record['name'], "."));
                 } else {
                     $filename = $record['name'];
                 }
@@ -1706,7 +1706,7 @@ if (isset($_POST['type'])) {
                     $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
                 }
                 // Prepare list of files for edit dialogbox
-                $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$record['name']."</span><br />";
+                $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
             }
             // display lists
             $filesEdit = str_replace('"', '&quot;', $filesEdit);
@@ -2202,7 +2202,8 @@ if (isset($_POST['type'])) {
                         // list of restricted users
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         $itemPw = $itemLogin = "";
-                        $displayItem = $need_sk = 0;
+                        $displayItem = false;
+                        $need_sk = false;
                         $canMove = false;
                         $item_is_restricted_to_role = false;
                         // TODO: Element is restricted to a group. Check if element can be seen by user
@@ -2259,7 +2260,8 @@ if (isset($_POST['type'])) {
                             $findPfGroup = 0;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
-                            $displayItem = $need_sk = 0;
+                            $displayItem = false;
+                            $need_sk = false;
                             $canMove = false;
                         }
                         // Case where item is in own personal folder
@@ -2271,7 +2273,8 @@ if (isset($_POST['type'])) {
                             $findPfGroup = 1;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
-                            $displayItem = $need_sk = 1;
+                            $displayItem = true;
+                            $need_sk = true;
                             $canMove = true;
                         }
                         // CAse where item is restricted to a group of users included user
@@ -2286,7 +2289,7 @@ if (isset($_POST['type'])) {
                             $findPfGroup = 0;
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
-                            $displayItem = 1;
+                            $displayItem = true;
                             $canMove = true;
                         }
                         // CAse where item is restricted to a group of users not including user
@@ -2315,7 +2318,8 @@ if (isset($_POST['type'])) {
                                 $findPfGroup = 0;
                                 $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\')';
                                 $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
-                                $displayItem = $need_sk = 0;
+                                $displayItem = false;
+                                $need_sk = true;
                                 $canMove = false;
                             } else {
                                 $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
@@ -2328,14 +2332,14 @@ if (isset($_POST['type'])) {
                                 }
 
                                 if (!empty($record['restricted_to']) && in_array($_SESSION['user_id'], $restricted_users_array)) {
-                                    $displayItem = 1;
+                                    $displayItem = true;
                                 }
                             }
                         } else {
                             $perso = '<i class="fa fa-tag mi-green fa-sm"></i>&nbsp';
                             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
                             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
-                            $displayItem = 1;
+                            $displayItem = true;
                             // reinit in case of not personal group
                             if ($init_personal_folder === false) {
                                 $findPfGroup = "";
@@ -3355,19 +3359,21 @@ if (isset($_POST['type'])) {
                 fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension);
 
                 // Open the file
-                $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
-                $fp_new = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension, 'wb');
+                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
+                    $fp_new = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension, 'wb');
 
-                // Add the Mcrypt stream filter
-                stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-                // copy stream
-                stream_copy_to_stream($fp, $fp_new);
-                // close files
-                fclose($fp);
-                fclose($fp_new);
-                // prepare variable
-                $file_to_display = $file_to_display."_delete.".$extension;
-                $file_suffix = "_delete.".$extension;
+                    // Add the Mcrypt stream filter
+                    stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+                    // copy stream
+                    stream_copy_to_stream($fp, $fp_new);
+                    // close files
+                    fclose($fp);
+                    fclose($fp_new);
+                    // prepare variable
+                    $file_to_display = $file_to_display."_delete.".$extension;
+                    $file_suffix = "_delete.".$extension;
+                }
             }
 
             // Encrypt data to return

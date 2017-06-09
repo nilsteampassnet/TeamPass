@@ -113,6 +113,16 @@ button{
     width: 670px;
     height: 230px;
     margin: 5px;
+}
+
+#handle {
+    width: 100px;
+    height: 10px;
+    background:grey;
+    margin-left:45%;
+}
+
+#item_details_scroll {
     background:white url(../images/canevas/lock_open.png) 100% 100% no-repeat;
 }
 

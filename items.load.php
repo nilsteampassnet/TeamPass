@@ -2346,6 +2346,15 @@ $(function() {
         }
     });
 
+    // manage item div resize
+    $( "#item_details_scroll" ).resizable({handles: {'s': '#handle'}});
+    $("#handle").dblclick(function() {
+        var inner = $("#item_details_scroll").find('table');
+        var current_height = $("#item_details_scroll").height();
+        $("#item_details_scroll").animate({top:'+='+(current_height-inner.height())}, 0);
+        $("#item_details_scroll").height(inner.outerHeight(true));
+    });
+
     $('#toppathwrap').hide();
     if ($(".tr_fields") != undefined) $(".tr_fields").hide();
     //Expend/Collapse jstree
@@ -2390,7 +2399,7 @@ $(function() {
     }
 
     // Autoresize Textareas
-    $(".items_tree, #items_content, #item_details_ok").addClass("ui-corner-all");
+    $(".items_tree, #items_content").addClass("ui-corner-all");
 
     //automatic height
     var window_height = $(window).height();
@@ -3249,6 +3258,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     // Uploader options
     uploader_attachments.bind("UploadProgress", function(up, file) {
         $("#" + file.id + " b").html(file.percent + "%");
+        $("#remove_" + file.id).remove();
     });
     uploader_attachments.bind("Error", function(up, err) {
         $("#item_upload_list").html(
@@ -3289,8 +3299,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_upload_list').append(
-                '<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
+                '<div id="' + file.id + '"><span id="remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#files_number").val(parseInt($("#files_number").val())+1);
         });
@@ -3352,6 +3362,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     // Uploader options
     edit_uploader_attachments.bind("UploadProgress", function(up, file) {
         $("#" + file.id + " b").html(file.percent + "%");
+        $("#edit_remove_" + file.id).remove();
     });
     edit_uploader_attachments.bind("Error", function(up, err) {
         $("#item_edit_upload_list").html(
@@ -3364,6 +3375,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     });
     edit_uploader_attachments.bind("+", function(up, file) {
         $("#" + file.id + " b").html("100%");
+        $("#edit_remove_" + file.id).remove();
     });
 
     // Load edit uploaded click
@@ -3393,8 +3405,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     edit_uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_edit_upload_list').append(
-                '<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
+                '<div id="' + file.id + '"><span id="edit_remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#edit_files_number").val(parseInt($("#edit_files_number").val())+1);
         });

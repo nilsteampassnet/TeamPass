@@ -202,7 +202,8 @@ echo '
             <input type="hidden" id="id_categorie" value="" />
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
-            <div style="height:220px;overflow-y:auto;" id="item_details_scroll">';
+            <div style="height:220px;overflow-y:auto;" id="item_details_scroll">
+                <div id="handle" class="ui-resizable-handle ui-resizable-n"></div>';
 
 echo'
                 <div id="item_details_expired" style="display:none;background-color:white; margin:5px;">
@@ -713,7 +714,7 @@ echo '
             <div style="font-weight:bold;font-size:12px;">
                 <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$LANG['uploaded_files'].'
             </div>
-            <div id="item_edit_list_files" style="margin-left:25px;"></div>
+            <div id="item_edit_list_files" style="margin-left:5px;"></div>
             <div style="margin-top:10px;font-weight:bold;font-size:12px;">
                 <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$LANG['upload_files'].'
             </div>

@@ -144,7 +144,9 @@ $valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-date_default_timezone_set($_POST['timezone']);
+if (isset($_POST['timezone'])) {
+    date_default_timezone_set($_POST['timezone']);
+}
 
 // Check post_max_size
 $POST_MAX_SIZE = ini_get('post_max_size');
@@ -348,7 +350,7 @@ rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
 
 
 // Case ITEM ATTACHMENTS - Store to database
-if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
+if (isset($_POST['edit_item']) && $_POST['type_upload'] === "item_attachments") {
     DB::insert(
         $pre.'files',
         array(
@@ -361,19 +363,18 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] == "item_attachments") {
             'status' => $file_status
         )
     );
-    // Log upload into databse only if "item edition"
-    if (isset($_POST['edit_item']) && $_POST['edit_item'] === true) {
-        DB::insert(
-            $pre.'log_items',
-            array(
-                'id_item' => $_POST['itemId'],
-                'date' => time(),
-                'id_user' => $_SESSION['user_id'],
-                'action' => 'at_modification',
-                'raison' => 'at_add_file : '.addslashes($fileName)
-            )
-        );
-    }
+
+    // Log upload into databse
+    DB::insert(
+        $pre.'log_items',
+        array(
+            'id_item' => $_POST['itemId'],
+            'date' => time(),
+            'id_user' => $_SESSION['user_id'],
+            'action' => 'at_modification',
+            'raison' => 'at_add_file : '.addslashes($fileName)
+        )
+    );
 }
 
 // Return JSON-RPC response
