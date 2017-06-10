@@ -1649,7 +1649,9 @@ function showDetailsStep2(id, param)
             $(".tip").tooltipster({multiple: true});
 
             // refresh
-            refreshListLastSeenItems();
+            if ($("#hid_cat").val() !== "") {
+                refreshListLastSeenItems();
+            }
          }
      );
 };

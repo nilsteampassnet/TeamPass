@@ -342,7 +342,6 @@ function identifyUser($sentData)
     );
     $counter = DB::count();
 
-
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
         && $username != "admin"
     ) {
@@ -772,7 +771,7 @@ function identifyUser($sentData)
         }
 
         // check the given password
-        if (isset($userPasswordVerified) && $userPasswordVerified !== true) {
+        if ($userPasswordVerified !== true) {
             if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
                 $userPasswordVerified = true;
             } else {

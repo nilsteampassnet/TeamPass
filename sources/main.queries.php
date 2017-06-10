@@ -51,6 +51,7 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
 ** Executes expected queries
 */
 function mainQuery() {
+    global $server, $user, $pass, $database, $port, $encoding, $k, $LANG;
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
