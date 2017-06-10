@@ -742,8 +742,6 @@ function identifyUser($sentData)
 
     if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
         // User exists in the DB
-        //$data = $db->fetchArray($row);
-
         //v2.1.17 -> change encryption for users password
         if (
                 $passwordOldEncryption == $data['pw'] &&
@@ -774,7 +772,7 @@ function identifyUser($sentData)
         }
 
         // check the given password
-        if ($userPasswordVerified !== true) {
+        if (isset($userPasswordVerified) && $userPasswordVerified !== true) {
             if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
                 $userPasswordVerified = true;
             } else {
@@ -945,7 +943,7 @@ function identifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)), //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => isset($psk) ? $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)) : '',
                     'user_ip' =>  get_client_ip_server()
                 ),
                 "id=%i",

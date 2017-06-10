@@ -2495,7 +2495,6 @@ if (isset($_POST['type'])) {
             if (count($rights) > 0) {
                 $returnValues = array_merge($returnValues, $rights);
             }
-            //if ($_POST['start'] === "0") print_r($returnValues);
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
 
@@ -2541,7 +2540,7 @@ if (isset($_POST['type'])) {
 
             if (isset($_POST['item_id']) && !empty($_POST['item_id'])) {
                 // Lock Item (if already locked), go back and warn
-                $dataTmp = DB::queryFirstRow("SELECT timestamp, user_id FROM ".prefix_table("items_edition")." WHERE item_id = %i", $_POST['item_id']); //echo ">".$dataTmp[0];
+                $dataTmp = DB::queryFirstRow("SELECT timestamp, user_id FROM ".prefix_table("items_edition")." WHERE item_id = %i", $_POST['item_id']);
 
                 // If token is taken for this Item and delay is passed then delete it.
                 if (isset($_SESSION['settings']['delay_item_edition']) &&
@@ -2600,18 +2599,16 @@ if (isset($_POST['type'])) {
             if (isset($_POST['context']) && !empty($_POST['context'])) {
                 if ($_POST['context'] === "create_folder" || $_POST['context'] === "edit_folder" || $_POST['context'] === "delete_folder") {
                     if (
-                        $_SESSION['is_admin'] === "1"
-                        || ($_SESSION['user_manager'] === "1")
-                        || (
+                        $_SESSION['is_admin'] !== "1"
+                        && ($_SESSION['user_manager'] !== "1")
+                        && (
                             isset($_SESSION['settings']['enable_user_can_create_folders'])
-                           && $_SESSION['settings']['enable_user_can_create_folders'] === "1"
+                           && $_SESSION['settings']['enable_user_can_create_folders'] !== "1"
                         )
-                        || (
-                            $data_this_folder['personal_folder'] === "1" && $data_this_folder['title'] === $_SESSION['user_id']
+                        && (
+                            $data_this_folder['personal_folder'] !== "1" && $data_this_folder['title'] !== $_SESSION['user_id']
                         )   // take into consideration if this is a personal folder
                     ) {
-                        // allow
-                    } else {
                         $returnValues = array(
                             "error" => "no_folder_creation_possible",
                             "error_msg" => addslashes($LANG['error_not_allowed_to'])

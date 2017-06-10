@@ -1544,12 +1544,10 @@ function handleConfigFile($action, $field = null, $value = null)
         if ($bFound === false) {
             $data[($x - 1)] = "    '".$field."' => '".$value."',\n";
         }
-    } else {
-        // ERROR
     }
 
     // update file
-    file_put_contents($tp_config_file, implode('', $data));
+    file_put_contents($tp_config_file, implode('', isset($data) ? $data : array()));
 
     return true;
 }
@@ -1569,9 +1567,9 @@ function loadSettings()
 {
     /* LOAD CPASSMAN SETTINGS */
     if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
-        $_SESSION['settings']['duplicate_folder'] = 0; //by default, this is false;
-        $_SESSION['settings']['duplicate_item'] = 0; //by default, this is false;
-        $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
+        $_SESSION['settings']['duplicate_folder'] = 0; //by default, this is set to 0;
+        $_SESSION['settings']['duplicate_item'] = 0; //by default, this is set to 0;
+        $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is set to 5;
         $settings = array();
 
         $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
