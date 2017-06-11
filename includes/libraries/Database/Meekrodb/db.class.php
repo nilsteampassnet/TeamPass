@@ -160,6 +160,14 @@ class MeekroDB {
     public $nested_transactions_count = 0;
 
 
+    /**
+     * @param string $host
+     * @param string $user
+     * @param string $password
+     * @param string $dbName
+     * @param string $port
+     * @param string $encoding
+     */
     public function __construct($host = null, $user = null, $password = null, $dbName = null, $port = null, $encoding = null) {
     if ($host === null) {
         $host = DB::$host;
@@ -375,6 +383,9 @@ class MeekroDB {
     return $this->query("%l INTO %b %lb VALUES %?", $which, $table, $keys, $values);
     }
 
+    /**
+     * @param string $table
+     */
     public function insert($table, $data) { return $this->insertOrReplace('INSERT', $table, $data); }
     public function insertIgnore($table, $data) { return $this->insertOrReplace('INSERT', $table, $data, array('ignore' => true)); }
     public function replace($table, $data) { return $this->insertOrReplace('REPLACE', $table, $data); }
