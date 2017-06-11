@@ -29,6 +29,19 @@ button{
     color:#242D35;
 }
 
+.trunc_line {
+    width:100%;
+}
+
+.truncate {
+    width: 80%;
+    display:inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 4px;
+}
+
 .liste_items a.file_search, .liste_items a.fileselected_search {
     padding: 2px 1px 1px 2px;
     display: inline;
@@ -91,7 +104,8 @@ button{
 }
 #items_list{
     float:left;
-    width: 675px;
+    margin-left: -35px;
+    width: 710px;
     overflow:auto ;
 }
 
@@ -99,6 +113,16 @@ button{
     width: 670px;
     height: 230px;
     margin: 5px;
+}
+
+#handle {
+    width: 100px;
+    height: 10px;
+    background:grey;
+    margin-left:45%;
+}
+
+#item_details_scroll {
     background:white url(../images/canevas/lock_open.png) 100% 100% no-repeat;
 }
 

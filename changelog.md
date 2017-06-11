@@ -1,5 +1,7 @@
 2.1.27
 
+ Fix for Custom Fields not displayed as defined by `order` field
+ #1787 email notifications are not sent if there are any admins with empty email address
  #1776 Allow restricting items to users and roles - Wrong Item Owner
  #1775 Can not decrypt a created crypted Backup - Improved encryption with Defuse
  #1774 Announce this Item by email

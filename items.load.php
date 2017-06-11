@@ -204,6 +204,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 id          : groupe_id,
                 restricted  : restricted,
                 start       : start,
+                uniqueLoadData : $("#uniqueLoadData").val(),
                 key         : "<?php echo $_SESSION['key']; ?>",
                 nb_items_to_display_once : $("#nb_items_to_display_once").val()
             },
@@ -225,71 +226,88 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                    $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
                    $("#items_list_loader").hide();
                    return false;
-               }
+                }
 
-                $("#pf_selected").val(data.IsPersonalFolder);
+                // to be done only in 1st list load
+                if (data.list_to_be_continued === "end") {
+                    $("#pf_selected").val(data.IsPersonalFolder);
 
-                // display path of folders
-                if (data.arborescence != undefined) {
-                    var path_maxlength = 420;
-                    if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
-                    if (data.IsPersonalFolder === 0) {
-                        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + data.arborescence);
-                    } else {
-                        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['personal_folder']); ?>&nbsp;:&nbsp;' + data.arborescence);
-                    }
-                    var path_levels = data.arborescence.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
-                    if ($("#items_path_var").width() > path_maxlength) {
-                        $("#path_fontsize").val($("#items_path_var").css('font-size'));
-                        // start reducing size of font
-                        $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
-                        if ($("#items_path_var").width() > path_maxlength && path_levels < 2) {
-                            while ($("#items_path_var").width() > path_maxlength) {
-                                $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
+                    // display path of folders
+                    if (data.arborescence != undefined) {
+                        var path_maxlength = 420;
+                        if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
+                        if (data.IsPersonalFolder === 0) {
+                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + data.arborescence);
+                        } else {
+                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['personal_folder']); ?>&nbsp;:&nbsp;' + data.arborescence);
+                        }
+                        var path_levels = data.arborescence.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
+                        if ($("#items_path_var").width() > path_maxlength) {
+                            $("#path_fontsize").val($("#items_path_var").css('font-size'));
+                            // start reducing size of font
+                            $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size'))-1);
+                            if ($("#items_path_var").width() > path_maxlength && path_levels < 2) {
+                                while ($("#items_path_var").width() > path_maxlength) {
+                                    $("#items_path_var").css('font-size', parseInt($("#items_path_var").css('font-size')) - 1);
+                                }
+                            }
+
+                            if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
+                                // only take first and last
+                                var nb = 1;
+                                var totalPathLength = occupedWidth = 0;
+                                $(".path_element").each(function () {
+                                    totalPathLength += $(this).width();
+                                    if (nb != 1 && nb != (path_levels-1) && nb != path_levels) {
+                                        $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
+                                    } else if (nb == path_levels) {
+                                        // next condition occurs if lasst folder name is too long
+                                        if (totalPathLength > path_maxlength) {
+                                            var lastTxt = $(this).html();
+                                            while ($(this).width() > (path_maxlength - occupedWidth)) {
+                                                lastTxt = lastTxt.slice(0, -1);
+                                                $(this).html(lastTxt);
+                                            }
+                                            $(this).html(lastTxt+"...");
+                                        }
+                                    }
+                                    occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
+                                    nb++;
+                                });
                             }
                         }
-
-                        if ($("#items_path_var").width() > path_maxlength && path_levels >= 2) {
-                            // only take first and last
-                            var nb = 1;
-                            var totalPathLength = occupedWidth = 0;
-                            $(".path_element").each(function () {
-                                totalPathLength += $(this).width();
-                                if (nb != 1 && nb != (path_levels-1) && nb != path_levels) {
-                                    $(this).html("<span class='tip' title='"+$(this).html()+"'>...</span>");
-                                } else if (nb == path_levels) {
-                                    // next condition occurs if lasst folder name is too long
-                                    if (totalPathLength > path_maxlength) {
-                                        var lastTxt = $(this).html();
-                                        while ($(this).width() > (path_maxlength - occupedWidth)) {
-                                            lastTxt = lastTxt.slice(0, -1);
-                                            $(this).html(lastTxt);
-                                        }
-                                        $(this).html(lastTxt+"...");
-                                    }
-                                }
-                                occupedWidth += $(this).width()+15; // 15 pixels corresponds to the small right triangle
-                                nb++;
-                            });
-                        }
+                    } else {
+                        $("#items_path_var").html('');
                     }
+
+                    // store the categories to be displayed
+                    $("#display_categories").val(data.displayCategories);
+
+                    // store type of access on folder
+                    $("#access_level").val(data.access_level);
+
+                    // warn about a required change of personal SK
+                    if ($("#personal_upgrade_needed").val() == "1" && data.recherche_group_pf === 1) {
+                        $("#dialog_upgrade_personal_passwords").dialog("open");
+                    }
+
+                    $("#items_loading_progress").remove();
+
+                    // show correct fodler in Tree
+                    $("#jstree").jstree("deselect_all");
+                    $('#jstree').jstree("select_node", "#li_"+groupe_id);
                 } else {
-                    $("#items_path_var").html('');
+                    $("#uniqueLoadData").val(data.uniqueLoadData);
+                    if ($("#items_loading_progress").length == 0) {
+                        $("#items_list_loader").after('<span id="items_loading_progress">' + Math.round(data.next_start*100/data.counter_full, 0) + '%</span>');
+                    } else {
+                        $("#items_loading_progress").html(Math.round(data.next_start*100/data.counter_full, 0) + '%');
+                    }
                 }
+
 
                 if (data.array_items == "" && data.items_count == "0") {
                     $("#items_list").html('<div style="text-align:center;margin-top:30px;"><b><i class="fa fa-info-circle"></i>&nbsp;<?php echo addslashes($LANG['no_item_to_display']); ?></b></div>');
-                }
-
-                // store the categories to be displayed
-                $("#display_categories").val(data.displayCategories);
-
-                // store type of access on folder
-                $("#access_level").val(data.access_level);
-
-                // warn about a required change of personal SK
-                if ($("#personal_upgrade_needed").val() == "1" && data.recherche_group_pf === 1) {
-                    $("#dialog_upgrade_personal_passwords").dialog("open");
                 }
 
                 if (data.error == "is_pf_but_no_saltkey") {
@@ -314,12 +332,12 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     $("#more_items").remove();
 
-                    if (data.list_to_be_continued == "yes") {
-                        $("#full_items_list").append(data.items_html);
+                    // show items
+                    $("#full_items_list").append(data.items_html);
+                    if (data.list_to_be_continued === "yes") {
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
                     } else {
-                        $("#full_items_list").append(data.items_html);
                         $("#query_next_start").val(data.list_to_be_continued);
 
                         // display Categories if needed
@@ -333,8 +351,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             if ($(".tr_fields") != undefined) $(".tr_fields").hide();
                         }
                     }
-                    //disable buttons
-                    //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item").addClass( "ui-state-disabled").off("click");
 
                     proceed_list_update(stop_listing_current_folder);
                 } else {
@@ -347,12 +363,13 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
-                    if (data.list_to_be_continued == "yes") {
-                        $("#full_items_list").append(data.items_html);
+                    // show items
+                    $("#full_items_list").append(data.items_html);
+
+                    if (data.list_to_be_continued === "yes") {
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
                     } else {
-                        $("#full_items_list").append(data.items_html);
                         $("#query_next_start").val(data.list_to_be_continued);
 
                         // display Categories if needed
@@ -366,24 +383,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             if ($(".tr_fields") != undefined) $(".tr_fields").hide();
                         }
                     }
-/*
-                    //If restriction for role
-                    if (restricted == 1) {
-                        $("#menu_button_add_item").attr('disabled', 'disabled');
-                    } else {
-                        $("#menu_button_add_item").prop('disabled', false);
-                    }
-                    $("#menu_button_copy_item").attr('disabled', 'disabled');
 
-                    //$("#menu_button_copy_item, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item").prop("disabled", false);
-
-                    // if PF folder, then diable menu create folder
-                    if ($('#recherche_group_pf').val() == "1") {
-                        $("#menu_button_add_group").prop("disabled", true);
-                    } else {
-                        $("#menu_button_add_group").prop("disabled", false);
-                    }
-*/
                     //If no data then empty
                     if (data.array_items != null) {
                         $(".item_draggable").draggable({
@@ -429,10 +429,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             }
                         });
                     }
-
-                    // show correct fodler in Tree
-                    $("#jstree").jstree("deselect_all");
-                    $('#jstree').jstree("select_node", "#li_"+groupe_id);
 
                     proceed_list_update(stop_listing_current_folder);
                 }
@@ -1653,7 +1649,9 @@ function showDetailsStep2(id, param)
             $(".tip").tooltipster({multiple: true});
 
             // refresh
-            refreshListLastSeenItems();
+            if ($("#hid_cat").val() !== "") {
+                refreshListLastSeenItems();
+            }
          }
      );
 };
@@ -2350,6 +2348,15 @@ $(function() {
         }
     });
 
+    // manage item div resize
+    $( "#item_details_scroll" ).resizable({handles: {'s': '#handle'}});
+    $("#handle").dblclick(function() {
+        var inner = $("#item_details_scroll").find('table');
+        var current_height = $("#item_details_scroll").height();
+        $("#item_details_scroll").animate({top:'+='+(current_height-inner.height())}, 0);
+        $("#item_details_scroll").height(inner.outerHeight(true));
+    });
+
     $('#toppathwrap').hide();
     if ($(".tr_fields") != undefined) $(".tr_fields").hide();
     //Expend/Collapse jstree
@@ -2394,7 +2401,7 @@ $(function() {
     }
 
     // Autoresize Textareas
-    $(".items_tree, #items_content, #item_details_ok").addClass("ui-corner-all");
+    $(".items_tree, #items_content").addClass("ui-corner-all");
 
     //automatic height
     var window_height = $(window).height();
@@ -3253,6 +3260,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     // Uploader options
     uploader_attachments.bind("UploadProgress", function(up, file) {
         $("#" + file.id + " b").html(file.percent + "%");
+        $("#remove_" + file.id).remove();
     });
     uploader_attachments.bind("Error", function(up, err) {
         $("#item_upload_list").html(
@@ -3293,8 +3301,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_upload_list').append(
-                '<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
+                '<div id="' + file.id + '"><span id="remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#files_number").val(parseInt($("#files_number").val())+1);
         });
@@ -3356,6 +3364,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     // Uploader options
     edit_uploader_attachments.bind("UploadProgress", function(up, file) {
         $("#" + file.id + " b").html(file.percent + "%");
+        $("#edit_remove_" + file.id).remove();
     });
     edit_uploader_attachments.bind("Error", function(up, err) {
         $("#item_edit_upload_list").html(
@@ -3368,6 +3377,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     });
     edit_uploader_attachments.bind("+", function(up, file) {
         $("#" + file.id + " b").html("100%");
+        $("#edit_remove_" + file.id).remove();
     });
 
     // Load edit uploaded click
@@ -3397,8 +3407,8 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     edit_uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_edit_upload_list').append(
-                '<div id="' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>] ' +
-                file.name + ' (' + plupload.formatSize(file.size) + ') <b></b>' +
+                '<div id="' + file.id + '"><span id="edit_remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#edit_files_number").val(parseInt($("#edit_files_number").val())+1);
         });

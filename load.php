@@ -1055,7 +1055,9 @@ $htmlHeaders .= '
         });
 
         // get list of last items
-        refreshListLastSeenItems();
+        if ($("#hid_cat").val() !== "" && $("#hid_cat").val() !== undefined) {
+            refreshListLastSeenItems();
+        }
 
         // prevent usage of symbols in Personal saltkey
         $(".text_without_symbols").bind("keydown", function (event) {

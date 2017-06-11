@@ -53,7 +53,6 @@ $link->set_charset($encoding);
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-$tree->rebuild();
 $folders = $tree->getDescendants();
 
 // define temporary sessions
@@ -276,7 +275,7 @@ function recursiveTree($nodeId)
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             // manage tree counters
-            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1 && in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) {
+            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] === "1" && in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) {
                 DB::query(
                     "SELECT * FROM ".prefix_table("items")."
                     WHERE inactif=%i AND id_tree = %i",
@@ -300,7 +299,6 @@ function recursiveTree($nodeId)
                 $displayThisNode = true;
                 $hide_node = $show_but_block = false;
                 $text = $title = "";
-                break;
             }
         }
 

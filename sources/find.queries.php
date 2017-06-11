@@ -226,7 +226,7 @@ if (!isset($_GET['type'])) {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
-            
+
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
                     "SELECT type FROM ".prefix_table("roles_values")." WHERE role_id = %i AND folder_id = %i",
@@ -466,7 +466,7 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare new line
-        $sOutput .= '<li class="item" id="'.$record['id'].'" style="margin-left:-30px;"><a id="fileclass'.$record['id'].'" class="file_search">'.
+        $sOutput .= '<li class="item trunc_line" id="'.$record['id'].'"><a id="fileclass'.$record['id'].'" class="file_search">'.
             '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
             '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {

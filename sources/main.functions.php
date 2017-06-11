@@ -255,7 +255,7 @@ function bCrypt($password, $cost)
 
 function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "public")
 {
-    if (DEFUSE_ENCRYPTION === TRUE) {
+    if (DEFUSE_ENCRYPTION === true) {
         if ($scope === "perso") {
             return defuse_crypto(
                 $message,
@@ -1544,12 +1544,10 @@ function handleConfigFile($action, $field = null, $value = null)
         if ($bFound === false) {
             $data[($x - 1)] = "    '".$field."' => '".$value."',\n";
         }
-    } else {
-        // ERROR
     }
 
     // update file
-    file_put_contents($tp_config_file, implode('', $data));
+    file_put_contents($tp_config_file, implode('', isset($data) ? $data : array()));
 
     return true;
 }
@@ -1557,6 +1555,9 @@ function handleConfigFile($action, $field = null, $value = null)
 /*
 ** Permits to replace &#92; to permit correct display
 */
+/**
+ * @param string $input
+ */
 function handleBackslash($input)
 {
     return str_replace("&amp;#92;", "&#92;", $input);
@@ -1569,9 +1570,9 @@ function loadSettings()
 {
     /* LOAD CPASSMAN SETTINGS */
     if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
-        $_SESSION['settings']['duplicate_folder'] = 0; //by default, this is false;
-        $_SESSION['settings']['duplicate_item'] = 0; //by default, this is false;
-        $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is 5;
+        $_SESSION['settings']['duplicate_folder'] = 0; //by default, this is set to 0;
+        $_SESSION['settings']['duplicate_item'] = 0; //by default, this is set to 0;
+        $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is set to 5;
         $settings = array();
 
         $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
@@ -1645,7 +1646,7 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && $image_status === "clear") {
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && ($image_status === "clear" || $image_status === "0")) {
         // file needs to be encrypted
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
             // make a copy of file
@@ -1671,9 +1672,8 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
 
             // read file and create new one
-            while (($line = fgets($fp)) !== false) {
-                fputs($out, $line);
-            }
+            stream_copy_to_stream($fp, $out);
+
             fclose($fp);
             fclose($out);
 
@@ -1713,9 +1713,8 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
             stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
 
             // read file and create new one
-            while (($line = fgets($fp)) !== false) {
-                fputs($out, $line);
-            }
+            stream_copy_to_stream($fp, $out);
+
             fclose($fp);
             fclose($out);
 

@@ -23,14 +23,14 @@ $k['admin_no_info'] = false;
 $k['copyright'] = "2009 - ".date('Y');
 $k['allowedTags'] = "<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>";
 
-@define('ERR_NOT_ALLOWED', "1000");
-@define('ERR_NOT_EXIST', "1001");
-@define('ERR_SESS_EXPIRED', "1002");
-@define('ERR_NO_MCRYPT', "1003");
-@define('ERR_VALID_SESSION', "1004");
-@define('OTV_USER_ID', "9999991");
-@define('API_USER_ID', "9999999");
-@define('DEFUSE_ENCRYPTION', true);
+define('ERR_NOT_ALLOWED', "1000");
+define('ERR_NOT_EXIST', "1001");
+define('ERR_SESS_EXPIRED', "1002");
+define('ERR_NO_MCRYPT', "1003");
+define('ERR_VALID_SESSION', "1004");
+define('OTV_USER_ID', "9999991");
+define('API_USER_ID', "9999999");
+define('DEFUSE_ENCRYPTION', true);
 
 // Management Pages
 $mngPages = array(

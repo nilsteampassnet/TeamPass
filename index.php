@@ -387,16 +387,6 @@ if (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) {
         $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
     }
 }
-/*
-// error Salt key
-if (isset($_SESSION['error']['salt']) && $_SESSION['error']['salt'] == 1) {
-    if (empty($errorAdmin)) {
-        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_salt'];
-    } else {
-        $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_salt'];
-    }
-}
-*/
 
 if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
     // error cpassman dir
@@ -741,7 +731,6 @@ echo '
 //Personnal SALTKEY
 if (
     isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
-    //&& (!isset($_SESSION['settings']['psk_authentication']) || $_SESSION['settings']['psk_authentication'] == 0)
 ) {
     echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">

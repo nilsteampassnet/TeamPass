@@ -44,9 +44,9 @@ if (
 
 /* LOAD CPASSMAN SETTINGS */
 if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
-    //by default, this is false;
+    //by default, this is set to 0;
     $_SESSION['settings']['duplicate_folder'] = 0;
-    //by default, this is false;
+    //by default, this is set to 0;
     $_SESSION['settings']['duplicate_item'] = 0;
     //by default, this value is 5;
     $_SESSION['settings']['number_of_used_pw'] = 5;
@@ -367,6 +367,53 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
                 $_SESSION['user_privilege'] = $LANG['user'];
             }
         }
+
+        /*
+        * LOAD CATEGORIES
+        */
+        if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty($_SESSION['item_fields'])) {
+            $_SESSION['item_fields'] = array();
+            $rows = DB::query(
+                "SELECT *
+                FROM ".prefix_table("categories")."
+                WHERE level=%i",
+                "0"
+            );
+            foreach ($rows as $record) {
+                $arrFields = array();
+
+                // get each field
+                $rows2 = DB::query(
+                    "SELECT *
+                    FROM ".prefix_table("categories")."
+                    WHERE parent_id=%i
+                    ORDER BY `order` ASC",
+                    $record['id']
+                );
+                if (DB::count() > 0) {
+                    foreach ($rows2 as $field) {
+                        array_push(
+                            $arrFields,
+                            array(
+                                $field['id'],
+                                addslashes($field['title']),
+                                $field['encrypted_data']
+                            )
+                        );
+                    }
+                }
+
+                // store the categories
+                array_push(
+                    $_SESSION['item_fields'],
+                    array(
+                        $record['id'],
+                        addslashes($record['title']),
+                        $arrFields
+                    )
+                );
+            }
+        }
     }
 }
 
@@ -395,50 +442,6 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
         }
     } else {
         $_SESSION['validite_pw'] = false;
-    }
-}
-
-/*
-* LOAD CATEGORIES
-*/
-if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty($_SESSION['item_fields'])) {
-    $_SESSION['item_fields'] = array();
-    $rows = DB::query("SELECT * FROM ".prefix_table("categories")." WHERE level=%s_level",
-        array(
-            'level' => "0"
-        )
-    );
-    foreach ($rows as $record) {
-        $arrFields = array();
-
-        // get each field
-        $rows = DB::query("SELECT * FROM ".prefix_table("categories")." WHERE parent_id=%i_parent_id",
-            array(
-                'parent_id' => $record['id']
-            )
-        );
-        if (count($rows) > 0) {
-            foreach ($rows as $field) {
-                array_push(
-                    $arrFields,
-                    array(
-                        $field['id'],
-                        addslashes($field['title']),
-                        $field['encrypted_data']
-                    )
-                );
-            }
-        }
-
-        // store the categories
-        array_push(
-            $_SESSION['item_fields'],
-            array(
-                $record['id'],
-                addslashes($record['title']),
-                $arrFields
-            )
-        );
     }
 }
 

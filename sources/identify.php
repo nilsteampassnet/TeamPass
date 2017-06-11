@@ -27,7 +27,8 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpas
 }
 
 // init
-$dbgDuo = $dbgLdap = "";
+$dbgDuo = "";
+$dbgLdap = "";
 $ldap_suffix = "";
 $result = "";
 $adldap = "";
@@ -55,7 +56,7 @@ if ($_POST['type'] === "identify_duo_user") {
     }
 
     // load csrfprotector
-    $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+    $csrfp_config = require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
@@ -65,7 +66,7 @@ if ($_POST['type'] === "identify_duo_user") {
 //-- AUTHENTICATION WITH AGSES
 //--------
 
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -287,6 +288,7 @@ function identifyUser($sentData)
     $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
     $username = htmlspecialchars_decode($dataReceived['login']);
     $logError = "";
+    $userPasswordVerified = false;
 
     if ($debugDuo == 1) {
         fputs(
@@ -340,7 +342,6 @@ function identifyUser($sentData)
         )
     );
     $counter = DB::count();
-
 
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
         && $username != "admin"
@@ -741,8 +742,6 @@ function identifyUser($sentData)
 
     if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
         // User exists in the DB
-        //$data = $db->fetchArray($row);
-
         //v2.1.17 -> change encryption for users password
         if (
                 $passwordOldEncryption == $data['pw'] &&
@@ -944,7 +943,7 @@ function identifyUser($sentData)
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)), //bCrypt(htmlspecialchars_decode($psk), COST)
+                    'psk' => isset($psk) ? $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)) : '',
                     'user_ip' =>  get_client_ip_server()
                 ),
                 "id=%i",
@@ -1009,7 +1008,7 @@ function identifyUser($sentData)
             ) {
                 // get all Admin users
                 $receivers = "";
-                $rows = DB::query("SELECT email FROM ".prefix_table("users")." WHERE admin = %i", 1);
+                $rows = DB::query("SELECT email FROM ".prefix_table("users")." WHERE admin = %i and email != ''", 1);
                 foreach ($rows as $record) {
                     if (empty($receivers)) {
                         $receivers = $record['email'];
