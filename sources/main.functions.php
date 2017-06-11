@@ -1555,6 +1555,9 @@ function handleConfigFile($action, $field = null, $value = null)
 /*
 ** Permits to replace &#92; to permit correct display
 */
+/**
+ * @param string $input
+ */
 function handleBackslash($input)
 {
     return str_replace("&amp;#92;", "&#92;", $input);
