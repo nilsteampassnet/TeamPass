@@ -288,6 +288,7 @@ function identifyUser($sentData)
     $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
     $username = htmlspecialchars_decode($dataReceived['login']);
     $logError = "";
+    $userPasswordVerified = false;
 
     if ($debugDuo == 1) {
         fputs(
