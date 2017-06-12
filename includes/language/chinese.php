@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          chinese.php
@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'nothing_to_do' => 'Nothing to do.',
+    'knowledge_base' => 'Knowledge Base',
+    'category' => 'Category',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
     'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => '发送 Google 身份验证器至用户，通过电子邮件',
     'send_ga_code' => 'Google 身份验证器，为用户',

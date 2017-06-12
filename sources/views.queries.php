@@ -233,7 +233,7 @@ switch ($_POST['type']) {
         }
 
         updateCacheTable("reload", "");
-        
+
         break;
 
     /**
@@ -259,6 +259,12 @@ switch ($_POST['type']) {
                     //delete items & logs
                     $items = DB::query("SELECT id FROM ".prefix_table("items")." WHERE id_tree=%i", $val[0]);
                     foreach ($items as $item) {
+                        // delete attachments
+                        $item_files = DB::query("SELECT id, file FROM ".prefix_table("files")." WHERE id_item=%i", $item['id']);
+                        foreach ($item_files as $file) {
+                            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$file['file']);
+                        }
+
                         //Delete item
                         DB::delete(prefix_table("items"), "id = %i", $item['id']);
                         DB::delete(prefix_table("log_items"), "id_item = %i", $item['id']);
@@ -279,6 +285,11 @@ switch ($_POST['type']) {
             DB::delete(prefix_table("items"), "id=%i", $id);
             //delete from LOG_ITEMS
             DB::delete(prefix_table("log_items"), "id_item=%i", $id);
+            // delete attachments
+            $item_files = DB::query("SELECT file FROM ".prefix_table("files")." WHERE id_item=%i", $id);
+            foreach ($item_files as $file) {
+                fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$file['file']);
+            }
             //delete from FILES
             DB::delete(prefix_table("files"), "id_item=%i", $id);
             //delete from TAGS

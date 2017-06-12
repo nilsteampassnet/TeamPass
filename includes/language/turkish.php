@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          turkish.php
@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'nothing_to_do' => 'Nothing to do.',
+    'knowledge_base' => 'Knowledge Base',
+    'category' => 'Category',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
     'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',

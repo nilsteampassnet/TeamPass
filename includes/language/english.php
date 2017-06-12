@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array(
+    'nothing_to_do' => 'Nothing to do.',
     'knowledge_base' => 'Knowledge Base',
     'category' => 'Category',
     'anyone_can_modify_it' => 'Anyone can modify it',

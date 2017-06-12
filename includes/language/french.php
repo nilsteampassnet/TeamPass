@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'nothing_to_do' => 'Nothing to do.',
+    'knowledge_base' => 'Knowledge Base',
+    'category' => 'Category',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
     'feature_support_canal' => 'Pour du Support et de l\'Aide, merci d\'utiliser ',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',

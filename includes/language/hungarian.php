@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          hungarian.php
@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'nothing_to_do' => 'Nothing to do.',
+    'knowledge_base' => 'Knowledge Base',
+    'category' => 'Category',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
     'user_ga_code' => 'Google Hitelesítő küldése a felhasználónak email-ben.',
     'send_ga_code' => 'Google Hitelesítés a felhasználó számára.',
     'error_no_email' => 'Ennek a felhasználónak nincs email beállítva!',
