@@ -888,7 +888,7 @@ function updateCacheTable($action, $id = "")
                 array(
                     'id' => $record['id'],
                     'label' => $record['label'],
-                    'description' => $record['description'],
+                    'description' => isset($record['description']) ? $record['description'] : "",
                     'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : "0",
                     'tags' => $tags,
                     'id_tree' => $record['id_tree'],
@@ -940,7 +940,7 @@ function updateCacheTable($action, $id = "")
                 'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
-                'restricted_to' => $data['restricted_to'],
+                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : "0",
                 'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],

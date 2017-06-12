@@ -2274,7 +2274,8 @@ function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
         $('#jstree')
         .one("refresh.jstree", function (e, data) {
             data.instance.select_node("#li_"+node_to_select);
-        }).jstree(true).refresh();
+        });
+        //.jstree("select_node", "#li_"+node_to_select);
 
     }
 

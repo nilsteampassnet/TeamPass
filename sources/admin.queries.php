@@ -449,7 +449,7 @@ switch ($_POST['type']) {
 
         //delete file FILES
         while (false !== ($f = readdir($dir))) {
-            if ($f != "." && $f !== "..") {
+            if ($f != "." && $f !== ".." && $f !== ".htaccess") {
                 if ((time() - filectime($dir.$f)) > 604800) {
                     fileDelete($_SESSION['settings']['path_to_files_folder']."/".$f);
                     $nbFilesDeleted++;

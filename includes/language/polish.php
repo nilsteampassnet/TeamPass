@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          polish.php
@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'nothing_to_do' => 'Nothing to do.',
+    'knowledge_base' => 'Knowledge Base',
+    'category' => 'Category',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
     'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Wyślij do użytkownika Google Authenticator za pośrednictwem e-mail ',
     'send_ga_code' => 'Google Authenticator dla użytkownika',
@@ -879,7 +885,7 @@ $LANG = array(
     'error_url_missing' => 'Nie podano adresu URL!',
     'error_ssh_credentials_missing' => 'Poświadczenia SSH są niepoprawne.',
     'error_url_must_be_ssh' => 'URL musi zawierać protokół SSH!',
-    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do 
+    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do
     serwera wykorzystując dane logowania i pole `URL`, < / li > <li > Zmiana hasła użytkownika na serwerze < /il > <li > Zachowanie nowego hasła w Teampass < /il > <li > Zakończenie połączenia SSH < /li > < / ul > <br / > < b > Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze(jeśli nie, określ hasło użytkownika root) przed uruchomieniem.< / b > ',
     'update_server_password' => 'Zaktualizuj hasło serwera',
     'error_personal_sk_expected' => 'Musisz najpierw wprowadzić swój prywatny saltkety!',

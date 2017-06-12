@@ -346,15 +346,21 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             title: "<?php echo $LANG['suggestion_delete_confirm']; ?>",
             buttons: {
                 "<?php echo $LANG['approve']; ?>": function() {
-                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show();
+                    $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show().removeClass("ui-state-default");
 
                     // select fields to update
                     var fields_to_update = "";
-                    if ($("#confirm_label-check").length !== 0) fields_to_update += "label;";
-                    if ($("#confirm_pw-check").length !== 0) fields_to_update += "pw;";
-                    if ($("#confirm_login-check").length !== 0) fields_to_update += "login;";
-                    if ($("#confirm_url-check").length !== 0) fields_to_update += "url;";
-                    if ($("#confirm_email-check").length !== 0) fields_to_update += "email;";
+                    if ($("#label_change").is(":disabled") === false && $("#confirm_label").html() !== undefined) fields_to_update += "label;";
+                    if ($("#pw_change").is(":disabled") === false && $("#confirm_pw").html() !== undefined) fields_to_update += "pw;";
+                    if ($("#login_change").is(":disabled") === false && $("#confirm_login").html() !== undefined) fields_to_update += "login;";
+                    if ($("#url_change").is(":disabled") === false && $("#confirm_url").html() !== undefined) fields_to_update += "url;";
+                    if ($("#email_change").is(":disabled") === false && $("#confirm_email").html() !== undefined) fields_to_update += "email;";
+
+                    // exclude if no change to perform
+                    if (fields_to_update === "") {
+                        $("#suggestion_view_wait").html("<?php echo "<i class='fa fa-info fa-lg'></i>&nbsp;".addslashes($LANG['nothing_to_do'])."..."; ?>").show(1).delay(2000).fadeOut(1000).addClass("ui-state-default");
+                        return false;
+                    }
 
                     $.post(
                         "sources/suggestion.queries.php",
@@ -432,12 +438,18 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                                 data.html
                             );
 
-                            $(".confirm_change").click(function(event){
-                                console.log($(this).attr("id"));
-                                var tmp = $(this).attr("id").split('-');
-                                $("#"+tmp[0]).html('<span class="fa fa-close mi-red fa-lg"></span>');
-                                tmp = tmp[0].split('_');
-                                $("#"+tmp[1]+"_change").val("").remove();
+                            $(document).on('click', ".confirm_change", function(event){
+                                var tmp = $(this).attr("id").split('-'),
+                                    tmp2 = tmp[0].split('_');
+
+                                if ($("#"+tmp2[1]+"_change").is(":disabled") === false) {
+                                    $("#"+tmp[0]).html('<span class="fa fa-close mi-red fa-lg confirm_change tip" id="'+$(this).attr("id")+'" style="cursor:pointer;"></span>');
+                                    $("#"+tmp2[1]+"_change").attr("disabled", true);
+                                } else {
+                                    $("#"+tmp[0]).html('<span class="fa fa-check mi-green fa-lg confirm_change tip" id="'+$(this).attr("id")+'" style="cursor:pointer;"></span>');
+                                    $("#"+tmp2[1]+"_change").attr("disabled", false);
+                                }
+
                             });
                         }
                         $("#add_suggestion_wait").hide();

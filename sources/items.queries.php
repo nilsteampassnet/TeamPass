@@ -1153,6 +1153,14 @@ if (isset($_POST['type'])) {
                 // Add attached itms
                 $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $_POST['item_id']);
                 foreach ($rows as $record) {
+                    // duplicate file
+                    $fileRandomId = md5($record['name'].time());
+                    copy(
+                        $_SESSION['settings']['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'],
+                        $_SESSION['settings']['path_to_upload_folder'].DIRECTORY_SEPARATOR.$fileRandomId
+                    );
+
+                    // store in DB
                     DB::insert(
                         prefix_table('files'),
                         array(
@@ -1161,8 +1169,9 @@ if (isset($_POST['type'])) {
                             'size' => $record['size'],
                             'extension' => $record['extension'],
                             'type' => $record['type'],
-                            'file' => $record['file']
-                            )
+                            'file' => $fileRandomId,
+                            'status' => $record['status']
+                        )
                     );
                 }
 
@@ -1986,7 +1995,7 @@ if (isset($_POST['type'])) {
             }
 
             // to do only on 1st iteration
-            if ($_POST['start'] === "0") {
+            if (intval($start) === 0) {
                 // Prepare tree
                 $arbo = $tree->getPath($_POST['id'], true);
                 foreach ($arbo as $elem) {
@@ -2447,7 +2456,7 @@ if (isset($_POST['type'])) {
 
             // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // count
-            if ($_POST['start'] === "0") {
+            if (intval($start) === 0) {
                 DB::query(
                     "SELECT i.id
                     FROM ".prefix_table("items")." as i
