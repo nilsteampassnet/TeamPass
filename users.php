@@ -311,19 +311,6 @@ echo '
     <div style="text-align:center;padding:2px;" class="ui-state-error ui-corner-all" id="manager_dialog_error"></div>
 </div>';
 
-/*// MIGRATE PERSONAL ITEMS FROM ADMIN TO A USER
-echo '
-<div id="migrate_pf_dialog" style="display:none;">
-    <div style="text-align:center;padding:2px;display:none;margin-bottom:10px;" class="ui-state-error ui-corner-all" id="migrate_pf_dialog_error"></div>
-    <div>
-        <label>'.$LANG['migrate_pf_select_to'].'</label>:
-        <select id="migrate_pf_to_user">
-            <option value="">-- '.$LANG['select'].' --</option>'.$listAvailableUsers.'
-        </select>
-        <br /><br />
-        <label>'.$LANG['migrate_pf_user_salt'].'</label>: <input type="text" id="migrate_pf_user_salt" size="30" /><br />
-    </div>
-</div>';*/
 // USER LOGS
 echo '
 <div id="user_logs_dialog" style="display:none;">

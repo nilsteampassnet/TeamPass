@@ -520,7 +520,6 @@ switch ($_POST['type']) {
                         $keepassVersion = 2;
                         break;
                     } elseif ($root === true && $xmlLevel > $levelMin) {
-    //                       error_log($nom.",".$elem." - ");
                         //Check each node name and get data from some of them
                         if ($entry === true && $nom == "Key" && $elem == "Title") {
                             $title = true;

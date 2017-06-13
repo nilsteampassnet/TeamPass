@@ -255,8 +255,8 @@ if (isset($_POST['type'])) {
                         prefix_table('automatic_del'),
                         array(
                             'item_id' => $newID,
-                            'del_enabled' => 1, // 0=deactivated;1=activated
-                            'del_type' => $date_stamp !== false ? 2 : 1, // 1=counter;2=date
+                            'del_enabled' => 1, /* Possible values: 0=deactivated;1=activated */
+                            'del_type' => $date_stamp !== false ? 2 : 1, /* Possible values:  1=counter;2=date */
                             'del_value' => $date_stamp !== false ? $date_stamp : $dataReceived['to_be_deleted']
                             )
                     );
