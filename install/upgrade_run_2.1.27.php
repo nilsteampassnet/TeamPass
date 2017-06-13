@@ -533,6 +533,12 @@ mysqli_query(
     "ALTER TABLE `".$_SESSION['pre']."misc` CHANGE valeur valeur VARCHAR(500) NOT NULL DEFAULT 'none'"
 );
 
+// alter table ITEMS_CHANGE
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['pre']."items_change` CHANGE user_id user_id INT(12) NOT NULL;"
+);
+
 
 // add new admin setting "otv_is_enabled"
 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));

@@ -389,7 +389,7 @@ switch ($_POST['type']) {
                                 'description' => htmlspecialchars_decode(addslashes(str_replace(array(";", "<br />"), array("|", "\n\r"), mysqli_escape_string($link, stripslashes(utf8_decode($record['description'])))))),
                                 'pw' => html_entity_decode($pw['string'], ENT_QUOTES | ENT_XHTML, UTF - 8),
                                 'login' => strip_tags(cleanString(html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, UTF - 8), true)),
-                                'restricted_to' => $record['restricted_to'],
+                                'restricted_to' => isset($record['restricted_to']) ? $record['restricted_to'] : '',
                                 'perso' => $record['perso'] === "0" ? "False" : "True",
                                 'url' => $record['url'] !== "none" ? htmlspecialchars_decode($record['url']) : "",
                                 'email' => $record['email'] !== "none" ? htmlspecialchars_decode($record['email']) : "",

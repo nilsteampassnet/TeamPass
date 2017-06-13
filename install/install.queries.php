@@ -717,7 +717,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_edition` (
                             `item_id` int(11) NOT NULL,
-                            `user_id` int(11) NOT NULL,
+                            `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL
                             ) CHARSET=utf8;"
                         );
@@ -811,7 +811,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."tokens` (
                             `id` int(12) NOT NULL AUTO_INCREMENT,
-                            `user_id` int(10) NOT NULL,
+                            `user_id` int(12) NOT NULL,
                             `token` varchar(255) NOT NULL,
                             `reason` varchar(255) NOT NULL,
                             `creation_timestamp` varchar(50) NOT NULL,
@@ -832,7 +832,7 @@ global \$SETTINGS;
                             `description` text NOT NULL,
                             `comment` text NOT NULL,
                             `folder_id` tinyint(12) NOT NULL,
-                            `user_id` tinyint(12) NOT NULL,
+                            `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
