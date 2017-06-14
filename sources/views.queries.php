@@ -58,7 +58,7 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 //Constant used
 $nbElements = 20;
 
-// Construction de la requ?te en fonction du type de valeur
+// building queries
 switch ($_POST['type']) {
     #CASE generating the log for passwords renewal
     case "log_generate":
@@ -83,16 +83,16 @@ switch ($_POST['type']) {
         $pdf->SetFont('helvetica', '', 10);
 
         $rows = DB::query(
-            "SELECT u.login as login, i.label as label, i.id_tree as id_tree
+            "SELECT u.login as login, i.label as label, i.id_tree as id_tree, l.date
             FROM ".prefix_table("log_items")." as l
             INNER JOIN ".prefix_table("users")." as u ON (u.id=l.id_user)
             INNER JOIN ".prefix_table("items")." as i ON (i.id=l.id_item)
-            WHERE l.action = %s AND l.raison = %s",
-            "Modification",
-            "Mot de passe changé"
+            WHERE l.action = %s AND l.raison LIKE %s",
+            "at_modification",
+            "at_pw :%"
         );
         foreach ($rows as $record) {
-            if (date($_SESSION['settings']['date_format'], $record['date']) == $_POST['date']) {
+            if (date($_SESSION['settings']['date_format'], $record['date']) === $_POST['date']) {
                 //get the tree grid
                 $arbo = $tree->getPath($record['id_tree'], true);
                 $arboTxt = "";
@@ -333,7 +333,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
             ORDER BY %s %s
-			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             "user_connection",
             $_POST['order'],
             $POST['direction']

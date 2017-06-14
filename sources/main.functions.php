@@ -1179,7 +1179,7 @@ function dateToStamp($date)
 {
     $date = date_parse_from_format($_SESSION['settings']['date_format'], $date);
     if ($date['warning_count'] == 0 && $date['error_count'] == 0) {
-        return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+        return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
     } else {
         return false;
     }

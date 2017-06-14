@@ -1234,7 +1234,7 @@ if (isset($_POST['type'])) {
             $arrData = array();
             // return ID
             $arrData['id'] = $_POST['id'];
-            $arrData['id_user'] = "9999999";
+            $arrData['id_user'] = API_USER_ID;
             $arrData['author'] = "API";
 
             // Check if item is deleted
@@ -1564,7 +1564,7 @@ if (isset($_POST['type'])) {
                             );
                             // store value
                             $arrData['to_be_deleted'] = $dataDelete['del_value'] - 1;
-                        } elseif ($dataDelete['del_type'] === '1' && $dataDelete['del_value'] <= 1 || $dataDelete['del_type'] == 2 && $dataDelete['del_value'] < time()
+                        } elseif ($dataDelete['del_type'] === '1' && $dataDelete['del_value'] <= 1 || $dataDelete['del_type'] === '2' && $dataDelete['del_value'] < time()
                                 )
                         {
                             $arrData['show_details'] = 0;
@@ -1582,7 +1582,7 @@ if (isset($_POST['type'])) {
                             // log
                             logItems($_POST['id'], $dataItem['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login'], 'at_automatically_deleted');
                             $arrData['to_be_deleted'] = 0;
-                        } elseif ($dataDelete['del_type'] == 2) {
+                        } elseif ($dataDelete['del_type'] === '2') {
                             $arrData['to_be_deleted'] = date($_SESSION['settings']['date_format'], $dataDelete['del_value']);
                         }
                     } else {
@@ -2217,6 +2217,9 @@ if (isset($_POST['type'])) {
                         $expirationFlag = '';
                         $expired_item = 0;
                         if ($_SESSION['settings']['activate_expiration'] === '1') {
+                            if ($record['id'] === "1182") {
+                                //echo "> ".($record['date'] + ($record['renewal_period'] * $k['one_month_seconds']))." -- ".time()." ;; ";
+                            }
                             if (
                                 $record['renewal_period'] > 0 &&
                                 ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
