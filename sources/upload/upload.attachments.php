@@ -115,9 +115,7 @@ if (!isset($_POST['user_token'])) {
             unset($_SESSION[$_POST['user_token']]);
         }
 
-        if (time() <= $data['end_timestamp']) {
-            // it is ok
-        } else {
+        if (time() > $data['end_timestamp']) {
             // too old
             unset($_SESSION[$_POST['user_token']]);
             handleAttachmentError('User token expired.', 110);

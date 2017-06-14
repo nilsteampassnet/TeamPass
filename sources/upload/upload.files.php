@@ -56,9 +56,7 @@ if (!isset($_POST['user_token'])) {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    if (time() <= $data['end_timestamp']) {
-        // it is ok
-    } else {
+    if (time() > $data['end_timestamp']) {
         // too old
         handleUploadError('User token expired.');
         exit();

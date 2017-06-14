@@ -2217,9 +2217,6 @@ if (isset($_POST['type'])) {
                         $expirationFlag = '';
                         $expired_item = 0;
                         if ($_SESSION['settings']['activate_expiration'] === '1') {
-                            if ($record['id'] === "1182") {
-                                //echo "> ".($record['date'] + ($record['renewal_period'] * $k['one_month_seconds']))." -- ".time()." ;; ";
-                            }
                             if (
                                 $record['renewal_period'] > 0 &&
                                 ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
