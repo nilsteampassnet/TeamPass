@@ -950,7 +950,9 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');
-require_once \"".str_replace('\\', '/', $skFile)."\";
+if (!file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
+    require_once \"".str_replace('\\', '/', $skFile)."\";
+}
 ?>"
                         )
                     );

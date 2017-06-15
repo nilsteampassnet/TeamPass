@@ -508,7 +508,7 @@ function mainQuery() {
                 $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
 
                 // check if encrypted_psk is in database. If not, add it
-                if (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk'])) {
+                if (!isset($_SESSION['user_settings']['encrypted_psk']) || (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk']))) {
                     // generate it based upon clear psk
                     $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($dataReceived['psk']);
 

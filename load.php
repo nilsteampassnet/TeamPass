@@ -1145,7 +1145,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                     $.each(data.stat_country, function( index, value ) {
                       if (value > 0) {
                         if (ips === "") ips = index+":"+value;
-                        else ips += ";"+index+":"+value;
+                        else ips += " ; "+index+":"+value;
                       }
                     });
                     $("#value_country").html(ips);
@@ -1176,7 +1176,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
                     $.each(data.stat_languages, function( index, value ) {
                       if (value > 0) {
                         if (langs === "") langs = index+":"+value;
-                        else langs += ";"+index+":"+value;
+                        else langs += " ; "+index+":"+value;
                       }
                     });
                     $("#value_languages").html(langs);

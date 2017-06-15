@@ -1,5 +1,6 @@
 2.1.27
 
+ Fix upgrade doesn't start in case that sk.php file has moved
  Fix for Custom Fields not displayed as defined by `order` field
  #1787 email notifications are not sent if there are any admins with empty email address
  #1776 Allow restricting items to users and roles - Wrong Item Owner
@@ -7,6 +8,7 @@
  #1774 Announce this Item by email
  #1769 Installation issue - no admin account is created
  #1762 Share user rights works backwards
+ #1690 Unable to set/save personal salt key with LDAP user
 
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)

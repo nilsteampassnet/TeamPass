@@ -125,6 +125,20 @@ if (isset($_POST['type'])) {
             require_once 'libs/aesctr.php';
             require_once "../includes/config/settings.php";
 
+            // check if path in settings.php are consistent
+            if (!is_dir(SECUREPATH)) {
+                echo 'document.getElementById("but_next").disabled = "disabled";';
+                echo 'document.getElementById("res_step0").innerHTML = "Error in settings.php file!<br>Check correctness of path indicated in file `includes/config/settings.php`.<br>Reload this page and retry.";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
+            if (!file_exists(SECUREPATH."/sk.php")) {
+                echo 'document.getElementById("but_next").disabled = "disabled";';
+                echo 'document.getElementById("res_step0").innerHTML = "Error in settings.php file!<br>Check that file `sk.php` exists as defined in `includes/config/settings.php`.<br>Reload this page and retry.";';
+                echo 'document.getElementById("loader").style.display = "none";';
+                break;
+            }
+
             $_SESSION['settings']['cpassman_dir'] = "..";
             require_once '../includes/libraries/PasswordLib/Random/Generator.php';
             require_once '../includes/libraries/PasswordLib/Random/Source.php';
@@ -167,18 +181,26 @@ if (isset($_POST['type'])) {
                 WHERE login='".mysqli_escape_string($link, stripslashes($_POST['login']))."'")
             );
 
-            if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($_POST['pwd']), "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
-                echo 'document.getElementById("but_next").disabled = "";';
-                echo 'document.getElementById("res_step0").innerHTML = "User is granted.";';
-                echo 'document.getElementById("step").value = "1";';
-                echo 'document.getElementById("user_granted").value = "1";';
-                $_SESSION['user_granted'] = true;
-            } else {
+            if (empty($user_info['pw']) || $user_info['pw'] === null) {
                 echo 'document.getElementById("but_next").disabled = "disabled";';
                 echo 'document.getElementById("res_step0").innerHTML = "This user is not allowed!";';
                 echo 'document.getElementById("user_granted").value = "0";';
                 $_SESSION['user_granted'] = false;
+            } else {
+                if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($_POST['pwd']), "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
+                    echo 'document.getElementById("but_next").disabled = "";';
+                    echo 'document.getElementById("res_step0").innerHTML = "User is granted.";';
+                    echo 'document.getElementById("step").value = "1";';
+                    echo 'document.getElementById("user_granted").value = "1";';
+                    $_SESSION['user_granted'] = true;
+                } else {
+                    echo 'document.getElementById("but_next").disabled = "disabled";';
+                    echo 'document.getElementById("res_step0").innerHTML = "This user is not allowed!";';
+                    echo 'document.getElementById("user_granted").value = "0";';
+                    $_SESSION['user_granted'] = false;
+                }
             }
+
             echo 'document.getElementById("loader").style.display = "none";';
             break;
 
@@ -708,7 +730,9 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7)."');
-require_once \"".$skFile."\";
+if (!file_exists(\"".$skFile."\")) {
+    require_once \"".$skFile."\";
+}
 @define('COST', '13'); // Don't change this."
                     )
                 );
