@@ -1784,10 +1784,9 @@ function rest_get() {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
 
                     // this will delete all sub folders and items associated
-                    for ($i = 0; $i < count($array_category); $i++) {echo "\n".$array_category[$i]."\n";
+                    for ($i = 0; $i < count($array_category); $i++) {
                         // Get through each subfolder
                         $folders = $tree->getDescendants($array_category[$i], true);
-                        print_r($folders);
                         if (count($folders) > 0) {
                             foreach ($folders as $folder) {
                                 if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {

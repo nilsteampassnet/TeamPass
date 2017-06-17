@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array(
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     'nothing_to_do' => 'Nothing to do.',
     'knowledge_base' => 'Knowledge Base',
     'category' => 'Category',
@@ -243,7 +245,7 @@ $LANG = array(
     'error_empty_data' => 'No data to proceed!',
     'error_not_allowed_to' => 'You are not allowed to do that!',
     'personal_saltkey_lost' => 'Reset my personal salt key',
-    'new_saltkey_warning_lost' => 'Input a new user salt key without re-encrypting any existing items. If you change your salt key here, all previous personal item passwords will be lost! If you know your old salt key, use the change key feature instead.',
+    'new_saltkey_warning_lost' => 'Important warning! This operation will delete all your personal items. As your Saltkey is lost, those items cannot be retreived. If you know your old salt key, use the `change key` feature instead.',
     'previous_pw' => 'Previous passwords used:',
     'no_previous_pw' => 'No previous password',
     'request_access_ot_item' => 'Request access to modify',

@@ -196,21 +196,19 @@ echo '
 
 //saltkey LOST dialogbox
 echo '
-   <div id="div_reset_psk" style="display:none;padding:5px;" class="ui-widget ui-state-default">
-      <div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
-         <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning_lost'].'
-      </div>
+    <div id="div_reset_psk" style="display:none;padding:5px;" class="ui-widget ui-state-default">
+        <div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
+            <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning_lost'].'
+        </div>
 
-      <div style="margin-top:5px;">
-         <label for="new_reset_psk" class="form_label">'.$LANG['new_saltkey'].' :</label>
-         <input type="text" size="30" name="new_reset_psk" id="new_reset_psk" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
-      </div>
+        <div style="margin-top:4px;">
+            <input type="checkbox" id="reset_psk_confirm" />&nbsp;<label for="reset_psk_confirm">'.$LANG['please_confirm_operation'].'</label>
+        </div>
 
-      <div style="margin-top:4px;">
-         <span class="button" id="button_reset_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
-         <span id="psk_reset_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_reset_wait_info">'.$LANG['please_wait'].'</span></span>
-      </div>
-
+        <div style="margin-top:4px;">
+            <span class="button" id="button_reset_psk">'.$LANG['continue'].'</span>&nbsp;
+            <span id="psk_reset_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_reset_wait_info">'.$LANG['please_wait'].'</span></span>
+        </div>
    </div>';
 echo '
 </div>';
@@ -521,36 +519,37 @@ $(function() {
     });
 
 
-   // RESET PSK
-   $("#but_reset_psk").click(function() {
-      // hide other divs
-      $("#div_change_password, #div_change_psk").hide();
+    // RESET PSK
+    $("#but_reset_psk").click(function() {
+        // hide other divs
+        $("#div_change_password, #div_change_psk").hide();
 
-      // prepare fields
-      $("#new_reset_psk").val("");
+        // prepare fields
+        $("#new_reset_psk").val("");
 
-      $("#div_reset_psk").show();
-      $("#dialog_user_profil").dialog("option", "height", 600);
+        $("#div_reset_psk").show();
+        $("#dialog_user_profil").dialog("option", "height", 600);
     });
-   $("#button_reset_psk").click(function() {
-      $("#psk_reset_wait").show();
+    $("#button_reset_psk").click(function() {
+        if ($("#reset_psk_confirm").is(":checked")) {
+            $("#psk_reset_wait").show();
 
-      var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_reset_psk").val()) + "\"}";
-
-      $.post(
-         "sources/main.queries.php",
-         {
-            type    : "reset_personal_saltkey",
-            data_to_share   : prepareExchangedData(data_to_share, "encode", "<?php echo $_SESSION['key']; ?>"),
-            key             : "<?php echo $_SESSION['key']; ?>"
-         },
-         function(data) {
-            $("#psk_reset_wait").hide();
-            $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done']; ?></div>');
-            setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
-         }
-      );
-   })
+            $.post(
+                "sources/main.queries.php",
+                {
+                type    : "reset_personal_saltkey",
+                key             : "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    $("#psk_reset_wait").hide();
+                    $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done']; ?></div>');
+                    setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
+                    $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done']; ?>");
+                    location.reload();
+                }
+            );
+        }
+    });
 
     $( ".button" ).button();
 

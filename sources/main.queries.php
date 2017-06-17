@@ -658,13 +658,8 @@ function mainQuery() {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
-            //Prepare variables
-            $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
-
-            if (!empty($_SESSION['user_id']) && !empty($newPersonalSaltkey)) {
+            if (!empty($_SESSION['user_id'])) {
                 // delete all previous items of this user
                 $rows = DB::query(
                     "SELECT i.id as id
@@ -680,15 +675,21 @@ function mainQuery() {
                     DB::delete(prefix_table("items"), "id = %i", $record['id']);
                     // delete in LOGS table
                     DB::delete(prefix_table("log_items"), "id_item = %i", $record['id']);
+                    // delete from CACHE table
+                    updateCacheTable("delete_value", $record['id']);
                 }
-                // change salt
-                $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
-                setcookie(
-                    "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                    encrypt($_SESSION['my_sk'], ""),
-                    time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-                    '/'
+
+                // remove from DB
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'encrypted_psk' => ""
+                        ),
+                    "id = %i",
+                    $_SESSION['user_id']
                 );
+
+                $_SESSION['user_settings']['session_psk'] = "";
             }
             break;
         /**

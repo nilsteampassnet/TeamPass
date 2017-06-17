@@ -8,6 +8,7 @@
  #1774 Announce this Item by email
  #1769 Installation issue - no admin account is created
  #1762 Share user rights works backwards
+ #1761 Reset of my Personal Saltkey
  #1743 Enable anonymous LDAP queries
  #1690 Unable to set/save personal salt key with LDAP user
 

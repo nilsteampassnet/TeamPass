@@ -30,9 +30,9 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
@@ -65,7 +65,7 @@ if (file_exists($filename)) {
 
 // read SK.PHP file
 $tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
-$skFile = file($tmp_skfile);
+$skFile = file($filename);
 while (list($key, $val) = each($skFile)) {
     if (substr_count($val, "@define('AKEY'") > 0) {
         $tmp_akey = substr($val, 17, strpos($val, '")') - 17);

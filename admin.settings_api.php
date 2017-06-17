@@ -74,9 +74,9 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -156,7 +156,7 @@ echo '
                       <i class="fa fa-pencil tip" onclick="key_update(\''.$record['id'].'\', $(\'#apiid'.$record['id'].'label\').text(), $(\'#apiid'.$record['id'].'value\').text())" title="'.htmlentities(strip_tags($LANG['edit']), ENT_QUOTES).'"></i>&nbsp;
                       <i class="fa fa-trash mi-red tip" onclick="deleteApiKey(\''.$record['id'].'\')" title="'.htmlentities(strip_tags($LANG['del_button']), ENT_QUOTES).'"></i></td>
                     </td>
-                    
+
                 </tr>';
                 }
                 echo '
@@ -225,7 +225,7 @@ echo '
         echo '
         </div>
         <br />
-        <input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />        
+        <input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
         </td>
       </tr>
     </tbody>
