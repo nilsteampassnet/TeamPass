@@ -36,7 +36,7 @@ if (isset($_SESSION['settings']['send_statistics_items'])) {
 
 echo '
 <input type="hidden" id="setting_send_stats" value="',isset($_SESSION['settings']['send_stats']) ? $_SESSION['settings']['send_stats'] : '0', '" />
-<div class="title ui-widget-content ui-corner-all">'.$LANG['thku'].' <span style="float:right;">',isset($k['version_full']) ? '<span class="fa fa-plug"></span>&nbsp;'.$k['version_full'] : '', '</span></div>
+<div class="title ui-widget-content ui-corner-all">'.$LANG['thku'].' <span style="float:right;">', isset($k['version_full']) ? '<span class="fa fa-plug"></span>&nbsp;'.$k['version_full'] : '', '</span></div>
 
 <div style="margin:auto; line-height:20px; padding:10px;" id="tabs">
     <ul>

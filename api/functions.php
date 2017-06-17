@@ -1858,7 +1858,7 @@ function rest_get() {
                     }
                 }
 
-                for ($i = 0; $i < count($array_items); $i++) {
+                for ($i = 0, $c = count($array_items); $i < $c; $i++) {
                     DB::update(
                         prefix_table("items"),
                         array(

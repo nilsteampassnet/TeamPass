@@ -68,7 +68,7 @@ class NestedTree
             join(',', $this->getFields()),
             $this->table,
             $this->fields['id'],
-            $id
+            filter_var($id, FILTER_SANITIZE_NUMBER_INT)
         );
 
         $result = mysqli_query($link, $query);
@@ -97,7 +97,7 @@ class NestedTree
         global $link;
         $idField = $this->fields['id'];
 
-        $node = $this->getNode($id);
+        $node = $this->getNode(filter_var($id, FILTER_SANITIZE_NUMBER_INT));
         if (is_null($node)) {
             $nleft = 0;
             $nright = 0;
