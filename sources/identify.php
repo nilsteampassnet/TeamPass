@@ -50,7 +50,7 @@ if ($_POST['type'] === "identify_duo_user") {
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig request : ".$_POST['login']."\n".
+            "sig request : ".string($_POST['login'])."\n".
             'resp : '.$sig_request."\n"
         );
     }
@@ -181,7 +181,7 @@ if ($_POST['type'] === "identify_duo_user") {
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig response : ".$_POST['sig_response']."\n".
+            "sig response : ".string($_POST['sig_response'])."\n".
             'resp : '.$resp."\n"
         );
     }
@@ -252,7 +252,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Content of data sent '".$sentData."'\n"
+            "Content of data sent '".string($sentData)."'\n"
         );
     }
 
@@ -293,7 +293,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Starting authentication of '".$username."'\n"
+            "Starting authentication of '".string($username)."'\n"
         );
     }
 
@@ -384,11 +384,11 @@ function identifyUser($sentData)
                     $result = ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], $filter_group, array('dn'));
+                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], string($filter_group), array('dn'));
                         if ($debugLdap == 1) {
                                 fputs(
                                         $dbgLdap,
-                                        'Search filter (group): '.$filter_group."\n".
+                                        'Search filter (group): '.string($filter_group)."\n".
                                         'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
                                 );
                         }
@@ -1093,7 +1093,7 @@ function identifyUser($sentData)
         fputs(
             $dbgDuo,
             "\n\n----\n".
-            "Identified : ".$return."\n\n"
+            "Identified : ".string($return)."\n\n"
         );
     }
 

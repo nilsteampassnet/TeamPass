@@ -1537,14 +1537,14 @@ function handleConfigFile($action, $field = null, $value = null)
                 break;
             }
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".$value."',\n";
+                $data[$x] = "    '".$field."' => '".string($value)."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".$value."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".string($value)."',\n";
         }
     }
 
@@ -1747,7 +1747,7 @@ function debugTeampass($text) {
 */
 function fileDelete($file) {
     if (is_file(string($file))) {
-        unlink($file);
+        unlink(string($file));
     }
 }
 

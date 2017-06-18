@@ -345,7 +345,7 @@ switch ($_POST['type']) {
 
         $dataPost = explode('&', $_POST['option']);
         $file = string($dataPost[0]);
-        $key = $dataPost[1];
+        $key = string($dataPost[1]);
 
         //create uncrypted file
         if (!empty($key)) {
@@ -1371,7 +1371,7 @@ switch ($_POST['type']) {
                             // make a copy of file
                             $backup_filename = string($file).".bck-before-change.".time();
                             if (!copy(
-                                    $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
+                                    $_SESSION['settings']['path_to_upload_folder'].'/'.string($file),
                                     $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
                             )) {
                                 $error = "Copy not possible";

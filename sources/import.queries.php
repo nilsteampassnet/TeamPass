@@ -190,7 +190,7 @@ switch ($_POST['type']) {
             fclose($fp);
 
             // remove file
-            unlink($file);
+            unlink(string($file));
         } else {
             echo '[{"error":"cannot_open"}]';
             break;
@@ -606,7 +606,7 @@ switch ($_POST['type']) {
             }
         }
 
-        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".$_POST['file']."\n");
+        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".string($_POST['file'])."\n");
 
         // Go through each node of XML file
         recursiveKeepassXML($xml);
@@ -618,7 +618,7 @@ switch ($_POST['type']) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+            unlink($_SESSION['settings']['url_to_files_folder']."/".string($_POST['file']));
 
             fputs($cacheLogFile, date('H:i').$LANG['import_error_no_read_possible_kp']."\n");
 
@@ -940,7 +940,7 @@ switch ($_POST['type']) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
+            unlink($_SESSION['settings']['path_to_files_folder']."/".string($_POST['file']));
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
