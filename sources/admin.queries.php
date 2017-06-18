@@ -2038,7 +2038,7 @@ switch ($_POST['type']) {
 
             $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
 
-            $ldapconn = ldap_connect($ldapURIs);
+            $ldapconn = ldap_connect(string($ldapURIs));
 
             if ($dataReceived[0]['ldap_tls_input']) {
                 ldap_start_tls($ldapconn);
@@ -2054,7 +2054,7 @@ switch ($_POST['type']) {
 
                 if ($ldapbind) {
                     $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))";
-                    $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
+                    $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], string($filter), array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
                         $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'], $filter_group, array('dn'));

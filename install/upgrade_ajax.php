@@ -385,7 +385,7 @@ if (isset($_POST['type'])) {
                     ' found in \"'.addslashes($_SESSION['sk_file']).'\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                     '</span><br />';
                 //copy some constants from this existing file
-                $skFile = file($_SESSION['sk_file']);
+                $skFile = file(string($_SESSION['sk_file']));
                 while (list($key, $val) = each($skFile)) {
                     if (substr_count($val, "@define('SALT'") > 0) {
                         $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
@@ -720,16 +720,16 @@ global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPa
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"". $_SESSION['server']."\";
-\$user = \"". $_SESSION['user']."\";
-\$pass = \"". str_replace("$", "\\$", $_SESSION['pass'])."\";
-\$database = \"". $_SESSION['database']."\";
-\$port = ". $_SESSION['port'].";
-\$pre = \"". $_SESSION['pre']."\";
-\$encoding = \"".$_SESSION['db_encoding']."\";
+\$server = \"".string($_SESSION['server'])."\";
+\$user = \"". string($_SESSION['user'])."\";
+\$pass = \"". str_replace("$", "\\$", string($_SESSION['pass']))."\";
+\$database = \"". string($_SESSION['database'])."\";
+\$port = ". string($_SESSION['port']).";
+\$pre = \"". string($_SESSION['pre'])."\";
+\$encoding = \"".string($_SESSION['db_encoding'])."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7)."');
+@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7))."');
 if (!file_exists(\"".$skFile."\")) {
     require_once \"".$skFile."\";
 }
