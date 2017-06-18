@@ -68,7 +68,7 @@ class NestedTree
             join(',', $this->getFields()),
             $this->table,
             $this->fields['id'],
-            filter_var($id, FILTER_SANITIZE_NUMBER_INT)
+            mysqli_real_escape_string($link, $id)
         );
 
         $result = mysqli_query($link, $query);

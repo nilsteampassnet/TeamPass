@@ -344,7 +344,7 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $_POST['option']);
-        $file = $dataPost[0];
+        $file = filter_var($dataPost[0], FILTER_SANITIZE_STRING);
         $key = $dataPost[1];
 
         //create uncrypted file

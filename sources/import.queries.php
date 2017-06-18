@@ -358,7 +358,9 @@ switch ($_POST['type']) {
 
         //read xml file
         if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
-            $xml = simplexml_load_file($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
+            $xml = simplexml_load_file(
+                $_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING)
+            );
         }
 
         /**
