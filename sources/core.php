@@ -38,7 +38,7 @@ if (
     isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
 ) {
-    $url = "https://".filter_var($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], FILTER_VALIDATE_URL);
+    $url = "https://".string($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
     redirect($url);
 }
 

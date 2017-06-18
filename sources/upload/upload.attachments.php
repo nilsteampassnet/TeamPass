@@ -134,7 +134,7 @@ header("Pragma: no-cache");
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-$targetDir = filter_var($$_SESSION['settings']['path_to_upload_folder'], FILTER_SANITIZE_STRING);
+$targetDir = string($_SESSION['settings']['path_to_upload_folder']);
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
