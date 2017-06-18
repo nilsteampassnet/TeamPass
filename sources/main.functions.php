@@ -1746,7 +1746,7 @@ function debugTeampass($text) {
 * DELETE the file with expected command depending on server type
 */
 function fileDelete($file) {
-    if (is_file($file)) {
+    if (is_file(string($file))) {
         unlink($file);
     }
 }
