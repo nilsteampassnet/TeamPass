@@ -57,7 +57,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 echo '
-<input type="hidden" id="folder_id_selected" value="', isset($_GET["folder_id"]) ? filter_var($_GET["folder_id"], FILTER_SANITIZE_NUMBER_INT) : '', '" />
+<input type="hidden" id="folder_id_selected" value="', isset($_GET["folder_id"]) ? filter_var(intval($_GET["folder_id"]), FILTER_SANITIZE_NUMBER_INT) : '', '" />
 <input type="hidden" id="import_user_token" value="" />
 <div id="import_tabs">
     <ul>

@@ -174,7 +174,7 @@ if ($_POST['type'] === "identify_duo_user") {
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $_POST['sig_response']);
+    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, string($_POST['sig_response']));
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");

@@ -49,7 +49,7 @@ session_id();
 $_SESSION['CPM'] = 1;
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
-    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
+    $_SESSION['settings']['cpassman_url'] = string($_SERVER["REQUEST_URI"]);
 }
 
 // Include files
@@ -108,10 +108,10 @@ if (isset($_GET['language'])) {
 } elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 } elseif (isset($_POST['language'])) {
-    $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+    $_SESSION['user_language'] = filter_var(string($_POST['language']), FILTER_SANITIZE_STRING);
 } elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
     if (isset($_POST['language'])) {
-        $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+        $_SESSION['user_language'] = filter_var(string($_POST['language']), FILTER_SANITIZE_STRING);
     } elseif (isset($_SESSION['settings']['default_language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
@@ -121,7 +121,7 @@ if (isset($_GET['language'])) {
 
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
-    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
+    $_SESSION['settings']['cpassman_url'] = string($_SERVER["REQUEST_URI"]);
 }
 
 // Load user languages files
@@ -279,7 +279,7 @@ if (isset($_SESSION['login'])) {
                                 <li onclick="loadProfileDialog()">
                                     <i class="fa fa-user fa-fw"></i> &nbsp;'.$LANG['my_profile'].'
                                 </li>
-                                <li onclick="MenuAction(\'deconnexion\', \''.$_SESSION['user_id'].'\')">
+                                <li onclick="MenuAction(\'deconnexion\', \''.string($_SESSION['user_id']).'\')">
                                     <i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'
                                 </li>
                             </ul>
