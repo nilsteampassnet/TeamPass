@@ -617,7 +617,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
         $groupesInterdits = array();
-        $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+        if (!is_array($groupesInterditsUser)) {
+            $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+        }
         if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {
             $groupesInterdits = $groupesInterditsUser;
         }
