@@ -356,7 +356,7 @@ switch ($_POST['type']) {
             deleteFile($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //create new file with uncrypted data
-            $file = $_SESSION['settings']['path_to_files_folder']."/".time().".txt";
+            $file = string($_SESSION['settings']['path_to_files_folder'])."/".time().".txt";
             $inF = fopen($file, "w");
             while (list($cle, $val) = each($fileArray)) {
                 fputs($inF, decrypt($val, $key)."\n");
@@ -1369,7 +1369,7 @@ switch ($_POST['type']) {
 
                         if ($skipFile === true) {
                             // make a copy of file
-                            $backup_filename = $file.".bck-before-change.".time();
+                            $backup_filename = string($file).".bck-before-change.".time();
                             if (!copy(
                                     $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
                                     $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
@@ -1379,7 +1379,7 @@ switch ($_POST['type']) {
                             }
 
                             // Open the file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.string($file));
                             $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename, "rb");
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
 
@@ -1607,13 +1607,13 @@ switch ($_POST['type']) {
             $fh,
             utf8_encode(
 "<?php
-@define('SALT', '".SALT."'); //Never Change it once it has been used !!!!!
+@define('SALT', '".string(SALT)."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 // DUOSecurity credentials
-@define('AKEY', \"".$akey."\");
-@define('IKEY', \"".$ikey."\");
-@define('SKEY', \"".$skey."\");
-@define('HOST', \"".$host."\");
+@define('AKEY', \"".string($akey)."\");
+@define('IKEY', \"".string($ikey)."\");
+@define('SKEY', \"".string($skey)."\");
+@define('HOST', \"".string($host)."\");
 ?>"
             )
         );
@@ -1888,7 +1888,7 @@ switch ($_POST['type']) {
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents($csrfp_file, $newdata);
+            file_put_contents($csrfp_file, string($newdata));
         } else
         if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
