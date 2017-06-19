@@ -344,19 +344,19 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $_POST['option']);
-        $file = (string)$dataPost[0];
-        $key = (string)$dataPost[1];
+        $file = (string) $dataPost[0];
+        $key = (string) $dataPost[1];
 
         //create uncrypted file
         if (!empty($key)) {
             //read full file
-            $fileArray = file($_SESSION['settings']['path_to_files_folder']."/".(string)$file);
+            $fileArray = file($_SESSION['settings']['path_to_files_folder']."/".(string) $file);
 
             //delete file
-            deleteFile($_SESSION['settings']['path_to_files_folder']."/".(string)$file);
+            deleteFile($_SESSION['settings']['path_to_files_folder']."/".(string) $file);
 
             //create new file with uncrypted data
-            $file = (string)$_SESSION['settings']['path_to_files_folder']."/".time().".txt";
+            $file = (string) $_SESSION['settings']['path_to_files_folder']."/".time().".txt";
             $inF = fopen($file, "w");
             while (list($cle, $val) = each($fileArray)) {
                 fputs($inF, decrypt($val, $key)."\n");
@@ -1369,9 +1369,9 @@ switch ($_POST['type']) {
 
                         if ($skipFile === true) {
                             // make a copy of file
-                            $backup_filename = (string)$file.".bck-before-change.".time();
+                            $backup_filename = (string) $file.".bck-before-change.".time();
                             if (!copy(
-                                    $_SESSION['settings']['path_to_upload_folder'].'/'.(string)$file,
+                                    $_SESSION['settings']['path_to_upload_folder'].'/'.(string) $file,
                                     $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
                             )) {
                                 $error = "Copy not possible";
@@ -1379,7 +1379,7 @@ switch ($_POST['type']) {
                             }
 
                             // Open the file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.(string)$file);
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.(string) $file);
                             $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename, "rb");
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
 
@@ -1607,13 +1607,13 @@ switch ($_POST['type']) {
             $fh,
             utf8_encode(
 "<?php
-@define('SALT', '".(string)SALT."'); //Never Change it once it has been used !!!!!
+@define('SALT', '".(string) SALT."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 // DUOSecurity credentials
-@define('AKEY', \"".(string)$akey."\");
-@define('IKEY', \"".(string)$ikey."\");
-@define('SKEY', \"".(string)$skey."\");
-@define('HOST', \"".(string)$host."\");
+@define('AKEY', \"".(string) $akey."\");
+@define('IKEY', \"".(string) $ikey."\");
+@define('SKEY', \"".(string) $skey."\");
+@define('HOST', \"".(string) $host."\");
 ?>"
             )
         );
@@ -1888,7 +1888,7 @@ switch ($_POST['type']) {
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents($csrfp_file, (string)$newdata);
+            file_put_contents($csrfp_file, (string) $newdata);
         } else
         if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
@@ -2038,7 +2038,7 @@ switch ($_POST['type']) {
 
             $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
 
-            $ldapconn = ldap_connect((string)$ldapURIs);
+            $ldapconn = ldap_connect((string) $ldapURIs);
 
             if ($dataReceived[0]['ldap_tls_input']) {
                 ldap_start_tls($ldapconn);
@@ -2054,7 +2054,7 @@ switch ($_POST['type']) {
 
                 if ($ldapbind) {
                     $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))";
-                    $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], (string)$filter, array('dn', 'mail', 'givenname', 'sn'));
+                    $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], (string) $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
                         $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'], $filter_group, array('dn'));

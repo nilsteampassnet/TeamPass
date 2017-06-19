@@ -136,7 +136,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
             // copy to file
             while (($line = fgets($fp)) !== false) {
-                fputs($out, (string)$line);
+                fputs($out, (string) $line);
             }
 
             // clean
