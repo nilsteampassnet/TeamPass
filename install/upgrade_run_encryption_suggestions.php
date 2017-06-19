@@ -53,7 +53,7 @@ $dbTmp = mysqli_connect(
     $_SESSION['port']
 );
 
-fputs($dbgDuo, (string)"\nStarting suggestion.\n\n");
+fputs($dbgDuo, (string) "\nStarting suggestion.\n\n");
 // decrypt passwords in suggestion table
 $resData = mysqli_query($dbTmp,
     "SELECT id, pw, pw_iv
@@ -92,6 +92,6 @@ while ($record = mysqli_fetch_array($resData)) {echo decrypt($record['pw'])." ";
 }
 $finish = 1;
 
-fputs($dbgDuo, (string)"\n\nAll finished.\n");
+fputs($dbgDuo, (string) "\n\nAll finished.\n");
 
 echo '[{"finish":"'.$finish.'" , "next":"" , "error":""}]';
