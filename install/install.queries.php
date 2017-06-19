@@ -1085,7 +1085,7 @@ if (!file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     }
 
                     $result = true;
-                    $errorMsg = "Cannot delete installation directory";
+                    $errorMsg = "Cannot delete `install` folder. Please do it manually.";
                     if (file_exists($_SESSION['abspath'].'/install')) {
                         // set the permissions on the install directory and delete
                         // is server Windows or Linux?
@@ -1097,10 +1097,10 @@ if (!file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
 
                     // delete temporary install table
                     $result = mysqli_query($dbTmp, "DROP TABLE `_install`");
-                    $errorMsg = "Cannot remove _install table";
+                    $errorMsg = "Cannot remove `_install` table. Please do it manually.";
 
                     if ($result === false) {
-                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "Failed", "multiple" : ""}]';
+                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "", "multiple" : ""}]';
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }

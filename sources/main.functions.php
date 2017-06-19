@@ -1537,19 +1537,19 @@ function handleConfigFile($action, $field = null, $value = null)
                 break;
             }
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".string($value)."',\n";
+                $data[$x] = "    '".$field."' => '".(string)$value."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".string($value)."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".(string)$value."',\n";
         }
     }
 
     // update file
-    file_put_contents($tp_config_file, implode('', isset($data) ? $data : array()));
+    file_put_contents($tp_config_file, (string)implode('', isset($data) ? $data : array()));
 
     return true;
 }
@@ -1746,8 +1746,8 @@ function debugTeampass($text) {
 * DELETE the file with expected command depending on server type
 */
 function fileDelete($file) {
-    if (is_file(string($file))) {
-        unlink(string($file));
+    if (is_file((string)$file)) {
+        unlink((string)$file);
     }
 }
 
