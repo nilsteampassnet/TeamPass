@@ -34,8 +34,7 @@ class AXSILPortal_V1_Auth {
 
         $serviceCall = $this->baseUrl."/authmessage/".$apn."/create/".$hedgeId;
 
-        $json = file_get_contents((string) $serviceCall);
-        $response = json_decode($json, true);
+        $json = file_get_contents(filter_var($serviceCall, FILTER_SANITIZE_URL));        $response = json_decode($json, true);
 
         return $response['flickerCode'];
     }

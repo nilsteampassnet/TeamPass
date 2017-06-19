@@ -262,7 +262,7 @@ if ($res === false) {
 mysqli_query($dbTmp,
     "UPDATE `".$_SESSION['pre']."misc`
     SET `valeur` = 'maintenance_mode'
-    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+    WHERE type = 'admin' AND intitule = '".intval($_POST['no_maintenance_mode'])."'"
 );
 
 
