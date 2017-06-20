@@ -13,35 +13,36 @@
  */
 require_once 'SecureHandler.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false|| !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
-/* do checks */
+// Do checks
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'home') === false) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
 /**
  * Define Timezone
- */
-if (isset($_SESSION['settings']['timezone'])) {
+**/
+if (isset($_SESSION['settings']['timezone']) === true) {
     date_default_timezone_set($_SESSION['settings']['timezone']);
 } else {
     date_default_timezone_set('UTC');
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-header("Content-type: text/html; charset=utf-8");
-header("Cache-Control: no-cache, must-revalidate");
-header("Pragma: no-cache");
+require_once$_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, must-revalidate');
+header('Pragma: no-cache');
 require_once 'main.functions.php';
-// pw complexity levels
+// Pw complexity levels
 $_SESSION['settings']['pwComplexity'] = array(
     0 => array(0, $LANG['complex_level0']),
     25 => array(25, $LANG['complex_level1']),
@@ -50,9 +51,9 @@ $_SESSION['settings']['pwComplexity'] = array(
     70 => array(70, $LANG['complex_level4']),
     80 => array(80, $LANG['complex_level5']),
     90 => array(90, $LANG['complex_level6'])
-    );
+);
 
-//Class loader
+// Class loader
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
@@ -79,11 +80,6 @@ $aes->register();
 // phpcrypt
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
-
-// prepare Encryption class calls
-use \Defuse\Crypto\Crypto;
-use \Defuse\Crypto\Exception as Ex;
-
 
 // Do asked action
 if (isset($_POST['type'])) {
@@ -181,7 +177,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                 } else {
-                    $passwd['string'] = "";
+                    $passwd['string'] = '';
                 }
 
                 if (!empty($passwd["error"])) {

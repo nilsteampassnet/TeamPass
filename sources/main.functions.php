@@ -1537,19 +1537,19 @@ function handleConfigFile($action, $field = null, $value = null)
                 break;
             }
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".(string) $value."',\n";
+                $data[$x] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".(string) $value."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
         }
     }
 
     // update file
-    file_put_contents($tp_config_file, (string) implode('', isset($data) ? $data : array()));
+    file_put_contents($tp_config_file, filter_var(implode('', isset($data) ? $data : array()), FILTER_SANITIZE_STRING));
 
     return true;
 }
@@ -1746,8 +1746,9 @@ function debugTeampass($text) {
 * DELETE the file with expected command depending on server type
 */
 function fileDelete($file) {
-    if (is_file((string) $file)) {
-        unlink((string) $file);
+    $file = filter_var($file, FILTER_SANITIZE_STRING);
+    if (is_file($file)) {
+        unlink($file);
     }
 }
 

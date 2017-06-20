@@ -173,8 +173,8 @@ class SecureHandler extends SessionHandler
      */
     protected function hash_equals($expected, $actual)
     {
-        $expected     = (string) $expected;
-        $actual       = (string) $actual;
+        $expected     = filter_var($expected, FILTER_SANITIZE_STRING);
+        $actual       = filter_var($actual, FILTER_SANITIZE_STRING);
         if (function_exists('hash_equals')) {
             return hash_equals($expected, $actual);
         }

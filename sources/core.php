@@ -19,14 +19,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 function redirect($url)
 {
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
-        header('Location: '.(string) $url);
+        header('Location: '.filter_var($url, FILTER_SANITIZE_URL));
         exit;
     } else {  //If headers are sent... do java redirect... if java disabled, do html redirect.
         echo '<script type="text/javascript">';
-        echo 'window.location.href="'.(string) $url.'";';
+        echo 'window.location.href="'.filter_var($url, FILTER_SANITIZE_URL).'";';
         echo '</script>';
         echo '<noscript>';
-        echo '<meta http-equiv="refresh" content="0;url='.(string) $url.'" />';
+        echo '<meta http-equiv="refresh" content="0;url='.filter_var($url, FILTER_SANITIZE_URL).'" />';
         echo '</noscript>';
         exit;
     }
@@ -38,7 +38,7 @@ if (
     isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
 ) {
-    $url = "https://".(string) $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+    $url = filter_var("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], FILTER_SANITIZE_URL);
     redirect($url);
 }
 

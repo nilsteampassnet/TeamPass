@@ -50,7 +50,7 @@ if ($_POST['type'] === "identify_duo_user") {
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig request : ".(string) $_POST['login']."\n".
+            "sig request : ".filter_var($_POST['login'], FILTER_SANITIZE_STRING)."\n".
             'resp : '.$sig_request."\n"
         );
     }
@@ -174,14 +174,14 @@ if ($_POST['type'] === "identify_duo_user") {
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     // load library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, (string) $_POST['sig_response']);
+    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING));
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig response : ".(string) $_POST['sig_response']."\n".
+            "sig response : ".filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING)."\n".
             'resp : '.$resp."\n"
         );
     }
@@ -252,7 +252,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Content of data sent '".(string) $sentData."'\n"
+            "Content of data sent '".filter_var($sentData, FILTER_SANITIZE_STRING)."'\n"
         );
     }
 
@@ -293,7 +293,7 @@ function identifyUser($sentData)
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Starting authentication of '".(string) $username."'\n"
+            "Starting authentication of '".filter_var($username, FILTER_SANITIZE_STRING)."'\n"
         );
     }
 
@@ -384,11 +384,11 @@ function identifyUser($sentData)
                     $result = ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], (string) $filter_group, array('dn'));
+                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], filter_var($filter_group, FILTER_SANITIZE_STRING), array('dn'));
                         if ($debugLdap == 1) {
                                 fputs(
                                         $dbgLdap,
-                                        'Search filter (group): '.(string) $filter_group."\n".
+                                        'Search filter (group): '.filter_var($filter_group, FILTER_SANITIZE_STRING)."\n".
                                         'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
                                 );
                         }
@@ -1093,7 +1093,7 @@ function identifyUser($sentData)
         fputs(
             $dbgDuo,
             "\n\n----\n".
-            "Identified : ".(string) $return."\n\n"
+            "Identified : ".filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
         );
     }
 

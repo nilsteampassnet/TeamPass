@@ -56,7 +56,7 @@ padding: 0 5px 0 5px;
 </style>
 </head><body>
 <?php
-require_once('sources/SecureHandler.php');
+require_once 'sources/SecureHandler.php';
 session_start();
 if (
     !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -68,7 +68,7 @@ if (
 
 /* do checks */
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings") === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
@@ -77,7 +77,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-header("Content-type: text/html; charset=utf-8");
+header('Content-type: text/html; charset=utf-8');
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 

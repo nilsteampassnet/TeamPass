@@ -720,16 +720,16 @@ global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPa
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"".string($_SESSION['server'])."\";
-\$user = \"". string($_SESSION['user'])."\";
-\$pass = \"". str_replace("$", "\\$", string($_SESSION['pass']))."\";
-\$database = \"". string($_SESSION['database'])."\";
-\$port = ". string($_SESSION['port']).";
-\$pre = \"". string($_SESSION['pre'])."\";
-\$encoding = \"".string($_SESSION['db_encoding'])."\";
+\$server = \"".filter_var($_SESSION['server'], FILTER_SANITIZE_STRING)."\";
+\$user = \"". filter_var($_SESSION['user'], FILTER_SANITIZE_STRING)."\";
+\$pass = \"". str_replace("$", "\\$", filter_var($_SESSION['pass'], FILTER_SANITIZE_STRING))."\";
+\$database = \"". filter_var($_SESSION['database'], FILTER_SANITIZE_STRING)."\";
+\$port = ". filter_var($filter_var['port'], FILTER_SANITIZE_STRING).";
+\$pre = \"". filter_var($_SESSION['pre'], FILTER_SANITIZE_STRING)."\";
+\$encoding = \"".filter_var($_SESSION['db_encoding'], FILTER_SANITIZE_STRING)."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
-@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7))."');
+@define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7)."');
 if (!file_exists(\"".$skFile."\")) {
     require_once \"".$skFile."\";
 }
