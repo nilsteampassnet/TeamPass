@@ -32,7 +32,7 @@ class AXSILPortal_V1_Auth {
 
     function createAuthenticationMessage($apn, $createFlickerCode, $returnPath, $authenticationLevel, $hedgeId) {
 
-        $serviceCall = filter_var($this->baseUrl."/authmessage/".$apn."/create/".$hedgeId, FILTER_SANITIZE_URL);
+        $serviceCall = htmlspecialchars($this->baseUrl."/authmessage/".$apn."/create/".$hedgeId);
 
         $json = file_get_contents($serviceCall);
         $response = json_decode($json, true);
@@ -46,7 +46,7 @@ class AXSILPortal_V1_Auth {
      */
     function verifyResponse($apn, $response, $hedgeId) {
 
-        $serviceCall = filter_var($this->baseUrl."/authmessage/".$apn."/verify/".$hedgeId."/".$response, FILTER_SANITIZE_URL);
+        $serviceCall = htmlspecialchars($this->baseUrl."/authmessage/".$apn."/verify/".$hedgeId."/".$response);
 
         $json = file_get_contents($serviceCall);
         $response = json_decode($json, true);
