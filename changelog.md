@@ -1,5 +1,6 @@
 2.1.27
 
+ Fix issues regarding DUOSecurity
  Fix upgrade doesn't start in case that sk.php file has moved
  Fix for Custom Fields not displayed as defined by `order` field
  #1787 email notifications are not sent if there are any admins with empty email address

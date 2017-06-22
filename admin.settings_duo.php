@@ -57,15 +57,15 @@ if (file_exists($filename)) {
     //copy some constants from this existing file
     $settingsFile = file($filename);
     while (list($key, $val) = each($settingsFile)) {
-        if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
-            $tmp_skfile = substr($val, 14, strpos($val, '";') - 14);
+        if (substr_count($val, "@define('SECUREPATH'")) {
+            $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
         }
     }
 }
 
 // read SK.PHP file
 $tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
-$skFile = file($filename);
+$skFile = file($tmp_skfile);
 while (list($key, $val) = each($skFile)) {
     if (substr_count($val, "@define('AKEY'") > 0) {
         $tmp_akey = substr($val, 17, strpos($val, '")') - 17);

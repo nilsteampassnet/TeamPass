@@ -344,19 +344,19 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $_POST['option']);
-        $file = filter_var($dataPost[0], FILTER_SANITIZE_STRING);
-        $key = filter_var($dataPost[1], FILTER_SANITIZE_STRING);
+        $file = htmlspecialchars($dataPost[0]);
+        $key = htmlspecialchars($dataPost[1]);
 
         //create uncrypted file
         if (!empty($key)) {
             //read full file
-            $fileArray = file($_SESSION['settings']['path_to_files_folder']."/".$file);
+            $fileArray = file(basename($_SESSION['settings']['path_to_files_folder']."/".$file));
 
             //delete file
             deleteFile($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //create new file with uncrypted data
-            $file = filter_var($_SESSION['settings']['path_to_files_folder']."/".time().".txt", FILTER_SANITIZE_STRING);
+            $file = htmlspecialchars($_SESSION['settings']['path_to_files_folder']."/".time().".txt");
             $inF = fopen($file, "w");
             while (list($cle, $val) = each($fileArray)) {
                 fputs($inF, decrypt($val, $key)."\n");
@@ -1570,12 +1570,13 @@ switch ($_POST['type']) {
 
         //get infos from SETTINGS.PHP file
         $filename = $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+        $tmp_skfile = '';
         if (file_exists($filename)) {
             // get sk.php file path
             $settingsFile = file($filename);
             while (list($key, $val) = each($settingsFile)) {
-                if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
-                    $tmp_skfile = substr($val, 14, strpos($val, '";') - 14);
+                if (substr_count($val, "@define('SECUREPATH'")) {
+                    $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
                 }
             }
 
@@ -1592,7 +1593,7 @@ switch ($_POST['type']) {
                     echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
                     break;
                 } else {
-                    deleteFile($tmp_skfile);
+                    fileDelete($tmp_skfile);
                 }
             } else {
                 // send back an error
@@ -1607,13 +1608,12 @@ switch ($_POST['type']) {
             $fh,
             utf8_encode(
 "<?php
-@define('SALT', '".filter_var(SALT, FILTER_SANITIZE_STRING)."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 // DUOSecurity credentials
-@define('AKEY', \"".filter_var($akey, FILTER_SANITIZE_STRING)."\");
-@define('IKEY', \"".filter_var($ikey, FILTER_SANITIZE_STRING)."\");
-@define('SKEY', \"".filter_var($skey, FILTER_SANITIZE_STRING)."\");
-@define('HOST', \"".filter_var($host, FILTER_SANITIZE_STRING)."\");
+@define('AKEY', \"".htmlspecialchars($akey)."\");
+@define('IKEY', \"".htmlspecialchars($ikey)."\");
+@define('SKEY', \"".htmlspecialchars($skey)."\");
+@define('HOST', \"".htmlspecialchars($host)."\");
 ?>"
             )
         );

@@ -61,6 +61,33 @@ if ($_POST['type'] === "identify_duo_user") {
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 
+} elseif ($_POST['type'] == "identify_duo_user_check") {
+//--------
+// DUO AUTHENTICATION
+// this step is verifying the response received from the server
+//--------
+
+    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    // load library
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING));
+
+    if ($debugDuo == 1) {
+        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");
+        fputs(
+            $dbgDuo,
+            "\n\n-----\n\n".
+            "sig response : ".filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING)."\n".
+            'resp : '.$resp."\n"
+        );
+    }
+
+    // return the response (which should be the user name)
+    if ($resp === $_POST['login']) {
+        echo '[{"resp" : "'.$resp.'"}]';
+    } else {
+        echo '[{"resp" : "'.$resp.'"}]';
+    }
 } elseif ($_POST['type'] == "identify_user_with_agses") {
 //--------
 //-- AUTHENTICATION WITH AGSES
@@ -147,11 +174,11 @@ if ($_POST['type'] === "identify_duo_user") {
             }
             $_SESSION['user_settings']['agses-usercardid'] = $row['agses-usercardid'];
             $agses_message = $agses->createAuthenticationMessage(
-                $row['agses-usercardid'],
+                (string)$row['agses-usercardid'],
                 true,
                 1,
                 2,
-                $_SESSION['hedgeId']
+                (int)$_SESSION['hedgeId']
             );
 
             echo '[{"agses_message" : "'.$agses_message.'" , "error" : ""}]';
@@ -164,33 +191,6 @@ if ($_POST['type'] === "identify_duo_user") {
         } else {
             echo '[{"error" : "something_wrong" , "agses_message" : ""}]'; // user not found but not displayed as this in the error message
         }
-    }
-} elseif ($_POST['type'] == "identify_duo_user_check") {
-//--------
-// DUO AUTHENTICATION
-// this step is verifying the response received from the server
-//--------
-
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    // load library
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING));
-
-    if ($debugDuo == 1) {
-        $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");
-        fputs(
-            $dbgDuo,
-            "\n\n-----\n\n".
-            "sig response : ".filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING)."\n".
-            'resp : '.$resp."\n"
-        );
-    }
-
-    // return the response (which should be the user name)
-    if ($resp === $_POST['login']) {
-        echo '[{"resp" : "'.$resp.'"}]';
-    } else {
-        echo '[{"resp" : "'.$resp.'"}]';
     }
 } elseif ($_POST['type'] == "identify_user") {
 //--------
@@ -342,7 +342,11 @@ function identifyUser($sentData)
         )
     );
     $counter = DB::count();
+    $user_initial_creation_through_ldap = false;
+    $proceedIdentification = false;
 
+
+    // Prepare LDAP connection if set up
     if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
         && $username != "admin"
     ) {
@@ -412,6 +416,25 @@ function identifyUser($sentData)
                         $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
                         if ($ldapbind) {
                             $ldapConnection = true;
+
+                            // Update user's password
+                            $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+
+                            // Do things if user exists in TP
+                            if ($counter > 0) {
+                                // Update pwd in TP database
+                                DB::update(
+                                    prefix_table('users'),
+                                    array(
+                                        'pw' => $data['pw']
+                                    ),
+                                    "login=%s",
+                                    $username
+                                );
+
+                                // No user creation is requested
+                                $proceedIdentification = true;
+                            }
                         } else {
                             $ldapConnection = false;
                         }
@@ -470,16 +493,24 @@ function identifyUser($sentData)
             // authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
-                //update user's password
+                // Update user's password
                 $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
-                DB::update(
-                    prefix_table('users'),
-                    array(
-                        'pw' => $data['pw']
-                    ),
-                    "login=%s",
-                    $username
-                );
+
+                // Do things if user exists in TP
+                if ($counter > 0) {
+                    // Update pwd in TP database
+                    DB::update(
+                        prefix_table('users'),
+                        array(
+                            'pw' => $data['pw']
+                        ),
+                        "login=%s",
+                        $username
+                    );
+
+                    // No user creation is requested
+                    $proceedIdentification = true;
+                }
             } else {
                 $ldapConnection = false;
             }
@@ -501,9 +532,11 @@ function identifyUser($sentData)
         );
     }
 
+
     // Check PSK
     if (
-            isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            isset($_SESSION['settings']['psk_authentication'])
+            && $_SESSION['settings']['psk_authentication'] == 1
             && $data['admin'] != 1
     ) {
         $psk = htmlspecialchars_decode($dataReceived['psk']);
@@ -524,15 +557,13 @@ function identifyUser($sentData)
         }
     }
 
-    $user_initial_creation_through_ldap = false;
-    $proceedIdentification = false;
-    if ($counter > 0) {
-        $proceedIdentification = true;
-    } elseif ($counter == 0 && $ldapConnection === true && isset($_SESSION['settings']['ldap_elusers'])
+
+    // Create new LDAP user if not existing in Teampass
+    // Don't create it if option "only localy declared users" is enabled
+    if ($counter == 0 && $ldapConnection === true && isset($_SESSION['settings']['ldap_elusers'])
         && ($_SESSION['settings']['ldap_elusers'] == 0)
     ) {
-        // If LDAP enabled, create user in CPM if doesn't exist
-        $data['pw'] = $pwdlib->createPasswordHash($passwordClear); // create passwordhash
+        // If LDAP enabled, create user in TEAMPASS if doesn't exist
 
         // get user info from LDAP
         if ($_SESSION['settings']['ldap_type'] === 'posix-search') {
@@ -554,11 +585,12 @@ function identifyUser($sentData)
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
                 'personal_folder' => $_SESSION['settings']['enable_pf_feature'] == "1" ? '1' : '0',
-                'fonction_id' => '0',
-                'groupes_interdits' => '0',
-                'groupes_visibles' => '0',
+                'fonction_id' => '',
+                'groupes_interdits' => '',
+                'groupes_visibles' => '',
                 'last_pw_change' => time(),
-                'user_language' => $_SESSION['settings']['default_language']
+                'user_language' => $_SESSION['settings']['default_language'],
+                'encrypted_psk' => ''
             )
         );
         $newUserId = DB::insertId();
@@ -579,6 +611,7 @@ function identifyUser($sentData)
         $user_initial_creation_through_ldap = true;
     }
 
+
     // Check if user exists (and has been created in case of new LDAP user)
     $data = DB::queryFirstRow(
         "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
@@ -593,15 +626,8 @@ function identifyUser($sentData)
         exit;
     }
 
-    if ($debugDuo == 1) {
-        fputs(
-            $dbgDuo,
-            "User exists (confirm): ".$counter."\n"
-        );
-    }
-
     // check GA code
-    if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username != "admin") {
+    if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 && $username !== "admin") {
         if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
             // load library
             include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
@@ -649,6 +675,8 @@ function identifyUser($sentData)
             $proceedIdentification = false;
             $logError = "ga_code_wrong";
         }
+    } else if ($counter > 0) {
+        $proceedIdentification = true;
     }
 
     if ($debugDuo == 1) {
@@ -657,6 +685,7 @@ function identifyUser($sentData)
             "Proceed with Ident: ".$proceedIdentification."\n"
         );
     }
+
 
     // check AGSES code
     if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 && $username != "admin") {
@@ -677,9 +706,9 @@ function identifyUser($sentData)
         if ($responseCode != "" && strlen($responseCode) >= 4) {
             // Verify response code, store result in session
             $result = $agses->verifyResponse(
-                $_SESSION['user_settings']['agses-usercardid'],
+                (string)$_SESSION['user_settings']['agses-usercardid'],
                 $responseCode,
-                $_SESSION['hedgeId']
+                (int)$_SESSION['hedgeId']
             );
 
             if ($result == 1) {

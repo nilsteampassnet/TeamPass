@@ -18,13 +18,15 @@ if (!isset($_SESSION['CPM']) || !isset($_SESSION['key_tmp']) || !isset($_SESSION
     die('Hacking attempt...');
 }
 
-header('Content-disposition: attachment; filename='.rawurldecode(filter_var($_GET['name'], FILTER_SANITIZE_STRING)));
+$get_filename = filter_var($_GET['name'], FILTER_SANITIZE_STRING);
+
+header('Content-disposition: attachment; filename='.rawurldecode(basename($get_filename)));
 header('Content-Type: application/octet-stream');
 header('Pragma: no-cache');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
-    readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename(filter_var($_GET['file'], FILTER_SANITIZE_STRING)));
+    readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($get_filename));
 } else {
     require_once 'main.functions.php';
     // connect to DB

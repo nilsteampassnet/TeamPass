@@ -162,9 +162,11 @@ if (!empty($_SESSION['fin_session'])) {
 }
 
 if (
-    isset($_SESSION['user_id']) && (empty($_SESSION['fin_session'])
-    || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
-    || empty($dataSession['key_tempo']))
+    isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
+        empty($_SESSION['fin_session'])
+        || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
+        || empty($dataSession['key_tempo'])
+    )
 ) {
     // Update table by deleting ID
     DB::update(
@@ -184,10 +186,9 @@ if (
     }
 
     // erase session table
-    $_SESSION = array();
-
-    // Kill session
     session_destroy();
+    $_SESSION = array();
+    unset($_SESSION);
 
     //Redirection
     echo '

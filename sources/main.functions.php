@@ -1549,7 +1549,7 @@ function handleConfigFile($action, $field = null, $value = null)
     }
 
     // update file
-    file_put_contents($tp_config_file, filter_var(implode('', isset($data) ? $data : array()), FILTER_SANITIZE_STRING));
+    file_put_contents($tp_config_file, implode('', isset($data) ? $data : array()));
 
     return true;
 }

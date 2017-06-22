@@ -199,7 +199,7 @@ $htmlHeaders .= '
         if (isDuo == 0 || (isDuo == 1 && $("#login").val() == "admin")) {
             identifyUser(redirect, psk, data, randomstring);
         } else {
-            $("#duo_data").val(data);
+            $("#duo_data").val(window.btoa(data));
             loadDuoDialog();
         }
     }
@@ -218,29 +218,29 @@ $htmlHeaders .= '
                 if (data[0].value == randomstring) {
                     $("#connection_error").hide();
                     //redirection for admin is specific
-                    if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
-                    else if (data[0].initial_url != "") window.location.href=data[0].initial_url;
-                    else window.location.href="index.php?page=items";
-                } else if (data[0].value == "user_is_locked") {
+                    if (data[0].user_admin === "1") window.location.href="index.php?page=manage_main";
+                    else if (data[0].initial_url !== "") window.location.href=data[0].initial_url;
+                    else window.location.href = "index.php?page=items";
+                } else if (data[0].value === "user_is_locked") {
                     $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
-                } else if (data[0].value == "bad_psk") {
+                } else if (data[0].value === "bad_psk") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
-                } else if (data[0].value == "bad_psk_confirmation") {
+                } else if (data[0].value === "bad_psk_confirmation") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
-                } else if (data[0].value == "psk_required") {
+                } else if (data[0].value === "psk_required") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
                     $("#connection_error, #connect_psk_confirm").show();
-                } else if (data[0].value == "user_not_exists") {
+                } else if (data[0].value === "user_not_exists") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
                     $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
-                } else if (data[0].value == "error") {
+                } else if (data[0].value === "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
-                } else if (data[0].value == "new_ldap_account_created") {
+                } else if (data[0].value === "new_ldap_account_created") {
                     $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
                     setTimeout(
                         function (){
@@ -248,20 +248,20 @@ $htmlHeaders .= '
                         },
                         2000
                     );
-                } else if (data[0].value == "false_onetimepw") {
+                } else if (data[0].value === "false_onetimepw") {
                     $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
-                } else if (data[0].pwd_attempts >=3 ||data[0].error == "bruteforce_wait") {
+                } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
                     // now user needs to wait 10 secs before new passwd
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
-                } else if (data[0].error == "bad_credentials") {
+                } else if (data[0].error === "bad_credentials") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (data[0].error == "ga_code_wrong") {
+                } else if (data[0].error === "ga_code_wrong") {
                     $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
                 } else if (data[0].value === "agses_error") {
                     $("#connection_error").html(data[0].error).show();
-                } else if (data[0].error == "ga_temporary_code_wrong") {
+                } else if (data[0].error === "ga_temporary_code_wrong") {
                     $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].error == "ga_temporary_code_correct") {
+                } else if (data[0].error === "ga_temporary_code_correct") {
                     $("#ga_code").val("").focus();
                     $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
                 } else if (data[0].value === "install_error") {
@@ -638,7 +638,7 @@ $htmlHeaders .= '
         countdown();
 
         // load DUO login
-        if ($("#duo_sig_response").val() != "") {
+        if ($("#duo_sig_response").val() !== "") {
             $("#login").val($("#duo_login").val());
 
             // checking that response is corresponding to user credentials
@@ -666,8 +666,12 @@ $htmlHeaders .= '
                             function(data) {
                                 $("#connection_error").hide();
                                 //redirection for admin is specific
-                                if (data[0].user_admin == "1") window.location.href="index.php?page=manage_main";
-                                else $( "#duo_form" ).submit();
+                                setTimeout(
+                                    function(){
+                                        window.location.href="index.php?page=items";
+                                    },
+                                    1
+                                );
                             },
                             "json"
                         );

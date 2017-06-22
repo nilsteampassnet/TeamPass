@@ -334,12 +334,12 @@ echo '
 echo '
         <input type="hidden" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
         <input type="hidden" name="language" id="language" value="" />
-        <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="'.@$_SESSION['user_pw_complexity'].'" />
+        <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
         <input type="hidden" name="user_session" id="user_session" value=""/>
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
-        <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
+        <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? $_POST['sig_response'] : '', '" />';
 
 // SENDING STATISTICS?
 if (
@@ -755,8 +755,8 @@ echo '
     <div id="div_duo"></div>
     '.$LANG['duo_loading_iframe'].'
     <form method="post" id="duo_form" action="#">
-        <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
-        <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
+        <input type="hidden" id="duo_login" name="duo_login" value="', isset($_POST['duo_login']) ? $_POST['duo_login'] : '', '" />
+        <input type="hidden" id="duo_data" name="duo_data" value="', isset($_POST['duo_data']) ? htmlentities(base64_decode($_POST['duo_data'])) : '', '" />
     </form>
 </div>';
 
@@ -764,7 +764,7 @@ echo '
 echo '
 <div id="div_increase_session_time" style="display:none;padding:4px;">
     <b>'.$LANG['index_session_duration'].':</b>
-    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? (string) $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
+    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
     <b>'.$LANG['minutes'].'</b>
     <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="input_session_duration_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';

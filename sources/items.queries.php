@@ -37,7 +37,7 @@ if (isset($_SESSION['settings']['timezone']) === true) {
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once$_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 header('Pragma: no-cache');
