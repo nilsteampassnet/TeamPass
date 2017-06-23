@@ -258,7 +258,7 @@ echo '
 // Line for PW
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<i id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td>
                         &nbsp;
                         <div id="id_pw" style="float:left; cursor:pointer; width:300px;"></div>
@@ -269,7 +269,7 @@ echo '
 // Line for LOGIN
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<i id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></i></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
                     <td>
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
@@ -625,11 +625,12 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold; padding:2px;" class="ui-corner-all ui-state-default"></span>
                     <span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
-                <span class="fa fa-clipboard tip" style="cursor:pointer;" id="edit_past_pwds"></span>
+                <span class="fa fa-history tip" style="cursor:pointer;" id="edit_past_pwds" onclick="showPasswordsHistory()"></span>
+                <div style="display:none; padding:3px; width:390px; font-weight:normal; font-size:11px; font-family:italic;" id="edit_past_pwds_div" class="ui-corner-all ui-state-default"></div>
                 <input type="hidden" id="edit_mypassword_complex" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>

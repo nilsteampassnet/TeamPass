@@ -1676,7 +1676,7 @@ if (isset($_POST['type'])) {
                 }
 
                 if (!empty($reason[1]) || $record['action'] === "at_copy" || $record['action'] === "at_creation" || $record['action'] === "at_manual" || $record['action'] === "at_modification" || $record['action'] === "at_delete" || $record['action'] === "at_restored") {
-                    if (trim($reason[0]) === "at_pw") {
+                    if (trim($reason[0]) === "at_pw" && empty($reason[1]) === false) {
                         if (empty($historyOfPws)) {
                             $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
                         } else {
@@ -2204,10 +2204,12 @@ if (isset($_POST['type'])) {
 
                 $idManaged = '';
                 $i = 0;
+                $arr_items_html = array();
 
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
                     if (empty($idManaged) || $idManaged != $record['id']) {
+                        $new_line = '';
 
                         // Get Expiration date
                         $expirationFlag = '';
@@ -2370,37 +2372,37 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // Prepare full line
-                        $html .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
+                        $new_line .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
                         if ($canMove === true && $accessLevel == 0) {
-                            $html .= 'item_draggable';
+                            $new_line .= 'item_draggable';
                         } else {
-                            $html .= 'item';
+                            $new_line .= 'item';
                         }
 
-                        $html .= ' trunc_line" id="'.$record['id'].'" style="">';
+                        $new_line .= ' trunc_line" id="'.$record['id'].'" style="">';
 
                         if ($canMove === true && $accessLevel == 0) {
-                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
+                            $new_line .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
                         } else {
-                            $html .= '<span style="margin-left:11px;"></span>';
+                            $new_line .= '<span style="margin-left:11px;"></span>';
                         }
 
 
                         $label = stripslashes(handleBackslash($record['label']));
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
+                        $new_line .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
 
                         // manage desc to show
                         if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === '1') {
                             $desc = explode("<br>", $record['description']);
-                            $html .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
+                            $new_line .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
                         }
 
-                        $html .= '</div></font>';
+                        $new_line .= '</div></font>';
 
-                        $html .= '</a>';
+                        $new_line .= '</a>';
 
                         //
-                        $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+                        $new_line .= '<span style="float:right;margin:2px 10px 0px 0px;">';
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1') {
@@ -2422,9 +2424,9 @@ if (isset($_POST['type'])) {
                             $pw = $pw['string'];
                             if (!isUTF8($pw)) {
                                 $pw = "";
-                                $html .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
+                                $new_line .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
                             } else if (empty($pw)) {
-                                $html .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
+                                $new_line .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
                             }
                         } else {
                             $pw = "";
@@ -2433,7 +2435,7 @@ if (isset($_POST['type'])) {
                         // mini icon for collab
                         if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === '1') {
                             if ($record['anyone_can_modify'] === '1') {
-                                $html .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                                $new_line .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                             }
                         }
 
@@ -2441,24 +2443,34 @@ if (isset($_POST['type'])) {
                         if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1') {
                             if ($displayItem === true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+                                    $new_line .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                                    $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
                                 }
                             }
                         }
                         // Prepare make Favorite small icon
-                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+                        $new_line .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $new_line .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
-                            $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $new_line .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
                         }
 
-                        $html .= '</span></li>';
+                        $new_line .= '</span></li>';
                         // Build array with items
                         array_push($itemsIDList, array($record['id'], $pw, $record['login'], $displayItem));
+
+                        // build full html
+                        $html .= $new_line;
+                        /*$arr_items_html[] = array(
+                            'item_id' => $record['id'],
+                            'tree_id' => $_POST['id'],
+                            'row_html' => $new_line,
+                            'last_modification' => $record['date'],
+                            'creation_timestamp' => time()
+                        );*/
 
                         $i++;
                     }
@@ -2467,7 +2479,12 @@ if (isset($_POST['type'])) {
 
                 $rights = recupDroitCreationSansComplexite($_POST['id']);
             }
-
+/*
+            DB::insert(
+                prefix_table("items_cache"),
+                $arr_items_html
+            );
+*/
             // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // count
             if (intval($start) === 0) {
@@ -2492,7 +2509,15 @@ if (isset($_POST['type'])) {
             }
 
             //  Fixing items not being displayed
-            $html = iconv('UTF-8', 'UTF-8//IGNORE', mb_convert_encoding($html, "UTF-8", "UTF-8"));
+            $html = iconv(
+                'UTF-8',
+                'UTF-8//IGNORE',
+                mb_convert_encoding(
+                    $html,
+                    "UTF-8",
+                    "UTF-8"
+                )
+            );
 
 
             // Prepare returned values

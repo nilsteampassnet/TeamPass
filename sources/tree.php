@@ -359,7 +359,7 @@ function recursiveTree($nodeId)
                     // folder should not be visible
                     // only if it has no descendants
                     $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
-                    if (count(array_diff($nodeDirectDescendants, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) !== count($nodeDirectDescendants)) {
+                    if (count(array_diff($nodeDirectDescendants, array_merge($_SESSION['groupes_visibles'], array_keys($_SESSION['list_restricted_folders_for_items'])))) !== count($nodeDirectDescendants)) {
                         // show it but block it
                         $show_but_block = true;
                         $hide_node = false;
