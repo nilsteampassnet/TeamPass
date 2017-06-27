@@ -174,11 +174,11 @@ if ($_POST['type'] === "identify_duo_user") {
             }
             $_SESSION['user_settings']['agses-usercardid'] = $row['agses-usercardid'];
             $agses_message = $agses->createAuthenticationMessage(
-                (string)$row['agses-usercardid'],
+                (string) $row['agses-usercardid'],
                 true,
                 1,
                 2,
-                (int)$_SESSION['hedgeId']
+                (string) $_SESSION['hedgeId']
             );
 
             echo '[{"agses_message" : "'.$agses_message.'" , "error" : ""}]';
@@ -706,9 +706,9 @@ function identifyUser($sentData)
         if ($responseCode != "" && strlen($responseCode) >= 4) {
             // Verify response code, store result in session
             $result = $agses->verifyResponse(
-                (string)$_SESSION['user_settings']['agses-usercardid'],
+                (string) $_SESSION['user_settings']['agses-usercardid'],
                 $responseCode,
-                (int)$_SESSION['hedgeId']
+                (string) $_SESSION['hedgeId']
             );
 
             if ($result == 1) {

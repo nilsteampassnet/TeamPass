@@ -544,7 +544,7 @@ $htmlHeaders .= '
 
                 // special check for agses_cardid
                 // must contain 12 numbers
-                if ($("#agses_cardid").val() !== "") {
+                if ($("#agses_cardid").val() === "") {
                     var agses_carid_error = "";
                     if ($("#agses_cardid").val().length !== 12) {
                         agses_carid_error = "Card ID MUST contain 12 numbers";

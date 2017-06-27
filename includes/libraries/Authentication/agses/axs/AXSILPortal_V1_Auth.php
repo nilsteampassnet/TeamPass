@@ -43,6 +43,7 @@ class AXSILPortal_V1_Auth {
     /**
      * @param string $response
      * @param string $hedgeId
+     * @param string $apn
      */
     function verifyResponse($apn, $response, $hedgeId) {
 

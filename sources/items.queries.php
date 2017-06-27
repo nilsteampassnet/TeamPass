@@ -13,7 +13,7 @@
  */
 require_once 'SecureHandler.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false|| !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
@@ -2464,13 +2464,6 @@ if (isset($_POST['type'])) {
 
                         // build full html
                         $html .= $new_line;
-                        /*$arr_items_html[] = array(
-                            'item_id' => $record['id'],
-                            'tree_id' => $_POST['id'],
-                            'row_html' => $new_line,
-                            'last_modification' => $record['date'],
-                            'creation_timestamp' => time()
-                        );*/
 
                         $i++;
                     }
@@ -2479,12 +2472,7 @@ if (isset($_POST['type'])) {
 
                 $rights = recupDroitCreationSansComplexite($_POST['id']);
             }
-/*
-            DB::insert(
-                prefix_table("items_cache"),
-                $arr_items_html
-            );
-*/
+
             // DELETE - 2.1.19 - AND (l.action = 'at_creation' OR (l.action = 'at_modification' AND l.raison LIKE 'at_pw :%'))
             // count
             if (intval($start) === 0) {
