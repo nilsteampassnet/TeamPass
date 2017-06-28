@@ -190,7 +190,7 @@ switch ($_POST['type']) {
             fclose($fp);
 
             // remove file
-            unlink($file);
+            unlink(filter_var($file, FILTER_SANITIZE_STRING));
         } else {
             echo '[{"error":"cannot_open"}]';
             break;
@@ -358,7 +358,9 @@ switch ($_POST['type']) {
 
         //read xml file
         if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
-            $xml = simplexml_load_file($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
+            $xml = simplexml_load_file(
+                $_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING)
+            );
         }
 
         /**
@@ -520,7 +522,6 @@ switch ($_POST['type']) {
                         $keepassVersion = 2;
                         break;
                     } elseif ($root === true && $xmlLevel > $levelMin) {
-    //                       error_log($nom.",".$elem." - ");
                         //Check each node name and get data from some of them
                         if ($entry === true && $nom == "Key" && $elem == "Title") {
                             $title = true;
@@ -605,7 +606,7 @@ switch ($_POST['type']) {
             }
         }
 
-        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".$_POST['file']."\n");
+        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".filter_var($_POST['file'], FILTER_SANITIZE_STRING)."\n");
 
         // Go through each node of XML file
         recursiveKeepassXML($xml);
@@ -617,7 +618,7 @@ switch ($_POST['type']) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['url_to_files_folder']."/".$_POST['file']);
+            unlink($_SESSION['settings']['url_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
 
             fputs($cacheLogFile, date('H:i').$LANG['import_error_no_read_possible_kp']."\n");
 
@@ -939,7 +940,7 @@ switch ($_POST['type']) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['path_to_files_folder']."/".$_POST['file']);
+            unlink($_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';

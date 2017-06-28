@@ -51,7 +51,7 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
 ** Executes expected queries
 */
 function mainQuery() {
-    global $server, $user, $pass, $database, $port, $encoding, $k, $LANG;
+    global $server, $user, $pass, $database, $port, $encoding, $pre, $k, $LANG;
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
@@ -248,7 +248,7 @@ function mainQuery() {
                 );
 
                 // update sessions
-                $_SESSION['last_pw'] = $oldPw;
+                $_SESSION['last_pw'] = "";
                 $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
                 $_SESSION['validite_pw'] = true;
 
@@ -391,7 +391,7 @@ function mainQuery() {
                     $LANG['index_password']." : ".md5($data['pw']);
 
                 // Check if email has already a key in DB
-                $data = DB::query(
+                DB::query(
                     "SELECT * FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
                     mysqli_escape_string($link, $_POST['login']),
                     "password_recovery"
@@ -496,42 +496,6 @@ function mainQuery() {
             }
             break;
         /**
-         * Get the list of folders
-         */
-        case "get_folders_list":
-            //Load Tree
-            $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-            $tree->register();
-            $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
-            $folders = $tree->getDescendants();
-            $arrOutput = array();
-
-            /* Build list of all folders */
-            $foldersList = "\'0\':\'".$LANG['root']."\'";
-            foreach ($folders as $f) {
-                // Be sure that user can only see folders he/she is allowed to
-                if (!in_array($f->id, $_SESSION['forbiden_pfs'])) {
-                    $displayThisNode = false;
-                    // Check if any allowed folder is part of the descendants of this node
-                    $nodeDescendants = $tree->getDescendants($f->id, true, false, true);
-                    foreach ($nodeDescendants as $node) {
-                        if (in_array($node, $_SESSION['groupes_visibles'])) {
-                            $displayThisNode = true;
-                            break;
-                        }
-                    }
-
-                    if ($displayThisNode === true) {
-                        if ($f->title == $_SESSION['user_id'] && $f->nlevel == 1) {
-                            $f->title = $_SESSION['login'];
-                        }
-                        $arrOutput[$f->id] = $f->title;
-                    }
-                }
-            }
-            echo json_encode($arrOutput, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-            break;
-        /**
          * Store the personal saltkey
          */
         case "store_personal_saltkey":
@@ -544,7 +508,7 @@ function mainQuery() {
                 $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
 
                 // check if encrypted_psk is in database. If not, add it
-                if (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk'])) {
+                if (!isset($_SESSION['user_settings']['encrypted_psk']) || (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk']))) {
                     // generate it based upon clear psk
                     $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($dataReceived['psk']);
 
@@ -694,13 +658,8 @@ function mainQuery() {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
-            //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
 
-            //Prepare variables
-            $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
-
-            if (!empty($_SESSION['user_id']) && !empty($newPersonalSaltkey)) {
+            if (!empty($_SESSION['user_id'])) {
                 // delete all previous items of this user
                 $rows = DB::query(
                     "SELECT i.id as id
@@ -716,15 +675,21 @@ function mainQuery() {
                     DB::delete(prefix_table("items"), "id = %i", $record['id']);
                     // delete in LOGS table
                     DB::delete(prefix_table("log_items"), "id_item = %i", $record['id']);
+                    // delete from CACHE table
+                    updateCacheTable("delete_value", $record['id']);
                 }
-                // change salt
-                $_SESSION['my_sk'] = str_replace(" ", "+", urldecode($newPersonalSaltkey));
-                setcookie(
-                    "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                    encrypt($_SESSION['my_sk'], ""),
-                    time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
-                    '/'
+
+                // remove from DB
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'encrypted_psk' => ""
+                        ),
+                    "id = %i",
+                    $_SESSION['user_id']
                 );
+
+                $_SESSION['user_settings']['session_psk'] = "";
             }
             break;
         /**
@@ -748,7 +713,7 @@ function mainQuery() {
                 $_SESSION['user_language'] = $language;
                 echo "done";
             } else {
-                $_SESSION['user_language'] = $language;
+                $_SESSION['user_language'] = "";
                 echo "done";
             }
             break;
@@ -786,7 +751,6 @@ function mainQuery() {
                     $mail->FromName = $_SESSION['settings']['email_from_name'];
                     $mail->WordWrap = 80; // set word wrap
                     $mail->isHtml(true); // send as HTML
-                    $status = "";
                     $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                     foreach ($rows as $record) {
                         // send email
@@ -949,6 +913,7 @@ function mainQuery() {
 
             // get list of last items seen
             $x = 1;
+            $return = "";
             $arrTmp = array();
             $rows = DB::query(
                 "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
@@ -979,7 +944,7 @@ function mainQuery() {
                 isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
                 && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
             ) {
-                $rows = DB::query("SELECT * FROM ".prefix_table("suggestion"));
+                DB::query("SELECT * FROM ".prefix_table("suggestion"));
                 $nb_suggestions_waiting = DB::count();
             }
 
@@ -1039,6 +1004,7 @@ function mainQuery() {
          */
         case "generate_timezones_list":
 
+            $array = array();
             foreach (timezone_identifiers_list() as $zone) {
                 $array[$zone] = $zone;
             }
@@ -1085,8 +1051,6 @@ function mainQuery() {
                 && $_SESSION['settings']['send_stats'] === "1"
                 && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) > time()
             ) {
-                $statsToSend = "";
-
                 // get statistics data
                 $stats_data = getStatisticsData();
 

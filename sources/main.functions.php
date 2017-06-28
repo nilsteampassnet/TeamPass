@@ -617,7 +617,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
         $groupesInterdits = array();
-        $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+        if (!is_array($groupesInterditsUser)) {
+            $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+        }
         if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {
             $groupesInterdits = $groupesInterditsUser;
         }
@@ -1179,7 +1181,7 @@ function dateToStamp($date)
 {
     $date = date_parse_from_format($_SESSION['settings']['date_format'], $date);
     if ($date['warning_count'] == 0 && $date['error_count'] == 0) {
-        return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+        return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
     } else {
         return false;
     }
@@ -1535,14 +1537,14 @@ function handleConfigFile($action, $field = null, $value = null)
                 break;
             }
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".$value."',\n";
+                $data[$x] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".$value."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
         }
     }
 
@@ -1744,6 +1746,7 @@ function debugTeampass($text) {
 * DELETE the file with expected command depending on server type
 */
 function fileDelete($file) {
+    $file = filter_var($file, FILTER_SANITIZE_STRING);
     if (is_file($file)) {
         unlink($file);
     }

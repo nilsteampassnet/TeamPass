@@ -1019,6 +1019,8 @@ function EditerItem()
                             });
 
                             $("#button_quick_pw_copy").show();
+                        } else {
+                            $("#button_quick_pw_copy").hide();
                         }
                         if ($('#edit_item_login').val() != "") {
                             var clipboard_elogin = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
@@ -1027,6 +1029,8 @@ function EditerItem()
                                 }
                             });
                             $("#button_quick_login_copy").show();
+                        } else {
+                            $("#button_quick_login_copy").hide();
                         }
 
 
@@ -1482,6 +1486,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             });
 
                             $("#button_quick_pw_copy").show();
+                        } else {
+                            $("#button_quick_pw_copy").hide();
                         }
                         if (data.login != "") {
                             var clipboard_login = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
@@ -1495,6 +1501,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 e.clearSelection();
                             });
                             $("#button_quick_login_copy").show();
+                        } else {
+                            $("#button_quick_login_copy").hide();
                         }
                         // #525
                         if (data.url != "") {
@@ -1615,6 +1623,7 @@ function showDetailsStep2(id, param)
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
             $("#edit_past_pwds").attr('title', htmlspecialchars_decode(data.history_of_pwds));
+            $("#edit_past_pwds_div").html(htmlspecialchars_decode(data.history_of_pwds));
 
             $("#id_files").html(data.files_id);
             $("#hid_files").val(data.files_id);
@@ -4189,6 +4198,15 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
             );
         }
     }).dialog("open");
+}
+
+/*
+**
+*/
+function showPasswordsHistory() {
+    if ($('#edit_past_pwds_div').text() !== "") {
+        $('#edit_past_pwds_div').toggle();
+    }
 }
 
 $.fn.simulateClick = function() {

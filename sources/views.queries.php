@@ -58,7 +58,7 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 //Constant used
 $nbElements = 20;
 
-// Construction de la requ?te en fonction du type de valeur
+// building queries
 switch ($_POST['type']) {
     #CASE generating the log for passwords renewal
     case "log_generate":
@@ -83,16 +83,16 @@ switch ($_POST['type']) {
         $pdf->SetFont('helvetica', '', 10);
 
         $rows = DB::query(
-            "SELECT u.login as login, i.label as label, i.id_tree as id_tree
+            "SELECT u.login as login, i.label as label, i.id_tree as id_tree, l.date
             FROM ".prefix_table("log_items")." as l
             INNER JOIN ".prefix_table("users")." as u ON (u.id=l.id_user)
             INNER JOIN ".prefix_table("items")." as i ON (i.id=l.id_item)
-            WHERE l.action = %s AND l.raison = %s",
-            "Modification",
-            "Mot de passe changé"
+            WHERE l.action = %s AND l.raison LIKE %s",
+            "at_modification",
+            "at_pw :%"
         );
         foreach ($rows as $record) {
-            if (date($_SESSION['settings']['date_format'], $record['date']) == $_POST['date']) {
+            if (date($_SESSION['settings']['date_format'], $record['date']) === $_POST['date']) {
                 //get the tree grid
                 $arbo = $tree->getPath($record['id_tree'], true);
                 $arboTxt = "";
@@ -132,8 +132,8 @@ switch ($_POST['type']) {
         );
         foreach ($rows as $record) {
             $tmp = explode(', ', $record['valeur']);
-            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_folder\' value=\''.$record['intitule'].'\' id=\'folder_deleted_'.$record['intitule'].'\' />&nbsp;<b>'.
-                $tmp[2].'</b></td><td><input type=\"hidden\" value=\"'.$record['valeur'].'\"></td></tr>';
+            $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_folder\' value=\''.$record['intitule'].'\' id=\'folder_deleted_'.$record['intitule'].'\' />&nbsp;<b><label for=\'folder_deleted_'.$record['intitule'].'\'>'.
+                $tmp[2].'</label></b></td><td><input type=\"hidden\" value=\"'.$record['valeur'].'\"></td></tr>';
             $arrFolders[substr($record['intitule'], 1)] = $tmp[2];
         }
 
@@ -163,7 +163,7 @@ switch ($_POST['type']) {
                     $thisFolder = "";
                 }
 
-                $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b>'.$record['label'].'</b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
+                $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b><label for=\'item_deleted_'.$record['id'].'\'>'.$record['label'].'</label></b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
             }
             $prev_id = $record['id'];
         }
@@ -333,7 +333,7 @@ switch ($_POST['type']) {
             INNER JOIN ".prefix_table("users")." as u ON (l.qui=u.id)
             WHERE l.type = %s
             ORDER BY %s %s
-			LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
+            LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($nbElements, FILTER_SANITIZE_NUMBER_INT)),
             "user_connection",
             $_POST['order'],
             $POST['direction']
@@ -687,8 +687,23 @@ switch ($_POST['type']) {
                 $itemDate = $record['date'] + ($record['renewal_period'] * $k['one_month_seconds']);
 
                 if ($itemDate <= $date) {
+                    // tree
+                    $arboHtml = "";
+                    $arbo = $tree->getPath($record['id_tree'], true);
+                    foreach ($arbo as $elem) {
+                        if ($elem->title == $_SESSION['user_id'] && $elem->nlevel === '1') {
+                            $elem->title = $_SESSION['login'];
+                            $folderIsPf = true;
+                        }
+                        if (empty($arboHtml)) {
+                            $arboHtml .= htmlspecialchars(stripslashes($elem->title), ENT_QUOTES);
+                        } else {
+                            $arboHtml .= '&nbsp;>&nbsp;'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES);
+                        }
+                    }
+
                     //Save data found
-                    $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"window.location.href = \'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\'\">&nbsp;</span>'.$record['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $itemDate).'</td><td width=\"150px\" align=\"center\">'.$record['title'].'</td><td width=\"100px\" align=\"center\">'.$record['login'].'</td></tr>';
+                    $texte .= '<tr><td width=\"250px\"><span class=\"ui-icon ui-icon-link\" style=\"float: left; margin-right: .3em; cursor:pointer;\" onclick=\"window.location.href = \'index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'\'\">&nbsp;</span>'.$record['label'].'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"100px\" align=\"center\">'.date($_SESSION['settings']['date_format'], $itemDate).'</td><td width=\"150px\" align=\"center\">'.$arboHtml.'</td><td width=\"100px\" align=\"center\">'.$record['login'].'</td></tr>';
 
                     //save data for PDF
                     if (empty($textPdf)) {

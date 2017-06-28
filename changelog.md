@@ -1,12 +1,19 @@
 2.1.27
 
+ Fix issue in tree if subfolder is visible while parent is not
+ Fix issues regarding DUOSecurity
+ Fix upgrade doesn't start in case that sk.php file has moved
  Fix for Custom Fields not displayed as defined by `order` field
+ #1796 Can't add folder from API
  #1787 email notifications are not sent if there are any admins with empty email address
  #1776 Allow restricting items to users and roles - Wrong Item Owner
  #1775 Can not decrypt a created crypted Backup - Improved encryption with Defuse
  #1774 Announce this Item by email
  #1769 Installation issue - no admin account is created
  #1762 Share user rights works backwards
+ #1761 Reset of my Personal Saltkey
+ #1743 Enable anonymous LDAP queries
+ #1690 Unable to set/save personal salt key with LDAP user
 
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)

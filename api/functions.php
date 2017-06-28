@@ -895,13 +895,14 @@ function rest_get() {
             /*
             * ADDING A FOLDER
             * <url to teampass>/api/index.php/add/folder/<title>;<complexity_level>;<parent_id>;<renewal_period>;<personal>?apikey=<valid api key>
+            * http://localhost/teampass/api/index.php/add/folder/Import from API;0;38;0;0?apikey=piesae7ahghae1iiP9ohPhaefaideeThohgh1te
             */
             elseif ($GLOBALS['request'][1] == "folder") {
                 if (!empty($GLOBALS['request'][2])) {
                     // get sent parameters
                     $params = explode(';', base64_decode($GLOBALS['request'][2]));
 
-                    if (!empty($params[0]) && !empty($params[1])) {
+                    if (empty($params[0]) === false && (intval($params[1]) >= 0 && intval($params[1]) <= 100)) {
                         if (empty($params[3])) {
                             $params[3] = 0;
                         }
@@ -1784,10 +1785,9 @@ function rest_get() {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title', 'personal_folder');
 
                     // this will delete all sub folders and items associated
-                    for ($i = 0; $i < count($array_category); $i++) {echo "\n".$array_category[$i]."\n";
+                    for ($i = 0; $i < count($array_category); $i++) {
                         // Get through each subfolder
                         $folders = $tree->getDescendants($array_category[$i], true);
-                        print_r($folders);
                         if (count($folders) > 0) {
                             foreach ($folders as $folder) {
                                 if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {
@@ -1859,7 +1859,7 @@ function rest_get() {
                     }
                 }
 
-                for ($i = 0; $i < count($array_items); $i++) {
+                for ($i = 0, $c = count($array_items); $i < $c; $i++) {
                     DB::update(
                         prefix_table("items"),
                         array(

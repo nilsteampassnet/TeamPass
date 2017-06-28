@@ -972,7 +972,7 @@ if (isset($_POST['newtitle'])) {
                 ) {
                     //Get user's rights
                     identifyUserRights(
-                        $_SESSION['groupes_visibles'].';'.$newFolderId,
+                        is_array($_SESSION['groupes_visibles']) ? array_push($_SESSION['groupes_visibles'], $newFolderId) : $_SESSION['groupes_visibles'].';'.$newFolderId,
                         $_SESSION['groupes_interdits'],
                         $_SESSION['is_admin'],
                         $_SESSION['fonction_id'],

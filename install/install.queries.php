@@ -717,7 +717,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_edition` (
                             `item_id` int(11) NOT NULL,
-                            `user_id` int(11) NOT NULL,
+                            `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL
                             ) CHARSET=utf8;"
                         );
@@ -811,7 +811,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query($dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."tokens` (
                             `id` int(12) NOT NULL AUTO_INCREMENT,
-                            `user_id` int(10) NOT NULL,
+                            `user_id` int(12) NOT NULL,
                             `token` varchar(255) NOT NULL,
                             `reason` varchar(255) NOT NULL,
                             `creation_timestamp` varchar(50) NOT NULL,
@@ -832,7 +832,7 @@ global \$SETTINGS;
                             `description` text NOT NULL,
                             `comment` text NOT NULL,
                             `folder_id` tinyint(12) NOT NULL,
-                            `user_id` tinyint(12) NOT NULL,
+                            `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
@@ -950,7 +950,9 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');
-require_once \"".str_replace('\\', '/', $skFile)."\";
+if (!file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
+    require_once \"".str_replace('\\', '/', $skFile)."\";
+}
 ?>"
                         )
                     );
@@ -1083,7 +1085,7 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
                     }
 
                     $result = true;
-                    $errorMsg = "Cannot delete installation directory";
+                    $errorMsg = "Cannot delete `install` folder. Please do it manually.";
                     if (file_exists($_SESSION['abspath'].'/install')) {
                         // set the permissions on the install directory and delete
                         // is server Windows or Linux?
@@ -1095,10 +1097,10 @@ require_once \"".str_replace('\\', '/', $skFile)."\";
 
                     // delete temporary install table
                     $result = mysqli_query($dbTmp, "DROP TABLE `_install`");
-                    $errorMsg = "Cannot remove _install table";
+                    $errorMsg = "Cannot remove `_install` table. Please do it manually.";
 
                     if ($result === false) {
-                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "Failed", "multiple" : ""}]';
+                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "", "multiple" : ""}]';
                     } else {
                         echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
                     }

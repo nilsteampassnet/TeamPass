@@ -1593,7 +1593,8 @@ if (!empty($_POST['type'])) {
             }
 
             // manage other rights
-            $user_other_rights = explode(';', $_POST['user_otherrights']); //gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin
+            /* Possible values: gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin*/
+            $user_other_rights = explode(';', $_POST['user_otherrights']); 
 
             foreach (explode(';', $_POST['destination_ids']) as $dest_user_id) {
                 // update user

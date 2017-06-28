@@ -353,7 +353,8 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         Before starting, be sure to:<ul>
                         <li>upload the complete package on the server and overwrite existing files,</li>
                         <li>have the database connection informations,</li>
-                        <li>get some CHMOD rights on the server.</li>
+                        <li>get some CHMOD rights on the server,</li>
+                        <li>ensure that the path to file `sk.php` is still the correct one indicated in file `includes/config/settings.php`.</li>
                         </ul>
 
                         <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>

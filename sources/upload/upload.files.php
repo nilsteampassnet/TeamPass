@@ -56,9 +56,7 @@ if (!isset($_POST['user_token'])) {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    if (time() <= $data['end_timestamp']) {
-        // it is ok
-    } else {
+    if (time() > $data['end_timestamp']) {
         // too old
         handleUploadError('User token expired.');
         exit();
@@ -270,9 +268,9 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$_POST["csvFile"]);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.filter_var($_POST["csvFile"], FILTER_SANITIZE_STRING));
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$_POST["xmlFile"]);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.filter_var($_POST["xmlFile"], FILTER_SANITIZE_STRING));
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
     $newFileName = preg_replace('/[^\w\._]+/', '_', $_POST['newFileName']);
@@ -325,7 +323,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     exit();
 
 } else {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$_POST["File"]);
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.filter_var($_POST["File"], FILTER_SANITIZE_STRING));
 }
 
 // Return JSON-RPC response

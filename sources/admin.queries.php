@@ -344,19 +344,19 @@ switch ($_POST['type']) {
         require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $_POST['option']);
-        $file = $dataPost[0];
-        $key = $dataPost[1];
+        $file = htmlspecialchars($dataPost[0]);
+        $key = htmlspecialchars($dataPost[1]);
 
         //create uncrypted file
         if (!empty($key)) {
             //read full file
-            $fileArray = file($_SESSION['settings']['path_to_files_folder']."/".$file);
+            $fileArray = file(basename($_SESSION['settings']['path_to_files_folder']."/".$file));
 
             //delete file
             deleteFile($_SESSION['settings']['path_to_files_folder']."/".$file);
 
             //create new file with uncrypted data
-            $file = $_SESSION['settings']['path_to_files_folder']."/".time().".txt";
+            $file = htmlspecialchars($_SESSION['settings']['path_to_files_folder']."/".time().".txt");
             $inF = fopen($file, "w");
             while (list($cle, $val) = each($fileArray)) {
                 fputs($inF, decrypt($val, $key)."\n");
@@ -572,7 +572,7 @@ switch ($_POST['type']) {
             $result = "backup_decrypt_fails";
             $msg = "File not found: ".$Fnm;
         }
-        echo '[{ "result":"'.$result.'" , "msg":"'.$msg.'"}]';
+        echo '[{ "result":"'.$result.'" , "msg":"'.filter_var($msg, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /*
@@ -692,7 +692,7 @@ switch ($_POST['type']) {
             $nextAction = "finishing";
         } else {
             // manage list of objects
-            $objects = explode(",", $_POST['object']);
+            $objects = explode(",", filter_var($_POST['object'], FILTER_SANITIZE_STRING));
 
             if ($objects[0] === "items") {
                 //change all encrypted data in Items (passwords)
@@ -1369,9 +1369,9 @@ $line = "qsd";
 
                         if ($skipFile === true) {
                             // make a copy of file
-                            $backup_filename = $file.".bck-before-change.".time();
+                            $backup_filename = filter_var($file.".bck-before-change.".time(), FILTER_SANITIZE_STRING);
                             if (!copy(
-                                    $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
+                                    $_SESSION['settings']['path_to_upload_folder'].'/'.filter_var($file, FILTER_SANITIZE_STRING),
                                     $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
                             )) {
                                 $error = "Copy not possible";
@@ -1379,7 +1379,7 @@ $line = "qsd";
                             }
 
                             // Open the file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.filter_var($file, FILTER_SANITIZE_STRING));
                             $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename, "rb");
                             $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
 
@@ -1570,12 +1570,13 @@ $line = "qsd";
 
         //get infos from SETTINGS.PHP file
         $filename = $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+        $tmp_skfile = '';
         if (file_exists($filename)) {
             // get sk.php file path
             $settingsFile = file($filename);
             while (list($key, $val) = each($settingsFile)) {
-                if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
-                    $tmp_skfile = substr($val, 14, strpos($val, '";') - 14);
+                if (substr_count($val, "@define('SECUREPATH'")) {
+                    $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
                 }
             }
 
@@ -1592,7 +1593,7 @@ $line = "qsd";
                     echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
                     break;
                 } else {
-                    deleteFile($tmp_skfile);
+                    fileDelete($tmp_skfile);
                 }
             } else {
                 // send back an error
@@ -1607,13 +1608,12 @@ $line = "qsd";
             $fh,
             utf8_encode(
 "<?php
-@define('SALT', '".SALT."'); //Never Change it once it has been used !!!!!
 @define('COST', '13'); // Don't change this.
 // DUOSecurity credentials
-@define('AKEY', \"".$akey."\");
-@define('IKEY', \"".$ikey."\");
-@define('SKEY', \"".$skey."\");
-@define('HOST', \"".$host."\");
+@define('AKEY', \"".htmlspecialchars($akey)."\");
+@define('IKEY', \"".htmlspecialchars($ikey)."\");
+@define('SKEY', \"".htmlspecialchars($skey)."\");
+@define('HOST', \"".htmlspecialchars($host)."\");
 ?>"
             )
         );
@@ -1888,7 +1888,7 @@ $line = "qsd";
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents($csrfp_file, $newdata);
+            file_put_contents($csrfp_file, filter_var($newdata, FILTER_SANITIZE_STRING));
         } else
         if ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
@@ -2038,7 +2038,7 @@ $line = "qsd";
 
             $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
 
-            $ldapconn = ldap_connect($ldapURIs);
+            $ldapconn = ldap_connect(filter_var($ldapURIs, FILTER_SANITIZE_URL));
 
             if ($dataReceived[0]['ldap_tls_input']) {
                 ldap_start_tls($ldapconn);
@@ -2053,7 +2053,7 @@ $line = "qsd";
                 $debug_ldap .= "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."<br/>";
 
                 if ($ldapbind) {
-                    $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))";
+                    $filter = filter_var("(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))", FILTER_SANITIZE_STRING);
                     $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;

@@ -30,9 +30,9 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
@@ -57,8 +57,8 @@ if (file_exists($filename)) {
     //copy some constants from this existing file
     $settingsFile = file($filename);
     while (list($key, $val) = each($settingsFile)) {
-        if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
-            $tmp_skfile = substr($val, 14, strpos($val, '";') - 14);
+        if (substr_count($val, "@define('SECUREPATH'")) {
+            $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
         }
     }
 }

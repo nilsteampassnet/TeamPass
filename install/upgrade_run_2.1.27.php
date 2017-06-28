@@ -262,7 +262,7 @@ if ($res === false) {
 mysqli_query($dbTmp,
     "UPDATE `".$_SESSION['pre']."misc`
     SET `valeur` = 'maintenance_mode'
-    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
+    WHERE type = 'admin' AND intitule = '".intval($_POST['no_maintenance_mode'])."'"
 );
 
 
@@ -531,6 +531,12 @@ mysqli_query(
 mysqli_query(
     $dbTmp,
     "ALTER TABLE `".$_SESSION['pre']."misc` CHANGE valeur valeur VARCHAR(500) NOT NULL DEFAULT 'none'"
+);
+
+// alter table ITEMS_CHANGE
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['pre']."items_change` CHANGE user_id user_id INT(12) NOT NULL;"
 );
 
 

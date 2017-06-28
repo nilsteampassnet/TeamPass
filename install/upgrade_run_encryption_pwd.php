@@ -54,7 +54,7 @@ $dbTmp = mysqli_connect(
     $_SESSION['port']
 );
 
-fputs($dbgDuo, "\n\nSELECT id, pw, pw_iv FROM ".$_SESSION['pre']."items
+fputs($dbgDuo, (string) "\n\nSELECT id, pw, pw_iv FROM ".$_SESSION['pre']."items
     WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']."\n");
 
 // get total items
@@ -80,13 +80,13 @@ if (!$rows) {
 }
 
 while ($data = mysqli_fetch_array($rows)) {
-    fputs($dbgDuo, "\n\n-----\nItem : ".$data['id']);
+    fputs($dbgDuo, (string) "\n\n-----\nItem : ".$data['id']);
 
     // check if pw encrypted with protocol #3
     if (!empty($data['pw_iv'])) {
         $pw = cryption_phpCrypt($data['pw'], SALT, $data['pw_iv'], "decrypt");
         // nothing to do - last encryption protocol (#3) used
-        fputs($dbgDuo, "\nItem is correctly encrypted");
+        fputs($dbgDuo, (string) "\nItem is correctly encrypted");
     } else {
         if (!empty($data['pw']) && substr($data['pw'], 0, 3) !== "def") {
             // check if pw encrypted with protocol #2
@@ -123,10 +123,10 @@ while ($data = mysqli_fetch_array($rows)) {
                 WHERE id=".$data['id']
             );
 
-            fputs($dbgDuo, "\nItem has been re-encrypted");
+            fputs($dbgDuo, (string) "\nItem has been re-encrypted");
         } else {
             // item has no pwd
-            fputs($dbgDuo, "\nItem has no password.");
+            fputs($dbgDuo, (string) "\nItem has no password.");
         }
     }
 
@@ -135,7 +135,7 @@ while ($data = mysqli_fetch_array($rows)) {
         $table_keys_exists = 1;
     } else {
         $table_keys_exists = 0;
-        fputs($dbgDuo, "\nNo re-encryption needed as passwords already using latest encryption protocol.\n");
+        fputs($dbgDuo, (string) "\nNo re-encryption needed as passwords already using latest encryption protocol.\n");
     }
 
     // change log and category fields
@@ -146,12 +146,12 @@ while ($data = mysqli_fetch_array($rows)) {
             LEFT JOIN ".$_SESSION['pre']."keys AS k ON (l.id_item = k.id)
             WHERE l.id_item = ".$data['id']." AND l.raison LIKE 'at_pw :%' AND k.sql_table='items'"
         );
-        fputs($dbgDuo, "\nNb of entries in log: ".mysqli_num_rows($resData));
+        fputs($dbgDuo, (string) "\nNb of entries in log: ".mysqli_num_rows($resData));
         while ($record = mysqli_fetch_array($resData)) {
-            fputs($dbgDuo, "\n> ".$record['raison']);
+            fputs($dbgDuo, (string) "\n> ".$record['raison']);
             if (!empty($record['raison_iv']) && $record['raison_iv'] != NULL) {
                 // nothing to do
-                fputs($dbgDuo, "Item log correct");
+                fputs($dbgDuo, (string) "Item log correct");
             } else {
                 // only at_modif and at_pw
                 $reason = explode(' : ', $record['raison']);
@@ -159,11 +159,11 @@ while ($data = mysqli_fetch_array($rows)) {
 
                     // check if pw encrypted with protocol #2
                     $pw = decrypt(trim($reason[1]));
-                    fputs($dbgDuo, "\n/ step1 : ".$pw);
+                    fputs($dbgDuo, (string) "\n/ step1 : ".$pw);
                     if (empty($pw)) {
                         // used protocol is #1
                         $pw = decryptOld(trim($reason[1])); // decrypt using protocol #1
-                        fputs($dbgDuo, " / step2 : ".$pw);
+                        fputs($dbgDuo, (string) " / step2 : ".$pw);
                     }
 
                     // get key for this pw
@@ -181,12 +181,12 @@ while ($data = mysqli_fetch_array($rows)) {
                         // remove key from pw
                         $pw = substr($pw, strlen($dataTemp[0]));
                     }
-                    fputs($dbgDuo, " / step3 : ".$pw);
+                    fputs($dbgDuo, (string) " / step3 : ".$pw);
 
                     // store new encryption
                     if (isUTF8($pw) && !empty($pw)) {
                         $encrypt = cryption_phpCrypt($pw, SALT, "", "encrypt");
-                        fputs($dbgDuo, " / Final : ".$encrypt['string']);
+                        fputs($dbgDuo, (string) " / Final : ".$encrypt['string']);
                         mysqli_query($dbTmp,
                             "UPDATE ".$_SESSION['pre']."log_items
                             SET raison = 'at_pw : ".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
@@ -196,12 +196,12 @@ while ($data = mysqli_fetch_array($rows)) {
                     } else {
                         //data is lost ... unknown encryption
                     }
-                    fputs($dbgDuo, " / Done.");
+                    fputs($dbgDuo, (string) " / Done.");
                 }
             }
         }
 
-        fputs($dbgDuo, "\nLog treatment done.");
+        fputs($dbgDuo, (string) "\nLog treatment done.");
 
         // change category fields encryption
         $resData = mysqli_query($dbTmp,
@@ -235,7 +235,7 @@ while ($data = mysqli_fetch_array($rows)) {
                 //data is lost ... unknown encryption
             }
         }
-        fputs($dbgDuo, "\nCategory treatment done.");
+        fputs($dbgDuo, (string) "\nCategory treatment done.");
     }
 
 }
@@ -244,6 +244,6 @@ if ($next >= $total) {
 }
 
 
-fputs($dbgDuo, "\n\nAll finished.\n");
+fputs($dbgDuo, (string) "\n\nAll finished.\n");
 
 echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';

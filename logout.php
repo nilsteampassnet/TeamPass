@@ -13,6 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+
+require_once 'sources/SecureHandler.php';
+session_start();
+
 // Update table by deleting ID
 if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     $user_id = $_SESSION['user_id'];
@@ -49,17 +53,19 @@ if (!empty($user_id)) {
     );
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
-        logEvents('user_connection', 'disconnection', @$user_id, @$_SESSION['login']);
+        logEvents('user_connection', 'disconnection', $user_id, @$_SESSION['login']);
     }
 }
 
 // erase session table
+session_destroy();
 $_SESSION = array();
+unset($_SESSION);
 
 echo '
     <script language="javascript" type="text/javascript">
     <!--
         sessionStorage.clear();
-        window.location.href = "index.php";
+        setTimeout(function(){document.location.href="index.php"}, 1);
     -->
     </script>';

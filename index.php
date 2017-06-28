@@ -49,7 +49,7 @@ session_id();
 $_SESSION['CPM'] = 1;
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
-    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
+    $_SESSION['settings']['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
 }
 
 // Include files
@@ -108,10 +108,10 @@ if (isset($_GET['language'])) {
 } elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
 } elseif (isset($_POST['language'])) {
-    $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+    $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
 } elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
     if (isset($_POST['language'])) {
-        $_SESSION['user_language'] = filter_var($_POST['language'], FILTER_SANITIZE_STRING);
+        $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
     } elseif (isset($_SESSION['settings']['default_language'])) {
         $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
     }
@@ -121,7 +121,7 @@ if (isset($_GET['language'])) {
 
 if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
     $_SESSION['settings']['cpassman_dir'] = ".";
-    $_SESSION['settings']['cpassman_url'] = $_SERVER["REQUEST_URI"];
+    $_SESSION['settings']['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
 }
 
 // Load user languages files
@@ -279,7 +279,7 @@ if (isset($_SESSION['login'])) {
                                 <li onclick="loadProfileDialog()">
                                     <i class="fa fa-user fa-fw"></i> &nbsp;'.$LANG['my_profile'].'
                                 </li>
-                                <li onclick="MenuAction(\'deconnexion\', \''.$_SESSION['user_id'].'\')">
+                                <li onclick="MenuAction(\'deconnexion\', \''.(string) $_SESSION['user_id'].'\')">
                                     <i class="fa fa-sign-out fa-fw"></i> &nbsp;'.$LANG['disconnect'].'
                                 </li>
                             </ul>
@@ -334,12 +334,12 @@ echo '
 echo '
         <input type="hidden" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
         <input type="hidden" name="language" id="language" value="" />
-        <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="'.@$_SESSION['user_pw_complexity'].'" />
+        <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
         <input type="hidden" name="user_session" id="user_session" value=""/>
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
-        <input type="hidden" id="duo_sig_response" value="'.@$_POST['sig_response'].'" />';
+        <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? $_POST['sig_response'] : '', '" />';
 
 // SENDING STATISTICS?
 if (
@@ -456,7 +456,7 @@ if (
         }
     }
 // ask the user to change his password
-    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id'])) {
+    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id']) && $_SESSION['is_admin'] !== '1' ) {
         //Check if password is valid
         echo '
         <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
@@ -603,14 +603,14 @@ if (
                 <form method="post" name="form_identify" id="form_identify" action="">
                     <div style="width:480px;margin:10px auto 10px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
                         <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
-        isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.$_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
+        isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.(string) $_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
                             '.$LANG['index_get_identified'].'
                             <span id="ajax_loader_connexion" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                         </div>
                         <div id="connection_error" style="display:none;text-align:center;margin:5px; padding:3px;" class="ui-state-error ui-corner-all">&nbsp;<i class="fa fa-warning"></i>&nbsp;'.$LANG['index_bas_pw'].'</div>';
         echo '
                         <div style="margin-bottom:3px;">
-                            <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? $_SESSION['settings']['custom_login_text'] : $LANG['index_login'], '</label>
+                            <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? (string) $_SESSION['settings']['custom_login_text'] : $LANG['index_login'], '</label>
                             <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
                             <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
@@ -705,7 +705,7 @@ echo '
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
         </div><div id="countdown2"></div>
         <div style="float:right;text-align:right;">
-            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], $_SERVER['REQUEST_TIME']).'
+            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], (string) $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], (string) $_SERVER['REQUEST_TIME']).'
         </div>
     </div>';
 // PAGE LOADING
@@ -735,7 +735,7 @@ if (
     echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
-            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['my_sk']) ? $_SESSION['my_sk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
+            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['my_sk']) ? (string) $_SESSION['my_sk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
             <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
             <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
         </div>';
@@ -755,8 +755,8 @@ echo '
     <div id="div_duo"></div>
     '.$LANG['duo_loading_iframe'].'
     <form method="post" id="duo_form" action="#">
-        <input type="hidden" id="duo_login" name="duo_login" value="'.@$_POST['duo_login'].'" />
-        <input type="hidden" id="duo_data" name="duo_data" value=\''.@$_POST['duo_data'].'\' />
+        <input type="hidden" id="duo_login" name="duo_login" value="', isset($_POST['duo_login']) ? $_POST['duo_login'] : '', '" />
+        <input type="hidden" id="duo_data" name="duo_data" value="', isset($_POST['duo_data']) ? htmlentities(base64_decode($_POST['duo_data'])) : '', '" />
     </form>
 </div>';
 
@@ -764,7 +764,7 @@ echo '
 echo '
 <div id="div_increase_session_time" style="display:none;padding:4px;">
     <b>'.$LANG['index_session_duration'].':</b>
-    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
+    <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
     <b>'.$LANG['minutes'].'</b>
     <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="input_session_duration_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';

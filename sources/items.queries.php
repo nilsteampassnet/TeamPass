@@ -13,35 +13,36 @@
  */
 require_once 'SecureHandler.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
     die('Hacking attempt...');
 }
 
-/* do checks */
+// Do checks
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
-    $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'home') === false) {
+    // Not allowed page
+    $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
 }
 
 /**
  * Define Timezone
- */
-if (isset($_SESSION['settings']['timezone'])) {
+**/
+if (isset($_SESSION['settings']['timezone']) === true) {
     date_default_timezone_set($_SESSION['settings']['timezone']);
 } else {
     date_default_timezone_set('UTC');
 }
 
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-header("Content-type: text/html; charset=utf-8");
-header("Cache-Control: no-cache, must-revalidate");
-header("Pragma: no-cache");
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, must-revalidate');
+header('Pragma: no-cache');
 require_once 'main.functions.php';
-// pw complexity levels
+// Pw complexity levels
 $_SESSION['settings']['pwComplexity'] = array(
     0 => array(0, $LANG['complex_level0']),
     25 => array(25, $LANG['complex_level1']),
@@ -50,9 +51,9 @@ $_SESSION['settings']['pwComplexity'] = array(
     70 => array(70, $LANG['complex_level4']),
     80 => array(80, $LANG['complex_level5']),
     90 => array(90, $LANG['complex_level6'])
-    );
+);
 
-//Class loader
+// Class loader
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
@@ -79,11 +80,6 @@ $aes->register();
 // phpcrypt
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
-
-// prepare Encryption class calls
-use \Defuse\Crypto\Crypto;
-use \Defuse\Crypto\Exception as Ex;
-
 
 // Do asked action
 if (isset($_POST['type'])) {
@@ -133,7 +129,7 @@ if (isset($_POST['type'])) {
             }
 
             // is pwd empty?
-            if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") {
+            if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') {
                 echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
                 break;
             }
@@ -160,13 +156,13 @@ if (isset($_POST['type'])) {
             }
 
             if (
-                (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] === "0" && $itemExists == 0)
+                (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] === '0' && $itemExists == 0)
                 ||
-                (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] === "1")
+                (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] === '1')
             ) {
-                if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") || !empty($pw)) {
+                if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') || !empty($pw)) {
                     // encrypt PW
-                    if ($dataReceived['salt_key_set'] === "1" && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === "1" && isset($dataReceived['is_pf'])) {
+                    if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) {
                         $passwd = cryption(
                             $pw,
                             $_SESSION['user_settings']['session_psk'],
@@ -181,7 +177,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                 } else {
-                    $passwd['string'] = "";
+                    $passwd['string'] = '';
                 }
 
                 if (!empty($passwd["error"])) {
@@ -202,8 +198,8 @@ if (isset($_POST['type'])) {
                         'id_tree' => $dataReceived['categorie'],
                         'login' => noHTML($login),
                         'inactif' => '0',
-                        'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '',
-                        'perso' => ($dataReceived['salt_key_set'] === "1" && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === "1" && isset($dataReceived['is_pf'])) ? '1' : '0',
+                        'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
+                        'perso' => ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) ? '1' : '0',
                         'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
                         'complexity_level' => $dataReceived['complexity_level']
                         )
@@ -212,7 +208,7 @@ if (isset($_POST['type'])) {
                 $pw = $passwd['string'];
 
                 // update fields
-                if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === "1") {
+                if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === '1') {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
                         if (count($field_data) > 1 && !empty($field_data[1])) {
@@ -221,7 +217,7 @@ if (isset($_POST['type'])) {
                                     FROM ".prefix_table("categories")."
                                     WHERE id = %i", $field_data[0]
                             );
-                            if ($dataTmp['encrypted_data'] === "1") {
+                            if ($dataTmp['encrypted_data'] === '1') {
                                 $encrypt = cryption(
                                     $field_data[1],
                                     "",
@@ -255,8 +251,8 @@ if (isset($_POST['type'])) {
                         prefix_table('automatic_del'),
                         array(
                             'item_id' => $newID,
-                            'del_enabled' => 1, // 0=deactivated;1=activated
-                            'del_type' => $date_stamp !== false ? 2 : 1, // 1=counter;2=date
+                            'del_enabled' => 1, /* Possible values: 0=deactivated;1=activated */
+                            'del_type' => $date_stamp !== false ? 2 : 1, /* Possible values:  1=counter;2=date */
                             'del_value' => $date_stamp !== false ? $date_stamp : $dataReceived['to_be_deleted']
                             )
                     );
@@ -308,7 +304,7 @@ if (isset($_POST['type'])) {
                 }
 
                 // Announce by email?
-                if ($dataReceived['diffusion'] !== "") {
+                if (!empty($dataReceived['diffusion'])) {
                     // get links url
                     if (empty($_SESSION['settings']['email_server_url'])) {
                         $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
@@ -336,7 +332,7 @@ if (isset($_POST['type'])) {
                 }
                 // Get Expiration date
                 $expirationFlag = '';
-                if ($_SESSION['settings']['activate_expiration'] === "1") {
+                if ($_SESSION['settings']['activate_expiration'] === '1') {
                     $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
                 }
                 // Prepare full line
@@ -346,18 +342,18 @@ if (isset($_POST['type'])) {
                 .$expirationFlag.'<i class="fa fa-sm fa-warning mi-yellow"></i>&nbsp;'.
                 '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">'.
                 stripslashes($dataReceived['label']);
-                if (!empty($dataReceived['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === "1") {
+                if (!empty($dataReceived['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === '1') {
                     $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($dataReceived['description']), 0, 30))).']</font>';
                 }
                 $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';
                 // mini icon for collab
-                if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === "1") {
-                    if ($dataReceived['anyone_can_modify'] === "1") {
+                if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === '1') {
+                    if ($dataReceived['anyone_can_modify'] === '1') {
                         $itemCollab = '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                     }
                 }
                 // display quick icon shortcuts ?
-                if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === "1") {
+                if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1') {
                     $itemLogin = $itemPw = "";
 
                     if (!empty($dataReceived['login'])) {
@@ -388,9 +384,9 @@ if (isset($_POST['type'])) {
                     "new_login" => $login,
                     "new_entry" => $html,
                     "array_items" => $itemsIDList,
-                    "show_clipboard_small_icons" => (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === "1") ? 1 : 0
+                    "show_clipboard_small_icons" => (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1') ? 1 : 0
                     );
-            } elseif (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] === "0" && $itemExists == 1) {
+            } elseif (isset($_SESSION['settings']['duplicate_item']) && $_SESSION['settings']['duplicate_item'] === '0' && $itemExists == 1) {
                 $returnValues = array("error" => "item_exists");
             }
 
@@ -428,7 +424,7 @@ if (isset($_POST['type'])) {
                 $email = noHTML(htmlspecialchars_decode($dataReceived['email']));
 
                 // perform a check in case of Read-Only user creating an item in his PF
-                if ($_SESSION['user_read_only'] === true && (!in_array($dataReceived['categorie'], $_SESSION['personal_folders']) || $dataReceived['is_pf'] !== "1")) {
+                if ($_SESSION['user_read_only'] === true && (!in_array($dataReceived['categorie'], $_SESSION['personal_folders']) || $dataReceived['is_pf'] !== '1')) {
                     echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                     break;
                 }
@@ -461,15 +457,15 @@ if (isset($_POST['type'])) {
                 if (
                     (
                         in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])
-                        && ($dataItem['perso'] === "0" || ($dataItem['perso'] === "1" && $dataItem['id_user'] == $_SESSION['user_id']))
+                        && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id']))
                         && $restrictionActive === false
                     )
                     ||
                     (
                         isset($_SESSION['settings']['anyone_can_modify'])
-                        && $_SESSION['settings']['anyone_can_modify'] === "1"
-                        && $dataItem['anyone_can_modify'] === "1"
-                        && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === "1")
+                        && $_SESSION['settings']['anyone_can_modify'] === '1'
+                        && $dataItem['anyone_can_modify'] === '1'
+                        && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1')
                         && $restrictionActive === false
                     )
                     ||
@@ -477,7 +473,7 @@ if (isset($_POST['type'])) {
                     ) {
 
                     // is pwd empty?
-                    if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") {
+                    if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') {
                         echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
                         break;
                     }
@@ -499,8 +495,8 @@ if (isset($_POST['type'])) {
                         $dataReceived['id']
                     );
                     // encrypt PW
-                    if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== "1") || !empty($pw)) {
-                        if ($dataReceived['salt_key_set'] === "1" && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === "1" && isset($dataReceived['is_pf'])) {
+                    if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') || !empty($pw)) {
+                        if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) {
                             $sentPw = $pw;
                             $passwd = cryption(
                                 $pw,
@@ -562,7 +558,7 @@ if (isset($_POST['type'])) {
                             'login' => $login,
                             'url' => $url,
                             'id_tree' => (!isset($dataReceived['categorie']) || $dataReceived['categorie'] === "undefined") ? $dataItem['id_tree'] : $dataReceived['categorie'],
-                            'restricted_to' => $dataReceived['restricted_to'],
+                            'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
                             'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
                             'complexity_level' => $dataReceived['complexity_level']
                             ),
@@ -570,7 +566,7 @@ if (isset($_POST['type'])) {
                         $dataReceived['id']
                     );
                     // update fields
-                    if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === "1") {
+                    if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === '1') {
                         foreach (explode("_|_", $dataReceived['fields']) as $field) {
                             $field_data = explode("~~", $field);
                             if (count($field_data) > 1 && !empty($field_data[1])) {
@@ -593,7 +589,7 @@ if (isset($_POST['type'])) {
                                     );
 
                                     // should we encrypt the data
-                                    if ($dataTmpCat['encrypted_data'] === "1") {
+                                    if ($dataTmpCat['encrypted_data'] === '1') {
                                         $encrypt = cryption(
                                             $field_data[1],
                                             "",
@@ -633,7 +629,7 @@ if (isset($_POST['type'])) {
 
                                     if ($field_data[1] !== $oldVal['string']) {
                                         // should we encrypt the data
-                                        if ($dataTmpCat['encrypted_data'] === "1") {
+                                        if ($dataTmpCat['encrypted_data'] === '1') {
                                             $encrypt = cryption(
                                                 $field_data[1],
                                                 "",
@@ -675,7 +671,7 @@ if (isset($_POST['type'])) {
                     }
 
                     // Update automatic deletion - Only by the creator of the Item
-                    if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] === "1") {
+                    if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] === '1') {
                         // check if elem exists in Table. If not add it or update it.
                         DB::query("SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id = %i", $dataReceived['id']);
                         if (DB::count() === 0) {
@@ -718,7 +714,7 @@ if (isset($_POST['type'])) {
 
                     // get readable list of restriction
                     $listOfRestricted = $oldRestrictionList = "";
-                    if (!empty($dataReceived['restricted_to']) && $_SESSION['settings']['restricted_to'] === "1") {
+                    if (!empty($dataReceived['restricted_to']) && $_SESSION['settings']['restricted_to'] === '1') {
                         foreach (explode(';', $dataReceived['restricted_to']) as $userRest) {
                             if (!empty($userRest)) {
                                 $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= %i", $userRest);
@@ -730,7 +726,7 @@ if (isset($_POST['type'])) {
                             }
                         }
                     }
-                    if ($data['restricted_to'] != $dataReceived['restricted_to'] && $_SESSION['settings']['restricted_to'] === "1") {
+                    if ($data['restricted_to'] != $dataReceived['restricted_to'] && $_SESSION['settings']['restricted_to'] === '1') {
                         if (!empty($data['restricted_to'])) {
                             foreach (explode(';', $data['restricted_to']) as $userRest) {
                                 if (!empty($userRest)) {
@@ -745,7 +741,7 @@ if (isset($_POST['type'])) {
                         }
                     }
                     // Manage retriction_to_roles
-                    if (isset($dataReceived['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] === "1") {
+                    if (isset($dataReceived['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] === '1') {
                         // get values before deleting them
                         $rows = DB::query(
                             "SELECT t.title
@@ -817,7 +813,7 @@ if (isset($_POST['type'])) {
                         $reloadPage = true;
                     }
                     /*PASSWORD */
-                    if ($dataReceived['salt_key_set'] === "1" && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === "1" && isset($dataReceived['is_pf'])) {
+                    if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) {
                         $oldPw = $data['pw'];
                         $oldPwClear = cryption(
                             $oldPw,
@@ -1001,7 +997,7 @@ if (isset($_POST['type'])) {
             }
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === "1" && (!in_array($_POST['source_id'], $_SESSION['personal_folders']) || !in_array($_POST['des_id'], $_SESSION['personal_folders']))) {
+            if ($_SESSION['user_read_only'] === '1' && (!in_array($_POST['source_id'], $_SESSION['personal_folders']) || !in_array($_POST['des_id'], $_SESSION['personal_folders']))) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "2'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
@@ -1024,7 +1020,7 @@ if (isset($_POST['type'])) {
                 );
 
                 // previous is personal folder and public one
-                if ($originalRecord['perso'] === "1" && $dataDestination['personal_folder'] === "0") {
+                if ($originalRecord['perso'] === '1' && $dataDestination['personal_folder'] === '0') {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
@@ -1044,7 +1040,7 @@ if (isset($_POST['type'])) {
                     $is_perso = 0;
                 }
                 // previous is public folder and personal one
-                else if ($originalRecord['perso'] === "0" && $dataDestination['personal_folder'] === "1") {
+                else if ($originalRecord['perso'] === '0' && $dataDestination['personal_folder'] === '1') {
                     // check if PSK is set
                     if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])) {
                         $returnValues = '[{"error" : "no_psk"}, {"error_text" : "'.addslashes($LANG['alert_message_personal_sk_missing']).'"}]';
@@ -1069,7 +1065,7 @@ if (isset($_POST['type'])) {
 
                     // this item is now private
                     $is_perso = 1;
-                } else if ($originalRecord['perso'] === "1" && $dataDestination['personal_folder'] === "1") {
+                } else if ($originalRecord['perso'] === '1' && $dataDestination['personal_folder'] === '1') {
                 // previous is public folder and personal one
                     // check if PSK is set
                     if (!isset($_SESSION['user_settings']['session_psk']) || empty($_SESSION['user_settings']['session_psk'])) {
@@ -1095,7 +1091,7 @@ if (isset($_POST['type'])) {
 
                     // this item is now private
                     $is_perso = 1;
-                } else if ($originalRecord['perso'] === "0" && $dataDestination['personal_folder'] === "0") {
+                } else if ($originalRecord['perso'] === '0' && $dataDestination['personal_folder'] === '0') {
                     // decrypt and re-encrypt password
                     $decrypt = cryption(
                         $originalRecord['pw'],
@@ -1234,7 +1230,7 @@ if (isset($_POST['type'])) {
             $arrData = array();
             // return ID
             $arrData['id'] = $_POST['id'];
-            $arrData['id_user'] = "9999999";
+            $arrData['id_user'] = API_USER_ID;
             $arrData['author'] = "API";
 
             // Check if item is deleted
@@ -1343,7 +1339,7 @@ if (isset($_POST['type'])) {
                 $myTest = 1;
             }
             // Uncrypt PW
-            if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] === "1" && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] === "1") {
+            if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] === '1' && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] === '1') {
                 $pw = cryption(
                     $dataItem['pw'],
                     $_SESSION['user_settings']['session_psk'],
@@ -1365,20 +1361,20 @@ if (isset($_POST['type'])) {
             }
 
             // check if item is expired
-            if (isset($_POST['expired_item']) && $_POST['expired_item'] === "1") {
+            if (isset($_POST['expired_item']) && $_POST['expired_item'] === '1') {
                 $item_is_expired = true;
             } else {
                 $item_is_expired = false;
             }
             // check user is admin
-            if ($_SESSION['user_admin'] === "1" && $dataItem['perso'] != 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
+            if ($_SESSION['user_admin'] === '1' && $dataItem['perso'] != 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
                 $arrData['show_details'] = 0;
             }
             // Check if actual USER can see this ITEM
             elseif (
-                ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === "1") && ($dataItem['perso'] === "0" || ($dataItem['perso'] === "1" && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
                 ||
-                (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === "1" && $dataItem['anyone_can_modify'] === "1" && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === "1") && $restrictionActive === false)
+                (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
                 (isset($_POST['folder_id']) && isset($_SESSION['list_folders_limited'][$_POST['folder_id']]) && in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
             ) {
@@ -1387,9 +1383,9 @@ if (isset($_POST['type'])) {
                 // Display menu icon for deleting if user is allowed
                 if (
                     $dataItem['id_user'] == $_SESSION['user_id']
-                    || $_SESSION['is_admin'] === "1"
-                    || ($_SESSION['user_manager'] === "1" && $_SESSION['settings']['manager_edit'] === "1")
-                    || $dataItem['anyone_can_modify'] === "1"
+                    || $_SESSION['is_admin'] === '1'
+                    || ($_SESSION['user_manager'] === '1' && $_SESSION['settings']['manager_edit'] === '1')
+                    || $dataItem['anyone_can_modify'] === '1'
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role'])
                     || in_array($_SESSION['user_id'], $restrictedTo)
                 ) {
@@ -1402,7 +1398,7 @@ if (isset($_POST['type'])) {
 
                 // Get restriction list for roles
                 $listRestrictionRoles = array();
-                if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] === "1") {
+                if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] === '1') {
                     // Add restriction if item is restricted to roles
                     $rows = DB::query(
                         "SELECT t.title
@@ -1419,7 +1415,7 @@ if (isset($_POST['type'])) {
                     }
                 }
                 // Check if any KB is linked to this item
-                if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] === "1") {
+                if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] === '1') {
                     $tmp = "";
                     $rows = DB::query(
                         "SELECT k.label, k.id
@@ -1464,14 +1460,14 @@ if (isset($_POST['type'])) {
                 $arrData['folder'] = $dataItem['id_tree'];
 
                 if (isset($_SESSION['settings']['enable_server_password_change'])
-                    && $_SESSION['settings']['enable_server_password_change'] === "1") {
+                    && $_SESSION['settings']['enable_server_password_change'] === '1') {
                     $arrData['auto_update_pwd_frequency'] = $dataItem['auto_update_pwd_frequency'];
                 } else {
                     $arrData['auto_update_pwd_frequency'] = "0";
                 }
 
                 if (isset($_SESSION['settings']['anyone_can_modify_bydefault'])
-                    && $_SESSION['settings']['anyone_can_modify_bydefault'] === "1") {
+                    && $_SESSION['settings']['anyone_can_modify_bydefault'] === '1') {
                     $arrData['anyone_can_modify'] = 1;
                 } else {
                     $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
@@ -1491,7 +1487,7 @@ if (isset($_POST['type'])) {
                 // get fields
                 $fieldsTmp = $arrCatList = "";
                 if (
-                    isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === "1"
+                    isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === '1'
                     && isset($_POST['page']) && $_POST['page'] === "items"
                 ) {
                     // get list of associated Categories
@@ -1550,9 +1546,9 @@ if (isset($_POST['type'])) {
                 $dataDelete = DB::queryfirstrow("SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id=%i", $_POST['id']);
                 $arrData['to_be_deleted'] = $dataDelete['del_value'];
                 $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
-                if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] === "1") {
-                    if ($dataDelete['del_enabled'] === "1" || $arrData['id_user'] != $_SESSION['user_id']) {
-                        if ($dataDelete['del_type'] === "1" && $dataDelete['del_value'] >= 1) {
+                if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] === '1') {
+                    if ($dataDelete['del_enabled'] === '1' || $arrData['id_user'] != $_SESSION['user_id']) {
+                        if ($dataDelete['del_type'] === '1' && $dataDelete['del_value'] >= 1) {
                             // decrease counter
                             DB::update(
                                 $pre."automatic_del",
@@ -1564,7 +1560,7 @@ if (isset($_POST['type'])) {
                             );
                             // store value
                             $arrData['to_be_deleted'] = $dataDelete['del_value'] - 1;
-                        } elseif ($dataDelete['del_type'] === "1" && $dataDelete['del_value'] <= 1 || $dataDelete['del_type'] == 2 && $dataDelete['del_value'] < time()
+                        } elseif ($dataDelete['del_type'] === '1' && $dataDelete['del_value'] <= 1 || $dataDelete['del_type'] === '2' && $dataDelete['del_value'] < time()
                                 )
                         {
                             $arrData['show_details'] = 0;
@@ -1582,7 +1578,7 @@ if (isset($_POST['type'])) {
                             // log
                             logItems($_POST['id'], $dataItem['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login'], 'at_automatically_deleted');
                             $arrData['to_be_deleted'] = 0;
-                        } elseif ($dataDelete['del_type'] == 2) {
+                        } elseif ($dataDelete['del_type'] === '2') {
                             $arrData['to_be_deleted'] = date($_SESSION['settings']['date_format'], $dataDelete['del_value']);
                         }
                     } else {
@@ -1592,7 +1588,7 @@ if (isset($_POST['type'])) {
                     $arrData['to_be_deleted'] = "not_enabled";
                 }
                 // send notification if enabled
-                if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] === "1") {
+                if (isset($_SESSION['settings']['enable_email_notification_on_item_shown']) && $_SESSION['settings']['enable_email_notification_on_item_shown'] === '1') {
                     // send back infos
                     DB::insert(
                         prefix_table('emails'),
@@ -1675,12 +1671,12 @@ if (isset($_POST['type'])) {
                     }
                 }
                 // imported via API
-                if ($record['login'] === "") {
+                if (empty($record['login'])) {
                     $record['login'] = $LANG['imported_via_api'];
                 }
 
                 if (!empty($reason[1]) || $record['action'] === "at_copy" || $record['action'] === "at_creation" || $record['action'] === "at_manual" || $record['action'] === "at_modification" || $record['action'] === "at_delete" || $record['action'] === "at_restored") {
-                    if (trim($reason[0]) === "at_pw") {
+                    if (trim($reason[0]) === "at_pw" && empty($reason[1]) === false) {
                         if (empty($historyOfPws)) {
                             $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
                         } else {
@@ -1729,7 +1725,7 @@ if (isset($_POST['type'])) {
             }
 
             // Add the fact that item has been viewed in logs
-            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] === "1") {
+            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] === '1') {
                 logItems($_POST['id'], $dataItem['label'], $_SESSION['user_id'], 'at_shown', $_SESSION['login']);
             }
 
@@ -1827,7 +1823,7 @@ if (isset($_POST['type'])) {
 
             // Check if duplicate folders name are allowed
             $createNewFolder = true;
-            if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] === "0") {
+            if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] === '0') {
                 $data = DB::queryFirstRow("SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
                 if (!empty($data['id']) && $dataReceived['folder'] != $data['id']) {
                     echo '[ { "error" : "'.addslashes($LANG['error_group_exist']).'" } ]';
@@ -1845,7 +1841,7 @@ if (isset($_POST['type'])) {
 
             // check if complexity level is good
             // if manager or admin don't care
-            if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1 && $data['personal_folder'] === "0") {
+            if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1 && $data['personal_folder'] === '0') {
                 $data = DB::queryfirstrow(
                     "SELECT valeur
                     FROM ".prefix_table("misc")."
@@ -1927,8 +1923,8 @@ if (isset($_POST['type'])) {
 
             // check if source or target folder is PF. If Yes, then cancel operation
             if (
-                !($tmp_source['personal_folder'] === "1" && $tmp_target['personal_folder'] === "1")
-                && !($tmp_source['personal_folder'] === "0" && $tmp_target['personal_folder'] === "0")
+                !($tmp_source['personal_folder'] === '1' && $tmp_target['personal_folder'] === '1')
+                && !($tmp_source['personal_folder'] === '0' && $tmp_target['personal_folder'] === '0')
             ) {
                 $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
@@ -1999,7 +1995,7 @@ if (isset($_POST['type'])) {
                 // Prepare tree
                 $arbo = $tree->getPath($_POST['id'], true);
                 foreach ($arbo as $elem) {
-                    if ($elem->title == $_SESSION['user_id'] && $elem->nlevel === "1") {
+                    if ($elem->title == $_SESSION['user_id'] && $elem->nlevel === '1') {
                         $elem->title = $_SESSION['login'];
                         $folderIsPf = true;
                     }
@@ -2052,7 +2048,7 @@ if (isset($_POST['type'])) {
 
                 // check if items exist
                 $where = new WhereClause('and');
-                if (isset($_POST['restricted']) && $_POST['restricted'] === "1" && !empty($_SESSION['list_folders_limited'][$_POST['id']])) {
+                if (isset($_POST['restricted']) && $_POST['restricted'] === '1' && !empty($_SESSION['list_folders_limited'][$_POST['id']])) {
                     $counter = count($_SESSION['list_folders_limited'][$_POST['id']]);
                     $uniqueLoadData['counter'] = $counter;
                 }
@@ -2094,7 +2090,7 @@ if (isset($_POST['type'])) {
 
                 // Has this folder some categories to be displayed?
                 $displayCategories = "";
-                if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === "1") {
+                if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] === '1') {
                     $catRow = DB::query(
                         "SELECT id_category FROM ".prefix_table("categories_folders")." WHERE id_folder = %i", $_POST['id']
                     );
@@ -2110,6 +2106,22 @@ if (isset($_POST['type'])) {
                 }
                 $uniqueLoadData['displayCategories'] = $displayCategories;
 
+                // is this folder a personal one
+                $folder_is_personal = in_array($_POST['id'], $_SESSION['personal_folders']);
+                $uniqueLoadData['folder_is_personal'] = $folder_is_personal;
+
+                //
+                $folder_is_in_personal = in_array($_POST['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']));
+                $uniqueLoadData['folder_is_in_personal'] = $folder_is_in_personal;
+
+                //
+                if (isset($_SESSION['list_folders_editable_by_role'])) {
+                    $list_folders_editable_by_role = in_array($_POST['id'], $_SESSION['list_folders_editable_by_role']);
+                } else {
+                    $list_folders_editable_by_role = "";
+                }
+                $uniqueLoadData['list_folders_editable_by_role'] = $list_folders_editable_by_role;
+
             } else {
                 // get preloaded data
                 $uniqueLoadData = json_decode($_POST['uniqueLoadData'], true);
@@ -2123,11 +2135,14 @@ if (isset($_POST['type'])) {
                 $displayCategories = $uniqueLoadData['displayCategories'];
                 $folderComplexity = $uniqueLoadData['folderComplexity'];
                 $arboHtml = $uniqueLoadData['arboHtml'];
+                $folder_is_personal = $uniqueLoadData['folder_is_personal'];
+                $folder_is_in_personal = $uniqueLoadData['folder_is_in_personal'];
+                $list_folders_editable_by_role = $uniqueLoadData['list_folders_editable_by_role'];
             }
 
             // prepare query WHere conditions
             $where = new WhereClause('and');
-            if (isset($_POST['restricted']) && $_POST['restricted'] === "1" && !empty($_SESSION['list_folders_limited'][$_POST['id']])) {
+            if (isset($_POST['restricted']) && $_POST['restricted'] === '1' && !empty($_SESSION['list_folders_limited'][$_POST['id']])) {
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$_POST['id']]);
             } else {
                 $where->add('i.id_tree=%i', $_POST['id']);
@@ -2189,15 +2204,17 @@ if (isset($_POST['type'])) {
 
                 $idManaged = '';
                 $i = 0;
+                $arr_items_html = array();
 
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
                     if (empty($idManaged) || $idManaged != $record['id']) {
+                        $new_line = '';
 
                         // Get Expiration date
                         $expirationFlag = '';
                         $expired_item = 0;
-                        if ($_SESSION['settings']['activate_expiration'] === "1") {
+                        if ($_SESSION['settings']['activate_expiration'] === '1') {
                             if (
                                 $record['renewal_period'] > 0 &&
                                 ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
@@ -2209,7 +2226,8 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // list of restricted users
-                        $restricted_users_array = explode(';', $record['restricted_to']);
+                        $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
+
                         $itemPw = $itemLogin = "";
                         $displayItem = false;
                         $need_sk = false;
@@ -2239,7 +2257,7 @@ if (isset($_POST['type'])) {
                             $restrictedTo = "";
                         }
 
-                        if (isset($_SESSION['list_folders_editable_by_role']) && in_array($_POST['id'], $_SESSION['list_folders_editable_by_role'])) {
+                        if ($list_folders_editable_by_role === '1') {
                             if (empty($restrictedTo)) {
                                 $restrictedTo = $_SESSION['user_id'];
                             } else {
@@ -2248,10 +2266,10 @@ if (isset($_POST['type'])) {
                         }
 
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] === "1"
+                        if ($record['anyone_can_modify'] === '1'
                             || $_SESSION['user_id'] === $record['log_user']
-                            || ($_SESSION['user_read_only'] === "1" && $folderIsPf === false)
-                            || (isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] === "1") // force draggable if user is manager
+                            || ($_SESSION['user_read_only'] === '1' && $folderIsPf === false)
+                            || (isset($_SESSION['settings']['manager_edit']) && $_SESSION['settings']['manager_edit'] === '1') // force draggable if user is manager
                         ) {
                             $canMove = true;
                         }
@@ -2262,8 +2280,8 @@ if (isset($_POST['type'])) {
                             && $user_is_included_in_role === false
                             && isset($item_is_restricted_to_role)
                             && $item_is_restricted_to_role === true
-                            && !in_array($_SESSION['user_id'], $restricted_users_array)
-                            && !in_array($_POST['id'], $_SESSION['personal_folders'])
+                            && $is_user_in_restricted_list !== '1'
+                            && $folder_is_personal !== '1'
                         ) {
                             $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
@@ -2275,8 +2293,8 @@ if (isset($_POST['type'])) {
                         }
                         // Case where item is in own personal folder
                         elseif (
-                            in_array($_POST['id'], array_merge($_SESSION['personal_visible_groups'], $_SESSION['personal_folders']))
-                            && $record['perso'] === "1"
+                            $folder_is_in_personal === '1'
+                            && $record['perso'] === '1'
                         ) {
                             $perso = '<i class="fa fa-user-secret mi-grey-1 fa-sm"></i>&nbsp';
                             $findPfGroup = 1;
@@ -2289,10 +2307,8 @@ if (isset($_POST['type'])) {
                         // CAse where item is restricted to a group of users included user
                         elseif (
                             !empty($record['restricted_to'])
-                            && in_array($_SESSION['user_id'], $restricted_users_array)
-                            || (isset($_SESSION['list_folders_editable_by_role'])
-                                    && in_array($_POST['id'], $_SESSION['list_folders_editable_by_role']))
-                            && in_array($_SESSION['user_id'], $restricted_users_array)
+                            || $list_folders_editable_by_role === '1'
+                            && $is_user_in_restricted_list === '1'
                         ) {
                             $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
@@ -2303,11 +2319,11 @@ if (isset($_POST['type'])) {
                         }
                         // CAse where item is restricted to a group of users not including user
                         elseif (
-                            $record['perso'] === "1"
+                            $record['perso'] === '1'
                             ||
                             (
                                 !empty($record['restricted_to'])
-                                && !in_array($_SESSION['user_id'], $restricted_users_array)
+                                && $is_user_in_restricted_list !== '1'
                             )
                             ||
                             (
@@ -2340,7 +2356,7 @@ if (isset($_POST['type'])) {
                                     $init_personal_folder = true;
                                 }
 
-                                if (!empty($record['restricted_to']) && in_array($_SESSION['user_id'], $restricted_users_array)) {
+                                if (!empty($record['restricted_to']) && $is_user_in_restricted_list === '1') {
                                     $displayItem = true;
                                 }
                             }
@@ -2356,40 +2372,40 @@ if (isset($_POST['type'])) {
                             }
                         }
                         // Prepare full line
-                        $html .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
+                        $new_line .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
                         if ($canMove === true && $accessLevel == 0) {
-                            $html .= 'item_draggable';
+                            $new_line .= 'item_draggable';
                         } else {
-                            $html .= 'item';
+                            $new_line .= 'item';
                         }
 
-                        $html .= ' trunc_line" id="'.$record['id'].'" style="">';
+                        $new_line .= ' trunc_line" id="'.$record['id'].'" style="">';
 
                         if ($canMove === true && $accessLevel == 0) {
-                            $html .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
+                            $new_line .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
                         } else {
-                            $html .= '<span style="margin-left:11px;"></span>';
+                            $new_line .= '<span style="margin-left:11px;"></span>';
                         }
 
 
                         $label = stripslashes(handleBackslash($record['label']));
-                        $html .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
+                        $new_line .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
 
                         // manage desc to show
-                        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === "1") {
+                        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] === '1') {
                             $desc = explode("<br>", $record['description']);
-                            $html .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
+                            $new_line .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
                         }
 
-                        $html .= '</div></font>';
+                        $new_line .= '</div></font>';
 
-                        $html .= '</a>';
+                        $new_line .= '</a>';
 
                         //
-                        $html .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+                        $new_line .= '<span style="float:right;margin:2px 10px 0px 0px;">';
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
-                        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === "1") {
+                        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1') {
                             if ($need_sk === true && isset($_SESSION['user_settings']['session_psk'])) {
                                 $pw = cryption(
                                     $record['pw'],
@@ -2408,43 +2424,46 @@ if (isset($_POST['type'])) {
                             $pw = $pw['string'];
                             if (!isUTF8($pw)) {
                                 $pw = "";
-                                $html .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
+                                $new_line .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
                             } else if (empty($pw)) {
-                                $html .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
+                                $new_line .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
                             }
                         } else {
                             $pw = "";
                         }
 
                         // mini icon for collab
-                        if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === "1") {
-                            if ($record['anyone_can_modify'] === "1") {
-                                $html .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                        if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === '1') {
+                            if ($record['anyone_can_modify'] === '1') {
+                                $new_line .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
                             }
                         }
 
                         // display quick icon shortcuts ?
-                        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === "1") {
+                        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1') {
                             if ($displayItem === true) {
                                 if (!empty($record['login'])) {
-                                    $html .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+                                    $new_line .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
                                 }
                                 if (!empty($pw)) {
-                                    $html .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                                    $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
                                 }
                             }
                         }
                         // Prepare make Favorite small icon
-                        $html .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
+                        $new_line .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $html .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $new_line .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
                         } else {
-                            $html .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $new_line .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
                         }
 
-                        $html .= '</span></li>';
+                        $new_line .= '</span></li>';
                         // Build array with items
                         array_push($itemsIDList, array($record['id'], $pw, $record['login'], $displayItem));
+
+                        // build full html
+                        $html .= $new_line;
 
                         $i++;
                     }
@@ -2471,14 +2490,22 @@ if (isset($_POST['type'])) {
             }
 
             // Check list to be continued status
-            if (($_POST['nb_items_to_display_once'] + $start) < $counter_full && $_POST['nb_items_to_display_once'] != "max") {
+            if (($_POST['nb_items_to_display_once'] + $start) < $counter_full && $_POST['nb_items_to_display_once'] !== 'max') {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";
             }
 
             //  Fixing items not being displayed
-            $html = iconv('UTF-8', 'UTF-8//IGNORE', mb_convert_encoding($html, "UTF-8", "UTF-8"));
+            $html = iconv(
+                'UTF-8',
+                'UTF-8//IGNORE',
+                mb_convert_encoding(
+                    $html,
+                    "UTF-8",
+                    "UTF-8"
+                )
+            );
 
 
             // Prepare returned values
@@ -2489,7 +2516,7 @@ if (isset($_POST['type'])) {
                 "items_html" => $html,
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
-                "show_clipboard_small_icons" => isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === "1" ? 1 : 0,
+                "show_clipboard_small_icons" => isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
                 "next_start" => $_POST['nb_items_to_display_once'] + $start,
                 "list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
@@ -2525,7 +2552,7 @@ if (isset($_POST['type'])) {
             if (isset($_POST['groupe']) && !empty($_POST['groupe'])) {
                 if (in_array($_POST['groupe'], $_SESSION['read_only_folders']) || !in_array($_POST['groupe'], $_SESSION['groupes_visibles'])) {
                     // check if this item can be modified by anyone
-                    if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === "1") {
+                    if (isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === '1') {
                         if ($dataItem['anyone_can_modify'] != 1) {
                             // else return not authorized
                             $returnValues = array(
@@ -2608,14 +2635,14 @@ if (isset($_POST['type'])) {
             if (isset($_POST['context']) && !empty($_POST['context'])) {
                 if ($_POST['context'] === "create_folder" || $_POST['context'] === "edit_folder" || $_POST['context'] === "delete_folder") {
                     if (
-                        $_SESSION['is_admin'] !== "1"
-                        && ($_SESSION['user_manager'] !== "1")
+                        $_SESSION['is_admin'] !== '1'
+                        && ($_SESSION['user_manager'] !== '1')
                         && (
                             isset($_SESSION['settings']['enable_user_can_create_folders'])
-                           && $_SESSION['settings']['enable_user_can_create_folders'] !== "1"
+                           && $_SESSION['settings']['enable_user_can_create_folders'] !== '1'
                         )
                         && (
-                            $data_this_folder['personal_folder'] !== "1" && $data_this_folder['title'] !== $_SESSION['user_id']
+                            $data_this_folder['personal_folder'] !== '1' && $data_this_folder['title'] !== $_SESSION['user_id']
                         )   // take into consideration if this is a personal folder
                     ) {
                         $returnValues = array(
@@ -2638,7 +2665,7 @@ if (isset($_POST['type'])) {
                 $_POST['groupe']
             );
 
-            if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] === "0")) {
+            if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] === '0')) {
                 $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
                 $folder_is_personal = $data['personal_folder'];
             } else {
@@ -2697,7 +2724,7 @@ if (isset($_POST['type'])) {
             );
 
             if ($_POST['field'] === "pw") {
-                if ($dataItem['perso'] === "1") {
+                if ($dataItem['perso'] === '1') {
                     $data = cryption(
                         $dataItem['pw'],
                         $_SESSION['user_settings']['session_psk'],
@@ -2740,7 +2767,7 @@ if (isset($_POST['type'])) {
         */
         case "rebuild_description_textarea":
             $returnValues = array();
-            if (isset($_SESSION['settings']['richtext']) && $_SESSION['settings']['richtext'] === "1") {
+            if (isset($_SESSION['settings']['richtext']) && $_SESSION['settings']['richtext'] === '1') {
                 if ($_POST['id'] === "desc") {
                     $returnValues['desc'] = '$("#desc").ckeditor({toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$k['langs'][$_SESSION['user_language']].'"});';
                 } elseif ($_POST['id'] === "edit_desc") {
@@ -2778,7 +2805,7 @@ if (isset($_POST['type'])) {
         * $action = 1 => Make favorite
         */
         case "action_on_quick_icon":
-            if ($_POST['action'] === "1") {
+            if ($_POST['action'] === '1') {
                 // Add new favourite
                 array_push($_SESSION['favourites'], $_POST['id']);
                 DB::update(
@@ -2795,7 +2822,7 @@ if (isset($_POST['type'])) {
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$_POST['id']
                     );
-            } elseif ($_POST['action'] === "0") {
+            } elseif ($_POST['action'] === '0') {
                 // delete from session
                 foreach ($_SESSION['favourites'] as $key => $value) {
                     if ($_SESSION['favourites'][$key] == $_POST['id']) {
@@ -2849,7 +2876,7 @@ if (isset($_POST['type'])) {
             );
 
             // previous is non personal folder and new too
-            if ($dataSource['personal_folder'] === "0" && $dataDestination['personal_folder'] === "0") {
+            if ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '0') {
                 // just update is needed. Item key is the same
                 DB::update(
                     prefix_table("items"),
@@ -2859,7 +2886,7 @@ if (isset($_POST['type'])) {
                     "id=%i",
                     $_POST['item_id']
                 );
-            } elseif ($dataSource['personal_folder'] === "0" && $dataDestination['personal_folder'] === "1") {
+            } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
                 $decrypt = cryption(
                     $dataSource['pw'],
                     "",
@@ -2884,7 +2911,7 @@ if (isset($_POST['type'])) {
                 );
             }
             // If previous is personal folder and new is personal folder too => no key exist on item
-            elseif ($dataSource['personal_folder'] === "1" && $dataDestination['personal_folder'] === "1") {
+            elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '1') {
                 // just update is needed. Item key is the same
                 DB::update(
                     prefix_table("items"),
@@ -2896,7 +2923,7 @@ if (isset($_POST['type'])) {
                 );
             }
             // If previous is personal folder and new is not personal folder => no key exist on item => add new
-            elseif ($dataSource['personal_folder'] === "1" && $dataDestination['personal_folder'] === "0") {
+            elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '0') {
                 $decrypt = cryption(
                     $dataSource['pw'],
                     mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
@@ -2956,7 +2983,7 @@ if (isset($_POST['type'])) {
                     );
 
                     // previous is non personal folder and new too
-                    if ($dataSource['personal_folder'] === "0" && $dataDestination['personal_folder'] === "0") {
+                    if ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '0') {
                         // just update is needed. Item key is the same
                         DB::update(
                             prefix_table("items"),
@@ -2966,7 +2993,7 @@ if (isset($_POST['type'])) {
                             "id=%i",
                             $item_id
                         );
-                    } elseif ($dataSource['personal_folder'] === "0" && $dataDestination['personal_folder'] === "1") {
+                    } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
                         $decrypt = cryption(
                             $dataSource['pw'],
                             "",
@@ -2991,7 +3018,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                     // If previous is personal folder and new is personal folder too => no key exist on item
-                    elseif ($dataSource['personal_folder'] === "1" && $dataDestination['personal_folder'] === "1") {
+                    elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '1') {
                         // just update is needed. Item key is the same
                         DB::update(
                             prefix_table("items"),
@@ -3003,7 +3030,7 @@ if (isset($_POST['type'])) {
                         );
                     }
                     // If previous is personal folder and new is not personal folder => no key exist on item => add new
-                    elseif ($dataSource['personal_folder'] === "1" && $dataDestination['personal_folder'] === "0") {
+                    elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '0') {
                         $decrypt = cryption(
                             $dataSource['pw'],
                             mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
@@ -3210,11 +3237,11 @@ if (isset($_POST['type'])) {
 
                 if (
                     (
-                        (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) && ($dataItem['perso'] === "0" || ($dataItem['perso'] === "1" && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false
+                        (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false
                     )
                     ||
                     (
-                        isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === "1" && $dataItem['anyone_can_modify'] === "1" && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === "1") && $restrictionActive === false
+                        isset($_SESSION['settings']['anyone_can_modify']) && $_SESSION['settings']['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false
                     )
                     ||
                     (@in_array($_POST['id'], $_SESSION['list_folders_limited'][$_POST['folder_id']]))
@@ -3555,11 +3582,11 @@ if (isset($_POST['type'])) {
 
             // Build list of visible folders
             $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
-            if (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] === "1") {
+            if (isset($_SESSION['settings']['can_create_root_folder']) && $_SESSION['settings']['can_create_root_folder'] === '1') {
                 $selectVisibleFoldersOptions = '<option value="0">'.$LANG['root'].'</option>';
             }
 
-            if ($_SESSION['user_admin'] === "1" && (isset($k['admin_full_right'])
+            if ($_SESSION['user_admin'] === '1' && (isset($k['admin_full_right'])
                 && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
                 $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
                 $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
@@ -3601,7 +3628,7 @@ if (isset($_POST['type'])) {
                     $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
                     foreach ($nodeDescendants as $node) {
                         // manage tree counters
-                        if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] === "1") {
+                        if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] === '1') {
                             DB::query(
                                 "SELECT * FROM ".prefix_table("items")."
                                 WHERE inactif=%i AND id_tree = %i",
@@ -3633,14 +3660,14 @@ if (isset($_POST['type'])) {
                         $fldTitle = str_replace("&", "&amp;", $folder->title);
 
                         // rename personal folder with user login
-                        if ($folder->title == $_SESSION['user_id'] && $folder->nlevel === "1") {
+                        if ($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1') {
                             $fldTitle = $_SESSION['login'];
                         }
 
                         // build select for all visible folders
                         if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-                            if ($_SESSION['user_read_only'] === "0" || ($_SESSION['user_read_only'] === "1" && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel === "1")) { //
+                            if ($_SESSION['user_read_only'] === '0' || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
+                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1')) { //
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" >'.$ident.$fldTitle.'</option>';
                                 } else {
                                     $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
@@ -3887,7 +3914,7 @@ function recupDroitCreationSansComplexite($groupe)
         $groupe
     );
     // Check if it's in a personal folder. If yes, then force complexity overhead.
-    if ($data['personal_folder'] === "1") {
+    if ($data['personal_folder'] === '1') {
         return array("bloquer_modification_complexite" => 1, "bloquer_creation_complexite" => 1);
     } else {
         return array("bloquer_modification_complexite" => $data['bloquer_modification'], "bloquer_creation_complexite" => $data['bloquer_creation']);

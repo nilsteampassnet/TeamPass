@@ -19,14 +19,14 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 function redirect($url)
 {
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
-        header('Location: '.$url);
+        header('Location: '.filter_var($url, FILTER_SANITIZE_URL));
         exit;
     } else {  //If headers are sent... do java redirect... if java disabled, do html redirect.
         echo '<script type="text/javascript">';
-        echo 'window.location.href="'.$url.'";';
+        echo 'window.location.href="'.filter_var($url, FILTER_SANITIZE_URL).'";';
         echo '</script>';
         echo '<noscript>';
-        echo '<meta http-equiv="refresh" content="0;url='.$url.'" />';
+        echo '<meta http-equiv="refresh" content="0;url='.filter_var($url, FILTER_SANITIZE_URL).'" />';
         echo '</noscript>';
         exit;
     }
@@ -38,7 +38,7 @@ if (
     isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
 ) {
-    $url = "https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+    $url = filter_var("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], FILTER_SANITIZE_URL);
     redirect($url);
 }
 
@@ -162,9 +162,11 @@ if (!empty($_SESSION['fin_session'])) {
 }
 
 if (
-    isset($_SESSION['user_id']) && (empty($_SESSION['fin_session'])
-    || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
-    || empty($dataSession['key_tempo']))
+    isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
+        empty($_SESSION['fin_session'])
+        || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
+        || empty($dataSession['key_tempo'])
+    )
 ) {
     // Update table by deleting ID
     DB::update(
@@ -184,10 +186,9 @@ if (
     }
 
     // erase session table
-    $_SESSION = array();
-
-    // Kill session
     session_destroy();
+    $_SESSION = array();
+    unset($_SESSION);
 
     //Redirection
     echo '

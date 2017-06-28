@@ -59,7 +59,7 @@ $aes->register();
 
 function utf8Urldecode($value)
 {
-    $value = preg_replace('/%([0-9a-f]{2})/ie', 'chr(hexdec($1))', (string) $value);
+    $value = preg_replace('/%([0-9a-f]{2})/ie', 'chr(hexdec($1))', filter_var($value, FILTER_SANITIZE_STRING));
 
     return $value;
 }
