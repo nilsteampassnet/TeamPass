@@ -385,7 +385,7 @@ if (isset($_POST['type'])) {
                     ' found in \"'.addslashes($_SESSION['sk_file']).'\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                     '</span><br />';
                 //copy some constants from this existing file
-                $skFile = file(string($_SESSION['sk_file']));
+                $skFile = file($_SESSION['sk_file']);
                 while (list($key, $val) = each($skFile)) {
                     if (substr_count($val, "@define('SALT'") > 0) {
                         $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
