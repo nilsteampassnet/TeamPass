@@ -724,7 +724,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 \$user = \"". filter_var($_SESSION['user'], FILTER_SANITIZE_STRING)."\";
 \$pass = \"". str_replace("$", "\\$", filter_var($_SESSION['pass'], FILTER_SANITIZE_STRING))."\";
 \$database = \"". filter_var($_SESSION['database'], FILTER_SANITIZE_STRING)."\";
-\$port = ". filter_var($filter_var['port'], FILTER_SANITIZE_STRING).";
+\$port = ". filter_var($_SESSION['port'], FILTER_SANITIZE_STRING).";
 \$pre = \"". filter_var($_SESSION['pre'], FILTER_SANITIZE_STRING)."\";
 \$encoding = \"".filter_var($_SESSION['db_encoding'], FILTER_SANITIZE_STRING)."\";
 
