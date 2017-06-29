@@ -132,14 +132,15 @@ $dbTmp = mysqli_connect(
 // 2.1.27 check with DEFUSE
 // check if library defuse already on-going here
 // if yes, then don't execute re-encryption
-$_SESSION['tp_defuse_installed'] = false;
-$columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['pre']."items");
-while ($c = mysqli_fetch_assoc($columns)) {
-    if ($c['Field'] === "encryption_type") {
-        $_SESSION['tp_defuse_installed'] = true;
+if (isset($_SESSION['tp_defuse_installed']) !== true) {
+    $_SESSION['tp_defuse_installed'] = false;
+    $columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['pre']."items");
+    while ($c = mysqli_fetch_assoc($columns)) {
+        if ($c['Field'] === "encryption_type") {
+            $_SESSION['tp_defuse_installed'] = true;
+        }
     }
 }
-
 
 ## Populate table MISC
 $val = array(
