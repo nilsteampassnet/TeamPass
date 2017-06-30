@@ -339,7 +339,7 @@ global \$SETTINGS;
                             array('admin', 'manager_edit', '1'),
                             array('admin', 'cpassman_dir', $var['abspath']),
                             array('admin', 'cpassman_url', $var['url_path']),
-                            array('admin', 'favicon', $var['url_path'].'/favico.ico'),
+                            array('admin', 'favicon', $var['url_path'].'/favicon.ico'),
                             array('admin', 'path_to_upload_folder', $var['abspath'].'/upload'),
                             array('admin', 'url_to_upload_folder', $var['url_path'].'/upload'),
                             array('admin', 'path_to_files_folder', $var['abspath'].'/files'),

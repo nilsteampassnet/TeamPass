@@ -612,5 +612,16 @@ if ($tmp === "0") {
     );
 }
 
+
+// Update favico to favicon
+$result = mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['pre']."misc` WHERE intitule = 'cpassman_url' AND type = 'admin'");
+$rows = mysqli_fetch_assoc($result);
+mysqli_free_result($result);
+mysqli_query($dbTmp,
+    "UPDATE `".$_SESSION['pre']."misc`
+    SET `valeur` = '".$rows['valeur']."/favicon.ico'
+    WHERE intitule = 'favicon' AND type = 'admin'"
+);
+
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
