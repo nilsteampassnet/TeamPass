@@ -79,7 +79,8 @@ if (!$rows) {
 }
 
 // Prepare encryption options - with new KEY
-if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
+if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) === false && $saltkey_ante_2127 !== 'none') {
+    // Prepare encryption options for Defuse
     $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
     $key = substr(
@@ -96,10 +97,19 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
     );
     $opts_decrypt = array('iv'=>$iv, 'key'=>$key);
 
+    // Prepare decryption options for Defuse
+    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
+    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
+    $opts_decrypt_defuse = array('iv'=>$iv, 'key'=>$key);
+
 
     while ($data = mysqli_fetch_array($rows)) {
         if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
-            // make a copy of file
+            // Try if file is already encrypted with Defuse
+
+
+
+            // Make a copy of file
             if (!copy(
                     $path_to_upload_folder.'/'.$data['file'],
                     $path_to_upload_folder.'/'.$data['file'].".copy"
