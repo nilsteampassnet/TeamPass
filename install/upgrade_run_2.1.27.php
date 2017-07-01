@@ -364,6 +364,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
         SECUREPATH."/teampass-seckey.txt",
         SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".time()
     );
+    $_SESSION['tp_defuse_new_key'] = true;
     $new_salt = defuse_generate_key();
     file_put_contents(
         SECUREPATH."/teampass-seckey.txt",
@@ -429,6 +430,8 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
             WHERE `type`='admin' AND `initule`='encryption_type'"
         );
     }
+} else {
+    $_SESSION['tp_defuse_new_key'] = false;
 }
 //--
 

@@ -473,7 +473,7 @@ if (isset($_POST['type'])) {
                             $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
                         }
 
-                        // upidate
+                        // Update
                         if (!empty($db_sk[0])) {
                             mysqli_query($dbTmp,
                                 "UPDATE `".$_SESSION['pre']."misc`

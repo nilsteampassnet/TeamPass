@@ -58,6 +58,12 @@ $path_to_upload_folder = $set[0];
 $set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='saltkey_ante_2127'"));
 $saltkey_ante_2127 = $set[0];
 
+// If $saltkey_ante_2127 is set to'none', then encryption is done with Defuse, so exit
+// Also quit if no new defuse saltkey was generated
+if ($saltkey_ante_2127 === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
+    echo '[{"finish":"1" , "next":"", "error":""}]';
+    exit();
+}
 
 // get total items
 $rows = mysqli_query($dbTmp, "SELECT id FROM ".$_SESSION['pre']."files");
