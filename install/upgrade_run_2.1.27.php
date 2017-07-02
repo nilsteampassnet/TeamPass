@@ -364,6 +364,7 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
         SECUREPATH."/teampass-seckey.txt",
         SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".time()
     );
+    $_SESSION['tp_defuse_new_key'] = true;
     $new_salt = defuse_generate_key();
     file_put_contents(
         SECUREPATH."/teampass-seckey.txt",
@@ -429,6 +430,8 @@ if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed']
             WHERE `type`='admin' AND `initule`='encryption_type'"
         );
     }
+} else {
+    $_SESSION['tp_defuse_new_key'] = false;
 }
 //--
 
@@ -611,6 +614,17 @@ if ($tmp === "0") {
         "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('9999999', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
     );
 }
+
+
+// Update favico to favicon
+$result = mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['pre']."misc` WHERE intitule = 'cpassman_url' AND type = 'admin'");
+$rows = mysqli_fetch_assoc($result);
+mysqli_free_result($result);
+mysqli_query($dbTmp,
+    "UPDATE `".$_SESSION['pre']."misc`
+    SET `valeur` = '".$rows['valeur']."/favicon.ico'
+    WHERE intitule = 'favicon' AND type = 'admin'"
+);
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

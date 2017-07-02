@@ -973,11 +973,17 @@ function EditerItem()
 
                         // refresh fields
                         if ($('.edit_item_field').val() != undefined) {
+                            $('.tr_fields').hide();
                             $('.edit_item_field').each(function(i){
                                 id = $(this).attr('id').split('_');
-                                // copy data from form to Item Div
-                                $('#id_field_' + id[2]).html($(this).val());
-                                $('#hid_field_' + id[2]).val($(this).val());
+                                if ($(this).val() !== "") {
+                                    // copy data from form to Item Div
+                                    $('#id_field_' + id[2]).html($(this).val());
+                                    $('#hid_field_' + id[2] + '_' + id[3]).val($(this).val());
+                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).show()
+                                } else {
+                                    $('#hid_field_' + id[2] + '_' + id[3]).val('');
+                                }
                                 // clear form
                                 $(this).val("");
                             });
@@ -1381,14 +1387,22 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             multiple: true
                         });
 
-                        // show Field values
+                        // ---
+                        // Show Field values
                         $(".fields").val("");
                         $(".fields_div").html("");
-                        var liste = data.fields.split('_|_');
-                        for (var i=0; i<liste.length; i++) {
-                            var field = liste[i].split('~~');
-                            $('#id_field_' + field[0]).html(field[1]);
-                            $('#hid_field_' + field[0]).val(field[1]);
+                        // If no CF then hide
+                        if (data.fields === "") {
+                            $(".tr_fields").hide();
+                        } else {
+                            $(".tr_cf, .tr_fields").hide();
+                            var liste = data.fields.split('_|_');
+                            for (var i=0; i<liste.length; i++) {
+                                var field = liste[i].split('~~');
+                                $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).show();
+                                $('#id_field_' + field[0]).html(field[1]);
+                                $('#hid_field_' + field[0] + '_' + field[2]).val(field[1]);
+                            }
                         }
 
                         //Anyone can modify button
@@ -1942,7 +1956,7 @@ function open_edit_item_div(restricted_to_roles)
     if ($('.fields').val() != undefined && $("#display_categories").val() != "") {
         $('.fields').each(function(i){
             id = $(this).attr('id').split('_');
-            $('#edit_field_' + id[2]).val(htmlspecialchars_decode($('#hid_field_' + id[2]).val()));
+            $('#edit_field_' + id[2] + '_' + id[3]).val(htmlspecialchars_decode($('#hid_field_' + id[2] + '_' + id[3]).val()));
         });
     }
 

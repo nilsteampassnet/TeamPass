@@ -1,5 +1,6 @@
 2.1.27
 
+ New: Custom Fields are only visible if defined
  Fix issue in tree if subfolder is visible while parent is not
  Fix issues regarding DUOSecurity
  Fix upgrade doesn't start in case that sk.php file has moved

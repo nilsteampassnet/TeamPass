@@ -211,7 +211,7 @@ echo'
                         <i class="fa fa-warning"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
-                <table width="100%">';
+                <table width="100%" id="item_details_table">';
 // Line for LABEL
 echo '
                 <tr>
@@ -332,17 +332,17 @@ if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_k
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
     foreach ($_SESSION['item_fields'] as $elem) {
         $itemCatName = $elem[0];
-    echo '
-                    <tr class="tr_fields itemCatName_'.$itemCatName.'">
+        echo '
+                    <tr class="tr_fields" id="tr_catfield_'.$elem[0].'" style="display:none;">
                         <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
                         <td></td>
                     </tr>';
         foreach ($elem[2] as $field) {
                     echo '
-                    <tr class="tr_fields itemCatName_'.$itemCatName.'">
+                    <tr class="tr_cf tr_fields" id="cf_tr_'.$field[0].'" style="display:none;">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
                         <td>
-                            <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'" class="fields" />
+                            <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />
                         </td>
                     </tr>';
         }
@@ -744,7 +744,7 @@ echo '
                         <div style="margin:2px 0 2px 15px;">
                             <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                             <label class="cpm_label">'.$field[1].'</label>
-                            <input type="text" id="edit_field_'.$field[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
+                            <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
                         </div>';
                     }
                     echo '

@@ -372,8 +372,8 @@ if (isset($_POST['type'])) {
                         $_SESSION['database'] = getSettingValue($val);
                     } elseif (substr_count($val, '$pre') > 0) {
                         $_SESSION['pre'] = getSettingValue($val);
-                    } elseif (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
-                        $_SESSION['sk_file'] = substr($val, 14, strpos($val, '";') - 14);
+                    } elseif (substr_count($val, 'SECUREPATH') > 0) {
+                        $_SESSION['sk_file'] = substr($val, 23, strpos($val, ');')-24)."/sk.php";
                     }
                 }
             }
@@ -473,7 +473,7 @@ if (isset($_POST['type'])) {
                             $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
                         }
 
-                        // upidate
+                        // Update
                         if (!empty($db_sk[0])) {
                             mysqli_query($dbTmp,
                                 "UPDATE `".$_SESSION['pre']."misc`
@@ -730,7 +730,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7)."');
-if (!file_exists(\"".$skFile."\")) {
+if (file_exists(\"".$skFile."\")) {
     require_once \"".$skFile."\";
 }
 @define('COST', '13'); // Don't change this."

@@ -55,8 +55,8 @@ if (file_exists($filename)) {
             $_SESSION['database'] = getSettingValue($val);
         } elseif (substr_count($val, '$pre = ') > 0) {
             $_SESSION['pre'] = getSettingValue($val);
-        } elseif (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
-            $_SESSION['sk_path'] = substr($val, 14, strpos($val, '";') - 14);
+        } elseif (substr_count($val, 'SECUREPATH') > 0) {
+            $_SESSION['sk_file'] = substr($val, 23, strpos($val, ');')-24)."/sk.php";
         }
     }
 }
@@ -564,7 +564,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      - update sk.php file for data encryption <span id="step5_skFile"></span><br />
                      Click on the button when ready.';
 
-    if (!isset($_SESSION['sk_path']) || !file_exists($_SESSION['sk_path'])) {
+    if (!isset($_SESSION['sk_file']) || !file_exists($_SESSION['sk_file'])) {
         echo '
         <h3>IMPORTANT: Since version 2.1.13, saltkey is stored in an independent file.</h3>
         <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
@@ -575,7 +575,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
         echo '<br /><br />
         <label for="sk_path" style="width:300px;">Absolute path to SaltKey :
             <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.">
-        </label><input type="text" id="sk_path" name="sk_path" value="'.substr($_SESSION['sk_path'], 0, strlen($_SESSION['sk_path']) - 7).'" size="75" /><br />
+        </label><input type="text" id="sk_path" name="sk_path" value="'.substr($_SESSION['sk_file'], 0, strlen($_SESSION['sk_file']) - 7).'" size="75" /><br />
         ';
     }
     echo '
