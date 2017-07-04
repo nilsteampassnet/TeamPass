@@ -435,7 +435,8 @@ global \$SETTINGS;
                             array('admin', 'agses_authentication_enabled', '0'),
                             array('admin', 'item_extra_fields', '0'),
                             array('admin', 'saltkey_ante_2127', 'none'),
-                            array('admin', 'migration_to_2127', 'done')
+                            array('admin', 'migration_to_2127', 'done'),
+                            array('admin', 'files_with_defuse', 'done')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

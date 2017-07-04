@@ -1648,6 +1648,23 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
+    // load PhpEncryption library
+    $path = '../includes/libraries/Encryption/Encryption/';
+
+    require_once $path.'Crypto.php';
+    require_once $path.'Encoding.php';
+    require_once $path.'DerivedKeys.php';
+    require_once $path.'Key.php';
+    require_once $path.'KeyOrPassword.php';
+    require_once $path.'File.php';
+    require_once $path.'RuntimeTests.php';
+    require_once $path.'KeyProtectedByPassword.php';
+    require_once $path.'Core.php';
+
+    // convert KEY
+    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    $defuse_key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+
     if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && ($image_status === "clear" || $image_status === "0")) {
         // file needs to be encrypted
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
@@ -1665,19 +1682,32 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
                 );
             }
 
-            // Open the file
             unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
-            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
-            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
 
-            // ecnrypt
-            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+            // Now encrypt the file with saltkey
+            $err = '';
+            try {
+                \Defuse\Crypto\File::encryptFile(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy",
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                    $defuse_key
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+            } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+            if (empty($err) === false) {
+                echo $err;
+            }
 
-            // read file and create new one
-            stream_copy_to_stream($fp, $out);
-
-            fclose($fp);
-            fclose($out);
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy");
 
             // update table
             DB::update(
@@ -1706,19 +1736,32 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
                 );
             }
 
-            // Open the file
             unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
-            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
-            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
 
-            // ecnrypt
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+            // Now encrypt the file with saltkey
+            $err = '';
+            try {
+                \Defuse\Crypto\File::decryptFile(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy",
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                    $defuse_key
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+            } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+            if (empty($err) === false) {
+                echo $err;
+            }
 
-            // read file and create new one
-            stream_copy_to_stream($fp, $out);
-
-            fclose($fp);
-            fclose($out);
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy");
 
             // update table
             DB::update(

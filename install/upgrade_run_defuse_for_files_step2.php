@@ -1,6 +1,6 @@
 <?php
 /**
- * @file          upgrade_run_defuse_for_files.php
+ * @file          upgrade_run_defuse_for_files_step2.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
@@ -26,6 +26,11 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
+
+// prepare Encryption class calls
+use \Defuse\Crypto\Crypto;
+use \Defuse\Crypto\File;
+use \Defuse\Crypto\Exception as Ex;
 
 $_SESSION['settings']['loaded'] = "";
 
@@ -64,18 +69,7 @@ $files_with_defuse = $set[0];
 
 // If $saltkey_ante_2127 is set to'none', then encryption is done with Defuse, so exit
 // Also quit if no new defuse saltkey was generated
-if ($files_with_defuse !== "done") {
-    if ($saltkey_ante_2127 === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
-        // update
-        mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."misc`
-            SET `valeur` = 'done'
-            WHERE type='admin' AND intitule='files_with_defuse'"
-        );
-
-        echo '[{"finish":"1" , "next":"", "error":""}]';
-        exit();
-    }
-} else {
+if ($files_with_defuse === "done") {
     echo '[{"finish":"1" , "next":"", "error":""}]';
     exit();
 }
@@ -99,24 +93,29 @@ if (!$rows) {
     exit();
 }
 
-// Prepare encryption options - with new KEY
-if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) === false) {
-    // Prepare encryption options for Defuse
-    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-    $key = substr(
-        hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-    $opts_encrypt = array('iv'=>$iv, 'key'=>$key);
+// load PhpEncryption library
+$path = '../includes/libraries/Encryption/Encryption/';
 
-    // Prepare encryption options - with old KEY
-    $iv = substr(md5("\x1B\x3C\x58".$saltkey_ante_2127, true), 0, 8);
-    $key = substr(
-        md5("\x2D\xFC\xD8".$saltkey_ante_2127, true).
-        md5("\x2D\xFC\xD9".$saltkey_ante_2127, true),
-        0,
-        24
-    );
-    $opts_decrypt = array('iv'=>$iv, 'key'=>$key);
+require_once $path.'Crypto.php';
+require_once $path.'Encoding.php';
+require_once $path.'DerivedKeys.php';
+require_once $path.'Key.php';
+require_once $path.'KeyOrPassword.php';
+require_once $path.'File.php';
+require_once $path.'RuntimeTests.php';
+require_once $path.'KeyProtectedByPassword.php';
+require_once $path.'Core.php';
+
+
+if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
+    // convert KEY
+    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    $defuse_key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+
+    // Prepare decryption options for Defuse
+    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
+    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
+    $opts_decrypt_defuse = array('iv'=>$iv, 'key'=>$key);
 
     while ($data = mysqli_fetch_array($rows)) {
         if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
@@ -141,7 +140,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) 
             $out = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", 'wb');
 
             // decrypt using old
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
+            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt_defuse);
             // copy to file
             stream_copy_to_stream($fp, $out);
             // clean
@@ -149,27 +148,31 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) 
             fclose($out);
             unlink($path_to_upload_folder.'/'.$data['file'].".copy");
 
-
             // Now encrypt the file with new saltkey
-            $fp = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", "rb");
-            $out = fopen($path_to_upload_folder.'/'.$data['file'], 'wb');
-            // encrypt using new
-            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
-            // copy to file
-            while (($line = fgets($fp)) !== false) {
-                fputs($out, (string) $line);
+            $err = '';
+            try {
+                \Defuse\Crypto\File::encryptFile(
+                    $path_to_upload_folder.'/'.$data['file'].".tmp",
+                    $path_to_upload_folder.'/'.$data['file'],
+                    $defuse_key
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+            } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+            if (empty($err) === false) {
+                echo $err;
             }
 
             // clean
-            fclose($fp);
-            fclose($out);
             unlink($path_to_upload_folder.'/'.$data['file'].".tmp");
-
-            // update table
-            mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."files`
-                SET `status` = 'encrypted'
-                WHERE id = '".$data['id']."'"
-            );
         }
     }
 

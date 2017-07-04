@@ -135,8 +135,14 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
     if ($k['version'] === "2.1.27") {
         mysqli_query($dbTmp,
             "UPDATE ".$_SESSION['pre']."misc
-            SET migration_to_2127 = 'done'
-            WHERE type = 'admin'"
+            SET `valeur` = 'done'
+            WHERE type = 'admin' AND intitule='migration_to_2127'"
+        );
+
+        mysqli_query($dbTmp,
+            "UPDATE `".$_SESSION['pre']."misc`
+            SET `valeur` = 'done'
+            WHERE type='admin' AND intitule='files_with_defuse'"
         );
     }
 
