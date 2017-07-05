@@ -131,23 +131,26 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         }
     }
 
-    // 2.1.27
-    if ($k['version'] === "2.1.27") {
-        mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['pre']."misc
-            SET `valeur` = 'done'
-            WHERE type = 'admin' AND intitule='migration_to_2127'"
-        );
-
-        mysqli_query($dbTmp,
-            "UPDATE `".$_SESSION['pre']."misc`
-            SET `valeur` = 'done'
-            WHERE type='admin' AND intitule='files_with_defuse'"
-        );
-    }
-
     $finish = 1;
 }
+
+
+
+// 2.1.27
+if ($k['version'] === "2.1.27") {
+    mysqli_query($dbTmp,
+        "UPDATE ".$_SESSION['pre']."misc
+        SET `valeur` = 'done'
+        WHERE type = 'admin' AND intitule='migration_to_2127'"
+    );
+
+    mysqli_query($dbTmp,
+        "UPDATE `".$_SESSION['pre']."misc`
+        SET `valeur` = 'done'
+        WHERE type='admin' AND intitule='files_with_defuse'"
+    );
+}
+
 
 // alter ITEMS table by adding default value to encryption_type field
 mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` CHANGE encryption_type encryption_type varchar(20) NOT NULL DEFAULT 'defuse'");

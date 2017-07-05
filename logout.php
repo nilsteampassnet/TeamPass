@@ -53,6 +53,7 @@ if (!empty($user_id)) {
     );
     //Log into DB the user's disconnection
     if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+        require_once 'sources/main.functions.php';
         logEvents('user_connection', 'disconnection', $user_id, @$_SESSION['login']);
     }
 }

@@ -118,61 +118,68 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
     $opts_decrypt_defuse = array('iv'=>$iv, 'key'=>$key);
 
     while ($data = mysqli_fetch_array($rows)) {
-        if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
-            // Make a copy of file
-            if (!copy(
-                    $path_to_upload_folder.'/'.$data['file'],
-                    $path_to_upload_folder.'/'.$data['file'].".copy"
-            )) {
-                $error = "Copy not possible";
-                exit;
-            } else {
-                // do a bck
-                copy(
-                    $path_to_upload_folder.'/'.$data['file'],
-                    $path_to_upload_folder.'/'.$data['file'].".bck"
-                );
-            }
-
-            // Open the file
-            unlink($path_to_upload_folder.'/'.$data['file']);
-            $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
-            $out = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", 'wb');
-
-            // decrypt using old
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt_defuse);
-            // copy to file
-            stream_copy_to_stream($fp, $out);
-            // clean
-            fclose($fp);
-            fclose($out);
-            unlink($path_to_upload_folder.'/'.$data['file'].".copy");
-
-            // Now encrypt the file with new saltkey
-            $err = '';
+        if (file_exists($path_to_upload_folder.'/'.$data['file']) && $data['status'] === 'encrypted') {
+            // Check if file is already encrypted with Defuse.
+            // If yes, then stop
             try {
-                \Defuse\Crypto\File::encryptFile(
-                    $path_to_upload_folder.'/'.$data['file'].".tmp",
+                \Defuse\Crypto\File::decryptFile(
                     $path_to_upload_folder.'/'.$data['file'],
+                    $path_to_upload_folder.'/'.$data['file'].".defuse_test",
                     $defuse_key
                 );
             } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
-            } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\CryptoException $ex) {
-                $err = $ex;
-            } catch (Defuse\Crypto\Exception\IOException $ex) {
-                $err = $ex;
-            }
-            if (empty($err) === false) {
-                echo $err;
-            }
+                // Make a copy of file
+                if (!copy(
+                        $path_to_upload_folder.'/'.$data['file'],
+                        $path_to_upload_folder.'/'.$data['file'].".copy"
+                )) {
+                    $error = "Copy not possible";
+                    exit;
+                } else {
+                    // do a bck
+                    copy(
+                        $path_to_upload_folder.'/'.$data['file'],
+                        $path_to_upload_folder.'/'.$data['file'].".bck"
+                    );
+                }
 
-            // clean
-            unlink($path_to_upload_folder.'/'.$data['file'].".tmp");
+                // Open the file
+                unlink($path_to_upload_folder.'/'.$data['file']);
+                $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
+                $out = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", 'wb');
+
+                // decrypt using old
+                stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt_defuse);
+                // copy to file
+                stream_copy_to_stream($fp, $out);
+                // clean
+                fclose($fp);
+                fclose($out);
+                unlink($path_to_upload_folder.'/'.$data['file'].".copy");
+
+                // Now encrypt the file with new saltkey
+                $err = '';
+                try {
+                    \Defuse\Crypto\File::encryptFile(
+                        $path_to_upload_folder.'/'.$data['file'].".tmp",
+                        $path_to_upload_folder.'/'.$data['file'],
+                        $defuse_key
+                    );
+                } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                    $err = "decryption_not_possible";
+                } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                    $err = $ex;
+                } catch (Defuse\Crypto\Exception\IOException $ex) {
+                    $err = $ex;
+                }
+                if (empty($err) === false) {
+                    echo $err;
+                }
+
+                // clean
+                unlink($path_to_upload_folder.'/'.$data['file'].".tmp");
+            }
+            
         }
     }
 
