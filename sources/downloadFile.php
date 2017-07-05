@@ -18,6 +18,11 @@ if (!isset($_SESSION['CPM']) || !isset($_SESSION['key_tmp']) || !isset($_SESSION
     die('Hacking attempt...');
 }
 
+// prepare Encryption class calls
+use \Defuse\Crypto\Crypto;
+use \Defuse\Crypto\File;
+use \Defuse\Crypto\Exception as Ex;
+
 $get_filename = filter_var($_GET['name'], FILTER_SANITIZE_STRING);
 
 header('Content-disposition: attachment; filename='.rawurldecode(basename($get_filename)));
@@ -45,24 +50,64 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     // get file key
     $file_info = DB::queryfirstrow("SELECT file, status FROM ".prefix_table("files")." WHERE id=%i", $_GET['fileid']);
 
-    // Open the file
-    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
-
-    // Prepare encryption options
-    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-    $opts = array('iv'=>$iv, 'key'=>$key);
-
     // should we encrypt/decrypt the file
-    encrypt_or_decrypt_file($file_info['file'], $file_info['status'], $opts);
+    encrypt_or_decrypt_file($file_info['file'], $file_info['status']);
 
     // should we decrypt the attachment?
     if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
-        // Add the Mcrypt stream filter
-        stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-    }
+        // load PhpEncryption library
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
-    // Read the file contents
-    fpassthru($fp);
+        // get KEY
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+        // Now encrypt the file with new saltkey
+        $err = '';
+        try {
+            \Defuse\Crypto\File::decryptFile(
+                $_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'],
+                $_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'].".delete",
+                \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+            );
+        } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+            $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+        } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+            $err = $ex;
+        } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+            $err = $ex;
+        } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+            $err = $ex;
+        } catch (Defuse\Crypto\Exception\IOException $ex) {
+            $err = $ex;
+        }
+        if (empty($err) === false) {
+            echo $err;
+        }
+
+        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'].".delete", 'rb');
+
+        // Read the file contents
+        fpassthru($fp);
+
+        // Close the file
+        fclose($fp);
+
+        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'].".delete");
+    } else {
+        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
+
+        // Read the file contents
+        fpassthru($fp);
+
+        // Close the file
+        fclose($fp);
+    }
 }

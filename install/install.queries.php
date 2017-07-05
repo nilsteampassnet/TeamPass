@@ -271,7 +271,7 @@ if (isset($_POST['type'])) {
                             `viewed_no` int(12) NOT null DEFAULT '0',
                             `complexity_level` varchar(3) NOT null DEFAULT '-1',
                             `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
-                            `auto_update_pwd_next_date` int(15) NOT null DEFAULT '0',
+                            `auto_update_pwd_next_date` varchar(100) NOT null DEFAULT '0',
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
                             PRIMARY KEY (`id`),
                             KEY    `restricted_inactif_idx` (`restricted_to`,`inactif`)
@@ -435,7 +435,8 @@ global \$SETTINGS;
                             array('admin', 'agses_authentication_enabled', '0'),
                             array('admin', 'item_extra_fields', '0'),
                             array('admin', 'saltkey_ante_2127', 'none'),
-                            array('admin', 'migration_to_2127', 'done')
+                            array('admin', 'migration_to_2127', 'done'),
+                            array('admin', 'files_with_defuse', 'done')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -847,7 +848,7 @@ global \$SETTINGS;
                         $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
                         if ($tmp == 0) {
                             $mysqli_result = mysqli_query($dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'], '13')."', '1', '0', '0', '', '', '')"
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_password_change`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'], '13')."', '1', '0', '0', '', '', '', '".time()."')"
                             );
                         } else {
                             $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'], '13')."' WHERE login = 'admin' AND id = '1'");

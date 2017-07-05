@@ -58,9 +58,24 @@ $path_to_upload_folder = $set[0];
 $set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='saltkey_ante_2127'"));
 $saltkey_ante_2127 = $set[0];
 
+// get if files are managed through defuse library
+$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='files_with_defuse'"));
+$files_with_defuse = $set[0];
+
 // If $saltkey_ante_2127 is set to'none', then encryption is done with Defuse, so exit
 // Also quit if no new defuse saltkey was generated
-if ($saltkey_ante_2127 === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
+if ($files_with_defuse !== "done") {
+    if ($saltkey_ante_2127 === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
+        // update
+        mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."misc`
+            SET `valeur` = 'done'
+            WHERE type='admin' AND intitule='files_with_defuse'"
+        );
+
+        echo '[{"finish":"1" , "next":"", "error":""}]';
+        exit();
+    }
+} else {
     echo '[{"finish":"1" , "next":"", "error":""}]';
     exit();
 }
@@ -85,7 +100,7 @@ if (!$rows) {
 }
 
 // Prepare encryption options - with new KEY
-if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) === false && $saltkey_ante_2127 !== 'none') {
+if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) === false) {
     // Prepare encryption options for Defuse
     $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
@@ -103,18 +118,8 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) 
     );
     $opts_decrypt = array('iv'=>$iv, 'key'=>$key);
 
-    // Prepare decryption options for Defuse
-    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-    $opts_decrypt_defuse = array('iv'=>$iv, 'key'=>$key);
-
-
     while ($data = mysqli_fetch_array($rows)) {
         if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
-            // Try if file is already encrypted with Defuse
-
-
-
             // Make a copy of file
             if (!copy(
                     $path_to_upload_folder.'/'.$data['file'],

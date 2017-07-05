@@ -1217,7 +1217,10 @@ echo '
                         <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <div id="upload_container_restoreDB">
                             <div id="filelist_restoreDB"></div><br />
-                            <a id="pickfiles_restoreDB" class="button" href="#">'.$LANG['select'].'</a>
+                            <span id="pickfiles_restoreDB" class="fa-stack tip" title="'.htmlentities($LANG['select'], ENT_QUOTES).'" style="cursor:pointer;">
+                                <i class="fa fa-square fa-stack-2x"></i>
+                                <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                            </span>
                         </div>
                         </td>
                     </tr>';
@@ -1581,7 +1584,9 @@ echo '
 
 echo '
 <input id="restore_bck_fileObj" name="restore_bck_fileObj" type="hidden" value="" />
-<div id="restore_bck_encryption_key_dialog" style="display:none;">
+<div id="restore_bck_encryption_key_dialog" style="display:none; text-align:center;">
     <input id="restore_bck_encryption_key" name="restore_bck_encryption_key" type="text" value="" />
+    <br>
+    <div class=ui-state-error ui-corner-all" style="display:none;padding:5px;display:none;margin:2px;" id="restore_bck_encryption_key_dialog_error"></div>
 </div>';
 include "admin.settings.load.php";

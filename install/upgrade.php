@@ -55,7 +55,7 @@ if (file_exists($filename)) {
             $_SESSION['database'] = getSettingValue($val);
         } elseif (substr_count($val, '$pre = ') > 0) {
             $_SESSION['pre'] = getSettingValue($val);
-        } elseif (substr_count($val, 'SECUREPATH') > 0) {
+        } elseif (substr_count($val, "define('SECUREPATH',") > 0) {
             $_SESSION['sk_file'] = substr($val, 23, strpos($val, ');')-24)."/sk.php";
         }
     }

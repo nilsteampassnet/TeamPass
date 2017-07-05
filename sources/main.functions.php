@@ -1633,7 +1633,7 @@ function checkCFconsistency($source_id, $target_id) {
 /*
 *
 */
-function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
+function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     // include librairies & connect to DB
@@ -1648,36 +1648,59 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($image_status) && ($image_status === "clear" || $image_status === "0")) {
+    // load PhpEncryption library
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+
+    // get KEY
+    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1" && isset($filename_status) && ($filename_status === "clear" || $filename_status === "0")) {
         // file needs to be encrypted
-        if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+        if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework)) {
             // make a copy of file
             if (!copy(
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
             )) {
                 exit;
             } else {
                 // do a bck
                 copy(
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".bck"
                 );
             }
 
-            // Open the file
-            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
-            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
-            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework);
 
-            // ecnrypt
-            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
+            // Now encrypt the file with saltkey
+            $err = '';
+            try {
+                \Defuse\Crypto\File::encryptFile(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy",
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+            if (empty($err) === false) {
+                echo $err;
+            }
 
-            // read file and create new one
-            stream_copy_to_stream($fp, $out);
-
-            fclose($fp);
-            fclose($out);
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy");
 
             // update table
             DB::update(
@@ -1689,36 +1712,45 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
                 substr($_POST['uri'], 1)
             );
         }
-    } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($image_status) && $image_status === "encrypted") {
+    } elseif (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "0" && isset($filename_status) && $filename_status === "encrypted") {
         // file needs to be decrypted
-        if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
+        if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework)) {
             // make a copy of file
             if (!copy(
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy"
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
             )) {
                 exit;
             } else {
                 // do a bck
                 copy(
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".bck"
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".bck"
                 );
             }
 
-            // Open the file
-            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code);
-            $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code.".copy", "rb");
-            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'wb');
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework);
 
-            // ecnrypt
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
+            // Now encrypt the file with saltkey
+            $err = '';
+            try {
+                \Defuse\Crypto\File::decryptFile(
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy",
+                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+            if (empty($err) === false) {
+                echo $err;
+            }
 
-            // read file and create new one
-            stream_copy_to_stream($fp, $out);
-
-            fclose($fp);
-            fclose($out);
+            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy");
 
             // update table
             DB::update(
@@ -1733,6 +1765,114 @@ function encrypt_or_decrypt_file($image_code, $image_status, $opts) {
     }
 }
 
+/**
+ * [prepareFileWithDefuse description]
+ * @param  [type] $type        [description]
+ * @param  [type] $source_file [description]
+ * @param  [type] $target_file [description]
+ * @return [type]              [description]
+ */
+function prepareFileWithDefuse($type, $source_file, $target_file, $password = '') {
+    // Sanitize
+    $source_file = filter_var($source_file, FILTER_SANITIZE_STRING);
+    $target_file = filter_var($target_file, FILTER_SANITIZE_STRING);
+
+    // load PhpEncryption library
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+
+    if (empty($password) === true) {
+        /*
+        File encryption/decryption is done with the SALTKEY
+         */
+
+        // get KEY
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+        // Now perform action on the file
+        $err = '';
+        if ($type === 'decrypt') {
+            try {
+                \Defuse\Crypto\File::decryptFile(
+                    $source_file,
+                    $target_file,
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "decryption_not_possible";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        } else if ($type === 'encrypt') {
+            try {
+                \Defuse\Crypto\File::encryptFile(
+                    $source_file,
+                    $target_file,
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "encryption_not_possible";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        }
+
+    } else {
+        /*
+        File encryption/decryption is done with special password and not the SALTKEY
+         */
+
+        $err = '';
+        if ($type === 'decrypt') {
+            try {
+                \Defuse\Crypto\File::decryptFileWithPassword(
+                    $source_file,
+                    $target_file,
+                    $password
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "wrong_key";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        } else if ($type === 'encrypt') {
+            try {
+                \Defuse\Crypto\File::encryptFileWithPassword(
+                    $source_file,
+                    $target_file,
+                    $password
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "wrong_key";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        }
+    }
+
+    // return error
+    if (empty($err) === false) {
+        return $err;
+    } else {
+        return true;
+    }
+}
+
 /*
 * NOT TO BE USED
 */
@@ -1742,9 +1882,12 @@ function debugTeampass($text) {
     fclose($debugFile);
 }
 
-/*
-* DELETE the file with expected command depending on server type
-*/
+
+/**
+ * DELETE the file with expected command depending on server type
+ * @param  [type] $file [description]
+ * @return [type]       [description]
+ */
 function fileDelete($file) {
     $file = filter_var($file, FILTER_SANITIZE_STRING);
     if (is_file($file)) {

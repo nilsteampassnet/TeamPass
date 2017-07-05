@@ -229,9 +229,13 @@ function LaunchAdminActions(action, option)
     $("#div_loading").show();
     $("#email_testing_results, #result_admin_script_backup").hide();
     $("#result_admin_action_db_backup").html("");
-    if (action === "admin_action_db_backup") option = $("#result_admin_action_db_backup_key").val();
-    else if (action === "admin_action_backup_decrypt") option = $("#bck_script_decrypt_file").val();
-    else if (action === "admin_action_change_salt_key") {
+    if (action === "admin_action_db_backup") {
+        option = $("#result_admin_action_db_backup_key").val();
+    } else if (action === "admin_action_db_restore") {
+        $("#restore_bck_encryption_key_dialog_error").html("").hide();
+    } else if (action === "admin_action_backup_decrypt") {
+        option = $("#bck_script_decrypt_file").val();
+    } else if (action === "admin_action_change_salt_key") {
         option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
     } else if (action === "admin_email_send_backlog") {
         $("#email_testing_results").show().html("<?php echo addslashes($LANG['please_wait']); ?>").attr("class","ui-corner-all ui-state-focus");
@@ -278,12 +282,16 @@ function LaunchAdminActions(action, option)
                 } else if (data[0].result == "pf_done") {
                     $("#result_admin_action_check_pf").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_restore") {
-                    $("#restore_bck_encryption_key_dialog").dialog("close");
-                    $("#result_admin_action_db_restore").html("<span class='fa fa-check mi-green'></span>").show();
-                    $("#result_admin_action_db_restore_get_file").hide();
-                    //deconnect userd
-                    sessionStorage.clear();
-                    window.location.href = "logout.php"
+                    if (data[0].message !== "") {
+                        $("#restore_bck_encryption_key_dialog_error").html(data[0].message).show();
+                    } else {
+                        $("#restore_bck_encryption_key_dialog").dialog("close");
+                        $("#result_admin_action_db_restore").html("<span class='fa fa-check mi-green'></span>").show();
+                        $("#result_admin_action_db_restore_get_file").hide();
+                        //deconnect userd
+                        sessionStorage.clear();
+                        window.location.href = "logout.php"
+                    }
                 } else if (data[0].result == "cache_reload") {
                     $("#result_admin_action_reload_cache_table").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_optimize") {
@@ -778,16 +786,20 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width:250,
-        height:150,
+        width:300,
+        height:180,
         title: "<?php echo $LANG['admin_action_db_restore_key']; ?>",
         buttons: {
             "<?php echo $LANG['ok']; ?>": function() {
                 LaunchAdminActions("admin_action_db_restore", $("#restore_bck_fileObj").val()+"&"+$("#restore_bck_encryption_key").val());
             },
-            "<?php echo $LANG['cancel_button']; ?>'": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
+        },
+        close: function(event,ui) {
+            $("#div_loading").hide();
+            $("#restore_bck_encryption_key_dialog").dialog("close");
         }
     });
 
@@ -811,6 +823,7 @@ $(function() {
         ],
         init: {
             FilesAdded: function(up, files) {
+                $("#div_loading").show();
                 // generate and save token
                 $.post(
                     "sources/main.queries.php",

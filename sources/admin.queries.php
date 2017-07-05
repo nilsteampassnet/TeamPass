@@ -319,14 +319,27 @@ switch ($_POST['type']) {
             $filename = time().'-'.$token.'.sql';
             $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename, 'w+');
 
-            //Encrypt the file
-            if (!empty($_POST['option'])) {
-                $return = encrypt($return, $_POST['option']);
-            }
-
             //write file
             fwrite($handle, $return);
             fclose($handle);
+
+            // Encrypt the file
+            if (empty($_POST['option']) === false) {
+                // Encrypt the file
+                prepareFileWithDefuse(
+                    'encrypt',
+                    $_SESSION['settings']['path_to_files_folder']."/".$filename,
+                    $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$filename,
+                    $_POST['option']
+                );
+
+                // Do clean
+                unlink($_SESSION['settings']['path_to_files_folder']."/".$filename);
+                rename (
+                    $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$filename,
+                    $_SESSION['settings']['path_to_files_folder']."/".$filename
+                );
+            }
 
             //generate 2d key
             $_SESSION['key_tmp'] = GenerateCryptKey(20, true);
@@ -347,21 +360,25 @@ switch ($_POST['type']) {
         $file = htmlspecialchars($dataPost[0]);
         $key = htmlspecialchars($dataPost[1]);
 
-        //create uncrypted file
-        if (!empty($key)) {
-            //read full file
-            $fileArray = file(basename($_SESSION['settings']['path_to_files_folder']."/".$file));
+        // Undecrypt the file
+        if (empty($key) === false) {
 
-            //delete file
-            deleteFile($_SESSION['settings']['path_to_files_folder']."/".$file);
+            // Decrypt the file
+            $ret = prepareFileWithDefuse(
+                'decrypt',
+                $_SESSION['settings']['path_to_files_folder']."/".$file,
+                $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file,
+                $key
+            );
 
-            //create new file with uncrypted data
-            $file = htmlspecialchars($_SESSION['settings']['path_to_files_folder']."/".time().".txt");
-            $inF = fopen($file, "w");
-            while (list($cle, $val) = each($fileArray)) {
-                fputs($inF, decrypt($val, $key)."\n");
+            if ($ret !== true) {
+                echo '[{"result":"db_restore" , "message":"'.$ret.'"}]';
+                break;
             }
-            fclose($inF);
+
+            // Do clean
+            unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
+            $file = $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file;
         } else {
             $file = $_SESSION['settings']['path_to_files_folder']."/".$file;
         }
@@ -381,7 +398,7 @@ switch ($_POST['type']) {
         }
 
         //delete file
-        deleteFile($file);
+        fileDelete($file);
 
         //Show done
         echo '[{"result":"db_restore"}]';
@@ -875,20 +892,9 @@ switch ($_POST['type']) {
 
             } else if ($objects[0] === "files") {
 
-                // Prepare decryption options
-                $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_old_salt']), 0, 8);
-                $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_old_salt'], true), 0, 24);
-                $decrypt_opts = array('iv'=>$iv, 'key'=>$key);
-
-
-                // Prepare encryption options
-                $iv = substr(hash("md5", "iv".$_SESSION['reencrypt_new_salt']), 0, 8);
-                $key = substr(hash("md5", "ssapmeat1".$_SESSION['reencrypt_new_salt'], true), 0, 24);
-                $encrypt_opts = array('iv'=>$iv, 'key'=>$key);
-
-                //change all encrypted data in FILES (passwords)
+                // Change all encrypted data in FILES (passwords)
                 $rows = DB::query("
-                    SELECT id, file
+                    SELECT id, file, status
                     FROM ".prefix_table("files")."
                     WHERE status = 'encrypted'
                     LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
@@ -927,69 +933,30 @@ switch ($_POST['type']) {
                             );
                         }
 
-                        // treat file
-                        // check if isUTF8 then it means the file is not encrypted.
-                        // So no need to decrypt it
-                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
-                        $line = fgets($fp);
-                        if (!isUTF8($line)) {
-                            fclose($fp);
-                            // 1- DECRYTP THE FILE
 
-                            // Open the file
-                            $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], "rb");
-                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", 'wb');
+                        // Treat the file
+                        // STEP1 - Do decryption
+                            prepareFileWithDefuse(
+                                'decrypt',
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']."_encrypted"
+                            );
 
-                            // decrypt stream using old
-                            stream_filter_append($in, 'mdecrypt.tripledes', STREAM_FILTER_READ, $decrypt_opts);
-
-                            // copy to file
-                            stream_copy_to_stream($in, $out);
-
-                            // close streams
-                            fclose($out);
-                            fclose($in);
-
-                            // delete the copy file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
+                            // Do cleanup of files
                             unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
 
+                        // STEP2 - Do encryption
+                            prepareFileWithDefuse(
+                                'encryp',
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']."_encrypted",
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']
+                            );
 
-                            // 2- NOW ENCRYPT THE FILE
-                            $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp", "rb");
-                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
+                            // Do cleanup of files
+                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']."_encrypted");
 
-                            // encrypt using new
-                            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $encrypt_opts);
-                            // copy to file
-                            while ($buff = fread($in, 4096)) {
-                                fwrite($out, $buff);
-                            }
 
-                            fclose($in);
-                            fclose($out);
-
-                            // delete file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".tmp");
-                        } else {
-                            // prepare output file
-                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'], 'wb');
-
-                            // encrypt using new
-                            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $encrypt_opts);
-                            // copy to file
-                            while ($buff = fread($fp, 4096)) {
-                                fwrite($out, $buff);
-                            }
-
-                            fclose($fp);
-                            fclose($out);
-
-                            // delete file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy");
-                        }
-
-                        // update backup table
+                        // Update backup table
                         DB::update(
                             prefix_table('sk_reencrypt_backup'),
                             array(
@@ -1292,38 +1259,29 @@ switch ($_POST['type']) {
 
         // get through files
         if (isset($_POST['option']) && !empty($_POST['option'])) {
-            if ($handle = opendir($_SESSION['settings']['path_to_upload_folder'].'/')) {
-                while (false !== ($entry = readdir($handle))) {
-                    $entry = basename($entry);
-                    if ($entry != "." && $entry != ".." && $entry != ".htaccess" && $entry != ".gitignore") {
-                        if (strpos($entry, ".") === false) {
-                            // check if user query is coherant
-                            $addfile = 0;
-                            if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$entry)) {
-                                $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$entry, "rb");
-                                $line = fgets($fp);
-$line = "qsd";
-                                // check if isUTF8. If yes, then check if process = encryption, and vice-versa
-                                if ((isUTF8($line) && $_POST['option'] === "encrypt") || (!isUTF8($line) && $_POST['option'] === "decrypt")) {
-                                    $addfile = 1;
-                                } else {
-                                    $addfile = 0;
-                                }
-                                fclose($fp);
-                            }
+            // Loop on files
+            $rows = DB::query("
+                SELECT id, file, status
+                FROM ".prefix_table("files")."
+                LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
+            );
+            foreach ($rows as $record) {
+                if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'])) {
+                    $addFile = 0;
+                    if ($_POST['option'] == "decrypt" && $record['status'] === 'encrypted') {
+                        $addFile = 1;
+                    } else if ($_POST['option'] == "encrypt" && $record['status'] === 'clear') {
+                        $addFile = 1;
+                    }
 
-                            // build list
-                            if ($addfile === 1) {
-                                if (empty($filesList)) {
-                                    $filesList = $entry;
-                                } else {
-                                    $filesList .= ";".$entry;
-                                }
-                            }
+                    if ($addFile === '1') {
+                        if (empty($filesList)) {
+                            $filesList = $entry;
+                        } else {
+                            $filesList .= ";".$entry;
                         }
                     }
                 }
-                closedir($handle);
             }
         } else {
             $error = "No option";
@@ -1344,11 +1302,19 @@ $line = "qsd";
             $continu = true;
             $error = "";
 
-            // Prepare encryption options
+            // load PhpEncryption library
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+            require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+
+            // Get KEY
             $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-            $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-            $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-            $opts = array('iv'=>$iv, 'key'=>$key);
 
             // treat 10 files
             $filesList = explode(';', $_POST['list']);
@@ -1356,58 +1322,40 @@ $line = "qsd";
                 if ($cpt < 5) {
                     // skip file is Coherancey not respected
                     if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$file)) {
-                        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, "rb");
-                        $line = fgets($fp);
-                        $skipFile = false;
-                        // check if isUTF8. If yes, then check if process = encryption, and vice-versa
-                        if (!isUTF8($line) && $_POST['option'] == "decrypt") {
-                            $skipFile = true;
-                        } elseif (isUTF8($line) && $_POST['option'] == "encrypt") {
-                            $skipFile = true;
+
+                        if ($_POST['option'] == "decrypt") {
+                            prepareFileWithDefuse (
+                                'decrypt',
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
+                                $_SESSION['settings']['path_to_upload_folder'].'/defuse_temp_'.$file
+                            );
+
+                        } else if ($_POST['option'] == "encrypt") {
+                            prepareFileWithDefuse (
+                                'encrypt',
+                                $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
+                                $_SESSION['settings']['path_to_upload_folder'].'/defuse_temp_'.$file
+                            );
+
                         }
-                        fclose($fp);
+                        // Do file cleanup
+                        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                        rename(
+                            $_SESSION['settings']['path_to_upload_folder'].'/defuse_temp_'.$file,
+                            $_SESSION['settings']['path_to_upload_folder'].'/'.$file
+                        );
 
-                        if ($skipFile === true) {
-                            // make a copy of file
-                            $backup_filename = filter_var($file.".bck-before-change.".time(), FILTER_SANITIZE_STRING);
-                            if (!copy(
-                                    $_SESSION['settings']['path_to_upload_folder'].'/'.filter_var($file, FILTER_SANITIZE_STRING),
-                                    $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
-                            )) {
-                                $error = "Copy not possible";
-                                exit;
-                            }
-
-                            // Open the file
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.filter_var($file, FILTER_SANITIZE_STRING));
-                            $in = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename, "rb");
-                            $out = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file, 'wb');
-
-                            if ($_POST['option'] === "decrypt") {
-                                stream_filter_append($in, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-                            } else if ($_POST['option'] === "encrypt") {
-                                stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-                            }
-
-                            // read file and create new one
-                            while ($buff = fread($in, 4096)) {
-                                fwrite($out, $buff);
-                            }
-                            fclose($in);
-                            fclose($out);
-
-                            // store in DB
+                        // store in DB
                             DB::update(
                                 prefix_table('files'),
                                 array(
-                                    'status' => $_POST['option'] === "decrypt" ? "0" : "encrypted"
+                                    'status' => $_POST['option'] === "decrypt" ? "clear" : "encrypted"
                                     ),
                                 "file=%s",
                                 $file
                             );
 
                             $cpt++;
-                        }
                     }
                 } else {
                     // build list

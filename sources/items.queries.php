@@ -3377,15 +3377,8 @@ if (isset($_POST['type'])) {
             $file_to_display = $_SESSION['settings']['url_to_upload_folder'].'/'.$image_code;
             $file_suffix = "";
 
-            // Prepare encryption options
-            $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-            $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-            $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-            $opts = array('iv'=>$iv, 'key'=>$key);
-
-
             // should we encrypt/decrypt the file
-            encrypt_or_decrypt_file($file_info['file'], $file_info['status'], $opts);
+            encrypt_or_decrypt_file($file_info['file'], $file_info['status']);
 
             // should we decrypt the attachment?
             if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
@@ -3394,16 +3387,13 @@ if (isset($_POST['type'])) {
 
                 // Open the file
                 if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
-                    $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code, 'rb');
-                    $fp_new = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension, 'wb');
 
-                    // Add the Mcrypt stream filter
-                    stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts);
-                    // copy stream
-                    stream_copy_to_stream($fp, $fp_new);
-                    // close files
-                    fclose($fp);
-                    fclose($fp_new);
+                    prepareFileWithDefuse(
+                        'decrypt',
+                        $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                        $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension
+                    );
+
                     // prepare variable
                     $file_to_display = $file_to_display."_delete.".$extension;
                     $file_suffix = "_delete.".$extension;
