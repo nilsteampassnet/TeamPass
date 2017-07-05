@@ -378,10 +378,7 @@ switch ($_POST['type']) {
 
             // Do clean
             unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
-            rename (
-                $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file,
-                $_SESSION['settings']['path_to_files_folder']."/".$file
-            );
+            $file = $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file;
         } else {
             $file = $_SESSION['settings']['path_to_files_folder']."/".$file;
         }
@@ -401,7 +398,7 @@ switch ($_POST['type']) {
         }
 
         //delete file
-        deleteFile($file);
+        fileDelete($file);
 
         //Show done
         echo '[{"result":"db_restore"}]';

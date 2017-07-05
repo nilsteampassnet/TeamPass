@@ -544,6 +544,12 @@ mysqli_query(
     "ALTER TABLE `".$_SESSION['pre']."items_change` CHANGE user_id user_id INT(12) NOT NULL;"
 );
 
+// alter table ITEMS
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$_SESSION['pre']."items` CHANGE auto_update_pwd_next_date auto_update_pwd_next_date VARCHAR(100) NOT NULL DEFAULT '0';"
+);
+
 
 // add new admin setting "otv_is_enabled"
 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'otv_is_enabled'"));
