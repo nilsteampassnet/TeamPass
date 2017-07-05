@@ -12,7 +12,7 @@
 global $settings, $languagesList;
 
 $k['version'] = "2.1.27";
-$k['version_full'] = "2.1.27.5";
+$k['version_full'] = "2.1.27.6";
 $k['tool_name'] = "TeamPass";
 $k['one_day_seconds'] = 86400;
 $k['one_week_seconds'] = 604800;
