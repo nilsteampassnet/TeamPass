@@ -3389,8 +3389,9 @@ if (isset($_POST['type'])) {
                 if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$image_code)) {
 
                     prepareFileWithDefuse(
-                        $image_code,
-                        $image_code."_delete.".$extension
+                        'decrypt',
+                        $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code,
+                        $_SESSION['settings']['path_to_upload_folder'].'/'.$image_code."_delete.".$extension
                     );
 
                     // prepare variable

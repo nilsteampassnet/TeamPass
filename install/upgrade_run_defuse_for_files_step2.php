@@ -166,7 +166,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
                         $defuse_key
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                    $err = "decryption_not_possible";
+                    $err = "encryption_not_possible";
                 } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                     $err = $ex;
                 } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -179,7 +179,10 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
                 // clean
                 unlink($path_to_upload_folder.'/'.$data['file'].".tmp");
             }
-            
+            // Clean if needed
+            if (file_exists($path_to_upload_folder.'/'.$data['file'].".defuse_test")) {
+                unlink($path_to_upload_folder.'/'.$data['file'].".defuse_test");
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 2.1.27
 
+ Fix: upgrade process with encrypted attachments
+
  New: Custom Fields are only visible if defined
  Fix issue in tree if subfolder is visible while parent is not
  Fix issues regarding DUOSecurity

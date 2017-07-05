@@ -219,7 +219,7 @@ $filePath = filter_var($targetDir.DIRECTORY_SEPARATOR.$fileName, FILTER_SANITIZE
 // Create target dir
 if (!file_exists($targetDir)) {
     try {
-        mkdir($targetDir);
+        mkdir($targetDir, 0777, true);
     } catch (Exception $e) {
         print_r($e);
     }
@@ -253,33 +253,11 @@ if (isset($_SERVER["CONTENT_TYPE"])) {
     $contentType = $_SERVER["CONTENT_TYPE"];
 }
 
-// should we encrypt the attachment?
-if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] == 1) {
-    // get key
-    if (empty($ascii_key)) {
-        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
-    }
-
-    // prepare encryption of attachment
-    $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
-    $opts = array('iv'=>$iv, 'key'=>$key);
-
-    $file_status = "encrypted";
-} else {
-    $file_status = "clear";
-}
-
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, "multipart") !== false) {
     if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
         // Open temp file
         $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
-
-        if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1") {
-            // Add the Mcrypt stream filter
-            stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-        }
 
         if ($out) {
             // Read binary input stream and append it to temp file
@@ -309,11 +287,6 @@ if (strpos($contentType, "multipart") !== false) {
 } else {
     // Open temp file
     $out = fopen("{$filePath}.part", $chunk == 0 ? "wb" : "ab");
-
-    if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === "1") {
-        // Add the Mcrypt stream filter
-        stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts);
-    }
 
     if ($out) {
         // Read binary input stream and append it to temp file
@@ -346,6 +319,27 @@ if (!$chunks || $chunk == $chunks - 1) {
 $fileRandomId = md5($fileName.time());
 rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
 
+
+// Encrypt the file if requested
+if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === '1') {
+    // Do encryption
+    prepareFileWithDefuse(
+        'encrypt',
+        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId,
+        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId."_encrypted"
+    );
+
+    // Do cleanup of files
+    unlink($targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
+    rename(
+        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId."_encrypted",
+        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId
+    );
+
+    $file_status = "encrypted";
+} else {
+    $file_status = "clear";
+}
 
 // Case ITEM ATTACHMENTS - Store to database
 if (isset($_POST['edit_item']) && $_POST['type_upload'] === "item_attachments") {

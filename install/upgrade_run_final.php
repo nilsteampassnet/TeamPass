@@ -39,6 +39,15 @@ require_once '../sources/SplClassLoader.php';
 $finish = 0;
 $next = ""; // init on 1st task to be done
 
+
+$dbTmp = mysqli_connect(
+    $_SESSION['server'],
+    $_SESSION['user'],
+    $_SESSION['pass'],
+    $_SESSION['database'],
+    $_SESSION['port']
+);
+
 //Update CACHE table -> this will be the last task during update
 if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 
@@ -46,15 +55,6 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-
-
-    $dbTmp = mysqli_connect(
-        $_SESSION['server'],
-        $_SESSION['user'],
-        $_SESSION['pass'],
-        $_SESSION['database'],
-        $_SESSION['port']
-    );
 
     // truncate table
     mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['pre']."cache");
@@ -138,17 +138,35 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 
 // 2.1.27
 if ($k['version'] === "2.1.27") {
-    mysqli_query($dbTmp,
-        "UPDATE ".$_SESSION['pre']."misc
-        SET `valeur` = 'done'
-        WHERE type = 'admin' AND intitule='migration_to_2127'"
-    );
+    $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'migration_to_2127'"));
+    if ($tmp[0] === '0') {
+        $mysqli_result = mysqli_query($dbTmp,
+            "INSERT INTO `".$_SESSION['pre']."misc`
+            (`increment_id`, `type`, `intitule`, `valeur`)
+            VALUES (NULL, 'admin', 'migration_to_2127', 'done')"
+        );
+    } else {
+        mysqli_query($dbTmp,
+            "UPDATE ".$_SESSION['pre']."misc
+            SET `valeur` = 'done'
+            WHERE type = 'admin' AND intitule = 'migration_to_2127'"
+        );
+    }
 
-    mysqli_query($dbTmp,
-        "UPDATE `".$_SESSION['pre']."misc`
-        SET `valeur` = 'done'
-        WHERE type='admin' AND intitule='files_with_defuse'"
-    );
+    $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'files_with_defuse'"));
+    if ($tmp[0] === '0') {
+        $mysqli_result = mysqli_query($dbTmp,
+            "INSERT INTO `".$_SESSION['pre']."misc`
+            (`increment_id`, `type`, `intitule`, `valeur`)
+            VALUES (NULL, 'admin', 'files_with_defuse', 'done')"
+        );
+    } else {
+        mysqli_query($dbTmp,
+            "UPDATE ".$_SESSION['pre']."misc
+            SET `valeur` = 'done'
+            WHERE type = 'admin' AND intitule = 'files_with_defuse'"
+        );
+    }
 }
 
 

@@ -39,29 +39,49 @@ if (isset($_POST['PHPSESSID'])) {
     handleUploadError('No Session was found.');
 }
 
+
+// Get parameters
+$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
+$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
+$fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANITIZE_STRING) : '';
+
 // token check
 if (!isset($_POST['user_token'])) {
     handleUploadError('No user token found.');
     exit();
 } else {
-    // check if token is expired
-    $data = DB::queryFirstRow(
-        "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
-        $_SESSION['user_id'],
-        $_POST['user_token']
-    );
-    // clear user token
-    DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
-
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    if (time() > $data['end_timestamp']) {
-        // too old
-        handleUploadError('User token expired.');
-        exit();
+    if ($chunk < ($chunks - 1)) {
+        // increase end_timestamp for token
+        DB::update(
+            prefix_table('tokens'),
+            array(
+                'end_timestamp' => time() + 10
+                ),
+            "user_id = %i AND token = %s",
+            $_SESSION['user_id'],
+            $_POST['user_token']
+        );
+    } else {
+        // check if token is expired
+        $data = DB::queryFirstRow(
+            "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
+            $_SESSION['user_id'],
+            $_POST['user_token']
+        );
+        // clear user token
+        DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
+
+        if (time() > $data['end_timestamp']) {
+            // too old
+            handleAttachmentError('User token expired.', 110);
+            die();
+        }
     }
 }
+
 
 // HTTP headers for no cache etc
 header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
@@ -81,11 +101,13 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_pho
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
+$valid_chars_regex = 'A-Za-z0-9_'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-date_default_timezone_set($_POST['timezone']);
+if (isset($_POST['timezone'])) {
+    date_default_timezone_set($_POST['timezone']);
+}
 
 // Check post_max_size
 $POST_MAX_SIZE = ini_get('post_max_size');
@@ -107,10 +129,6 @@ if ($file_size <= 0) {
 // 5 minutes execution time
 set_time_limit(5 * 60);
 
-// Get parameters
-$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
-$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
-$fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANITIZE_STRING) : '';
 
 // Validate the upload
 if (!isset($_FILES['file'])) {
@@ -122,6 +140,7 @@ if (!isset($_FILES['file'])) {
 } elseif (!isset($_FILES['file']['name'])) {
     handleUploadError('File has no name.');
 }
+
 
 // Validate file name (for our purposes we'll just remove invalid characters)
 $file_name = preg_replace(
@@ -150,12 +169,12 @@ if (!in_array(
 }
 
 // is destination folder writable
-if (!is_writable($_SESSION['settings']['path_to_files_folder'])) {
+if (is_writable($_SESSION['settings']['path_to_files_folder']) === false) {
     handleUploadError('Not enough permissions on folder '.$_SESSION['settings']['path_to_files_folder'].'.');
 }
 
 // Clean the fileName for security reasons
-$fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
+$fileName = preg_replace('/[^\w\.]+/', '_', $fileName);
 $fileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($fileName)));
 
 // Make sure the fileName is unique but only if chunking is disabled
@@ -175,7 +194,11 @@ $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
-    mkdir($targetDir, 0777, true);
+    try {
+        mkdir($targetDir, 0777, true);
+    } catch (Exception $e) {
+        print_r($e);
+    }
 }
 
 // Remove old temp files
@@ -265,6 +288,9 @@ if (strpos($contentType, "multipart") !== false) {
 if (!$chunks || $chunk == $chunks - 1) {
     // Strip the temp .part suffix off
     rename("{$filePath}.part", $filePath);
+} else {
+    // continue uploading other chunks
+    die();
 }
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {

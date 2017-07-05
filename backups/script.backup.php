@@ -27,6 +27,9 @@ DB::$port = $port;
 DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 
+// Load libraries
+require_once '../sources/main.functions.php';
+
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
@@ -79,31 +82,20 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
     $bck_filename = $settings['bck_script_filename'].'-'.time();
     if (!empty($settings['bck_script_key'])) {
 
-        $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
-        fwrite($handle, $return);
-        fclose($handle);
-
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Encoding.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Key.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/RuntimeTests.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-        require_once $settings['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
-
-        \Defuse\Crypto\File::encryptFileWithPassword(
+        // Encrypt the file
+        prepareFileWithDefuse(
+            'encrypt',
             $settings['bck_script_path'].'/'.$bck_filename.'.sql',
             $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
             $settings['bck_script_key']
         );
 
-        // delete clear file
+        // Do clean
         unlink($settings['bck_script_path'].'/'.$bck_filename.'.sql');
-
-        // change the file name
-        $bck_filename .= '.encrypted';
+        rename (
+            $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
+            $settings['bck_script_path'].'/'.$bck_filename.'.sql'
+        );
     } else {
         //save the file
         $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');

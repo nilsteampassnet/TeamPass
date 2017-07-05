@@ -1765,10 +1765,18 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
     }
 }
 
-/*
- *
-*/
-function prepareFileWithDefuse($source_file, $target_file) {
+/**
+ * [prepareFileWithDefuse description]
+ * @param  [type] $type        [description]
+ * @param  [type] $source_file [description]
+ * @param  [type] $target_file [description]
+ * @return [type]              [description]
+ */
+function prepareFileWithDefuse($type, $source_file, $target_file, $password = '') {
+    // Sanitize
+    $source_file = filter_var($source_file, FILTER_SANITIZE_STRING);
+    $target_file = filter_var($target_file, FILTER_SANITIZE_STRING);
+
     // load PhpEncryption library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
@@ -1780,26 +1788,88 @@ function prepareFileWithDefuse($source_file, $target_file) {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
-    // get KEY
-    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+    if (empty($password) === true) {
+        /*
+        File encryption/decryption is done with the SALTKEY
+         */
 
-    // Now decrypt the file
-    $err = '';
-    try {
-        \Defuse\Crypto\File::decryptFile(
-            $_SESSION['settings']['path_to_upload_folder'].'/'.$source_file,
-            $_SESSION['settings']['path_to_upload_folder'].'/'.$target_file,
-            \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
-        );
-    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = "decryption_not_possible";
-    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-        $err = $ex;
-    } catch (Defuse\Crypto\Exception\IOException $ex) {
-        $err = $ex;
+        // get KEY
+        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+        // Now perform action on the file
+        $err = '';
+        if ($type === 'decrypt') {
+            try {
+                \Defuse\Crypto\File::decryptFile(
+                    $source_file,
+                    $target_file,
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "decryption_not_possible";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        } else if ($type === 'encrypt') {
+            try {
+                \Defuse\Crypto\File::encryptFile(
+                    $source_file,
+                    $target_file,
+                    \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "encryption_not_possible";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        }
+
+    } else {
+        /*
+        File encryption/decryption is done with special password and not the SALTKEY
+         */
+
+        $err = '';
+        if ($type === 'decrypt') {
+            try {
+                \Defuse\Crypto\File::decryptFileWithPassword(
+                    $source_file,
+                    $target_file,
+                    $password
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "wrong_key";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        } else if ($type === 'encrypt') {
+            try {
+                \Defuse\Crypto\File::encryptFileWithPassword(
+                    $source_file,
+                    $target_file,
+                    $password
+                );
+            } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                $err = "wrong_key";
+            } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                $err = $ex;
+            } catch (Defuse\Crypto\Exception\IOException $ex) {
+                $err = $ex;
+            }
+        }
     }
+
+    // return error
     if (empty($err) === false) {
-        echo $err;
+        return $err;
+    } else {
+        return true;
     }
 }
 
@@ -1812,9 +1882,12 @@ function debugTeampass($text) {
     fclose($debugFile);
 }
 
-/*
-* DELETE the file with expected command depending on server type
-*/
+
+/**
+ * DELETE the file with expected command depending on server type
+ * @param  [type] $file [description]
+ * @return [type]       [description]
+ */
 function fileDelete($file) {
     $file = filter_var($file, FILTER_SANITIZE_STRING);
     if (is_file($file)) {
