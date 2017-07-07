@@ -1071,8 +1071,10 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
             $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
             $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $db = json_decode($json, true);
             // launch
-            $dbTmp = @mysqli_connect($_SESSION['db_host'], $_SESSION['db_login'], $_SESSION['db_pw'], $_SESSION['db_bdd'], $_SESSION['db_port']);
+            $dbTmp = @mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
 
             if ($activity == "file") {
                 if ($task == "deleteInstall") {
