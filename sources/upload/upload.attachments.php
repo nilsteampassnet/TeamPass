@@ -134,7 +134,7 @@ header("Pragma: no-cache");
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-$targetDir = htmlentities($_SESSION['settings']['path_to_upload_folder'], ENT_QUOTES);
+$targetDir = (string) $_SESSION['settings']['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -214,7 +214,9 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$filePath = $targetDir.DIRECTORY_SEPARATOR.htmlentities($fileName, ENT_QUOTES);
+$fileName = (string) $fileName;
+
+$filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
