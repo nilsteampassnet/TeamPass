@@ -346,7 +346,24 @@ switch ($_POST['type']) {
             $record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
+        // Sanitize
+        $logs = filter_var($logs, FILTER_SANITIZE_STRING);
+        if (!$logs) {
+            throw new \InvalidArgumentException(
+                'Data is not valid ' . $text
+            );
+            break;
+        }
+
+        $pages = filter_var($pages, FILTER_SANITIZE_STRING);
+        if (!$pages) {
+            throw new \InvalidArgumentException(
+                'Data is not valid ' . $text
+            );
+            break;
+        }
+
+        echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
         break;
 
     /**
