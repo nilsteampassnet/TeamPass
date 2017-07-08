@@ -346,24 +346,11 @@ switch ($_POST['type']) {
             $record['login'].'</td></tr>';
         }
 
-        // Sanitize
-        $logs = filter_var($logs, FILTER_SANITIZE_STRING);
-        if (!$logs) {
-            throw new \InvalidArgumentException(
-                'Data is not valid ' . $text
-            );
-            break;
-        }
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
 
-        $pages = filter_var($pages, FILTER_SANITIZE_STRING);
-        if (!$pages) {
-            throw new \InvalidArgumentException(
-                'Data is not valid ' . $text
-            );
-            break;
-        }
-
-        echo '[{"tbody_logs": "'.$logs.'" , "log_pages" : "'.$pages.'"}]';
+        echo '[{"tbody_logs": "'.$antiXss->xss_clean($logs).'" , "log_pages" : "'.$antiXss->xss_clean($pages).'"}]';
         break;
 
     /**
@@ -416,7 +403,11 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.@$label[1].'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
+
+        echo '[{"tbody_logs": "'.$antiXss->xss_clean($logs).'" , "log_pages" : "'.$antiXss->xss_clean($pages).'"}]';
         break;
 
     /**
@@ -474,7 +465,11 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
+
+        echo '[{"tbody_logs": "'.$antiXss->clean($logs).'" , "log_pages" : "'.$antiXss->clean($pages).'"}]';
         break;
 
     /**
@@ -534,7 +529,11 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.sanitize($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
+
+        echo '[{"tbody_logs": "'.$antiXss->clean($logs).'" , "log_pages" : "'.$antiXss->clean($pages).'"}]';
         break;
 
     /**
@@ -600,7 +599,11 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
+
+        echo '[{"tbody_logs": "'.$antiXss->clean($logs).'" , "log_pages" : "'.$antiXss->clean($pages).'"}]';
         break;
 
     /**
@@ -659,7 +662,11 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
+
+        echo '[{"tbody_logs": "'.$antiXss->clean($logs).'" , "log_pages" : "'.$antiXss->clean($pages).'"}]';
         break;
 
     /**
@@ -733,7 +740,11 @@ switch ($_POST['type']) {
             $idManaged = $record['id'];
         }
 
-        echo '[{"text" : "'.sanitizeEntry($texte, FILTER_SANITIZE_STRING).'</table>" , "pdf" : "'.sanitizeEntry($textPdf, FILTER_SANITIZE_STRING).'"}]';
+        // Load AntiXss library
+        $antiXss = new SplClassLoader('voku\helper', '../includes/libraries');
+        $antiXss->register();
+
+        echo '[{"text" : "'.$antiXss->clean($texte).'</table>" , "pdf" : "'.$antiXss->clean($textPdf).'"}]';
         break;
 
     /**
