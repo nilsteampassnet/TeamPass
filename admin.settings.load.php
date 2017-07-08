@@ -424,7 +424,7 @@ function changeMainSaltKey(start, object)
                     changeMainSaltKey("finishing");
                 } else {
                     // error mngt
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo $LANG['error_sent_back']; ?> : "+data[0].error);
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-alert fa-spin fa\"></i>&nbsp;<?php echo addslashes($LANG['error_sent_back']); ?> : "+data[0].error);
                 }
             },
             "json"
@@ -440,7 +440,7 @@ function changeMainSaltKey(start, object)
             function(data) {
                 if (data[0].nextAction === "done") {
                     console.log("done");
-                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo $LANG['alert_message_done']." ".$LANG['number_of_items_treated']; ?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p><?php echo $LANG['check_data_after_reencryption']; ?><p><div style=\"margin-top:5px;\"><a href=\"#\" onclick=\"encryption_show_revert()\"><?php echo $LANG['revert']; ?></a></div>');
+                    $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo addslashes($LANG['alert_message_done'])." ".$LANG['number_of_items_treated']; ?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p><?php echo addslashes($LANG['check_data_after_reencryption']); ?><p><div style=\"margin-top:5px;\"><a href=\"#\" onclick=\"encryption_show_revert()\"><?php echo addslashes($LANG['revert']); ?></a></div>');
                 } else {
                     // error mngt
                 }

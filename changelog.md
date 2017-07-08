@@ -1,7 +1,13 @@
 2.1.27
 
- Fix: upgrade process with encrypted attachments
+ 8/
+ PHPMailer library updated to 5.2.23
 
+ 6-7/
+ Fix: upgrade process with encrypted attachments
+ Fix for #1806
+
+ 5/
  New: Custom Fields are only visible if defined
  Fix issue in tree if subfolder is visible while parent is not
  Fix issues regarding DUOSecurity
@@ -18,6 +24,7 @@
  #1743 Enable anonymous LDAP queries
  #1690 Unable to set/save personal salt key with LDAP user
 
+ 3-4/
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)
  Fix: Prevent moving a folder to one of its child folder
@@ -34,6 +41,7 @@
  #1729 Protection against bigger data than database field size
  #1727 Cannot edit or delete entry in the Personal folder
 
+ 2/
  Secure fixes
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix
@@ -65,6 +73,7 @@
  #1659 Third level of sub folders in the Personal folder are not seen
  #1654 User management page - no "next" button
 
+ 2/
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented
  NEW   Custom Fields data can be encrytped or not in database
@@ -126,7 +135,7 @@
  #1408 Display folders visible by a user
  #1299 Export to pdf or csv shows htmlencoded
 
-2.1.27
+2.1.26
  #1537 Homepage not loading in French
  #1527 Error Field 'timestamp' doesn't have a default value
  #1526 New .htaccess file in ./includes/config

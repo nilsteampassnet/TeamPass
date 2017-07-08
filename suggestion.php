@@ -233,7 +233,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
     echo '
         <script language="javascript" type="text/javascript">
         <!--
-        openKB('.filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT).');
+        openKB('.filter_var((integer) $_GET['id'], FILTER_SANITIZE_NUMBER_INT).');
         -->
         </script>';
 }
