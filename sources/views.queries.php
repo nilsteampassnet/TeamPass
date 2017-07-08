@@ -346,7 +346,7 @@ switch ($_POST['type']) {
             $record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.htmlentities($logs, ENT_QUOTES).'" , "log_pages" : "'.htmlentities($pages, ENT_QUOTES).'"}]';
+        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**
@@ -399,7 +399,7 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.@$label[1].'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.htmlentities($logs, ENT_QUOTES).'" , "log_pages" : "'.htmlentities($pages, ENT_QUOTES).'"}]';
+        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**
@@ -457,7 +457,7 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.htmlentities($logs, ENT_QUOTES).'" , "log_pages" : "'.htmlentities($pages, ENT_QUOTES).'"}]';
+        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**
@@ -517,7 +517,7 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.htmlentities($logs, ENT_QUOTES).'" , "log_pages" : "'.htmlentities($pages, ENT_QUOTES).'"}]';
+        echo '[{"tbody_logs": "'.sanitize($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**
@@ -583,7 +583,7 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.htmlentities($logs, ENT_QUOTES).'" , "log_pages" : "'.htmlentities($pages, ENT_QUOTES).'"}]';
+        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**
@@ -642,7 +642,7 @@ switch ($_POST['type']) {
             $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"left\">'.$label[0].'</td><td align=\"center\">'.$record['login'].'</td></tr>';
         }
 
-        echo '[{"tbody_logs": "'.htmlentities($logs, ENT_QUOTES).'" , "log_pages" : "'.htmlentities($pages, ENT_QUOTES).'"}]';
+        echo '[{"tbody_logs": "'.sanitizeEntry($logs, FILTER_SANITIZE_STRING).'" , "log_pages" : "'.sanitizeEntry($pages, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**
@@ -716,7 +716,7 @@ switch ($_POST['type']) {
             $idManaged = $record['id'];
         }
 
-        echo '[{"text" : "'.htmlentities($texte, ENT_QUOTES).'</table>" , "pdf" : "'.htmlentities($textPdf, ENT_QUOTES).'"}]';
+        echo '[{"text" : "'.sanitizeEntry($texte, FILTER_SANITIZE_STRING).'</table>" , "pdf" : "'.sanitizeEntry($textPdf, FILTER_SANITIZE_STRING).'"}]';
         break;
 
     /**

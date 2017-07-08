@@ -1536,15 +1536,17 @@ function handleConfigFile($action, $field = null, $value = null)
             if (stristr($line, ");")) {
                 break;
             }
+
+            // 
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
+                $data[$x] = "    '".$field."' => '".sanitizeEntry($value, FILTER_SANITIZE_STRING)."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".sanitizeEntry($value, FILTER_SANITIZE_STRING)."',\n";
         }
     }
 
@@ -1774,8 +1776,8 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
  */
 function prepareFileWithDefuse($type, $source_file, $target_file, $password = '') {
     // Sanitize
-    $source_file = filter_var($source_file, FILTER_SANITIZE_STRING);
-    $target_file = filter_var($target_file, FILTER_SANITIZE_STRING);
+    $source_file = sanitizeEntry($source_file, FILTER_SANITIZE_STRING);
+    $target_file = sanitizeEntry($target_file, FILTER_SANITIZE_STRING);
 
     // load PhpEncryption library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
@@ -1889,7 +1891,7 @@ function debugTeampass($text) {
  * @return [type]       [description]
  */
 function fileDelete($file) {
-    $file = filter_var($file, FILTER_SANITIZE_STRING);
+    $file = sanitizeEntry($file, FILTER_SANITIZE_STRING);
     if (is_file($file)) {
         unlink($file);
     }
@@ -1907,9 +1909,11 @@ function getFileExtension($f)
     return substr($f, strrpos($f, '.') + 1);
 }
 
-/*
- *
-*/
+/**
+ * @param  [type]
+ * @param  [type]
+ * @return [type]
+ */
 function array_map_r( $func, $arr )
 {
     $newArr = array();
@@ -1920,4 +1924,24 @@ function array_map_r( $func, $arr )
     }
 
     return $newArr;
+}
+
+/**
+ * @param  [type]
+ * @param  [type]
+ * @return [type]
+ */
+function sanitizeEntry($text, $filter) {
+    // Do filter
+    $filtered_text = filter_var($text, $filter);
+
+    // Handle result
+    if (!$filtered_text) {
+        throw new \InvalidArgumentException(
+            'Data is not valid ' . $text
+        );
+        return false;
+    } else {
+        return $filtered_text;
+    }
 }
