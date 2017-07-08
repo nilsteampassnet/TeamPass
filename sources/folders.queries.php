@@ -58,6 +58,12 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
+// Load AntiXss library
+$antiXss = new SplClassLoader('voku\AntiXSS', '../includes/libraries');
+$antiXss->register();
+$antiXss = new voku\AntiXSS\AntiXSS();
+
+
 // CASE where title is changed
 if (isset($_POST['newtitle'])) {
     $id = explode('_', $_POST['id']);
@@ -71,7 +77,7 @@ if (isset($_POST['newtitle'])) {
         $id[1]
     );
     //Show value
-    echo ($_POST['newtitle']);
+    echo $antiXss->xss_clean($_POST['newtitle']);
 
     // CASE where RENEWAL PERIOD is changed
 } elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
@@ -89,7 +95,7 @@ if (isset($_POST['newtitle'])) {
             $id[1]
         );
         //Show value
-        echo ($_POST['renewal_period']);
+        echo $antiXss->xss_clean($_POST['renewal_period']);
     } else {
         //Show ERROR
         echo ($LANG['error_renawal_period_not_integer']);
@@ -110,7 +116,7 @@ if (isset($_POST['newtitle'])) {
     //Get the title to display it
     $data = DB::queryfirstrow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", $_POST['newparent_id']);
     //show value
-    echo ($data['title']);
+    echo $antiXss->xss_clean($data['title']);
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
     $tree->rebuild();
