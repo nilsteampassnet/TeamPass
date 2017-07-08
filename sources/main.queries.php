@@ -343,7 +343,7 @@ function mainQuery() {
             // check if session is not already expired.
             if ($_SESSION['fin_session'] > time()) {
                 // Calculate end of session
-                $_SESSION['fin_session'] = $_SESSION['fin_session'] + $_POST['duration'];
+                $_SESSION['fin_session'] = (integer) ($_SESSION['fin_session'] + $_POST['duration']);
                 // Update table
                 DB::update(
                     prefix_table("users"),
@@ -968,7 +968,7 @@ function mainQuery() {
             $pwdlib = new PasswordLib\PasswordLib();
             // generate key
             $key = $pwdlib->getRandomToken($_POST['size']);
-            echo '[{"key" : "'.$key.'"}]';
+            echo '[{"key" : "'.htmlentities($key, ENT_QUOTES).'"}]';
             break;
 
         /**

@@ -138,7 +138,8 @@ function buildNodeTree($nodeId)
 
             if ($displayThisNode === true) {
                 $hide_node = $show_but_block = false;
-                $text = $title = "";
+                $text = "";
+                $title = "";
 
                 // get count of Items in this folder
                 DB::query(

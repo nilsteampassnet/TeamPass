@@ -902,7 +902,7 @@ if (!empty($_POST['type'])) {
                 }
             }
 
-            echo '[ { "table_logs": "'.$logs.'", "pages": "'.$pages.'", "error" : "no" } ]';
+            echo '[ { "table_logs": "'.htmlentities($logs, ENT_QUOTES).'", "pages": "'.htmlentities($pages, ENT_QUOTES).'", "error" : "no" } ]';
             break;
 
         /*

@@ -891,7 +891,7 @@ function identifyUser($sentData)
 
 
             // manage session expiration
-            $_SESSION['fin_session'] = time() + $_SESSION['user_settings']['session_duration'];
+            $_SESSION['fin_session'] = (integer) (time() + $_SESSION['user_settings']['session_duration']);
 
             /* If this option is set user password MD5 is used as personal SALTKey */
             if (

@@ -294,12 +294,12 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.filter_var($_POST["csvFile"], FILTER_SANITIZE_STRING));
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.htmlentities($_POST["csvFile"], ENT_QUOTES));
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.filter_var($_POST["xmlFile"], FILTER_SANITIZE_STRING));
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.htmlentities($_POST["xmlFile"], ENT_QUOTES));
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
-    $newFileName = preg_replace('/[^\w\._]+/', '_', $_POST['newFileName']);
+    $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($_POST['newFileName'], ENT_QUOTES));
     $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));
 
     // get file extension
@@ -345,11 +345,11 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     $_SESSION['user_avatar'] = $newFileName.'.'.$ext;
     $_SESSION['user_avatar_thumb'] = $newFileName."_thumb".'.'.$ext;
 
-    echo '{"filename" : "'.$_SESSION['user_avatar'].'" , "filename_thumb" : "'.$_SESSION['user_avatar_thumb'].'"}';
+    echo '{"filename" : "'.htmlentities($_SESSION['user_avatar'], ENT_QUOTES).'" , "filename_thumb" : "'.htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES).'"}';
     exit();
 
 } else {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.filter_var($_POST["File"], FILTER_SANITIZE_STRING));
+    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.htmlentities($_POST["File"], ENT_QUOTES));
 }
 
 // Return JSON-RPC response
@@ -359,6 +359,6 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
 /* Handles the error output. */
 function handleUploadError($message)
 {
-    echo $message;
+    echo htmlentities($message, ENT_QUOTES);
     exit(0);
 }

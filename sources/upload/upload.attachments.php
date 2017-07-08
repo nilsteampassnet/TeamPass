@@ -134,7 +134,7 @@ header("Pragma: no-cache");
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-$targetDir = filter_var($_SESSION['settings']['path_to_upload_folder'], FILTER_SANITIZE_STRING);
+$targetDir = htmlentities($_SESSION['settings']['path_to_upload_folder'], ENT_QUOTES);
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -214,7 +214,7 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$filePath = filter_var($targetDir.DIRECTORY_SEPARATOR.$fileName, FILTER_SANITIZE_STRING);
+$filePath = $targetDir.DIRECTORY_SEPARATOR.htmlentities($fileName, ENT_QUOTES);
 
 // Create target dir
 if (!file_exists($targetDir)) {
@@ -376,6 +376,6 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
 /* Handles the error output. */
 function handleAttachmentError($message, $code)
 {
-    echo '{"jsonrpc" : "2.0", "error" : {"code": '.$code.', "message": "'.$message.'"}, "id" : "id"}';
+    echo '{"jsonrpc" : "2.0", "error" : {"code": '.htmlentities($code, ENT_QUOTES).', "message": "'.htmlentities($message, ENT_QUOTES).'"}, "id" : "id"}';
     exit(0);
 }
