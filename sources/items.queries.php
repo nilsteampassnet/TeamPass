@@ -1625,14 +1625,8 @@ if (isset($_POST['type'])) {
             }
             $arrData['timestamp'] = time();
 
-            // Sanitize
-            $arrData2 = [];
-            foreach($arrData as $key => $value) {
-                $arrData2[$key] = htmlentities($value, ENT_QUOTES);
-            }     
-
             // Encrypt data to return
-            echo prepareExchangedData($arrData2, "encode");
+            echo prepareExchangedData($arrData, "encode");
             break;
 
         /*
