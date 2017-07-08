@@ -53,10 +53,6 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
 function utf8Urldecode($value)
 {
     $value = preg_replace('/%([0-9a-f]{2})/ie', 'chr(hexdec($1))', filter_var($value, FILTER_SANITIZE_STRING));

@@ -268,10 +268,6 @@ function identifyUser($sentData)
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-    $aes->register();
-
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
     $pwdlib->register();

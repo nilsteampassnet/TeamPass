@@ -35,10 +35,6 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 stream_resolve_include_path('../includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
 include('../includes/libraries/Authentication/phpseclib/Net/SSH2.php');
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
 // load passwordLib library
 $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
 $pwgen->register();

@@ -54,16 +54,6 @@ $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_di
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
-// Load AntiXss library
-$antiXss = new SplClassLoader('voku\AntiXSS', '../includes/libraries');
-$antiXss->register();
-$antiXss = new voku\AntiXSS\AntiXSS();
-
-
 // CASE where title is changed
 if (isset($_POST['newtitle'])) {
     $id = explode('_', $_POST['id']);
@@ -77,7 +67,7 @@ if (isset($_POST['newtitle'])) {
         $id[1]
     );
     //Show value
-    echo $antiXss->xss_clean($_POST['newtitle']);
+    echo htmlentities($_POST['newtitle'], ENT_QUOTES);
 
     // CASE where RENEWAL PERIOD is changed
 } elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
@@ -95,7 +85,7 @@ if (isset($_POST['newtitle'])) {
             $id[1]
         );
         //Show value
-        echo $antiXss->xss_clean($_POST['renewal_period']);
+        echo htmlentities($_POST['renewal_period'], ENT_QUOTES);
     } else {
         //Show ERROR
         echo ($LANG['error_renawal_period_not_integer']);

@@ -30,10 +30,6 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 // Load libraries
 require_once '../sources/main.functions.php';
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
 //get backups infos
 $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");
 foreach ($rows as $record) {

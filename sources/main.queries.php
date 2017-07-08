@@ -72,10 +72,6 @@ function mainQuery() {
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-    $aes->register();
-
     // User's language loading
     $k['langage'] = @$_SESSION['user_language'];
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';

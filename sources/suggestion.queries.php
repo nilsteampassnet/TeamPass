@@ -64,10 +64,6 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-// load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
 // treatment by action
 if (!empty($_POST['type'])) {
     switch ($_POST['type']) {

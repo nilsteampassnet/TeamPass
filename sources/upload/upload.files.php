@@ -294,9 +294,15 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.htmlentities($_POST["csvFile"], ENT_QUOTES));
+    rename(
+        $filePath,
+        htmlentities($targetDir.DIRECTORY_SEPARATOR.$_POST["csvFile"], ENT_QUOTES)
+    );
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.htmlentities($_POST["xmlFile"], ENT_QUOTES));
+    rename(
+        $filePath,
+        htmlentities($targetDir.DIRECTORY_SEPARATOR.$_POST["xmlFile"], ENT_QUOTES)
+    );
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
     $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($_POST['newFileName'], ENT_QUOTES));
@@ -306,7 +312,10 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
 
     // rename the file
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext);
+    rename(
+        $filePath,
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext
+    );
 
     // make thumbnail
     make_thumb(
@@ -349,7 +358,10 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     exit();
 
 } else {
-    rename($filePath, $targetDir.DIRECTORY_SEPARATOR.htmlentities($_POST["File"], ENT_QUOTES));
+    rename(
+        $filePath,
+        htmlentities($targetDir.DIRECTORY_SEPARATOR.$_POST["File"], ENT_QUOTES)
+    );
 }
 
 // Return JSON-RPC response
