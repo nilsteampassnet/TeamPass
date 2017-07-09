@@ -133,8 +133,9 @@ header("Pragma: no-cache");
 
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/Owasp/sanitize.inc.php';
 
-$targetDir = (string) $_SESSION['settings']['path_to_upload_folder'];
+$targetDir = sanitize_system_string($_SESSION['settings']['path_to_upload_folder']);
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -214,7 +215,7 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$fileName = (string) $fileName;
+$fileName = sanitize_system_string($fileName);
 
 $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 

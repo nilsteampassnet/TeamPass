@@ -80,6 +80,10 @@ $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
+//Load AES
+$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+$aes->register();
+
 //User's language loading
 $k['langage'] = @$_SESSION['user_language'];
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';

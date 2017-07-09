@@ -57,6 +57,10 @@ $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
+//Load AES
+$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+$aes->register();
+
 switch ($_POST['type']) {
     #CASE for getting informations about the tool
     # connection to author's cpassman website

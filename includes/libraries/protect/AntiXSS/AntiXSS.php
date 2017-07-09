@@ -1,6 +1,6 @@
 <?php
 
-namespace voku\helper;
+namespace voku\AntiXSS;
 
 /**
  * Anti XSS library
