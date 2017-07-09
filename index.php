@@ -107,7 +107,7 @@ if (isset($_GET['language'])) {
     }
 } elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
-} elseif (isset((string) $_POST['language'])) {
+} elseif (isset($_POST['language'])) {
     $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
 } elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
     if (isset($_POST['language'])) {
