@@ -41,8 +41,8 @@ if (isset($_POST['PHPSESSID'])) {
 
 
 // Get parameters
-$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
-$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
+$chunk = isset($_REQUEST["chunk"]) ? (int) $_REQUEST["chunk"] : 0;
+$chunks = isset($_REQUEST["chunks"]) ? (int) $_REQUEST["chunks"] : 0;
 $fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
 
 
@@ -122,6 +122,9 @@ if (!isset($_POST['user_token'])) {
             die();
         }
     }
+
+    // Load Settings
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/tp.config.php';
 }
 
 // HTTP headers for no cache etc
@@ -138,7 +141,7 @@ require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php'
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
 $antiXss = new protect\AntiXSS\AntiXSS();
 
-$targetDir = $antiXss->xss_clean($_SESSION['settings']['path_to_upload_folder']);
+$targetDir = $SETTINGS['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds

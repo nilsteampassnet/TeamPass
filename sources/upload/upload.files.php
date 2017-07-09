@@ -93,10 +93,6 @@ header("Pragma: no-cache");
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
 
-// Load AntiXSS library
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
-$antiXss = new protect\AntiXSS\AntiXSS();
-
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     $targetDir = $_SESSION['settings']['cpassman_dir'].'/includes/avatars';
 } else {
@@ -299,14 +295,16 @@ if (!$chunks || $chunk == $chunks - 1) {
 
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
+    $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$antiXss->xss_clean($_POST["csvFile"])
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
+    $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$antiXss->xss_clean($_POST["xmlFile"])
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
@@ -363,14 +361,15 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
     exit();
 
 } else {
+    $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$antiXss->xss_clean($_POST["File"])
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
 }
 
 // Return JSON-RPC response
-die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
+die('{"jsonrpc" : "2.0", "result" : null, "id" : "id" , "newfilename" : "'.$newFileName.'"}');
 
 
 /* Handles the error output. */

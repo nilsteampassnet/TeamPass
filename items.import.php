@@ -167,6 +167,7 @@ foreach ($folders as $t) {
         $("#import_tabs").tabs();
 
         // CSV IMPORT
+        var csv_filename = '';
         var uploader_csv = new plupload.Uploader({
             runtimes : "gears,html5,flash,silverlight,browserplus",
             browse_button : "pickfiles_csv",
@@ -208,14 +209,13 @@ foreach ($folders as $t) {
                 BeforeUpload: function (up, file) {
                     up.settings.multipart_params = {
                         "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
-                        "csvFile":file.name,
                         "type_upload":"import_items_from_csv",
                         "user_token": $("#import_user_token").val()
                     };
                 },
                 UploadComplete: function(up, files) {
                     $.each(files, function(i, file) {
-                        ImportCSV(file.name);
+                        ImportCSV(csv_filename);
                         up.splice();    // clear the file queue
                     });
                 }
@@ -238,6 +238,15 @@ foreach ($folders as $t) {
         uploader_csv.bind("+", function(up, file) {
             $("#" + file.id + " b").html("100%");
         });
+        uploader_csv.bind('FileUploaded', function(upldr, file, object) {
+            var myData;
+            try {
+                myData = eval(object.response);
+            } catch(err) {
+                myData = eval('(' + object.response + ')');
+            }
+            csv_filename = myData.newfilename;
+        });
 
         // Load CSV click
         $("#uploadfiles_csv").click(function(e) {
@@ -249,6 +258,7 @@ foreach ($folders as $t) {
         //-----------------------------------------------------
 
         // KEYPASS IMPORT
+        var kp_filename = '';
         var uploader_kp = new plupload.Uploader({
             runtimes : "gears,html5,flash,silverlight,browserplus",
             browse_button : "pickfiles_kp",
@@ -291,13 +301,12 @@ foreach ($folders as $t) {
                     $("#import_status_ajax_loader").show();
                     up.settings.multipart_params = {
                         "PHPSESSID":"'.$_SESSION['user_id'];?>",
-                        "xmlFile":file.name,
                         "type_upload":"import_items_from_keypass",
                         "user_token": $("#import_user_token").val()
                     };
                 },
                 UploadComplete: function(up, files) {
-                    ImportKEEPASS(files[0].name);
+                    ImportKEEPASS(kp_filename);
                     up.splice();        // clear the file queue
                 }
             }
@@ -317,6 +326,15 @@ foreach ($folders as $t) {
         });
         uploader_kp.bind("+", function(up, file) {
             $("#" + file.id + " b").html("100%");
+        });
+        uploader_csv.bind('FileUploaded', function(upldr, file, object) {
+            var myData;
+            try {
+                myData = eval(object.response);
+            } catch(err) {
+                myData = eval('(' + object.response + ')');
+            }
+            kp_filename = myData.newfilename;
         });
 
         // Load CSV click
