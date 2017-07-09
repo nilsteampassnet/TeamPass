@@ -1546,14 +1546,14 @@ function handleConfigFile($action, $field = null, $value = null)
 
             // 
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".$antiXss->clean($value)."',\n";
+                $data[$x] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".$antiXss->clean($value)."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
         }
     }
 
@@ -1787,8 +1787,8 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     $antiXss = new protect\AntiXSS\AntiXSS();
     
     // Sanitize
-    $source_file = $antiXss->clean($source_file);
-    $target_file = $antiXss->clean($target_file);
+    $source_file = $antiXss->xss_clean($source_file);
+    $target_file = $antiXss->xss_clean($target_file);
 
     // load PhpEncryption library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
@@ -1906,7 +1906,7 @@ function fileDelete($file) {
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
-    $file = $antiXss->clean($file);
+    $file = $antiXss->xss_clean($file);
     if (is_file($file)) {
         unlink($file);
     }

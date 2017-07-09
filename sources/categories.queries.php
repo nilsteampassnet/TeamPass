@@ -53,6 +53,10 @@ $link->set_charset($encoding);
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
+// Load AntiXSS
+require_once '../includes/libraries/protect/AntiXSS/AntiXss.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
+
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
         case "addNewCategory":
@@ -103,7 +107,7 @@ if (isset($_POST['type'])) {
                     "id=%i",
                     $_POST['id']
                 );
-                echo '[{"error" : "", "id" : "'.$_POST['id'].'"}]';
+                echo '[{"error" : "", "id" : "'.$antiXss->xss_clean($_POST['id']).'"}]';
             }
             break;
 
@@ -119,7 +123,7 @@ if (isset($_POST['type'])) {
                     "id=%i",
                     $_POST['id']
                 );
-                echo '[{"error" : "", "id" : "'.$_POST['id'].'"}]';
+                echo '[{"error" : "", "id" : "'.$antiXss->xss_clean($_POST['id']).'"}]';
             }
             break;
 

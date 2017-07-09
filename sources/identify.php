@@ -245,6 +245,10 @@ function identifyUser($sentData)
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
+    // Load AntiXSS
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+
     if ($debugDuo == 1) {
         $dbgDuo = fopen($_SESSION['settings']['path_to_files_folder']."/duo.debug.txt", "a");
     }
@@ -282,14 +286,14 @@ function identifyUser($sentData)
     // Prepare variables
     $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
     $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
-    $username = htmlspecialchars_decode($dataReceived['login']);
+    $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
     $logError = "";
     $userPasswordVerified = false;
 
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Starting authentication of '".filter_var($username, FILTER_SANITIZE_STRING)."'\n"
+            "Starting authentication of '".$username."'\n"
         );
     }
 
@@ -384,11 +388,11 @@ function identifyUser($sentData)
                     $result = ldap_search($ldapconn, $_SESSION['settings']['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
                     if (isset($_SESSION['settings']['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], filter_var($filter_group, FILTER_SANITIZE_STRING), array('dn'));
+                        $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], $filter_group, array('dn'));
                         if ($debugLdap == 1) {
                                 fputs(
                                         $dbgLdap,
-                                        'Search filter (group): '.filter_var($filter_group, FILTER_SANITIZE_STRING)."\n".
+                                        'Search filter (group): '.$filter_group."\n".
                                         'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
                                 );
                         }
@@ -653,7 +657,7 @@ function identifyUser($sentData)
                         $data['id']
                     );
 
-                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
                     exit();
 
@@ -760,7 +764,7 @@ function identifyUser($sentData)
         $logError = "Install folder has to be removed!";
 
         echo '[{"value" : "'.$return.'", "user_admin":"',
-        isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+        isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "",
         '", "initial_url" : "'.@$_SESSION['initial_url'].'",
         "error" : "'.$logError.'"}]';
 
@@ -1127,7 +1131,7 @@ function identifyUser($sentData)
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$_SESSION["pwd_attempts"].'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
     $_SESSION['initial_url'] = "";
     if ($_SESSION['settings']['cpassman_dir'] == "..") {

@@ -84,6 +84,10 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
+// Load AntiXSS
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
+
 //User's language loading
 $k['langage'] = @$_SESSION['user_language'];
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -190,7 +194,7 @@ switch ($_POST['type']) {
             fclose($fp);
 
             // remove file
-            unlink(filter_var($file, FILTER_SANITIZE_STRING));
+            fileDelete($file);
         } else {
             echo '[{"error":"cannot_open"}]';
             break;
@@ -355,11 +359,12 @@ switch ($_POST['type']) {
         $cacheFileF = fopen($cacheFileNameFolder, "w");
         $logFileName = "/keepassImport_".date('YmdHis');
         $cacheLogFile = fopen($_SESSION['settings']['path_to_files_folder'].$logFileName, 'w');
+        $_POST['file'] = $antiXss->xss_clean($_POST['file']);
 
         //read xml file
         if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
             $xml = simplexml_load_file(
-                $_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING)
+                $_SESSION['settings']['path_to_files_folder']."/".$_POST['file']
             );
         }
 

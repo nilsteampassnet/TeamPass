@@ -16,21 +16,30 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Please login...');
 }
 
-function redirect($url)
-{
+/**
+ * redirection management
+ * @param  [string] $url new url
+ * @return refresh page to url
+ */
+function redirect($url) {
+    // Load AntiXSS
+    require_once '../includes/libraries/protect/AntiXSS/AntiXss.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
-        header('Location: '.filter_var($url, FILTER_SANITIZE_URL));
+        header('Location: '.$antiXss->xss_clean($url));
         exit;
     } else {  //If headers are sent... do java redirect... if java disabled, do html redirect.
         echo '<script type="text/javascript">';
-        echo 'window.location.href="'.filter_var($url, FILTER_SANITIZE_URL).'";';
+        echo 'window.location.href="'.$antiXss->xss_clean($url).'";';
         echo '</script>';
         echo '<noscript>';
-        echo '<meta http-equiv="refresh" content="0;url='.filter_var($url, FILTER_SANITIZE_URL).'" />';
+        echo '<meta http-equiv="refresh" content="0;url='.$antiXss->xss_clean($url).'" />';
         echo '</noscript>';
         exit;
     }
 }
+
 
 if (
     isset($_SERVER['HTTPS']) &&
@@ -38,8 +47,7 @@ if (
     isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
 ) {
-    $url = filter_var("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'], FILTER_SANITIZE_URL);
-    redirect($url);
+    redirect("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
 }
 
 /* LOAD CPASSMAN SETTINGS */

@@ -3427,7 +3427,7 @@ if (isset($_POST['type'])) {
             // get file info
             $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
-            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$antiXss->clean($result['file'].$_POST['file_suffix']));
+            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$antiXss->xss_clean($result['file'].$_POST['file_suffix']));
 
             break;
 
