@@ -24,12 +24,15 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
 }
+
+// Prepare PHPCrypt class calls
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
 
-// prepare Encryption class calls
+// Prepare Encryption class calls
 use \Defuse\Crypto\Crypto;
 use \Defuse\Crypto\Exception as Ex;
+
 
 //Generate N# of random bits for use as salt
 /**

@@ -1,6 +1,11 @@
 <?php
 
-namespace voku\AntiXSS;
+namespace protect\AntiXSS;
+
+use protect\AntiXSS\bootup;
+use protect\AntiXSS\UTF8;
+require_once(dirname(__FILE__)."/bootup.php");
+require_once(dirname(__FILE__)."/UTF8.php");
 
 /**
  * Anti XSS library

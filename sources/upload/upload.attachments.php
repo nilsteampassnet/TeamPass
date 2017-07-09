@@ -133,9 +133,12 @@ header("Pragma: no-cache");
 
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/Owasp/sanitize.inc.php';
 
-$targetDir = sanitize_system_string($_SESSION['settings']['path_to_upload_folder']);
+// Load AntiXSS library
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
+
+$targetDir = $antiXss->xss_clean($_SESSION['settings']['path_to_upload_folder']);
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -144,7 +147,7 @@ $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
 if (isset($_POST['timezone'])) {
-    date_default_timezone_set($_POST['timezone']);
+    date_default_timezone_set((string) $_POST['timezone']);
 }
 
 // Check post_max_size
@@ -215,7 +218,7 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$fileName = sanitize_system_string($fileName);
+$fileName = $antiXss->xss_clean($fileName);
 
 $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 

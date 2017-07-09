@@ -92,7 +92,10 @@ header("Pragma: no-cache");
 
 // load functions
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/Owasp/sanitize.inc.php';
+
+// Load AntiXSS library
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     $targetDir = $_SESSION['settings']['cpassman_dir'].'/includes/avatars';
@@ -294,15 +297,16 @@ if (!$chunks || $chunk == $chunks - 1) {
     die();
 }
 
+
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.sanitize_system_string($_POST["csvFile"])
+        $targetDir.DIRECTORY_SEPARATOR.$antiXss->xss_clean($_POST["csvFile"])
     );
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.sanitize_system_string($_POST["xmlFile"])
+        $targetDir.DIRECTORY_SEPARATOR.$antiXss->xss_clean($_POST["xmlFile"])
     );
 } else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
@@ -361,7 +365,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 } else {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.sanitize_system_string($_POST["File"])
+        $targetDir.DIRECTORY_SEPARATOR.$antiXss->xss_clean($_POST["File"])
     );
 }
 
