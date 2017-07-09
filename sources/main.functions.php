@@ -1497,6 +1497,10 @@ function handleConfigFile($action, $field = null, $value = null)
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     $tp_config_file = "../includes/config/tp.config.php";
 
+    // Load AntiXSS
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+    
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
@@ -1542,14 +1546,14 @@ function handleConfigFile($action, $field = null, $value = null)
 
             // 
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".sanitizeEntry($value, FILTER_SANITIZE_STRING)."',\n";
+                $data[$x] = "    '".$field."' => '".$antiXss->clean($value)."',\n";
                 $bFound = true;
                 break;
             }
             $x++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".sanitizeEntry($value, FILTER_SANITIZE_STRING)."',\n";
+            $data[($x - 1)] = "    '".$field."' => '".$antiXss->clean($value)."',\n";
         }
     }
 
@@ -1778,9 +1782,13 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
  * @return [type]              [description]
  */
 function prepareFileWithDefuse($type, $source_file, $target_file, $password = '') {
+    // Load AntiXSS
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+    
     // Sanitize
-    $source_file = sanitizeEntry($source_file, FILTER_SANITIZE_STRING);
-    $target_file = sanitizeEntry($target_file, FILTER_SANITIZE_STRING);
+    $source_file = $antiXss->clean($source_file);
+    $target_file = $antiXss->clean($target_file);
 
     // load PhpEncryption library
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
@@ -1894,7 +1902,11 @@ function debugTeampass($text) {
  * @return [type]       [description]
  */
 function fileDelete($file) {
-    $file = sanitizeEntry($file, FILTER_SANITIZE_STRING);
+    // Load AntiXSS
+    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+
+    $file = $antiXss->clean($file);
     if (is_file($file)) {
         unlink($file);
     }
@@ -1927,24 +1939,4 @@ function array_map_r( $func, $arr )
     }
 
     return $newArr;
-}
-
-/**
- * @param  [type]
- * @param  [type]
- * @return [type]
- */
-function sanitizeEntry($text, $filter) {
-    // Do filter
-    $filtered_text = filter_var($text, $filter);
-
-    // Handle result
-    if (!$filtered_text) {
-        throw new \InvalidArgumentException(
-            'Data is not valid ' . $text
-        );
-        return false;
-    } else {
-        return $filtered_text;
-    }
 }

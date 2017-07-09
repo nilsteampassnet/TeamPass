@@ -77,6 +77,10 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
+// Load AntiXSS
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
+
 // Do asked action
 if (isset($_POST['type'])) {
     switch ($_POST['type']) {
@@ -3423,7 +3427,7 @@ if (isset($_POST['type'])) {
             // get file info
             $result = DB::queryfirstrow("SELECT file FROM ".prefix_table("files")." WHERE id=%i", substr($_POST['uri'], 1));
 
-            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$result['file'].$_POST['file_suffix']);
+            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$antiXss->clean($result['file'].$_POST['file_suffix']));
 
             break;
 

@@ -221,7 +221,6 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$fileName = $antiXss->xss_clean($fileName);
 
 $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
