@@ -107,7 +107,7 @@ if (isset($_GET['language'])) {
     }
 } elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
     $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
-} elseif (isset($_POST['language'])) {
+} elseif (isset((string) $_POST['language'])) {
     $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
 } elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
     if (isset($_POST['language'])) {
@@ -580,14 +580,14 @@ if (
             echo '
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
                     class="ui-state-error ui-corner-all">
-                    <b>'.$LANG['index_maintenance_mode'].'</b>
+                    <b>'.addslashes($LANG['index_maintenance_mode']).'</b>
                 </div>';
         } else if (isset($_GET['session_over']) && $_GET['session_over'] == "true") {
             // SESSION FINISHED => RECONNECTION ASKED
             echo '
                     <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
                         class="ui-state-error ui-corner-all">
-                        <b>'.$LANG['index_session_expired'].'</b>
+                        <b>'.addslashes($LANG['index_session_expired']).'</b>
                     </div>';
         }
 

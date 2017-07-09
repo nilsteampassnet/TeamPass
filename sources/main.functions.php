@@ -1775,16 +1775,21 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
 }
 
 /**
- * [prepareFileWithDefuse description]
- * @param  [type] $type        [description]
- * @param  [type] $source_file [description]
- * @param  [type] $target_file [description]
- * @return [type]              [description]
+ * Will encrypte/decrypt a fil eusing Defuse
+ * @param  string $type        can be either encrypt or decrypt
+ * @param  string $source_file path to source file
+ * @param  string $target_file path to target file
+ * @return string              'true' is success or error message
  */
 function prepareFileWithDefuse($type, $source_file, $target_file, $password = '') {
     // Load AntiXSS
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
+
+    // Protect against bad inputs
+    if (is_array($source_file) ||is_array($target_file)) {
+        return 'error_cannot_be_array';
+    }
     
     // Sanitize
     $source_file = $antiXss->xss_clean($source_file);
