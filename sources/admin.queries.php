@@ -33,6 +33,8 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
 
 include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/tp.config.php';
+
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
@@ -59,6 +61,10 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
+
+// Load AntiXSS
+require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
 
 switch ($_POST['type']) {
     #CASE for getting informations about the tool
@@ -375,7 +381,7 @@ switch ($_POST['type']) {
             }
 
             // Do clean
-            unlink($_SESSION['settings']['path_to_files_folder']."/".$file);
+            fileDelete($_SESSION['settings']['path_to_files_folder']."/".$file);
             $file = $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file;
         } else {
             $file = $_SESSION['settings']['path_to_files_folder']."/".$file;
@@ -587,7 +593,7 @@ switch ($_POST['type']) {
             $result = "backup_decrypt_fails";
             $msg = "File not found: ".$Fnm;
         }
-        echo '[{ "result":"'.$result.'" , "msg":"'.filter_var($msg, FILTER_SANITIZE_STRING).'"}]';
+        echo '[{ "result":"'.$result.'" , "msg":"'.$antiXss->xss_clean($msg).'"}]';
         break;
 
     /*
@@ -999,7 +1005,7 @@ switch ($_POST['type']) {
                     $nb_of_items = $error = $nextStart = "";
                 }
             } else {
-                $nextAction = $_POST['object'];
+                $nextAction = $antiXss->xss_clean($_POST['object']);
                 $nb_of_items = "";
             }
         }
@@ -1330,22 +1336,22 @@ switch ($_POST['type']) {
                     if ($_POST['option'] === "decrypt") {
                         prepareFileWithDefuse(
                             'decrypt',
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
-                            $_SESSION['settings']['path_to_upload_folder'].'/defuse_temp_'.$file
+                            $SETTINGS['path_to_upload_folder'].'/'.$file,
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file
                         );
                     // Case where we want to encrypt
                     } elseif ($_POST['option'] === "encrypt") {
                         prepareFileWithDefuse(
                             'encrypt',
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$file,
-                            $_SESSION['settings']['path_to_upload_folder'].'/defuse_temp_'.$file
+                            $SETTINGS['path_to_upload_folder'].'/'.$file,
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file
                         );
                     }
                     // Do file cleanup
-                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file);
+                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file);
                     rename(
-                        $_SESSION['settings']['path_to_upload_folder'].'/defuse_temp_'.$file,
-                        $_SESSION['settings']['path_to_upload_folder'].'/'.$file
+                        $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file,
+                        $SETTINGS['path_to_upload_folder'].'/'.$file
                     );
 
                     // store in DB
@@ -1407,7 +1413,10 @@ switch ($_POST['type']) {
             );
         // Delete existing key
         } elseif (isset($_POST['action']) && $_POST['action'] == "delete") {
-            DB::query("DELETE FROM ".prefix_table("api")." WHERE id = %i", $_POST['id']);
+            DB::query(
+                "DELETE FROM ".prefix_table("api")." WHERE id = %i",
+                $_POST['id']
+            );
         }
         echo '[{"error":"'.$error.'"}]';
         break;
@@ -1835,7 +1844,7 @@ switch ($_POST['type']) {
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
             $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents($csrfp_file, filter_var($newdata, FILTER_SANITIZE_STRING));
+            file_put_contents($csrfp_file, $antiXss->xss_clean($newdata));
         } elseif ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
                 prefix_table("misc"),
@@ -1984,7 +1993,7 @@ switch ($_POST['type']) {
 
             $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
 
-            $ldapconn = ldap_connect(filter_var($ldapURIs, FILTER_SANITIZE_URL));
+            $ldapconn = ldap_connect($antiXss->xss_clean($ldapURIs));
 
             if ($dataReceived[0]['ldap_tls_input']) {
                 ldap_start_tls($ldapconn);
@@ -1999,11 +2008,23 @@ switch ($_POST['type']) {
                 $debug_ldap .= "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."<br/>";
 
                 if ($ldapbind) {
-                    $filter = filter_var("(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))", FILTER_SANITIZE_STRING);
-                    $result = ldap_search($ldapconn, $dataReceived[0]['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
+                    $filter = $antiXss->xss_clean(
+                        "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))"
+                    );
+                    $result = ldap_search(
+                        $ldapconn,
+                        $dataReceived[0]['ldap_search_base'],
+                        $filter,
+                        array('dn', 'mail', 'givenname', 'sn')
+                    );
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $dataReceived[0]['ldap_usergroup'], $filter_group, array('dn'));
+                        $result_group = ldap_search(
+                            $ldapconn,
+                            $dataReceived[0]['ldap_usergroup'],
+                            $filter_group,
+                            array('dn')
+                        );
 
                         $debug_ldap .= 'Search filter (group): '.$filter_group."<br/>".
                                     'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."<br/>";
@@ -2082,7 +2103,7 @@ switch ($_POST['type']) {
                 "ldap status : ".$ldapConnection; //Debug
         }
 
-        echo '[{ "option" : "admin_ldap_test_configuration", "results" : "'.$debug_ldap.'" }]';
+        echo '[{ "option" : "admin_ldap_test_configuration", "results" : "'.&antiXss->xss_clean($debug_ldap).'" }]';
 
         break;
 
