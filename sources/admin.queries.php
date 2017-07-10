@@ -2103,7 +2103,7 @@ switch ($_POST['type']) {
                 "ldap status : ".$ldapConnection; //Debug
         }
 
-        echo '[{ "option" : "admin_ldap_test_configuration", "results" : "'.&antiXss->xss_clean($debug_ldap).'" }]';
+        echo '[{ "option" : "admin_ldap_test_configuration", "results" : "'.$antiXss->xss_clean($debug_ldap).'" }]';
 
         break;
 

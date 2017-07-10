@@ -189,7 +189,7 @@ if (isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
     );
 
     //Log into DB the user's disconnection
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] === '1' && empty($_SESSION['login']) === false) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 
