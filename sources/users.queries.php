@@ -15,8 +15,7 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
@@ -319,7 +318,7 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-        logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             } else {
                 // lock user in database
                 DB::update(
@@ -332,7 +331,7 @@ if (!empty($_POST['type'])) {
                     $_POST['id']
                 );
                 // update LOG
-        logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             }
             echo '[ { "error" : "no" } ]';
             break;
@@ -361,7 +360,7 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-        logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+            logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
             echo '[{"error" : "no"}]';
             break;
         /**
@@ -517,7 +516,7 @@ if (!empty($_POST['type'])) {
         /**
          * CHANGE USER FUNCTIONS
          */
-        case "open_div_functions";
+        case "open_div_functions":
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
@@ -547,7 +546,7 @@ if (!empty($_POST['type'])) {
         /**
          * Change user's functions
          */
-        case "change_user_functions";
+        case "change_user_functions":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
@@ -583,7 +582,7 @@ if (!empty($_POST['type'])) {
         /**
          * CHANGE AUTHORIZED GROUPS
          */
-        case "open_div_autgroups";
+        case "open_div_autgroups":
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
@@ -617,7 +616,7 @@ if (!empty($_POST['type'])) {
         /**
          * CHANGE ADMINISTRATED BY
          */
-        case "change_user_adminby";
+        case "change_user_adminby":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
@@ -638,7 +637,7 @@ if (!empty($_POST['type'])) {
         /**
          * Change authorized groups
          */
-        case "change_user_autgroups";
+        case "change_user_autgroups":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
@@ -673,7 +672,7 @@ if (!empty($_POST['type'])) {
         /**
          * Change forbidden groups
          */
-        case "open_div_forgroups";
+        case "open_div_forgroups":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
                 // error
@@ -713,7 +712,7 @@ if (!empty($_POST['type'])) {
         /**
          * Change forbidden groups for user
          */
-        case "change_user_forgroups";
+        case "change_user_forgroups":
             // save data
             DB::update(
                 prefix_table("users"),
@@ -759,7 +758,7 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+            logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
             break;
         /*
         * Check the domain
@@ -879,15 +878,15 @@ if (!empty($_POST['type'])) {
                         $label = "";
                         if ($tmp[0] == "at_user_initial_pwd_changed") {
                             $label = $LANG['log_user_initial_pwd_changed'];
-                        } else if ($tmp[0] == "at_user_email_changed") {
+                        } elseif ($tmp[0] == "at_user_email_changed") {
                             $label = $LANG['log_user_email_changed'].$tmp[1];
-                        } else if ($tmp[0] == "at_user_added") {
+                        } elseif ($tmp[0] == "at_user_added") {
                             $label = $LANG['log_user_created'];
-                        } else if ($tmp[0] == "at_user_locked") {
+                        } elseif ($tmp[0] == "at_user_locked") {
                             $label = $LANG['log_user_locked'];
-                        } else if ($tmp[0] == "at_user_unlocked") {
+                        } elseif ($tmp[0] == "at_user_unlocked") {
                             $label = $LANG['log_user_unlocked'];
-                        } else if ($tmp[0] == "at_user_pwd_changed") {
+                        } elseif ($tmp[0] == "at_user_pwd_changed") {
                             $label = $LANG['log_user_pwd_changed'];
                         }
                         // prepare log
@@ -1261,9 +1260,7 @@ if (!empty($_POST['type'])) {
                 }
                 // update LOG
                 logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
-
             } else {
-
                 // Get old data about user
                 $oldData = DB::queryfirstrow(
                     "SELECT * FROM ".prefix_table("users")."
@@ -1590,7 +1587,7 @@ if (!empty($_POST['type'])) {
 
             // manage other rights
             /* Possible values: gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin*/
-            $user_other_rights = explode(';', $_POST['user_otherrights']); 
+            $user_other_rights = explode(';', $_POST['user_otherrights']);
 
             foreach (explode(';', $_POST['destination_ids']) as $dest_user_id) {
                 // update user
@@ -1614,9 +1611,8 @@ if (!empty($_POST['type'])) {
             }
             break;
     }
-}
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-elseif (!empty($_POST['newValue'])) {
+} elseif (!empty($_POST['newValue'])) {
     $value = explode('_', $_POST['id']);
     if ($value[0] === "userlanguage") {
         $value[0] = "user_language";
@@ -1635,29 +1631,24 @@ elseif (!empty($_POST['newValue'])) {
     // refresh SESSION if requested
     if ($value[0] === "treeloadstrategy") {
         $_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
-
-    } else if ($value[0] === "usertimezone") {
+    } elseif ($value[0] === "usertimezone") {
     // special case for usertimezone where session needs to be updated
         $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
-
-    } else if ($value[0] === "userlanguage") {
+    } elseif ($value[0] === "userlanguage") {
     // special case for user_language where session needs to be updated
         $_SESSION['user_settings']['user_language'] = $_POST['newValue'];
         $_SESSION['user_language'] = $_POST['newValue'];
-
-    } else if ($value[0] === "agses-usercardid") {
+    } elseif ($value[0] === "agses-usercardid") {
     // special case for agsescardid where session needs to be updated
         $_SESSION['user_settings']['agses-usercardid'] = $_POST['newValue'];
-
-    } else if ($value[0] === "email") {
+    } elseif ($value[0] === "email") {
     // store email change in session
         $_SESSION['user_email'] = $_POST['newValue'];
     }
     // Display info
     echo htmlentities($_POST['newValue'], ENT_QUOTES);
-}
 // # ADMIN FOR USER HAS BEEN DEFINED ##
-elseif (isset($_POST['newadmin'])) {
+} elseif (isset($_POST['newadmin'])) {
     $id = explode('_', $_POST['id']);
     DB::update(
         prefix_table("users"),
@@ -1675,7 +1666,8 @@ elseif (isset($_POST['newadmin'])) {
     }
 }
 
-function evaluate_folder_acces_level($new_val, $existing_val) {
+function evaluate_folder_acces_level($new_val, $existing_val)
+{
     $levels = array(
         "W" => 4,
         "ND" => 3,
@@ -1692,8 +1684,7 @@ function evaluate_folder_acces_level($new_val, $existing_val) {
     $new_level_points = $levels[$new_val];
 
     // check if new is > to current one (always keep the highest level)
-    if (
-        ($new_val === "ND" && $existing_val === "NE")
+    if (($new_val === "ND" && $existing_val === "NE")
         ||
         ($new_val === "NE" && $existing_val === "ND")
     ) {

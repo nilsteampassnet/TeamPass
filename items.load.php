@@ -1765,8 +1765,7 @@ function open_move_group_div()
         return false;
     }
 
-    if (
-        $("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) {
+    if ($("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) {
     echo $_SESSION['personal_folders'][0];
 } else {
     echo "";

@@ -1,11 +1,11 @@
 <?php
 /**
- * @file 		upload.files.php
- * @author		Nils Laumaillé
- * @version 	2.1.16
- * @copyright 	(c) 2009-2012 Nils Laumaillé
- * @licensing 	GNU AFFERO GPL 3.0
- * @link		http://www.teampass.net
+ * @file        upload.files.php
+ * @author      Nils Laumaillé
+ * @version     2.1.16
+ * @copyright   (c) 2009-2012 Nils Laumaillé
+ * @licensing   GNU AFFERO GPL 3.0
+ * @link        http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,8 +14,7 @@
 
 require_once('../SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
 ) {
@@ -300,13 +299,13 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
+} elseif (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} else if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+} elseif (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
     // sanitize the new file name
     $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($_POST['newFileName'], ENT_QUOTES));
     $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));
@@ -359,7 +358,6 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 
     echo '{"filename" : "'.htmlentities($_SESSION['user_avatar'], ENT_QUOTES).'" , "filename_thumb" : "'.htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES).'"}';
     exit();
-
 } else {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(

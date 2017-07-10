@@ -14,11 +14,10 @@
  */
 require_once('sources/SecureHandler.php');
 session_start();
-if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -69,14 +68,11 @@ $skFile = file($tmp_skfile);
 while (list($key, $val) = each($skFile)) {
     if (substr_count($val, "@define('AKEY'") > 0) {
         $tmp_akey = substr($val, 17, strpos($val, '")') - 17);
-    } else
-    if (substr_count($val, "@define('IKEY'") > 0) {
+    } elseif (substr_count($val, "@define('IKEY'") > 0) {
         $tmp_ikey = substr($val, 17, strpos($val, '")') - 17);
-    } else
-    if (substr_count($val, "@define('SKEY'") > 0) {
+    } elseif (substr_count($val, "@define('SKEY'") > 0) {
         $tmp_skey = substr($val, 17, strpos($val, '")') - 17);
-    } else
-    if (substr_count($val, "@define('HOST'") > 0) {
+    } elseif (substr_count($val, "@define('HOST'") > 0) {
         $tmp_host = substr($val, 17, strpos($val, '")') - 17);
     }
 }

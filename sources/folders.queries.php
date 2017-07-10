@@ -14,11 +14,10 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -37,7 +36,7 @@ header("Content-type: text/html; charset==utf-8");
 require_once 'main.functions.php';
 require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
-//Connect to mysql server
+// Connect to mysql server
 require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
@@ -49,7 +48,7 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-//Build tree
+// Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -57,7 +56,7 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 // CASE where title is changed
 if (isset($_POST['newtitle'])) {
     $id = explode('_', $_POST['id']);
-    //update DB
+    // Update DB
     DB::update(
         prefix_table("nested_tree"),
         array(
@@ -69,10 +68,9 @@ if (isset($_POST['newtitle'])) {
     //Show value
     echo htmlentities($_POST['newtitle'], ENT_QUOTES);
 
-    // CASE where RENEWAL PERIOD is changed
+// CASE where RENEWAL PERIOD is changed
 } elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
-
-    //Check if renewal period is an integer
+    // Check if renewal period is an integer
     if (parseInt(intval($_POST['renewal_period']))) {
         $id = explode('_', $_POST['id']);
         //update DB
@@ -123,11 +121,11 @@ if (isset($_POST['newtitle'])) {
 
     $id = explode('_', $_POST['id']);
 
-    //Check if group exists
+    // Check if group exists
     $tmp = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s' AND intitule = %i", "complex", $id[1]);
     $counter = DB::count();
     if ($counter == 0) {
-        //Insert into DB
+        // Insert into DB
         DB::insert(
             prefix_table("misc"),
             array(
@@ -137,7 +135,7 @@ if (isset($_POST['newtitle'])) {
             )
         );
     } else {
-        //update DB
+        // Update DB
         DB::update(
             prefix_table("misc"),
             array(
@@ -149,7 +147,7 @@ if (isset($_POST['newtitle'])) {
         );
     }
 
-    //Get title to display it
+    // Get title to display it
     echo $_SESSION['settings']['pwComplexity'][$_POST['changer_complexite']][1];
 
     //rebuild the tree grid
@@ -169,7 +167,7 @@ if (isset($_POST['newtitle'])) {
 
             $error = "";
 
-            // user shall not delete personal folder
+            // User shall not delete personal folder
             $data = DB::queryfirstrow(
                 "SELECT personal_folder
                 FROM ".prefix_table("nested_tree")."
@@ -455,8 +453,7 @@ if (isset($_POST['newtitle'])) {
                 }
 
 
-                if (
-                    $isPersonal == 1
+                if ($isPersonal == 1
                     || $_SESSION['is_admin'] == 1
                     || ($_SESSION['user_manager'] == 1)
                     || (isset($_SESSION['settings']['enable_user_can_create_folders'])
@@ -496,8 +493,7 @@ if (isset($_POST['newtitle'])) {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                     $tree->rebuild();
 
-                    if (
-                        $isPersonal != 1
+                    if ($isPersonal != 1
                         && isset($_SESSION['settings']['subfolder_rights_as_parent'])
                         && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                         && $_SESSION['is_admin'] !== 0
@@ -619,7 +615,9 @@ if (isset($_POST['newtitle'])) {
             $createNewFolder = true;
             if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
                 $data = DB::queryfirstrow(
-                    "SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
+                    "SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s",
+                    $title
+                );
                 if (!empty($data['id']) && $dataReceived['id'] != $data['id'] && $title != $data['title']) {
                     echo '[ { "error" : "error_group_exist" } ]';
                     break;
@@ -960,8 +958,7 @@ if (isset($_POST['newtitle'])) {
                 }
 
 
-                if (
-                    $nodeInfo->personal_folder != 1
+                if ($nodeInfo->personal_folder != 1
                     && isset($_SESSION['settings']['subfolder_rights_as_parent'])
                     && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
                     && $_SESSION['is_admin'] !== 0
@@ -1056,8 +1053,7 @@ if (isset($_POST['newtitle'])) {
                     );
 
                     if ($dataDeleted !== "1" || intval($item_deleted['date']) < intval($item_restored['date'])) {
-
-                        // decrypt and re-encrypt password
+                        // Decrypt and re-encrypt password
                         $decrypt = cryption(
                             $record['pw'],
                             "",
@@ -1069,7 +1065,7 @@ if (isset($_POST['newtitle'])) {
                             "encrypt"
                         );
 
-                        // insert the new record and get the new auto_increment id
+                        // Insert the new record and get the new auto_increment id
                         DB::insert(
                             prefix_table("items"),
                             array(
@@ -1083,11 +1079,10 @@ if (isset($_POST['newtitle'])) {
                         );
                         $newItemId = DB::insertId();
 
-                        // generate the query to update the new record with the previous values
+                        // Generate the query to update the new record with the previous values
                         $aSet = array();
                         foreach ($record as $key => $value) {
-                            if (
-                                $key !== "id" && $key !== "key" && $key !== "id_tree"
+                            if ($key !== "id" && $key !== "key" && $key !== "id_tree"
                                 && $key !== "viewed_no" && $key !== "pw" && $key !== "pw_iv"
                                 && $key !== "perso"
                             ) {

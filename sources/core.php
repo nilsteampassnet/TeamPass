@@ -21,7 +21,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
  * @param  [string] $url new url
  * @return refresh page to url
  */
-function redirect($url) {
+function redirect($url)
+{
     // Load AntiXSS
     require_once '../includes/libraries/protect/AntiXSS/AntiXss.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
@@ -41,8 +42,7 @@ function redirect($url) {
 }
 
 
-if (
-    isset($_SERVER['HTTPS']) &&
+if (isset($_SERVER['HTTPS']) &&
     $_SERVER['HTTPS'] != 'on' &&
     isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
@@ -59,7 +59,8 @@ if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] !
     //by default, this value is 5;
     $_SESSION['settings']['number_of_used_pw'] = 5;
 
-    $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
+    $rows = DB::query(
+        "SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
         array(
             'type' => "admin",
             'type2' => "settings"
@@ -76,7 +77,8 @@ if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] !
     $_SESSION['settings']['default_session_expiration_time'] = 5;
 }
 
-$rows = DB::query("SELECT valeur, intitule FROM ".prefix_table("misc")." WHERE type=%s_type",
+$rows = DB::query(
+    "SELECT valeur, intitule FROM ".prefix_table("misc")." WHERE type=%s_type",
     array(
         'type' => "admin"
     )
@@ -130,8 +132,7 @@ if (empty($languagesDropmenu)) {
 }
 
 /* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
-if (
-    (isset($_GET['session']) && $_GET['session'] == "expired")
+if ((isset($_GET['session']) && $_GET['session'] == "expired")
     || (isset($_POST['session']) && $_POST['session'] == "expired")
 ) {
     // Clear User tempo key
@@ -169,8 +170,7 @@ if (!empty($_SESSION['fin_session'])) {
     $dataSession['key_tempo'] = "";
 }
 
-if (
-    isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
+if (isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
         empty($_SESSION['fin_session'])
         || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
         || empty($dataSession['key_tempo'])
@@ -208,12 +208,12 @@ if (
 }
 
 /* CHECK IF UPDATE IS NEEDED */
-if (
-    (isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] !== false
+if ((isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] !== false
     || empty($_SESSION['settings']['update_needed'])))
     && (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1)
 ) {
-    $row = DB::queryFirstRow("SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s_type AND intitule=%s_intitule",
+    $row = DB::queryFirstRow(
+        "SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s_type AND intitule=%s_intitule",
         array(
             "type" => "admin",
             "intitule" => "cpassman_version"
@@ -229,8 +229,7 @@ if (
 /**
  * Set the personal SaltKey if authorized
  */
-if (
-    isset($_SESSION['settings']['enable_personal_saltkey_cookie'])
+if (isset($_SESSION['settings']['enable_personal_saltkey_cookie'])
     && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1
     && isset($_SESSION['user_id'])
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
@@ -285,8 +284,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
 }
 
 /* Force HTTPS Strict Transport Security */
-if (
-    isset($_SESSION['settings']['enable_sts']) &&
+if (isset($_SESSION['settings']['enable_sts']) &&
     $_SESSION['settings']['enable_sts'] == 1
 ) {
     // do a check to make sure that the certificate is not self signed.

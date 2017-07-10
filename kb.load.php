@@ -81,7 +81,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             buttons: {
                 "<?php echo $LANG['del_button']; ?>": function() {
                     $.post(
-                		"sources/kb.queries.php",
+                        "sources/kb.queries.php",
                         {
                         type    : "delete_kb",
                         id      : $("#kb_id").val(),

@@ -78,8 +78,7 @@ switch ($_POST['type']) {
                     $restricted_users_array = explode(';', $record['restricted_to']);
                     //exclude all results except the first one returned by query
                     if (empty($id_managed) || $id_managed != $record['id']) {
-                            if (
-                            (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] === "1" && $_SESSION['user_id'] === $record['restricted_to']) && !empty($record['restricted_to']))
+                        if ((in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] === "1" && $_SESSION['user_id'] === $record['restricted_to']) && !empty($record['restricted_to']))
                             ||
                             (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
                         ) {
@@ -253,7 +252,8 @@ switch ($_POST['type']) {
                             'pw' => $encrypt['string'],
                             'pw_iv' => ""
                             ),
-                        "id = %i", $data['id']
+                        "id = %i",
+                        $data['id']
                     );
                 }
             }
@@ -306,7 +306,8 @@ switch ($_POST['type']) {
                         'pw_iv' => "",
                         "encryption_type" => "defuse"
                         ),
-                    "id = %i", $data['id']
+                    "id = %i",
+                    $data['id']
                 );
             } elseif ($data['encryption_type'] === "not_set") {
             // to be re-encrypted with defuse
@@ -334,7 +335,8 @@ switch ($_POST['type']) {
                         'pw_iv' => "",
                         "encryption_type" => "defuse"
                         ),
-                    "id = %i", $data['id']
+                    "id = %i",
+                    $data['id']
                 );
             } else {
             // already re-encrypted
@@ -456,7 +458,7 @@ switch ($_POST['type']) {
         break;
 
     case "server_auto_update_password_frequency":
-         if ($_POST['key'] != $_SESSION['key'] || !isset($_POST['id']) || !isset($_POST['freq'])) {
+        if ($_POST['key'] != $_SESSION['key'] || !isset($_POST['id']) || !isset($_POST['freq'])) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
@@ -475,5 +477,4 @@ switch ($_POST['type']) {
         echo '[{"error" : ""}]';
 
         break;
-
 }

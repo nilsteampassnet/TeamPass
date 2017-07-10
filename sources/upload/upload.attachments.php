@@ -14,8 +14,7 @@
 
 require_once('../SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
 ) {
@@ -79,7 +78,6 @@ if (!isset($_POST['user_token'])) {
             $_POST['user_token']
         );
     } else {
-
         // create a session if several files to upload
         if (!isset($_SESSION[$_POST['user_token']]) || empty($_SESSION[$_POST['user_token']]) || $_SESSION[$_POST['user_token']] === 0) {
             $_SESSION[$_POST['user_token']] = $_POST['files_number'];

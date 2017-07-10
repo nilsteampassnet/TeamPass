@@ -106,8 +106,7 @@ if (isset($_GET['iSortCol_0'])) {
     } else {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -235,7 +234,7 @@ if (!isset($_GET['type'])) {
                 );
                 if ($access['type'] == "R") {
                     array_push($arrTmp, 1);
-                } else if ($access['type'] == "W") {
+                } elseif ($access['type'] == "W") {
                     array_push($arrTmp, 0);
                 } else {
                     array_push($arrTmp, 2);
@@ -261,7 +260,8 @@ if (!isset($_GET['type'])) {
         //get restriction from ROles
         $restrictedToRole = false;
         $rTmp = DB::query(
-            "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i", $record['id']
+            "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i",
+            $record['id']
         );
         foreach ($rTmp as $aTmp) {
             if ($aTmp['role_id'] != "") {
@@ -271,8 +271,8 @@ if (!isset($_GET['type'])) {
             }
         }
 
-        if (
-            ($record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
+        if ((
+            $record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
             ||
             (
                 !empty($record['restricted_to'])
@@ -319,7 +319,7 @@ if (!isset($_GET['type'])) {
     $sOutput .= '] }';
 
     echo $sOutput;
-} else if (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
+} elseif (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
     require_once 'main.functions.php';
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
@@ -330,8 +330,7 @@ if (!isset($_GET['type'])) {
         $expired_item = 0;
         if ($_SESSION['settings']['activate_expiration'] == 1) {
             $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
-            if (
-                $record['renewal_period'] > 0 &&
+            if ($record['renewal_period'] > 0 &&
                 ($record['timestamp'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
             ) {
                 $expirationFlag = '<i class="fa fa-flag mi-red"></i>&nbsp;';
@@ -374,8 +373,7 @@ if (!isset($_GET['type'])) {
         }
 
         // CASE where item is restricted to a role to which the user is not associated
-        if (
-            isset($user_is_included_in_role)
+        if (isset($user_is_included_in_role)
             && $user_is_included_in_role == 0
             && isset($item_is_restricted_to_role)
             && $item_is_restricted_to_role == 1
@@ -386,9 +384,8 @@ if (!isset($_GET['type'])) {
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 0;
-        }
         // Case where item is in own personal folder
-        elseif (
+        } elseif (
             in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
@@ -397,9 +394,8 @@ if (!isset($_GET['type'])) {
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 1;
-        }
         // CAse where item is restricted to a group of users included user
-        elseif (
+        } elseif (
             !empty($record['restricted_to'])
             && in_array($_SESSION['user_id'], $restricted_users_array)
             || (isset($_SESSION['list_folders_editable_by_role'])
@@ -411,9 +407,8 @@ if (!isset($_GET['type'])) {
             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
-        }
         // CAse where item is restricted to a group of users not including user
-        elseif (
+        } elseif (
             $record['perso'] == 1
             ||
             (
@@ -428,8 +423,7 @@ if (!isset($_GET['type'])) {
                 && $item_is_restricted_to_role == 1
             )
         ) {
-            if (
-                isset($user_is_included_in_role)
+            if (isset($user_is_included_in_role)
                 && isset($item_is_restricted_to_role)
                 && $user_is_included_in_role == 0
                 && $item_is_restricted_to_role == 1

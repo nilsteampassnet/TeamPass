@@ -2,9 +2,9 @@
 /**
  *
  * @file          main.functions.php
- * @author        Nils Laumaillé
+ * @author        Nils LaumaillÃ©
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2017 Nils LaumaillÃ©
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
@@ -28,11 +28,9 @@ if (!isset($_SESSION['settings']['cpassman_dir']) || empty($_SESSION['settings']
 // Prepare PHPCrypt class calls
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
-
 // Prepare Encryption class calls
 use \Defuse\Crypto\Crypto;
 use \Defuse\Crypto\Exception as Ex;
-
 
 //Generate N# of random bits for use as salt
 /**
@@ -295,7 +293,7 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             for ($x = strlen($key) + 1; $x <= 16; $x++) {
                 $key .= chr(0);
             }
-        } else if (strlen($key) > 16) {
+        } elseif (strlen($key) > 16) {
             $key = substr($key, 16);
         }
     }
@@ -313,7 +311,7 @@ function cryption_phpCrypt($string, $key, $iv, $type)
             "iv" => bin2hex($iv),
             "error" => empty($encrypt) ? "ERR_ENCRYPTION_NOT_CORRECT" : ""
         );
-    } else if ($type == "decrypt") {
+    } elseif ($type == "decrypt") {
         // case if IV is empty
         if (empty($iv)) {
                     return array(
@@ -388,11 +386,11 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     try {
         if ($type === "encrypt") {
             $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
-        } else if ($type === "decrypt") {
+        } elseif ($type === "decrypt") {
             $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
         }
     } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+        $err = "an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
     } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
         $err = $ex;
     } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
@@ -409,7 +407,8 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     );
 }
 
-function defuse_generate_key() {
+function defuse_generate_key()
+{
     require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
     require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
     require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
@@ -425,7 +424,8 @@ function defuse_generate_key() {
     return $key;
 }
 
-function defuse_generate_personal_key($psk) {
+function defuse_generate_personal_key($psk)
+{
     require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
     require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
     require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
@@ -445,7 +445,8 @@ function defuse_generate_personal_key($psk) {
 /**
  * @param string $psk
  */
-function defuse_validate_personal_key($psk, $protected_key_encoded) {
+function defuse_validate_personal_key($psk, $protected_key_encoded)
+{
     require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
     require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
     require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
@@ -510,7 +511,8 @@ function cleanString($string, $special = false)
     return str_replace($tabSpecialChar, "\n", $string);
 }
 
-function db_error_handler($params) {
+function db_error_handler($params)
+{
     echo "Error: ".$params['error']."<br>\n";
     echo "Query: ".$params['query']."<br>\n";
     die; // don't want to keep going if a query broke
@@ -597,7 +599,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $tmp = explode(";", $_SESSION['fonction_id']);
         $rows = DB::query(
             "SELECT * FROM ".prefix_table("roles_title")."
-            ORDER BY title ASC");
+            ORDER BY title ASC"
+        );
         foreach ($rows as $record) {
             if (!empty($record['id']) && !in_array($record['id'], $tmp)) {
                 array_push($tmp, $record['id']);
@@ -704,8 +707,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 
         $where = new WhereClause('and');
         $where->add('personal_folder=%i', 1);
-        if (
-            isset($_SESSION['settings']['enable_pf_feature']) &&
+        if (isset($_SESSION['settings']['enable_pf_feature']) &&
             $_SESSION['settings']['enable_pf_feature'] == 1 &&
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
@@ -719,8 +721,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             array_push($_SESSION['forbiden_pfs'], $pfId['id']);
         }
         // Get IDs of personal folders
-        if (
-            isset($_SESSION['settings']['enable_pf_feature']) &&
+        if (isset($_SESSION['settings']['enable_pf_feature']) &&
             $_SESSION['settings']['enable_pf_feature'] == 1 &&
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
@@ -749,7 +750,6 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $folderId,
                         $fonctionsAssociees,
                         array("W", "ND", "NE", "NDNE")
-
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -884,7 +884,7 @@ function updateCacheTable($action, $id = "")
                 if (empty($folder)) {
                     $folder = stripslashes($elem->title);
                 } else {
-                    $folder .= " » ".stripslashes($elem->title);
+                    $folder .= " Â» ".stripslashes($elem->title);
                 }
             }
             // store data
@@ -913,7 +913,9 @@ function updateCacheTable($action, $id = "")
         $data = DB::queryfirstrow(
             "SELECT label, description, id_tree, perso, restricted_to, login, url
             FROM ".$pre."items
-            WHERE id=%i", $id);
+            WHERE id=%i",
+            $id
+        );
         // Get all TAGS
         $tags = "";
         $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $id);
@@ -932,7 +934,7 @@ function updateCacheTable($action, $id = "")
             if (empty($folder)) {
                 $folder = stripslashes($elem->title);
             } else {
-                $folder .= " » ".stripslashes($elem->title);
+                $folder .= " Â» ".stripslashes($elem->title);
             }
         }
         // finaly update
@@ -983,7 +985,7 @@ function updateCacheTable($action, $id = "")
             if (empty($folder)) {
                 $folder = stripslashes($elem->title);
             } else {
-                $folder .= " » ".stripslashes($elem->title);
+                $folder .= " Â» ".stripslashes($elem->title);
             }
         }
         // finaly update
@@ -1014,7 +1016,8 @@ function updateCacheTable($action, $id = "")
 /*
 *
 */
-function getStatisticsData() {
+function getStatisticsData()
+{
     DB::query(
         "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
         0
@@ -1083,7 +1086,7 @@ function getStatisticsData() {
     foreach ($tp_ips as $ip) {
         if (array_key_exists($ip['user_ip'], $usedIp)) {
             $usedIp[$ip['user_ip']] = $usedIp[$ip['user_ip']] + 1;
-        } else if (!empty($ip['user_ip']) && $ip['user_ip'] !== "none") {
+        } elseif (!empty($ip['user_ip']) && $ip['user_ip'] !== "none") {
             $usedIp[$ip['user_ip']] = 1;
         }
     }
@@ -1237,8 +1240,7 @@ function prepareExchangedData($data, $type)
     $aes->register();
 
     if ($type == "encode") {
-        if (
-            isset($_SESSION['settings']['encryptClientServer'])
+        if (isset($_SESSION['settings']['encryptClientServer'])
             && $_SESSION['settings']['encryptClientServer'] == 0
         ) {
             return json_encode(
@@ -1256,8 +1258,7 @@ function prepareExchangedData($data, $type)
             );
         }
     } elseif ($type == "decode") {
-        if (
-            isset($_SESSION['settings']['encryptClientServer'])
+        if (isset($_SESSION['settings']['encryptClientServer'])
             && $_SESSION['settings']['encryptClientServer'] == 0
         ) {
             return json_decode(
@@ -1277,8 +1278,8 @@ function prepareExchangedData($data, $type)
     }
 }
 
-function make_thumb($src, $dest, $desired_width) {
-
+function make_thumb($src, $dest, $desired_width)
+{
     /* read the source image */
     $source_image = imagecreatefrompng($src);
     $width = imagesx($source_image);
@@ -1352,12 +1353,10 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
 
 /*
 * Send sysLOG message
+* @param string $message
+* @param string $host
 */
-/**
- * @param string $message
- * @param string $host
- */
-function send_syslog($message, $component = "teampass", $host, $port)
+function send_syslog($message, $host, $port, $component = "teampass")
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
         //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
@@ -1376,7 +1375,7 @@ function send_syslog($message, $component = "teampass", $host, $port)
  * @param string $label
  * @param string $field_1
  */
-function logEvents($type, $label, $who, $login = "", $field_1 = NULL)
+function logEvents($type, $label, $who, $login = "", $field_1 = null)
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
@@ -1408,9 +1407,19 @@ function logEvents($type, $label, $who, $login = "", $field_1 = NULL)
     );
     if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
         if ($type == "user_mngt") {
-            send_syslog("The User ".$login." perform the acction off ".$label." to the user ".$field_1." - ".$type, "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+            send_syslog(
+                "The User ".$login." perform the acction off ".$label." to the user ".$field_1." - ".$type,
+                $_SESSION['settings']['syslog_host'],
+                $_SESSION['settings']['syslog_port'],
+                "teampass"
+            );
         } else {
-            send_syslog("The User ".$login." perform the acction off ".$label." - ".$type, "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+            send_syslog(
+                "The User ".$login." perform the acction off ".$label." - ".$type,
+                $_SESSION['settings']['syslog_host'],
+                $_SESSION['settings']['syslog_port'],
+                "teampass"
+            );
         }
     }
 }
@@ -1419,7 +1428,7 @@ function logEvents($type, $label, $who, $login = "", $field_1 = NULL)
  * @param string $item
  * @param string $action
  */
-function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $raison_iv = NULL, $encryption_type = "")
+function logItems($id, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
 {
     global $server, $user, $pass, $database, $pre, $port, $encoding;
     // include librairies & connect to DB
@@ -1434,38 +1443,43 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = NULL, $r
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
     DB::insert(
-        prefix_table(
-            "log_items"),
-            array(
-                'id_item' => $id,
-                'date' => time(),
-                'id_user' => $id_user,
-                'action' => $action,
-                'raison' => $raison,
-                'raison_iv' => $raison_iv,
-                'encryption_type' => $encryption_type
-            )
+        prefix_table("log_items"),
+        array(
+            'id_item' => $id,
+            'date' => time(),
+            'id_user' => $id_user,
+            'action' => $action,
+            'raison' => $raison,
+            'raison_iv' => $raison_iv,
+            'encryption_type' => $encryption_type
+        )
+    );
+    if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+        send_syslog(
+            "The Item ".$item." was ".$action." by ".$login." ".$raison,
+            $_SESSION['settings']['syslog_host'],
+            $_SESSION['settings']['syslog_port'],
+            "teampass"
         );
-        if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                send_syslog("The Item ".$item." was ".$action." by ".$login." ".$raison, "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
-        }
+    }
 }
 
 /*
 * Function to get the client ip address
  */
-function get_client_ip_server() {
+function get_client_ip_server()
+{
     if (getenv('HTTP_CLIENT_IP')) {
             $ipaddress = getenv('HTTP_CLIENT_IP');
-    } else if (getenv('HTTP_X_FORWARDED_FOR')) {
+    } elseif (getenv('HTTP_X_FORWARDED_FOR')) {
             $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
-    } else if (getenv('HTTP_X_FORWARDED')) {
+    } elseif (getenv('HTTP_X_FORWARDED')) {
             $ipaddress = getenv('HTTP_X_FORWARDED');
-    } else if (getenv('HTTP_FORWARDED_FOR')) {
+    } elseif (getenv('HTTP_FORWARDED_FOR')) {
             $ipaddress = getenv('HTTP_FORWARDED_FOR');
-    } else if (getenv('HTTP_FORWARDED')) {
+    } elseif (getenv('HTTP_FORWARDED')) {
             $ipaddress = getenv('HTTP_FORWARDED');
-    } else if (getenv('REMOTE_ADDR')) {
+    } elseif (getenv('REMOTE_ADDR')) {
             $ipaddress = getenv('REMOTE_ADDR');
     } else {
             $ipaddress = 'UNKNOWN';
@@ -1500,7 +1514,7 @@ function handleConfigFile($action, $field = null, $value = null)
     // Load AntiXSS
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
-    
+
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
@@ -1535,7 +1549,7 @@ function handleConfigFile($action, $field = null, $value = null)
         }
         array_push($data, ");");
         $data = array_unique($data);
-    } else if ($action == "update" && !empty($field)) {
+    } elseif ($action == "update" && !empty($field)) {
         $data = file($tp_config_file);
         $x = 0;
         $bFound = false;
@@ -1544,7 +1558,7 @@ function handleConfigFile($action, $field = null, $value = null)
                 break;
             }
 
-            // 
+            //
             if (stristr($line, "'".$field."' => '")) {
                 $data[$x] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
                 $bFound = true;
@@ -1586,7 +1600,8 @@ function loadSettings()
         $_SESSION['settings']['number_of_used_pw'] = 5; //by default, this value is set to 5;
         $settings = array();
 
-        $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
+        $rows = DB::query(
+            "SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
             array(
                 'type' => "admin",
                 'type2' => "settings"
@@ -1608,7 +1623,8 @@ function loadSettings()
 ** check if folder has custom fields.
 ** Ensure that target one also has same custom fields
 */
-function checkCFconsistency($source_id, $target_id) {
+function checkCFconsistency($source_id, $target_id)
+{
     $source_cf = array();
     $rows = DB::QUERY(
         "SELECT id_category
@@ -1642,7 +1658,8 @@ function checkCFconsistency($source_id, $target_id) {
 /*
 *
 */
-function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
+function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
+{
     global $server, $user, $pass, $database, $pre, $port, $encoding;
 
     // include librairies & connect to DB
@@ -1676,8 +1693,8 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework)) {
             // make a copy of file
             if (!copy(
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
+                $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
             )) {
                 exit;
             } else {
@@ -1726,8 +1743,8 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
         if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework)) {
             // make a copy of file
             if (!copy(
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
-                    $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
+                $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework,
+                $_SESSION['settings']['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
             )) {
                 exit;
             } else {
@@ -1781,7 +1798,8 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status) {
  * @param  string $target_file path to target file
  * @return string              'true' is success or error message
  */
-function prepareFileWithDefuse($type, $source_file, $target_file, $password = '') {
+function prepareFileWithDefuse($type, $source_file, $target_file, $password = '')
+{
     // Load AntiXSS
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
@@ -1790,7 +1808,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     if (is_array($source_file) ||is_array($target_file)) {
         return 'error_cannot_be_array';
     }
-    
+
     // Sanitize
     $source_file = $antiXss->xss_clean($source_file);
     $target_file = $antiXss->xss_clean($target_file);
@@ -1830,7 +1848,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
             } catch (Defuse\Crypto\Exception\IOException $ex) {
                 $err = $ex;
             }
-        } else if ($type === 'encrypt') {
+        } elseif ($type === 'encrypt') {
             try {
                 \Defuse\Crypto\File::encryptFile(
                     $source_file,
@@ -1845,7 +1863,6 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
                 $err = $ex;
             }
         }
-
     } else {
         /*
         File encryption/decryption is done with special password and not the SALTKEY
@@ -1866,7 +1883,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
             } catch (Defuse\Crypto\Exception\IOException $ex) {
                 $err = $ex;
             }
-        } else if ($type === 'encrypt') {
+        } elseif ($type === 'encrypt') {
             try {
                 \Defuse\Crypto\File::encryptFileWithPassword(
                     $source_file,
@@ -1894,7 +1911,8 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
 /*
 * NOT TO BE USED
 */
-function debugTeampass($text) {
+function debugTeampass($text)
+{
     $debugFile = fopen('D:/wamp64/www/TeamPass/debug.txt', 'r+');
     fputs($debugFile, $text);
     fclose($debugFile);
@@ -1906,7 +1924,8 @@ function debugTeampass($text) {
  * @param  [type] $file [description]
  * @return [type]       [description]
  */
-function fileDelete($file) {
+function fileDelete($file)
+{
     // Load AntiXSS
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
@@ -1934,13 +1953,12 @@ function getFileExtension($f)
  * @param  [type]
  * @return [type]
  */
-function array_map_r( $func, $arr )
+function array_map_r($func, $arr)
 {
     $newArr = array();
 
-    foreach( $arr as $key => $value )
-    {
-        $newArr[ $key ] = ( is_array( $value ) ? array_map_r( $func, $value ) : ( is_array($func) ? call_user_func_array($func, $value) : $func( $value ) ) );
+    foreach ($arr as $key => $value) {
+        $newArr[ $key ] = (is_array($value) ? array_map_r($func, $value) : ( is_array($func) ? call_user_func_array($func, $value) : $func( $value )));
     }
 
     return $newArr;

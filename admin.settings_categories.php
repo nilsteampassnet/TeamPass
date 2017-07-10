@@ -169,7 +169,6 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
             }
         }
     }
-
 }
 echo '
         </table>
@@ -234,24 +233,24 @@ echo '
         <br />
         <div style="text-align:center; margin-top:10px;">
         <select id="cat_folders_selection" multiple="multiple" size="12">';
-        $folders = $tree->getDescendants();
-        foreach ($folders as $folder) {
-            DB::query(
-                "SELECT * FROM ".prefix_table("nested_tree")."
-                WHERE personal_folder = %i AND id = %i",
-                '0',
-                $folder->id
-            );
-            $counter = DB::count();
-            if ($counter > 0) {
-                $ident = "";
-                for ($x = 1; $x < $folder->nlevel; $x++) {
-                    $ident .= "-";
-                }
-                echo '
-                <option value="'.$folder->id.'">'.$ident.'&nbsp;'.str_replace("&", "&amp;", $folder->title).'</option>';
-            }
+$folders = $tree->getDescendants();
+foreach ($folders as $folder) {
+    DB::query(
+        "SELECT * FROM ".prefix_table("nested_tree")."
+        WHERE personal_folder = %i AND id = %i",
+        '0',
+        $folder->id
+    );
+    $counter = DB::count();
+    if ($counter > 0) {
+        $ident = "";
+        for ($x = 1; $x < $folder->nlevel; $x++) {
+            $ident .= "-";
         }
+        echo '
+        <option value="'.$folder->id.'">'.$ident.'&nbsp;'.str_replace("&", "&amp;", $folder->title).'</option>';
+    }
+}
 echo '
         </select>
         </div>

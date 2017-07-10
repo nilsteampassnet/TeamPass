@@ -32,13 +32,11 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $_SESSION['settings']['cpassman_dir'].'/error.php';
     exit();
-} elseif (
-    (isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
+} elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
     // continue
     mainQuery();
-} elseif (
-    (isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
+} elseif ((isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
     // continue
     mainQuery();
 } else {
@@ -50,7 +48,8 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
 /*
 ** Executes expected queries
 */
-function mainQuery() {
+function mainQuery()
+{
     global $server, $user, $pass, $database, $port, $encoding, $pre, $k, $LANG;
     include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
@@ -795,7 +794,7 @@ function mainQuery() {
         case "store_error":
             if (!empty($_SESSION['user_id'])) {
                 // update DB
-            logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
+                logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
             }
             break;
         /**
@@ -853,8 +852,7 @@ function mainQuery() {
             } else {
                 $userOk = true;
             }
-            if (
-                isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
                 && !empty($data['psk'])
             ) {
                 $pskSet = true;
@@ -936,8 +934,7 @@ function mainQuery() {
 
             // get wainting suggestions
             $nb_suggestions_waiting = 0;
-            if (
-                isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+            if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
                 && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
             ) {
                 DB::query("SELECT * FROM ".prefix_table("suggestion"));
@@ -978,7 +975,7 @@ function mainQuery() {
                 isset($_POST['numeric']) ? $_POST['numeric'] : false,
                 isset($_POST['ambiguous']) ? $_POST['ambiguous'] : false,
                 isset($_POST['symbols']) ? $_POST['symbols'] : false
-                );
+            );
 
             // store in DB
             DB::insert(
@@ -999,7 +996,6 @@ function mainQuery() {
          * Create list of timezones
          */
         case "generate_timezones_list":
-
             $array = array();
             foreach (timezone_identifiers_list() as $zone) {
                 $array[$zone] = $zone;
@@ -1025,7 +1021,7 @@ function mainQuery() {
                 $count += DB::count();
 
                 echo '[ { "error" : "" , "count" : "'.$count.'" , "show_sug_in_menu" : "0"} ]';
-            } else if (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
+            } elseif (isset($_SESSION['nb_item_change_proposals']) && $_SESSION['nb_item_change_proposals'] > 0) {
                 echo '[ { "error" : "" , "count" : "'.$_SESSION['nb_item_change_proposals'].'" , "show_sug_in_menu" : "1"} ]';
             } else {
                 echo '[ { "error" : "" , "count" : "" , "show_sug_in_menu" : "0"} ]';
@@ -1042,8 +1038,7 @@ function mainQuery() {
                 break;
             }
 
-            if (
-                isset($_SESSION['settings']['send_statistics_items']) && isset($_SESSION['settings']['send_stats']) && isset($_SESSION['settings']['send_stats_time'])
+            if (isset($_SESSION['settings']['send_statistics_items']) && isset($_SESSION['settings']['send_stats']) && isset($_SESSION['settings']['send_stats_time'])
                 && $_SESSION['settings']['send_stats'] === "1"
                 && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) > time()
             ) {
@@ -1066,7 +1061,7 @@ function mainQuery() {
                             }
                         }
                         $statsToSend[$data] = $tmp;
-                    } else if ($data === "stat_country") {
+                    } elseif ($data === "stat_country") {
                         $tmp = "";
                         foreach ($stats_data[$data] as $key => $value) {
                             if (empty($tmp)) {

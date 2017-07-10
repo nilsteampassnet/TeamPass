@@ -58,11 +58,10 @@ padding: 0 5px 0 5px;
 <?php
 require_once 'sources/SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -148,7 +147,7 @@ echo '
                     'key'
                 );
                 foreach ($rows as $record) {
-                echo '
+                    echo '
                   <tr id="apiid'.$record['id'].'">
                     <td id="apiid'.$record['id'].'label">'.$record['label'].'</td>
                     <td id="apiid'.$record['id'].'value">'.$record['value'].'</td>
@@ -182,14 +181,14 @@ echo '
  	 	    </td>
       	<td>
         <div id="api_ips_list">';
-            $data = DB::query(
-            "SELECT id, label, value FROM ".prefix_table("api")."
-            WHERE type = %s",
-            'ip'
-            );
-            $counter = DB::count();
-            if ($counter != 0) {
-            echo '
+                $data = DB::query(
+                    "SELECT id, label, value FROM ".prefix_table("api")."
+                    WHERE type = %s",
+                    'ip'
+                );
+                $counter = DB::count();
+                if ($counter != 0) {
+                    echo '
             <table id="tbl_ips">
               <thead>
                 <tr>
@@ -199,14 +198,14 @@ echo '
                 </tr>
               </thead>
               <tbody class="keytable">';
-                $rows = DB::query(
-                    "SELECT id, label, value FROM ".prefix_table("api")."
-                    WHERE type = %s
-                    ORDER BY timestamp ASC",
-                    'ip'
-                );
-                foreach ($rows as $record) {
-                    echo '
+                    $rows = DB::query(
+                        "SELECT id, label, value FROM ".prefix_table("api")."
+                        WHERE type = %s
+                        ORDER BY timestamp ASC",
+                        'ip'
+                    );
+                    foreach ($rows as $record) {
+                        echo '
                   <tr id="apiid'.$record['id'].'">
                     <td id="apiid'.$record['id'].'label">'.$record['label'].'</td>
                     <td id="apiid'.$record['id'].'value">'.$record['value'].'</td>
@@ -214,15 +213,15 @@ echo '
                       <i class="fa fa-pencil tip" onclick="ip_update(\''.$record['id'].'\', $(\'#apiid'.$record['id'].'label\').text(), $(\'#apiid'.$record['id'].'value\').text())" title="'.htmlentities(strip_tags($LANG['edit']), ENT_QUOTES).'"></i>&nbsp;
                       <i class="fa fa-trash mi-red tip" onclick="deleteApiKey(\''.$record['id'].'\')" title="'.htmlentities(strip_tags($LANG['del_button']), ENT_QUOTES).'"></i></td>
                   </tr>';
-                }
-                echo '
+                    }
+                    echo '
               </tbody>
             </table>
             ';
-            } else {
-            echo $LANG['settings_api_world_open'];
-            }
-        echo '
+                } else {
+                    echo $LANG['settings_api_world_open'];
+                }
+                echo '
         </div>
         <br />
         <input type="button" id="but_add_new_ip" value="'.$LANG['settings_api_add_ip'].'" onclick="newIPDB()" class="ui-state-default ui-corner-all" />
@@ -233,7 +232,7 @@ echo '
 </div>';
 
 // dialog box
-echo '
+                echo '
 <div id="api_db" style="display:none;">
     <input type="hidden" id="api_db_type" />
     <input type="hidden" id="api_db_action" />
@@ -250,7 +249,7 @@ echo '
     </div>
 </div>';
 
-echo '
+                echo '
 <script type="text/javascript">
 //<![CDATA[
 $(".tip").tooltipster({

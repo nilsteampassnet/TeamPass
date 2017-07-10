@@ -13,11 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -776,15 +775,15 @@ echo '
                     </td><td>
                     <input type="hidden" id="roles_allowed_to_print" name="roles_allowed_to_print" value="', isset($_SESSION['settings']['roles_allowed_to_print']) ? $_SESSION['settings']['roles_allowed_to_print'] : '', '" />
                     <select id="roles_allowed_to_print_select" name="roles_allowed_to_print_select" class="text ui-widget-content" multiple="multiple" onchange="refreshInput()">';
-                    if (!isset($_SESSION['settings']['roles_allowed_to_print']) || empty($_SESSION['settings']['roles_allowed_to_print'])) {
-                        $arrRolesToPrint = array();
-                    } else {
-                        $arrRolesToPrint = explode(";", $_SESSION['settings']['roles_allowed_to_print']);
-                    }
-                    $roles = DB::query("SELECT id, title FROM ".prefix_table("roles_title"));
-                    foreach ($roles as $role) {
-                        echo '<option value="'.$role['id'].'"', in_array($role['id'], $arrRolesToPrint) ? ' selected="selected"' : '', '>'.addslashes($role['title']).'</option>';
-                    }
+if (!isset($_SESSION['settings']['roles_allowed_to_print']) || empty($_SESSION['settings']['roles_allowed_to_print'])) {
+    $arrRolesToPrint = array();
+} else {
+    $arrRolesToPrint = explode(";", $_SESSION['settings']['roles_allowed_to_print']);
+}
+$roles = DB::query("SELECT id, title FROM ".prefix_table("roles_title"));
+foreach ($roles as $role) {
+    echo '<option value="'.$role['id'].'"', in_array($role['id'], $arrRolesToPrint) ? ' selected="selected"' : '', '>'.addslashes($role['title']).'</option>';
+}
 echo '
                         </select>
                 </td></tr>';

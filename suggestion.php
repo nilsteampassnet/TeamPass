@@ -12,13 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
     || !isset($_SESSION['settings']['enable_suggestion'])
-    || $_SESSION['settings']['enable_suggestion'] != 1)
-{
+    || $_SESSION['settings']['enable_suggestion'] != 1
+) {
     die('Hacking attempt...');
 }
 
@@ -55,8 +54,7 @@ if (isset($_SESSION['list_restricted_folders_for_items'])
 $selectVisibleFoldersOptions = "<option value=\"\">--".$LANG['select']."--</option>";
 foreach ($folders as $folder) {
     // Be sure that user can only see folders he/she is allowed to
-    if (
-        !in_array($folder->id, $_SESSION['forbiden_pfs'])
+    if (!in_array($folder->id, $_SESSION['forbiden_pfs'])
         || in_array($folder->id, $_SESSION['groupes_visibles'])
         || in_array($folder->id, $listFoldersLimitedKeys)
         || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
@@ -67,8 +65,7 @@ foreach ($folders as $folder) {
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
         foreach ($nodeDescendants as $node) {
-            if (
-                ($listFoldersLimitedKeys != null || is_array($listFoldersLimitedKeys)) &&
+            if (($listFoldersLimitedKeys != null || is_array($listFoldersLimitedKeys)) &&
                 (
                     in_array(
                         $node,

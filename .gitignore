@@ -3,3 +3,5 @@
 _utils/
 *.bck
 *.201*
+install1/
+backups/*.sql

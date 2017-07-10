@@ -14,8 +14,7 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
@@ -120,7 +119,8 @@ if (!empty($_POST['type'])) {
             // parse all users to remove this role
             $rows = DB::query(
                 "SELECT id, fonction_id FROM ".prefix_table("users")."
-                ORDER BY id ASC");
+                ORDER BY id ASC"
+            );
             foreach ($rows as $record) {
                 $tab = explode(";", $record['fonction_id']);
                 if (($key = array_search($_POST['id'], $tab)) !== false) {
@@ -314,7 +314,8 @@ if (!empty($_POST['type'])) {
             $rows = DB::query(
                 "SELECT * FROM ".prefix_table("roles_title").
                 $where."
-                ORDER BY title ASC".$sql_limit);
+                ORDER BY title ASC".$sql_limit
+            );
             foreach ($rows as $record) {
                 if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
                     if ($record['allow_pw_change'] == 1) {

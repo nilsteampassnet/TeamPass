@@ -1,19 +1,18 @@
 <?php
 /**
  *
- * @file 		  find.php
- * @author 		  Nils Laumaillé
+ * @file          find.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright 	  (c) 2009-2017 Nils Laumaillé
- * @licensing	  GNU AFFERO GPL 3.0
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 

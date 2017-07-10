@@ -70,8 +70,7 @@ if (isset($_GET['length']) && $_GET['length'] != '-1') {
 //Ordering
 if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
-    if (
-        preg_match("#^(asc|desc)\$#i", $_GET['order'][0]['column'])
+    if (preg_match("#^(asc|desc)\$#i", $_GET['order'][0]['column'])
     ) {
         $sOrder .= "".$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)]." "
         .mysqli_escape_string($link, $_GET['order'][0]['column']).", ";
@@ -146,7 +145,6 @@ if (DB::count() > 0) {
 }
 
 foreach ($rows as $record) {
-
     // Get list of allowed functions
     $listAlloFcts = "";
     if ($record['admin'] != 1) {
@@ -193,8 +191,7 @@ foreach ($rows as $record) {
     }
 
     //Show user only if can be administrated by the adapted Roles manager
-    if (
-        $_SESSION['is_admin'] ||
+    if ($_SESSION['is_admin'] ||
         ($record['isAdministratedByRole'] > 0 &&
         in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
         ($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)

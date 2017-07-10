@@ -64,7 +64,12 @@ if (isset($_POST['type'])) {
 
                 // SysLog
                 if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                    send_syslog("The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".", "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+                    send_syslog(
+                        "The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".",
+                        $_SESSION['settings']['syslog_host'],
+                        $_SESSION['settings']['syslog_port'],
+                        "teampass"
+                    );
                 }
             }
 
@@ -87,7 +92,12 @@ if (isset($_POST['type'])) {
 
                 // SysLog
                 if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                    send_syslog("The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".", "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+                    send_syslog(
+                        "The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".",
+                        $_SESSION['settings']['syslog_host'],
+                        $_SESSION['settings']['syslog_port'],
+                        "teampass"
+                    );
                 }
             }
 

@@ -91,8 +91,7 @@ foreach ($treeDesc as $t) {
         $sOutput .= "[";
 
         //col1
-        if (
-            ($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
+        if (($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
             ||
             $t->parent_id != 0
         ) {

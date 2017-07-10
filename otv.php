@@ -51,9 +51,7 @@ if (
         WHERE code = %s",
         $_GET['code']
     );
-    if (
-        $data['timestamp'] == intval($_GET['stamp'])
-    ) {
+    if ( $data['timestamp'] == intval($_GET['stamp'])) {
         // otv is too old
         if ($data['timestamp'] < (time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";
@@ -86,8 +84,7 @@ if (
                             "item_id = %i",
                             $data['item_id']
                         );
-                    } elseif (
-                        $dataDelete['del_type'] == 1 && $dataDelete['del_value'] <= 1
+                    } elseif ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] <= 1
                         || $dataDelete['del_type'] == 2 && $dataDelete['del_value'] < time()
                     ) {
                         // delete item
@@ -104,8 +101,8 @@ if (
                         // log
                         logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_delete', 'otv', 'at_automatically_deleted');
 
-                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.addslashes(
-                            $LANG['not_allowed_to_see_pw_is_expired']).'</div>';
+                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.
+                        addslashes($LANG['not_allowed_to_see_pw_is_expired']).'</div>';
                         return false;
                     }
                 }

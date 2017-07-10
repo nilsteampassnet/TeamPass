@@ -13,8 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
@@ -133,12 +132,12 @@ echo '
     <div id="change_user_adminby_list" style="margin:20px 0 0 15px;">
         <select id="user_admin_by" class="input_text text ui-widget-content ui-corner-all">
             <option value="0">'.$LANG['administrators_only'].'</option>';
-    foreach ($rolesList as $fonction) {
-        if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
-            echo '
+foreach ($rolesList as $fonction) {
+    if ($_SESSION['is_admin'] || in_array($fonction['id'], $_SESSION['user_roles'])) {
+        echo '
             <option value="'.$fonction['id'].'">'.$LANG['managers_of'].' "'.htmlentities($fonction['title'], ENT_QUOTES, "UTF-8").'"</option>';
-        }
     }
+}
     echo '
         </select>
     </div>
@@ -441,7 +440,7 @@ echo '
         <br>
         <label for="share_rights_details_4" class="form_label"><span class="fa fa-hand-o-right"></span>&nbsp;'.$LANG['forbidden_groups'].'</label>
         <span id="share_rights_details_4"></span>
-        <input type="hidden" id="share_rights_details_ids_4" />        
+        <input type="hidden" id="share_rights_details_ids_4" />
         <input type="hidden" id="share_rights_details_other" />
     </div>
 

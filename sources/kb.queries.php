@@ -14,13 +14,12 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])
-        || !isset($_SESSION['settings']['enable_kb'])
-        || $_SESSION['settings']['enable_kb'] != 1)
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+    || !isset($_SESSION['settings']['enable_kb'])
+    || $_SESSION['settings']['enable_kb'] != 1
+) {
     die('Hacking attempt...');
 }
 
@@ -120,7 +119,8 @@ if (!empty($_POST['type'])) {
                             'category_id' => $cat_id,
                             'anyone_can_modify' => $anyone_can_modify
                         ),
-                        "id=%i", $id
+                        "id=%i",
+                        $id
                     );
                 } else {
                     //add new KB

@@ -12,13 +12,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])
-        || !isset($_SESSION['settings']['enable_kb'])
-        || $_SESSION['settings']['enable_kb'] != 1)
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+    || !isset($_SESSION['settings']['enable_kb'])
+    || $_SESSION['settings']['enable_kb'] != 1
+) {
     die('Hacking attempt...');
 }
 
@@ -105,50 +104,50 @@ echo '
     <div style="float:left;width:100%;margin-top:15px;">
         <label for="kb_associated_to" class="label">'.$LANG['associate_kb_to_items'].'</label>
         <select id="kb_associated_to" class="multiselect" multiple="multiple" name="kb_associated_to[]" style="width: 860px; height: 150px;">';
-            //get list of available items
-            $items_id_list = array();
-            if (empty($_SESSION['list_folders_limited'])) {
-                $_SESSION['list_folders_limited'] = array();
-            }
-            $rows = DB::query(
-                "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                    l.date as date
-                FROM ".prefix_table("items")." as i
-                INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                WHERE i.inactif = %i
-                AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                AND i.id_tree IN %ls
-                ORDER BY i.label ASC, l.date DESC",
-                '0',
-                'at_creation',
-                'at_modification',
-                'at_pw :%',
-                array_unique(
-                    array_merge(
-                        $_SESSION['all_non_personal_folders'],
-                        $_SESSION['list_folders_editable_by_role'],
-                        $_SESSION['list_restricted_folders_for_items'],
-                        $_SESSION['list_folders_limited']
-                    )
-                )
-            );
-            foreach ($rows as $reccord) {
-                if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
-                    // exclude item if it is restricted to a group the user doesn't have
-                    $include_item = false;
-                    if (empty($reccord['restricted_to'])) {
-                        $include_item = true;
-                    } else if (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
-                        $include_item = true;
-                    }
-                    if ($include_item === true) {
-                        echo '
-                        <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
-                        array_push($items_id_list, $reccord['id']);
-                    }
-                }
-            }
-        echo '
+//get list of available items
+$items_id_list = array();
+if (empty($_SESSION['list_folders_limited'])) {
+    $_SESSION['list_folders_limited'] = array();
+}
+$rows = DB::query(
+    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
+        l.date as date
+    FROM ".prefix_table("items")." as i
+    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+    WHERE i.inactif = %i
+    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+    AND i.id_tree IN %ls
+    ORDER BY i.label ASC, l.date DESC",
+    '0',
+    'at_creation',
+    'at_modification',
+    'at_pw :%',
+    array_unique(
+        array_merge(
+            $_SESSION['all_non_personal_folders'],
+            $_SESSION['list_folders_editable_by_role'],
+            $_SESSION['list_restricted_folders_for_items'],
+            $_SESSION['list_folders_limited']
+        )
+    )
+);
+foreach ($rows as $reccord) {
+    if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
+        // exclude item if it is restricted to a group the user doesn't have
+        $include_item = false;
+        if (empty($reccord['restricted_to'])) {
+            $include_item = true;
+        } else if (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
+            $include_item = true;
+        }
+        if ($include_item === true) {
+            echo '
+            <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
+            array_push($items_id_list, $reccord['id']);
+        }
+    }
+}
+echo '
         </select>
     </div>
 </div>';

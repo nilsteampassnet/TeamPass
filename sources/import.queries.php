@@ -42,7 +42,8 @@ define('KP_NOTES', 7);
 /**
  * @param string $crLFReplacement
  */
-function sanitiseString($str, $crLFReplacement) {
+function sanitiseString($str, $crLFReplacement)
+{
     $str = preg_replace('#[\r\n]#', $crLFReplacement, $str);
     $str = str_replace('\\', '&#92;', $str);
     $str = str_replace('"', "&quot;", $str);
@@ -131,7 +132,7 @@ switch ($_POST['type']) {
             ;
             // extract data from CSV file
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
                     'Label'     => $row[0],
                     'Login'     => $row[1],
@@ -649,7 +650,7 @@ switch ($_POST['type']) {
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
         if ($numItems > 0 || $numGroups > 0) {
-
+            // Write in file
             fputs($cacheLogFile, date('H:i:s ').$LANG['nb_folders'].' '.$numGroups."\n");
             fputs($cacheLogFile, date('H:i:s ').$LANG['nb_items'].' '.$numItems."\n");
 
@@ -664,7 +665,7 @@ switch ($_POST['type']) {
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;
                 $import_perso = true;
-            } else if ($_POST['destination'] > 0) {
+            } elseif ($_POST['destination'] > 0) {
                 $data = DB::queryFirstRow(
                     "SELECT m.valeur as value, t.nlevel as nlevel
                     FROM ".prefix_table("misc")." as m
@@ -954,8 +955,9 @@ switch ($_POST['type']) {
         }
         break;
 }
-spl_autoload_register(function($class) {
-    $prefix = 'League\\Csv\\'; echo "ici2";
+
+spl_autoload_register(function ($class) {
+    $prefix = 'League\\Csv\\';
     $base_dir = __DIR__.'/src/';
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {

@@ -87,7 +87,7 @@ $last_visible_parent_level = 1;
 // build the tree to be displayed
 if (isset($_GET['id']) && is_numeric(intval($_GET['id'])) && isset($_SESSION['user_settings']['treeloadstrategy']) && $_SESSION['user_settings']['treeloadstrategy'] == "sequential") {
     buildNodeTree($_GET['id']);
-} else if (isset($_SESSION['user_settings']['treeloadstrategy']) && $_SESSION['user_settings']['treeloadstrategy'] == "sequential") {
+} elseif (isset($_SESSION['user_settings']['treeloadstrategy']) && $_SESSION['user_settings']['treeloadstrategy'] == "sequential") {
     buildNodeTree(0);
 } else {
     $completTree = $tree->getTreeWithChildren();
@@ -105,8 +105,7 @@ function buildNodeTree($nodeId)
     global $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG, $last_visible_parent, $last_visible_parent_level;
 
     // Be sure that user can only see folders he/she is allowed to
-    if (
-        !in_array($nodeId, $_SESSION['forbiden_pfs'])
+    if (!in_array($nodeId, $_SESSION['forbiden_pfs'])
         || in_array($nodeId, $_SESSION['groupes_visibles'])
         || in_array($nodeId, $listFoldersLimitedKeys)
         || in_array($nodeId, $listRestrictedFoldersForItemsKeys)
@@ -119,8 +118,7 @@ function buildNodeTree($nodeId)
         $nodeDescendants = $tree->getDescendants($nodeId, false, true, false);
         foreach ($nodeDescendants as $node) {
             $displayThisNode = false;
-            if (
-                (!in_array($node->id, $_SESSION['forbiden_pfs'])
+            if ((!in_array($node->id, $_SESSION['forbiden_pfs'])
                 || in_array($node->id, $_SESSION['groupes_visibles'])
                 || in_array($node->id, $listFoldersLimitedKeys)
                 || in_array($node->id, $listRestrictedFoldersForItemsKeys)) && (
@@ -184,7 +182,7 @@ function buildNodeTree($nodeId)
                         $title = $LANG['read_only_account'];
                         $restricted = 1;
                         $folderClass = "folder_not_droppable";
-                    } else if ($_SESSION['user_read_only'] === true && !in_array($node->id, $_SESSION['personal_visible_groups'])) {
+                    } elseif ($_SESSION['user_read_only'] === true && !in_array($node->id, $_SESSION['personal_visible_groups'])) {
                         $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.$itemsNb.'</span>';
@@ -240,7 +238,7 @@ function buildNodeTree($nodeId)
                         ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$node->id.'] '.$title.'"}'.
                         ', "a_attr":{"id":"fld_'.$node->id.'", "class":"'.$folderClass.' nodblclick" , "onclick":"ListerItems(\''.$node->id.'\', \''.$restricted.'\', 0, 1)"}'.
                     '}';
-                } else if ($show_but_block === true) {
+                } elseif ($show_but_block === true) {
                     $ret_json .= '{'.
                         '"id":"li_'.$node->id.'"'.
                         ', "parent":"'.$parent.'"'.
@@ -262,8 +260,7 @@ function recursiveTree($nodeId)
     global $completTree, $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG, $last_visible_parent, $last_visible_parent_level;
 
     // Be sure that user can only see folders he/she is allowed to
-    if (
-        !in_array($completTree[$nodeId]->id, $_SESSION['forbiden_pfs'])
+    if (!in_array($completTree[$nodeId]->id, $_SESSION['forbiden_pfs'])
         || in_array($completTree[$nodeId]->id, $_SESSION['groupes_visibles'])
         || in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys)
         || in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys)
@@ -285,8 +282,7 @@ function recursiveTree($nodeId)
                 );
                 $nbChildrenItems += DB::count();
             }
-            if (
-                in_array(
+            if (in_array(
                     $node,
                     array_merge(
                         $_SESSION['groupes_visibles'],
@@ -332,7 +328,7 @@ function recursiveTree($nodeId)
                     $title = $LANG['read_only_account'];
                     $restricted = 1;
                     $folderClass = "folder_not_droppable";
-                } else if ($_SESSION['user_read_only'] === true && !in_array($completTree[$nodeId]->id, $_SESSION['personal_visible_groups'])) {
+                } elseif ($_SESSION['user_read_only'] === true && !in_array($completTree[$nodeId]->id, $_SESSION['personal_visible_groups'])) {
                     $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.$itemsNb.'</span>';
@@ -386,7 +382,7 @@ function recursiveTree($nodeId)
                 if ($hide_node === true) {
                     $last_visible_parent = $parent;
                     $last_visible_parent_level = $completTree[$nodeId]->nlevel--;
-                } else if ($completTree[$nodeId]->nlevel < $last_visible_parent_level) {
+                } elseif ($completTree[$nodeId]->nlevel < $last_visible_parent_level) {
                     $last_visible_parent = "";
                 }
             }
@@ -401,7 +397,7 @@ function recursiveTree($nodeId)
                     ', "li_attr":{"class":"jstreeopen", "title":"ID ['.$completTree[$nodeId]->id.'] '.$title.'"}'.
                     ', "a_attr":{"id":"fld_'.$completTree[$nodeId]->id.'", "class":"'.$folderClass.'" , "onclick":"ListerItems(\''.$completTree[$nodeId]->id.'\', \''.$restricted.'\', 0, 1)", "ondblclick":"LoadTreeNode(\''.$completTree[$nodeId]->id.'\')"}'.
                 '}';
-            } else if ($show_but_block === true) {
+            } elseif ($show_but_block === true) {
                 $ret_json .= (!empty($ret_json) ? ", " : "").'{'.
                     '"id":"li_'.$completTree[$nodeId]->id.'"'.
                     ', "parent":"'.(empty($last_visible_parent) ? $parent : $last_visible_parent).'"'.

@@ -14,8 +14,7 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
     || !isset($_SESSION['settings']['enable_suggestion'])
@@ -134,7 +133,7 @@ if (!empty($_POST['type'])) {
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';
             }
-        break;
+            break;
 
         case "delete_suggestion":
             // Check KEY
@@ -143,7 +142,7 @@ if (!empty($_POST['type'])) {
                 break;
             }
             DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
-        break;
+            break;
 
         case "duplicate_suggestion":
             // Check KEY
@@ -282,7 +281,9 @@ if (!empty($_POST['type'])) {
             }
 
             $data = DB::queryfirstrow(
-                "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s", $_POST['folder_id'], "complex"
+                "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
+                $_POST['folder_id'],
+                "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
                 $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
@@ -291,7 +292,7 @@ if (!empty($_POST['type'])) {
             }
 
             echo '[ { "status" : "ok" , "complexity" : "'.$data['valeur'].'" , "complexity_text" : "'.$complexity.'" } ]';
-        break;
+            break;
 
         case "get_item_change_detail":
             // Check KEY
@@ -401,7 +402,7 @@ if (!empty($_POST['type'])) {
                 ),
                 "encode"
             );
-        break;
+            break;
 
 
         case "approve_item_change":
@@ -438,8 +439,7 @@ if (!empty($_POST['type'])) {
             );
 
             // is user allowed?
-            if (
-                (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] !== "1") &&
+            if ((isset($_SESSION['user_admin']) && $_SESSION['user_admin'] !== "1") &&
                 (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] !== "1") &&
                 ($data['user_id'] !== $_SESSION['user_id']) &&
                 ($ret_item_creator['id_user'] !== $_SESSION['user_id'])
@@ -495,7 +495,7 @@ if (!empty($_POST['type'])) {
             );
 
             echo '[ { "error" : "" } ]';
-        break;
+            break;
 
 
         case "reject_item_change":
@@ -512,6 +512,6 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
 
-        break;
+            break;
     }
 }

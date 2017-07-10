@@ -60,7 +60,7 @@ if ($_POST['type'] === "identify_duo_user") {
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
-
+// DUO Identification
 } elseif ($_POST['type'] == "identify_duo_user_check") {
 //--------
 // DUO AUTHENTICATION
@@ -116,7 +116,7 @@ if ($_POST['type'] === "identify_duo_user") {
             WHERE login = %s",
             filter_var($_POST['login'], FILTER_SANITIZE_STRING)
         );
-    } else if (!empty($_POST['cardid']) && is_numeric($_POST['cardid'])) {
+    } elseif (!empty($_POST['cardid']) && is_numeric($_POST['cardid'])) {
         // card id is given
         // save it in DB
         DB::update(
@@ -217,8 +217,11 @@ if ($_POST['type'] === "identify_duo_user") {
         echo '[{"error" : "bruteforce_wait"}]';
         return false;
     }
-
 } elseif ($_POST['type'] == "store_data_in_cookie") {
+//--------
+// STORE DATA IN COOKIE
+//--------
+//
     // not used any more (only development purpose)
     if ($_POST['key'] != $_SESSION['key']) {
         echo '[{"error" : "something_wrong"}]';
@@ -391,9 +394,9 @@ function identifyUser($sentData)
                         $result_group = ldap_search($ldapconn, $_SESSION['settings']['ldap_usergroup'], $filter_group, array('dn'));
                         if ($debugLdap == 1) {
                                 fputs(
-                                        $dbgLdap,
-                                        'Search filter (group): '.$filter_group."\n".
-                                        'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
+                                    $dbgLdap,
+                                    'Search filter (group): '.$filter_group."\n".
+                                    'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
                                 );
                         }
                         if (!ldap_count_entries($ldapconn, $result_group)) {
@@ -522,7 +525,7 @@ function identifyUser($sentData)
                 ); //Debug
             }
         }
-    } else if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2) {
+    } elseif (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2) {
         // nothing
     }
     if ($debugDuo == 1) {
@@ -534,10 +537,9 @@ function identifyUser($sentData)
 
 
     // Check PSK
-    if (
-            isset($_SESSION['settings']['psk_authentication'])
-            && $_SESSION['settings']['psk_authentication'] == 1
-            && $data['admin'] != 1
+    if (isset($_SESSION['settings']['psk_authentication'])
+        && $_SESSION['settings']['psk_authentication'] == 1
+        && $data['admin'] != 1
     ) {
         $psk = htmlspecialchars_decode($dataReceived['psk']);
         $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
@@ -660,7 +662,6 @@ function identifyUser($sentData)
                     echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
                     exit();
-
                 }
             } else {
                 // verify the user GA code
@@ -675,7 +676,7 @@ function identifyUser($sentData)
             $proceedIdentification = false;
             $logError = "ga_code_wrong";
         }
-    } else if ($counter > 0) {
+    } elseif ($counter > 0) {
         $proceedIdentification = true;
     }
 
@@ -691,16 +692,16 @@ function identifyUser($sentData)
     if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 && $username != "admin") {
         // load AGSES
         include_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
-            $agses = new AXSILPortal_V1_Auth();
-            $agses->setUrl($_SESSION['settings']['agses_hosted_url']);
-            $agses->setAAId($_SESSION['settings']['agses_hosted_id']);
-            //for release there will be another api-key - this is temporary only
-            $agses->setApiKey($_SESSION['settings']['agses_hosted_apikey']);
-            $agses->create();
-            //create random salt and store it into session
-            if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
-                $_SESSION['hedgeId'] = md5(time());
-            }
+        $agses = new AXSILPortal_V1_Auth();
+        $agses->setUrl($_SESSION['settings']['agses_hosted_url']);
+        $agses->setAAId($_SESSION['settings']['agses_hosted_id']);
+        //for release there will be another api-key - this is temporary only
+        $agses->setApiKey($_SESSION['settings']['agses_hosted_apikey']);
+        $agses->create();
+        //create random salt and store it into session
+        if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+            $_SESSION['hedgeId'] = md5(time());
+        }
 
         $responseCode = $passwordClear;
         if ($responseCode != "" && strlen($responseCode) >= 4) {
@@ -721,15 +722,15 @@ function identifyUser($sentData)
             } else {
                 if ($result < -10) {
                     $logError = "ERROR: ".$result;
-                } else if ($result == -4) {
+                } elseif ($result == -4) {
                     $logError = "Wrong response code, no more tries left.";
-                } else if ($result == -3) {
+                } elseif ($result == -3) {
                     $logError = "Wrong response code, try to reenter.";
-                } else if ($result == -2) {
+                } elseif ($result == -2) {
                     $logError = "Timeout. The response code is not valid anymore.";
-                } else if ($result == -1) {
+                } elseif ($result == -1) {
                     $logError = "Security Error. Did you try to verify the response from a different computer?";
-                } else if ($result == 1) {
+                } elseif ($result == 1) {
                     $logError = "Authentication successful, response code correct.
                           <br /><br />Authentification Method for SecureBrowser updated!";
                     // Add necessary code here for accessing your Business Application
@@ -742,9 +743,8 @@ function identifyUser($sentData)
 
                 exit();
             }
-
         } else {
-
+            // We have an error here
             $return = "agses_error";
             $logError = "No response code given";
 
@@ -774,9 +774,8 @@ function identifyUser($sentData)
     if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
         // User exists in the DB
         //v2.1.17 -> change encryption for users password
-        if (
-                $passwordOldEncryption == $data['pw'] &&
-                !empty($data['pw'])
+        if ($passwordOldEncryption == $data['pw'] &&
+            !empty($data['pw'])
         ) {
             //update user's password
             $data['pw'] = bCrypt($passwordClear, COST);
@@ -824,22 +823,25 @@ function identifyUser($sentData)
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
-        if (
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
+        if ((
+                isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 0
                 && $userPasswordVerified === true && $data['disabled'] == 0
-                )
-                ||
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+            )
+            ||
+            (
+                isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                 && $ldapConnection === true && $data['disabled'] == 0 && $username != "admin"
-                )
-                ||
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
+            )
+            ||
+            (
+                isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 2
                 && $ldapConnection === true && $data['disabled'] == 0 && $username != "admin"
-                )
-                ||
-                (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
+            )
+            ||
+            (
+                isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1
                 && $username == "admin" && $userPasswordVerified === true && $data['disabled'] == 0
-                )
+            )
         ) {
             $_SESSION['autoriser'] = true;
             $_SESSION["pwd_attempts"] = 0;
@@ -894,11 +896,9 @@ function identifyUser($sentData)
             $_SESSION['fin_session'] = (integer) (time() + $_SESSION['user_settings']['session_duration']);
 
             /* If this option is set user password MD5 is used as personal SALTKey */
-            if (
-                isset($_SESSION['settings']['use_md5_password_as_salt']) &&
+            if (isset($_SESSION['settings']['use_md5_password_as_salt']) &&
                 $_SESSION['settings']['use_md5_password_as_salt'] == 1
-            )
-            {
+            ) {
                 $_SESSION['my_sk'] = md5($passwordClear);
                 setcookie(
                     "TeamPass_PFSK_".md5($_SESSION['user_id']),

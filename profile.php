@@ -15,8 +15,7 @@
 
 require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
@@ -95,11 +94,11 @@ echo '
       <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
          <ul class="menu_250" style="text-align:left;">
             <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
-            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) {
-                echo '
+if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) {
+    echo '
             <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
-            }
-            echo '
+}
+echo '
             <li id="but_change_psk"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['menu_title_new_personal_saltkey'].'</li>
             <li id="but_reset_psk"><i class="fa fa-eraser fa-fw"></i> &nbsp;'.$LANG['personal_saltkey_lost'].'</li>
          </ul>

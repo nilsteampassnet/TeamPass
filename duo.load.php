@@ -15,9 +15,7 @@
 
 require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1)
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';

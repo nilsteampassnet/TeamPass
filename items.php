@@ -13,11 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -535,29 +534,29 @@ echo '
         </div>';
 // Tabs N°4
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
-echo '
+    echo '
         <div id="tabs-04">
             <div id="item_more">';
-                // load all categories and fields
-                foreach ($_SESSION['item_fields'] as $elem) {
-                    $itemCatName = $elem[0];
-                    echo '
-                    <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
-                        <div style="font-weight:bold;font-size:12px;">
-                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
-                        </div>';
-                    foreach ($elem[2] as $field) {
-                        echo '
-                        <div style="margin:2px 0 2px 15px;">
-                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                            <label class="cpm_label">'.$field[1].'</span>
-                            <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
-                        </div>';
-                    }
-                    echo '
+    // load all categories and fields
+    foreach ($_SESSION['item_fields'] as $elem) {
+        $itemCatName = $elem[0];
+        echo '
+                <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
+                    <div style="font-weight:bold;font-size:12px;">
+                        <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                     </div>';
-                }
-            echo '
+        foreach ($elem[2] as $field) {
+                echo '
+                    <div style="margin:2px 0 2px 15px;">
+                        <span class="fa fa-tag mi-grey-1">&nbsp;</span>
+                        <label class="cpm_label">'.$field[1].'</span>
+                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                    </div>';
+        }
+        echo '
+                </div>';
+    }
+    echo '
             </div>
         </div>';
 }
@@ -700,10 +699,10 @@ echo '
                 <div style="line-height:10px;">&nbsp;</div>
                 <label for="" class="label_cpm">'.$LANG['email_announce'].' : </label>
                 <select id="edit_annonce_liste_destinataires" multiple="multiple" style="width:100%">';
-                foreach ($usersList as $user) {
-                    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-                }
-                echo '
+foreach ($usersList as $user) {
+    echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
+}
+echo '
                 </select>
             </div>';
 
@@ -729,28 +728,28 @@ echo '
         </div>';
 // Tabs EDIT N°4 -> Categories
 if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1) {
-echo '
+    echo '
         <div id="tabs-4">
             <div id="edit_item_more">';
-                // load all categories and fields
-                foreach ($_SESSION['item_fields'] as $elem) {
-                    echo '
-                    <div class="editItemCat" id="editItemCatName_'.$elem[0].'">
-                        <div style="font-weight:bold;font-size:12px;">
-                            <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
-                        </div>';
-                    foreach ($elem[2] as $field) {
-                        echo '
-                        <div style="margin:2px 0 2px 15px;">
-                            <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                            <label class="cpm_label">'.$field[1].'</label>
-                            <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
-                        </div>';
-                    }
-                    echo '
+    // load all categories and fields
+    foreach ($_SESSION['item_fields'] as $elem) {
+        echo '
+                <div class="editItemCat" id="editItemCatName_'.$elem[0].'">
+                    <div style="font-weight:bold;font-size:12px;">
+                        <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                     </div>';
-                }
+        foreach ($elem[2] as $field) {
             echo '
+                    <div style="margin:2px 0 2px 15px;">
+                        <span class="fa fa-tag mi-grey-1">&nbsp;</span>
+                        <label class="cpm_label">'.$field[1].'</label>
+                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
+                    </div>';
+        }
+        echo '
+                </div>';
+    }
+    echo '
             </div>
         </div>
     </div>';

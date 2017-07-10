@@ -12,8 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key']))
 {
@@ -369,24 +368,24 @@ echo '
         </div>
     </div>
     <div id="tabs-3">';
-        // Display the readme file
-        $Fnm = "changelog.md";
-        if (file_exists($Fnm)) {
-            $tab = file($Fnm);
-            echo '
-                <h3>'.$LANG['changelog'].'</h3>';
-            $show = false;
-            $cnt = 0;
-            while (list($cle, $val) = each($tab)) {
-                if ($cnt < 30) {
-                    echo $val."<br />";
-                    $cnt++;
-                } elseif ($cnt == 30) {
-                    echo '...<br /><br /><b><a href="changelog.md" target="_blank"><span class="fa fa-book"></span>&nbsp;'.$LANG['readme_open'].'</a></b>';
-                    break;
-                }
-            }
+// Display the readme file
+$Fnm = "changelog.md";
+if (file_exists($Fnm)) {
+    $tab = file($Fnm);
+    echo '
+        <h3>'.$LANG['changelog'].'</h3>';
+    $show = false;
+    $cnt = 0;
+    while (list($cle, $val) = each($tab)) {
+        if ($cnt < 30) {
+            echo $val."<br />";
+            $cnt++;
+        } elseif ($cnt == 30) {
+            echo '...<br /><br /><b><a href="changelog.md" target="_blank"><span class="fa fa-book"></span>&nbsp;'.$LANG['readme_open'].'</a></b>';
+            break;
         }
+    }
+}
 echo '
     </div>
     <div id="tabs-4">

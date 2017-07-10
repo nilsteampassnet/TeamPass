@@ -173,20 +173,20 @@ if (isset($_SESSION['CPM'])) {
     <?php
 
 /* HEADER */
-echo '
+    echo '
     <div id="top">
         <div id="logo"><img src="includes/images/canevas/logo.png" alt="" /></div>';
-// Display menu
-if (isset($_SESSION['login'])) {
-    // welcome message
-    echo '
+    // Display menu
+    if (isset($_SESSION['login'])) {
+        // welcome message
+        echo '
         <div style="float:right; margin:-10px 5px 0 0; color:#FFF;">'.$LANG['index_welcome'].'&nbsp;<b>'.$_SESSION['name'].'&nbsp;'.$_SESSION['lastname'].'&nbsp;['.$_SESSION['login'].']</b>&nbsp;-&nbsp;', $_SESSION['user_admin'] == 1 ? $LANG['god'] : ($_SESSION['user_manager'] == 1 ? $LANG['gestionnaire'] : ($_SESSION['user_read_only'] == 1 ? $LANG['read_only_account'] : $LANG['user'])), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
 
-    echo '
+        echo '
         <div id="menu_top">
             <div style="margin-left:20px; margin-top:2px;width:710px;" id="main_menu">';
-    if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
-        echo '
+        if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
+            echo '
                 <a class="btn btn-default" href="#"',
                 (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
                 || (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) ? '' : ' onclick="MenuAction(\'items\')"',
@@ -200,55 +200,53 @@ if (isset($_SESSION['login'])) {
                 '>
                     <i class="fa fa-binoculars fa-2x tip" title="'.$LANG['find'].'"></i>
                 </a>';
-    }
+        }
 
-    // Favourites menu
-    if (
-        isset($_SESSION['settings']['enable_favourites'])
-        && $_SESSION['settings']['enable_favourites'] == 1
-        &&
-        ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false))
-    ) {
+        // Favourites menu
+        if (isset($_SESSION['settings']['enable_favourites'])
+            && $_SESSION['settings']['enable_favourites'] == 1
+            &&
+            ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false))
+        ) {
+            echo '
+                    <a class="btn btn-default" href="#" onclick="MenuAction(\'favourites\')">
+                        <i class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'"></i>
+                    </a>';
+        }
+        // KB menu
+        if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
+            echo '
+                    <a class="btn btn-default" href="#" onclick="MenuAction(\'kb\')">
+                        <i class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'"></i>
+                    </a>';
+        }
         echo '
-                <a class="btn btn-default" href="#" onclick="MenuAction(\'favourites\')">
-                    <i class="fa fa-star fa-2x tip" title="'.$LANG['my_favourites'].'"></i>
-                </a>';
-    }
-    // KB menu
-    if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
-        echo '
-                <a class="btn btn-default" href="#" onclick="MenuAction(\'kb\')">
-                    <i class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'"></i>
-                </a>';
-    }
-    echo '
-    <span id="menu_suggestion_position">';
-    // SUGGESTION menu
-    if (
-        isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
-        && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
-    ) {
-        echo '
+        <span id="menu_suggestion_position">';
+        // SUGGESTION menu
+        if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+            && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
+        ) {
+            echo '
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'suggestion\')">
                     <i class="fa fa-lightbulb-o fa-2x tip" id="menu_icon_suggestions" title="'.$LANG['suggestion_menu'].'"></i>
                 </a>';
-    }
-    echo '
-    </span>';
-    // Admin menu
-    if ($_SESSION['user_admin'] == 1) {
+        }
         echo '
-                &nbsp;
-                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_main\')">
-                    <i class="fa fa-info fa-2x tip" title="'.$LANG['admin_main'].'"></i>
-                </a>
-                <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_settings\')">
-                    <i class="fa fa-wrench fa-2x tip" title="'.$LANG['admin_settings'].'"></i>
-                </a>';
-    }
+        </span>';
+        // Admin menu
+        if ($_SESSION['user_admin'] == 1) {
+            echo '
+                    &nbsp;
+                    <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_main\')">
+                        <i class="fa fa-info fa-2x tip" title="'.$LANG['admin_main'].'"></i>
+                    </a>
+                    <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_settings\')">
+                        <i class="fa fa-wrench fa-2x tip" title="'.$LANG['admin_settings'].'"></i>
+                    </a>';
+        }
 
-    if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
-        echo '
+        if ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1) {
+            echo '
                 &nbsp;
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_folders\')">
                     <i class="fa fa-folder-open fa-2x tip" title="'.$LANG['admin_groups'].'"></i>
@@ -262,9 +260,9 @@ if (isset($_SESSION['login'])) {
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_views\')">
                     <i class="fa fa-cubes fa-2x tip" title="'.$LANG['admin_views'].'"></i>
                 </a>';
-    }
+        }
 
-    echo '
+        echo '
                 <div style="float:right;">
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
@@ -287,8 +285,8 @@ if (isset($_SESSION['login'])) {
                     </ul>
                 </div>';
 
-    if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)) {
-        echo '
+        if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)) {
+            echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-map fa-fw"></i>&nbsp;&nbsp;
@@ -298,32 +296,32 @@ if (isset($_SESSION['login'])) {
                         </li>
                     </ul>
                 </div>';
-    }
+        }
 
-    // show avatar
-    if (isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb'])) {
-        if (file_exists('includes/avatars/'.$_SESSION['user_avatar_thumb'])) {
-            $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'];
+        // show avatar
+        if (isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb'])) {
+            if (file_exists('includes/avatars/'.$_SESSION['user_avatar_thumb'])) {
+                $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'];
+            } else {
+                $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+            }
         } else {
             $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
         }
-    } else {
-        $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
-    }
-    echo '
+        echo '
                 <div style="float:right; margin-right:10px;">
                     <img src="'.$avatar.'" style="border-radius:10px; height:28px; cursor:pointer;" onclick="loadProfileDialog()" alt="photo" id="user_avatar_thumb" />
                 </div>';
 
-    echo '
+        echo '
+                </div>';
+
+        echo '
             </div>';
+    }
 
     echo '
         </div>';
-}
-
-echo '
-    </div>';
 
     echo '
 <div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
@@ -331,7 +329,7 @@ echo '
 </div>';
 
 /* MAIN PAGE */
-echo '
+    echo '
         <input type="hidden" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
         <input type="hidden" name="language" id="language" value="" />
         <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
@@ -342,110 +340,110 @@ echo '
         <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? $_POST['sig_response'] : '', '" />';
 
 // SENDING STATISTICS?
-if (
-    isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1
-    && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
-) {
-    echo '
-        <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
-} else {
-    echo '
-    <input type="hidden" name="send_statistics" id="send_statistics" value="0" />';
-}
+    if (
+        isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1
+        && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
+    ) {
+        echo '
+            <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
+    } else {
+        echo '
+        <input type="hidden" name="send_statistics" id="send_statistics" value="0" />';
+    }
 
-echo '
+    echo '
     <div id="', (isset($_GET['page']) && filter_var($_GET['page'], FILTER_SANITIZE_STRING) === "items" && isset($_SESSION['user_id'])) ? "main_simple" : "main", '">';
 // MESSAGE BOX
-echo '
-        <div style="" class="div_center">
-            <div id="message_box" style="display:none;width:200px;padding:5px;text-align:center; z-index:999999;" class="ui-widget-content ui-state-error ui-corner-all"></div>
-        </div>';
-// Main page
-if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] === true) {
-    // Show menu
     echo '
-        <form method="post" name="main_form" action="">
-            <input type="hidden" name="menu_action" id="menu_action" value="" />
-            <input type="hidden" name="changer_pw" id="changer_pw" value="" />
-            <input type="hidden" name="form_user_id" id="form_user_id" value="', isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '', '" />
-            <input type="hidden" name="is_admin" id="is_admin" value="', isset($_SESSION['is_admin']) ? $_SESSION['is_admin'] : '', '" />
-            <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['my_sk']) ? true : false, '" />
-        </form>';
-}
+            <div style="" class="div_center">
+                <div id="message_box" style="display:none;width:200px;padding:5px;text-align:center; z-index:999999;" class="ui-widget-content ui-state-error ui-corner-all"></div>
+            </div>';
+    // Main page
+    if (isset($_SESSION['autoriser']) && $_SESSION['autoriser'] === true) {
+        // Show menu
+        echo '
+            <form method="post" name="main_form" action="">
+                <input type="hidden" name="menu_action" id="menu_action" value="" />
+                <input type="hidden" name="changer_pw" id="changer_pw" value="" />
+                <input type="hidden" name="form_user_id" id="form_user_id" value="', isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '', '" />
+                <input type="hidden" name="is_admin" id="is_admin" value="', isset($_SESSION['is_admin']) ? $_SESSION['is_admin'] : '', '" />
+                <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['my_sk']) ? true : false, '" />
+            </form>';
+    }
 // ---------
 // Display a help to admin
-$errorAdmin = "";
-// error nb folders
-if (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) {
-    $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_folders'].'<br />';
-}
-// error nb roles
-if (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) {
-    if (empty($errorAdmin)) {
-        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
-    } else {
-        $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
-    }
-}
+    $errorAdmin = "";
 
-if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
-    // error cpassman dir
-    if (isset($_SESSION['settings']['cpassman_dir']) && empty($_SESSION['settings']['cpassman_dir']) || !isset($_SESSION['settings']['cpassman_dir'])) {
+// error nb folders
+    if (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0) {
+        $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_folders'].'<br />';
+    }
+// error nb roles
+    if (isset($_SESSION['nb_roles']) && $_SESSION['nb_roles'] == 0) {
         if (empty($errorAdmin)) {
-            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
+            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
         } else {
-            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
+            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_no_roles'];
         }
     }
-    // error cpassman url
-    if (isset($_SESSION['validite_pw']) && (isset($_SESSION['settings']['cpassman_url']) && empty($_SESSION['settings']['cpassman_url']) || !isset($_SESSION['settings']['cpassman_url']))) {
-        if (empty($errorAdmin)) {
-            $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
-        } else {
-            $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
+
+    if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
+        // error cpassman dir
+        if (isset($_SESSION['settings']['cpassman_dir']) && empty($_SESSION['settings']['cpassman_dir']) || !isset($_SESSION['settings']['cpassman_dir'])) {
+            if (empty($errorAdmin)) {
+                $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
+            } else {
+                $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
+            }
+        }
+        // error cpassman url
+        if (isset($_SESSION['validite_pw']) && (isset($_SESSION['settings']['cpassman_url']) && empty($_SESSION['settings']['cpassman_url']) || !isset($_SESSION['settings']['cpassman_url']))) {
+            if (empty($errorAdmin)) {
+                $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
+            } else {
+                $errorAdmin .= '<br /><span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
+            }
         }
     }
-}
 // Display help
-if (!empty($errorAdmin)) {
-    echo '
-            <div style="margin:10px;padding:10px;" class="ui-state-error ui-corner-all">
-            '.$errorAdmin.'
-            </div>';
-}
+    if (!empty($errorAdmin)) {
+        echo '
+                <div style="margin:10px;padding:10px;" class="ui-state-error ui-corner-all">
+                '.$errorAdmin.'
+                </div>';
+    }
 // -----------
 // Display Maintenance mode information
-if (
-    isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1
-        && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
-    ) {
-    echo '
-        <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all">
-            <b>'.$LANG['index_maintenance_mode_admin'].'</b>
-        </div>';
-}
+    if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1
+            && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
+        ) {
+        echo '
+            <div style="text-align:center;margin-bottom:5px;padding:10px;" class="ui-state-highlight ui-corner-all">
+                <b>'.$LANG['index_maintenance_mode_admin'].'</b>
+            </div>';
+    }
 // Display UPDATE NEEDED information
-if (
-    isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] === true
-        && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
-        && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0)
-        || !isset($_SESSION['hide_maintenance']))
-    ) {
-    echo '
-        <div style="text-align:center;margin-bottom:5px;padding:10px;"
-            class="ui-state-highlight ui-corner-all" id="div_maintenance">
-            <b>'.$LANG['update_needed_mode_admin'].'</b>
-            <span style="float:right;cursor:pointer;">
-                <span class="fa fa-close mi-red" onclick="toggleDiv(\'div_maintenance\')"></span>
-            </span>
-        </div>';
-}
+    if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] === true
+            && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
+            && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0)
+            || !isset($_SESSION['hide_maintenance']))
+        ) {
+        echo '
+            <div style="text-align:center;margin-bottom:5px;padding:10px;"
+                class="ui-state-highlight ui-corner-all" id="div_maintenance">
+                <b>'.$LANG['update_needed_mode_admin'].'</b>
+                <span style="float:right;cursor:pointer;">
+                    <span class="fa fa-close mi-red" onclick="toggleDiv(\'div_maintenance\')"></span>
+                </span>
+            </div>';
+    }
 
 // display an item in the context of OTV link
-    if ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) && isset($_GET['otv']) && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === "true") {
+    if ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) &&
+        isset($_GET['otv']) && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === "true"
+    ) {
         // case where one-shot viewer
-        if (
-            isset($_GET['code']) && !empty($_GET['code'])
+        if (isset($_GET['code']) && !empty($_GET['code'])
             && isset($_GET['stamp']) && !empty($_GET['stamp'])
         ) {
             include 'otv.php';
@@ -454,9 +452,8 @@ if (
             $_SESSION['initial_url'] = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")), FILTER_SANITIZE_URL);
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
-    }
-// ask the user to change his password
-    else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id']) && $_SESSION['is_admin'] !== '1') {
+    // Ask the user to change his password
+    } else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id']) && $_SESSION['is_admin'] !== '1') {
         //Check if password is valid
         echo '
         <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
@@ -480,9 +477,8 @@ if (
         <script type="text/javascript">
             $("#new_pw").focus();
         </script>';
-    }
-// Display pages
-    elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] === true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
+    // Display pages
+    } elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] === true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
         if (!extension_loaded('mcrypt')) {
             $_SESSION['error']['code'] = ERR_NO_MCRYPT;
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
@@ -490,8 +486,7 @@ if (
             include $_SESSION['initial_url'];
         } elseif ($_GET['page'] == "items") {
             // SHow page with Items
-            if (
-                ($_SESSION['user_admin'] != 1)
+            if (($_SESSION['user_admin'] != 1)
                 ||
                 ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)
             ) {
@@ -541,9 +536,8 @@ if (
             $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
             include $_SESSION['settings']['cpassman_dir'].'/error.php';
         }
-    }
-// case of password recovery
-    elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
+    // Case of password recovery
+    } elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
         // Case where user has asked new PW
         echo '
             <div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
@@ -582,7 +576,7 @@ if (
                     class="ui-state-error ui-corner-all">
                     <b>'.addslashes($LANG['index_maintenance_mode']).'</b>
                 </div>';
-        } else if (isset($_GET['session_over']) && $_GET['session_over'] == "true") {
+        } elseif (isset($_GET['session_over']) && $_GET['session_over'] == "true") {
             // SESSION FINISHED => RECONNECTION ASKED
             echo '
                     <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
@@ -688,11 +682,11 @@ if (
                     </div>
                 </div>';
     }
-echo '
+    echo '
     </div>';
 // FOOTER
 /* DON'T MODIFY THE FOOTER ... MANY THANKS TO YOU */
-echo '
+    echo '
     <div id="footer">
         <div style="float:left;width:32%;">
             <a href="http://teampass.net" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$k['copyright'].'</a>
@@ -709,40 +703,38 @@ echo '
         </div>
     </div>';
 // PAGE LOADING
-echo '
+    echo '
     <div id="div_loading" style="display:none;">
         <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all">
             <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>
     </div>';
 // Alert BOX
-echo '
+    echo '
     <div id="div_dialog_message" style="display:none;">
         <div id="div_dialog_message_text"></div>
     </div>';
 
 // WARNING FOR QUERY ERROR
-echo '
+    echo '
     <div id="div_mysql_error" style="display:none;">
         <div style="padding:10px;text-align:center;" id="mysql_error_warning"></div>
     </div>';
 
 
 //Personnal SALTKEY
-if (
-    isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1
-) {
-    echo '
+    if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
+        echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
             <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['my_sk']) ? (string) $_SESSION['my_sk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
             <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
             <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
         </div>';
-}
+    }
 
 // user profile
-echo '
+    echo '
 <div id="dialog_user_profil" style="display:none;padding:4px;">
     <div id="div_user_profil">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
@@ -750,7 +742,7 @@ echo '
 </div>';
 
 // DUO box
-echo '
+    echo '
 <div id="dialog_duo" style="display:none;padding:4px;">
     <div id="div_duo"></div>
     '.$LANG['duo_loading_iframe'].'
@@ -761,7 +753,7 @@ echo '
 </div>';
 
 // INCREASE session time
-echo '
+    echo '
 <div id="div_increase_session_time" style="display:none;padding:4px;">
     <b>'.$LANG['index_session_duration'].':</b>
     <input type="text" id="input_session_duration" style="width:50px;padding:5px;margin:0 10px 0 10px;" class="text ui-widget-content ui-corner-all" value="', isset($_SESSION['user_settings']['session_duration']) ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60, '" />
@@ -769,7 +761,7 @@ echo '
     <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="input_session_duration_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
 </div>';
 
-closelog();
+    closelog();
 
 ?>
 <script type="text/javascript">NProgress.start();</script>
