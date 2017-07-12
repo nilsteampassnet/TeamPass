@@ -533,6 +533,7 @@ switch ($_POST['type']) {
     case "admin_action_backup_decrypt":
         $msg = "";
         $result = "";
+        $filename = (string) $_POST['option'];
         //get backups infos
         $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s", "admin");
         foreach ($rows as $record) {
@@ -545,9 +546,9 @@ switch ($_POST['type']) {
 
         //read file
         $return = "";
-        $Fnm = $tp_settings['bck_script_path'].'/'.$_POST['option'].'.sql';
+        $Fnm = $tp_settings['bck_script_path'].'/'.$filename.'.sql';
         if (file_exists($Fnm)) {
-            if (!empty($bck) && $bck['valeur'] === $_POST['option']) {
+            if (!empty($bck) && $bck['valeur'] === $filename) {
                 $err = "";
 
                 // it means that file is DEFUSE encrypted
@@ -560,7 +561,7 @@ switch ($_POST['type']) {
                 try {
                     \Defuse\Crypto\File::decryptFileWithPassword(
                         $_SESSION['settings']['bck_script_path'].'/'.$_POST['option'].'.sql',
-                        $_SESSION['settings']['bck_script_path'].'/'.str_replace('encrypted', 'clear', $_POST['option']).'.sql',
+                        $_SESSION['settings']['bck_script_path'].'/'.str_replace('encrypted', 'clear', filename).'.sql',
                         $_SESSION['settings']['bck_script_key']
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
@@ -583,17 +584,17 @@ switch ($_POST['type']) {
                 $return = Encryption\Crypt\aesctr::decrypt($return, $tp_settings['bck_script_key'], 256);
 
                 //save the file
-                $handle = fopen($tp_settings['bck_script_path'].'/'.$_POST['option'].'.clear'.'.sql', 'w+');
+                $handle = fopen($tp_settings['bck_script_path'].'/'.$filename.'.clear'.'.sql', 'w+');
                 fwrite($handle, $return);
                 fclose($handle);
             }
             $result = "backup_decrypt_success";
-            $msg = $tp_settings['bck_script_path'].'/'.$_POST['option'].'.clear'.'.sql';
+            $msg = $tp_settings['bck_script_path'].'/'.$filename.'.clear'.'.sql';
         } else {
             $result = "backup_decrypt_fails";
             $msg = "File not found: ".$Fnm;
         }
-        echo '[{ "result":"'.$result.'" , "msg":"'.$antiXss->xss_clean($msg).'"}]';
+        echo '[{ "result":"'.$result.'" , "msg":"'.$msg.'"}]';
         break;
 
     /*
@@ -696,6 +697,12 @@ switch ($_POST['type']) {
         // Check KEY and rights
         if ($_POST['key'] != $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // Allowed values for $_POST['object'] : "items,logs,files,categories"
+        if (!in_array($_POST['object'], explode("items,logs,files,categories", ","), true)) {
+            echo prepareExchangedData(array("error" => "This input is not allowed"), "encode");
             break;
         }
 
@@ -1311,6 +1318,7 @@ switch ($_POST['type']) {
         $newFilesList = "";
         $continu = true;
         $error = "";
+        $post_cpt = intval($_POST['cpt']);
 
         // load PhpEncryption library
         require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
@@ -1327,7 +1335,7 @@ switch ($_POST['type']) {
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
         // treat 10 files
-        $filesList = explode(';', $_POST['list']);
+        $filesList = explode(';', (string) $_POST['list']);
         foreach ($filesList as $file) {
             if ($cpt < 5) {
                 // skip file is Coherancey not respected
@@ -1380,7 +1388,7 @@ switch ($_POST['type']) {
             $continu = false;
         }
 
-        echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($_POST['cpt'] + $cpt).'"}]';
+        echo '[{"error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$newFilesList.'", "cpt":"'.($post_cpt + $cpt).'"}]';
         break;
 
     /*
@@ -1566,10 +1574,10 @@ switch ($_POST['type']) {
                 "<?php
 @define('COST', '13'); // Don't change this.
 // DUOSecurity credentials
-@define('AKEY', \"".htmlspecialchars($akey)."\");
-@define('IKEY', \"".htmlspecialchars($ikey)."\");
-@define('SKEY', \"".htmlspecialchars($skey)."\");
-@define('HOST', \"".htmlspecialchars($host)."\");
+@define('AKEY', '".(string) $akey."');
+@define('IKEY', '".(string) $ikey."');
+@define('SKEY', '".(string) $skey."');
+@define('HOST', '".(string) $host."');
 ?>"
             )
         );
@@ -1993,7 +2001,7 @@ switch ($_POST['type']) {
 
             $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
 
-            $ldapconn = ldap_connect($antiXss->xss_clean($ldapURIs));
+            $ldapconn = ldap_connect($ldapURIs);
 
             if ($dataReceived[0]['ldap_tls_input']) {
                 ldap_start_tls($ldapconn);
@@ -2008,9 +2016,7 @@ switch ($_POST['type']) {
                 $debug_ldap .= "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."<br/>";
 
                 if ($ldapbind) {
-                    $filter = $antiXss->xss_clean(
-                        "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))"
-                    );
+                    $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))";
                     $result = ldap_search(
                         $ldapconn,
                         $dataReceived[0]['ldap_search_base'],
