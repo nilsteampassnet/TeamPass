@@ -26,26 +26,47 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
+require_once '../includes/config/tp.config.php';
 
+// Some init
 $_SESSION['settings']['loaded'] = "";
-
 $finish = false;
+$_POST['nb'] = intval($_POST['nb']);
+$_POST['start'] = intval($_POST['start']);
 $next = ($_POST['nb'] + $_POST['start']);
 
-
+// Open DB connection
 $dbTmp = mysqli_connect(
-    $_SESSION['server'],
-    $_SESSION['user'],
-    $_SESSION['pass'],
-    $_SESSION['database'],
-    $_SESSION['port']
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
 );
+
+// Get old saltkey from saltkey_ante_2127
+$db_sk = mysqli_fetch_array(
+    mysqli_query(
+        $dbTmp,
+        "SELECT valeur FROM ".$pre."misc
+        WHERE type='admin' AND intitule = 'saltkey_ante_2127'"
+    )
+);
+if (isset($db_sk['valeur']) && empty($db_sk['valeur']) === false) {
+    $old_saltkey = $db_sk['valeur'];
+} else {
+    echo '[{"finish":"1" , "error":"Previous Saltkey not in database."}]';
+    exit();
+}
+
+// Read saltkey
+$ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
 
 // get total items
 $rows = mysqli_query(
     $dbTmp,
-    "SELECT * FROM ".$_SESSION['pre']."categories_items"
+    "SELECT * FROM ".$pre."categories_items"
 );
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
@@ -57,7 +78,7 @@ $total = mysqli_num_rows($rows);
 // loop on items
 $rows = mysqli_query(
     $dbTmp,
-    "SELECT id, data, data_iv, encryption_type FROM ".$_SESSION['pre']."categories_items
+    "SELECT id, data, data_iv, encryption_type FROM ".$pre."categories_items
     LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -70,7 +91,7 @@ while ($data = mysqli_fetch_array($rows)) {
         // decrypt with phpCrypt
         $old_pw = cryption_phpCrypt(
             $data['data'],
-            $_POST['session_salt'],
+            $old_saltkey,
             $data['data_iv'],
             "decrypt"
         );
@@ -78,21 +99,21 @@ while ($data = mysqli_fetch_array($rows)) {
         // encrypt with Defuse
         $new_pw = cryption(
             $old_pw['string'],
-            $_SESSION['new_salt'],
+            $ascii_key,
             "encrypt"
         );
 
         // store Password
         mysqli_query(
             $dbTmp,
-            "UPDATE ".$_SESSION['pre']."categories_items
+            "UPDATE ".$pre."categories_items
             SET data = '".$new_pw['string']."', data_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
     } elseif ($data['encryption_type'] !== "defuse" && substr($data['data'], 0, 3) === "def") {
         mysqli_query(
             $dbTmp,
-            "UPDATE ".$_SESSION['pre']."categories_items
+            "UPDATE ".$pre."categories_items
             SET data_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );

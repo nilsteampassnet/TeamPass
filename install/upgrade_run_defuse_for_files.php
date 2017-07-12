@@ -26,50 +26,40 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
+require_once '../includes/config/tp.config.php';
 
+// Some init
 $_SESSION['settings']['loaded'] = "";
-
 $finish = false;
+$_POST['nb'] = intval($_POST['nb']);
+$_POST['start'] = intval($_POST['start']);
 $next = ($_POST['nb'] + $_POST['start']);
 
 $dbTmp = mysqli_connect(
-    $_SESSION['server'],
-    $_SESSION['user'],
-    $_SESSION['pass'],
-    $_SESSION['database'],
-    $_SESSION['port']
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
 );
-// are files encrypted? get the setting ongoing in teampass
-$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='enable_attachment_encryption'"));
-$enable_attachment_encryption = $set[0];
+
 
 // if no encryption then stop
-if ($enable_attachment_encryption === "0") {
-    mysqli_query($dbTmp, "update `".$_SESSION['pre']."files` set status = 'clear' where 1 = 1");
+if ($SETTINGS['enable_attachment_encryption'] === "0") {
+    mysqli_query($dbTmp, "update `".$pre."files` set status = 'clear' where 1 = 1");
     echo '[{"finish":"1" , "next":"", "error":""}]';
     exit();
 }
 
-// get path to upload
-$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='path_to_upload_folder'"));
-$path_to_upload_folder = $set[0];
 
-// get previous saltkey
-$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='saltkey_ante_2127'"));
-$saltkey_ante_2127 = $set[0];
-
-// get if files are managed through defuse library
-$set = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM ".$_SESSION['pre']."misc WHERE type='admin' AND intitule='files_with_defuse'"));
-$files_with_defuse = $set[0];
-
-// If $saltkey_ante_2127 is set to'none', then encryption is done with Defuse, so exit
+// If $SETTINGS['saltkey_ante_2127'] is set to'none', then encryption is done with Defuse, so exit
 // Also quit if no new defuse saltkey was generated
-if ($files_with_defuse !== "done") {
-    if ($saltkey_ante_2127 === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
+if ($SETTINGS['files_with_defuse'] !== "done") {
+    if ($SETTINGS['saltkey_ante_2127'] === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
         // update
         mysqli_query(
             $dbTmp,
-            "UPDATE `".$_SESSION['pre']."misc`
+            "UPDATE `".$pre."misc`
             SET `valeur` = 'done'
             WHERE type='admin' AND intitule='files_with_defuse'"
         );
@@ -83,7 +73,7 @@ if ($files_with_defuse !== "done") {
 }
 
 // get total items
-$rows = mysqli_query($dbTmp, "SELECT id FROM ".$_SESSION['pre']."files");
+$rows = mysqli_query($dbTmp, "SELECT id FROM ".$pre."files");
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
     exit();
@@ -94,7 +84,7 @@ $total = mysqli_num_rows($rows);
 // loop on files
 $rows = mysqli_query(
     $dbTmp,
-    "SELECT * FROM ".$_SESSION['pre']."files
+    "SELECT * FROM ".$pre."files
     LIMIT ".$_POST['start'].", ".$_POST['nb']
 );
 if (!$rows) {
@@ -103,7 +93,7 @@ if (!$rows) {
 }
 
 // Prepare encryption options - with new KEY
-if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) === false) {
+if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($SETTINGS['saltkey_ante_2127']) === false) {
     // Prepare encryption options for Defuse
     $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
@@ -115,36 +105,36 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) 
     $opts_encrypt = array('iv'=>$iv, 'key'=>$key);
 
     // Prepare encryption options - with old KEY
-    $iv = substr(md5("\x1B\x3C\x58".$saltkey_ante_2127, true), 0, 8);
+    $iv = substr(md5("\x1B\x3C\x58".$SETTINGS['saltkey_ante_2127'], true), 0, 8);
     $key = substr(
-        md5("\x2D\xFC\xD8".$saltkey_ante_2127, true).
-        md5("\x2D\xFC\xD9".$saltkey_ante_2127, true),
+        md5("\x2D\xFC\xD8".$SETTINGS['saltkey_ante_2127'], true).
+        md5("\x2D\xFC\xD9".$SETTINGS['saltkey_ante_2127'], true),
         0,
         24
     );
     $opts_decrypt = array('iv'=>$iv, 'key'=>$key);
 
     while ($data = mysqli_fetch_array($rows)) {
-        if (file_exists($path_to_upload_folder.'/'.$data['file'])) {
+        if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$data['file'])) {
             // Make a copy of file
             if (!copy(
-                $path_to_upload_folder.'/'.$data['file'],
-                $path_to_upload_folder.'/'.$data['file'].".copy"
+                $SETTINGS['path_to_upload_folder'].'/'.$data['file'],
+                $SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy"
             )) {
                 $error = "Copy not possible";
                 exit;
             } else {
                 // do a bck
                 copy(
-                    $path_to_upload_folder.'/'.$data['file'],
-                    $path_to_upload_folder.'/'.$data['file'].".bck"
+                    $SETTINGS['path_to_upload_folder'].'/'.$data['file'],
+                    $SETTINGS['path_to_upload_folder'].'/'.$data['file'].".bck"
                 );
             }
 
             // Open the file
-            unlink($path_to_upload_folder.'/'.$data['file']);
-            $fp = fopen($path_to_upload_folder.'/'.$data['file'].".copy", "rb");
-            $out = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", 'wb');
+            unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file']);
+            $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
+            $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", 'wb');
 
             // decrypt using old
             stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
@@ -153,12 +143,12 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) 
             // clean
             fclose($fp);
             fclose($out);
-            unlink($path_to_upload_folder.'/'.$data['file'].".copy");
+            unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy");
 
 
             // Now encrypt the file with new saltkey
-            $fp = fopen($path_to_upload_folder.'/'.$data['file'].".tmp", "rb");
-            $out = fopen($path_to_upload_folder.'/'.$data['file'], 'wb');
+            $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", "rb");
+            $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'], 'wb');
             // encrypt using new
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
             // copy to file
@@ -169,12 +159,12 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($saltkey_ante_2127) 
             // clean
             fclose($fp);
             fclose($out);
-            unlink($path_to_upload_folder.'/'.$data['file'].".tmp");
+            unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp");
 
             // update table
             mysqli_query(
                 $dbTmp,
-                "UPDATE `".$_SESSION['pre']."files`
+                "UPDATE `".$pre."files`
                 SET `status` = 'encrypted'
                 WHERE id = '".$data['id']."'"
             );

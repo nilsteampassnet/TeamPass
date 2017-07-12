@@ -37,7 +37,7 @@ if (file_exists("../includes/settings.php") && !file_exists("../includes/config/
     // copy to config/
     copy("../includes/settings.php", "../includes/config/settings.php");
     unlink("../includes/settings.php");
-} else if (file_exists("../includes/settings.php") && file_exists("../includes/config/settings.php")) {
+} elseif (file_exists("../includes/settings.php") && file_exists("../includes/config/settings.php")) {
     // remove as not used anymore
     unlink("../includes/settings.php");
 }
@@ -81,7 +81,8 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
     }
 }
 
-function addIndexIfNotExist($table, $index, $sql) {
+function addIndexIfNotExist($table, $index, $sql)
+{
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
@@ -99,7 +100,8 @@ function tableExists($tablename, $database = false)
 {
     global $dbTmp;
 
-    $res = mysqli_query($dbTmp,
+    $res = mysqli_query(
+        $dbTmp,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
         WHERE table_schema = '".$_SESSION['db_bdd']."'
@@ -111,7 +113,7 @@ function tableExists($tablename, $database = false)
     } else {
         return false;
     }
-    }
+}
 
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
@@ -188,7 +190,8 @@ if ($res === false) {
 // check that API doesn't exist
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."users` WHERE id = '".API_USER_ID."'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-    mysqli_query($dbTmp,
+    mysqli_query(
+        $dbTmp,
         "INSERT INTO `".$_SESSION['pre']."users` (`id`, `login`, `read_only`) VALUES ('".API_USER_ID."', 'API', '1')"
     );
 }
@@ -196,13 +199,16 @@ if ($tmp[0] == 0 || empty($tmp[0])) {
 // check that SYSLOG doesn't exist
 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'syslog_enable'"));
 if ($tmp[0] == 0 || empty($tmp[0])) {
-    mysqli_query($dbTmp,
+    mysqli_query(
+        $dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_enable', '0')"
     );
-    mysqli_query($dbTmp,
+    mysqli_query(
+        $dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_host', 'localhost')"
     );
-    mysqli_query($dbTmp,
+    mysqli_query(
+        $dbTmp,
         "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'syslog_port', '514')"
     );
 }
@@ -241,7 +247,8 @@ mysqli_query($dbTmp, "CREATE INDEX teampass_log_items_id_item_IDX ON ".$_SESSION
 mysqli_query($dbTmp, "UPDATE `".$_SESSION['pre']."misc SET `valeur` = 1 WHERE `type` = 'admin' AND `intitule` = 'encryptClientServer'");
 
 // create new table
-mysqli_query($dbTmp,
+mysqli_query(
+    $dbTmp,
     "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."tokens` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `user_id` int(10) NOT NULL,
@@ -256,7 +263,8 @@ mysqli_query($dbTmp,
 // change to 0 if auto_update_pwd_next_date empty in ITEMS table
 $result = mysqli_query($dbTmp, "SELECT id FROM `".$_SESSION['pre']."items` WHERE auto_update_pwd_next_date = ''");
 while ($row = mysqli_fetch_assoc($result)) {
-    mysqli_query($dbTmp,
+    mysqli_query(
+        $dbTmp,
         "UPDATE `".$_SESSION['pre']."items`
         SET `auto_update_pwd_next_date` = '0'
         WHERE id = '".$row['id']."'"
@@ -300,41 +308,6 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
 
     $_SESSION['upgrade']['csrfp_config_file'] = 1;
 }
-
-/*
-* Introduce new CONFIG file
-*/
-    $tp_config_file = "../includes/config/tp.config.php";
-    if (file_exists($tp_config_file)) {
-        if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-            echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
-            return false;
-        } else {
-            unlink($tp_config_file);
-        }
-    }
-    $fh = fopen($tp_config_file, 'w');
-    $config_text = "<?php
-    global \$SETTINGS;
-    \$SETTINGS = array (";
-
-    $result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin'");
-    while ($row = mysqli_fetch_assoc($result)) {
-        // append new setting in config file
-        $config_text .= "
-        '".$row['intitule']."' => '".$row['valeur']."',";
-    }
-    mysqli_free_result($result);
-
-    // write to config file
-    $result = fwrite(
-        $fh,
-        utf8_encode(
-            substr_replace($config_text, "", -1)."
-    );"
-        )
-    );
-    fclose($fh);
 
 
 // clean duplicate ldap_object_class from bad update script version

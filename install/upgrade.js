@@ -25,7 +25,7 @@ function PauseInExecution(millis)
 function httpRequest(file,data,type) {
     var xhr_object = null;
     var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
-    
+
     if (document.getElementById("menu_action") != null) {
         document.getElementById("menu_action").value = "action";
     }

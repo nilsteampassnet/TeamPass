@@ -352,11 +352,6 @@ if ($res === false) {
     exit();
 }
 
-
-
-
-
-
 //-- generate new DEFUSE key
 if (!isset($_SESSION['tp_defuse_installed']) || $_SESSION['tp_defuse_installed'] === false) {
     $filename = "../includes/config/settings.php";
@@ -652,6 +647,43 @@ mysqli_query(
     SET `valeur` = '".$rows['valeur']."/favicon.ico'
     WHERE intitule = 'favicon' AND type = 'admin'"
 );
+
+
+
+/*
+* Introduce new CONFIG file
+*/
+$tp_config_file = "../includes/config/tp.config.php";
+if (file_exists($tp_config_file)) {
+    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+        echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+        return false;
+    } else {
+        unlink($tp_config_file);
+    }
+}
+$fh = fopen($tp_config_file, 'w');
+$config_text = "<?php
+global \$SETTINGS;
+\$SETTINGS = array (";
+
+$result = mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin'");
+while ($row = mysqli_fetch_assoc($result)) {
+    // append new setting in config file
+    $config_text .= "
+    '".$row['intitule']."' => '".$row['valeur']."',";
+}
+mysqli_free_result($result);
+
+// write to config file
+$result = fwrite(
+    $fh,
+    utf8_encode(
+        substr_replace($config_text, "", -1)."
+);"
+    )
+);
+fclose($fh);
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

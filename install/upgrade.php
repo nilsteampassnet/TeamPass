@@ -1,5 +1,5 @@
 <?php
-require_once('../sources/SecureHandler.php');
+require_once("../sources/SecureHandler.php");
 session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;
@@ -123,13 +123,13 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
                     "&login="+escape(document.getElementById("user_login").value)+
                     "&pwd="+window.btoa(aes_encrypt(document.getElementById("user_pwd").value));
                     document.getElementById("loader").style.display = "";
-                } else if (step == "step1") {
+                } else if (step === "step1") {
                     var data = "type="+step+
                     "&abspath="+escape(document.getElementById("root_path").value)+
                         "&fullurl="+escape(document.getElementById("root_url").value);
                     document.getElementById("loader").style.display = "";
                 } else
-                if (step == "step2") {
+                if (step === "step2") {
                     document.getElementById("loader").style.display = "";
                     var maintenance = 1;
                     if (document.getElementById("no_maintenance_mode").checked==true) {
@@ -141,26 +141,26 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
                     "&previous_sk="+escape(document.getElementById("previous_sk").value)+
                     "&no_previous_sk="+document.getElementById("no_key_selection").value;
                 } else
-                if (step == "step3") {
+                if (step === "step3") {
                     document.getElementById("res_step3").innerHTML = '<img src="images/ajax-loader.gif" alt="" />';
                     var data = "type="+step+
                     "&prefix_before_convert="+document.getElementById("prefix_before_convert").checked;
                     document.getElementById("loader").style.display = "";
                 } else
-                if (step == "step4") {
+                if (step === "step4") {
                     upgrade_file = "";
                     var data = "type="+step;
                     manageUpgradeScripts("0");
 
                 } else
-                if (step == "step5") {
+                if (step === "step5") {
                     document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
                     if (document.getElementById("sk_path") == null)
                         var data = "type="+step;
                     else
                         var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
                 }
-                if (upgrade_file != "") httpRequest(upgrade_file, data);
+                if (upgrade_file !== "") httpRequest(upgrade_file, data);
             }
         }
 
@@ -178,7 +178,7 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
                 },
                 function(data) {
                     // work not finished
-                    if (data[0].finish != 1) {
+                    if (data[0].finish !== "1") {
                         // loop
                         runUpdate(data[0].scriptname, data[0].parameter, start_at, noitems_by_loop, loop_number, file_number);
                     }
@@ -214,19 +214,17 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
                 },
                 function(data) {
                     // work not finished
-                    if (data[0].finish != 1) {
+                    if (data[0].finish !== "1") {
                         $("#span_"+rand_number).html("<i class=\"fa fa-thumbs-up\" style=\"color:green\"></i>")
                         // loop
                         runUpdate(script_file, type_parameter, data[0].next, noitems_by_loop, loop_number, file_number);
-                    }
                     // is there an error
-                    else if (data[0].finish == 1 && data[0].error != "") {
+                    } else if (data[0].finish === "1" && data[0].error !== "") {
                         $("#span_"+rand_number).html("<i class=\"fa fa-thumbs-down\" style=\"color:red\"></i>");
                         $("#step4_progress").html("<div style=\"margin:15px 0 15px 0; font-style:italic;\">"+d.getHours()+":"+d.getMinutes()+":"+d.getSeconds()+" - <b>ERROR</b>: "+data[0].error+"</div>"+ $("#step4_progress").html());
                         $("#step4_progress").html("<div>An error occurred. Please check and relaunch.</div>"+ $("#step4_progress").html());
-                    }
                     // work finished
-                    else {
+                    } else {
                         $("#span_"+rand_number).html("<i class=\"fa fa-thumbs-up\" style=\"color:green\"></i>")
                         // continue with next script file
                         file_number ++;
@@ -237,7 +235,8 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
             );
         }
 
-        function newEncryptPw(suggestion){
+        function newEncryptPw(suggestion)
+        {
             var nb = 20;
             var start = 0;
 
@@ -246,7 +245,7 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
             } else {
                 $("#change_pw_encryption_progress").html("Progress: 0% <img src=\"images/76.gif\" />");
             }
-            request = $.post("upgrade_ajax.php",
+            var request = $.post("upgrade_ajax.php",
                 {
                     type        : "new_encryption_of_pw",
                     start       : start,
@@ -439,7 +438,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         If you need to change them, please edit file `/includes/config/settings.php` and relaunch the upgrade process.
                         </div>';
     } else {
-                        echo '
+        echo '
                         <div style="">
                         The database information has not been retreived from the settings file.<br>
                         You need to adapt the file `/includes/config/settings.php` and relaunch the upgrade process.
