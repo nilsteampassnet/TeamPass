@@ -31,9 +31,9 @@ require_once '../includes/config/tp.config.php';
 // Some init
 $_SESSION['settings']['loaded'] = "";
 $finish = false;
-$_POST['nb'] = intval($_POST['nb']);
-$_POST['start'] = intval($_POST['start']);
-$next = ($_POST['nb'] + $_POST['start']);
+$post_nb = intval($_POST['nb']);
+$post_start = intval($_POST['start']);
+$next = ($post_nb + $post_start);
 
 // Open DB connection
 $dbTmp = mysqli_connect(
@@ -79,7 +79,7 @@ $total = mysqli_num_rows($rows);
 $rows = mysqli_query(
     $dbTmp,
     "SELECT id, pw, pw_iv, encryption_type FROM ".$pre."items
-    WHERE perso = '0' LIMIT ".$_POST['start'].", ".$_POST['nb']
+    WHERE perso = '0' LIMIT ".$post_start.", ".$post_nb
 );
 if (!$rows) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
