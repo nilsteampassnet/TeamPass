@@ -519,10 +519,12 @@ function db_error_handler($params)
 }
 
 /**
- * identifyUserRights()
- *
- * @return
- * @param boolean $refresh
+ * [identifyUserRights description]
+ * @param  string $groupesVisiblesUser  [description]
+ * @param  string $groupesInterditsUser [description]
+ * @param  string $isAdmin              [description]
+ * @param  string $idFonctions          [description]
+ * @return string                       [description]
  */
 function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions)
 {

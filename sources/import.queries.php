@@ -796,7 +796,7 @@ switch ($_POST['type']) {
                     implode(';', $_SESSION['groupes_visibles']).';'.$newId,
                     $_SESSION['groupes_interdits'],
                     $_SESSION['is_admin'],
-                    $_SESSION['fonction_id'],
+                    $_SESSION['fonction_id']
                 );
 
                 fputs($cacheLogFile, date('H:i:s ')."Rebuilding Tree\n");
