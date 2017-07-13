@@ -76,7 +76,7 @@ function addIndexIfNotExist($table, $index, $sql)
     return $res;
 }
 
-function tableExists($tablename, $database = false)
+function tableExists($tablename)
 {
     global $dbTmp;
 

@@ -15,8 +15,8 @@
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -110,7 +110,7 @@ echo '
     <label for="ajouter_groupe_titre" class="label_cpm">'.$LANG['group_title'].'</label>
     <input type="text" id="ajouter_groupe_titre" class="input_text text ui-widget-content ui-corner-all" />
 
-    <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
+    <label for="parent_id" class="label_cpm">'.addslashes($LANG['group_parent']).'</label>
     <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">
         '.$droplist.'
     </select>

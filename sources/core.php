@@ -358,8 +358,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
             $data['groupes_visibles'],
             $data['groupes_interdits'],
             $data['admin'],
-            $data['fonction_id'],
-            false
+            $data['fonction_id']
         );
 
         // user type

@@ -374,10 +374,10 @@ switch ($_POST['type']) {
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
-            global $meta, $root, $group, $name, $entry, $levelMin, $key, $title, $notes, $pw, $username, $url,
-                $newItem, $temparray, $history, $levelInProgress, $historyLevel, $nbItems,
+            global $meta, $root, $group, $name, $entry, $levelMin, $title, $notes, $pw, $username, $url,
+                $newItem, $temparray, $history, $levelInProgress, $historyLevel,
                 $path, $previousLevel, $generatorFound, $cacheFile, $cacheFileF, $numGroups,
-                $numItems, $foldersSeparator, $itemsSeparator, $lineEndSeparator, $keepassVersion, $arrFolders;
+                $numItems, $foldersSeparator, $itemsSeparator, $keepassVersion, $arrFolders;
 
             $groupsArray = array();
 
@@ -792,7 +792,12 @@ switch ($_POST['type']) {
             if ($nbFoldersImported > 0) {
                 fputs($cacheLogFile, date('H:i:s ')."Setting User Rights\n");
                 //Refresh the rights of actual user
-                identifyUserRights(implode(';', $_SESSION['groupes_visibles']).';'.$newId, $_SESSION['groupes_interdits'], $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
+                identifyUserRights(
+                    implode(';', $_SESSION['groupes_visibles']).';'.$newId,
+                    $_SESSION['groupes_interdits'],
+                    $_SESSION['is_admin'],
+                    $_SESSION['fonction_id'],
+                );
 
                 fputs($cacheLogFile, date('H:i:s ')."Rebuilding Tree\n");
                 //rebuild full tree

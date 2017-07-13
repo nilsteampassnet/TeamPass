@@ -994,8 +994,7 @@ function identifyUser($sentData)
                     $data['groupes_visibles'],
                     $_SESSION['groupes_interdits'],
                     $data['admin'],
-                    $data['fonction_id'],
-                    false
+                    $data['fonction_id']
                 );
             } else {
                 // is new LDAP user. Show only his personal folder

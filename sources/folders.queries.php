@@ -504,8 +504,7 @@ if (isset($_POST['newtitle'])) {
                             array_push($_SESSION['groupes_visibles'], $newId),
                             implode(";", $_SESSION['groupes_interdits']),
                             $_SESSION['is_admin'],
-                            $_SESSION['fonction_id'],
-                            true
+                            $_SESSION['fonction_id']
                         );
 
                         //add access to this new folder
@@ -669,7 +668,12 @@ if (isset($_POST['newtitle'])) {
             $tree->rebuild();
 
             //Get user's rights
-            identifyUserRights(implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'], implode(";", $_SESSION['groupes_interdits']), $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
+            identifyUserRights(
+                implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'],
+                implode(";", $_SESSION['groupes_interdits']),
+                $_SESSION['is_admin'],
+                $_SESSION['fonction_id']
+            );
 
 
             // rebuild the droplist
@@ -968,8 +972,7 @@ if (isset($_POST['newtitle'])) {
                         is_array($_SESSION['groupes_visibles']) ? array_push($_SESSION['groupes_visibles'], $newFolderId) : $_SESSION['groupes_visibles'].';'.$newFolderId,
                         $_SESSION['groupes_interdits'],
                         $_SESSION['is_admin'],
-                        $_SESSION['fonction_id'],
-                        true
+                        $_SESSION['fonction_id']
                     );
 
                     //add access to this new folder

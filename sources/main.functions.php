@@ -524,9 +524,9 @@ function db_error_handler($params)
  * @return
  * @param boolean $refresh
  */
-function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions, $refresh)
+function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions)
 {
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
 
     //load ClassLoader
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -827,7 +827,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
  */
 function updateCacheTable($action, $id = "")
 {
-    global $db, $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
     require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
@@ -850,13 +850,13 @@ function updateCacheTable($action, $id = "")
     // Rebuild full cache table
     if ($action === "reload") {
         // truncate table
-        DB::query("TRUNCATE TABLE ".$pre."cache");
+        DB::query("TRUNCATE TABLE ".prefix_table("cache"));
 
         // reload date
         $rows = DB::query(
             "SELECT *
-            FROM ".$pre."items as i
-            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+            FROM ".prefix_table('items')." as i
+            INNER JOIN ".prefix_table('log_items')." as l ON (l.id_item = i.id)
             AND l.action = %s
             AND i.inactif = %i",
             'at_creation',
@@ -865,14 +865,14 @@ function updateCacheTable($action, $id = "")
         foreach ($rows as $record) {
             // Get all TAGS
             $tags = "";
-            $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $record['id']);
+            $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $record['id']);
             foreach ($itemTags as $itemTag) {
                 if (!empty($itemTag['tag'])) {
                     $tags .= $itemTag['tag']." ";
                 }
             }
             // Get renewal period
-            $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".$pre."nested_tree WHERE id=%i", $record['id_tree']);
+            $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".prefix_table('nested_tree')." WHERE id=%i", $record['id_tree']);
 
             // form id_tree to full foldername
             $folder = "";
@@ -889,7 +889,7 @@ function updateCacheTable($action, $id = "")
             }
             // store data
             DB::insert(
-                $pre."cache",
+                prefix_table('cache'),
                 array(
                     'id' => $record['id'],
                     'label' => $record['label'],
@@ -912,13 +912,13 @@ function updateCacheTable($action, $id = "")
         // get new value from db
         $data = DB::queryfirstrow(
             "SELECT label, description, id_tree, perso, restricted_to, login, url
-            FROM ".$pre."items
+            FROM ".prefix_table('items')."
             WHERE id=%i",
             $id
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id=%i", $id);
+        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $id);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -939,7 +939,7 @@ function updateCacheTable($action, $id = "")
         }
         // finaly update
         DB::update(
-            $pre."cache",
+            prefix_table('cache'),
             array(
                 'label' => $data['label'],
                 'description' => $data['description'],
@@ -960,8 +960,8 @@ function updateCacheTable($action, $id = "")
         // get new value from db
         $data = DB::queryFirstRow(
             "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
-            FROM ".$pre."items as i
-            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
+            FROM ".prefix_table('items')." as i
+            INNER JOIN ".prefix_table('log_items')." as l ON (l.id_item = i.id)
             WHERE i.id = %i
             AND l.action = %s",
             $id,
@@ -969,7 +969,7 @@ function updateCacheTable($action, $id = "")
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".$pre."tags WHERE item_id = %i", $id);
+        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id = %i", $id);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -990,7 +990,7 @@ function updateCacheTable($action, $id = "")
         }
         // finaly update
         DB::insert(
-            prefix_table("cache"),
+            prefix_table('cache'),
             array(
                 'id' => $data['id'],
                 'label' => $data['label'],
@@ -1009,7 +1009,7 @@ function updateCacheTable($action, $id = "")
 
         // DELETE an item
     } elseif ($action === "delete_value") {
-        DB::delete($pre."cache", "id = %i", $id);
+        DB::delete(prefix_table('cache'), "id = %i", $id);
     }
 }
 
@@ -1377,7 +1377,7 @@ function send_syslog($message, $host, $port, $component = "teampass")
  */
 function logEvents($type, $label, $who, $login = "", $field_1 = null)
 {
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
 
     if (empty($who)) {
         $who = get_client_ip_server();
@@ -1430,7 +1430,7 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
  */
 function logItems($id, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
 {
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
@@ -1508,7 +1508,7 @@ function noHTML($input, $encoding = 'UTF-8')
  */
 function handleConfigFile($action, $field = null, $value = null)
 {
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
     $tp_config_file = "../includes/config/tp.config.php";
 
     // Load AntiXSS
@@ -1660,7 +1660,7 @@ function checkCFconsistency($source_id, $target_id)
 */
 function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 {
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
 
     // include librairies & connect to DB
     require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';

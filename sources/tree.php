@@ -102,7 +102,7 @@ echo '['.$ret_json.']';
 */
 function buildNodeTree($nodeId)
 {
-    global $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG, $last_visible_parent, $last_visible_parent_level;
+    global $ret_json, $listFoldersLimitedKeys, $listRestrictedFoldersForItemsKeys, $tree, $LANG, $last_visible_parent_level;
 
     // Be sure that user can only see folders he/she is allowed to
     if (!in_array($nodeId, $_SESSION['forbiden_pfs'])
@@ -283,13 +283,13 @@ function recursiveTree($nodeId)
                 $nbChildrenItems += DB::count();
             }
             if (in_array(
-                    $node,
-                    array_merge(
-                        $_SESSION['groupes_visibles'],
-                        $_SESSION['list_restricted_folders_for_items'],
-                        $_SESSION['no_access_folders']
-                    )
+                $node,
+                array_merge(
+                    $_SESSION['groupes_visibles'],
+                    $_SESSION['list_restricted_folders_for_items'],
+                    $_SESSION['no_access_folders']
                 )
+            )
                 || @in_array($node, $listFoldersLimitedKeys)
                 || @in_array($node, $listRestrictedFoldersForItemsKeys)
             ) {

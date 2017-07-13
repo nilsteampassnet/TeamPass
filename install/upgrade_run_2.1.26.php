@@ -96,25 +96,6 @@ function addIndexIfNotExist($table, $index, $sql)
     return $res;
 }
 
-function tableExists($tablename, $database = false)
-{
-    global $dbTmp;
-
-    $res = mysqli_query(
-        $dbTmp,
-        "SELECT COUNT(*) as count
-        FROM information_schema.tables
-        WHERE table_schema = '".$_SESSION['db_bdd']."'
-        AND table_name = '$tablename'"
-    );
-
-    if ($res > 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
 

@@ -212,8 +212,8 @@ if (isset($_POST['type'])) {
                         $field_data = explode("~~", $field);
                         if (count($field_data) > 1 && !empty($field_data[1])) {
                             // should we encrypt the data
-                            $dataTmp = DB::queryFirstRow("
-                                SELECT encrypted_data
+                            $dataTmp = DB::queryFirstRow(
+                                "SELECT encrypted_data
                                 FROM ".prefix_table("categories")."
                                 WHERE id = %i",
                                 $field_data[0]
@@ -2290,8 +2290,7 @@ if (isset($_POST['type'])) {
                             $need_sk = false;
                             $canMove = false;
                         // Case where item is in own personal folder
-                        } elseif (
-                            $folder_is_in_personal === '1'
+                        } elseif ($folder_is_in_personal === '1'
                             && $record['perso'] === '1'
                         ) {
                             $perso = '<i class="fa fa-user-secret mi-grey-1 fa-sm"></i>&nbsp';
@@ -2302,8 +2301,7 @@ if (isset($_POST['type'])) {
                             $need_sk = true;
                             $canMove = true;
                         // CAse where item is restricted to a group of users included user
-                        } elseif (
-                            !empty($record['restricted_to'])
+                        } elseif (!empty($record['restricted_to'])
                             || $list_folders_editable_by_role === '1'
                             && $is_user_in_restricted_list === '1'
                         ) {
@@ -2314,8 +2312,7 @@ if (isset($_POST['type'])) {
                             $displayItem = true;
                             $canMove = true;
                         // CAse where item is restricted to a group of users not including user
-                        } elseif (
-                            $record['perso'] === '1'
+                        } elseif ($record['perso'] === '1'
                             ||
                             (
                                 !empty($record['restricted_to'])
@@ -3891,7 +3888,6 @@ if (isset($_GET['type'])) {
 */
 function recupDroitCreationSansComplexite($groupe)
 {
-    global $db;
     $data = DB::queryFirstRow(
         "SELECT bloquer_creation, bloquer_modification, personal_folder FROM ".prefix_table("nested_tree")." WHERE id = %i",
         $groupe
