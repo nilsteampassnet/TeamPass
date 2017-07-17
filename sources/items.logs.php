@@ -18,15 +18,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once 'main.functions.php';
 
 //Class loader
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -51,7 +60,7 @@ if (isset($_POST['type'])) {
         * log if item's password is shown
         */
         case "item_password_shown":
-            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
+            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] == 1) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
@@ -63,11 +72,11 @@ if (isset($_POST['type'])) {
                 );
 
                 // SysLog
-                if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+                if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
                     send_syslog(
                         "The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".",
-                        $_SESSION['settings']['syslog_host'],
-                        $_SESSION['settings']['syslog_port'],
+                        $SETTINGS['syslog_host'],
+                        $SETTINGS['syslog_port'],
                         "teampass"
                     );
                 }
@@ -79,7 +88,7 @@ if (isset($_POST['type'])) {
         * log if item's password is copied
         */
         case "item_password_copied":
-            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
+            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] == 1) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
@@ -91,11 +100,11 @@ if (isset($_POST['type'])) {
                 );
 
                 // SysLog
-                if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
+                if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
                     send_syslog(
                         "The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".",
-                        $_SESSION['settings']['syslog_host'],
-                        $_SESSION['settings']['syslog_port'],
+                        $SETTINGS['syslog_host'],
+                        $SETTINGS['syslog_port'],
                         "teampass"
                     );
                 }

@@ -12,7 +12,21 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_suggestion']) || $_SESSION['settings']['enable_suggestion'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+    die('Hacking attempt...');
+}
+
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+if (!isset($SETTINGS['enable_suggestion']) || $SETTINGS['enable_suggestion'] != 1) {
     die('Hacking attempt...');
 }
 

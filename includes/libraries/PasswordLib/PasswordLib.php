@@ -29,8 +29,8 @@ if (!class_exists('\\PasswordLib\Core\AutoLoader', true)) {
 use PasswordLib\Password\Factory as PasswordFactory;
 use PasswordLib\Random\Factory as RandomFactory;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Factory.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Random/Factory.php";
+require_once dirname(__FILE__)."/Password/Factory.php";
+require_once dirname(__FILE__)."/Random/Factory.php";
 
 /**
  * A core wrapper class to provide easy access to some of the cryptographic

@@ -28,11 +28,11 @@ require_once '../sources/main.functions.php';
 
 $_SESSION['settings']['loaded'] = "";
 
-################
-## Function permits to get the value from a line
-################
+
 /**
- * @param string $val
+ * Function permits to get the value from a line
+ * @param  string $val [description]
+ * @return string      [description]
  */
 function getSettingValue($val)
 {
@@ -40,9 +40,12 @@ function getSettingValue($val)
     return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
 }
 
-################
-## Function permits to check if a column exists, and if not to add it
-################
+/**
+ * Function permits to check if a column exists, and if not to add it
+ * @param string $db         [description]
+ * @param string $column     [description]
+ * @param string $columnAttr [description]
+ */
 function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
 {
     global $dbTmp;

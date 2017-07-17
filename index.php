@@ -45,17 +45,27 @@ require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
 //session_destroy();
 session_id();
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // initialize session
 $_SESSION['CPM'] = 1;
-if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
-    $_SESSION['settings']['cpassman_dir'] = ".";
-    $_SESSION['settings']['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
+if (!isset($SETTINGS['cpassman_dir']) || $SETTINGS['cpassman_dir'] === "") {
+    $SETTINGS['cpassman_dir'] = ".";
+    $SETTINGS['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
 }
 
 // Include files
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
 require_once './includes/libraries/Database/Meekrodb/db.class.php';
@@ -73,7 +83,7 @@ $link->set_charset($encoding);
 //load main functions needed
 require_once 'sources/main.functions.php';
 // Load CORE
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/core.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/core.php';
 
 /* DEFINE WHAT LANGUAGE TO USE */
 if (isset($_GET['language'])) {
@@ -105,41 +115,41 @@ if (isset($_GET['language'])) {
         $_SESSION['user_language'] = $dataLanguage['valeur'];
         $_SESSION['user_language_flag'] = $dataLanguage['flag'];
     }
-} elseif (isset($_SESSION['settings']['default_language']) && !isset($_SESSION['user_language'])) {
-    $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+} elseif (isset($SETTINGS['default_language']) && !isset($_SESSION['user_language'])) {
+    $_SESSION['user_language'] = $SETTINGS['default_language'];
 } elseif (isset($_POST['language'])) {
     $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
 } elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
     if (isset($_POST['language'])) {
         $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
-    } elseif (isset($_SESSION['settings']['default_language'])) {
-        $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+    } elseif (isset($SETTINGS['default_language'])) {
+        $_SESSION['user_language'] = $SETTINGS['default_language'];
     }
 } elseif ($_SESSION['user_language'] == "0") {
-    $_SESSION['user_language'] = $_SESSION['settings']['default_language'];
+    $_SESSION['user_language'] = $SETTINGS['default_language'];
 }
 
-if (!isset($_SESSION['settings']['cpassman_dir']) || $_SESSION['settings']['cpassman_dir'] === "") {
-    $_SESSION['settings']['cpassman_dir'] = ".";
-    $_SESSION['settings']['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
+if (!isset($SETTINGS['cpassman_dir']) || $SETTINGS['cpassman_dir'] === "") {
+    $SETTINGS['cpassman_dir'] = ".";
+    $SETTINGS['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
 }
 
 // Load user languages files
 if (in_array($_SESSION['user_language'], $languagesList)) {
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
 }
 
 // load 2FA Google
-if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] === "1") {
-    include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+if (isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1") {
+    include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
 }
 
 // Load links, css and javascripts
-if (isset($_SESSION['CPM']) && isset($_SESSION['settings']['cpassman_dir'])) {
-    require_once $_SESSION['settings']['cpassman_dir'].'/load.php';
+if (isset($_SESSION['CPM']) && isset($SETTINGS['cpassman_dir'])) {
+    require_once $SETTINGS['cpassman_dir'].'/load.php';
 }
 
 ?>
@@ -203,8 +213,8 @@ if (isset($_SESSION['CPM'])) {
         }
 
         // Favourites menu
-        if (isset($_SESSION['settings']['enable_favourites'])
-            && $_SESSION['settings']['enable_favourites'] == 1
+        if (isset($SETTINGS['enable_favourites'])
+            && $SETTINGS['enable_favourites'] == 1
             &&
             ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false))
         ) {
@@ -214,7 +224,7 @@ if (isset($_SESSION['CPM'])) {
                     </a>';
         }
         // KB menu
-        if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
+        if (isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] == 1) {
             echo '
                     <a class="btn btn-default" href="#" onclick="MenuAction(\'kb\')">
                         <i class="fa fa-map-signs fa-2x tip" title="'.$LANG['kb_menu'].'"></i>
@@ -223,7 +233,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
         <span id="menu_suggestion_position">';
         // SUGGESTION menu
-        if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+        if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
             && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
         ) {
             echo '
@@ -267,7 +277,7 @@ if (isset($_SESSION['CPM'])) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === true) ? '' : isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? '
+                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === true) ? '' : isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
@@ -301,12 +311,12 @@ if (isset($_SESSION['CPM'])) {
         // show avatar
         if (isset($_SESSION['user_avatar_thumb']) && !empty($_SESSION['user_avatar_thumb'])) {
             if (file_exists('includes/avatars/'.$_SESSION['user_avatar_thumb'])) {
-                $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'];
+                $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar_thumb'];
             } else {
-                $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+                $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
             }
         } else {
-            $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+            $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
         }
         echo '
                 <div style="float:right; margin-right:10px;">
@@ -334,14 +344,14 @@ if (isset($_SESSION['CPM'])) {
         <input type="hidden" name="language" id="language" value="" />
         <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
         <input type="hidden" name="user_session" id="user_session" value=""/>
-        <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($_SESSION['settings']['encryptClientServer']) ? $_SESSION['settings']['encryptClientServer'] : '1', '" />
+        <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($SETTINGS['encryptClientServer']) ? $SETTINGS['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
         <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? $_POST['sig_response'] : '', '" />';
 
 // SENDING STATISTICS?
     if (
-        isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] == 1
+        isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] == 1
         && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
     ) {
         echo '
@@ -389,7 +399,7 @@ if (isset($_SESSION['CPM'])) {
 
     if (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw']) {
         // error cpassman dir
-        if (isset($_SESSION['settings']['cpassman_dir']) && empty($_SESSION['settings']['cpassman_dir']) || !isset($_SESSION['settings']['cpassman_dir'])) {
+        if (isset($SETTINGS['cpassman_dir']) && empty($SETTINGS['cpassman_dir']) || !isset($SETTINGS['cpassman_dir'])) {
             if (empty($errorAdmin)) {
                 $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_dir'];
             } else {
@@ -397,7 +407,7 @@ if (isset($_SESSION['CPM'])) {
             }
         }
         // error cpassman url
-        if (isset($_SESSION['validite_pw']) && (isset($_SESSION['settings']['cpassman_url']) && empty($_SESSION['settings']['cpassman_url']) || !isset($_SESSION['settings']['cpassman_url']))) {
+        if (isset($_SESSION['validite_pw']) && (isset($SETTINGS['cpassman_url']) && empty($SETTINGS['cpassman_url']) || !isset($SETTINGS['cpassman_url']))) {
             if (empty($errorAdmin)) {
                 $errorAdmin = '<span class="ui-icon ui-icon-lightbulb" style="float: left; margin-right: .3em;">&nbsp;</span>'.$LANG['error_cpassman_url'];
             } else {
@@ -414,7 +424,7 @@ if (isset($_SESSION['CPM'])) {
     }
 // -----------
 // Display Maintenance mode information
-    if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1
+    if (isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] == 1
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
         ) {
         echo '
@@ -423,7 +433,7 @@ if (isset($_SESSION['CPM'])) {
             </div>';
     }
 // Display UPDATE NEEDED information
-    if (isset($_SESSION['settings']['update_needed']) && $_SESSION['settings']['update_needed'] === true
+    if (isset($SETTINGS['update_needed']) && $SETTINGS['update_needed'] === true
             && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
             && ((isset($_SESSION['hide_maintenance']) && $_SESSION['hide_maintenance'] == 0)
             || !isset($_SESSION['hide_maintenance']))
@@ -450,7 +460,7 @@ if (isset($_SESSION['CPM'])) {
         } else {
             $_SESSION['error']['code'] = ERR_VALID_SESSION;
             $_SESSION['initial_url'] = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")), FILTER_SANITIZE_URL);
-            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            include $SETTINGS['cpassman_dir'].'/error.php';
         }
     // Ask the user to change his password
     } else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id']) && $_SESSION['is_admin'] !== '1') {
@@ -460,7 +470,7 @@ if (isset($_SESSION['CPM'])) {
             <h3>'.$LANG['index_change_pw'].'</h3>
             <div style="height:20px;text-align:center;margin:2px;display:none;" id="change_pwd_error" class=""></div>
             <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all">'.
-            $LANG['complex_asked'].' : '.$_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1].
+            $LANG['complex_asked'].' : '.$SETTINGS['pwComplexity'][$_SESSION['user_pw_complexity']][1].
             '</div>
             <div id="pw_strength" style="margin:0 0 10px 140px;"></div>
             <table>
@@ -481,7 +491,7 @@ if (isset($_SESSION['CPM'])) {
     } elseif (isset($_SESSION['validite_pw']) && $_SESSION['validite_pw'] === true && !empty($_GET['page']) && !empty($_SESSION['user_id'])) {
         if (!extension_loaded('mcrypt')) {
             $_SESSION['error']['code'] = ERR_NO_MCRYPT;
-            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            include $SETTINGS['cpassman_dir'].'/error.php';
         } elseif (isset($_SESSION['initial_url']) && !empty($_SESSION['initial_url'])) {
             include $_SESSION['initial_url'];
         } elseif ($_GET['page'] == "items") {
@@ -493,7 +503,7 @@ if (isset($_SESSION['CPM'])) {
                 include 'items.php';
             } else {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
             }
         } elseif ($_GET['page'] == "find") {
             // Show page for items findind
@@ -503,19 +513,19 @@ if (isset($_SESSION['CPM'])) {
             include 'favorites.php';
         } elseif ($_GET['page'] == "kb") {
             // Show page KB
-            if (isset($_SESSION['settings']['enable_kb']) && $_SESSION['settings']['enable_kb'] == 1) {
+            if (isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] == 1) {
                 include 'kb.php';
             } else {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
             }
         } elseif ($_GET['page'] == "suggestion") {
             // Show page KB
-            if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1) {
+            if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1) {
                 include 'suggestion.php';
             } else {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
             }
         } elseif (in_array($_GET['page'], array_keys($mngPages))) {
             // Define if user is allowed to see management pages
@@ -526,15 +536,15 @@ if (isset($_SESSION['CPM'])) {
                     include($mngPages[$_GET['page']]);
                 } else {
                     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                    include $SETTINGS['cpassman_dir'].'/error.php';
                 }
             } else {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
             }
         } else {
             $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
-            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            include $SETTINGS['cpassman_dir'].'/error.php';
         }
     // Case of password recovery
     } elseif (empty($_SESSION['user_id']) && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
@@ -560,7 +570,7 @@ if (isset($_SESSION['CPM'])) {
     } elseif (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
         // Page doesn't exist
         $_SESSION['error']['code'] = ERR_NOT_EXIST;
-        include $_SESSION['settings']['cpassman_dir'].'/error.php';
+        include $SETTINGS['cpassman_dir'].'/error.php';
         // When user is not identified
     } else {
         // Automatic redirection
@@ -570,7 +580,7 @@ if (isset($_SESSION['CPM'])) {
             $nextUrl = "";
         }
         // MAINTENANCE MODE
-        if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1) {
+        if (isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] == 1) {
             echo '
                 <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
                     class="ui-state-error ui-corner-all">
@@ -597,20 +607,20 @@ if (isset($_SESSION['CPM'])) {
                 <form method="post" name="form_identify" id="form_identify" action="">
                     <div style="width:480px;margin:10px auto 10px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
                         <div style="text-align:center;font-weight:bold;margin-bottom:20px;">',
-        isset($_SESSION['settings']['custom_logo']) && !empty($_SESSION['settings']['custom_logo']) ? '<img src="'.(string) $_SESSION['settings']['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
+        isset($SETTINGS['custom_logo']) && !empty($SETTINGS['custom_logo']) ? '<img src="'.(string) $SETTINGS['custom_logo'].'" alt="" style="margin-bottom:40px;" />' : '', '<br />
                             '.$LANG['index_get_identified'].'
                             <span id="ajax_loader_connexion" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                         </div>
                         <div id="connection_error" style="display:none;text-align:center;margin:5px; padding:3px;" class="ui-state-error ui-corner-all">&nbsp;<i class="fa fa-warning"></i>&nbsp;'.$LANG['index_bas_pw'].'</div>';
         echo '
                         <div style="margin-bottom:3px;">
-                            <label for="login" class="form_label">', isset($_SESSION['settings']['custom_login_text']) && !empty($_SESSION['settings']['custom_login_text']) ? (string) $_SESSION['settings']['custom_login_text'] : $LANG['index_login'], '</label>
+                            <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
                             <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
                             <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
 
         // AGSES
-        if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1) {
+        if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1) {
             echo '
                         <div id="agses_cardid_div" style="text-align:center; display:none; padding:5px; width:454px; margin-bottom:5px;" class="ui-state-active ui-corner-all">
                             '.$LANG['user_profile_agses_card_id'].': &nbsp;
@@ -624,28 +634,28 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
 
         // Personal salt key
-        if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1) {
+        if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1) {
             echo '
                         <div id="connect_psk" style="margin-bottom:3px;">
                             <label for="personal_psk" class="form_label">'.$LANG['home_personal_saltkey'].'</label>
-                            <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>
                         <div id="connect_psk_confirm" style="margin-bottom:3px; display:none;">
                             <label for="psk_confirm" class="form_label">'.$LANG['home_personal_saltkey_confirm'].'</label>
-                            <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
         }
 
         // Google Authenticator code
-        if (isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] === "1") {
+        if (isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1") {
             echo '
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'
-                            <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" />
+                            <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" />
                         <div id="2fa_new_code_div" style="text-align:center; display:none; margin-top:5px; padding:5px;" class="ui-state-default ui-corner-all"></div>
                         <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">'.$LANG['i_need_to_generate_new_ga_code'].'</div>
                         </div>';
@@ -653,14 +663,14 @@ if (isset($_SESSION['CPM'])) {
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($_SESSION['settings']['default_session_expiration_time']) ? $_SESSION['settings']['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                         </div>
 
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                         </div>
                         <div style="text-align:center;margin-top:15px;">
-                            <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1 ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
+                            <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1 ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
                         </div>
                     </div>
                 </form>
@@ -699,7 +709,7 @@ if (isset($_SESSION['CPM'])) {
             ', (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) ? '<i class="fa fa-users"></i>&nbsp;'.$_SESSION['nb_users_online'].'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '
         </div><div id="countdown2"></div>
         <div style="float:right;text-align:right;">
-            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($_SESSION['settings']['date_format'], (string) $_SERVER['REQUEST_TIME'])." - ".@date($_SESSION['settings']['time_format'], (string) $_SERVER['REQUEST_TIME']).'
+            <i class="fa fa-clock-o"></i>&nbsp;'. $LANG['server_time']." : ".@date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME'])." - ".@date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']).'
         </div>
     </div>';
 // PAGE LOADING
@@ -723,7 +733,7 @@ if (isset($_SESSION['CPM'])) {
 
 
 //Personnal SALTKEY
-    if (isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1) {
+    if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1) {
         echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>

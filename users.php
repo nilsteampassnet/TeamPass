@@ -20,22 +20,31 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // Load file
 require_once 'users.load.php';
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -156,7 +165,7 @@ echo '
     <label for="new_login" class="label_cpm">'.$LANG['login'].'&nbsp;<span id="new_login_status"></span></label>
     <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />
 
-    ', isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1 ? '' : '<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
+    ', isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 1 ? '' : '<label for="new_pwd" class="label_cpm">'.$LANG['pw'].'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />', '
 
     <label for="new_email" class="label_cpm">'.$LANG['email'].'</label>
@@ -229,7 +238,7 @@ foreach ($rows as $record) {
             </tr>
             <tr>
                 <td>
-                    <input type="checkbox" id="new_personal_folder"', isset($_SESSION['settings']['enable_pf_feature']) && $_SESSION['settings']['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' />
+                    <input type="checkbox" id="new_personal_folder"', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' />
                     <label for="new_personal_folder">'.$LANG['personal_folder'].'</label>
                 </td>
             </tr>

@@ -16,6 +16,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Please login...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /**
  * redirection management
  * @param  [string] $url new url
@@ -41,82 +50,56 @@ function redirect($url)
     }
 }
 
-
+// Redirect needed?
 if (isset($_SERVER['HTTPS']) &&
     $_SERVER['HTTPS'] != 'on' &&
-    isset($_SESSION['settings']['enable_sts']) &&
-    $_SESSION['settings']['enable_sts'] == 1
+    isset($SETTINGS['enable_sts']) &&
+    $SETTINGS['enable_sts'] == 1
 ) {
     redirect("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
 }
 
-/* LOAD CPASSMAN SETTINGS */
-if (!isset($_SESSION['settings']['loaded']) || $_SESSION['settings']['loaded'] != 1) {
+// LOAD CPASSMAN SETTINGS
+if (!isset($SETTINGS['loaded']) || $SETTINGS['loaded'] !== '1') {
     //by default, this is set to 0;
-    $_SESSION['settings']['duplicate_folder'] = 0;
+    $SETTINGS['duplicate_folder'] = 0;
     //by default, this is set to 0;
-    $_SESSION['settings']['duplicate_item'] = 0;
+    $SETTINGS['duplicate_item'] = 0;
     //by default, this value is 5;
-    $_SESSION['settings']['number_of_used_pw'] = 5;
+    $SETTINGS['number_of_used_pw'] = 5;
+    $SETTINGS['loaded'] = 1;
+    $SETTINGS['default_session_expiration_time'] = 5;
 
-    $rows = DB::query(
-        "SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
-        array(
-            'type' => "admin",
-            'type2' => "settings"
-        )
-    );
-    foreach ($rows as $record) {
-        if ($record['type'] == 'admin') {
-            $_SESSION['settings'][$record['intitule']] = $record['valeur'];
-        } else {
-            $settings[$record['intitule']] = $record['valeur'];
-        }
+    // Pw complexity levels
+    if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
+        require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+        $SETTINGS['pwComplexity'] = array(
+            0=>array(0, $LANG['complex_level0']),
+            25=>array(25, $LANG['complex_level1']),
+            50=>array(50, $LANG['complex_level2']),
+            60=>array(60, $LANG['complex_level3']),
+            70=>array(70, $LANG['complex_level4']),
+            80=>array(80, $LANG['complex_level5']),
+            90=>array(90, $LANG['complex_level6'])
+        );
     }
-    $_SESSION['settings']['loaded'] = 1;
-    $_SESSION['settings']['default_session_expiration_time'] = 5;
 }
 
-$rows = DB::query(
-    "SELECT valeur, intitule FROM ".prefix_table("misc")." WHERE type=%s_type",
-    array(
-        'type' => "admin"
-    )
-);
-foreach ($rows as $record) {
-    $_SESSION['settings'][$record['intitule']] = $record['valeur'];
-}
 
-//pw complexity levels
-if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    $_SESSION['settings']['pwComplexity'] = array(
-        0=>array(0, $LANG['complex_level0']),
-        25=>array(25, $LANG['complex_level1']),
-        50=>array(50, $LANG['complex_level2']),
-        60=>array(60, $LANG['complex_level3']),
-        70=>array(70, $LANG['complex_level4']),
-        80=>array(80, $LANG['complex_level5']),
-        90=>array(90, $LANG['complex_level6'])
-    );
-}
-
-/**
- * Define Timezone
- */
-if (!isset($_SESSION['settings']['timezone'])) {
-    $_SESSION['settings']['timezone'] = 'UTC';
+// Define Timezone
+if (!isset($SETTINGS['timezone'])) {
+    $SETTINGS['timezone'] = 'UTC';
 }
 if (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") {
     // use user timezone
     date_default_timezone_set($_SESSION['user_settings']['usertimezone']);
 } else {
     // use server timezone
-    date_default_timezone_set($_SESSION['settings']['timezone']);
+    date_default_timezone_set($SETTINGS['timezone']);
 }
 
 
-//Load Languages stuff
+// Load Languages stuff
 if (empty($languagesDropmenu)) {
     $languagesList = array();
     $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
@@ -131,7 +114,7 @@ if (empty($languagesDropmenu)) {
     }
 }
 
-/* CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED */
+// CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED
 if ((isset($_GET['session']) && $_GET['session'] == "expired")
     || (isset($_POST['session']) && $_POST['session'] == "expired")
 ) {
@@ -160,7 +143,7 @@ if ((isset($_GET['session']) && $_GET['session'] == "expired")
     exit;
 }
 
-/* CHECK IF SESSION EXISTS AND IF SESSION IS VALID */
+// CHECK IF SESSION EXISTS AND IF SESSION IS VALID
 if (!empty($_SESSION['fin_session'])) {
     $dataSession = DB::queryFirstRow(
         "SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i",
@@ -189,7 +172,7 @@ if (isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
     );
 
     //Log into DB the user's disconnection
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] === '1' && empty($_SESSION['login']) === false) {
+    if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1' && empty($_SESSION['login']) === false) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 
@@ -207,9 +190,9 @@ if (isset($_SESSION['user_id']) && isset($_GET['type']) === false && (
     </script>';
 }
 
-/* CHECK IF UPDATE IS NEEDED */
-if ((isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['update_needed'] !== false
-    || empty($_SESSION['settings']['update_needed'])))
+// CHECK IF UPDATE IS NEEDED
+if ((isset($SETTINGS['update_needed']) && ($SETTINGS['update_needed'] !== false
+    || empty($SETTINGS['update_needed'])))
     && (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1)
 ) {
     $row = DB::queryFirstRow(
@@ -220,17 +203,17 @@ if ((isset($_SESSION['settings']['update_needed']) && ($_SESSION['settings']['up
         )
     );
     if ($row['valeur'] != $k['version']) {
-        $_SESSION['settings']['update_needed'] = true;
+        $SETTINGS['update_needed'] = true;
     } else {
-        $_SESSION['settings']['update_needed'] = false;
+        $SETTINGS['update_needed'] = false;
     }
 }
 
 /**
  * Set the personal SaltKey if authorized
  */
-if (isset($_SESSION['settings']['enable_personal_saltkey_cookie'])
-    && $_SESSION['settings']['enable_personal_saltkey_cookie'] == 1
+if (isset($SETTINGS['enable_personal_saltkey_cookie'])
+    && $SETTINGS['enable_personal_saltkey_cookie'] == 1
     && isset($_SESSION['user_id'])
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
 ) {
@@ -241,7 +224,7 @@ if (isset($_SESSION['settings']['enable_personal_saltkey_cookie'])
 * IF yes then authorize all ADMIN connections and
 * reject all others
 */
-if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['maintenance_mode'] == 1) {
+if (isset($SETTINGS['maintenance_mode']) && $SETTINGS['maintenance_mode'] == 1) {
     if (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] != 1) {
         // Update table by deleting ID
         if (isset($_SESSION['user_id'])) {
@@ -258,7 +241,7 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
         }
 
         //Log into DB the user's disconnection
-        if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+        if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] == 1) {
             logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
         }
 
@@ -284,8 +267,8 @@ if (isset($_SESSION['settings']['maintenance_mode']) && $_SESSION['settings']['m
 }
 
 /* Force HTTPS Strict Transport Security */
-if (isset($_SESSION['settings']['enable_sts']) &&
-    $_SESSION['settings']['enable_sts'] == 1
+if (isset($SETTINGS['enable_sts']) &&
+    $SETTINGS['enable_sts'] == 1
 ) {
     // do a check to make sure that the certificate is not self signed.
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
@@ -377,7 +360,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
         /*
         * LOAD CATEGORIES
         */
-        if (isset($_SESSION['settings']['item_extra_fields']) && $_SESSION['settings']['item_extra_fields'] == 1 && empty($_SESSION['item_fields'])) {
+        if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 && empty($_SESSION['item_fields'])) {
             $_SESSION['item_fields'] = array();
             $rows = DB::query(
                 "SELECT *
@@ -428,16 +411,16 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 * Don't take into consideration if LDAP in use
 */
 $_SESSION['numDaysBeforePwExpiration'] = ""; //initiliaze variable
-if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mode'] == 1) {
+if (isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 1) {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
 } else {
     if (isset($_SESSION['last_pw_change'])) {
-        if ($_SESSION['settings']['pw_life_duration'] == 0) {
+        if ($SETTINGS['pw_life_duration'] == 0) {
             $_SESSION['numDaysBeforePwExpiration'] = "infinite";
             $_SESSION['validite_pw'] = true;
         } else {
-            $_SESSION['numDaysBeforePwExpiration'] = $_SESSION['settings']['pw_life_duration'] - round(
+            $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
                 (mktime(0, 0, 0, date('m'), date('d'), date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
             );
             if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
@@ -455,8 +438,8 @@ if (isset($_SESSION['settings']['ldap_mode']) && $_SESSION['settings']['ldap_mod
 **
 */
 $_SESSION['temporary']['user_can_printout'] = false;
-if (isset($_SESSION['settings']['roles_allowed_to_print']) && isset($_SESSION['user_roles']) && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))) {
-    foreach (explode(";", $_SESSION['settings']['roles_allowed_to_print']) as $role) {
+if (isset($SETTINGS['roles_allowed_to_print']) && isset($_SESSION['user_roles']) && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))) {
+    foreach (explode(";", $SETTINGS['roles_allowed_to_print']) as $role) {
         if (in_array($role, $_SESSION['user_roles'])) {
             $_SESSION['temporary']['user_can_printout'] = true;
         }

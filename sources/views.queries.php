@@ -21,24 +21,33 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once 'main.functions.php';
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -50,7 +59,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -62,7 +71,7 @@ switch ($_POST['type']) {
     #CASE generating the log for passwords renewal
     case "log_generate":
         //Prepare the PDF file
-        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
+        include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
         $pdf = new TFPDF();
 
         //Add font for utf-8
@@ -72,7 +81,7 @@ switch ($_POST['type']) {
         $pdf->SetFont('helvetica', '', 16);
         $pdf->Cell(0, 10, $LANG['pdf_del_title'], 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 12);
-        $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(15, 86, 145);
         $pdf->cell(80, 6, $LANG['label'], 1, 0, "C", true);
@@ -91,7 +100,7 @@ switch ($_POST['type']) {
             "at_pw :%"
         );
         foreach ($rows as $record) {
-            if (date($_SESSION['settings']['date_format'], $record['date']) === $_POST['date']) {
+            if (date($SETTINGS['date_format'], $record['date']) === $_POST['date']) {
                 //get the tree grid
                 $arbo = $tree->getPath($record['id_tree'], true);
                 $arboTxt = "";
@@ -111,9 +120,9 @@ switch ($_POST['type']) {
         list($d, $m, $y) = explode('/', $_POST['date']);
         $nomFichier = "log_followup_passwords_".date("Y-m-d", mktime(0, 0, 0, $m, $d, $y)).".pdf";
         //send the file
-        $pdf->Output($_SESSION['settings']['path_to_files_folder'].'/'.$nomFichier);
+        $pdf->Output($SETTINGS['path_to_files_folder'].'/'.$nomFichier);
 
-        echo '[{"text":"<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+        echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$nomFichier.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         break;
 
     /**
@@ -162,7 +171,7 @@ switch ($_POST['type']) {
                     $thisFolder = "";
                 }
 
-                $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b><label for=\'item_deleted_'.$record['id'].'\'>'.$record['label'].'</label></b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($_SESSION['settings']['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
+                $texte .= '<tr><td><input type=\'checkbox\' class=\'cb_deleted_item\' value=\''.$record['id'].'\' id=\'item_deleted_'.$record['id'].'\' />&nbsp;<b><label for=\'item_deleted_'.$record['id'].'\'>'.$record['label'].'</label></b></td><td width=\"100px\" align=\"center\"><span class=\"fa fa-calendar\"></span>&nbsp;'.date($SETTINGS['date_format'], $record['date']).'</td><td width=\"70px\" align=\"center\"><span class=\"fa fa-user\"></span>&nbsp;'.$record['login'].'</td><td><span class=\"fa fa-folder-o\"></span>&nbsp;'.$record['folder_title'].'</td>'.$thisFolder.'</tr>';
             }
             $prev_id = $record['id'];
         }
@@ -261,7 +270,7 @@ switch ($_POST['type']) {
                         // delete attachments
                         $item_files = DB::query("SELECT id, file FROM ".prefix_table("files")." WHERE id_item=%i", $item['id']);
                         foreach ($item_files as $file) {
-                            fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$file['file']);
+                            fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file['file']);
                         }
 
                         //Delete item
@@ -287,7 +296,7 @@ switch ($_POST['type']) {
             // delete attachments
             $item_files = DB::query("SELECT file FROM ".prefix_table("files")." WHERE id_item=%i", $id);
             foreach ($item_files as $file) {
-                fileDelete($_SESSION['settings']['path_to_upload_folder'].'/'.$file['file']);
+                fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file['file']);
             }
             //delete from FILES
             DB::delete(prefix_table("files"), "id_item=%i", $id);
@@ -301,7 +310,7 @@ switch ($_POST['type']) {
      */
     case "generate_renewal_pdf":
         //Prepare the PDF file
-        include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
+        include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
         $pdf = new tFPDF();
 
         //Add font for utf-8
@@ -312,7 +321,7 @@ switch ($_POST['type']) {
         $pdf->SetFont('helvetica', '', 16);
         $pdf->Cell(0, 10, $LANG['renewal_needed_pdf_title'], 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 12);
-        $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], time()), 0, 1, 'C', false);
+        $pdf->Cell(0, 10, $LANG['pdf_del_date'].date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time()), 0, 1, 'C', false);
         $pdf->SetFont('helvetica', '', 10);
         $pdf->SetFillColor(192, 192, 192);
         $pdf->cell(70, 6, $LANG['label'], 1, 0, "C", true);
@@ -335,9 +344,9 @@ switch ($_POST['type']) {
 
         $pdfFile = "renewal_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".pdf";
         //send the file
-        $pdf->Output($_SESSION['settings']['path_to_files_folder']."/".$pdfFile);
+        $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdfFile);
 
-        echo '[{"file" : "'.$_SESSION['settings']['url_to_files_folder'].'/'.$pdfFile.'"}]';
+        echo '[{"file" : "'.$SETTINGS['url_to_files_folder'].'/'.$pdfFile.'"}]';
         break;
 
     /**

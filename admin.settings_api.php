@@ -56,6 +56,16 @@ padding: 0 5px 0 5px;
 </style>
 </head><body>
 <?php
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 require_once 'sources/SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -66,22 +76,22 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings") === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 header('Content-type: text/html; charset=utf-8');
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -106,9 +116,9 @@ echo '
           </label>
         </td>
         <td class="maintable-right">
-          <div class="toggle toggle-modern" id="api" data-toggle-on="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? 'true' : 'false', '">
+          <div class="toggle toggle-modern" id="api" data-toggle-on="', isset($SETTINGS['api']) && $SETTINGS['api'] == 1 ? 'true' : 'false', '">
           </div>
-          <div><input type="hidden" id="api_input" name="api_input" value="', isset($_SESSION['settings']['api']) && $_SESSION['settings']['api'] == 1 ? '1' : '0', '" />
+          <div><input type="hidden" id="api_input" name="api_input" value="', isset($SETTINGS['api']) && $SETTINGS['api'] == 1 ? '1' : '0', '" />
         </div>
         </td>
       </tr>

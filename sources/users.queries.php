@@ -22,32 +22,41 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
     if (!isset($_POST['newValue'])) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-        include $_SESSION['settings']['cpassman_dir'].'/error.php';
+        include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     } else {
         $filtered_newvalue = sanitizeEntry($_POST['newValue'], FILTER_SANITIZE_STRING);
         if (empty($filtered_newvalue)) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            include $SETTINGS['cpassman_dir'].'/error.php';
             exit();
         }
     }
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -177,7 +186,7 @@ if (!empty($_POST['type'])) {
                         'gestionnaire' => $dataReceived['manager'] == "true" ? '1' : '0',
                         'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
                         'personal_folder' => $dataReceived['personal_folder'] == "true" ? '1' : '0',
-                        'user_language' => $_SESSION['settings']['default_language'],
+                        'user_language' => $SETTINGS['default_language'],
                         'fonction_id' => $dataReceived['groups'],
                         'groupes_interdits' => $dataReceived['forbidden_flds'],
                         'groupes_visibles' => $dataReceived['allowed_flds'],
@@ -253,13 +262,13 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // get links url
-                if (empty($_SESSION['settings']['email_server_url'])) {
-                    $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
+                if (empty($SETTINGS['email_server_url'])) {
+                    $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
                 // Send email to new user
                 sendEmail(
                     $LANG['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $SETTINGS['email_server_url']), $LANG['email_new_user_mail']),
                     $dataReceived['email']
                 );
                 // update LOG
@@ -890,9 +899,9 @@ if (!empty($_POST['type'])) {
                             $label = $LANG['log_user_pwd_changed'];
                         }
                         // prepare log
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
                     } else {
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
+                        $logs .= '<tr><td>'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
                     }
                 }
             }
@@ -1032,7 +1041,7 @@ if (!empty($_POST['type'])) {
             $arrFldAllowed = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -1371,7 +1380,7 @@ if (!empty($_POST['type'])) {
             $arrData = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 

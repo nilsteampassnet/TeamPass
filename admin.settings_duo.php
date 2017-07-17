@@ -21,24 +21,33 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -50,7 +59,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //get infos from SETTINGS.PHP file
-$filename = $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+$filename = $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 $events = "";
 if (file_exists($filename)) {
     //copy some constants from this existing file
@@ -101,9 +110,9 @@ td {
 .googleauth td:nth-child(2) {
   width: 60%;
 }
-.google_enabled { ', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? '' : 'display:none;', ' }
-.duo_enabled { ', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '' : 'display:none;', ' }
-.agses_enabled { ', isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 ? '' : 'display:none;', ' }
+.google_enabled { ', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 ? '' : 'display:none;', ' }
+.duo_enabled { ', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? '' : 'display:none;', ' }
+.agses_enabled { ', isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1 ? '' : 'display:none;', ' }
 </style>
 </head><body>';
 
@@ -122,9 +131,9 @@ echo '
         </label>
       </td>
       <td>
-        <div class="toggle toggle-modern" id="google_authentication" data-toggle-on="', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? 'true' : 'false', '">
+        <div class="toggle toggle-modern" id="google_authentication" data-toggle-on="', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 ? 'true' : 'false', '">
         </div>
-        <input type="hidden" id="google_authentication_input" name="google_authentication_input" value="', isset($_SESSION['settings']['google_authentication']) && $_SESSION['settings']['google_authentication'] == 1 ? '1' : '0', '" />
+        <input type="hidden" id="google_authentication_input" name="google_authentication_input" value="', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 ? '1' : '0', '" />
       </td>
     </tr>
 
@@ -137,7 +146,7 @@ echo '
         </label>
       </td>
       <td>
-        <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($_SESSION['settings']['ga_website_name']) ? $_SESSION['settings']['ga_website_name'] : 'not set', '" class="text ui-widget-content" />
+        <input type="text" size="30" id="ga_website_name" name="ga_website_name" value="', isset($SETTINGS['ga_website_name']) ? $SETTINGS['ga_website_name'] : 'not set', '" class="text ui-widget-content" />
         <input type="button" onclick="SaveFA()" value="'.$LANG['save_button'].'" class="ui-state-default ui-corner-all" />
         <span id="save_wait" style="display: none;"><i class="fa fa-cog fa-spin"></i></span>
       </td>
@@ -152,9 +161,9 @@ echo '
         </label>
       </td>
       <td>
-        <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="', isset($_SESSION['settings']['ga_reset_by_user']) && $_SESSION['settings']['ga_reset_by_user'] == 1 ? 'true' : 'false', '">
+        <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="', isset($SETTINGS['ga_reset_by_user']) && $SETTINGS['ga_reset_by_user'] == 1 ? 'true' : 'false', '">
         </div>
-        <input type="hidden" id="ga_reset_by_user_input" name="ga_reset_by_user_input" value="', isset($_SESSION['settings']['ga_reset_by_user']) && $_SESSION['settings']['ga_reset_by_user'] == 1 ? '1' : '0', '" />
+        <input type="hidden" id="ga_reset_by_user_input" name="ga_reset_by_user_input" value="', isset($SETTINGS['ga_reset_by_user']) && $SETTINGS['ga_reset_by_user'] == 1 ? '1' : '0', '" />
       </td>
     </tr>
 
@@ -173,9 +182,9 @@ echo '
         </label>
       </td>
       <td>
-        <div class="toggle toggle-modern" id="duo" data-toggle-on="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? 'true' : 'false', '">
+        <div class="toggle toggle-modern" id="duo" data-toggle-on="', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 'true' : 'false', '">
         </div>
-        <input type="hidden" id="duo_input" name="duo_input" value="', isset($_SESSION['settings']['duo']) && $_SESSION['settings']['duo'] == 1 ? '1' : '0', '" />
+        <input type="hidden" id="duo_input" name="duo_input" value="', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? '1' : '0', '" />
       </td>
     </tr>
 
@@ -259,9 +268,9 @@ echo '
         </label>
       </td>
       <td>
-        <div class="toggle toggle-modern" id="agses_authentication_enabled" data-toggle-on="', isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 ? 'true' : 'false', '">
+        <div class="toggle toggle-modern" id="agses_authentication_enabled" data-toggle-on="', isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1 ? 'true' : 'false', '">
         </div>
-        <input type="hidden" id="agses_authentication_enabled_input" name="agses_authentication_enabled_input" value="', isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1 ? '1' : '0', '" />
+        <input type="hidden" id="agses_authentication_enabled_input" name="agses_authentication_enabled_input" value="', isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1 ? '1' : '0', '" />
       </td>
     </tr>
 
@@ -282,7 +291,7 @@ echo '
               </label>
             </td>
             <td>
-              <input type="text" size="60" id="agses_hosted_url" value="', isset($_SESSION['settings']['agses_hosted_url']) ? $_SESSION['settings']['agses_hosted_url'] : '', '" class="text ui-widget-content" />
+              <input type="text" size="60" id="agses_hosted_url" value="', isset($SETTINGS['agses_hosted_url']) ? $SETTINGS['agses_hosted_url'] : '', '" class="text ui-widget-content" />
             </td>
           </tr>
           <tr>
@@ -291,7 +300,7 @@ echo '
               </label>
             </td>
             <td>
-              <input type="text" size="60" id="agses_hosted_id" value="', isset($_SESSION['settings']['agses_hosted_id']) ? $_SESSION['settings']['agses_hosted_id'] : '', '" class="text ui-widget-content" />
+              <input type="text" size="60" id="agses_hosted_id" value="', isset($SETTINGS['agses_hosted_id']) ? $SETTINGS['agses_hosted_id'] : '', '" class="text ui-widget-content" />
             </td>
           </tr>
           <tr>
@@ -300,7 +309,7 @@ echo '
               </label>
             </td>
             <td>
-              <input type="text" size="60" id="agses_hosted_apikey" value="', isset($_SESSION['settings']['agses_hosted_apikey']) ? $_SESSION['settings']['agses_hosted_apikey'] : '', '" class="text ui-widget-content" />
+              <input type="text" size="60" id="agses_hosted_apikey" value="', isset($SETTINGS['agses_hosted_apikey']) ? $SETTINGS['agses_hosted_apikey'] : '', '" class="text ui-widget-content" />
             </td>
           </tr>
         </table>

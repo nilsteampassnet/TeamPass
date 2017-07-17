@@ -19,7 +19,7 @@ namespace PasswordLib\Password;
 use PasswordLib\Random\Factory as RandomFactory;
 use DomainException;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Password.php";
+require_once dirname(__FILE__)."/Password.php";
 
 /**
  * The base abstract password hashing implementation
@@ -126,7 +126,7 @@ abstract class AbstractPassword implements \PasswordLib\Password\Password {
      *
      * @param \PasswordLib\Random\Generator $generator  The random generator to use for seeds
      *
-     * @return void     
+     * @return void
      */
     public function setGenerator(
         \PasswordLib\Random\Generator $generator = null
@@ -136,20 +136,20 @@ abstract class AbstractPassword implements \PasswordLib\Password\Password {
 
     /**
      * Perform a constant time comparison between two hash strings
-     * 
+     *
      * This is done to prevent remote timing attacks from giving an attacker
      * information about the hash remotely.  This provides a constant runtime
      * equality check between two strings of the same length. This should be used
      * any time sensitive information is compared, as === can leak information
      * about the position of the difference to an attacker.
      *
-     * Additionally, for added protection we're hashing each hash again with the 
+     * Additionally, for added protection we're hashing each hash again with the
      * same random key, to further protect against any form of timing attacks if
      * the two hashes are of different length
      *
      * @param string $hash1 The first hash to compare
      * @param string $hash2 The second hash to compare
-     * 
+     *
      * @see http://rdist.root.org/2010/07/19/exploiting-remote-timing-attacks/
      * @see http://rdist.root.org/2010/01/07/timing-independent-array-comparison/
      * @return boolean True if the strings are identical
@@ -171,7 +171,7 @@ abstract class AbstractPassword implements \PasswordLib\Password\Password {
      * Validates the password for type constraints
      *
      * @param string $password The password to validate
-     * 
+     *
      * @return string The validated password (casted if needed)
      */
     protected function checkPassword($password) {

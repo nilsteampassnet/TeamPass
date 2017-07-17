@@ -22,27 +22,36 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/tp.config.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
 
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -63,7 +72,7 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Load AntiXSS
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
 $antiXss = new protect\AntiXSS\AntiXSS();
 
 switch ($_POST['type']) {
@@ -73,10 +82,10 @@ switch ($_POST['type']) {
         $text = "<ul>";
         $error = "";
         if (!isset($k['admin_no_info']) || (isset($k['admin_no_info']) && $k['admin_no_info'] == 0)) {
-            if (isset($_SESSION['settings']['get_tp_info']) && $_SESSION['settings']['get_tp_info'] == 1) {
+            if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
                 $handleDistant = array();
-                if (isset($_SESSION['settings']['proxy_ip']) && !empty($_SESSION['settings']['proxy_ip'])) {
-                    $fp = fsockopen($_SESSION['settings']['proxy_ip'], $_SESSION['settings']['proxy_port']);
+                if (isset($SETTINGS['proxy_ip']) && !empty($SETTINGS['proxy_ip'])) {
+                    $fp = fsockopen($SETTINGS['proxy_ip'], $SETTINGS['proxy_port']);
                 } else {
                     $fp = @fsockopen("www.teampass.net", 80);
                 }
@@ -206,7 +215,7 @@ switch ($_POST['type']) {
     #CASE for deleting all items from DB that are linked to a folder that has been deleted
     case "admin_action_db_clean_items":
         //Libraries call
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         //init
         $foldersIds = array();
@@ -263,7 +272,7 @@ switch ($_POST['type']) {
     ###########################################################
     #CASE for creating a DB backup
     case "admin_action_db_backup":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         $return = "";
 
         //Get all tables
@@ -322,7 +331,7 @@ switch ($_POST['type']) {
 
             //save file
             $filename = time().'-'.$token.'.sql';
-            $handle = fopen($_SESSION['settings']['path_to_files_folder']."/".$filename, 'w+');
+            $handle = fopen($SETTINGS['path_to_files_folder']."/".$filename, 'w+');
 
             //write file
             fwrite($handle, $return);
@@ -333,16 +342,16 @@ switch ($_POST['type']) {
                 // Encrypt the file
                 prepareFileWithDefuse(
                     'encrypt',
-                    $_SESSION['settings']['path_to_files_folder']."/".$filename,
-                    $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$filename,
+                    $SETTINGS['path_to_files_folder']."/".$filename,
+                    $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
                     $_POST['option']
                 );
 
                 // Do clean
-                unlink($_SESSION['settings']['path_to_files_folder']."/".$filename);
+                unlink($SETTINGS['path_to_files_folder']."/".$filename);
                 rename(
-                    $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$filename,
-                    $_SESSION['settings']['path_to_files_folder']."/".$filename
+                    $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
+                    $SETTINGS['path_to_files_folder']."/".$filename
                 );
             }
 
@@ -359,7 +368,7 @@ switch ($_POST['type']) {
     ###########################################################
     #CASE for restoring a DB backup
     case "admin_action_db_restore":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $_POST['option']);
         $file = htmlspecialchars($dataPost[0]);
@@ -370,8 +379,8 @@ switch ($_POST['type']) {
             // Decrypt the file
             $ret = prepareFileWithDefuse(
                 'decrypt',
-                $_SESSION['settings']['path_to_files_folder']."/".$file,
-                $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file,
+                $SETTINGS['path_to_files_folder']."/".$file,
+                $SETTINGS['path_to_files_folder']."/defuse_temp_".$file,
                 $key
             );
 
@@ -381,10 +390,10 @@ switch ($_POST['type']) {
             }
 
             // Do clean
-            fileDelete($_SESSION['settings']['path_to_files_folder']."/".$file);
-            $file = $_SESSION['settings']['path_to_files_folder']."/defuse_temp_".$file;
+            fileDelete($SETTINGS['path_to_files_folder']."/".$file);
+            $file = $SETTINGS['path_to_files_folder']."/defuse_temp_".$file;
         } else {
-            $file = $_SESSION['settings']['path_to_files_folder']."/".$file;
+            $file = $SETTINGS['path_to_files_folder']."/".$file;
         }
 
         //read sql file
@@ -463,16 +472,16 @@ switch ($_POST['type']) {
     #CASE for deleted old files in folder "files"
     case "admin_action_purge_old_files":
         $nbFilesDeleted = 0;
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         //read folder
-        $dir = opendir($_SESSION['settings']['path_to_files_folder']);
+        $dir = opendir($SETTINGS['path_to_files_folder']);
 
         //delete file FILES
         while (false !== ($f = readdir($dir))) {
             if ($f != "." && $f !== ".." && $f !== ".htaccess") {
                 if ((time() - filectime($dir.$f)) > 604800) {
-                    fileDelete($_SESSION['settings']['path_to_files_folder']."/".$f);
+                    fileDelete($SETTINGS['path_to_files_folder']."/".$f);
                     $nbFilesDeleted++;
                 }
             }
@@ -481,13 +490,13 @@ switch ($_POST['type']) {
         closedir($dir);
 
         //read folder  UPLOAD
-        $dir = opendir($_SESSION['settings']['path_to_upload_folder']);
+        $dir = opendir($SETTINGS['path_to_upload_folder']);
 
         //delete file
         while (false !== ($f = readdir($dir))) {
             if ($f != "." && $f !== "..") {
                 if (strpos($f, "_delete.") > 0) {
-                    fileDelete($_SESSION['settings']['path_to_upload_folder']."/".$f);
+                    fileDelete($SETTINGS['path_to_upload_folder']."/".$f);
                     $nbFilesDeleted++;
                 }
             }
@@ -503,7 +512,7 @@ switch ($_POST['type']) {
     * Reload the Cache table
     */
     case "admin_action_reload_cache_table":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         updateCacheTable("reload", "");
         echo '[{"result":"cache_reload"}]';
         break;
@@ -514,7 +523,7 @@ switch ($_POST['type']) {
     case "admin_action_rebuild_config_file":
         $error = "";
 
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         $ret = handleConfigFile("rebuild");
 
         if ($ret !== true) {
@@ -552,17 +561,17 @@ switch ($_POST['type']) {
                 $err = "";
 
                 // it means that file is DEFUSE encrypted
-                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
-                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
-                require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
+                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
+                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
+                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
 
                 try {
                     \Defuse\Crypto\File::decryptFileWithPassword(
-                        $_SESSION['settings']['bck_script_path'].'/'.$_POST['option'].'.sql',
-                        $_SESSION['settings']['bck_script_path'].'/'.str_replace('encrypted', 'clear', filename).'.sql',
-                        $_SESSION['settings']['bck_script_key']
+                        $SETTINGS['bck_script_path'].'/'.$_POST['option'].'.sql',
+                        $SETTINGS['bck_script_path'].'/'.str_replace('encrypted', 'clear', filename).'.sql',
+                        $SETTINGS['bck_script_key']
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
                     $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
@@ -677,7 +686,7 @@ switch ($_POST['type']) {
         );
 
         // delete previous backup files
-        $files = glob($_SESSION['settings']['path_to_upload_folder'].'/*'); // get all file names
+        $files = glob($SETTINGS['path_to_upload_folder'].'/*'); // get all file names
         foreach ($files as $file) { // iterate files
             if (is_file($file)) {
                 $file_parts = pathinfo($file);
@@ -933,11 +942,11 @@ switch ($_POST['type']) {
                     );
                     $newID = DB::insertId();
 
-                    if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'])) {
+                    if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
                         // make a copy of file
                         if (!copy(
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'].".copy"
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['file'].".copy"
                         )) {
                             $error = "Copy not possible";
                             exit;
@@ -945,8 +954,8 @@ switch ($_POST['type']) {
                             // prepare a bck of file (that will not be deleted)
                             $backup_filename = $record['file'].".bck-change-sk.".time();
                             copy(
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$backup_filename
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+                                $SETTINGS['path_to_upload_folder'].'/'.$backup_filename
                             );
                         }
 
@@ -955,22 +964,22 @@ switch ($_POST['type']) {
                         // STEP1 - Do decryption
                             prepareFileWithDefuse(
                                 'decrypt',
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'],
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']."_encrypted"
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file']."_encrypted"
                             );
 
                             // Do cleanup of files
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']);
+                            unlink($SETTINGS['path_to_upload_folder'].'/'.$record['file']);
 
                         // STEP2 - Do encryption
                             prepareFileWithDefuse(
                                 'encryp',
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']."_encrypted",
-                                $_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file']."_encrypted",
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file']
                             );
 
                             // Do cleanup of files
-                            unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file']."_encrypted");
+                            unlink($SETTINGS['path_to_upload_folder'].'/'.$record['file']."_encrypted");
 
 
                         // Update backup table
@@ -1069,12 +1078,12 @@ switch ($_POST['type']) {
                 );
             } elseif ($record['current_table'] === "files") {
                 // restore backup file
-                if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value'])) {
-                    unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value']);
-                    if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2'])) {
+                if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$record['value'])) {
+                    unlink($SETTINGS['path_to_upload_folder'].'/'.$record['value']);
+                    if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$record['value2'])) {
                         rename(
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2'],
-                            $_SESSION['settings']['path_to_upload_folder'].'/'.$record['value']
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['value2'],
+                            $SETTINGS['path_to_upload_folder'].'/'.$record['value']
                         );
                     }
                 }
@@ -1115,8 +1124,8 @@ switch ($_POST['type']) {
             WHERE current_table = 'files'"
         );
         foreach ($rows as $record) {
-            if (file_exists($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2'])) {
-                unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$record['value2']);
+            if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$record['value2'])) {
+                unlink($SETTINGS['path_to_upload_folder'].'/'.$record['value2']);
             }
         }
 
@@ -1133,7 +1142,7 @@ switch ($_POST['type']) {
         if (empty($_SESSION['user_email'])) {
             echo '[{"result":"email_test_conf", "error":"error_mail_not_send" , "message":"User has no email defined!"}]';
         } else {
-            require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             echo '[{"result":"email_test_conf", '.sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['user_email']).'}]';
         }
         break;
@@ -1142,7 +1151,7 @@ switch ($_POST['type']) {
     * Send emails in backlog
     */
     case "admin_email_send_backlog":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status = %s OR status = %s", "not_sent", "");
         foreach ($rows as $record) {
@@ -1174,7 +1183,7 @@ switch ($_POST['type']) {
         //update LOG
         logEvents('admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
 
-        echo '[{"result":"admin_email_send_backlog", '.@sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['settings']['email_from']).'}]';
+        echo '[{"result":"admin_email_send_backlog", '.@sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $SETTINGS['email_from']).'}]';
         break;
 
     /*
@@ -1265,7 +1274,7 @@ switch ($_POST['type']) {
     * Attachments encryption
     */
     case "admin_action_attachments_cryption":
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         // init
         $error = "";
@@ -1283,7 +1292,7 @@ switch ($_POST['type']) {
                 LIMIT ".filter_var($_POST['start'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_POST['length'], FILTER_SANITIZE_NUMBER_INT)
             );
             foreach ($rows as $record) {
-                if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$record['file'])) {
+                if (is_file($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
                     $addFile = 0;
                     if ($_POST['option'] == "decrypt" && $record['status'] === 'encrypted') {
                         $addFile = 1;
@@ -1311,8 +1320,8 @@ switch ($_POST['type']) {
      * Attachments encryption - Treatment in several loops
      */
     case "admin_action_attachments_cryption_continu":
-        include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+        include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $cpt = 0;
         $newFilesList = "";
@@ -1321,15 +1330,15 @@ switch ($_POST['type']) {
         $post_cpt = intval($_POST['cpt']);
 
         // load PhpEncryption library
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
         // Get KEY
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
@@ -1339,7 +1348,7 @@ switch ($_POST['type']) {
         foreach ($filesList as $file) {
             if ($cpt < 5) {
                 // skip file is Coherancey not respected
-                if (is_file($_SESSION['settings']['path_to_upload_folder'].'/'.$file)) {
+                if (is_file($SETTINGS['path_to_upload_folder'].'/'.$file)) {
                     // Case where we want to decrypt
                     if ($_POST['option'] === "decrypt") {
                         prepareFileWithDefuse(
@@ -1488,7 +1497,7 @@ switch ($_POST['type']) {
                 "api"
             );
         }
-        $_SESSION['settings']['api'] = intval($_POST['status']);
+        $SETTINGS['api'] = intval($_POST['status']);
         break;
 
     case "save_duo_status":
@@ -1514,7 +1523,7 @@ switch ($_POST['type']) {
                 "duo"
             );
         }
-        $_SESSION['settings']['duo'] = intval($_POST['status']);
+        $SETTINGS['duo'] = intval($_POST['status']);
         break;
 
     case "save_duo_in_sk_file":
@@ -1533,7 +1542,7 @@ switch ($_POST['type']) {
         $host = htmlspecialchars_decode($dataReceived['host']);
 
         //get infos from SETTINGS.PHP file
-        $filename = $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+        $filename = $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
         $tmp_skfile = '';
         if (file_exists($filename)) {
             // get sk.php file path
@@ -1626,7 +1635,7 @@ switch ($_POST['type']) {
                 "google_authentication"
             );
         }
-        $_SESSION['settings']['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
+        $SETTINGS['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
 
         // ga_website_name
         if (!is_null($dataReceived['ga_website_name'])) {
@@ -1652,9 +1661,9 @@ switch ($_POST['type']) {
                     "ga_website_name"
                 );
             }
-            $_SESSION['settings']['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+            $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
         } else {
-            $_SESSION['settings']['ga_website_name'] = "";
+            $SETTINGS['ga_website_name'] = "";
         }
 
         // send data
@@ -1694,9 +1703,9 @@ switch ($_POST['type']) {
                     "agses_hosted_url"
                 );
             }
-            $_SESSION['settings']['agses_hosted_url'] = htmlspecialchars_decode($dataReceived['agses_hosted_url']);
+            $SETTINGS['agses_hosted_url'] = htmlspecialchars_decode($dataReceived['agses_hosted_url']);
         } else {
-            $_SESSION['settings']['agses_hosted_url'] = "";
+            $SETTINGS['agses_hosted_url'] = "";
         }
 
         // agses_hosted_id
@@ -1723,9 +1732,9 @@ switch ($_POST['type']) {
                     "agses_hosted_id"
                 );
             }
-            $_SESSION['settings']['agses_hosted_id'] = htmlspecialchars_decode($dataReceived['agses_hosted_id']);
+            $SETTINGS['agses_hosted_id'] = htmlspecialchars_decode($dataReceived['agses_hosted_id']);
         } else {
-            $_SESSION['settings']['agses_hosted_id'] = "";
+            $SETTINGS['agses_hosted_id'] = "";
         }
 
         // agses_hosted_apikey
@@ -1752,9 +1761,9 @@ switch ($_POST['type']) {
                     "agses_hosted_apikey"
                 );
             }
-            $_SESSION['settings']['agses_hosted_apikey'] = htmlspecialchars_decode($dataReceived['agses_hosted_apikey']);
+            $SETTINGS['agses_hosted_apikey'] = htmlspecialchars_decode($dataReceived['agses_hosted_apikey']);
         } else {
-            $_SESSION['settings']['agses_hosted_apikey'] = "";
+            $SETTINGS['agses_hosted_apikey'] = "";
         }
 
         // send data
@@ -1866,7 +1875,7 @@ switch ($_POST['type']) {
         }
 
         // store in SESSION
-        $_SESSION['settings'][$dataReceived['field']] = $dataReceived['value'];
+        $SETTINGS[$dataReceived['field']] = $dataReceived['value'];
 
         // save change in config file
         handleConfigFile("update", $dataReceived['field'], $dataReceived['value']);
@@ -1875,7 +1884,7 @@ switch ($_POST['type']) {
         echo prepareExchangedData(
             array(
                 "error" => "",
-                "misc" => $counter." ; ".$_SESSION['settings'][$dataReceived['field']]
+                "misc" => $counter." ; ".$SETTINGS[$dataReceived['field']]
             ),
             "encode"
         );
@@ -1927,9 +1936,9 @@ switch ($_POST['type']) {
                     "send_stats"
                 );
             }
-            $_SESSION['settings']['send_stats'] = $_POST['status'];
+            $SETTINGS['send_stats'] = $_POST['status'];
         } else {
-            $_SESSION['settings']['send_stats'] = "0";
+            $SETTINGS['send_stats'] = "0";
         }
 
         // send statistics items
@@ -1956,9 +1965,9 @@ switch ($_POST['type']) {
                     "send_statistics_items"
                 );
             }
-            $_SESSION['settings']['send_statistics_items'] = $_POST['list'];
+            $SETTINGS['send_statistics_items'] = $_POST['list'];
         } else {
-            $_SESSION['settings']['send_statistics_items'] = "";
+            $SETTINGS['send_statistics_items'] = "";
         }
 
         // send data

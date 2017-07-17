@@ -21,8 +21,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     handleUploadError('Not allowed to ...');
@@ -90,12 +97,12 @@ header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
 // load functions
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
-    $targetDir = $_SESSION['settings']['cpassman_dir'].'/includes/avatars';
+    $targetDir = $SETTINGS['cpassman_dir'].'/includes/avatars';
 } else {
-    $targetDir = $_SESSION['settings']['path_to_files_folder'];
+    $targetDir = $SETTINGS['path_to_files_folder'];
 }
 
 $cleanupTargetDir = true; // Remove old files
@@ -160,16 +167,16 @@ if (!in_array(
     $ext,
     explode(
         ',',
-        $_SESSION['settings']['upload_docext'].','.$_SESSION['settings']['upload_imagesext'].
-        ','.$_SESSION['settings']['upload_pkgext'].','.$_SESSION['settings']['upload_otherext']
+        $SETTINGS['upload_docext'].','.$SETTINGS['upload_imagesext'].
+        ','.$SETTINGS['upload_pkgext'].','.$SETTINGS['upload_otherext']
     )
 )) {
     handleUploadError('Invalid file extension.');
 }
 
 // is destination folder writable
-if (is_writable($_SESSION['settings']['path_to_files_folder']) === false) {
-    handleUploadError('Not enough permissions on folder '.$_SESSION['settings']['path_to_files_folder'].'.');
+if (is_writable($SETTINGS['path_to_files_folder']) === false) {
+    handleUploadError('Not enough permissions on folder '.$SETTINGS['path_to_files_folder'].'.');
 }
 
 // Clean the fileName for security reasons
@@ -328,7 +335,7 @@ if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_
 
     //Connect to mysql server
     require_once '../../includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;

@@ -18,19 +18,28 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 $html = "";
 if (
     filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
     && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) !== false
 ) {
     //Include files
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
     // connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -41,7 +50,7 @@ if (
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
 
-    if (!isset($_SESSION['settings']['otv_is_enabled']) || $_SESSION['settings']['otv_is_enabled'] === "0") {
+    if (!isset($SETTINGS['otv_is_enabled']) || $SETTINGS['otv_is_enabled'] === "0") {
         echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;One-Time-View is not allowed!</div>';
     }
 
@@ -53,7 +62,7 @@ if (
     );
     if ( $data['timestamp'] == intval($_GET['stamp'])) {
         // otv is too old
-        if ($data['timestamp'] < (time() - ($_SESSION['settings']['otv_expiration_period'] * 86400))) {
+        if ($data['timestamp'] < (time() - ($SETTINGS['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";
         } else {
             // get from DB
@@ -72,7 +81,7 @@ if (
                 "SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id=%i",
                 $data['item_id']
             );
-            if (isset($_SESSION['settings']['enable_delete_after_consultation']) && $_SESSION['settings']['enable_delete_after_consultation'] == 1) {
+            if (isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] == 1) {
                 if ($dataDelete['del_enabled'] == 1) {
                     if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
                         // decrease counter

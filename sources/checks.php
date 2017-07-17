@@ -6,13 +6,25 @@
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link		  http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} elseif (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 
 $pagesRights = array(
     "user" => array(
@@ -28,13 +40,13 @@ $pagesRights = array(
 
 function curPage()
 {
-    parse_str(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "?") + 1), $result);
+    parse_str(substr((string) $_SERVER["REQUEST_URI"], strpos((string) $_SERVER["REQUEST_URI"], "?") + 1), $result);
     return $result['page'];
 }
 
 function checkUser($userId, $userKey, $pageVisited)
 {
-    global $pagesRights;
+    global $pagesRights, $SETTINGS;
 
     if (empty($userId) || empty($pageVisited) || empty($userKey)) {
         return false;
@@ -44,13 +56,13 @@ function checkUser($userId, $userKey, $pageVisited)
         $pageVisited = array($pageVisited);
     }
 
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     require_once 'main.functions.php';
 
     // Connect to mysql server
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -75,9 +87,9 @@ function checkUser($userId, $userKey, $pageVisited)
     // check if user is allowed to see this page
     if (empty($data['admin']) && empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['user'])) {
         return false;
-    } else if (empty($data['admin']) && !empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['manager'])) {
+    } elseif (empty($data['admin']) && !empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['manager'])) {
         return false;
-    } else if (!empty($data['admin']) && !IsInArray($pageVisited, $pagesRights['admin'])) {
+    } elseif (!empty($data['admin']) && !IsInArray($pageVisited, $pagesRights['admin'])) {
         return false;
     }
 

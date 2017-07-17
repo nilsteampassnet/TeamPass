@@ -21,14 +21,23 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 if (isset($_POST['session']) && $_POST['session'] == "expired") {
     //Include files
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -55,11 +64,11 @@ if (isset($_POST['session']) && $_POST['session'] == "expired") {
     }
 
     //Log into DB the user's disconnection
-    if (isset($_SESSION['settings']['log_connections']) && $_SESSION['settings']['log_connections'] == 1) {
+    if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] == 1) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/english.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/english.php';
     echo '
     <div style="width:800px;margin:auto;">';
     if (@$_SESSION['error']['code'] == ERR_NOT_ALLOWED) {

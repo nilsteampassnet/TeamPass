@@ -23,14 +23,23 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     exit();
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['type'] == "generate_new_password")) {
     // continue
     mainQuery();
 } elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
@@ -41,7 +50,7 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
     mainQuery();
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
@@ -51,16 +60,18 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
 function mainQuery()
 {
     global $server, $user, $pass, $database, $port, $encoding, $pre, $k, $LANG;
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+    global $SETTINGS;
+
+    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
     header("Pragma: no-cache");
     error_reporting(E_ERROR);
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to the server
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -73,7 +84,7 @@ function mainQuery()
 
     // User's language loading
     $k['langage'] = @$_SESSION['user_language'];
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     // Manage type of action asked
     switch ($_POST['type']) {
         case "change_pw":
@@ -121,16 +132,16 @@ function mainQuery()
                 // Get a string with the old pw array
                 $lastPw = explode(';', $_SESSION['last_pw']);
                 // if size is bigger then clean the array
-                if (sizeof($lastPw) > $_SESSION['settings']['number_of_used_pw']
-                        && $_SESSION['settings']['number_of_used_pw'] > 0
+                if (sizeof($lastPw) > $SETTINGS['number_of_used_pw']
+                        && $SETTINGS['number_of_used_pw'] > 0
                 ) {
-                    for ($x = 0; $x < $_SESSION['settings']['number_of_used_pw']; $x++) {
+                    for ($x = 0; $x < $SETTINGS['number_of_used_pw']; $x++) {
                         unset($lastPw[$x]);
                     }
                     // reinit SESSION
                     $_SESSION['last_pw'] = implode(';', $lastPw);
                     // specific case where admin setting "number_of_used_pw"
-                } elseif ($_SESSION['settings']['number_of_used_pw'] == 0) {
+                } elseif ($SETTINGS['number_of_used_pw'] == 0) {
                     $_SESSION['last_pw'] = "";
                     $lastPw = array();
                 }
@@ -140,7 +151,7 @@ function mainQuery()
                     break;
                 } else {
                     // update old pw with new pw
-                    if (sizeof($lastPw) == ($_SESSION['settings']['number_of_used_pw'] + 1)) {
+                    if (sizeof($lastPw) == ($SETTINGS['number_of_used_pw'] + 1)) {
                         unset($lastPw[0]);
                     } else {
                         array_push($lastPw, $newPw);
@@ -216,7 +227,7 @@ function mainQuery()
                         WHERE id = %i",
                         $dataReceived['user_id']
                     );
-                    if (!empty($row['email']) && isset($_SESSION['settings']['enable_email_notification_on_user_pw_change']) && $_SESSION['settings']['enable_email_notification_on_user_pw_change'] == 1) {
+                    if (!empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) && $SETTINGS['enable_email_notification_on_user_pw_change'] == 1) {
                         sendEmail(
                             $LANG['forgot_pw_email_subject'],
                             $LANG['forgot_pw_email_body']." ".htmlspecialchars_decode($dataReceived['new_pw']),
@@ -262,7 +273,7 @@ function mainQuery()
          */
         case "ga_generate_qr":
             // is this allowed by setting
-            if (!isset($_SESSION['settings']['ga_reset_by_user']) || $_SESSION['settings']['ga_reset_by_user'] !== "1") {
+            if (!isset($SETTINGS['ga_reset_by_user']) || $SETTINGS['ga_reset_by_user'] !== "1") {
                 // User cannot ask for a new code
                 echo '[{"error" : "not_allowed"}]';
             }
@@ -297,8 +308,8 @@ function mainQuery()
                     echo '[{"error" : "no_email"}]';
                 } else {
                     // generate new GA user code
-                    include_once($_SESSION['settings']['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
-                    $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($_SESSION['settings']['ga_website_name']);
+                    include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+                    $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
                     $gaSecretKey = $tfa->createSecret();
                     $gaTemporaryCode = GenerateCryptKey(12);
 
@@ -379,8 +390,8 @@ function mainQuery()
                     mysqli_escape_string($link, stripslashes($_POST['email']))
                 );
                 $textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
-                    $_SESSION['settings']['cpassman_url']."/index.php?action=password_recovery&key=".$key.
-                    "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$_SESSION['settings']['cpassman_url'].
+                    $SETTINGS['cpassman_url']."/index.php?action=password_recovery&key=".$key.
+                    "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$SETTINGS['cpassman_url'].
                     "/index.php?action=password_recovery&key=".$key."&login=".mysqli_escape_string($link, $_POST['login'])."</a>.<br><br>".$LANG['thku'];
                 $textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysqli_escape_string($link, $_POST['login'])." - ".
                     $LANG['index_password']." : ".md5($data['pw']);
@@ -532,7 +543,7 @@ function mainQuery()
                     setcookie(
                         "TeamPass_PFSK_".md5($_SESSION['user_id']),
                         encrypt($dataReceived['psk'], ""),
-                        (!isset($_SESSION['settings']['personal_saltkey_cookie_duration']) || $_SESSION['settings']['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                        (!isset($SETTINGS['personal_saltkey_cookie_duration']) || $SETTINGS['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
                     );
                 }
@@ -632,7 +643,7 @@ function mainQuery()
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
                 encrypt($newPersonalSaltkey, ""),
-                time() + 60 * 60 * 24 * $_SESSION['settings']['personal_saltkey_cookie_duration'],
+                time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
             );
 
@@ -721,8 +732,8 @@ function mainQuery()
                 break;
             }
 
-            if (isset($_SESSION['settings']['enable_send_email_on_user_login'])
-                && $_SESSION['settings']['enable_send_email_on_user_login'] == 1
+            if (isset($SETTINGS['enable_send_email_on_user_login'])
+                && $SETTINGS['enable_send_email_on_user_login'] == 1
                 && isset($_SESSION['key'])
             ) {
                 $row = DB::queryFirstRow(
@@ -732,18 +743,18 @@ function mainQuery()
                 );
                 if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
                     //load library
-                    require $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+                    require $SETTINGS['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
                     // load PHPMailer
                     $mail = new PHPMailer();
 
                     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language");
                     $mail->isSmtp(); // send via SMTP
-                    $mail->Host = $_SESSION['settings']['email_smtp_server']; // SMTP servers
-                    $mail->SMTPAuth = $_SESSION['settings']['email_smtp_auth']; // turn on SMTP authentication
-                    $mail->Username = $_SESSION['settings']['email_auth_username']; // SMTP username
-                    $mail->Password = $_SESSION['settings']['email_auth_pwd']; // SMTP password
-                    $mail->From = $_SESSION['settings']['email_from'];
-                    $mail->FromName = $_SESSION['settings']['email_from_name'];
+                    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
+                    $mail->SMTPAuth = $SETTINGS['email_smtp_auth']; // turn on SMTP authentication
+                    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
+                    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
+                    $mail->From = $SETTINGS['email_from'];
+                    $mail->FromName = $SETTINGS['email_from_name'];
                     $mail->WordWrap = 80; // set word wrap
                     $mail->isHtml(true); // send as HTML
                     $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
@@ -801,7 +812,7 @@ function mainQuery()
          * Generate a password generic
          */
         case "generate_a_password":
-            if ($_POST['size'] > $_SESSION['settings']['pwd_maximum_length']) {
+            if ($_POST['size'] > $SETTINGS['pwd_maximum_length']) {
                 echo prepareExchangedData(
                     array(
                         "error_msg" => "Password length is too long!",
@@ -852,7 +863,7 @@ function mainQuery()
             } else {
                 $userOk = true;
             }
-            if (isset($_SESSION['settings']['psk_authentication']) && $_SESSION['settings']['psk_authentication'] == 1
+            if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1
                 && !empty($data['psk'])
             ) {
                 $pskSet = true;
@@ -934,7 +945,7 @@ function mainQuery()
 
             // get wainting suggestions
             $nb_suggestions_waiting = 0;
-            if (isset($_SESSION['settings']['enable_suggestion']) && $_SESSION['settings']['enable_suggestion'] == 1
+            if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
                 && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
             ) {
                 DB::query("SELECT * FROM ".prefix_table("suggestion"));
@@ -1038,9 +1049,9 @@ function mainQuery()
                 break;
             }
 
-            if (isset($_SESSION['settings']['send_statistics_items']) && isset($_SESSION['settings']['send_stats']) && isset($_SESSION['settings']['send_stats_time'])
-                && $_SESSION['settings']['send_stats'] === "1"
-                && ($_SESSION['settings']['send_stats_time'] + $k['one_day_seconds']) > time()
+            if (isset($SETTINGS['send_statistics_items']) && isset($SETTINGS['send_stats']) && isset($SETTINGS['send_stats_time'])
+                && $SETTINGS['send_stats'] === "1"
+                && ($SETTINGS['send_stats_time'] + $k['one_day_seconds']) > time()
             ) {
                 // get statistics data
                 $stats_data = getStatisticsData();
@@ -1050,7 +1061,7 @@ function mainQuery()
                 $statsToSend = [];
                 $statsToSend['ip'] = $_SERVER['SERVER_ADDR'];
                 $statsToSend['timestamp'] = time();
-                foreach (array_filter(explode(";", $_SESSION['settings']['send_statistics_items'])) as $data) {
+                foreach (array_filter(explode(";", $SETTINGS['send_statistics_items'])) as $data) {
                     if ($data === "stat_languages") {
                         $tmp = "";
                         foreach ($stats_data[$data] as $key => $value) {
@@ -1105,7 +1116,7 @@ function mainQuery()
 
                 //permits to test only once by session
                 $_SESSION['temporary']['send_stats_done'] = true;
-                $_SESSION['settings']['send_stats_time'] = time();
+                $SETTINGS['send_stats_time'] = time();
 
                 echo '[ { "error" : "'.$err.'" , "done" : "1"} ]';
             } else {

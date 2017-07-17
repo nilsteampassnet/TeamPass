@@ -18,6 +18,17 @@ if (!isset($_SESSION['CPM']) || !isset($_SESSION['key_tmp']) || !isset($_SESSION
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} elseif (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // prepare Encryption class calls
 use \Defuse\Crypto\Crypto;
 use \Defuse\Crypto\File;
@@ -31,12 +42,12 @@ header('Pragma: no-cache');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
-    readfile($_SESSION['settings']['path_to_files_folder'].'/'.basename($get_filename));
+    readfile($SETTINGS['path_to_files_folder'].'/'.basename($get_filename));
 } else {
     require_once 'main.functions.php';
     // connect to DB
-    include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -56,15 +67,15 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     // should we decrypt the attachment?
     if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
         // load PhpEncryption library
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-        require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
         // get KEY
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
@@ -73,8 +84,8 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
         $err = '';
         try {
             \Defuse\Crypto\File::decryptFile(
-                $_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'],
-                $_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'].".delete",
+                $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete",
                 \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
             );
         } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
@@ -92,7 +103,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
             echo $err;
         }
 
-        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'].".delete", 'rb');
+        $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete", 'rb');
 
         // Read the file contents
         fpassthru($fp);
@@ -100,9 +111,9 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
         // Close the file
         fclose($fp);
 
-        unlink($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'].".delete");
+        unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete");
     } else {
-        $fp = fopen($_SESSION['settings']['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
+        $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
 
         // Read the file contents
         fpassthru($fp);

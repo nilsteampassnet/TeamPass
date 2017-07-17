@@ -2,6 +2,7 @@
 
  8/
  PHPMailer library updated to 5.2.23
+ Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
 
  6-7/
  Fix: upgrade process with encrypted attachments

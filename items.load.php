@@ -16,10 +16,19 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LANG['show_password'].'"></i>&nbsp;&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>';
 
 // load csrfprotector
-$csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+$csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 ?>
 
 <script type="text/javascript">
@@ -1239,7 +1248,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         if (open_edit == 1 && $("#item_editable").val() == 1 && reload != 1) {
             $("#request_ongoing").val("");
             open_edit_item_div(
-                <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] === "1") {
+                <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
     echo 1;
 } else {
     echo 0;
@@ -1535,7 +1544,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //prepare link to clipboard
                         var clipboard_link = new Clipboard("#menu_button_copy_link", {
                             text: function() {
-                                return "<?php echo $_SESSION['settings']['cpassman_url']; ?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
+                                return "<?php echo $SETTINGS['cpassman_url']; ?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
                             }
                         });
                         clipboard_link.on('success', function(e) {
@@ -1553,7 +1562,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Manage double click
                         if (open_edit === true && (data.restricted == "1" || data.user_can_modify == "1")) {
                             open_edit_item_div(
-                            <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
+                            <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
     echo 1;
 } else {
     echo 0;
@@ -3228,10 +3237,10 @@ $(function() {
         browse_button : "item_attach_pickfiles",
         container : "item_upload",
         max_file_size : "<?php
-if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
-    echo $_SESSION['settings']['upload_maxfilesize']."mb";
+if (strrpos($SETTINGS['upload_maxfilesize'], "mb") === false) {
+    echo $SETTINGS['upload_maxfilesize']."mb";
 } else {
-    echo $_SESSION['settings']['upload_maxfilesize'];
+    echo $SETTINGS['upload_maxfilesize'];
 }
 ?>",
         chunk_size : "1mb",
@@ -3240,17 +3249,17 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
-            {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext']; ?>"},
-            {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext']; ?>"},
-            {title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext']; ?>"},
-            {title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext']; ?>"}
+            {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
+            {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
+            {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
+            {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
         ],<?php
-if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
+if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         resize : {
-            width : <?php echo $_SESSION['settings']['upload_imageresize_width']; ?>,
-            height : <?php echo $_SESSION['settings']['upload_imageresize_height']; ?>,
-            quality : <?php echo $_SESSION['settings']['upload_imageresize_quality']; ?>
+            width : <?php echo $SETTINGS['upload_imageresize_width']; ?>,
+            height : <?php echo $SETTINGS['upload_imageresize_height']; ?>,
+            quality : <?php echo $SETTINGS['upload_imageresize_quality']; ?>
         },
 <?php
 }
@@ -3338,10 +3347,10 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         browse_button : "item_edit_attach_pickfiles",
         container : "item_edit_upload",
         max_file_size : "<?php
-if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
-    echo $_SESSION['settings']['upload_maxfilesize']."mb";
+if (strrpos($SETTINGS['upload_maxfilesize'], "mb") === false) {
+    echo $SETTINGS['upload_maxfilesize']."mb";
 } else {
-    echo $_SESSION['settings']['upload_maxfilesize'];
+    echo $SETTINGS['upload_maxfilesize'];
 }
 ?>",
         chunk_size : "1mb",
@@ -3350,17 +3359,17 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
-            {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext']; ?>"},
-            {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext']; ?>"},
-            {title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext']; ?>"},
-            {title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext']; ?>"}
+            {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
+            {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
+            {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
+            {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
         ],<?php
-if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
+if ($SETTINGS['upload_imageresize_options'] == 1) {
         ?>
         resize : {
-            width : <?php echo $_SESSION['settings']['upload_imageresize_width']; ?>,
-            height : <?php echo $_SESSION['settings']['upload_imageresize_height']; ?>,
-            quality : <?php echo $_SESSION['settings']['upload_imageresize_quality']; ?>
+            width : <?php echo $SETTINGS['upload_imageresize_width']; ?>,
+            height : <?php echo $SETTINGS['upload_imageresize_height']; ?>,
+            quality : <?php echo $SETTINGS['upload_imageresize_quality']; ?>
         },<?php
 }
 ?>
@@ -3571,7 +3580,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
     //add date selector
     $(".datepicker").datepicker({
-        dateFormat:"<?php echo str_replace(array("Y", "M"), array("yy", "mm"), $_SESSION['settings']['date_format']); ?>",
+        dateFormat:"<?php echo str_replace(array("Y", "M"), array("yy", "mm"), $SETTINGS['date_format']); ?>",
         changeMonth: true,
         changeYear: true
     });
@@ -3886,7 +3895,7 @@ function proceed_list_update(stop_proceeding)
         $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
-        var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
+        var restricted_to_roles = <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
     echo 1;
 } else {
     echo 0;
@@ -4135,7 +4144,7 @@ function loadOfflineDialog()
     $("#dialog_offline_mode").dialog({
         open: function(event, ui) {
             $("#div_offline_mode").load(
-                "<?php echo $_SESSION['settings']['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>", function(){}
             );
         }
     }).dialog("open");
@@ -4146,7 +4155,7 @@ function loadExportDialog()
     $("#dialog_export_file").dialog({
         open: function(event, ui) {
             $("#div_export_file").load(
-                "<?php echo $_SESSION['settings']['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>", function(){}
             );
         }
     }).dialog("open");
@@ -4157,7 +4166,7 @@ function loadImportDialog()
     $("#dialog_import_file").dialog({
         open: function(event, ui) {
             $("#div_import_file").load(
-                "<?php echo $_SESSION['settings']['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(), function(){}
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(), function(){}
             );
         }
     }).dialog("open");
@@ -4207,7 +4216,7 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
     $("#dialog_ssh").dialog({
         open: function(event, ui) {
             $("#div_ssh").load(
-                "<?php echo $_SESSION['settings']['cpassman_url'].'/ssh.php?key='.$_SESSION['key']; ?>&id="+$("#selected_items").val(), function(){}
+                "<?php echo $SETTINGS['cpassman_url'].'/ssh.php?key='.$_SESSION['key']; ?>&id="+$("#selected_items").val(), function(){}
             );
         }
     }).dialog("open");

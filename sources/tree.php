@@ -18,12 +18,21 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // includes
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 // header
 header("Content-type: text/html; charset=utf-8");
@@ -31,14 +40,14 @@ header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 
 // Define Timezone
-if (isset($_SESSION['settings']['timezone'])) {
-    date_default_timezone_set($_SESSION['settings']['timezone']);
+if (isset($SETTINGS['timezone'])) {
+    date_default_timezone_set($SETTINGS['timezone']);
 } else {
     date_default_timezone_set('UTC');
 }
 
 // Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -50,7 +59,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 $folders = $tree->getDescendants();
@@ -187,7 +196,7 @@ function buildNodeTree($nodeId)
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.$itemsNb.'</span>';
                     // display tree counters
-                    if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                    if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] == 1) {
                         $text .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants) - 1);
                     }
                     $text .= ')';
@@ -206,7 +215,7 @@ function buildNodeTree($nodeId)
                 } else {
                     $restricted = "1";
                     $folderClass = "folder_not_droppable";
-                    if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] == 1) {
+                    if (isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] == 1) {
                         // folder is not visible
                             $nodeDirectDescendants = $tree->getDescendants($nodeId, false, true, true);
                         if (count($nodeDirectDescendants) > 0) {
@@ -273,7 +282,7 @@ function recursiveTree($nodeId)
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             // manage tree counters
-            if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] === "1" && in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) {
+            if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === "1" && in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) {
                 DB::query(
                     "SELECT * FROM ".prefix_table("items")."
                     WHERE inactif=%i AND id_tree = %i",
@@ -333,7 +342,7 @@ function recursiveTree($nodeId)
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.$itemsNb.'</span>';
                 // display tree counters
-                if (isset($_SESSION['settings']['tree_counters']) && $_SESSION['settings']['tree_counters'] == 1) {
+                if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] == 1) {
                     $text .= '|'.$nbChildrenItems.'|'.(count($nodeDescendants) - 1);
                 }
                 $text .= ')';
@@ -352,7 +361,7 @@ function recursiveTree($nodeId)
             } else {
                 $restricted = "1";
                 $folderClass = "folder_not_droppable";
-                if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] === "1" && $nbChildrenItems === 0) {
+                if (isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] === "1" && $nbChildrenItems === 0) {
                     // folder should not be visible
                     // only if it has no descendants
                     $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
@@ -378,7 +387,7 @@ function recursiveTree($nodeId)
             }
 
             // handle displaying
-            if (isset($_SESSION['settings']['show_only_accessible_folders']) && $_SESSION['settings']['show_only_accessible_folders'] === "1") {
+            if (isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] === "1") {
                 if ($hide_node === true) {
                     $last_visible_parent = $parent;
                     $last_visible_parent_level = $completTree[$nodeId]->nlevel--;

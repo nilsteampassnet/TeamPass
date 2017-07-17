@@ -21,23 +21,32 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "folders")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset==utf-8");
 require_once 'main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -49,7 +58,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 // Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -112,10 +121,10 @@ if (isset($_POST['newtitle'])) {
     // CASE where complexity is changed
 } elseif (isset($_POST['changer_complexite'])) {
     /* do checks */
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
     if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-        include $_SESSION['settings']['cpassman_dir'].'/error.php';
+        include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     }
 
@@ -148,7 +157,7 @@ if (isset($_POST['newtitle'])) {
     }
 
     // Get title to display it
-    echo $_SESSION['settings']['pwComplexity'][$_POST['changer_complexite']][1];
+    echo $SETTINGS['pwComplexity'][$_POST['changer_complexite']][1];
 
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -402,7 +411,7 @@ if (isset($_POST['newtitle'])) {
 
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
-            if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
+            if (isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] == 0) {
                 DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
                 $counter = DB::count();
                 if ($counter != 0) {
@@ -446,7 +455,7 @@ if (isset($_POST['newtitle'])) {
                             "complex"
                         );
                         if (intval($complexity) < intval($data['valeur'])) {
-                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                             break;
                         }
                     }
@@ -456,8 +465,8 @@ if (isset($_POST['newtitle'])) {
                 if ($isPersonal == 1
                     || $_SESSION['is_admin'] == 1
                     || ($_SESSION['user_manager'] == 1)
-                    || (isset($_SESSION['settings']['enable_user_can_create_folders'])
-                    && $_SESSION['settings']['enable_user_can_create_folders'] == 1)
+                    || (isset($SETTINGS['enable_user_can_create_folders'])
+                    && $SETTINGS['enable_user_can_create_folders'] == 1)
                 ) {
                     //create folder
                     DB::insert(
@@ -494,8 +503,8 @@ if (isset($_POST['newtitle'])) {
                     $tree->rebuild();
 
                     if ($isPersonal != 1
-                        && isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                        && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                        && isset($SETTINGS['subfolder_rights_as_parent'])
+                        && $SETTINGS['subfolder_rights_as_parent'] == 1
                         && $_SESSION['is_admin'] !== 0
                         || ($isPersonal != 1 && $parentId === "0")
                     ) {
@@ -612,7 +621,7 @@ if (isset($_POST['newtitle'])) {
 
             //Check if duplicate folders name are allowed
             $createNewFolder = true;
-            if (isset($_SESSION['settings']['duplicate_folder']) && $_SESSION['settings']['duplicate_folder'] == 0) {
+            if (isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] == 0) {
                 $data = DB::queryfirstrow(
                     "SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s",
                     $title
@@ -634,7 +643,7 @@ if (isset($_POST['newtitle'])) {
                     "complex"
                 );
                 if (intval($complexity) < intval($data['valeur'])) {
-                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$_SESSION['settings']['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                     break;
                 }
             }
@@ -706,10 +715,10 @@ if (isset($_POST['newtitle'])) {
         //CASE where to update the associated Function
         case "fonction":
             /* do checks */
-            require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
             if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
                 exit();
             }
             // get values
@@ -756,10 +765,10 @@ if (isset($_POST['newtitle'])) {
         // CASE where to authorize an ITEM creation without respecting the complexity
         case "modif_droit_autorisation_sans_complexite":
             /* do checks */
-            require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
             if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
                 exit();
             }
 
@@ -783,10 +792,10 @@ if (isset($_POST['newtitle'])) {
         // CASE where to authorize an ITEM modification without respecting the complexity
         case "modif_droit_modification_sans_complexite":
             /* do checks */
-            require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
             if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $_SESSION['settings']['cpassman_dir'].'/error.php';
+                include $SETTINGS['cpassman_dir'].'/error.php';
                 exit();
             }
 
@@ -963,8 +972,8 @@ if (isset($_POST['newtitle'])) {
 
 
                 if ($nodeInfo->personal_folder != 1
-                    && isset($_SESSION['settings']['subfolder_rights_as_parent'])
-                    && $_SESSION['settings']['subfolder_rights_as_parent'] == 1
+                    && isset($SETTINGS['subfolder_rights_as_parent'])
+                    && $SETTINGS['subfolder_rights_as_parent'] == 1
                     && $_SESSION['is_admin'] !== 0
                 ) {
                     //Get user's rights
@@ -1131,7 +1140,7 @@ if (isset($_POST['newtitle'])) {
             $tree->rebuild();
 
             // reload cache table
-            require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             updateCacheTable("reload", "");
 
             echo '[ { "error" : "" } ]';

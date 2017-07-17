@@ -17,6 +17,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...2');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // Common elements
 $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
@@ -62,7 +71,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
         -->
         <link rel="stylesheet" type="text/css" href="includes/css/items.css" />';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
@@ -72,12 +81,12 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_main") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_main") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
         <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
+} elseif (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
@@ -87,13 +96,13 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.js"></script>
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.js"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
+} elseif (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
@@ -104,14 +113,14 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />';
-} else if (isset($_GET['page']) && ($_GET['page'] == "suggestion")) {
+} elseif (isset($_GET['page']) && ($_GET['page'] == "suggestion")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>';
-} else if (!isset($_GET['page'])) {
+} elseif (!isset($_GET['page'])) {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
     if (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
@@ -120,8 +129,8 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
     }
 }
 // Get Favicon
-$htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
-        <link rel="icon" href="'.$_SESSION['settings']['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
+$htmlHeaders .= isset($SETTINGS['favicon']) ? '
+        <link rel="icon" href="'.$SETTINGS['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
 // get some init
 if (!isset($_SESSION["user_id"])) {
@@ -162,7 +171,7 @@ $htmlHeaders .= '
         if (psk == 1 && $("#psk").val() == "") {
             $("#psk").addClass("ui-state-error");
             return false;
-        } else if (psk == 1) {
+        } elseif (psk == 1) {
             $("#psk").removeClass("ui-state-error");
         }
         if ($("#pw").val() == "") {
@@ -219,28 +228,28 @@ $htmlHeaders .= '
                     $("#connection_error").hide();
                     //redirection for admin is specific
                     if (data[0].user_admin === "1") window.location.href="index.php?page=manage_main";
-                    else if (data[0].initial_url !== "") window.location.href=data[0].initial_url;
+                    elseif (data[0].initial_url !== "") window.location.href=data[0].initial_url;
                     else window.location.href = "index.php?page=items";
-                } else if (data[0].value === "user_is_locked") {
+                } elseif (data[0].value === "user_is_locked") {
                     $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
-                } else if (data[0].value === "bad_psk") {
+                } elseif (data[0].value === "bad_psk") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
-                } else if (data[0].value === "bad_psk_confirmation") {
+                } elseif (data[0].value === "bad_psk_confirmation") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
-                } else if (data[0].value === "psk_required") {
+                } elseif (data[0].value === "psk_required") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
                     $("#connection_error, #connect_psk_confirm").show();
-                } else if (data[0].value === "user_not_exists") {
+                } elseif (data[0].value === "user_not_exists") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
-                } else if (data[0].value === "error") {
+                } elseif (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
+                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
+                } elseif (data[0].value === "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
-                } else if (data[0].value === "new_ldap_account_created") {
+                } elseif (data[0].value === "new_ldap_account_created") {
                     $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
                     setTimeout(
                         function (){
@@ -248,23 +257,23 @@ $htmlHeaders .= '
                         },
                         2000
                     );
-                } else if (data[0].value === "false_onetimepw") {
+                } elseif (data[0].value === "false_onetimepw") {
                     $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
-                } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
+                } elseif (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
                     // now user needs to wait 10 secs before new passwd
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
-                } else if (data[0].error === "bad_credentials") {
+                } elseif (data[0].error === "bad_credentials") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (data[0].error === "ga_code_wrong") {
+                } elseif (data[0].error === "ga_code_wrong") {
                     $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].value === "agses_error") {
+                } elseif (data[0].value === "agses_error") {
                     $("#connection_error").html(data[0].error).show();
-                } else if (data[0].error === "ga_temporary_code_wrong") {
+                } elseif (data[0].error === "ga_temporary_code_wrong") {
                     $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].error === "ga_temporary_code_correct") {
+                } elseif (data[0].error === "ga_temporary_code_correct") {
                     $("#ga_code").val("").focus();
                     $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
-                } else if (data[0].value === "install_error") {
+                } elseif (data[0].value === "install_error") {
                     $("#connection_error").html(data[0].error).show();
                 } else {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
@@ -296,7 +305,7 @@ $htmlHeaders .= '
                     if (data[0].error === "0") {
                         //$("#ga_qr").attr("src", data[0].ga_url);
                         $("#div_ga_url").show();
-                    } else if (data[0].error === "not_allowed") {
+                    } elseif (data[0].error === "not_allowed") {
                         $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
                         $("#div_ga_url").hide();
                     } else {
@@ -368,7 +377,7 @@ $htmlHeaders .= '
         $("#dialog_user_profil").dialog({
             open: function(event, ui) {
                 $("#div_user_profil").load(
-                    "'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
+                    "'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
                 );
             },
             close: function() {
@@ -407,7 +416,7 @@ $htmlHeaders .= '
     function displayItemNumber (item_id, tree_id)
     {
         if (window.location.href.indexOf("page=items") == -1) {
-            location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
+            location.replace("'.$SETTINGS['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
         } else {
             $("#items_list").html("<ul class=\'liste_items\' id=\'full_items_list\'></ul>");
             AfficherDetailsItem(item_id);
@@ -460,7 +469,7 @@ $htmlHeaders .= '
             title: "DUO Security",
             open: function(event, ui) {
                 $("#div_duo").load(
-                    "'.$_SESSION['settings']['cpassman_url'].'/duo.load.php", function(){}
+                    "'.$SETTINGS['cpassman_url'].'/duo.load.php", function(){}
                 );
             }
         }).dialog("open");
@@ -519,10 +528,10 @@ $htmlHeaders .= '
 
             if (msg === "not_allowed") {
                 html += "'.addslashes($LANG['error_not_allowed_to']).'";
-            } else if (msg === "key_not_conform") {
+            } elseif (msg === "key_not_conform") {
                 html += "Key verification for Query is not correct!";
             }
-        } else if (type === "info") {
+        } elseif (type === "info") {
             html = "<i class=\'fa fa-info-circle fa-lg\'></i>&nbsp;";
             if (msg === "done") {
                 html += "'.addslashes($LANG['alert_message_done']).'";
@@ -548,7 +557,7 @@ $htmlHeaders .= '
                     var agses_carid_error = "";
                     if ($("#agses_cardid").val().length !== 12) {
                         agses_carid_error = "Card ID MUST contain 12 numbers";
-                    } else if (isNaN($("#agses_cardid").val())) {
+                    } elseif (isNaN($("#agses_cardid").val())) {
                         agses_carid_error = "Card ID contains only numbers";
                     }
 
@@ -586,7 +595,7 @@ $htmlHeaders .= '
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
 
-                        } else if (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
+                        } elseif (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
                         // Agses returned an error
                             $("#agses_cardid_div").show();
                             $("#agses_cardid").focus();
@@ -594,7 +603,7 @@ $htmlHeaders .= '
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].agses_message+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
 
-                        } else if (data[0].agses_message !== "") {
+                        } elseif (data[0].agses_message !== "") {
                         // show agses flicker
                             $("#agses_cardid_div").hide();
                             // check if already generated
@@ -611,7 +620,7 @@ $htmlHeaders .= '
                             $("#agses_flickercode_div").show();
                             $("#user_pwd").text("'.addslashes($LANG['index_agses_key']).'");
 
-                        } else if (data[0].agses_message === "") {
+                        } elseif (data[0].agses_message === "") {
                         // user needs to enter his user card id
                             $("#agses_cardid_div").show();
                             $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
@@ -989,19 +998,19 @@ $htmlHeaders .= '
                 if (jqXHR.status === 0) {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Not connect. Verify Network.");
-                } else if (jqXHR.status == 404) {
+                } elseif (jqXHR.status == 404) {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Requested page not found. [404]");
-                } else if (jqXHR.status == 500) {
+                } elseif (jqXHR.status == 500) {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Internal Server Error [500].");
-                } else if (exception === "parsererror") {
+                } elseif (exception === "parsererror") {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Requested JSON parse failed.");
-                } else if (exception === "timeout") {
+                } elseif (exception === "timeout") {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Time out error.");
-                } else if (exception === "abort") {
+                } elseif (exception === "abort") {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Ajax request aborted.");
                 } else {
@@ -1097,7 +1106,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
     $htmlHeaders .= '
     ';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_main") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_main") {
     // JAVASCRIPT FOR ADMIN PAGE
     $htmlHeaders .= '
     //Function loads informations from cpassman FTP
@@ -1112,7 +1121,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
             function(data) {
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
-                } else if (data[0].error == "conf_block") {
+                } elseif (data[0].error == "conf_block") {
                     $("#CPM_infos").html("No display available. Feature disabled in configuration.");
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$LANG['admin_info'].'</span>"+data[0].output+"</ul>");
@@ -1287,7 +1296,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
 
         LoadCPMInfo();
     });';
-} else if (isset($_GET['page']) && $_GET['page'] == "favourites") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "favourites") {
     // JAVASCRIPT FOR FAVOURITES PAGE
     $htmlHeaders .= '
     $(function() {
@@ -1326,7 +1335,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         $("#detele_fav_id").val(id);
         OpenDialog("div_delete_fav");
     }';
-} else if (isset($_GET['page']) && isset($_SESSION['user_id'])) {
+} elseif (isset($_GET['page']) && isset($_SESSION['user_id'])) {
     // simulate a CRON activity (only 4 secs after page loading)
     // check for existing suggestions / changes
     $htmlHeaders .= '

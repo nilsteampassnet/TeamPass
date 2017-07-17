@@ -18,13 +18,22 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 global $k, $settings, $link;
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // if no folders are visible then return no results
 if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles'])) {
@@ -38,7 +47,7 @@ if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles']
 }
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -221,7 +230,7 @@ if (!isset($_GET['type'])) {
 
         // massive move/delete enabled?
         $checkbox = '';
-        if (isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] === "1") {
+        if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === "1") {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
@@ -321,14 +330,14 @@ if (!isset($_GET['type'])) {
     echo $sOutput;
 } elseif (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
     require_once 'main.functions.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
 
     foreach ($rows as $record) {
         $expirationFlag = '';
         $expired_item = 0;
-        if ($_SESSION['settings']['activate_expiration'] == 1) {
+        if ($SETTINGS['activate_expiration'] == 1) {
             $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
             if ($record['renewal_period'] > 0 &&
                 ($record['timestamp'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
@@ -463,7 +472,7 @@ if (!isset($_GET['type'])) {
         $sOutput .= '<li class="item trunc_line" id="'.$record['id'].'"><a id="fileclass'.$record['id'].'" class="file_search">'.
             '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
             '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
-        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
+        if (!empty($record['description']) && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
                 $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($record['description']), 0, 30))).']</font>';
@@ -483,7 +492,7 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare pwd copy if enabled
-        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] == 1) {
             $data_item = DB::queryFirstRow(
                 "SELECT pw
                 from ".prefix_table("items")." WHERE id=%i",

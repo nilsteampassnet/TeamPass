@@ -21,6 +21,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // No time limit
 set_time_limit(0);
 
@@ -56,16 +65,16 @@ function sanitiseString($str, $crLFReplacement)
 global $k, $settings;
 header("Content-type: text/html; charset=utf-8");
 error_reporting(E_ERROR);
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 //Class loader
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // call needed functions
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -86,12 +95,12 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 // Load AntiXSS
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
 $antiXss = new protect\AntiXSS\AntiXSS();
 
 //User's language loading
 $k['langage'] = @$_SESSION['user_language'];
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // Build query
 switch ($_POST['type']) {
@@ -102,7 +111,7 @@ switch ($_POST['type']) {
         $tree = $tree->getDescendants();
 
         // do some initializations
-        $file = $_SESSION['settings']['path_to_files_folder']."/".$_POST['file'];
+        $file = $SETTINGS['path_to_files_folder']."/".$_POST['file'];
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
@@ -118,18 +127,14 @@ switch ($_POST['type']) {
             // data from CSV
             $valuesToImport = array();
             // load libraries
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php');
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php';
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php';
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php';
 
             // Lexer configuration
             $config = new LexerConfig();
             $lexer = new Lexer($config);
-            $config
-                ->setIgnoreHeaderLine("true")
-                //->setToCharset('UTF-8')
-                //->setFromCharset('SJIS-win')
-            ;
+            $config->setIgnoreHeaderLine("true");
             // extract data from CSV file
             $interpreter = new Interpreter();
             $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
@@ -354,18 +359,18 @@ switch ($_POST['type']) {
         $lineEndSeparator = '@*1|#9*|@';
 
         //prepare CACHE files
-        $cacheFileName = $_SESSION['settings']['path_to_files_folder']."/cpassman_cache_".md5(time().mt_rand());
+        $cacheFileName = $SETTINGS['path_to_files_folder']."/cpassman_cache_".md5(time().mt_rand());
         $cacheFileNameFolder = $cacheFileName."_folders";
         $cacheFile = fopen($cacheFileName, "w");
         $cacheFileF = fopen($cacheFileNameFolder, "w");
         $logFileName = "/keepassImport_".date('YmdHis');
-        $cacheLogFile = fopen($_SESSION['settings']['path_to_files_folder'].$logFileName, 'w');
+        $cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');
         $_POST['file'] = $antiXss->xss_clean($_POST['file']);
 
         //read xml file
-        if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
+        if (file_exists("'".$SETTINGS['path_to_files_folder']."/".$_POST['file'])."'") {
             $xml = simplexml_load_file(
-                $_SESSION['settings']['path_to_files_folder']."/".$_POST['file']
+                $SETTINGS['path_to_files_folder']."/".$_POST['file']
             );
         }
 
@@ -624,7 +629,7 @@ switch ($_POST['type']) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['url_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['url_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
 
             fputs($cacheLogFile, date('H:i').$LANG['import_error_no_read_possible_kp']."\n");
 
@@ -938,7 +943,7 @@ switch ($_POST['type']) {
             $text .= "Folders imported: $nbFoldersImported<br />";
             $text .= "Items imported: $nbItemsImported<br />";
             $text .= '</div><br /><br /><b>'.$LANG['import_kp_finished'].'</b>';
-            $text .= '<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$logFileName.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>';
+            $text .= '<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$logFileName.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>';
 
             fputs($cacheLogFile, date('H:i:s ')."Import finished\n");
             fputs($cacheLogFile, date('H:i:s ')."Statistics\n");
@@ -951,7 +956,7 @@ switch ($_POST['type']) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
@@ -967,7 +972,6 @@ spl_autoload_register(function ($class) {
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
         // no, move to the next registered autoloader
-        echo "ici";
         return;
     }
     $relative_class = substr($class, $len);

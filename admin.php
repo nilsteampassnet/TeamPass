@@ -19,22 +19,31 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_main")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
 // get current statistics items
 $statistics_items = array();
-if (isset($_SESSION['settings']['send_statistics_items'])) {
-    $statistics_items = array_filter(explode(";", $_SESSION['settings']['send_statistics_items']));
+if (isset($SETTINGS['send_statistics_items'])) {
+    $statistics_items = array_filter(explode(";", $SETTINGS['send_statistics_items']));
 }
 
 echo '
-<input type="hidden" id="setting_send_stats" value="',isset($_SESSION['settings']['send_stats']) ? $_SESSION['settings']['send_stats'] : '0', '" />
+<input type="hidden" id="setting_send_stats" value="',isset($SETTINGS['send_stats']) ? $SETTINGS['send_stats'] : '0', '" />
 <div class="title ui-widget-content ui-corner-all">'.$LANG['thku'].' <span style="float:right;">', isset($k['version_full']) ? '<span class="fa fa-plug"></span>&nbsp;'.$k['version_full'] : '', '</span></div>
 
 <div style="margin:auto; line-height:20px; padding:10px;" id="tabs">
@@ -333,7 +342,7 @@ echo '
             <table border="0">
                 <tr>
                 <td>'.$LANG['settings_send_stats'].'&nbsp;</td>
-                <td width="200px"><div class="toggle toggle-modern" id="send_stats" data-toggle-on="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] === "1" ? 'true' : 'false', '"></div><input type="hidden" id="send_stats_input" name="send_stats_input" value="', isset($_SESSION['settings']['send_stats']) && $_SESSION['settings']['send_stats'] === "1" ? '1' : '0', '" /></td>
+                <td width="200px"><div class="toggle toggle-modern" id="send_stats" data-toggle-on="', isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === "1" ? 'true' : 'false', '"></div><input type="hidden" id="send_stats_input" name="send_stats_input" value="', isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === "1" ? '1' : '0', '" /></td>
                 </tr>
             </table>
         </div>
