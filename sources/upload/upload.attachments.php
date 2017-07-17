@@ -390,5 +390,4 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
 function handleAttachmentError($message, $code)
 {
     echo '{"jsonrpc" : "2.0", "error" : {"code": '.htmlentities($code, ENT_QUOTES).', "message": "'.htmlentities($message, ENT_QUOTES).'"}, "id" : "id"}';
-    exit(0);
 }

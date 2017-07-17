@@ -91,7 +91,7 @@ function stringUtf8Decode($string)
  */
 function encryptOld($text, $personalSalt = "")
 {
-    if (!empty($personalSalt)) {
+    if (empty($personalSalt) === false) {
         return trim(
             base64_encode(
                 mcrypt_encrypt(
@@ -106,22 +106,23 @@ function encryptOld($text, $personalSalt = "")
                 )
             )
         );
-    } else {
-        return trim(
-            base64_encode(
-                mcrypt_encrypt(
-                    MCRYPT_RIJNDAEL_256,
-                    SALT,
-                    $text,
-                    MCRYPT_MODE_ECB,
-                    mcrypt_create_iv(
-                        mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
-                        MCRYPT_RAND
-                    )
+    }
+
+    // If $personalSalt is not empty
+    return trim(
+        base64_encode(
+            mcrypt_encrypt(
+                MCRYPT_RIJNDAEL_256,
+                SALT,
+                $text,
+                MCRYPT_MODE_ECB,
+                mcrypt_create_iv(
+                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                    MCRYPT_RAND
                 )
             )
-        );
-    }
+        )
+    );
 }
 
 /**
@@ -532,7 +533,7 @@ function db_error_handler($params)
 {
     echo "Error: ".$params['error']."<br>\n";
     echo "Query: ".$params['query']."<br>\n";
-    die; // don't want to keep going if a query broke
+    throw new Exception("Error - Query", 1);
 }
 
 /**

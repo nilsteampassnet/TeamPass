@@ -46,7 +46,7 @@ function IncreaseSessionTime(message_end, message_wait, duration){
         duration: parseInt(duration) * 60
         },
         function(data){
-            if (data[0].new_value != "expired") {
+            if (data[0].new_value !== "expired") {
                 $("#main_info_box_text").html(message_end);
                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                 $("#temps_restant").val(data[0].new_value);
@@ -67,7 +67,7 @@ function IncreaseSessionTime(message_end, message_wait, duration){
 function countdown()
 {
     var DayTill
-    var theDay =  $('#temps_restant').val();
+    var theDay =  $("#temps_restant").val();
     var today = new Date(); //Create an Date Object that contains today's date.
     var second = Math.floor(theDay - (today.getTime()/1000));
     var minute = Math.floor(second/60); //Devide "second" into 60 to get the minute
@@ -87,20 +87,20 @@ function countdown()
     DayTill = CHour+":"+CMinute+":"+CSecond;
 
     //Avertir de la fin imminante de la session
-    if ( DayTill == "00:01:00" ){
-        $('#div_increase_session_time').dialog('open');
-        $('#countdown').css("color","red");
+    if ( DayTill === "00:01:00" ){
+        $("#div_increase_session_time").dialog('open');
+        $("#countdown").css("color","red");
     }
 
     // Manage end of session
-    if ($("#temps_restant").val() != "" && DayTill <= "00:00:00" && $("#please_login").val() != 1) {
+    if ($("#temps_restant").val() !== "" && DayTill <= "00:00:00" && $("#please_login").val() !== "1") {
         $("#please_login").val("1");
         document.location = "index.php?session=expired";
     }
 
     //Rewrite the string to the correct information.
-    if ($('#countdown')){
-        $('#countdown').html(DayTill); //Make the particular form chart become "Daytill"
+    if ($("#countdown")){
+        $("#countdown").html(DayTill); //Make the particular form chart become "Daytill"
     }
 
     //Create the timer "counter" that will automatic restart function countdown() again every second.
@@ -123,9 +123,9 @@ function OpenDialog(id){
 *   Toggle a DIV
 **/
 function toggleDiv(id){
-    $('#'+id).slideToggle("slow");
+    $("#"+id).slideToggle("slow");
     //specific case to not show upgrade alert
-    if(id == "div_maintenance"){
+    if(id === "div_maintenance"){
         $.post(
             "sources/main.queries.php",
             {
@@ -149,11 +149,17 @@ function CreateRandomString(size,type){
     var chars = "";
 
     // CHoose what kind of string we want
-    if ( type == "num" ) chars = "0123456789";
-    else if ( type == "num_no_0" ) chars = "123456789";
-    else if ( type == "alpha" ) chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
-    else if ( type == "secure" ) chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz&#@;!+-$*%";
-    else chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+    if (type === "num") {
+        chars = "0123456789";
+    } else if (type === "num_no_0") {
+        chars = "123456789";
+    } else if (type === "alpha") {
+        chars = "ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+    } else if (type === "secure") {
+        chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz&#@;!+-$*%";
+    } else {
+        chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz";
+    }
 
     //generate it
     var randomstring = '';
@@ -171,7 +177,7 @@ function CreateRandomString(size,type){
 *
 **/
 function unsanitizeString(string){
-    if(string != "" && string != null){
+    if(string !== "" && string !== null){
         string = string.replace(/\\/g,'').replace(/&#92;/g,'\\');
     }
     return string;
@@ -181,7 +187,7 @@ function unsanitizeString(string){
 *   Clean up a string and delete any scripting tags
 **/
 function sanitizeString(string){
-    if(string != "" && string != null){
+    if(string !== "" && string !== null){
         string = string.replace(/\\/g,'&#92;').replace(/"/g,"&quot;");
         string = string.replace(new RegExp('\\s*<script[^>]*>[\\s\\S]*?</script>\\s*','ig'),'');
     }
@@ -266,7 +272,7 @@ function aes_decrypt(text, key)
 function prepareExchangedData(data, type, key)
 {
     var jsonResult;
-    if (type == "decode") {
+    if (type === "decode") {
         if ($("#encryptClientServer").val() == 0) {
             try {
                 return $.parseJSON(data);
@@ -282,7 +288,7 @@ function prepareExchangedData(data, type, key)
                 return "Error: " + jsonErrorHdl(e);
             };
         }
-    } else if (type == "encode") {
+    } else if (type === "encode") {
         if ($("#encryptClientServer").val() == 0) {
             return data;
         } else {

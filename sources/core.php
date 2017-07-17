@@ -38,7 +38,6 @@ function redirect($url)
 
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: '.$antiXss->xss_clean($url));
-        exit;
     } else {  //If headers are sent... do java redirect... if java disabled, do html redirect.
         echo '<script type="text/javascript">';
         echo 'window.location.href="'.$antiXss->xss_clean($url).'";';
@@ -46,7 +45,6 @@ function redirect($url)
         echo '<noscript>';
         echo '<meta http-equiv="refresh" content="0;url='.$antiXss->xss_clean($url).'" />';
         echo '</noscript>';
-        exit;
     }
 }
 
