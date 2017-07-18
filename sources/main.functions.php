@@ -1864,9 +1864,9 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
 
     if (empty($password) === true) {
-        /*
-        File encryption/decryption is done with the SALTKEY
-         */
+    /*
+    File encryption/decryption is done with the SALTKEY
+     */
 
         // get KEY
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
@@ -1903,9 +1903,9 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
             }
         }
     } else {
-        /*
-        File encryption/decryption is done with special password and not the SALTKEY
-         */
+    /*
+    File encryption/decryption is done with special password and not the SALTKEY
+     */
 
         $err = '';
         if ($type === 'decrypt') {
@@ -1960,8 +1960,8 @@ function debugTeampass($text)
 
 /**
  * DELETE the file with expected command depending on server type
- * @param  [type] $file [description]
- * @return [type]       [description]
+ * @param  string $file Path to file
+ * @return              Nothing
  */
 function fileDelete($file)
 {
@@ -1990,9 +1990,10 @@ function getFileExtension($f)
 }
 
 /**
- * @param  [type]
- * @param  [type]
- * @return [type]
+ * array_map
+ * @param  [type] $func [description]
+ * @param  [type] $arr  [description]
+ * @return [type]       [description]
  */
 function array_map_r($func, $arr)
 {
@@ -2003,4 +2004,27 @@ function array_map_r($func, $arr)
     }
 
     return $newArr;
+}
+
+/**
+ * Permits to clean and sanitize text to be displayed
+ * @param  string $text text to clean
+ * @param  string $type what clean to perform
+ * @return string       text cleaned up
+ */
+function cleanText($string, $type = "")
+{
+    global $SETTINGS;
+
+    // Load AntiXSS
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    $antiXss = new protect\AntiXSS\AntiXSS();
+
+    if ($type === "css") {
+        // Escape text and quotes in UTF8 format
+        return htmlentities($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    } elseif ($type === "html" || empty($type)) {
+        // Html cleaner
+        return $antiXss->xss_clean($string);
+    }
 }

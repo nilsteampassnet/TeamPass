@@ -166,19 +166,21 @@ $htmlHeaders .= '
     function launchIdentify(isDuo, redirect, psk)
     {
         $("#connection_error").hide();
-        if (redirect == undefined) redirect = ""; //Check if redirection
+        if (redirect == undefined) {
+            redirect = ""; //Check if redirection
+        }
         // Check form data
-        if (psk == 1 && $("#psk").val() == "") {
+        if (psk === "1" && $("#psk").val() === "") {
             $("#psk").addClass("ui-state-error");
             return false;
-        } elseif (psk == 1) {
+        } else if (psk === "1") {
             $("#psk").removeClass("ui-state-error");
         }
-        if ($("#pw").val() == "") {
+        if ($("#pw").val() === "") {
             $("#pw").addClass("ui-state-error");
             return false;
         }
-        if ($("#login").val() == "") {
+        if ($("#login").val() === "") {
             $("#login").addClass("ui-state-error");
             return false;
         }
@@ -187,15 +189,15 @@ $htmlHeaders .= '
         $("#ajax_loader_connexion").show();
 
         //create random string
-        var randomstring =CreateRandomString(10);
+        var randomstring = CreateRandomString(10);
 
         var data = "";
-        if ($("#ga_code").val() != undefined) {
-            data = \', "GACode":"\'+sanitizeString($("#ga_code").val())+\'"\';
+        if ($("#ga_code").val() !== undefined) {
+            data = \', "GACode":"\' + sanitizeString($("#ga_code").val()) + \'"\';
         }
-        if ($("#psk").val() != undefined) {
-            data = \', "psk":"\'+sanitizeString($("#psk").val())+\'"\'+
-                \', "psk_confirm":"\'+sanitizeString($("#psk_confirm").val())+\'"\';
+        if ($("#psk").val() !== undefined) {
+            data = \', "psk":"\' + sanitizeString($("#psk").val()) + \'"\'+
+                \', "psk_confirm":"\' + sanitizeString($("#psk_confirm").val()) + \'"\';
         }
 
         // get timezone
@@ -205,7 +207,7 @@ $htmlHeaders .= '
         data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\'}\';
 
         // Handle if DUOSecurity is enabled
-        if (isDuo == 0 || (isDuo == 1 && $("#login").val() == "admin")) {
+        if (isDuo !== "1" || $("#login").val() === "admin") {
             identifyUser(redirect, psk, data, randomstring);
         } else {
             $("#duo_data").val(window.btoa(data));
@@ -224,32 +226,36 @@ $htmlHeaders .= '
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
-                if (data[0].value == randomstring) {
+                if (data[0].value === randomstring) {
                     $("#connection_error").hide();
                     //redirection for admin is specific
-                    if (data[0].user_admin === "1") window.location.href="index.php?page=manage_main";
-                    elseif (data[0].initial_url !== "") window.location.href=data[0].initial_url;
-                    else window.location.href = "index.php?page=items";
-                } elseif (data[0].value === "user_is_locked") {
+                    if (data[0].user_admin === "1") {
+                        window.location.href="index.php?page=manage_main";
+                    } else if (data[0].initial_url !== "") {
+                        window.location.href=data[0].initial_url;
+                    } else {
+                        window.location.href = "index.php?page=items";
+                    }
+                } else if (data[0].value === "user_is_locked") {
                     $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
-                } elseif (data[0].value === "bad_psk") {
+                } else if (data[0].value === "bad_psk") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
-                } elseif (data[0].value === "bad_psk_confirmation") {
+                } else if (data[0].value === "bad_psk_confirmation") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
-                } elseif (data[0].value === "psk_required") {
+                } else if (data[0].value === "psk_required") {
                     $("#ajax_loader_connexion").hide();
                     $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
                     $("#connection_error, #connect_psk_confirm").show();
-                } elseif (data[0].value === "user_not_exists") {
+                } else if (data[0].value === "user_not_exists") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } elseif (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
+                } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
                     $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
-                } elseif (data[0].value === "error") {
+                } else if (data[0].value === "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
-                } elseif (data[0].value === "new_ldap_account_created") {
+                } else if (data[0].value === "new_ldap_account_created") {
                     $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
                     setTimeout(
                         function (){
@@ -257,23 +263,23 @@ $htmlHeaders .= '
                         },
                         2000
                     );
-                } elseif (data[0].value === "false_onetimepw") {
+                } else if (data[0].value === "false_onetimepw") {
                     $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
-                } elseif (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
+                } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
                     // now user needs to wait 10 secs before new passwd
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
-                } elseif (data[0].error === "bad_credentials") {
+                } else if (data[0].error === "bad_credentials") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } elseif (data[0].error === "ga_code_wrong") {
+                } else if (data[0].error === "ga_code_wrong") {
                     $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } elseif (data[0].value === "agses_error") {
+                } else if (data[0].value === "agses_error") {
                     $("#connection_error").html(data[0].error).show();
-                } elseif (data[0].error === "ga_temporary_code_wrong") {
+                } else if (data[0].error === "ga_temporary_code_wrong") {
                     $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } elseif (data[0].error === "ga_temporary_code_correct") {
+                } else if (data[0].error === "ga_temporary_code_correct") {
                     $("#ga_code").val("").focus();
                     $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
-                } elseif (data[0].value === "install_error") {
+                } else if (data[0].value === "install_error") {
                     $("#connection_error").html(data[0].error).show();
                 } else {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
@@ -305,7 +311,7 @@ $htmlHeaders .= '
                     if (data[0].error === "0") {
                         //$("#ga_qr").attr("src", data[0].ga_url);
                         $("#div_ga_url").show();
-                    } elseif (data[0].error === "not_allowed") {
+                    } else if (data[0].error === "not_allowed") {
                         $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
                         $("#div_ga_url").hide();
                     } else {
@@ -528,10 +534,10 @@ $htmlHeaders .= '
 
             if (msg === "not_allowed") {
                 html += "'.addslashes($LANG['error_not_allowed_to']).'";
-            } elseif (msg === "key_not_conform") {
+            } else if (msg === "key_not_conform") {
                 html += "Key verification for Query is not correct!";
             }
-        } elseif (type === "info") {
+        } else if (type === "info") {
             html = "<i class=\'fa fa-info-circle fa-lg\'></i>&nbsp;";
             if (msg === "done") {
                 html += "'.addslashes($LANG['alert_message_done']).'";
@@ -557,7 +563,7 @@ $htmlHeaders .= '
                     var agses_carid_error = "";
                     if ($("#agses_cardid").val().length !== 12) {
                         agses_carid_error = "Card ID MUST contain 12 numbers";
-                    } elseif (isNaN($("#agses_cardid").val())) {
+                    } else if (isNaN($("#agses_cardid").val())) {
                         agses_carid_error = "Card ID contains only numbers";
                     }
 
@@ -595,7 +601,7 @@ $htmlHeaders .= '
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
 
-                        } elseif (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
+                        } else if (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
                         // Agses returned an error
                             $("#agses_cardid_div").show();
                             $("#agses_cardid").focus();
@@ -603,7 +609,7 @@ $htmlHeaders .= '
                             $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].agses_message+"</div>");
                             $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
 
-                        } elseif (data[0].agses_message !== "") {
+                        } else if (data[0].agses_message !== "") {
                         // show agses flicker
                             $("#agses_cardid_div").hide();
                             // check if already generated
@@ -620,7 +626,7 @@ $htmlHeaders .= '
                             $("#agses_flickercode_div").show();
                             $("#user_pwd").text("'.addslashes($LANG['index_agses_key']).'");
 
-                        } elseif (data[0].agses_message === "") {
+                        } else if (data[0].agses_message === "") {
                         // user needs to enter his user card id
                             $("#agses_cardid_div").show();
                             $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
@@ -998,19 +1004,19 @@ $htmlHeaders .= '
                 if (jqXHR.status === 0) {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Not connect. Verify Network.");
-                } elseif (jqXHR.status == 404) {
+                } else if (jqXHR.status == 404) {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Requested page not found. [404]");
-                } elseif (jqXHR.status == 500) {
+                } else if (jqXHR.status == 500) {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Internal Server Error [500].");
-                } elseif (exception === "parsererror") {
+                } else if (exception === "parsererror") {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Requested JSON parse failed.");
-                } elseif (exception === "timeout") {
+                } else if (exception === "timeout") {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Time out error.");
-                } elseif (exception === "abort") {
+                } else if (exception === "abort") {
                     $("#div_dialog_message").show();
                     $("#div_dialog_message_text").html("Ajax request aborted.");
                 } else {
@@ -1121,7 +1127,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
             function(data) {
                 if (data[0].error == "connection") {
                     $("#CPM_infos").html("Server connection is impossible ... check your Internet/firewall configuration");
-                } elseif (data[0].error == "conf_block") {
+                } else if (data[0].error == "conf_block") {
                     $("#CPM_infos").html("No display available. Feature disabled in configuration.");
                 } else {
                     $("#CPM_infos").html("<span style=\'font-weight:bold;\'>'.$LANG['admin_info'].'</span>"+data[0].output+"</ul>");

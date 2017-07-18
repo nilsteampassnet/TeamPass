@@ -634,7 +634,7 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
 
         // Personal salt key
@@ -642,11 +642,11 @@ if (isset($_SESSION['CPM'])) {
             echo '
                         <div id="connect_psk" style="margin-bottom:3px;">
                             <label for="personal_psk" class="form_label">'.$LANG['home_personal_saltkey'].'</label>
-                            <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>
                         <div id="connect_psk_confirm" style="margin-bottom:3px; display:none;">
                             <label for="psk_confirm" class="form_label">'.$LANG['home_personal_saltkey_confirm'].'</label>
-                            <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1 ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
                         </div>';
         }
 
@@ -655,7 +655,7 @@ if (isset($_SESSION['CPM'])) {
             echo '
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'
-                            <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" />
+                            <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" />
                         <div id="2fa_new_code_div" style="text-align:center; display:none; margin-top:5px; padding:5px;" class="ui-state-default ui-corner-all"></div>
                         <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">'.$LANG['i_need_to_generate_new_ga_code'].'</div>
                         </div>';
@@ -663,14 +663,14 @@ if (isset($_SESSION['CPM'])) {
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                         </div>
 
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                         </div>
                         <div style="text-align:center;margin-top:15px;">
-                            <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1 ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
+                            <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
                         </div>
                     </div>
                 </form>

@@ -28,7 +28,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (isset($SETTINGS['enable_kb']) = false || $SETTINGS['enable_kb'] !== "1") {
+if (isset($SETTINGS['enable_kb']) === false || $SETTINGS['enable_kb'] !== "1") {
     die('Hacking attempt...');
 }
 
@@ -121,7 +121,8 @@ if (empty($_SESSION['list_folders_limited'])) {
     $_SESSION['list_folders_limited'] = array();
 }
 $rows = DB::query(
-    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
+    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label,
+        i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
         l.date as date
     FROM ".prefix_table("items")." as i
     INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
@@ -148,7 +149,7 @@ foreach ($rows as $reccord) {
         $include_item = false;
         if (empty($reccord['restricted_to'])) {
             $include_item = true;
-        } else if (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
+        } elseif (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
             $include_item = true;
         }
         if ($include_item === true) {

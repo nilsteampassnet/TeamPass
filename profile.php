@@ -17,8 +17,8 @@ require_once('./sources/SecureHandler.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -48,7 +48,12 @@ header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
 // reload user avatar
-$userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("users")." WHERE id=%i", $_SESSION['user_id']);
+$userData = DB::queryFirstRow(
+    "SELECT avatar, avatar_thumb
+    FROM ".prefix_table("users")."
+    WHERE id=%i",
+    $_SESSION['user_id']
+);
 $_SESSION['user_avatar'] = $userData['avatar'];
 $_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 

@@ -28,7 +28,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (isset($SETTINGS['enable_suggestion']) = false || $SETTINGS['enable_suggestion'] != 1) {
+if (isset($SETTINGS['enable_suggestion']) === false || $SETTINGS['enable_suggestion'] !== "1") {
     die('Hacking attempt...');
 }
 
