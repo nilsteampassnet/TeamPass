@@ -64,7 +64,7 @@ if (isset($_POST['type'])) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => $_POST['id_item'],
+                        'id_item' => intval($_POST['id_item']),
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_shown'

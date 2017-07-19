@@ -370,7 +370,7 @@ switch ($_POST['type']) {
     case "admin_action_db_restore":
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-        $dataPost = explode('&', $_POST['option']);
+        $dataPost = explode('&', filter_var($_POST['option'], FILTER_SANITIZE_STRING));
         $file = htmlspecialchars($dataPost[0]);
         $key = htmlspecialchars($dataPost[1]);
 
@@ -611,7 +611,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___start":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -704,7 +704,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___encrypt":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -726,7 +726,7 @@ switch ($_POST['type']) {
         }
 
         // what objects to treat
-        if (empty($_POST['object']) || empty($_POST['object'])) {
+        if (empty($_POST['object'])) {
             // no more object to treat
             $nextAction = "finishing";
         } else {
@@ -1034,7 +1034,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___end":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1060,7 +1060,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___restore_backup":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1112,7 +1112,7 @@ switch ($_POST['type']) {
     */
     case "admin_action_change_salt_key___delete_backup":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1412,8 +1412,8 @@ switch ($_POST['type']) {
                 array(
                     'id'        => null,
                     'type'      => 'key',
-                    'label'     => $_POST['label'],
-                    'value'       => $_POST['key'],
+                    'label'     => filter_var($_POST['label'], FILTER_SANITIZE_STRING),
+                    'value'       => filter_var($_POST['key'], FILTER_SANITIZE_STRING),
                     'timestamp' => time()
                 )
             );
@@ -1422,7 +1422,7 @@ switch ($_POST['type']) {
             DB::update(
                 prefix_table("api"),
                 array(
-                    'label'     => $_POST['label'],
+                    'label'     => filter_var($_POST['label'], FILTER_SANITIZE_STRING),
                     'timestamp' => time()
                 ),
                 "id=%i",
@@ -1450,8 +1450,8 @@ switch ($_POST['type']) {
                 array(
                     'id'        => null,
                     'type'      => 'ip',
-                    'label'     => $_POST['label'],
-                    'value'       => $_POST['key'],
+                    'label'     => filter_var($_POST['label'], FILTER_SANITIZE_STRING),
+                    'value'       => filter_var($_POST['key'], FILTER_SANITIZE_STRING),
                     'timestamp' => time()
                 )
             );
@@ -1460,8 +1460,8 @@ switch ($_POST['type']) {
                 DB::update(
                     prefix_table("api"),
                     array(
-                        'label'     => $_POST['label'],
-                        'value'     => $_POST['key'],
+                        'label'     => filter_var($_POST['label'], FILTER_SANITIZE_STRING),
+                        'value'     => filter_var($_POST['key'], FILTER_SANITIZE_STRING),
                         'timestamp' => time()
                     ),
                     "id=%i",
@@ -1528,7 +1528,7 @@ switch ($_POST['type']) {
 
     case "save_duo_in_sk_file":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1600,7 +1600,7 @@ switch ($_POST['type']) {
 
     case "save_google_options":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1672,7 +1672,7 @@ switch ($_POST['type']) {
 
     case "save_agses_options":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1772,7 +1772,7 @@ switch ($_POST['type']) {
 
     case "save_option_change":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1892,7 +1892,7 @@ switch ($_POST['type']) {
 
     case "get_values_for_statistics":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1907,7 +1907,7 @@ switch ($_POST['type']) {
 
     case "save_sending_statistics":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -2124,7 +2124,7 @@ switch ($_POST['type']) {
 
     case "is_backup_table_existing":
         // Check KEY and rights
-        if ($_POST['key'] != $_SESSION['key']) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }

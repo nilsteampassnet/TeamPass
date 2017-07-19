@@ -42,7 +42,7 @@ $ldap_suffix = "";
 $result = "";
 $adldap = "";
 
-if ($_POST['type'] === "identify_duo_user") {
+if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") {
 //--------
 // DUO AUTHENTICATION
 //--------
@@ -70,7 +70,7 @@ if ($_POST['type'] === "identify_duo_user") {
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 // DUO Identification
-} elseif ($_POST['type'] == "identify_duo_user_check") {
+} elseif (filter_ver($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user_check") {
 //--------
 // DUO AUTHENTICATION
 // this step is verifying the response received from the server
@@ -97,7 +97,7 @@ if ($_POST['type'] === "identify_duo_user") {
     } else {
         echo '[{"resp" : "'.$resp.'"}]';
     }
-} elseif ($_POST['type'] == "identify_user_with_agses") {
+} elseif (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_user_with_agses") {
 //--------
 //-- AUTHENTICATION WITH AGSES
 //--------
@@ -117,7 +117,7 @@ if ($_POST['type'] === "identify_duo_user") {
     $link->set_charset($encoding);
 
     // do checks
-    if (isset($_POST['cardid']) && empty($_POST['cardid'])) {
+    if (isset($_POST['cardid']) && empty($_POST['cardid']) === true) {
         // no card id is given
         // check if it is DB
         $row = DB::queryFirstRow(
