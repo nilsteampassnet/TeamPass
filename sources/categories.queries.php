@@ -106,7 +106,7 @@ if (isset($_POST['type'])) {
 
         case "renameItem":
             // update key
-            if (!empty($_POST['data']) && !empty($_POST['id'])) {
+            if (empty($_POST['data']) === false && empty($_POST['id']) === false) {
                 DB::update(
                     prefix_table("categories"),
                     array(
@@ -121,7 +121,7 @@ if (isset($_POST['type'])) {
 
         case "moveItem":
             // update key
-            if (!empty($_POST['data']) && !empty($_POST['id'])) {
+            if (empty($_POST['data']) === false && empty($_POST['id']) === false) {
                 DB::update(
                     prefix_table("categories"),
                     array(
@@ -137,8 +137,8 @@ if (isset($_POST['type'])) {
 
         case "saveOrder":
             // update order
-            if (!empty($_POST['data'])) {
-                foreach (explode(';', $_POST['data']) as $data) {
+            if (empty($_POST['data']) === false) {
+                foreach (explode(';', filter_var($_POST['data'], FILTER_SANITIZE_STRING)) as $data) {
                     $elem = explode(':', $data);
                     DB::update(
                         prefix_table("categories"),
@@ -216,16 +216,20 @@ if (isset($_POST['type'])) {
 
         case "categoryInFolders":
             // update order
-            if (!empty($_POST['foldersIds'])) {
+            if (empty($_POST['foldersIds']) === false) {
                 // delete all existing inputs
-                DB::delete($pre."categories_folders", "id_category = %i", $_POST['id']);
+                DB::delete(
+                    $pre."categories_folders",
+                    "id_category = %i",
+                    intval($_POST['id'])
+                );
                 // create new list
                 $list = "";
-                foreach (explode(';', $_POST['foldersIds']) as $folder) {
+                foreach (explode(';', filter_var($_POST['foldersIds'], FILTER_SANITIZE_STRING)) as $folder) {
                     DB::insert(
                         prefix_table("categories_folders"),
                         array(
-                            'id_category' => $_POST['id'],
+                            'id_category' => intval($_POST['id']),
                             'id_folder' => $folder
                             )
                     );

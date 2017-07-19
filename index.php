@@ -347,11 +347,10 @@ if (isset($_SESSION['CPM'])) {
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($SETTINGS['encryptClientServer']) ? $SETTINGS['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
-        <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? $_POST['sig_response'] : '', '" />';
+        <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? intval($_POST['sig_response']) : '', '" />';
 
 // SENDING STATISTICS?
-    if (
-        isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] == 1
+    if (isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === "1"
         && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
     ) {
         echo '

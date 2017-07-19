@@ -38,9 +38,9 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 
 //check for session
 if (isset($_POST['PHPSESSID'])) {
-    session_id($_POST['PHPSESSID']);
+    session_id(filter_var($_POST['PHPSESSID'], FILTER_SANITIZE_STRING));
 } elseif (isset($_GET['PHPSESSID'])) {
-    session_id($_GET['PHPSESSID']);
+    session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
 } else {
     handleUploadError('No Session was found.');
 }
@@ -112,7 +112,7 @@ $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
 if (isset($_POST['timezone'])) {
-    date_default_timezone_set($_POST['timezone']);
+    date_default_timezone_set(filter_var($_POST['timezone'], FILTER_SANITIZE_STRING));
 }
 
 // Check post_max_size
@@ -300,19 +300,26 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 
-if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_csv") {
+if (isset($_POST["type_upload"])
+    && empty($_POST["type_upload"]) === false
+    && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "import_items_from_csv"
+) {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} elseif (isset($_POST["type_upload"]) && $_POST["type_upload"] == "import_items_from_keypass") {
+} elseif (isset($_POST["type_upload"])
+    && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "import_items_from_keypass"
+) {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} elseif (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+} elseif (isset($_POST["type_upload"])
+    && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "upload_profile_photo"
+) {
     // sanitize the new file name
     $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($_POST['newFileName'], ENT_QUOTES));
     $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));

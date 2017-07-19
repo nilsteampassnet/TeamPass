@@ -321,7 +321,7 @@ switch ($_POST['type']) {
         $i = 1;
         $items_id_list = array();
 
-        foreach (explode(';', $_POST['ids']) as $id) {
+        foreach (explode(';', htmlentities($_POST['ids'], ENT_QUOTES)) as $id) {
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 $rows = DB::query(
                     "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
@@ -609,7 +609,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
         }
 
         //save in export file
-        $outstream = fopen($_POST['file'], "a");
+        $outstream = fopen(filter_var($_POST['file'], FILTER_SANITIZE_STRING), "a");
 
         $lineType = "line1";
         $idTree = "";
@@ -654,7 +654,7 @@ Enter the decryption key : <input type="password" id="saltkey" />
                 $idTree = $elem['id_tree'];
             }
 
-            $encPw = GibberishAES::enc($elem['pw'], $_POST['pdf_password']);
+            $encPw = GibberishAES::enc($elem['pw'], filter_var($_POST['pdf_password'], FILTER_SANITIZE_STRING));
             fputs(
                 $outstream,
                 '
@@ -728,7 +728,9 @@ Enter the decryption key : <input type="password" id="saltkey" />
 
         fclose($outstream);
 
-        echo '[{"text":"<a href=\''.$_POST['file_link'].'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+        echo '[{"text":"<a href=\''.
+            filter_var(cleanText($_POST['file_link'], "css"), FILTER_SANITIZE_STRING).
+            '\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
         break;
 }
 

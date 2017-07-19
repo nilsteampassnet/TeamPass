@@ -85,7 +85,7 @@ if (!empty($_POST['type'])) {
                 break;
             }
             // decrypt and retrieve data in JSON format
-            $data_received = prepareExchangedData($_POST['data'], "decode");
+            $data_received = prepareExchangedData(filter_var($_POST['data'], FILTER_SANITIZE_STRING), "decode");
 
             // prepare variables
             $label = htmlspecialchars_decode($data_received['label']);
@@ -166,7 +166,7 @@ if (!empty($_POST['type'])) {
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, folder_id FROM ".prefix_table("suggestion")." WHERE id = %i",
-                $_POST['id']
+                intval($_POST['id'])
             );
 
             // check if similar exists
@@ -463,7 +463,7 @@ if (!empty($_POST['type'])) {
 
             // prepare query
             $fields_array = array();
-            $fields_to_update = explode(";", $_POST['data']);
+            $fields_to_update = explode(";", filter_var($_POST['data'], FILTER_SANITIZE_STRING));
             foreach ($fields_to_update as $field) {
                 if (!empty($field)) {
                     $fields_array[$field] = $data[$field];

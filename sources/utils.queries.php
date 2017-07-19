@@ -467,7 +467,10 @@ switch ($_POST['type']) {
         break;
 
     case "server_auto_update_password_frequency":
-        if ($_POST['key'] != $_SESSION['key'] || !isset($_POST['id']) || !isset($_POST['freq'])) {
+        if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
+            || isset($_POST['id']) === false
+            || isset($_POST['freq']) === false
+        ) {
             echo '[{"error" : "something_wrong"}]';
             break;
         }
@@ -480,7 +483,7 @@ switch ($_POST['type']) {
                 'auto_update_pwd_next_date' => time() + (2592000 * intval($_POST['freq']))
                 ),
             "id = %i",
-            $_POST['id']
+            intval($_POST['id'])
         );
 
         echo '[{"error" : ""}]';

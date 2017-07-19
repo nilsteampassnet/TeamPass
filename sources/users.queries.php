@@ -40,7 +40,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
         include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     } else {
-        $filtered_newvalue = sanitizeEntry($_POST['newValue'], FILTER_SANITIZE_STRING);
+        $filtered_newvalue = filter_var($_POST['newValue'], FILTER_SANITIZE_STRING);
         if (empty($filtered_newvalue)) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $SETTINGS['cpassman_dir'].'/error.php';
@@ -78,11 +78,17 @@ if (!empty($_POST['type'])) {
         case "groupes_interdits":
             $val = explode(';', $_POST['valeur']);
             $valeur = $_POST['valeur'];
+            $post_type = filter_var($_POST['type'], FILTER_SANITIZE_STRING);
             // Check if id folder is already stored
-            $data = DB::queryfirstrow("SELECT ".$_POST['type']." FROM ".prefix_table("users")." WHERE id = %i", $val[0]);
-            $new_groupes = $data[$_POST['type']];
-            if (!empty($data[$_POST['type']])) {
-                $groupes = explode(';', $data[$_POST['type']]);
+            $data = DB::queryfirstrow(
+                "SELECT ".$post_type."
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $val[0]
+            );
+            $new_groupes = $data[$post_type];
+            if (empty($data[$post_type]) === false) {
+                $groupes = explode(';', $data[$post_type]);
                 if (in_array($val[1], $groupes)) {
                     $new_groupes = str_replace($val[1], "", $new_groupes);
                 } else {
@@ -141,9 +147,9 @@ if (!empty($_POST['type'])) {
          */
         case "add_new_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data'], "decode");
@@ -284,8 +290,9 @@ if (!empty($_POST['type'])) {
          */
         case "delete_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             if ($_POST['action'] == "delete") {
@@ -349,9 +356,10 @@ if (!empty($_POST['type'])) {
          */
         case "modif_mail_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
                 // error
                 echo '[ { "error" : "yes" } ]';
+                break;
             }
             // Get old email
             $data = DB::queryfirstrow(
@@ -369,7 +377,13 @@ if (!empty($_POST['type'])) {
                 $_POST['id']
             );
             // update LOG
-            logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+            logEvents(
+                'user_mngt',
+                'at_user_email_changed:'.$data['email'],
+                intval($_SESSION['user_id']),
+                filter_var($_SESSION['login'], FILTER_SANITIZE_STRING),
+                intval($_POST['id'])
+            );
             echo '[{"error" : "no"}]';
             break;
         /**
@@ -377,9 +391,9 @@ if (!empty($_POST['type'])) {
          */
         case "can_create_root_folder":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             DB::update(
@@ -397,20 +411,24 @@ if (!empty($_POST['type'])) {
          */
         case "admin":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['is_admin'] != 1) {
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
+                || $_SESSION['is_admin'] !== "1"
+            ) {
                 echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
                 exit();
             }
 
+            $post_value = filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT);
+
             DB::update(
                 prefix_table("users"),
                 array(
-                    'admin' => sanitizeEntry($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
-                    'gestionnaire' => $_POST['value'] === "1" ? "0" : "0",
-                    'read_only' => $_POST['value'] === "1" ? "0" : "0"
+                    'admin' => $post_value,
+                    'gestionnaire' => $post_value === "1" ? "0" : "0",
+                    'read_only' => $post_value === "1" ? "0" : "0"
                     ),
                 "id = %i",
-                sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
 
             echo prepareExchangedData(array("error" => ""), "encode");
@@ -420,31 +438,33 @@ if (!empty($_POST['type'])) {
          */
         case "gestionnaire":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             // Get some data
             $data = DB::queryfirstrow(
                 "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
-                sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
+
+            $post_value = filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'gestionnaire' => sanitizeEntry($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
-                    'can_manage_all_users' => ($data['can_manage_all_users'] === "0" && $_POST['value'] === "1") ? "0" : (
-                        ($data['can_manage_all_users'] === "0" && $_POST['value'] === "0") ? "0" : (
-                        ($data['can_manage_all_users'] === "1" && $_POST['value'] === "0") ? "0" : "1")
+                    'gestionnaire' => $post_value,
+                    'can_manage_all_users' => ($data['can_manage_all_users'] === "0" && $post_value === "1") ? "0" : (
+                        ($data['can_manage_all_users'] === "0" && $post_value === "0") ? "0" : (
+                        ($data['can_manage_all_users'] === "1" && $post_value === "0") ? "0" : "1")
                     ),
-                    'admin' => $_POST['value'] === "1" ? "0" : "0",
-                    'read_only' => $_POST['value'] === "1" ? "0" : "0"
+                    'admin' => $post_value === "1" ? "0" : "0",
+                    'read_only' => $post_value === "1" ? "0" : "0"
                     ),
                 "id = %i",
-                sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -453,10 +473,12 @@ if (!empty($_POST['type'])) {
          */
         case "read_only":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
+
+            $post_value = filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
@@ -466,7 +488,7 @@ if (!empty($_POST['type'])) {
                     'admin' => $_POST['value'] == 1 ? "0" : "0"
                     ),
                 "id = %i",
-                sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -476,28 +498,30 @@ if (!empty($_POST['type'])) {
          */
         case "can_manage_all_users":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             // Get some data
             $data = DB::queryfirstrow(
                 "SELECT admin, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
-                sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
+
+            $post_value = filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'can_manage_all_users' => $_POST['value'],
-                    'gestionnaire' => ($data['gestionnaire'] == 0 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 0) ? "1" : "0")),
-                    'admin' => $_POST['value'] == 1 ? "0" : "0",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
+                    'can_manage_all_users' => $post_value,
+                    'gestionnaire' => ($data['gestionnaire'] === "0" && $post_value === "1") ? "1" : (($data['gestionnaire'] === "1" && $post_value === "1") ? "1" : (($data['gestionnaire'] === "1" && $post_value === "0") ? "1" : "0")),
+                    'admin' => $post_value === "1" ? "1" : "0",
+                    'read_only' => $post_value === "1" ? "1" : "0"
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -506,18 +530,20 @@ if (!empty($_POST['type'])) {
          */
         case "personal_folder":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
+
+            $post_value = filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'personal_folder' => $_POST['value']
+                    'personal_folder' => $post_value === "1" ? "1" : "0"
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -557,9 +583,10 @@ if (!empty($_POST['type'])) {
          */
         case "change_user_functions":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // save data
             DB::update(
@@ -627,9 +654,9 @@ if (!empty($_POST['type'])) {
          */
         case "change_user_adminby":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // save data
             DB::update(
@@ -648,9 +675,9 @@ if (!empty($_POST['type'])) {
          */
         case "change_user_autgroups":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // save data
             DB::update(
@@ -683,9 +710,9 @@ if (!empty($_POST['type'])) {
          */
         case "open_div_forgroups":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             $text = "";
@@ -733,7 +760,7 @@ if (!empty($_POST['type'])) {
             );
             // display information
             $text = "";
-            $val = str_replace(';', ',', $_POST['list']);
+            $val = str_replace(';', ',', filter_var($_POST['list'], FILTER_SANITIZE_STRING));
             // Check if POST is empty
             if (!empty($_POST['list'])) {
                 $rows = DB::query(
@@ -752,9 +779,9 @@ if (!empty($_POST['type'])) {
          */
         case "unlock_account":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             DB::update(
@@ -813,7 +840,7 @@ if (!empty($_POST['type'])) {
 
             if ($_POST['scope'] === "user_activity") {
                 if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] !== "all") {
-                    $sql_filter = " AND l.action = '".sanitizeEntry($_POST['filter'], FILTER_SANITIZE_STRING)."'";
+                    $sql_filter = " AND l.action = '".filter_var($_POST['filter'], FILTER_SANITIZE_STRING)."'";
                 }
                 // get number of pages
                 DB::query(
@@ -822,12 +849,12 @@ if (!empty($_POST['type'])) {
                     INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
                     INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                     WHERE l.id_user = %i ".$sql_filter,
-                    sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
                 if (isset($_POST['page']) && $_POST['page'] > 1) {
-                    $start = ($_POST['nb_items_by_page'] * ($_POST['page'] - 1)) + 1;
+                    $start = (intval($_POST['nb_items_by_page']) * (intval($_POST['page']) - 1)) + 1;
                 } else {
                     $start = 0;
                 }
@@ -840,7 +867,7 @@ if (!empty($_POST['type'])) {
                     WHERE l.id_user = %i ".$sql_filter."
                     ORDER BY date DESC
                     LIMIT ".intval($start).",".intval($_POST['nb_items_by_page']),
-                    sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
             } else {
                 // get number of pages
@@ -849,7 +876,7 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i",
                     "user_mngt",
-                    sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
@@ -864,14 +891,14 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i
                     ORDER BY date DESC
-                    LIMIT ".mysqli_real_escape_string($link, sanitizeEntry($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, sanitizeEntry($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
+                    LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
                     "user_mngt",
-                    sanitizeEntry($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
                 );
             }
             // generate data
             if (isset($counter) && $counter != 0) {
-                $nb_pages = ceil($counter / $_POST['nb_items_by_page']);
+                $nb_pages = ceil($counter / intval($_POST['nb_items_by_page']));
                 for ($i = 1; $i <= $nb_pages; $i++) {
                     $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$_POST['scope'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
                 }
@@ -881,7 +908,7 @@ if (!empty($_POST['type'])) {
                 foreach ($rows as $record) {
                     if ($_POST['scope'] == "user_mngt") {
                         $user = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $record['qui']);
-                        $user_1 = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $_POST['id']);
+                        $user_1 = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", intval($_POST['id']));
                         $tmp = explode(":", $record['label']);
                         // extract action done
                         $label = "";
@@ -978,7 +1005,7 @@ if (!empty($_POST['type'])) {
          */
         case "disconnect_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1000,7 +1027,7 @@ if (!empty($_POST['type'])) {
          */
         case "disconnect_all_users":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1029,9 +1056,9 @@ if (!empty($_POST['type'])) {
          */
         case "get_user_info":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             $arrData = array();
@@ -1212,9 +1239,9 @@ if (!empty($_POST['type'])) {
          */
         case "store_user_changes":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             // decrypt and retreive data in JSON format
@@ -1331,9 +1358,9 @@ if (!empty($_POST['type'])) {
          */
         case "user_edit_login":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             DB::update(
@@ -1353,9 +1380,9 @@ if (!empty($_POST['type'])) {
          */
         case "is_login_available":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             DB::queryfirstrow(
@@ -1373,9 +1400,9 @@ if (!empty($_POST['type'])) {
          */
         case "user_folders_rights":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
             $arrData = array();
 
@@ -1536,9 +1563,9 @@ if (!empty($_POST['type'])) {
          */
         case "get_list_of_users_for_sharing":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             $list_users_from = '';
@@ -1583,9 +1610,9 @@ if (!empty($_POST['type'])) {
          */
         case "update_users_rights_sharing":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             // Check send values
@@ -1675,6 +1702,12 @@ if (!empty($_POST['type'])) {
     }
 }
 
+/**
+ * Return the level of access on a folder
+ * @param  string $new_val      New value
+ * @param  string $existing_val Current value
+ * @return string               Returned index
+ */
 function evaluate_folder_acces_level($new_val, $existing_val)
 {
     $levels = array(
