@@ -376,7 +376,7 @@ if (isset($_SESSION['CPM'])) {
                 <input type="hidden" name="changer_pw" id="changer_pw" value="" />
                 <input type="hidden" name="form_user_id" id="form_user_id" value="', isset($_SESSION['user_id']) ? $_SESSION['user_id'] : '', '" />
                 <input type="hidden" name="is_admin" id="is_admin" value="', isset($_SESSION['is_admin']) ? $_SESSION['is_admin'] : '', '" />
-                <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['my_sk']) ? true : false, '" />
+                <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['user_settings']['clear_psk']) ? true : false, '" />
             </form>';
     }
 // ---------
@@ -637,7 +637,7 @@ if (isset($_SESSION['CPM'])) {
                         </div>';
 
         // Personal salt key
-        if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1) {
+        if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1") {
             echo '
                         <div id="connect_psk" style="margin-bottom:3px;">
                             <label for="personal_psk" class="form_label">'.$LANG['home_personal_saltkey'].'</label>
@@ -732,11 +732,11 @@ if (isset($_SESSION['CPM'])) {
 
 
 //Personnal SALTKEY
-    if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1) {
+    if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] === "1") {
         echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
             <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
-            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['my_sk']) ? (string) $_SESSION['my_sk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
+            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
             <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
             <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
         </div>';

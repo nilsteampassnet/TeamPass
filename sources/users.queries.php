@@ -946,7 +946,7 @@ if (!empty($_POST['type'])) {
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
 
-            if (!isset($_SESSION['my_sk']) || $_SESSION['my_sk'] == "") {
+            if (!isset($_SESSION['user_settings']['clear_psk']) || $_SESSION['user_settings']['clear_psk'] == "") {
                 echo '[ { "error" : "no_sk" } ]';
             } elseif ($salt_user == "") {
                 echo '[ { "error" : "no_sk_user" } ]';

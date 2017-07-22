@@ -215,7 +215,7 @@ if (isset($SETTINGS['enable_personal_saltkey_cookie'])
     && isset($_SESSION['user_id'])
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])])
 ) {
-    $_SESSION['my_sk'] = decrypt($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], '');
+    $_SESSION['user_settings']['clear_psk'] = decrypt($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], '');
 }
 
 /* CHECK IF MAINTENANCE MODE

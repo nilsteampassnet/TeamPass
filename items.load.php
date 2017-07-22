@@ -3989,9 +3989,9 @@ function manage_history_entry(type, id)
         "sources/items.queries.php",
         {
             type      : "history_entry_add",
-            folder_id           : $('#hid_cat').val(),
-            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-            key        : "<?php echo $_SESSION['key']; ?>"
+            folder_id : $('#hid_cat').val(),
+            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+            key       : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             //check if format error

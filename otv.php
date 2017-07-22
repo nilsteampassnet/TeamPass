@@ -13,7 +13,6 @@
  */
 
 require_once('sources/SecureHandler.php');
-session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -28,8 +27,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 $html = "";
-if (
-    filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
+if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
     && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) !== false
 ) {
     //Include files

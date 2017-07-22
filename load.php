@@ -796,7 +796,7 @@ $htmlHeaders .= '
             height: 190,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
-                $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
+                $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).'");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {
@@ -852,7 +852,7 @@ $htmlHeaders .= '
             title: "'.$LANG['menu_title_new_personal_saltkey'].'",
             open: function() {
                 $("#new_personal_saltkey").val("");
-                $("#old_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
+                $("#old_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).'");
             },
             buttons: {
                 "'.$LANG['ok'].'": function() {

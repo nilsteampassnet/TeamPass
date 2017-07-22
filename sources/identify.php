@@ -70,7 +70,7 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 // DUO Identification
-} elseif (filter_ver($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user_check") {
+} elseif (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user_check") {
 //--------
 // DUO AUTHENTICATION
 // this step is verifying the response received from the server
@@ -201,7 +201,7 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
             echo '[{"error" : "something_wrong" , "agses_message" : ""}]'; // user not found but not displayed as this in the error message
         }
     }
-} elseif ($_POST['type'] == "identify_user") {
+} elseif ($_POST['type'] === "identify_user") {
 //--------
 // NORMAL IDENTICATION STEP
 //--------
@@ -556,8 +556,8 @@ function identifyUser($sentData)
 
     // Check PSK
     if (isset($SETTINGS['psk_authentication'])
-        && $SETTINGS['psk_authentication'] == 1
-        && $data['admin'] != 1
+        && $SETTINGS['psk_authentication'] === "1"
+        && $data['admin'] !== "1"
     ) {
         $psk = htmlspecialchars_decode($dataReceived['psk']);
         $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
@@ -569,7 +569,7 @@ function identifyUser($sentData)
                 echo '[{"value" : "bad_psk_confirmation"}]';
                 exit;
             } else {
-                $_SESSION['my_sk'] = $psk;
+                $_SESSION['user_settings']['clear_psk'] = $psk;
             }
         } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
             echo '[{"value" : "bad_psk"}]';
@@ -917,10 +917,10 @@ function identifyUser($sentData)
             if (isset($SETTINGS['use_md5_password_as_salt']) &&
                 $SETTINGS['use_md5_password_as_salt'] == 1
             ) {
-                $_SESSION['my_sk'] = md5($passwordClear);
+                $_SESSION['user_settings']['clear_psk'] = md5($passwordClear);
                 setcookie(
                     "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                    encrypt($_SESSION['my_sk'], ""),
+                    encrypt($_SESSION['user_settings']['clear_psk'], ""),
                     time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                     '/'
                 );

@@ -500,7 +500,7 @@ $(function() {
 
       // prepare fields
       $("#new_personal_saltkey").val("");
-      $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk'])); ?>");
+      $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['user_settings']['clear_psk'])); ?>");
 
       $("#div_change_psk").show();
       $("#dialog_user_profil").dialog("option", "height", 600);

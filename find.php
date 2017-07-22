@@ -51,7 +51,7 @@ if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['li
 
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1' : '0', '" />';
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['clear_psk']) && !empty($_SESSION['user_settings']['clear_psk']) ? '1' : '0', '" />';
 
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />
