@@ -136,7 +136,7 @@ $htmlHeaders .= isset($SETTINGS['favicon']) ? '
 if (!isset($_SESSION["user_id"])) {
     $_SESSION["key"] = mt_rand();
     $_SESSION["user_id"] = "0";
-    $_SESSION["my_sk"] = "0";
+    $_SESSION['user_settings']['clear_psk'] = "";
 }
 
 $htmlHeaders .= '
@@ -309,10 +309,12 @@ $htmlHeaders .= '
                 },
                 function(data) {
                     if (data[0].error === "0") {
-                        //$("#ga_qr").attr("src", data[0].ga_url);
                         $("#div_ga_url").show();
                     } else if (data[0].error === "not_allowed") {
                         $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
+                        $("#div_ga_url").hide();
+                    } else if (data[0].error === "no_user") {
+                        $("#connection_error").html("'.addslashes($LANG['error_no_user']).'").show();
                         $("#div_ga_url").hide();
                     } else {
                         $("#connection_error").html("'.addslashes($LANG['index_bas_pw']).'").show();
@@ -343,6 +345,9 @@ $htmlHeaders .= '
             function(data) {
                 if (data[0].error === "0") {
                     $("#div_dialog_message").html(data[0].msg).dialog("open");
+                } else if (data[0].error === "no_user") {
+                    $("#connection_error").html("'.addslashes($LANG['error_no_user']).'")
+                        .show().delay(3000).fadeOut(500);
                 } else {
 
                 }
@@ -796,7 +801,9 @@ $htmlHeaders .= '
             height: 190,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
-                $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).'");
+                $("#input_personal_saltkey").val("'.
+                    addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).
+                '");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {

@@ -34,7 +34,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['type'] == "generate_new_password")) {
+if (isset($_POST['type']) && ($_POST['type'] == "ga_generate_qr" || $_POST['type'] == "send_pw_by_email" || $_POST['type'] == "generate_new_password")) {
     // continue
     mainQuery();
 } elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
@@ -43,9 +43,6 @@ if (isset($_POST['type']) && ($_POST['type'] == "send_pw_by_email" || $_POST['ty
     exit();
 } elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
-    // continue
-    mainQuery();
-} elseif ((isset($_POST['data']) && ($_POST['type'] == "ga_generate_qr") || $_POST['type'] == "send_pw_by_email")) {
     // continue
     mainQuery();
 } else {

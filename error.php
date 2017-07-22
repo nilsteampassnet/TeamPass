@@ -13,7 +13,13 @@
  */
 
 
-require_once('./sources/SecureHandler.php');
+if (file_exists('../sources/SecureHandler.php')) {
+    require_once '../sources/SecureHandler.php';
+} elseif (file_exists('./sources/SecureHandler.php')) {
+    require_once './sources/SecureHandler.php';
+} else {
+    throw new Exception("Error file '/sources/SecureHandler.php' not exists", 1);
+}
 if (!isset($_SESSION)) {
     session_start();
 }
