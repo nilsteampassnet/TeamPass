@@ -74,7 +74,6 @@ function teampass_connect()
 
 function teampass_get_ips()
 {
-    global $server, $user, $pass, $database, $link;
     $array_of_results = array();
     teampass_connect();
     $response = DB::query("select value from ".prefix_table("api")." WHERE type = %s", "ip");
@@ -87,7 +86,6 @@ function teampass_get_ips()
 
 function teampass_get_keys()
 {
-    global $server, $user, $pass, $database, $link;
     teampass_connect();
     $response = DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key");
 
@@ -101,7 +99,6 @@ function rest_head()
 
 function addToCacheTable($id)
 {
-    global $server, $user, $pass, $database, $link;
     teampass_connect();
     // get data
     $data = DB::queryfirstrow(
@@ -151,7 +148,6 @@ function addToCacheTable($id)
  */
 function getSettingValue($setting)
 {
-
     // get default language
     $set = DB::queryFirstRow(
         "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
@@ -173,7 +169,6 @@ function rest_delete()
         $GLOBALS['request'] = explode('/', $matches[2]);
     }
     if (apikey_checker($GLOBALS['apikey'])) {
-        global $server, $user, $pass, $database, $pre, $link;
         include "../sources/main.functions.php";
         teampass_connect();
         $category_query = "";
@@ -291,9 +286,7 @@ function rest_get()
     }
 
     if (apikey_checker($GLOBALS['apikey'])) {
-        global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
-        $category_query = "";
 
         // define the API user through the LABEL of apikey
         $api_info = DB::queryFirstRow(

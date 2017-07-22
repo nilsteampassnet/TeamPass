@@ -139,7 +139,7 @@ function toggleDiv(id){
 *   Checks if value is an integer
 **/
 function isInteger(s) {
-  return (s.toString().search(/^-?[0-9]+$/) == 0);
+  return (s.toString().search(/^-?[0-9]+$/) === 0);
 }
 
 /**
@@ -269,36 +269,11 @@ function aes_decrypt(text, key)
     return Aes.Ctr.decrypt(text, key, 256);
 }
 
-function prepareExchangedData(data, type, key)
-{
-    var jsonResult;
-    if (type === "decode") {
-        if ($("#encryptClientServer").val() == 0) {
-            try {
-                return $.parseJSON(data);
-            }
-            catch (e) {
-                return "Error: " + jsonErrorHdl(e);
-            };
-        } else {
-            try {
-                return $.parseJSON(aes_decrypt(data, key));
-            }
-            catch (e) {
-                return "Error: " + jsonErrorHdl(e);
-            };
-        }
-    } else if (type === "encode") {
-        if ($("#encryptClientServer").val() == 0) {
-            return data;
-        } else {
-            return aes_encrypt(data, key);
-        }
-    } else {
-        return false;
-    }
-}
-
+/**
+ * Shows error message
+ * @param  {string} message  Message to display
+ * @return {boolean}         False
+ */
 function jsonErrorHdl(message)
 {
     $("#div_dialog_message_text").html(message);
@@ -306,6 +281,36 @@ function jsonErrorHdl(message)
     $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
     $("#items_list_loader").hide();
     return false;
+}
+
+function prepareExchangedData(data, type, key)
+{
+    var jsonResult;
+    if (type === "decode") {
+        if ($("#encryptClientServer").val() === "0") {
+            try {
+                return $.parseJSON(data);
+            }
+            catch (e) {
+                return "Error: " + jsonErrorHdl(e);
+            }
+        } else {
+            try {
+                return $.parseJSON(aes_decrypt(data, key));
+            }
+            catch (e) {
+                return "Error: " + jsonErrorHdl(e);
+            }
+        }
+    } else if (type === "encode") {
+        if ($("#encryptClientServer").val() === "0") {
+            return data;
+        } else {
+            return aes_encrypt(data, key);
+        }
+    } else {
+        return false;
+    }
 }
 
 function displayMessage(textToDisplay)
@@ -323,16 +328,17 @@ function displayMessage(textToDisplay)
 function blink(elem, times, speed, klass)
 {
     if (times > 0 || times < 0) {
-      if ($(elem).hasClass(klass))
-         $(elem).removeClass(klass);
-      else
-         $(elem).addClass(klass);
-     }
+        if ($(elem).hasClass(klass)) {
+            $(elem).removeClass(klass);
+        } else {
+            $(elem).addClass(klass);
+        }
+    }
 
-     clearTimeout(function() { blink(elem, times, speed, klass); });
+    clearTimeout(function() { blink(elem, times, speed, klass); });
 
-     if (times > 0 || times < 0) {
-       setTimeout(function() { blink(elem, times, speed, klass); }, speed);
-       times-= .5;
-     }
+    if (times > 0 || times < 0) {
+        setTimeout(function() { blink(elem, times, speed, klass); }, speed);
+        times-= .5;
+    }
 }

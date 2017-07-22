@@ -563,17 +563,17 @@ function identifyUser($sentData)
         $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
         if (empty($psk)) {
             echo '[{"value" : "psk_required"}]';
-            exit;
+            exit("abort");
         } elseif (empty($data['psk'])) {
             if (empty($pskConfirm)) {
                 echo '[{"value" : "bad_psk_confirmation"}]';
-                exit;
+                exit("abort");
             } else {
                 $_SESSION['user_settings']['clear_psk'] = $psk;
             }
         } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
             echo '[{"value" : "bad_psk"}]';
-            exit;
+            exit("abort");
         }
     }
 
@@ -643,7 +643,7 @@ function identifyUser($sentData)
     if ($counter == 0) {
         logEvents('failed_auth', 'user_not_exists', "", stripslashes($username));
         echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
-        exit;
+        exit("abort");
     }
 
     // check GA code
@@ -679,7 +679,7 @@ function identifyUser($sentData)
 
                     echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
-                    exit();
+                    exit("abort");
                 }
             } else {
                 // verify the user GA code
@@ -759,7 +759,7 @@ function identifyUser($sentData)
                 '", "initial_url" : "'.@$_SESSION['initial_url'].'",
                 "error" : "'.$logError.'"}]';
 
-                exit();
+                exit("abort");
             }
         } else {
             // We have an error here
@@ -771,7 +771,7 @@ function identifyUser($sentData)
             '", "initial_url" : "'.@$_SESSION['initial_url'].'",
             "error" : "'.$logError.'"}]';
 
-            exit();
+            exit("abort");
         }
     }
 
@@ -786,7 +786,7 @@ function identifyUser($sentData)
         '", "initial_url" : "'.@$_SESSION['initial_url'].'",
         "error" : "'.$logError.'"}]';
 
-        exit();
+        exit("abort");
     }
 
     if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
