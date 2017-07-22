@@ -132,8 +132,8 @@ function mainQuery()
                 if (sizeof($lastPw) > $SETTINGS['number_of_used_pw']
                         && $SETTINGS['number_of_used_pw'] > 0
                 ) {
-                    for ($x = 0; $x < $SETTINGS['number_of_used_pw']; $x++) {
-                        unset($lastPw[$x]);
+                    for ($x_counter = 0; $x_counter < $SETTINGS['number_of_used_pw']; $x_counter++) {
+                        unset($lastPw[$x_counter]);
                     }
                     // reinit SESSION
                     $_SESSION['last_pw'] = implode(';', $lastPw);
@@ -142,50 +142,52 @@ function mainQuery()
                     $_SESSION['last_pw'] = "";
                     $lastPw = array();
                 }
+
                 // check if new pw is different that old ones
                 if (in_array($newPw, $lastPw)) {
                     echo '[ { "error" : "already_used" } ]';
                     break;
+                }
+
+                // update old pw with new pw
+                if (sizeof($lastPw) == ($SETTINGS['number_of_used_pw'] + 1)) {
+                    unset($lastPw[0]);
                 } else {
-                    // update old pw with new pw
-                    if (sizeof($lastPw) == ($SETTINGS['number_of_used_pw'] + 1)) {
-                        unset($lastPw[0]);
-                    } else {
-                        array_push($lastPw, $newPw);
-                    }
-                    // create a list of last pw based on the table
-                    $oldPw = "";
-                    foreach ($lastPw as $elem) {
-                        if (!empty($elem)) {
-                            if (empty($oldPw)) {
-                                $oldPw = $elem;
-                            } else {
-                                $oldPw .= ";".$elem;
-                            }
+                    array_push($lastPw, $newPw);
+                }
+                // create a list of last pw based on the table
+                $oldPw = "";
+                foreach ($lastPw as $elem) {
+                    if (!empty($elem)) {
+                        if (empty($oldPw)) {
+                            $oldPw = $elem;
+                        } else {
+                            $oldPw .= ";".$elem;
                         }
                     }
-
-                    // update sessions
-                    $_SESSION['last_pw'] = $oldPw;
-                    $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
-                    $_SESSION['validite_pw'] = true;
-                    // update DB
-                    DB::update(
-                        prefix_table("users"),
-                        array(
-                            'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
-                            'last_pw' => $oldPw
-                            ),
-                        "id = %i",
-                        $_SESSION['user_id']
-                    );
-                    // update LOG
-                    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-                    echo '[ { "error" : "none" } ]';
-                    break;
                 }
-                // ADMIN has decided to change the USER's PW
+
+                // update sessions
+                $_SESSION['last_pw'] = $oldPw;
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
+                $_SESSION['validite_pw'] = true;
+                // update DB
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        'pw' => $newPw,
+                        'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
+                        'last_pw' => $oldPw
+                        ),
+                    "id = %i",
+                    $_SESSION['user_id']
+                );
+                // update LOG
+                logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                echo '[ { "error" : "none" } ]';
+                break;
+
+            // ADMIN has decided to change the USER's PW
             } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] === "admin_change" || $_POST['change_pw_origine'] === "user_change") && ($_SESSION['user_admin'] === "1" || $_SESSION['user_manager'] === "1" || $_SESSION['user_can_manage_all_users'] === "1"))) {
                 // check if user is admin / Manager
                 $userInfo = DB::queryFirstRow(
@@ -567,7 +569,7 @@ function mainQuery()
 
             //init
             $list = "";
-            $nb = 0;
+            $number = 0;
 
             //decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
@@ -586,7 +588,7 @@ function mainQuery()
                     array(
                         "list" => $list,
                         "error" => $user_key_encoded,
-                        "nb_total" => $nb
+                        "nb_total" => $number
                     ),
                     "encode"
                 );
@@ -625,7 +627,7 @@ function mainQuery()
                 $_SESSION['user_id'],
                 "at_creation"
             );
-            $nb = DB::count();
+            $number = DB::count();
             foreach ($rows as $record) {
                 if (!empty($record['pw'])) {
                     if (empty($list)) {
@@ -648,7 +650,7 @@ function mainQuery()
                 array(
                     "list" => $list,
                     "error" => "no",
-                    "nb_total" => $nb
+                    "nb_total" => $number
                 ),
                 "encode"
             );
@@ -914,7 +916,7 @@ function mainQuery()
             }
 
             // get list of last items seen
-            $x = 1;
+            $x_counter = 1;
             $return = "";
             $arrTmp = array();
             $rows = DB::query(
@@ -931,9 +933,9 @@ function mainQuery()
                 foreach ($rows as $record) {
                     if (!in_array($record['id'], $arrTmp)) {
                         $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
-                        $x++;
+                        $x_counter++;
                         array_push($arrTmp, $record['id']);
-                        if ($x >= 10) {
+                        if ($x_counter >= 10) {
                             break;
                         }
                     }

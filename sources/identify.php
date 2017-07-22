@@ -307,7 +307,7 @@ function identifyUser($sentData)
     $dataReceived = prepareExchangedData($sentData, "decode");
     // Prepare variables
     $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-    $passwordOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
+    $pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
     $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
     $logError = "";
     $userPasswordVerified = false;
@@ -792,7 +792,7 @@ function identifyUser($sentData)
     if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
         // User exists in the DB
         //v2.1.17 -> change encryption for users password
-        if ($passwordOldEncryption == $data['pw'] &&
+        if ($pwdOldEncryption === $data['pw'] &&
             !empty($data['pw'])
         ) {
             //update user's password

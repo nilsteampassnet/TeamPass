@@ -3904,9 +3904,9 @@ function recupDroitCreationSansComplexite($groupe)
     // Check if it's in a personal folder. If yes, then force complexity overhead.
     if ($data['personal_folder'] === '1') {
         return array("bloquer_modification_complexite" => 1, "bloquer_creation_complexite" => 1);
-    } else {
-        return array("bloquer_modification_complexite" => $data['bloquer_modification'], "bloquer_creation_complexite" => $data['bloquer_creation']);
     }
+    
+    return array("bloquer_modification_complexite" => $data['bloquer_modification'], "bloquer_creation_complexite" => $data['bloquer_creation']);
 }
 
 /*
