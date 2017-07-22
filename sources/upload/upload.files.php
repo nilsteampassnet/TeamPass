@@ -33,7 +33,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     handleUploadError('Not allowed to ...');
-    exit("abort");
+    exit();
 }
 
 //check for session
@@ -54,7 +54,7 @@ $fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANI
 // token check
 if (!isset($_POST['user_token'])) {
     handleUploadError('No user token found.');
-    exit("abort");
+    exit();
 } else {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
@@ -371,7 +371,7 @@ if (isset($_POST["type_upload"])
     $_SESSION['user_avatar_thumb'] = $newFileName."_thumb".'.'.$ext;
 
     echo '{"filename" : "'.htmlentities($_SESSION['user_avatar'], ENT_QUOTES).'" , "filename_thumb" : "'.htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES).'"}';
-    exit("abort");
+    exit();
 } else {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(
@@ -388,5 +388,5 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "id" , "newfilename" : "'.$newF
 function handleUploadError($message)
 {
     echo htmlentities($message, ENT_QUOTES);
-    exit("abort");
+    exit();
 }

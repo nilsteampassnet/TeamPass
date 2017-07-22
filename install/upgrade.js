@@ -26,7 +26,7 @@ function httpRequest(file,data,type) {
     var xhr_object = null;
     var is_chrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
 
-    if (document.getElementById("menu_action") != null) {
+    if (document.getElementById("menu_action") !== null) {
         document.getElementById("menu_action").value = "action";
     }
 
@@ -39,30 +39,30 @@ function httpRequest(file,data,type) {
         return;
     }
 
-    if (type == "GET") {
+    if (type === "GET") {
         xhr_object.open("GET", file+"?"+data, true);
         xhr_object.send(null);
     } else {
         xhr_object.open("POST", file, true);
         xhr_object.onreadystatechange = function() {
-            if(xhr_object.readyState == 4) {
+            if(xhr_object.readyState === 4) {
                 eval(xhr_object.responseText);
                 //Check if query is for user identification. If yes, then reload page.
-                if (data != "" && data !== undefined && data.indexOf('ype=identify_user') > 0 ) {
+                if (data !== "" && data !== undefined && data.indexOf('ype=identify_user') > 0 ) {
                     if (is_chrome === true ) PauseInExecution(100);  //Needed pause for Chrome
-                    if (type == "") {
-                        if (document.getElementById('erreur_connexion').style.display == "") {
+                    if (type === "") {
+                        if (document.getElementById('erreur_connexion').style.display === "") {
                             //rise an error in url. This in order to display the eror after refreshing
-                            window.location.href="index.php?error=rised";
+                            window.location.href = "index.php?error=rised";
                         } else {
-                            window.location.href="index.php";
+                            window.location.href = "index.php";
                         }
                     } else {
-                        if (type = "?error=rised") {
-                            if (document.getElementById('erreur_connexion').style.display == "none") type = "";   //clean error in url
+                        if (type === "?error=rised") {
+                            if (document.getElementById('erreur_connexion').style.display === "none") type = "";   //clean error in url
                             else type = "?error=rised"; //Maintain the ERROR
                         }
-                        window.location.href="index.php"+type;
+                        window.location.href = "index.php"+type;
                     }
                 }
             }

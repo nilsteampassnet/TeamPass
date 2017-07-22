@@ -398,7 +398,6 @@ class NestedTree
         $data = $this->getTreeWithChildren();
 
         $n = 0; // need a variable to hold the running n tally
-        $fld_level = 0; // need a variable to hold the running level tally
 
         // invoke the recursive function. Start it processing
         // on the fake "root node" generated in getTreeWithChildren().

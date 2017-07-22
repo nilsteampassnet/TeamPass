@@ -28,7 +28,7 @@ class Aes
     for ($round = 1; $round < $Nr; $round++) {  // apply Nr rounds
         $state = self::subBytes($state, $Nb);
         $state = self::shiftRows($state, $Nb);
-        $state = self::mixColumns($state, $Nb);
+        $state = self::mixColumns($state);
         $state = self::addRoundKey($state, $w, $round, $Nb);
     }
 
@@ -92,7 +92,7 @@ class Aes
     /**
      * @param integer $Nb
      */
-    private static function mixColumns($s, $Nb) {   // combine bytes of each col of state S [é5.1.3]
+    private static function mixColumns($s) {   // combine bytes of each col of state S [é5.1.3]
     for ($c = 0; $c < 4; $c++) {
         $a = array(4); // 'a' is a copy of the current column from 's'
         $b = array(4); // 'b' is aé{02} in GF(2^8)

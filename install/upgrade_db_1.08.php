@@ -15,7 +15,6 @@
 require_once('../sources/SecureHandler.php');
 session_start();
 include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-global $k;
 //ENGLISH
 $english_vals = array(
     array('at_modification', "Modification"),
@@ -64,7 +63,7 @@ changeDB();
 
 function changeDB()
 {
-    global $k, $spanish_vals, $french_vals, $english_vals, $dbTmp;
+    global $spanish_vals, $french_vals, $english_vals, $dbTmp;
     $res = mysqli_query($dbTmp, "SELECT * FROM ".$_SESSION['pre']."log_items") or die(mysqli_error($dbTmp));
     while ($data = mysqli_fetch_array($res)) {
         $action = "";
