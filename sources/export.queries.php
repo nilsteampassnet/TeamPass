@@ -735,63 +735,63 @@ Enter the decryption key : <input type="password" id="saltkey" />
 }
 
 //SPECIFIC FUNCTIONS FOR FPDF
-function checkPageBreak($h)
+function checkPageBreak($height)
 {
     global $pdf;
     //Continue on a new page if needed
-    if ($pdf->GetY() + $h > $pdf->PageBreakTrigger) {
+    if ($pdf->GetY() + $height > $pdf->PageBreakTrigger) {
         $pdf->addPage($pdf->CurOrientation);
     }
 }
 
-function nbLines($w, $txt)
+function nbLines($width, $txt)
 {
     global $pdf;
     //Calculate the number of lines needed by a Multicell with a width of w
-    if ($w == 0) {
-        $w = $pdf->w - $this->rMargin - $pdf->x;
+    if ($width == 0) {
+        $width = $pdf->w - $this->rMargin - $pdf->x;
     }
-    $wmax = ($w - 2 * $pdf->cMargin) * 1000 / $pdf->FontSize;
-    $s = str_replace("\r", '', $txt);
-    $nb = strlen($s);
-    if ($nb > 0 and $s[$nb - 1] == "\n") {
-        $nb--;
+    $wmax = ($width - 2 * $pdf->cMargin) * 1000 / $pdf->FontSize;
+    $s_text = str_replace("\r", '', $txt);
+    $nb_char = strlen($s_text);
+    if ($nb_char > 0 and $s_text[$nb_char - 1] == "\n") {
+        $nb_char--;
     }
     $sep = -1;
-    $i = 0;
-    $j = 0;
-    $l = 0;
-    $nl = 1;
-    while ($i < $nb) {
-        $c = $s[$i];
-        if ($c == "\n") {
-            $i++;
+    $var_i = 0;
+    $var_j = 0;
+    $var_l = 0;
+    $var_nl = 1;
+    while ($var_i < $nb_char) {
+        $var_c = $s_text[$var_i];
+        if ($var_c == "\n") {
+            $var_i++;
             $sep = -1;
-            $j = $i;
-            $l = 0;
-            $nl++;
+            $var_j = $i;
+            $var_l = 0;
+            $var_nl++;
             continue;
         }
-        if ($c == ' ') {
-            $sep = $i;
+        if ($var_c == ' ') {
+            $sep = $var_i;
         }
-        $l += 550;
-        if ($l > $wmax) {
+        $var_l += 550;
+        if ($var_l > $wmax) {
             if ($sep == -1) {
-                if ($i == $j) {
-                    $i++;
+                if ($var_i == $var_j) {
+                    $var_i++;
                 }
             } else {
-                $i = $sep + 1;
+                $var_i = $sep + 1;
             }
             $sep = -1;
-            $j = $i;
-            $l = 0;
-            $nl++;
+            $var_j = $var_i;
+            $var_l = 0;
+            $var_nl++;
         } else {
-            $i++;
+            $var_i++;
         }
     }
 
-    return $nl;
+    return $var_nl;
 }

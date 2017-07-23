@@ -3935,10 +3935,10 @@ function fileFormatImage($ext)
 * FUNCTION
 * permits to remplace some specific characters in password
 */
-function passwordReplacement($pw)
+function passwordReplacement($pwd)
 {
     $pwPatterns = array('/ETCOMMERCIAL/', '/SIGNEPLUS/');
     $pwRemplacements = array('&', '+');
 
-    return preg_replace($pwPatterns, $pwRemplacements, $pw);
+    return preg_replace($pwPatterns, $pwRemplacements, $pwd);
 }

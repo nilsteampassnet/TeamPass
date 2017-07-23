@@ -38,27 +38,29 @@ function redirect($url)
 
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: '.$antiXss->xss_clean($url));
-    } else {  //If headers are sent... do java redirect... if java disabled, do html redirect.
-        echo '<script type="text/javascript">';
-        echo 'window.location.href="'.$antiXss->xss_clean($url).'";';
-        echo '</script>';
-        echo '<noscript>';
-        echo '<meta http-equiv="refresh" content="0;url='.$antiXss->xss_clean($url).'" />';
-        echo '</noscript>';
+        exit();
     }
+
+    //If headers are sent... do java redirect... if java disabled, do html redirect.
+    echo '<script type="text/javascript">';
+    echo 'window.location.href="'.$antiXss->xss_clean($url).'";';
+    echo '</script>';
+    echo '<noscript>';
+    echo '<meta http-equiv="refresh" content="0;url='.$antiXss->xss_clean($url).'" />';
+    echo '</noscript>';
 }
 
 // Redirect needed?
 if (isset($_SERVER['HTTPS']) &&
-    $_SERVER['HTTPS'] != 'on' &&
+    $_SERVER['HTTPS'] !== 'on' &&
     isset($SETTINGS['enable_sts']) &&
-    $SETTINGS['enable_sts'] == 1
+    $SETTINGS['enable_sts'] === "1"
 ) {
     redirect("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
 }
 
 // LOAD CPASSMAN SETTINGS
-if (!isset($SETTINGS['loaded']) || $SETTINGS['loaded'] !== '1') {
+if (!isset($SETTINGS['loaded']) || $SETTINGS['loaded'] !== "1") {
     //by default, this is set to 0;
     $SETTINGS['duplicate_folder'] = 0;
     //by default, this is set to 0;

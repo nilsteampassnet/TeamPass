@@ -21,9 +21,9 @@ $_SESSION['CPM'] = 1;
 
 function chmod_r($dir, $dirPermissions, $filePermissions)
 {
-    $dp = opendir($dir);
+    $pointer_dir = opendir($dir);
     $res = true;
-    while ($file = readdir($dp)) {
+    while ($file = readdir($pointer_dir)) {
         if (($file == ".") || ($file == "..")) {
             continue;
         }
@@ -38,11 +38,11 @@ function chmod_r($dir, $dirPermissions, $filePermissions)
             $res = chmod($fullPath, $filePermissions);
         }
         if (!$res) {
-            closedir($dp);
+            closedir($pointer_dir);
             return false;
         }
     }
-    closedir($dp);
+    closedir($pointer_dir);
     if (is_dir($dir) && $res) {
             $res = @chmod($dir, $dirPermissions);
     }

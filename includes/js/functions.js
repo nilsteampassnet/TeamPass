@@ -15,10 +15,11 @@
 *   Show or hide Loading animation GIF
 **/
 function LoadingPage(){
-    if ( $("#div_loading").is(':visible') )
+    if ($("#div_loading").is(":visible")) {
         $("#div_loading").hide();
-    else
+    } else {
         $("#div_loading").show();
+    }
 }
 
 /**
@@ -31,9 +32,9 @@ function RefreshPage(myform){
 /**
 *   Add 1 hour to session duration
 **/
-function IncreaseSessionTime(message_end, message_wait, duration){
+function IncreaseSessionTime(messageEnd, messageWait, duration){
     duration = duration || 60;
-    $("#main_info_box_text").html(message_wait);
+    $("#main_info_box_text").html(messageWait);
     $("#main_info_box").show().position({
         my: "center",
         at: "center top+75",
@@ -47,7 +48,7 @@ function IncreaseSessionTime(message_end, message_wait, duration){
         },
         function(data){
             if (data[0].new_value !== "expired") {
-                $("#main_info_box_text").html(message_end);
+                $("#main_info_box_text").html(messageEnd);
                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
@@ -87,8 +88,8 @@ function countdown()
     DayTill = CHour+":"+CMinute+":"+CSecond;
 
     //Avertir de la fin imminante de la session
-    if ( DayTill === "00:01:00" ){
-        $("#div_increase_session_time").dialog('open');
+    if (DayTill === "00:01:00") {
+        $("#div_increase_session_time").dialog("open");
         $("#countdown").css("color","red");
     }
 
@@ -99,7 +100,7 @@ function countdown()
     }
 
     //Rewrite the string to the correct information.
-    if ($("#countdown")){
+    if ($("#countdown")) {
         $("#countdown").html(DayTill); //Make the particular form chart become "Daytill"
     }
 
@@ -116,7 +117,7 @@ function countdown()
 *   Open a dialog
 **/
 function OpenDialog(id){
-    $('#'+id).dialog('open');
+    $("#"+id).dialog("open");
 }
 
 /**
@@ -129,7 +130,7 @@ function toggleDiv(id){
         $.post(
             "sources/main.queries.php",
             {
-            type    : "hide_maintenance"
+                type    : "hide_maintenance"
             }
         );
     }
@@ -162,7 +163,7 @@ function CreateRandomString(size,type){
     }
 
     //generate it
-    var randomstring = '';
+    var randomstring = "";
     for (var i=0; i<size; i++) {
         var rnum = Math.floor(Math.random() * chars.length);
         randomstring += chars.substring(rnum,rnum+1);
@@ -187,9 +188,9 @@ function unsanitizeString(string){
 *   Clean up a string and delete any scripting tags
 **/
 function sanitizeString(string){
-    if(string !== "" && string !== null){
-        string = string.replace(/\\/g,'&#92;').replace(/"/g,"&quot;");
-        string = string.replace(new RegExp('\\s*<script[^>]*>[\\s\\S]*?</script>\\s*','ig'),'');
+    if(string !== "" && string !== null) {
+        string = string.replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
+        string = string.replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
     }
     return string;
 }
@@ -197,14 +198,14 @@ function sanitizeString(string){
 /**
 *   Send email
 **/
-function SendMail(cat, content, key, message){
+function SendMail(category, contentEmail, keySent, message){
     $.post(
         "sources/items.queries.php",
         {
             type    : "send_email",
-            cat     : cat,
-            content : content,
-            key     : key
+            cat     : category,
+            content : contentEmail,
+            key     : keySent
         },
         function(data){
             if (data[0].error !== undefined && data[0].error !== "") {
@@ -244,18 +245,18 @@ function extractLast( term ) {
 }
 
 
-function store_error(message_error, dialog_div, text_div){
+function store_error(messageError, dialogDiv, textDiv){
     //Store error in DB
     $.post(
         "sources/main.queries.php",
         {
             type    : "store_error",
-            error   : escape(message_error)
+            error   : escape(messageError)
         }
     );
     //Display
-    $("#"+text_div).html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+message_error);
-    $("#"+dialog_div).dialog("open");
+    $("#"+textDiv).html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+messageError);
+    $("#"+dialogDiv).dialog("open");
 }
 
 function aes_encrypt(text, key)

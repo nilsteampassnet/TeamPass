@@ -397,13 +397,13 @@ class NestedTree
         global $link;
         $data = $this->getTreeWithChildren();
 
-        $n = 0; // need a variable to hold the running n tally
+        $n_tally = 0; // need a variable to hold the running n tally
 
         // invoke the recursive function. Start it processing
         // on the fake "root node" generated in getTreeWithChildren().
         // because this node doesn't really exist in the database, we
         // give it an initial nleft value of 0 and an nlevel of 0.
-        $this->generateTreeData($data, 0, 0, $n);
+        $this->generateTreeData($data, 0, 0, $n_tally);
 
         // at this point the the root node will have nleft of 0, nlevel of 0
         // and nright of (tree size * 2 + 1)
@@ -437,24 +437,24 @@ class NestedTree
      * in subrequests are held over to when control is returned so the nright
      * can be assigned.
      *
-     * @param   array   &$arr   A reference to the data array, since we need to
-     *                          be able to update the data in it
-     * @param int $folder_id    The ID of the current node to process
-     * @param int $fld_level The nlevel to assign to the current node
-     * @param   int     &$n     A reference to the running tally for the n-value
+     * @param   array   &$arr       A reference to the data array, since we need to
+     *                              be able to update the data in it
+     * @param int     $folder_id    The ID of the current node to process
+     * @param int     $fld_level    The nlevel to assign to the current node
+     * @param int     $n_tally      A reference to the running tally for the n-value
      * @param integer $n
      */
-    public function generateTreeData(&$arr, $folder_id, $fld_level, &$n)
+    public function generateTreeData(&$arr, $folder_id, $fld_level, &$n_tally)
     {
         $arr[$folder_id]->nlevel = $fld_level;
-        $arr[$folder_id]->nleft = $n++;
+        $arr[$folder_id]->nleft = $n_tally++;
 
         // loop over the node's children and process their data
         // before assigning the nright value
         foreach ($arr[$folder_id]->children as $child_id) {
-            $this->generateTreeData($arr, $child_id, $fld_level + 1, $n);
+            $this->generateTreeData($arr, $child_id, $fld_level + 1, $n_tally);
         }
-        $arr[$folder_id]->nright = $n++;
+        $arr[$folder_id]->nright = $n_tally++;
     }
 
     /**
@@ -505,5 +505,4 @@ class NestedTree
 
         return $arr;
     }
-
 }

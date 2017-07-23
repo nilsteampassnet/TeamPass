@@ -16,8 +16,8 @@ $(function() {
     $("#but_launch, #step_error, #but_restart").hide();
 
     // no paste
-    $('#admin_pwd').bind("paste",function(e) {
-        alert('Paste option is disabled !!');
+    $("#admin_pwd").bind("paste",function(e) {
+        alert("Paste option is disabled !!");
         e.preventDefault();
     });
 });
@@ -27,7 +27,7 @@ function aes_encrypt(text)
     return Aes.Ctr.encrypt(text, "cpm", 128);
 }
 
-function CheckPage()
+function checkPage()
 {
     var step = $("#page_id").val();
     var data = "";
@@ -35,7 +35,7 @@ function CheckPage()
     var index = "";
     var tasks = [];
     var multiple = "";
-    var error_msg = "";
+    var errorMsg = "";
     $("#step_error").hide().html("");
     $("#res_"+step).html("");
 
@@ -100,13 +100,13 @@ function CheckPage()
 
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
         $("#step_res").val("true");
-        $('#pop_db').html("");
+        $("#pop_db").html("");
 
         for (index = 0; index < tasks.length; ++index) {
             tsk = tasks[index].split("*");
             ajaxReqs.push($.ajax({
                 url: "install.queries.php",
-                type : 'POST',
+                type : "POST",
                 dataType : "json",
                 data : {
                     type:       "step_"+step,
@@ -126,9 +126,9 @@ function CheckPage()
                         if (data[0].error === "") {
                             if (step === "5") {
                                 if (data[0].activity === "table") {
-                                    $('#pop_db').append('<li>Table <b>'+data[0].task+'</b> created</li>');
+                                    $("#pop_db").append("<li>Table <b>"+data[0].task+"</b> created</li>");
                                 } else if (data[0].activity === "entry") {
-                                    $('#pop_db').append('<li>Entries <b>'+data[0].task+'</b> were added</li>');
+                                    $("#pop_db").append("<li>Entries <b>"+data[0].task+"</b> were added</li>");
                                 }
                             } else {
                                 $("#res"+step+"_check"+data[0].index).html("<img src=\"images/tick.png\">");
@@ -143,7 +143,7 @@ function CheckPage()
                                 $("#step_res").val("false");
                             }
                             $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
-                            $('#pop_db').append('<li><img src=\"images/exclamation-red.png\">&nbsp;Error on task `<b>'+data[0].activity+' > '+data[0].task+'`</b>. <i>'+data[0].error+'</i></li>');
+                            $("#pop_db").append("<li><img src=\"images/exclamation-red.png\">&nbsp;Error on task `<b>"+data[0].activity+" > "+data[0].task+"`</b>. <i>"+data[0].error+"</i></li>");
                             if (data[0].result !== undefined && data[0].result !== "" ) {
                                 $("#step_result").html(data[0].result);
                             }
@@ -204,9 +204,6 @@ function CheckPage()
                     $("#but_next").prop("disabled", false);
                     $("#but_next").show();
                 }
-            },
-            error : function(resultat, statut, erreur){
-
             }
         });
     } else {
@@ -246,7 +243,7 @@ function GotoNextStep()
             alert('Paste option is disabled !!');
             e.preventDefault();
         });
-        $("#admin_pwd").live('keypress', function(e){
+        $("#admin_pwd").live("keypress", function(e){
             var key = e.charCode || e.keyCode || 0;
             // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
             return (
@@ -254,6 +251,8 @@ function GotoNextStep()
             );
         });
         // Auto start as required
-        if (nextStep === "5" || nextStep === "6" || nextStep === "7" ) CheckPage();
+        if (nextStep === "5" || nextStep === "6" || nextStep === "7" ) {
+            checkPage();
+        }
     }
 }
