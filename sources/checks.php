@@ -13,6 +13,8 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+require_once 'SecureHandler.php';
+
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
     require_once '../includes/config/tp.config.php';
@@ -40,13 +42,18 @@ $pagesRights = array(
 
 function curPage()
 {
-    parse_str(substr((string) $_SERVER["REQUEST_URI"], strpos((string) $_SERVER["REQUEST_URI"], "?") + 1), $result);
+    require_once "classes.php";
+    parse_str(
+        substr((string) superGlobal::get("REQUEST_URI", "SERVER"), strpos((string) superGlobal::get("REQUEST_URI", "SERVER"), "?") + 1),
+        $result
+    );
     return $result['page'];
 }
 
 function checkUser($userId, $userKey, $pageVisited)
 {
     global $pagesRights, $SETTINGS;
+    require_once "classes.php";
 
     if (empty($userId) || empty($pageVisited) || empty($userKey)) {
         return false;
@@ -57,7 +64,7 @@ function checkUser($userId, $userKey, $pageVisited)
     }
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.superGlobal::get("user_language", "SESSION").'.php';
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     require_once 'main.functions.php';
 
