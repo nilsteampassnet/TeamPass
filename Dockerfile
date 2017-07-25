@@ -1,23 +1,28 @@
-FROM ubuntu:14.04
-MAINTAINER arthur@caranta.com
-RUN apt-get update && apt-get install -y git apache2 php5 libapache2-mod-php5 php5-mcrypt php5-mysqlnd php5-ldap php5-gd php5-curl
-ENV APACHE_RUN_USER www-data
-ENV APACHE_RUN_GROUP www-data
-ENV APACHE_LOG_DIR /var/log/apache2
+FROM richarvey/nginx-php-fpm:1.2.1
 
-ADD . /teampassinit
+# The location of the web files
+ARG VOL=/var/www/html
+ENV VOL ${VOL}
+VOLUME ${VOL}
 
-RUN php5enmod mcrypt
-RUN php5enmod mysql
-RUN php5enmod ldap
-RUN php5enmod curl
+# Configure nginx-php-fpm image to use this dir.
+ENV WEBROOT ${VOL}/www
 
-RUN perl -p -i -e "s/max_execution_time = 30/max_execution_time = 120/g" /etc/php5/apache2/php.ini
-RUN perl -p -i -e "s#Directory /var/www#Directory /teampass#g" /etc/apache2/apache2.conf
+RUN echo && \
+  # Install and configure missing PHP requirements
+  /usr/local/bin/docker-php-ext-configure bcmath && \
+  /usr/local/bin/docker-php-ext-install bcmath && \
+  apk add --no-cache openldap-dev && \
+  /usr/local/bin/docker-php-ext-configure ldap && \
+  /usr/local/bin/docker-php-ext-install ldap && \
+  apk del openldap-dev && \
+  echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/docker-vars.ini && \
+echo
 
-RUN mv /teampassinit/apache-default.conf /etc/apache2/sites-available/000-default.conf
-RUN mv /teampassinit/start.sh /start.sh && chmod a+x /start.sh
-EXPOSE 80
-VOLUME /teampass
+COPY teampass-docker-start.sh /teampass-docker-start.sh
 
-CMD /start.sh
+# Configure nginx-php-fpm image to pull our code.
+ENV REPO_URL https://github.com/nilsteampassnet/TeamPass.git
+
+ENTRYPOINT ["/bin/sh"]
+CMD ["/teampass-docker-start.sh"]
