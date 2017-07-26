@@ -37,7 +37,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 }
 
 //check for session
-if (isset($_POST['PHPSESSID'])) {
+if (isset(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING))) {
     session_id($_POST['PHPSESSID']);
 } elseif (isset($_GET['PHPSESSID'])) {
     session_id($_GET['PHPSESSID']);
@@ -53,7 +53,7 @@ $fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
 
 
 // token check
-if (!isset($_POST['user_token'])) {
+if (!isset(filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING))) {
     handleAttachmentError('No user token found.', 110);
     exit();
 } else {
@@ -73,7 +73,10 @@ if (!isset($_POST['user_token'])) {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    if (isset($_SESSION[$_POST['user_token']]) && ($chunk < $chunks - 1) && $_SESSION[$_POST['user_token']] >= 0) {
+    if (isset($_SESSION[filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)])
+        && ($chunk < $chunks - 1)
+        && $_SESSION[filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)] >= 0
+    ) {
         // increase end_timestamp for token
         DB::update(
             prefix_table('tokens'),

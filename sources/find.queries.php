@@ -367,7 +367,7 @@ if (!isset($_GET['type'])) {
             }
         }
         // Manage the restricted_to variable
-        if (isset($_POST['restricted'])) {
+        if (isset(filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING))) {
             $restrictedTo = $_POST['restricted'];
         } else {
             $restrictedTo = "";

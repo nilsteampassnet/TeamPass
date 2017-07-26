@@ -47,7 +47,9 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 // Check KEY and rights
-if (!isset($_POST['key']) || $_POST['key'] != $_SESSION['key']) {
+if (!isset(filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING))
+    || filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) != $_SESSION['key']
+) {
     echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
     exit();
 }
@@ -74,7 +76,7 @@ if (isset($_POST['type'])) {
                 // SysLog
                 if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
                     send_syslog(
-                        "The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".",
+                        "The password of Item #".filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_STRING)." was shown to ".$_SESSION['login'].".",
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"
@@ -102,7 +104,7 @@ if (isset($_POST['type'])) {
                 // SysLog
                 if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
                     send_syslog(
-                        "The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".",
+                        "The password of Item #".filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_STRING)." was copied to clipboard by ".$_SESSION['login'].".",
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"
