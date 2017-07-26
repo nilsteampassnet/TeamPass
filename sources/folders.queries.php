@@ -502,11 +502,10 @@ if (isset($_POST['newtitle'])) {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                     $tree->rebuild();
 
-                    if ($isPersonal != 1
+                    if ($isPersonal !== 1
                         && isset($SETTINGS['subfolder_rights_as_parent'])
-                        && $SETTINGS['subfolder_rights_as_parent'] == 1
-                        && $_SESSION['is_admin'] !== 0
-                        || ($isPersonal != 1 && $parentId === "0")
+                        && $SETTINGS['subfolder_rights_as_parent'] === 1
+                        || ($isPersonal !== 1 && $parentId === "0")
                     ) {
                         //Get user's rights
                         identifyUserRights(

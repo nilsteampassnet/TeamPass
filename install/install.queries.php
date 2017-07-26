@@ -442,7 +442,8 @@ global \$SETTINGS;
                             array('admin', 'item_extra_fields', '0'),
                             array('admin', 'saltkey_ante_2127', 'none'),
                             array('admin', 'migration_to_2127', 'done'),
-                            array('admin', 'files_with_defuse', 'done')
+                            array('admin', 'files_with_defuse', 'done'),
+                            array('admin', 'timezone', 'UTC')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

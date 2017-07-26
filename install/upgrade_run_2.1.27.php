@@ -503,6 +503,15 @@ if ($tmp === "0") {
     );
 }
 
+// add new admin setting "timezone"
+$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'timezone'"));
+if ($tmp === "0") {
+    mysqli_query(
+        $dbTmp,
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'timezone', 'UTC')"
+    );
+}
+
 // add new language "portuges_br"
 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$_SESSION['pre']."languages` WHERE name = 'portuguese_br'"));
 if ($tmp === "0") {

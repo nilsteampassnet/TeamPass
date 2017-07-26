@@ -510,7 +510,7 @@ $(function() {
     $("#button_change_psk").click(function() {
         $("#psk_change_wait").show();
 
-        if ($("#new_personal_saltkey").val() === "" || $("#new_personal_saltkey").val() === "") {
+        if ($("#new_personal_saltkey").val() === "" || $("#old_personal_saltkey").val() === "") {
             $("#psk_change_wait").hide();
             $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']); ?></div>');
 

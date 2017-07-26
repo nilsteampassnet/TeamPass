@@ -1731,7 +1731,9 @@ function open_add_group_div()
     $("#div_loading").show();
 
     // check if read only or forbidden
-    if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) return false;
+    if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) {
+        return false;
+    }
 
     //Select the actual folder in the dialogbox
     $('#new_rep_groupe option[value=' + $('#hid_cat').val() + ']').prop('selected', true);

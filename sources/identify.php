@@ -134,7 +134,7 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
                 'agses-usercardid' =>  filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT)
                 ),
             "login = %s",
-            $_POST['login']
+            filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING)
         );
         $row['agses-usercardid'] = filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT);
     } else {

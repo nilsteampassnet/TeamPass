@@ -68,7 +68,6 @@ if (!isset($SETTINGS['loaded']) || $SETTINGS['loaded'] !== "1") {
     //by default, this value is 5;
     $SETTINGS['number_of_used_pw'] = 5;
     $SETTINGS['loaded'] = 1;
-    $SETTINGS['default_session_expiration_time'] = 5;
 
     // Pw complexity levels
     if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
