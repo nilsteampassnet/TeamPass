@@ -730,7 +730,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             echo '[{"text":"<a href=\''.
                 filter_var(cleanText($_POST['file_link'], "css"), FILTER_SANITIZE_STRING).
-                '\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+                '\' download>'.$LANG['pdf_download'].'</a>"}]';
             break;
     }
 }
