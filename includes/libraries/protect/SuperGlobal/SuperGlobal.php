@@ -1,7 +1,10 @@
 <?php
+
+namespace protect\SuperGlobal;
+
 /**
  *
- * @file          classes.php
+ * @file          SuperGlobal.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
@@ -13,7 +16,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-class superGlobal
+require_once dirname(__FILE__).'/../../../../sources/SecureHandler.php';
+
+class SuperGlobal
 {
     public static function put($key, $value, $type)
     {

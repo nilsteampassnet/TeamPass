@@ -47,7 +47,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 // Check KEY and rights
-if (!isset(filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING))
+if (null === filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING)
     || filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) != $_SESSION['key']
 ) {
     echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
@@ -55,8 +55,8 @@ if (!isset(filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING))
 }
 
 // Do asked action
-if (isset($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         /*
         * CASE
         * log if item's password is shown
