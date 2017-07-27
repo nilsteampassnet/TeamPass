@@ -93,7 +93,7 @@ if (!$rows) {
 }
 
 // Prepare encryption options - with new KEY
-if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($SETTINGS['saltkey_ante_2127']) === false) {
+if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
     // Prepare encryption options for Defuse
     $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
@@ -105,13 +105,25 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt") && empty($SETTINGS['saltkey_a
     $opts_encrypt = array('iv'=>$iv, 'key'=>$key);
 
     // Prepare encryption options - with old KEY
-    $iv = substr(md5("\x1B\x3C\x58".$SETTINGS['saltkey_ante_2127'], true), 0, 8);
-    $key = substr(
-        md5("\x2D\xFC\xD8".$SETTINGS['saltkey_ante_2127'], true).
-        md5("\x2D\xFC\xD9".$SETTINGS['saltkey_ante_2127'], true),
-        0,
-        24
-    );
+    if ($SETTINGS['saltkey_ante_2127'] !== "none" && empty($SETTINGS['saltkey_ante_2127']) === false) {
+        // Encoding option were set as this in Teampass version < 2.1.27
+        $iv = substr(md5("\x1B\x3C\x58".$SETTINGS['saltkey_ante_2127'], true), 0, 8);
+        $key = substr(
+            md5("\x2D\xFC\xD8".$SETTINGS['saltkey_ante_2127'], true).
+            md5("\x2D\xFC\xD9".$SETTINGS['saltkey_ante_2127'], true),
+            0,
+            24
+        );
+    } elseif (empty($SETTINGS['saltkey_ante_2127']) === true) {
+        // Encoding option were set as this in Teampass version = 2.1.27.0
+        $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
+        $key = substr(
+            md5("\x2D\xFC\xD8".$ascii_key, true).
+            md5("\x2D\xFC\xD9".$ascii_key, true),
+            0,
+            24
+        );
+    }
     $opts_decrypt = array('iv'=>$iv, 'key'=>$key);
 
     while ($data = mysqli_fetch_array($rows)) {

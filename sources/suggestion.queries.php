@@ -52,16 +52,18 @@ header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 require_once 'main.functions.php';
 
-// pw complexity levels
-$SETTINGS['pwComplexity'] = array(
-    0 => array(0, $LANG['complex_level0']),
-    25 => array(25, $LANG['complex_level1']),
-    50 => array(50, $LANG['complex_level2']),
-    60 => array(60, $LANG['complex_level3']),
-    70 => array(70, $LANG['complex_level4']),
-    80 => array(80, $LANG['complex_level5']),
-    90 => array(90, $LANG['complex_level6'])
-);
+// Ensure Complexity levels are translated
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+    $SETTINGS_EXT['pwComplexity'] = array(
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
+    );
+}
 
 // connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -76,8 +78,8 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 // treatment by action
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "add_new":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {
@@ -298,7 +300,7 @@ if (!empty($_POST['type'])) {
                 "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
-                $complexity = $SETTINGS['pwComplexity'][$data['valeur']][1];
+                $complexity = $SETTINGS_EXT['pwComplexity'][$data['valeur']][1];
             } else {
                 $complexity = $LANG['not_defined'];
             }

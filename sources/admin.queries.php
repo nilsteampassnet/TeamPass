@@ -75,13 +75,13 @@ $aes->register();
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
 $antiXss = new protect\AntiXSS\AntiXSS();
 
-switch ($_POST['type']) {
+switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     #CASE for getting informations about the tool
     # connection to author's cpassman website
     case "cpm_status":
         $text = "<ul>";
         $error = "";
-        if (!isset($k['admin_no_info']) || (isset($k['admin_no_info']) && $k['admin_no_info'] == 0)) {
+        if (!isset($SETTINGS_EXT['admin_no_info']) || (isset($SETTINGS_EXT['admin_no_info']) && $SETTINGS_EXT['admin_no_info'] == 0)) {
             if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
                 $handleDistant = array();
                 if (isset($SETTINGS['proxy_ip']) && !empty($SETTINGS['proxy_ip'])) {
@@ -114,8 +114,8 @@ switch ($_POST['type']) {
                                 $tmp = explode('#', $elem);
                                 $text .= '<li><u>'.$LANG[$tmp[0]]."</u> : ".$tmp[1].'</li>';
                                 if ($tmp[0] == "version") {
-                                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$k['version'];
-                                    if (floatval($k['version']) < floatval($tmp[1])) {
+                                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$SETTINGS_EXT['version'];
+                                    if (floatval($SETTINGS_EXT['version']) < floatval($tmp[1])) {
                                         $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
                                     }
                                     $text .= '</li>';
@@ -1021,7 +1021,7 @@ switch ($_POST['type']) {
                     $nb_of_items = $error = $nextStart = "";
                 }
             } else {
-                $nextAction = $antiXss->xss_clean($_POST['object']);
+                $nextAction = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_STRING);
                 $nb_of_items = "";
             }
         }

@@ -137,7 +137,7 @@ $("#div_item_data").dialog({
                             "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['index_login']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
                             "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['url']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
                         "</table>";
-                    }
+                    }console.log(return_html);
                     $("#div_item_data_show_error").html("").hide();
                     $("#div_item_data_text").html(return_html);
                 }
@@ -213,7 +213,7 @@ $(function() {
 
             // prepare display
             if ($("#div_mass_op").data('action') === "move") {
-                html = '<?php echo $LANG['you_decided_to_move_items']; ?>: ' +
+                html = '<?php echo $LANG["you_decided_to_move_items"]; ?>: ' +
                 '<div><ul>' + sel_items_txt + '</ul></div>';
                 var folder_options = '';
 
@@ -248,7 +248,7 @@ $(function() {
                 html = '<?php echo $LANG['you_decided_to_delete_items']; ?>: ' +
                 '<div><ul>' + sel_items_txt + '</ul></div>' +
                 '<div style="padding:10px;" class="ui-corner-all ui-state-error"><span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo $LANG['confirm_deletion']; ?></div>';
-                
+
                 $("#div_mass_html").html(html);
             }
 
@@ -294,7 +294,7 @@ $(function() {
                             }
                             //if OK
                             if (data[0].status == "ok") {
-                                //reload search 
+                                //reload search
                                 oTable.api().ajax.reload();
 
                                 $("#main_info_box_text").html("<?php echo $LANG['alert_message_done']; ?>");
@@ -329,7 +329,7 @@ $(function() {
                             }
                             //if OK
                             if (data[0].status == "ok") {
-                                //reload search 
+                                //reload search
                                 oTable.api().ajax.reload();
 
                                 $("#main_info_box_text").html("<?php echo $LANG['alert_message_done']; ?>");

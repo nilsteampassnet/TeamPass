@@ -126,7 +126,7 @@ echo '
 
     <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
     <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
-foreach ($SETTINGS['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -169,7 +169,7 @@ echo '
 
     <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
     <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">';
-foreach ($SETTINGS['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '

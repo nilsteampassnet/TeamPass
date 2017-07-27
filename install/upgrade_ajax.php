@@ -730,7 +730,7 @@ if (isset($_POST['type'])) {
                     $fh,
                     utf8_encode(
                         "<?php
-global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
+global \$lang, \$txt, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
@@ -747,7 +747,8 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 if (file_exists(\"".$skFile."\")) {
     require_once \"".$skFile."\";
 }
-@define('COST', '13'); // Don't change this."
+@define('COST', '13'); // Don't change this.
+"
                     )
                 );
 

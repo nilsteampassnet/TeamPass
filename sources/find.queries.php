@@ -30,19 +30,14 @@ if (file_exists('../includes/config/tp.config.php')) {
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-global $k, $settings, $link;
+global $settings, $link;
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // if no folders are visible then return no results
 if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles'])) {
-    $returnValues = array(
-        "items_html" => '',
-        "message" => str_replace("%X%", 0, $LANG['find_message'])
-    );
-
-    echo prepareExchangedData($returnValues, "encode");
+    echo '{"sEcho": '.intval($_GET['sEcho']).' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
     exit;
 }
 
@@ -340,7 +335,7 @@ if (!isset($_GET['type'])) {
         if ($SETTINGS['activate_expiration'] == 1) {
             $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
             if ($record['renewal_period'] > 0 &&
-                ($record['timestamp'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
+                ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
             ) {
                 $expirationFlag = '<i class="fa fa-flag mi-red"></i>&nbsp;';
                 $expired_item = 1;
@@ -367,7 +362,7 @@ if (!isset($_GET['type'])) {
             }
         }
         // Manage the restricted_to variable
-        if (isset(filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING))) {
+        if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
             $restrictedTo = $_POST['restricted'];
         } else {
             $restrictedTo = "";
@@ -394,8 +389,7 @@ if (!isset($_GET['type'])) {
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 0;
         // Case where item is in own personal folder
-        } elseif (
-            in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
+        } elseif (in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
             $perso = '<i class="fa fa-warning mi-red"></i>&nbsp;';
@@ -404,8 +398,7 @@ if (!isset($_GET['type'])) {
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 1;
         // CAse where item is restricted to a group of users included user
-        } elseif (
-            !empty($record['restricted_to'])
+        } elseif (!empty($record['restricted_to'])
             && in_array($_SESSION['user_id'], $restricted_users_array)
             || (isset($_SESSION['list_folders_editable_by_role'])
                 && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
@@ -417,8 +410,7 @@ if (!isset($_GET['type'])) {
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
         // CAse where item is restricted to a group of users not including user
-        } elseif (
-            $record['perso'] == 1
+        } elseif ($record['perso'] == 1
             ||
             (
                 !empty($record['restricted_to'])

@@ -163,7 +163,7 @@ $val = array(
     array('admin', 'activate_expiration', '0', 0),
     array('admin', 'pw_life_duration', '30', 0),
     //array('admin', 'maintenance_mode','1',1),
-    array('admin', 'cpassman_version', $k['version'], 1),
+    array('admin', 'cpassman_version', $SETTINGS_EXT['version'], 1),
     array('admin', 'ldap_mode', '0', 0),
     array('admin', 'ldap_type', '0', 0),
     array('admin', 'ldap_suffix', '0', 0),

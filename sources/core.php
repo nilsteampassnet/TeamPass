@@ -60,19 +60,13 @@ if (isset($_SERVER['HTTPS']) &&
 }
 
 // LOAD CPASSMAN SETTINGS
-if (!isset($SETTINGS['loaded']) || $SETTINGS['loaded'] !== "1") {
-    //by default, this is set to 0;
-    $SETTINGS['duplicate_folder'] = 0;
-    //by default, this is set to 0;
-    $SETTINGS['duplicate_item'] = 0;
-    //by default, this value is 5;
-    $SETTINGS['number_of_used_pw'] = 5;
-    $SETTINGS['loaded'] = 1;
+if (!isset($SETTINGS_EXT['loaded']) || $SETTINGS_EXT['loaded'] !== "1") {
+    $SETTINGS_EXT['loaded'] = 1;
 
     // Pw complexity levels
     if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
         require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-        $SETTINGS['pwComplexity'] = array(
+        $SETTINGS_EXT['pwComplexity'] = array(
             0=>array(0, $LANG['complex_level0']),
             25=>array(25, $LANG['complex_level1']),
             50=>array(50, $LANG['complex_level2']),
@@ -85,10 +79,6 @@ if (!isset($SETTINGS['loaded']) || $SETTINGS['loaded'] !== "1") {
 }
 
 
-// Define Timezone
-if (!isset($SETTINGS['timezone'])) {
-    $SETTINGS['timezone'] = 'UTC';
-}
 if (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") {
     // use user timezone
     date_default_timezone_set($_SESSION['user_settings']['usertimezone']);
@@ -201,7 +191,7 @@ if ((isset($SETTINGS['update_needed']) && ($SETTINGS['update_needed'] !== false
             "intitule" => "cpassman_version"
         )
     );
-    if ($row['valeur'] != $k['version']) {
+    if ($row['valeur'] != $SETTINGS_EXT['version']) {
         $SETTINGS['update_needed'] = true;
     } else {
         $SETTINGS['update_needed'] = false;

@@ -40,8 +40,8 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
-    && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
+if ($_SESSION['user_admin'] == 1 && (isset($SETTINGS_EXT['admin_full_right'])
+    && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
@@ -789,7 +789,7 @@ echo '
         <tr>
             <td>'.$LANG['complex_asked'].' : </td>
             <td><select id="new_rep_complexite" style="width:250px; padding:3px;" class="ui-widget-content">';
-foreach ($SETTINGS['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -819,7 +819,7 @@ echo '
             <td>'.$LANG['complex_asked'].' : </td>
             <td><select id="edit_folder_complexity" style="width:250px; padding:3px;" class="ui-widget-content">
                 <option value="">---</option>';
-foreach ($SETTINGS['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '

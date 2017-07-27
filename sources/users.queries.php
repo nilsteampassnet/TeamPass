@@ -72,8 +72,8 @@ $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "groupes_visibles":
         case "groupes_interdits":
             $val = explode(';', $_POST['valeur']);

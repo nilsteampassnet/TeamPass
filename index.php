@@ -195,7 +195,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
         <div id="menu_top">
             <div style="margin-left:20px; margin-top:2px;width:710px;" id="main_menu">';
-        if ($_SESSION['user_admin'] == 0 || $k['admin_full_right'] == 0) {
+        if ($_SESSION['user_admin'] == 0 || $SETTINGS_EXT['admin_full_right'] == 0) {
             echo '
                 <a class="btn btn-default" href="#"',
                 (isset($_SESSION['nb_folders']) && $_SESSION['nb_folders'] == 0)
@@ -216,7 +216,7 @@ if (isset($_SESSION['CPM'])) {
         if (isset($SETTINGS['enable_favourites'])
             && $SETTINGS['enable_favourites'] == 1
             &&
-            ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false))
+            ($_SESSION['user_admin'] == 0 || ($_SESSION['user_admin'] == 1 && $SETTINGS_EXT['admin_full_right'] === false))
         ) {
             echo '
                     <a class="btn btn-default" href="#" onclick="MenuAction(\'favourites\')">
@@ -277,7 +277,7 @@ if (isset($_SESSION['CPM'])) {
                     <ul class="menu" style="">
                         <li class="" style="padding:4px;width:40px; text-align:center;"><i class="fa fa-dashboard fa-fw"></i>&nbsp;
                             <ul class="menu_200" style="text-align:left;">',
-                                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === true) ? '' : isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 ? '
+                                ($_SESSION['user_admin'] == 1 && $SETTINGS_EXT['admin_full_right'] === true) ? '' : isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 ? '
                                 <li onclick="$(\'#div_set_personal_saltkey\').dialog(\'open\')">
                                     <i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['home_personal_saltkey_button'].'
                                 </li>' : '', '
@@ -295,7 +295,7 @@ if (isset($_SESSION['CPM'])) {
                     </ul>
                 </div>';
 
-        if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)) {
+        if ($_SESSION['user_admin'] != 1 || ($_SESSION['user_admin'] == 1 && $SETTINGS_EXT['admin_full_right'] === false)) {
             echo '
                 <div style="float:right; margin-right:10px;">
                     <ul class="menu" id="menu_last_seen_items">
@@ -469,7 +469,7 @@ if (isset($_SESSION['CPM'])) {
             <h3>'.$LANG['index_change_pw'].'</h3>
             <div style="height:20px;text-align:center;margin:2px;display:none;" id="change_pwd_error" class=""></div>
             <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all">'.
-            $LANG['complex_asked'].' : '.$SETTINGS['pwComplexity'][$_SESSION['user_pw_complexity']][1].
+            $LANG['complex_asked'].' : '.$SETTINGS_EXT['pwComplexity'][$_SESSION['user_pw_complexity']][1].
             '</div>
             <div id="pw_strength" style="margin:0 0 10px 140px;"></div>
             <table>
@@ -497,7 +497,7 @@ if (isset($_SESSION['CPM'])) {
             // SHow page with Items
             if (($_SESSION['user_admin'] != 1)
                 ||
-                ($_SESSION['user_admin'] == 1 && $k['admin_full_right'] === false)
+                ($_SESSION['user_admin'] == 1 && $SETTINGS_EXT['admin_full_right'] === false)
             ) {
                 include 'items.php';
             } else {
@@ -698,7 +698,7 @@ if (isset($_SESSION['CPM'])) {
     echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://teampass.net" target="_blank" style="color:#F0F0F0;">'.$k['tool_name'].'&nbsp;'.$k['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$k['copyright'].'</a>
+            <a href="http://teampass.net" target="_blank" style="color:#F0F0F0;">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
             &nbsp;|&nbsp;
             <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
             &nbsp;

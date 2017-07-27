@@ -52,16 +52,18 @@ header('Cache-Control: no-cache, must-revalidate');
 header('Pragma: no-cache');
 require_once 'main.functions.php';
 
-// Pw complexity levels
-$SETTINGS['pwComplexity'] = array(
-    0 => array(0, $LANG['complex_level0']),
-    25 => array(25, $LANG['complex_level1']),
-    50 => array(50, $LANG['complex_level2']),
-    60 => array(60, $LANG['complex_level3']),
-    70 => array(70, $LANG['complex_level4']),
-    80 => array(80, $LANG['complex_level5']),
-    90 => array(90, $LANG['complex_level6'])
-);
+// Ensure Complexity levels are translated
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+    $SETTINGS_EXT['pwComplexity'] = array(
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
+    );
+}
 
 // Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -92,8 +94,8 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/Anti
 $antiXss = new protect\AntiXSS\AntiXSS();
 
 // Do asked action
-if (isset($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         /*
         * CASE
         * creating a new ITEM
@@ -132,13 +134,18 @@ if (isset($_POST['type'])) {
             }
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === true && !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])) {
+            if ($_SESSION['user_read_only'] === true &&
+                !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])
+            ) {
                 echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                 break;
             }
 
             // is pwd empty?
-            if (empty($pw) && isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') {
+            if (empty($pw) &&
+                isset($_SESSION['user_settings']['create_item_without_password']) &&
+                $_SESSION['user_settings']['create_item_without_password'] !== '1'
+            ) {
                 echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
                 break;
             }
@@ -164,13 +171,33 @@ if (isset($_POST['type'])) {
                 $itemExists = 0;
             }
 
-            if ((isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '0' && $itemExists == 0)
+            // Manage case where item is personal.
+            // In this case, duplication is allowed
+            if (isset($SETTINGS['duplicate_item'])
+                && $SETTINGS['duplicate_item'] === '0'
+                && $dataReceived['salt_key_set'] === '1'
+                && isset($dataReceived['salt_key_set'])
+                && $dataReceived['is_pf'] === '1'
+                && isset($dataReceived['is_pf'])
+            ) {
+                $itemExists = 0;
+            }
+
+            if ((isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '0' && $itemExists === 0)
                 ||
                 (isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '1')
             ) {
-                if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') || !empty($pw)) {
+                if ((isset($_SESSION['user_settings']['create_item_without_password'])
+                    && $_SESSION['user_settings']['create_item_without_password'] !== '1'
+                    ) ||
+                    !empty($pw)
+                ) {
                     // encrypt PW
-                    if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) {
+                    if ($dataReceived['salt_key_set'] === '1' &&
+                        isset($dataReceived['salt_key_set']) &&
+                        $dataReceived['is_pf'] === '1' &&
+                        isset($dataReceived['is_pf'])
+                    ) {
                         $passwd = cryption(
                             $pw,
                             $_SESSION['user_settings']['session_psk'],
@@ -399,8 +426,10 @@ if (isset($_POST['type'])) {
                     "array_items" => $itemsIDList,
                     "show_clipboard_small_icons" => (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') ? 1 : 0
                     );
-            } elseif (isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '0' && $itemExists == 1) {
-                $returnValues = array("error" => "item_exists");
+            } elseif (isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '0' && (int) $itemExists === 1) {
+                // Encrypt data to return
+                echo prepareExchangedData(array("error" => "item_exists"), "encode");
+                break;
             }
 
             // Update CACHE table
@@ -905,7 +934,7 @@ if (isset($_POST['type'])) {
                         $iconImage = fileFormatImage($record['extension']);
 
                         // If file is an image, then prepare lightbox. If not image, then prepare donwload
-                        if (in_array($record['extension'], $k['image_file_ext'])) {
+                        if (in_array($record['extension'], $SETTINGS_EXT['image_file_ext'])) {
                             $files .= '<i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class="image_dialog" href="#'.$record['id'].'" title="'.$record['name'].'">'.$record['name'].'</a><br />';
                         } else {
                             $files .= '<i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&type=sub&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' target=\'_blank\'>'.$record['name'].'</a><br />';
@@ -1349,8 +1378,9 @@ if (isset($_POST['type'])) {
             if (in_array($_SESSION['user_id'], $rows_tmp)) {
                 $myTest = 1;
             }
+
             // Uncrypt PW
-            if (isset($_POST['salt_key_required']) && $_POST['salt_key_required'] === '1' && isset($_POST['salt_key_set']) && $_POST['salt_key_set'] === '1') {
+            if (isset($_POST['salt_key_required']) && filter_input(INPUT_POST, 'salt_key_required', FILTER_SANITIZE_STRING) === '1' && isset($_POST['salt_key_set']) && filter_input(INPUT_POST, 'salt_key_set', FILTER_SANITIZE_STRING) === '1') {
                 $pw = cryption(
                     $dataItem['pw'],
                     $_SESSION['user_settings']['session_psk'],
@@ -1378,7 +1408,7 @@ if (isset($_POST['type'])) {
                 $item_is_expired = false;
             }
             // check user is admin
-            if ($_SESSION['user_admin'] === '1' && $dataItem['perso'] != 1 && (isset($k['admin_full_right']) && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
+            if ($_SESSION['user_admin'] === '1' && $dataItem['perso'] != 1 && (isset($SETTINGS_EXT['admin_full_right']) && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
@@ -1461,7 +1491,7 @@ if (isset($_POST['type'])) {
                     $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'>&nbsp;<i class='fa fa-link tip' title='".$LANG['open_url_link']."'></i></a>";
                 }
 
-                $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
+                $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $SETTINGS_EXT['allowedTags']));
                 $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']));
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
@@ -1714,7 +1744,7 @@ if (isset($_POST['type'])) {
                 }
 
                 // If file is an image, then prepare lightbox. If not image, then prepare donwload
-                if (in_array($record['extension'], $k['image_file_ext'])) {
+                if (in_array($record['extension'], $SETTINGS_EXT['image_file_ext'])) {
                     $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a></div>';
                 } else {
                     $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
@@ -1859,7 +1889,7 @@ if (isset($_POST['type'])) {
                     "complex"
                 );
                 if (intval($dataReceived['complexity']) < intval($data['valeur'])) {
-                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                     break;
                 }
             }
@@ -2226,7 +2256,7 @@ if (isset($_POST['type'])) {
                         $expired_item = 0;
                         if ($SETTINGS['activate_expiration'] === '1') {
                             if ($record['renewal_period'] > 0 &&
-                                ($record['date'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
+                                ($record['date'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
                             ) {
                                 $expirationFlag = '<i class="fa fa-flag mi-red fa-sm"></i>&nbsp;';
                                 $expired_item = 1;
@@ -2288,8 +2318,8 @@ if (isset($_POST['type'])) {
                             && $user_is_included_in_role === false
                             && isset($item_is_restricted_to_role)
                             && $item_is_restricted_to_role === true
-                            && $is_user_in_restricted_list !== '1'
-                            && $folder_is_personal !== '1'
+                            && (int) $is_user_in_restricted_list !== 1
+                            && (int) $folder_is_personal !== 1
                         ) {
                             $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
@@ -2299,8 +2329,8 @@ if (isset($_POST['type'])) {
                             $need_sk = false;
                             $canMove = false;
                         // Case where item is in own personal folder
-                        } elseif ($folder_is_in_personal === '1'
-                            && $record['perso'] === '1'
+                        } elseif ((int) $folder_is_in_personal === 1
+                            && (int) $record['perso'] === 1
                         ) {
                             $perso = '<i class="fa fa-user-secret mi-grey-1 fa-sm"></i>&nbsp';
                             $findPfGroup = 1;
@@ -2311,8 +2341,8 @@ if (isset($_POST['type'])) {
                             $canMove = true;
                         // CAse where item is restricted to a group of users included user
                         } elseif (!empty($record['restricted_to'])
-                            || $list_folders_editable_by_role === '1'
-                            && $is_user_in_restricted_list === '1'
+                            || (int) $list_folders_editable_by_role === 1
+                            && (int) $is_user_in_restricted_list === 1
                         ) {
                             $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
                             $findPfGroup = 0;
@@ -2321,11 +2351,11 @@ if (isset($_POST['type'])) {
                             $displayItem = true;
                             $canMove = true;
                         // CAse where item is restricted to a group of users not including user
-                        } elseif ($record['perso'] === '1'
+                        } elseif ((int) $record['perso'] === 1
                             ||
                             (
                                 !empty($record['restricted_to'])
-                                && $is_user_in_restricted_list !== '1'
+                                && (int) $is_user_in_restricted_list !== 1
                             )
                             ||
                             (
@@ -2403,7 +2433,7 @@ if (isset($_POST['type'])) {
                         $new_line .= '</a>';
 
                         //
-                        $new_line .= '<span style="float:right;margin:2px 10px 0px 0px;">';
+                        $new_line .= '<span style="float:right;margin-top:2px;">';
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
@@ -2426,7 +2456,7 @@ if (isset($_POST['type'])) {
                             if (!isUTF8($pw)) {
                                 $pw = "";
                                 $new_line .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
-                            } elseif (empty($pw)) {
+                            } elseif (empty($pw) === true) {
                                 $new_line .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
                             }
                         } else {
@@ -2666,7 +2696,7 @@ if (isset($_POST['type'])) {
             );
 
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] === '0')) {
-                $complexity = $SETTINGS['pwComplexity'][$data['valeur']][1];
+                $complexity = $SETTINGS_EXT['pwComplexity'][$data['valeur']][1];
                 $folder_is_personal = $data['personal_folder'];
             } else {
                 $complexity = $LANG['not_defined'];
@@ -2770,9 +2800,9 @@ if (isset($_POST['type'])) {
             $returnValues = array();
             if (isset($SETTINGS['richtext']) && $SETTINGS['richtext'] === '1') {
                 if ($_POST['id'] === "desc") {
-                    $returnValues['desc'] = '$("#desc").ckeditor({toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$k['langs'][$_SESSION['user_language']].'"});';
+                    $returnValues['desc'] = '$("#desc").ckeditor({toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$SETTINGS_EXT['langs'][$_SESSION['user_language']].'"});';
                 } elseif ($_POST['id'] === "edit_desc") {
-                    $returnValues['desc'] = 'CKEDITOR.replace("edit_desc",{toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$k['langs'][$_SESSION['user_language']].'"});';
+                    $returnValues['desc'] = 'CKEDITOR.replace("edit_desc",{toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$SETTINGS_EXT['langs'][$_SESSION['user_language']].'"});';
                 }
             }
             // Multselect
@@ -3573,8 +3603,8 @@ if (isset($_POST['type'])) {
                 $selectVisibleFoldersOptions = '<option value="0">'.$LANG['root'].'</option>';
             }
 
-            if ($_SESSION['user_admin'] === '1' && (isset($k['admin_full_right'])
-                && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
+            if ($_SESSION['user_admin'] === '1' && (isset($SETTINGS_EXT['admin_full_right'])
+                && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
                 $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
                 $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
             }
@@ -3905,7 +3935,7 @@ function recupDroitCreationSansComplexite($groupe)
     if ($data['personal_folder'] === '1') {
         return array("bloquer_modification_complexite" => 1, "bloquer_creation_complexite" => 1);
     }
-    
+
     return array("bloquer_modification_complexite" => $data['bloquer_modification'], "bloquer_creation_complexite" => $data['bloquer_creation']);
 }
 
@@ -3916,11 +3946,11 @@ function recupDroitCreationSansComplexite($groupe)
 function fileFormatImage($ext)
 {
     global $k;
-    if (in_array($ext, $k['office_file_ext'])) {
+    if (in_array($ext, $SETTINGS_EXT['office_file_ext'])) {
         $image = "file-word-o";
     } elseif ($ext === "pdf") {
         $image = "file-pdf-o";
-    } elseif (in_array($ext, $k['image_file_ext'])) {
+    } elseif (in_array($ext, $SETTINGS_EXT['image_file_ext'])) {
         $image = "file-image-o";
     } elseif ($ext === "txt") {
         $image = "file-text-o";

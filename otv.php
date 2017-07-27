@@ -120,7 +120,7 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];
-            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
+            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $SETTINGS_EXT['allowedTags']));
             $login = str_replace('"', '&quot;', $dataItem['login']);
 
             // display data

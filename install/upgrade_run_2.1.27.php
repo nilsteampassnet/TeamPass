@@ -150,13 +150,13 @@ $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT valeur FROM `".$_SESSION['p
 if (count($tmp[0]) === 0 || empty($tmp[0])) {
     mysqli_query(
         $dbTmp,
-        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_version', '".$k['version']."')"
+        "INSERT INTO `".$_SESSION['pre']."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'teampass_version', '".$SETTINGS_EXT['version']."')"
     );
 } else {
     mysqli_query(
         $dbTmp,
         "UPDATE `".$_SESSION['pre']."misc`
-        SET `valeur` = '".$k['version']."'
+        SET `valeur` = '".$SETTINGS_EXT['version']."'
         WHERE intitule = 'teampass_version' AND type = 'admin'"
     );
 }

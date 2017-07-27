@@ -157,15 +157,15 @@ if (isset($_POST['newtitle'])) {
     }
 
     // Get title to display it
-    echo $SETTINGS['pwComplexity'][$_POST['changer_complexite']][1];
+    echo $SETTINGS_EXT['pwComplexity'][$_POST['changer_complexite']][1];
 
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
     $tree->rebuild();
 
     // Several other cases
-} elseif (isset($_POST['type'])) {
-    switch ($_POST['type']) {
+} elseif (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         // CASE where DELETING a group
         case "delete_folder":
             // Check KEY and rights
@@ -175,13 +175,14 @@ if (isset($_POST['newtitle'])) {
             }
 
             $error = "";
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             // User shall not delete personal folder
             $data = DB::queryfirstrow(
                 "SELECT personal_folder
                 FROM ".prefix_table("nested_tree")."
                 WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
             if ($data['personal_folder'] === "1") {
                 $pf = true;
@@ -195,7 +196,7 @@ if (isset($_POST['newtitle'])) {
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
             // get parent folder
-            $parent = $tree->getPath($_POST['id']);
+            $parent = $tree->getPath($post_id);
             $parent = array_pop($parent);
             if ($parent->id === null || $parent->id === "undefined") {
                 $parent_id = "";
@@ -204,7 +205,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             // Get through each subfolder
-            $folders = $tree->getDescendants($_POST['id'], true);
+            $folders = $tree->getDescendants($post_id, true);
 
             if (count($folders) > 1) {
                 echo prepareExchangedData(array("error" => "ERR_SUB_FOLDERS_EXIST"), "encode");
@@ -273,7 +274,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             // delete folder from SESSION
-            if (($key = array_search($_POST['id'], $_SESSION['groupes_visibles'])) !== false) {
+            if (($key = array_search($post_id, $_SESSION['groupes_visibles'])) !== false) {
                 unset($folders[$key]);
             }
 
@@ -455,7 +456,7 @@ if (isset($_POST['newtitle'])) {
                             "complex"
                         );
                         if (intval($complexity) < intval($data['valeur'])) {
-                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                             break;
                         }
                     }
@@ -642,7 +643,7 @@ if (isset($_POST['newtitle'])) {
                     "complex"
                 );
                 if (intval($complexity) < intval($data['valeur'])) {
-                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                     break;
                 }
             }
@@ -721,8 +722,9 @@ if (isset($_POST['newtitle'])) {
                 exit();
             }
             // get values
-            $val = explode(';', $_POST['valeur']);
-            $valeur = $_POST['valeur'];
+            $post_valeur = filter_input(INPUT_POST, 'valeur', FILTER_SANITIZE_STRING);
+            $val = explode(';', $post_valeur);
+            $valeur = $post_valeur;
             //Check if ID already exists
             $data = DB::queryfirstrow("SELECT authorized FROM ".prefix_table("rights")." WHERE tree_id = %i AND fonction_id= %i", $val[0], $val[1]);
             if (empty($data['authorized'])) {
@@ -893,12 +895,6 @@ if (isset($_POST['newtitle'])) {
             if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
-            }
-
-            // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
             }
 
             //decrypt and retreive data in JSON format

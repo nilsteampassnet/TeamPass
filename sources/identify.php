@@ -300,7 +300,7 @@ function identifyUser($sentData)
     $pwdlib = new PasswordLib\PasswordLib();
 
     // User's language loading
-    $k['langage'] = @$_SESSION['user_language'];
+    $SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
     // decrypt and retreive data in JSON format

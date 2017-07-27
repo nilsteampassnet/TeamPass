@@ -37,7 +37,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 }
 
 //check for session
-if (isset(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING))) {
+if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
     session_id($_POST['PHPSESSID']);
 } elseif (isset($_GET['PHPSESSID'])) {
     session_id($_GET['PHPSESSID']);
@@ -53,7 +53,7 @@ $fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
 
 
 // token check
-if (!isset(filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING))) {
+if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
     handleAttachmentError('No user token found.', 110);
     exit();
 } else {
@@ -144,10 +144,6 @@ header("Pragma: no-cache");
 
 // load functions
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-
-// Load AntiXSS library
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
-$antiXss = new protect\AntiXSS\AntiXSS();
 
 $targetDir = $SETTINGS['path_to_upload_folder'];
 

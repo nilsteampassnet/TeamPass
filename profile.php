@@ -229,7 +229,7 @@ echo '
 // Pw complexity levels
 if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    $SETTINGS['pwComplexity'] = array(
+    $SETTINGS_EXT['pwComplexity'] = array(
         0=>array(0, $LANG['complex_level0']),
         25=>array(25, $LANG['complex_level1']),
         50=>array(50, $LANG['complex_level2']),
@@ -245,7 +245,7 @@ $(function() {
     $(".tip").tooltipster({multiple: true});
     // password
     $("#but_change_password").click(function() {
-        $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked']; ?> : <?php echo $SETTINGS['pwComplexity'][$_SESSION['user_pw_complexity']][1]; ?>");
+        $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked']; ?> : <?php echo $SETTINGS_EXT['pwComplexity'][$_SESSION['user_pw_complexity']][1]; ?>");
         $("#change_pwd_error").hide();
       $("#div_change_psk, #div_reset_psk").hide();
 

@@ -139,7 +139,7 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 
 
 // 2.1.27
-if ($k['version'] === "2.1.27") {
+if ($SETTINGS_EXT['version'] === "2.1.27") {
     $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'migration_to_2127'"));
     if ($tmp[0] === '0') {
         $mysqli_result = mysqli_query(

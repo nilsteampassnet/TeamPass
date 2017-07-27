@@ -36,7 +36,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (isset(filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)) && filter_var($_POST['session'], FILTER_SANITIZE_STRING) === "expired") {
+if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) && filter_var($_POST['session'], FILTER_SANITIZE_STRING) === "expired") {
     //Include files
     require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
@@ -77,19 +77,19 @@ if (isset(filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)) && filter
     require_once $SETTINGS['cpassman_dir'].'/includes/language/english.php';
     echo '
     <div style="width:800px;margin:auto;">';
-    if (@$_SESSION['error']['code'] == ERR_NOT_ALLOWED) {
+    if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
         echo '
         <div class="ui-state-error ui-corner-all error" >'.$LANG['error_not_authorized'].'</div>';
-    } elseif (@$_SESSION['error']['code'] == ERR_NOT_EXIST) {
+    } elseif (@$_SESSION['error']['code'] === ERR_NOT_EXIST) {
         echo '
         <div class="ui-state-error ui-corner-all error" >'.$LANG['error_not_exists'].'</div>';
-    } elseif (@$_SESSION['error']['code'] == ERR_SESS_EXPIRED) {
+    } elseif (@$_SESSION['error']['code'] === ERR_SESS_EXPIRED) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['index_session_expired'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
-    } elseif (@$_SESSION['error']['code'] == ERR_NO_MCRYPT) {
+    } elseif (@$_SESSION['error']['code'] === ERR_NO_MCRYPT) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
-    } elseif (@$_SESSION['error']['code'] == ERR_VALID_SESSION) {
+    } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
         echo '
         <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_not_authorized'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
     }

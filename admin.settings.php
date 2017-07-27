@@ -946,7 +946,7 @@ echo '
                     </td>
                     <td>
                         <select id="offline_key_level" name="offline_key_level" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">';
-foreach ($SETTINGS['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'"', isset($SETTINGS['offline_key_level']) && $SETTINGS['offline_key_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
 }
 echo '

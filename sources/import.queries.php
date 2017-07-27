@@ -99,7 +99,7 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/Anti
 $antiXss = new protect\AntiXSS\AntiXSS();
 
 //User's language loading
-$k['langage'] = @$_SESSION['user_language'];
+$SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // Build query

@@ -62,8 +62,8 @@ $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includ
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         #CASE adding a new role
         case "add_new_role":
             //Check if role already exist : No similar roles
@@ -272,16 +272,18 @@ if (!empty($_POST['type'])) {
         //-------------------------------------------
         #CASE refresh the matrix
         case "refresh_roles_matrix":
-            //pw complexity levels
-            $SETTINGS['pwComplexity'] = array(
-                0=>array(0, $LANG['complex_level0']),
-                25=>array(25, $LANG['complex_level1']),
-                50=>array(50, $LANG['complex_level2']),
-                60=>array(60, $LANG['complex_level3']),
-                70=>array(70, $LANG['complex_level4']),
-                80=>array(80, $LANG['complex_level5']),
-                90=>array(90, $LANG['complex_level6'])
-            );
+            // Ensure Complexity levels are translated
+            if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+                $SETTINGS_EXT['pwComplexity'] = array(
+                    0=>array(0, $LANG['complex_level0']),
+                    25=>array(25, $LANG['complex_level1']),
+                    50=>array(50, $LANG['complex_level2']),
+                    60=>array(60, $LANG['complex_level3']),
+                    70=>array(70, $LANG['complex_level4']),
+                    80=>array(80, $LANG['complex_level5']),
+                    90=>array(90, $LANG['complex_level6'])
+                );
+            }
 
             $tree = $tree->getDescendants();
             $texte = '<table><thead><tr><th>'.$LANG['groups'].'</th>';
@@ -339,7 +341,7 @@ if (!empty($_POST['type'])) {
                         '<span class=\'fa fa-pencil fa-2x mi-grey-1\' onclick=\'edit_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'",'.$record['complexity'].')\' style=\'cursor:pointer;\'></span>&nbsp;'.
                         '<span class=\'fa fa-trash fa-2x mi-grey-1\' style=\'cursor:pointer;\' onclick=\'delete_this_role('.$record['id'].',"'.htmlentities($record['title'], ENT_QUOTES, "UTF-8").'")\'></span>'.
                         $allow_pw_change.
-                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$SETTINGS['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
+                        '<div style=\'margin-top:-8px;\'>[&nbsp;'.$SETTINGS_EXT['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
 
                     array_push($arrRoles, $record['id']);
                 }

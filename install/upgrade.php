@@ -482,7 +482,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                         Please select:&nbsp;<select id="no_key_selection">
                             <option value="false">-- select --</option>
                             <option value="no_previous_sk_sel">We have never used Teampass in an older version than 2.1.27(.x)</option>
-                            <option value="previous_sk_sel">We have user Teampass in an older version (example: 2.1.26)</option>
+                            <option value="previous_sk_sel">We have used Teampass in an older version (example: 2.1.26)</option>
                         </select>
                         <div id="previous_sk_div" style="display:none;">
                             <p>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
@@ -504,7 +504,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     echo '
                      <h3>Step 3 - Converting database to UTF-8</h3>';
 
-    if (version_compare($_POST['actual_cpm_version'], $k['version'], "<")) {
+    if (version_compare($_POST['actual_cpm_version'], $SETTINGS_EXT['version'], "<")) {
         echo '
             Notice that TeamPass is now only using UTF-8 charset.
             This step will convert the database to this charset.<br />
@@ -635,7 +635,7 @@ echo '
 echo '
     <div id="footer">
         <div style="width:500px;">
-            '.$k['tool_name'].' '.$k['version'].' &#169; copyright 2009-2016
+            '.$SETTINGS_EXT['tool_name'].' '.$SETTINGS_EXT['version'].' &#169; copyright 2009-2016
         </div>
         <div style="float:right;margin-top:-15px;">
         </div>

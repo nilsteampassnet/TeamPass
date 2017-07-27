@@ -61,11 +61,7 @@ $link->set_charset($encoding);
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-// Load AntiXSS
-require_once '../includes/libraries/protect/AntiXSS/AntiXss.php';
-$antiXss = new protect\AntiXSS\AntiXSS();
-
-if (isset(filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING))) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "addNewCategory":
             // store key
@@ -119,7 +115,7 @@ if (isset(filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING))) {
                     "id=%i",
                     $_POST['id']
                 );
-                echo '[{"error" : "", "id" : "'.$antiXss->xss_clean($_POST['id']).'"}]';
+                echo '[{"error" : "", "id" : "'.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT).'"}]';
             }
             break;
 
@@ -137,7 +133,7 @@ if (isset(filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING))) {
                     "id=%i",
                     $_POST['id']
                 );
-                echo '[{"error" : "", "id" : "'.$antiXss->xss_clean($_POST['id']).'"}]';
+                echo '[{"error" : "", "id" : "'.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT).'"}]';
             }
             break;
 

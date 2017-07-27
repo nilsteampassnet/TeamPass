@@ -30,7 +30,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 global $k, $settings;
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-header("Content-type: text/x-json; charset=".$k['charset']);
+header("Content-type: text/x-json; charset=".$SETTINGS_EXT['charset']);
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';

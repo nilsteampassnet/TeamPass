@@ -355,7 +355,7 @@ global \$SETTINGS;
                             array('admin', 'maintenance_mode', '1'),
                             array('admin', 'enable_sts', '0'),
                             array('admin', 'encryptClientServer', '1'),
-                            array('admin', 'cpassman_version', $k['version']),
+                            array('admin', 'cpassman_version', $SETTINGS_EXT['version']),
                             array('admin', 'ldap_mode', '0'),
                             array('admin', 'ldap_type', '0'),
                             array('admin', 'ldap_suffix', '0'),
@@ -980,7 +980,7 @@ global \$SETTINGS;
                         $fh,
                         utf8_encode(
                             "<?php
-global \$lang, \$txt, \$k, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
+global \$lang, \$txt, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
@@ -997,7 +997,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
     require_once \"".str_replace('\\', '/', $skFile)."\";
 }
-?>"
+"
                         )
                     );
                     fclose($fh);

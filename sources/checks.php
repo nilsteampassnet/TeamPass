@@ -42,9 +42,15 @@ $pagesRights = array(
 
 function curPage()
 {
-    require_once "classes.php";
+    global $SETTINGS;
+
+    // Load libraries
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Parse the url
     parse_str(
-        substr((string) superGlobal::get("REQUEST_URI", "SERVER"), strpos((string) superGlobal::get("REQUEST_URI", "SERVER"), "?") + 1),
+        substr((string) $superGlobal->get("REQUEST_URI", "SERVER"), strpos((string) $superGlobal->get("REQUEST_URI", "SERVER"), "?") + 1),
         $result
     );
     return $result['page'];
@@ -53,7 +59,11 @@ function curPage()
 function checkUser($userId, $userKey, $pageVisited)
 {
     global $pagesRights, $SETTINGS;
-    require_once "classes.php";
+    global $server, $user, $pass, $database, $pre, $port, $encoding;
+
+    // Load libraries
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     if (empty($userId) || empty($pageVisited) || empty($userKey)) {
         return false;
@@ -63,8 +73,7 @@ function checkUser($userId, $userKey, $pageVisited)
         $pageVisited = array($pageVisited);
     }
 
-    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.superGlobal::get("user_language", "SESSION").'.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get("user_language", "SESSION").'.php';
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     require_once 'main.functions.php';
 

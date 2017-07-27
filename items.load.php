@@ -95,7 +95,7 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
             itemLog("item_password_shown");
             $('#id_pw').text($('#hid_pw').val());
         } else {
-            $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
+            $('#id_pw').html('<?php echo $var["hidden_asterisk"]; ?>');
         }
     }
 
@@ -204,7 +204,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         //Disable menu buttons
         $("#button_quick_login_copy, #button_quick_pw_copy").hide();
 
-        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['opening_folder']); ?>');
+        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG["opening_folder"]); ?>');
 
         //ajax query
         request = $.post("sources/items.queries.php",
@@ -705,7 +705,7 @@ function AjouterItem()
                     }
 
                     //Check errors
-                    if (data.error == "item_exists") {
+                    if (data.error === "item_exists") {
                         $("#div_formulaire_saisi").dialog("open");
                         $("#new_show_error").html('<?php echo addslashes($LANG['error_item_exists']); ?>');
                         $("#new_show_error").show();
@@ -1110,7 +1110,7 @@ function AddNewFolder()
         //prepare data
         var data = '{"title":"' + sanitizeString($('#new_rep_titre').val()) + '", "complexity":"' + sanitizeString($('#new_rep_complexite').val()) + '", "is_pf":"' + $('#pf_selected').val() + '", ' +
         '"parent_id":"' + $("#new_rep_groupe option:selected").val() + '", "renewal_period":"0"}';
-
+console.log(data);
         //send query
         $.post(
             "sources/folders.queries.php",

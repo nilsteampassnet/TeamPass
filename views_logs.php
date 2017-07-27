@@ -41,8 +41,8 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
 
 include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-if (!isset($k) || !isset($k['version'])) {
-    include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+if (!isset($SETTINGS_EXT) || !isset($SETTINGS_EXT['version'])) {
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 }
 header("Content-type: text/html; charset=utf-8");
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';

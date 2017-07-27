@@ -65,8 +65,8 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $folders = $tree->getDescendants();
 
 // define temporary sessions
-if ($_SESSION['user_admin'] == 1 && (isset($k['admin_full_right'])
-    && $k['admin_full_right'] === true) || !isset($k['admin_full_right'])) {
+if ($_SESSION['user_admin'] == 1 && (isset($SETTINGS_EXT['admin_full_right'])
+    && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }

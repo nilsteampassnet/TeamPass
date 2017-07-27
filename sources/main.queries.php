@@ -80,7 +80,7 @@ function mainQuery()
     $link->set_charset($encoding);
 
     // User's language loading
-    $k['langage'] = @$_SESSION['user_language'];
+    $SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     // Manage type of action asked
     switch ($_POST['type']) {
@@ -1050,7 +1050,7 @@ function mainQuery()
 
             if (isset($SETTINGS['send_statistics_items']) && isset($SETTINGS['send_stats']) && isset($SETTINGS['send_stats_time'])
                 && $SETTINGS['send_stats'] === "1"
-                && ($SETTINGS['send_stats_time'] + $k['one_day_seconds']) > time()
+                && ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
             ) {
                 // get statistics data
                 $stats_data = getStatisticsData();

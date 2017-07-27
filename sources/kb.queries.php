@@ -72,8 +72,8 @@ function utf8Urldecode($value)
 }
 
 // Construction de la requéte en fonction du type de valeur
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "kb_in_db":
             // Check KEY
             if ($_POST['key'] != $_SESSION['key']) {

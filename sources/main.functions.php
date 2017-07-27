@@ -1388,9 +1388,8 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
 function send_syslog($message, $host, $port, $component = "teampass")
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-        //$syslog_message = "<123>" . date('M d H:i:s ') . " " .$host . " " . $component . ": " . $message;
     $syslog_message = "<123>".date('M d H:i:s ').$component.": ".$message;
-        socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
+    socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
     socket_close($sock);
 }
 
@@ -1438,14 +1437,14 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
     if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
         if ($type == "user_mngt") {
             send_syslog(
-                "The User ".$login." perform the acction off ".$label." to the user ".$field_1." - ".$type,
+                "The User ".$login." performed the action of ".$label." to the user ".$field_1." - ".$type,
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 "teampass"
             );
         } else {
             send_syslog(
-                "The User ".$login." perform the acction off ".$label." - ".$type,
+                "The User ".$login." performed the action of ".$label." - ".$type,
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 "teampass"
