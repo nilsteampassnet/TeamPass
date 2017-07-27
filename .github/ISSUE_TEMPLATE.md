@@ -1,5 +1,8 @@
 <!--
-Thanks for reporting issues back to Teampass! This is the issue tracker of Teampass, if you have any FEATURE REQUEST or question, please use https://teampass.userecho.com/
+Thanks for reporting issues back to Teampass! 
+This is ONLY for ISSUE / DEFECT / BUG.
+
+If you have any FEATURE REQUEST or question, please use https://teampass.userecho.com/
 
 To make it possible for us to help you please fill out below information carefully.
 --> 
