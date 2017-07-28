@@ -118,7 +118,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $pdf->cell(15, 6, $record['login'], 1, 1, "C");
                 }
             }
-            list($d, $m, $y) = explode('/', $_POST['date']);
+            list($d, $m, $y) = explode('/', filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING));
             $nomFichier = "log_followup_passwords_".date("Y-m-d", mktime(0, 0, 0, $m, $d, $y)).".pdf";
             //send the file
             $pdf->Output($SETTINGS['path_to_files_folder'].'/'.$nomFichier);
@@ -406,7 +406,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         intval(strtotime($_POST['purgeFrom'])),
                         intval(strtotime($_POST['purgeTo']))
                     );
-                } elseif ($_POST['logType'] == "copy_logs") {
+                } elseif (filter_input(INPUT_POST, 'logType', FILTER_SANITIZE_STRING) === "copy_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                         "AND date BETWEEN %i AND %i",

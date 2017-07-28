@@ -68,17 +68,17 @@ if (!isset($_POST['user_token'])) {
                 ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            $_POST['user_token']
+            filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)
         );
     } else {
         // check if token is expired
         $data = DB::queryFirstRow(
             "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            $_POST['user_token']
+            filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)
         );
         // clear user token
-        DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
+        DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING));
 
         if (time() > $data['end_timestamp']) {
             // too old
@@ -99,7 +99,7 @@ header("Pragma: no-cache");
 // load functions
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-if (isset($_POST["type_upload"]) && $_POST["type_upload"] == "upload_profile_photo") {
+if (null !== filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING) && filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING) == "upload_profile_photo") {
     $targetDir = $SETTINGS['cpassman_dir'].'/includes/avatars';
 } else {
     $targetDir = $SETTINGS['path_to_files_folder'];
@@ -300,8 +300,8 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 
-if (isset($_POST["type_upload"])
-    && empty($_POST["type_upload"]) === false
+if (null !== (filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING))
+    && empty(filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING)) === false
     && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "import_items_from_csv"
 ) {
     $newFileName = time()."_".$_SESSION['user_id'];
@@ -309,7 +309,7 @@ if (isset($_POST["type_upload"])
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} elseif (isset($_POST["type_upload"])
+} elseif (null !== (filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING))
     && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "import_items_from_keypass"
 ) {
     $newFileName = time()."_".$_SESSION['user_id'];
@@ -317,7 +317,7 @@ if (isset($_POST["type_upload"])
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} elseif (isset($_POST["type_upload"])
+} elseif (null !== (filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING))
     && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "upload_profile_photo"
 ) {
     // sanitize the new file name

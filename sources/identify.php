@@ -42,7 +42,7 @@ $ldap_suffix = "";
 $result = "";
 $adldap = "";
 
-if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") {
+if (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING) === "identify_duo_user") {
 //--------
 // DUO AUTHENTICATION
 //--------

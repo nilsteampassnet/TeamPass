@@ -76,7 +76,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "kb_in_db":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -178,17 +178,20 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
+            $post_id = filter_input(INPUT_POST, $_POST['id'], FILTER_SANITIZE_NUMBER_INT);
+
             $ret = DB::queryfirstrow(
                 "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
                 FROM ".prefix_table("kb")." AS k
                 INNER JOIN ".prefix_table("kb_categories")." AS c ON (c.id = k.category_id)
                 INNER JOIN ".prefix_table("users")." AS u ON (u.id = k.author_id)
                 WHERE k.id = %i",
-                $_POST['id']
+                $post_id
             );
 
             //select associated items
-            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $_POST['id']);
+            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $post_id);
             $arrOptions = array();
             foreach ($rows as $record) {
                 array_push($arrOptions, $record['item_id']);

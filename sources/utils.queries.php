@@ -137,7 +137,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         #CASE start user personal pwd re-encryption
         case "reencrypt_personal_pwd_start":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
@@ -177,16 +177,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
-            if (empty($_POST['currentId'])) {
+
+            $post_current_id = filter_input(INPUT_POST, 'currentId', FILTER_SANITIZE_NUMBER_INT);
+
+            if (empty($post_current_id) === true) {
                 echo '[{"error" : "No ID provided"}]';
                 break;
             }
 
-            if (isset($_POST['data_to_share'])) {
+            if (null !== filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING)) {
                 // ON DEMAND
 
                 //decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING),
+                    "decode"
+                );
 
                 // do a check on old PSK
                 if (empty($dataReceived['sk']) || empty($dataReceived['old_sk'])) {
@@ -203,7 +209,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     "SELECT id, pw, pw_iv, encryption_type
                     FROM ".prefix_table("items")."
                     WHERE id = %i",
-                    $_POST['currentId']
+                    $post_current_id
                 );
                 if ($data['encryption_type'] === "defuse") {
                     $decrypt = cryption(
@@ -274,7 +280,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     "SELECT id, pw, pw_iv, encryption_type
                     FROM ".prefix_table("items")."
                     WHERE id = %i",
-                    $_POST['currentId']
+                    $post_current_id
                 );
                 if (empty($data['pw_iv']) && $data['encryption_type'] === "not_set") {
                 // check if pw encrypted with protocol #2
@@ -377,7 +383,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
 
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
 
             // get data about item
             $dataItem = DB::queryfirstrow(
@@ -468,9 +477,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "server_auto_update_password_frequency":
-            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
-                || isset($_POST['id']) === false
-                || isset($_POST['freq']) === false
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']
+                || null !== filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
+                || null !== filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_STRING)
             ) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
@@ -481,7 +490,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 prefix_table("items"),
                 array(
                     'auto_update_pwd_frequency' => $_POST['freq'],
-                    'auto_update_pwd_next_date' => time() + (2592000 * intval($_POST['freq']))
+                    'auto_update_pwd_next_date' => time() + (2592000 * filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT))
                     ),
                 "id = %i",
                 intval($_POST['id'])

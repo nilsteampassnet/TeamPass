@@ -155,7 +155,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+            DB::delete(
+                prefix_table("suggestion"),
+                "id = %i",
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+            );
             break;
 
         case "duplicate_suggestion":
@@ -168,7 +172,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, folder_id FROM ".prefix_table("suggestion")." WHERE id = %i",
-                intval($_POST['id'])
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
             // check if similar exists
@@ -192,12 +196,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 break;
             }
 
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, description, pw, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")."
                 WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // check if similar Item exists (based upon Label and folder id)
@@ -239,7 +245,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     updateCacheTable("update_value", $existing_item_id['id']);
 
                     // delete suggestion
-                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+                    DB::delete(
+                        prefix_table("suggestion"),
+                        "id = %i",
+                        $post_id
+                    );
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -278,7 +288,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     updateCacheTable("add_value", $newID);
 
                     // delete suggestion
-                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+                    DB::delete(
+                        prefix_table("suggestion"),
+                        "id = %i",
+                        $post_id
+                    );
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -465,7 +479,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // prepare query
             $fields_array = array();
-            $fields_to_update = explode(";", filter_var($_POST['data'], FILTER_SANITIZE_STRING));
+            $fields_to_update = explode(";", filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING));
             foreach ($fields_to_update as $field) {
                 if (!empty($field)) {
                     $fields_array[$field] = $data[$field];
@@ -485,7 +499,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 if (!empty($field)) {
                     if ($field !== "pw") {
                         logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$current_item[$field].' => '.$data[$field]);
-                    } else if ($field === "description") {
+                    } elseif ($field === "description") {
                         logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field);
                     } else {
                         $oldPwClear = cryption(
