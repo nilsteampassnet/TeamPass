@@ -105,7 +105,7 @@ if (empty($languagesDropmenu)) {
 
 // CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED
 if ((isset($_GET['session']) && $_GET['session'] == "expired")
-    || (isset($_POST['session']) && $_POST['session'] == "expired")
+    || (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired")
 ) {
     // Clear User tempo key
     if (isset($_SESSION['user_id'])) {

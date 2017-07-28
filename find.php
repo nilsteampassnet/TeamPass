@@ -43,7 +43,9 @@ if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_li
     $list_folders_limited_keys = array();
 }
 // list of items accessible but not in an allowed folder
-if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['list_restricted_folders_for_items']) > 0) {
+if (isset($_SESSION['list_restricted_folders_for_items'])
+    && count($_SESSION['list_restricted_folders_for_items']) > 0
+) {
     $list_restricted_folders_for_items_keys = @array_keys($_SESSION['list_restricted_folders_for_items']);
 } else {
     $list_restricted_folders_for_items_keys = array();

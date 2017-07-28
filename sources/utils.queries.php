@@ -50,6 +50,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         #CASE export in CSV format
         case "export_to_csv_format":
+            //Prepare variables
+            $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
+            $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+
+            // Init
             $full_listing = array();
             $full_listing[0] = array(
                 'id' => "id",
@@ -61,10 +66,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 'perso' => "perso"
             );
 
-            foreach (explode(';', $_POST['ids']) as $id) {
+            foreach (explode(';', $post_ids) as $id) {
                 if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                     $rows = DB::query(
-                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
+                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
                         l.date as date,
                         n.renewal_period as renewal_period
                         FROM ".prefix_table("items")." as i
@@ -88,17 +94,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) || $id_managed != $record['id']) {
-                            if ((in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] === "1" && $_SESSION['user_id'] === $record['restricted_to']) && !empty($record['restricted_to']))
+                            if ((in_array($id, $_SESSION['personal_visible_groups'])
+                                && !($record['perso'] === "1"
+                                    && $_SESSION['user_id'] === $record['restricted_to'])
+                                && !empty($record['restricted_to']))
                                 ||
-                                (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                                (!empty($record['restricted_to'])
+                                    && !in_array($_SESSION['user_id'], $restricted_users_array)
+                                )
                             ) {
                                 //exclude this case
                             } else {
                                 //encrypt PW
-                                if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                                if (empty($post_salt_key) === false && null !== $post_salt_key) {
                                     $pw = cryption(
                                         $record['pw'],
-                                        mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                        mysqli_escape_string($link, stripslashes($post_salt_key)),
                                         "decrypt"
                                     );
                                 } else {
@@ -173,11 +184,12 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         #CASE user personal pwd re-encryption
         case "reencrypt_personal_pwd":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
 
+            // Prepare POST variable
             $post_current_id = filter_input(INPUT_POST, 'currentId', FILTER_SANITIZE_NUMBER_INT);
 
             if (empty($post_current_id) === true) {
@@ -377,7 +389,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             #CASE auto update server password
         case "server_auto_update_password":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
@@ -460,7 +472,15 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $dataReceived['currentId']
                 );
                 // update log
-                logItems($dataReceived['currentId'], $dataItem['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
+                logItems(
+                    $dataReceived['currentId'],
+                    $dataItem['label'],
+                    $_SESSION['user_id'],
+                    'at_modification',
+                    $_SESSION['login'],
+                    'at_pw :'.$oldPw,
+                    $oldPwIV
+                );
                 $ret .= "<br />".$LANG['ssh_action_performed'];
             } else {
                 $ret .= "<br /><i class='fa fa-warning'></i>&nbsp;".$LANG['ssh_action_performed_with_error']."<br />";
@@ -493,7 +513,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     'auto_update_pwd_next_date' => time() + (2592000 * filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT))
                     ),
                 "id = %i",
-                intval($_POST['id'])
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
             );
 
             echo '[{"error" : ""}]';

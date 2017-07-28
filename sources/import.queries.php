@@ -103,7 +103,7 @@ $SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // Build query
-switch ($_POST['type']) {
+switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     //Check if import CSV file format is what expected
     case "import_file_format_csv":
         //load full tree
@@ -111,7 +111,7 @@ switch ($_POST['type']) {
         $tree = $tree->getDescendants();
 
         // do some initializations
-        $file = $SETTINGS['path_to_files_folder']."/".$_POST['file'];
+        $file = $SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
@@ -221,7 +221,7 @@ switch ($_POST['type']) {
                     for ($x = 1; $x < $t->nlevel; $x++) {
                         $ident .= "&nbsp;&nbsp;";
                     }
-                    if (isset($_POST['folder_id']) && $_POST['folder_id'] == $t->id) {
+                    if (null !== filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT) && filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT) === $t->id) {
                         $selected = " selected";
                     } else {
                         $selected = "";
@@ -246,15 +246,24 @@ switch ($_POST['type']) {
     //Insert into DB the items the user has selected
     case "import_items":
         //decrypt and retreive data in JSON format
-        $dataReceived = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256));
+        $dataReceived = (Encryption\Crypt\aesctr::decrypt(
+            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            $_SESSION['key'],
+            256
+        ));
 
         //Get some info about personal folder
-        if ($_POST['folder'] == $_SESSION['user_id']) {
+        if (filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT) === $_SESSION['user_id']) {
             $personalFolder = 1;
         } else {
             $personalFolder = 0;
         }
-        $data_fld = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", intval($_POST['folder']));
+        $data_fld = DB::queryFirstRow(
+            "SELECT title
+            FROM ".prefix_table("nested_tree")."
+            WHERE id = %i",
+            filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT)
+        );
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
@@ -288,15 +297,17 @@ switch ($_POST['type']) {
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv'],
                     'url' => substr($item[3], 0, 500),
-                    'id_tree' => $_POST['folder'],
+                    'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
                     'login' => substr($item[1], 0, 200),
-                    'anyone_can_modify' => $_POST['import_csv_anyone_can_modify'] == "true" ? 1 : 0
+                    'anyone_can_modify' => filter_input(INPUT_POST, 'import_csv_anyone_can_modify', FILTER_SANITIZE_STRING) === "true" ? 1 : 0
                 )
             );
             $newId = DB::insertId();
 
             //if asked, anyone in role can modify
-            if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
+            if (null !== filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) === "true"
+            ) {
                 foreach ($_SESSION['arr_roles'] as $role) {
                     DB::insert(
                         prefix_table("restriction_to_roles"),
@@ -332,7 +343,7 @@ switch ($_POST['type']) {
                     'id' => $newId,
                     'label' => substr($item[0], 0, 500),
                     'description' => $item[4],
-                    'id_tree' => $_POST['folder'],
+                    'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
                     'perso' => $personalFolder == 0 ? 0 : 1,
                     'login' => substr($item[1], 0, 500),
                     'folder' => $data_fld['title'],
@@ -365,12 +376,11 @@ switch ($_POST['type']) {
         $cacheFileF = fopen($cacheFileNameFolder, "w");
         $logFileName = "/keepassImport_".date('YmdHis');
         $cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');
-        $_POST['file'] = $antiXss->xss_clean($_POST['file']);
 
         //read xml file
-        if (file_exists("'".$SETTINGS['path_to_files_folder']."/".$_POST['file'])."'") {
+        if (file_exists("'".$SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING))."'") {
             $xml = simplexml_load_file(
-                $SETTINGS['path_to_files_folder']."/".$_POST['file']
+                $SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)
             );
         }
 
@@ -617,7 +627,7 @@ switch ($_POST['type']) {
             }
         }
 
-        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".filter_var($_POST['file'], FILTER_SANITIZE_STRING)."\n");
+        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)."\n");
 
         // Go through each node of XML file
         recursiveKeepassXML($xml);
@@ -629,7 +639,7 @@ switch ($_POST['type']) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($SETTINGS['url_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['url_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
 
             fputs($cacheLogFile, date('H:i').$LANG['import_error_no_read_possible_kp']."\n");
 
@@ -664,20 +674,21 @@ switch ($_POST['type']) {
             $text = '<span class="fa fa-folder-open"></span>&nbsp;'.$LANG['nb_folders'].': '.
                 $numGroups.'<br /><span class="fa fa-tag"></span>>&nbsp;'.$LANG['nb_items'].': '.
                 $numItems.'<br /><br />';
+            $post_destination = filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_STRING);
 
             //if destination is not ROOT then get the complexity level
-            if (strpos($_POST['destination'], "perso") !== 0) {
+            if (strpos($post_destination, "perso") !== 0) {
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;
                 $import_perso = true;
-            } elseif ($_POST['destination'] > 0) {
+            } elseif ($post_destination > 0) {
                 $data = DB::queryFirstRow(
                     "SELECT m.valeur as value, t.nlevel as nlevel
                     FROM ".prefix_table("misc")." as m
                     INNER JOIN ".prefix_table("nested_tree")." as t ON (m.intitule = t.id)
                     WHERE m.type = %s AND m.intitule = %s",
                     "complex",
-                    mysqli_escape_string($link, $_POST['destination'])
+                    mysqli_escape_string($link, $post_destination)
                 );
                 $levelPwComplexity = $data['value'];
                 $startPathLevel = $data['nlevel'];
@@ -714,7 +725,7 @@ switch ($_POST['type']) {
                         $parent_id = $foldersArray[$parent]['id'];
                     } else {
                         $fold = $folder;
-                        $parent_id = $_POST['destination']; //permits to select the folder destination
+                        $parent_id = $post_destination; //permits to select the folder destination
                     }
 
                     $fold = stripslashes($fold);
@@ -816,7 +827,7 @@ switch ($_POST['type']) {
             $count = 0;
 
             //Get some info about personal folder
-            if ($_POST['destination'] == $_SESSION['user_id']) {
+            if ($post_destination == $_SESSION['user_id']) {
                 $personalFolder = 1;
             } else {
                 $personalFolder = 0;
@@ -846,7 +857,7 @@ switch ($_POST['type']) {
 
                     //Get folder label
                     if (count($foldersArray) == 0 || empty($item[KP_PATH])) {
-                        $folderId = $_POST['destination'];
+                        $folderId = $post_destination;
                     } else {
                         $folderId = $foldersArray[$item[KP_PATH]]['id'];
                     }
@@ -885,13 +896,13 @@ switch ($_POST['type']) {
                                 'url' => substr(stripslashes($item[KP_URL]), 0, 500),
                                 'id_tree' => $folderId,
                                 'login' => substr(stripslashes($item[KP_USERNAME]), 0, 500),
-                                'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
+                                'anyone_can_modify' => filter_input(INPUT_POST, 'import_kps_anyone_can_modify', FILTER_SANITIZE_STRING) === "true" ? 1 : 0
                             )
                         );
                         $newId = DB::insertId();
 
                         //if asked, anyone in role can modify
-                        if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
+                        if (null !== filter_input(INPUT_POST, 'import_kps_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) && filter_input(INPUT_POST, 'import_kps_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) === "true") {
                             foreach ($_SESSION['arr_roles'] as $role) {
                                 DB::insert(
                                     prefix_table("restriction_to_roles"),
@@ -956,7 +967,7 @@ switch ($_POST['type']) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($SETTINGS['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';

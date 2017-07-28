@@ -82,7 +82,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "add_new":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -151,7 +151,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "delete_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -164,7 +164,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "duplicate_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -191,7 +191,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "validate_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -303,7 +303,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "get_complexity_level":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -324,7 +324,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "get_item_change_detail":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -435,7 +435,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "approve_item_change":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -528,7 +528,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "reject_item_change":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }

@@ -58,7 +58,7 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
         WHERE code = %s",
         $_GET['code']
     );
-    if ( $data['timestamp'] == intval($_GET['stamp'])) {
+    if ($data['timestamp'] == intval($_GET['stamp'])) {
         // otv is too old
         if ($data['timestamp'] < (time() - ($SETTINGS['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";

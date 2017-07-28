@@ -45,6 +45,11 @@ if (isset($_POST['PHPSESSID'])) {
     handleUploadError('No Session was found.');
 }
 
+// Prepare POST variables
+$post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
+$post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
+$post_newFileName = filter_input(INPUT_POST, 'newFileName', FILTER_SANITIZE_STRING);
+$post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
 
 // Get parameters
 $chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
@@ -52,7 +57,7 @@ $chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
 $fileName = isset($_REQUEST["name"]) ? filter_var($_REQUEST["name"], FILTER_SANITIZE_STRING) : '';
 
 // token check
-if (!isset($_POST['user_token'])) {
+if (null === $post_user_token) {
     handleUploadError('No user token found.');
     exit();
 } else {
@@ -68,17 +73,22 @@ if (!isset($_POST['user_token'])) {
                 ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)
+            $post_user_token
         );
     } else {
         // check if token is expired
         $data = DB::queryFirstRow(
             "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)
+            $post_user_token
         );
         // clear user token
-        DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING));
+        DB::delete(
+            prefix_table("tokens"),
+            "user_id = %i AND token = %s",
+            $_SESSION['user_id'],
+            $post_user_token
+        );
 
         if (time() > $data['end_timestamp']) {
             // too old
@@ -99,7 +109,7 @@ header("Pragma: no-cache");
 // load functions
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-if (null !== filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING) && filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING) == "upload_profile_photo") {
+if (null !== $post_type_upload && $post_type_upload === "upload_profile_photo") {
     $targetDir = $SETTINGS['cpassman_dir'].'/includes/avatars';
 } else {
     $targetDir = $SETTINGS['path_to_files_folder'];
@@ -111,8 +121,8 @@ $valid_chars_regex = 'A-Za-z0-9_'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-if (isset($_POST['timezone'])) {
-    date_default_timezone_set(filter_var($_POST['timezone'], FILTER_SANITIZE_STRING));
+if (null !== $post_timezone) {
+    date_default_timezone_set($post_timezone);
 }
 
 // Check post_max_size
@@ -300,28 +310,28 @@ if (!$chunks || $chunk == $chunks - 1) {
 }
 
 
-if (null !== (filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING))
-    && empty(filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING)) === false
-    && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "import_items_from_csv"
+if (null !== ($post_type_upload)
+    && empty($post_type_upload) === false
+    && $post_type_upload === "import_items_from_csv"
 ) {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} elseif (null !== (filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING))
-    && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "import_items_from_keypass"
+} elseif (null !== ($post_type_upload)
+    && $post_type_upload === "import_items_from_keypass"
 ) {
     $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-} elseif (null !== (filter_input(INPUT_POST, "type_upload", FILTER_SANITIZE_STRING))
-    && filter_var($_POST["type_upload"], FILTER_SANITIZE_STRING) === "upload_profile_photo"
+} elseif (null !== ($post_type_upload)
+    && $post_type_upload === "upload_profile_photo"
 ) {
     // sanitize the new file name
-    $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($_POST['newFileName'], ENT_QUOTES));
+    $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($post_newFileName, ENT_QUOTES));
     $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));
 
     // get file extension

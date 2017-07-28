@@ -81,7 +81,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 break;
             }
             //decrypt and retreive data in JSON format
-            $data_received = prepareExchangedData($_POST['data'], "decode");
+            $data_received = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);
@@ -174,7 +174,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "open_kb":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -212,7 +212,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "delete_kb":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }

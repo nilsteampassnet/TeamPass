@@ -94,9 +94,15 @@ $parent = "#";
 $last_visible_parent_level = 1;
 
 // build the tree to be displayed
-if (isset($_GET['id']) && is_numeric(intval($_GET['id'])) && isset($_SESSION['user_settings']['treeloadstrategy']) && $_SESSION['user_settings']['treeloadstrategy'] == "sequential") {
+if (isset($_GET['id'])
+    && is_numeric(intval($_GET['id']))
+    && isset($_SESSION['user_settings']['treeloadstrategy'])
+    && $_SESSION['user_settings']['treeloadstrategy'] == "sequential"
+) {
     buildNodeTree($_GET['id']);
-} elseif (isset($_SESSION['user_settings']['treeloadstrategy']) && $_SESSION['user_settings']['treeloadstrategy'] == "sequential") {
+} elseif (isset($_SESSION['user_settings']['treeloadstrategy'])
+    && $_SESSION['user_settings']['treeloadstrategy'] == "sequential"
+) {
     buildNodeTree(0);
 } else {
     $completTree = $tree->getTreeWithChildren();
@@ -282,7 +288,13 @@ function recursiveTree($nodeId)
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             // manage tree counters
-            if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === "1" && in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))) {
+            if (isset($SETTINGS['tree_counters'])
+                && $SETTINGS['tree_counters'] === "1"
+                && in_array(
+                    $node,
+                    array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
+                )
+            ) {
                 DB::query(
                     "SELECT * FROM ".prefix_table("items")."
                     WHERE inactif=%i AND id_tree = %i",
@@ -361,11 +373,22 @@ function recursiveTree($nodeId)
             } else {
                 $restricted = "1";
                 $folderClass = "folder_not_droppable";
-                if (isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] === "1" && $nbChildrenItems === 0) {
+                if (isset($SETTINGS['show_only_accessible_folders'])
+                    && $SETTINGS['show_only_accessible_folders'] === "1"
+                    && $nbChildrenItems === 0
+                ) {
                     // folder should not be visible
                     // only if it has no descendants
                     $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
-                    if (count(array_diff($nodeDirectDescendants, array_merge($_SESSION['groupes_visibles'], array_keys($_SESSION['list_restricted_folders_for_items'])))) !== count($nodeDirectDescendants)) {
+                    if (count(
+                        array_diff(
+                            $nodeDirectDescendants,
+                            array_merge(
+                                $_SESSION['groupes_visibles'],
+                                array_keys($_SESSION['list_restricted_folders_for_items'])
+                            )
+                        )
+                    ) !== count($nodeDirectDescendants)) {
                         // show it but block it
                         $show_but_block = true;
                         $hide_node = false;

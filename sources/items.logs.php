@@ -66,7 +66,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => intval($_POST['id_item']),
+                        'id_item' => filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_NUMBER_INT),
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_shown'

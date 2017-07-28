@@ -34,7 +34,8 @@ if (file_exists('../includes/config/tp.config.php')) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (isset($_POST['type']) && ($_POST['type'] == "ga_generate_qr" || $_POST['type'] == "send_pw_by_email" || $_POST['type'] == "generate_new_password")) {
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+if (isset($post_type) && ($post_type === "ga_generate_qr" || $post_type === "send_pw_by_email" || $post_type === "generate_new_password")) {
     // continue
     mainQuery();
 } elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
@@ -42,7 +43,8 @@ if (isset($_POST['type']) && ($_POST['type'] == "ga_generate_qr" || $_POST['type
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
-    (isset($_POST['type']) && $_POST['type'] == "change_user_language" && isset($_POST['data']))) {
+    (isset($post_type) && $post_type === "change_user_language" && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING))
+) {
     // continue
     mainQuery();
 } else {
@@ -83,10 +85,13 @@ function mainQuery()
     $SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     // Manage type of action asked
-    switch ($_POST['type']) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "change_pw":
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
 
             // load passwordLib library
             $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -97,7 +102,10 @@ function mainQuery()
             $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));
 
             // User has decided to change is PW
-            if (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] === "user_change" && $_SESSION['user_admin'] !== "1") {
+            if (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change"
+                && $_SESSION['user_admin'] !== "1"
+            ) {
                 // check if expected security level is reached
                 $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
 
@@ -121,7 +129,7 @@ function mainQuery()
                     WHERE id IN (".implode(',', $data_roles['fonction_id']).")
                     ORDER BY complexity DESC"
                 );
-                if (intval($_POST['complexity']) < intval($data[0]['complexity'])) {
+                if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
                     echo '[ { "error" : "complexity_level_not_reached" } ]';
                     break;
                 }
@@ -188,7 +196,13 @@ function mainQuery()
                 break;
 
             // ADMIN has decided to change the USER's PW
-            } elseif (isset($_POST['change_pw_origine']) && (($_POST['change_pw_origine'] === "admin_change" || $_POST['change_pw_origine'] === "user_change") && ($_SESSION['user_admin'] === "1" || $_SESSION['user_manager'] === "1" || $_SESSION['user_can_manage_all_users'] === "1"))) {
+            } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
+                && ((filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "admin_change"
+                    || filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change"
+                    ) && ($_SESSION['user_admin'] === "1"|| $_SESSION['user_manager'] === "1"
+                    || $_SESSION['user_can_manage_all_users'] === "1")
+                )
+            ) {
                 // check if user is admin / Manager
                 $userInfo = DB::queryFirstRow(
                     "SELECT admin, gestionnaire
@@ -201,7 +215,7 @@ function mainQuery()
                     break;
                 }
                 // adapt
-                if ($_POST['change_pw_origine'] == "user_change") {
+                if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change") {
                     $dataReceived['user_id'] = $_SESSION['user_id'];
                 }
 
@@ -220,7 +234,7 @@ function mainQuery()
                 logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
 
                 //Send email to user
-                if ($_POST['change_pw_origine'] != "admin_change") {
+                if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) !== "admin_change") {
                     $row = DB::queryFirstRow(
                         "SELECT email FROM ".prefix_table("users")."
                         WHERE id = %i",
@@ -240,7 +254,9 @@ function mainQuery()
                 break;
 
                 // ADMIN first login
-            } elseif (isset($_POST['change_pw_origine']) && $_POST['change_pw_origine'] == "first_change") {
+            } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) == "first_change"
+            ) {
                 // update DB
                 DB::update(
                     prefix_table("users"),
@@ -278,9 +294,14 @@ function mainQuery()
             }
 
             // Check if user exists
-            if (!isset($_POST['id']) || empty($_POST['id'])) {
+            if (null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                || empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) === true
+            ) {
                 // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData($_POST['data'], "decode");
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                    "decode"
+                );
                 // Prepare variables
                 $login = htmlspecialchars_decode($dataReceived['login']);
 
@@ -295,7 +316,7 @@ function mainQuery()
                     "SELECT id, login, email
                     FROM ".prefix_table("users")."
                     WHERE id = %i",
-                    $_POST['id']
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
             }
             $counter = DB::count();
@@ -324,7 +345,9 @@ function mainQuery()
                     );
 
                     // send mail?
-                    if (isset($_POST['send_email']) && $_POST['send_email'] === "1") {
+                    if (null !== filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING)
+                        && filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING) === "1"
+                    ) {
                         sendEmail(
                             $LANG['email_ga_subject'],
                             str_replace(
@@ -348,7 +371,7 @@ function mainQuery()
             // check if session is not already expired.
             if ($_SESSION['fin_session'] > time()) {
                 // Calculate end of session
-                $_SESSION['fin_session'] = (integer) ($_SESSION['fin_session'] + $_POST['duration']);
+                $_SESSION['fin_session'] = (integer) ($_SESSION['fin_session'] + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT));
                 // Update table
                 DB::update(
                     prefix_table("users"),
@@ -377,28 +400,32 @@ function mainQuery()
             // generate key
             $key = GenerateCryptKey(50);
 
+            // Prepare post variables
+            $post_email = mysqli_escape_string($link, stripslashes(filter_input(INPUT_POST, 'email', FILTER_SANITIZE_STRING)));
+            $post_login = mysqli_escape_string($link, filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING));
+
             // Get account and pw associated to email
             DB::query(
                 "SELECT * FROM ".prefix_table("users")." WHERE email = %s",
-                mysqli_escape_string($link, stripslashes($_POST['email']))
+                $post_email
             );
             $counter = DB::count();
             if ($counter != 0) {
                 $data = DB::query(
                     "SELECT login,pw FROM ".prefix_table("users")." WHERE email = %s",
-                    mysqli_escape_string($link, stripslashes($_POST['email']))
+                    $post_email
                 );
                 $textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
                     $SETTINGS['cpassman_url']."/index.php?action=password_recovery&key=".$key.
-                    "&login=".mysqli_escape_string($link, $_POST['login'])."\">".$SETTINGS['cpassman_url'].
-                    "/index.php?action=password_recovery&key=".$key."&login=".mysqli_escape_string($link, $_POST['login'])."</a>.<br><br>".$LANG['thku'];
-                $textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".mysqli_escape_string($link, $_POST['login'])." - ".
+                    "&login=".$post_login."\">".$SETTINGS['cpassman_url'].
+                    "/index.php?action=password_recovery&key=".$key."&login=".$post_login."</a>.<br><br>".$LANG['thku'];
+                $textMailAlt = $LANG['forgot_pw_email_altbody_1']." ".$LANG['at_login']." : ".$post_login." - ".
                     $LANG['index_password']." : ".md5($data['pw']);
 
                 // Check if email has already a key in DB
                 DB::query(
                     "SELECT * FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
-                    mysqli_escape_string($link, $_POST['login']),
+                    $post_login,
                     "password_recovery"
                 );
                 $counter = DB::count();
@@ -410,7 +437,7 @@ function mainQuery()
                         ),
                         "type = %s and intitule = %s",
                         "password_recovery",
-                        mysqli_escape_string($link, $_POST['login'])
+                        $post_login
                     );
                 } else {
                     // store in DB the password recovery informations
@@ -418,13 +445,13 @@ function mainQuery()
                         prefix_table("misc"),
                         array(
                             'type' => 'password_recovery',
-                            'intitule' => mysqli_escape_string($link, $_POST['login']),
+                            'intitule' => $post_login,
                             'valeur' => $key
                         )
                     );
                 }
 
-                echo '[{'.sendEmail($LANG['forgot_pw_email_subject'], $textMail, $_POST['email'], $textMailAlt).'}]';
+                echo '[{'.sendEmail($LANG['forgot_pw_email_subject'], $textMail, $post_email, $textMailAlt).'}]';
             } else {
                 // no one has this email ... alert
                 echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
@@ -434,10 +461,15 @@ function mainQuery()
         // Send to user his new pw if key is conform
         case "generate_new_password":
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
+
             // Prepare variables
             $login = htmlspecialchars_decode($dataReceived['login']);
             $key = htmlspecialchars_decode($dataReceived['key']);
+
             // check if key is okay
             $data = DB::queryFirstRow(
                 "SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
@@ -505,7 +537,10 @@ function mainQuery()
          */
         case "store_personal_saltkey":
             $err = "";
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
 
             // manage store
             if ($dataReceived['psk'] !== "") {
@@ -562,7 +597,7 @@ function mainQuery()
          * Change the personal saltkey
          */
         case "change_personal_saltkey":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
@@ -659,7 +694,7 @@ function mainQuery()
          * Reset the personal saltkey
          */
         case "reset_personal_saltkey":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
@@ -703,7 +738,10 @@ function mainQuery()
         case "change_user_language":
             if (!empty($_SESSION['user_id'])) {
                 // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData($_POST['data'], "decode");
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                    "decode"
+                );
                 // Prepare variables
                 $language = $dataReceived['lang'];
                 // update DB
@@ -726,7 +764,7 @@ function mainQuery()
          * Send emails not sent
          */
         case "send_waiting_emails":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -827,17 +865,19 @@ function mainQuery()
             $pwgen->register();
             $pwgen = new Encryption\PwGen\pwgen();
 
-            $pwgen->setLength($_POST['size']);
-            if (isset($_POST['secure']) && $_POST['secure'] == "true") {
+            $pwgen->setLength(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+            if (null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) === "true"
+            ) {
                 $pwgen->setSecure(true);
                 $pwgen->setSymbols(true);
                 $pwgen->setCapitalize(true);
                 $pwgen->setNumerals(true);
             } else {
-                $pwgen->setSecure(($_POST['secure'] == "true") ? true : false);
-                $pwgen->setNumerals(($_POST['numerals'] == "true") ? true : false);
-                $pwgen->setCapitalize(($_POST['capitalize'] == "true") ? true : false);
-                $pwgen->setSymbols(($_POST['symbols'] == "true") ? true : false);
+                $pwgen->setSecure((filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $pwgen->setNumerals((filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $pwgen->setCapitalize((filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $pwgen->setSymbols((filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) === "true") ? true : false);
             }
 
             echo prepareExchangedData(
@@ -855,7 +895,7 @@ function mainQuery()
             $data = DB::query(
                 "SELECT login, psk FROM ".prefix_table("users")."
                 WHERE login = %i",
-                mysqli_escape_string($link, stripslashes($_POST['userId']))
+                mysqli_escape_string($link, stripslashes(filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT)))
             );
             if (empty($data['login'])) {
                 $userOk = false;
@@ -876,11 +916,13 @@ function mainQuery()
          * Make statistics on item
          */
         case "item_stat":
-            if (isset($_POST['scope']) && $_POST['scope'] == "item") {
+            if (null !== filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === "item"
+            ) {
                 $data = DB::queryfirstrow(
                     "SELECT view FROM ".prefix_table("statistics")." WHERE scope = %s AND item_id = %i",
                     'item',
-                    $_POST['id']
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 if ($counter == 0) {
@@ -889,7 +931,7 @@ function mainQuery()
                         array(
                             'scope' => 'item',
                             'view' => '1',
-                            'item_id' => $_POST['id']
+                            'item_id' => filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                         )
                     );
                 } else {
@@ -900,7 +942,7 @@ function mainQuery()
                             'view' => $data['view'] + 1
                         ),
                         "item_id = %i",
-                        $_POST['id']
+                        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                     );
                 }
             }
@@ -910,7 +952,7 @@ function mainQuery()
          * Refresh list of last items seen
          */
         case "refresh_list_items_seen":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -970,7 +1012,7 @@ function mainQuery()
             $pwdlib->register();
             $pwdlib = new PasswordLib\PasswordLib();
             // generate key
-            $key = $pwdlib->getRandomToken($_POST['size']);
+            $key = $pwdlib->getRandomToken(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
             echo '[{"key" : "'.htmlentities($key, ENT_QUOTES).'"}]';
             break;
 
@@ -979,12 +1021,12 @@ function mainQuery()
          */
         case "save_token":
             $token = GenerateCryptKey(
-                isset($_POST['size']) ? $_POST['size'] : 20,
-                isset($_POST['secure']) ? $_POST['secure'] : false,
-                isset($_POST['capital']) ? $_POST['capital'] : false,
-                isset($_POST['numeric']) ? $_POST['numeric'] : false,
-                isset($_POST['ambiguous']) ? $_POST['ambiguous'] : false,
-                isset($_POST['symbols']) ? $_POST['symbols'] : false
+                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
+                null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_STRING) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_STRING) : false,
+                null !== filter_input(INPUT_POST, 'ambiguous', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'ambiguous', FILTER_SANITIZE_STRING) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) : false
             );
 
             // store in DB
@@ -995,7 +1037,7 @@ function mainQuery()
                     'token' => $token,
                     'reason' => $_POST['reason'],
                     'creation_timestamp' => time(),
-                    'end_timestamp' => time() + $_POST['duration']    // in secs
+                    'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)    // in secs
                 )
             );
 
@@ -1018,7 +1060,7 @@ function mainQuery()
          * Check if suggestions are existing
          */
         case "is_existings_suggestions":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1043,7 +1085,7 @@ function mainQuery()
          * Check if suggestions are existing
          */
         case "sending_statistics":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1128,12 +1170,12 @@ function mainQuery()
          * delete a file
          */
         case "file_deletion":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
-            fileDelete($_POST['filename']);
+            fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING));
 
             break;
     }

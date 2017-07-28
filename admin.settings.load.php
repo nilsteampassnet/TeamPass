@@ -62,7 +62,7 @@ function categoryAdd() {
             $("#tbl_categories").append(
                 '<tr id="t_cat_'+data[0].id+'"><td colspan="2">'+
                 '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;&nbsp;'+
-                '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category']; ?>" onclick="fieldAdd('+
+                '<span class="fa-stack tip" title="<?php echo $LANG["field_add_in_category"]; ?>" onclick="fieldAdd('+
                 data[0].id+')" style="cursor:pointer;">'+
                 '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
                 '</span>&nbsp;'+
@@ -70,10 +70,10 @@ function categoryAdd() {
                 '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
                 $("#new_category_label").val()+'</label>'+
                 '</td><td>'+
-                '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders']; ?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
+                '<span class="fa-stack tip" title="<?php echo $LANG["category_in_folders"]; ?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
                 '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
                 '</span>&nbsp;'+
-                '<?php echo $LANG['category_in_folders_title']; ?>:'+
+                '<?php echo $LANG["category_in_folders_title"]; ?>:'+
                 '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
                 '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
@@ -177,7 +177,7 @@ function loadFieldsList() {
                 if (val[0] === "1") {
                     newList += '<tr id="t_cat_'+val[1]+'"><td colspan="2">'+
                     '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
-                    '<span class="fa-stack tip" title="<?php echo $LANG['field_add_in_category']; ?>" onclick="fieldAdd('+
+                    '<span class="fa-stack tip" title="<?php echo $LANG["field_add_in_category"]; ?>" onclick="fieldAdd('+
                     val[1]+')" style="cursor:pointer;">'+
                     '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
                     '</span>&nbsp;'+
@@ -573,8 +573,7 @@ $(function() {
                 } catch (e) {
                     // error
                     $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
-
-                    return;
+                    return false;
                 }
                 console.log(data);
                 if (data.error == "") {
@@ -699,7 +698,7 @@ $(function() {
         title: "<?php echo $LANG['category_in_folders']; ?>",
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
-                if ($("#new_field_title").val() != "" && $("#post_id").val() != "") {
+                if ($("#new_field_title").val() !== "" && $("#post_id").val() !== "") {
                     $("#div_loading").show();
                     var $this = $(this);
                     //send query

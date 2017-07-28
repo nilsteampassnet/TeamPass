@@ -36,7 +36,9 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) && filter_var($_POST['session'], FILTER_SANITIZE_STRING) === "expired") {
+if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
+    && filter_var($_POST['session'], FILTER_SANITIZE_STRING) === "expired"
+) {
     //Include files
     require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
