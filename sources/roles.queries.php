@@ -169,9 +169,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "edit_role":
             // Prepare POST variables
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
 
             //Check if role already exist : No similar roles
-            DB::query("SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s AND id != %i", $_POST['title'], $post_id);
+            DB::query(
+                "SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s AND id != %i",
+                $post_title,
+                $post_id
+            );
             $counter = DB::count();
             if ($counter == 0) {
                 DB::update(
@@ -181,7 +186,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         'complexity' => filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT),
                     ),
                     'id = %i',
-                    $_POST['id']
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 echo '[ { "error" : "no" } ]';
             } else {
@@ -280,6 +285,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 );
             }
 
+            // Prepare POST variables
+            $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
             $tree = $tree->getDescendants();
             $texte = '<table><thead><tr><th>'.$LANG['groups'].'</th>';
             $gpes_ok = array();
@@ -301,11 +309,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count = DB::count();
             if ($roles_count > $display_nb) {
-                if (!isset($_POST['start']) || $_POST['start'] == 0) {
+                if (null !== $post_start || $post_start === 0) {
                     $start = 0;
                     $previous = 0;
                 } else {
-                    $start = intval($_POST['start']);
+                    $start = $post_start;
                     $previous = $start - $display_nb;
                 }
                 $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));

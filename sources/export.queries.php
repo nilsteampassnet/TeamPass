@@ -66,7 +66,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         //CASE export to PDF format
         case "export_to_pdf_format":
+            // Prepare POST variables
             $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 // get path
                 $tree->rebuild();
@@ -112,10 +115,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             //exclude this case
                         } else {
                             //encrypt PW
-                            if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                            if (empty($post_salt_key) === false && null !== $post_salt_key) {
                                 $pw = cryption(
                                     $record['pw'],
-                                    mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                    mysqli_escape_string($link, stripslashes($post_salt_key)),
                                     "decrypt"
                                 );
                             } else {
@@ -196,6 +199,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "finalize_export_pdf":
+            // Prepare POST variables
+            $post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_STRING);
+
             // query
             $rows = DB::query("SELECT * FROM ".prefix_table("export"));
             $counter = DB::count();
@@ -211,7 +217,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/fpdf.php';
 
                 $pdf = new FPDF_Protection("P", "mm", "A4", "ma page");
-                $pdf->SetProtection(array('print'), $_POST['pdf_password']);
+                $pdf->SetProtection(array('print'), $post_pdf_password);
 
                 //Add font for regular text
                 $pdf->AddFont('helvetica', '');
@@ -296,12 +302,15 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 //clean table
                 DB::query("TRUNCATE TABLE ".prefix_table("export"));
 
-                echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$pdf_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+                echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$pdf_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
             }
             break;
 
         //CASE export in CSV format
         case "export_to_csv_format":
+            // Prepare POST variables
+            $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
+
             $full_listing = array();
             $full_listing[0] = array(
                 'id' => "id",
@@ -321,7 +330,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $i = 1;
             $items_id_list = array();
 
-            foreach (explode(';', htmlentities($_POST['ids'], ENT_QUOTES)) as $id) {
+            foreach (explode(';', htmlentities($post_ids, ENT_QUOTES)) as $id) {
                 if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                     $rows = DB::query(
                         "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
@@ -446,7 +455,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $idsList = array();
             $objNumber = 0;
 
-            foreach (explode(';', $_POST['ids']) as $id) {
+            // Prepare POST variables
+            $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
+
+            foreach (explode(';', $post_ids) as $id) {
                 if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                     // count elements to display
                     $result = DB::query(
@@ -546,8 +558,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         //CASE export in HTML format - Iteration loop
         case "export_to_html_format_loop":
+            // Prepare POST variables
+            $post_idTree = filter_input(INPUT_POST, 'idTree', FILTER_SANITIZE_NUMBER_INT);
+            $post_idsList = filter_input(INPUT_POST, 'idsList', FILTER_SANITIZE_STRING);
+            $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+            $post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
+            $post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_STRING);
+            $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_STRING);
+            $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
+            $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
+
             // do checks ... if fails, return an error
-            if (!isset($_POST['idTree']) || !isset($_POST['idsList'])) {
+            if (null !== $post_idTree || null !== $post_idsList) {
                 echo '[{"error":"true"}]';
                 break;
             }
@@ -569,7 +591,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                 ORDER BY i.label ASC, l.date DESC",
                 "0",
-                intval($_POST['idTree']),
+                $post_idTree,
                 "at_creation",
                 "at_modification",
                 "at_pw :%"
@@ -579,10 +601,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 //exclude all results except the first one returned by query
                 if (empty($id_managed) || $id_managed != $record['id']) {
                     // decrypt PW
-                    if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                    if (empty($post_salt_key) === false && null !== $post_salt_key) {
                         $pw = cryption(
                             $record['pw'],
-                            mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                            mysqli_escape_string($link, stripslashes($post_salt_key)),
                             "decrypt"
                         );
                     } else {
@@ -609,7 +631,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
 
             //save in export file
-            $outstream = fopen(filter_var($_POST['file'], FILTER_SANITIZE_STRING), "a");
+            $outstream = fopen($post_file, "a");
 
             $lineType = "line1";
             $idTree = "";
@@ -654,7 +676,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $idTree = $elem['id_tree'];
                 }
 
-                $encPw = GibberishAES::enc($elem['pw'], filter_var($_POST['pdf_password'], FILTER_SANITIZE_STRING));
+                $encPw = GibberishAES::enc($elem['pw'], $post_pdf_password);
                 fputs(
                     $outstream,
                     '
@@ -671,14 +693,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($outstream);
 
             // send back and continue
-            echo '[{"loop":"true", "number":"'.$_POST['number'].'", "cpt":"'.$_POST['cpt'].'", "file":"'.$_POST['file'].'", "idsList":"'.$_POST['idsList'].'" , "file_link":"'.$_POST['file_link'].'"}]';
+            echo '[{"loop":"true", "number":"'.$post_number.'", "cpt":"'.$post_cpt.'", "file":"'.$post_file.'", "idsList":"'.$post_idsList.'" , "file_link":"'.$post_file_link.'"}]';
             break;
 
             //CASE export in HTML format - Iteration loop
         case "export_to_html_format_finalize":
+            // Prepare POST variable
+            $post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
+            $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
+
             include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
             // open file
-            $outstream = fopen($_POST['file'], "a");
+            $outstream = fopen($post_file, "a");
 
             fputs(
                 $outstream,
@@ -729,7 +755,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($outstream);
 
             echo '[{"text":"<a href=\''.
-                filter_var(cleanText($_POST['file_link'], "css"), FILTER_SANITIZE_STRING).
+                cleanText($post_file_link, "css").
                 '\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
             break;
     }

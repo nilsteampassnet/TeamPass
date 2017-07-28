@@ -2059,16 +2059,19 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Prepare POST variables
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_restricted = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_NUMBER_INT);
+            $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+            $post_nb_items_to_display_once = filter_input(INPUT_POST, 'nb_items_to_display_once', FILTER_SANITIZE_NUMBER_INT);
 
             $arboHtml = $html = "";
             $folderIsPf = false;
             $showError = 0;
             $itemsIDList = $rights = $returnedData = $uniqueLoadData = array();
             // Build query limits
-            if (empty($_POST['start'])) {
+            if (empty($post_start) === true) {
                 $start = 0;
             } else {
-                $start = $_POST['start'];
+                $start = $post_start;
             }
 
             // to do only on 1st iteration
@@ -2129,7 +2132,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                 // check if items exist
                 $where = new WhereClause('and');
-                if (isset($_POST['restricted']) && $_POST['restricted'] === '1' && !empty($_SESSION['list_folders_limited'][$post_id])) {
+                if (null !== $post_restricted && $post_restricted === 1 && !empty($_SESSION['list_folders_limited'][$post_id])) {
                     $counter = count($_SESSION['list_folders_limited'][$post_id]);
                     $uniqueLoadData['counter'] = $counter;
                 // check if this folder is visible
@@ -2204,7 +2207,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $uniqueLoadData['list_folders_editable_by_role'] = $list_folders_editable_by_role;
             } else {
                 // get preloaded data
-                $uniqueLoadData = json_decode($_POST['uniqueLoadData'], true);
+                $uniqueLoadData = json_decode(
+                    filter_input(INPUT_POST, 'uniqueLoadData', FILTER_SANITIZE_STRING),
+                    true
+                );
 
                 // initialize main variables
                 $showError = $uniqueLoadData['showError'];
@@ -2222,7 +2228,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // prepare query WHere conditions
             $where = new WhereClause('and');
-            if (isset($_POST['restricted']) && $_POST['restricted'] === '1' && !empty($_SESSION['list_folders_limited'][$post_id])) {
+            if (null !== $post_restricted && $post_restricted === 1 && !empty($_SESSION['list_folders_limited'][$post_id])) {
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$post_id]);
             } else {
                 $where->add('i.id_tree=%i', $post_id);
@@ -2244,8 +2250,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     }
 
                     $query_limit = " LIMIT ".
-                        mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).",".
-                        mysqli_real_escape_string($link, filter_var($_POST['nb_items_to_display_once'], FILTER_SANITIZE_NUMBER_INT));
+                        $start.",".
+                        $post_nb_items_to_display_once;
 
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
@@ -2262,7 +2268,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         $where
                     );
                 } else {
-                    $_POST['nb_items_to_display_once'] = "max";
+                    $post_nb_items_to_display_once = "max";
                     $where->add('i.inactif=%i', 0);
 
                     $rows = DB::query(
@@ -2329,8 +2335,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             }
                         }
                         // Manage the restricted_to variable
-                        if (isset($_POST['restricted'])) {
-                            $restrictedTo = $_POST['restricted'];
+                        if (null !== $post_restricted) {
+                            $restrictedTo = $post_restricted;
                         } else {
                             $restrictedTo = "";
                         }
@@ -2560,7 +2566,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
 
             // Check list to be continued status
-            if (($_POST['nb_items_to_display_once'] + $start) < $counter_full && $_POST['nb_items_to_display_once'] !== 'max') {
+            if (($post_nb_items_to_display_once + $start) < $counter_full && $post_nb_items_to_display_once !== 'max') {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";
@@ -2587,7 +2593,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
-                "next_start" => $_POST['nb_items_to_display_once'] + $start,
+                "next_start" => $post_nb_items_to_display_once + $start,
                 "list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
                 "counter_full" => $counter_full,
@@ -2614,6 +2620,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Prepare POST variables
             $post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
             $post_groupe = filter_input(INPUT_POST, 'groupe', FILTER_SANITIZE_STRING);
+            $post_context = filter_input(INPUT_POST, 'context', FILTER_SANITIZE_STRING);
 
             // get some info about ITEM
             $dataItem = DB::queryfirstrow(
@@ -2706,8 +2713,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             );
 
             // check if user can perform this action
-            if (isset($_POST['context']) && !empty($_POST['context'])) {
-                if ($_POST['context'] === "create_folder" || $_POST['context'] === "edit_folder" || $_POST['context'] === "delete_folder") {
+            if (null !== $post_context && empty($post_context) === false) {
+                if ($post_context === "create_folder" || $post_context === "edit_folder" || $post_context === "delete_folder") {
                     if ($_SESSION['is_admin'] !== '1'
                         && ($_SESSION['user_manager'] !== '1')
                         && (
@@ -2797,7 +2804,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
-            if ($_POST['field'] === "pw") {
+            if (filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING) === "pw") {
                 if ($dataItem['perso'] === '1') {
                     $data = cryption(
                         $dataItem['pw'],
@@ -2835,7 +2842,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::delete(
                     prefix_table("files"),
                     "id = %i",
-                    filter_input(INPUT_POST,'file_id', FILTER_SANITIZE_NUMBER_INT)
+                    filter_input(INPUT_POST, 'file_id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 // Update the log
                 logItems($data['id_item'], $data['name'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_del_file : '.$data['name']);
@@ -2849,18 +2856,20 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         * REBUILD the description editor
         */
         case "rebuild_description_textarea":
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
+
             $returnValues = array();
             if (isset($SETTINGS['richtext']) && $SETTINGS['richtext'] === '1') {
-                if ($_POST['id'] === "desc") {
+                if ($post_id === "desc") {
                     $returnValues['desc'] = '$("#desc").ckeditor({toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$SETTINGS_EXT['langs'][$_SESSION['user_language']].'"});';
-                } elseif ($_POST['id'] === "edit_desc") {
+                } elseif ($post_id === "edit_desc") {
                     $returnValues['desc'] = 'CKEDITOR.replace("edit_desc",{toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$SETTINGS_EXT['langs'][$_SESSION['user_language']].'"});';
                 }
             }
             // Multselect
             $returnValues['multi_select'] = '$("#edit_restricted_to_list").multiselect({selectedList: 7, minWidth: 430, height: 145, checkAllText: "'.$LANG['check_all_text'].'", uncheckAllText: "'.$LANG['uncheck_all_text'].'",noneSelectedText: "'.$LANG['none_selected_text'].'"});';
             // Display popup
-            if ($_POST['id'] === "edit_desc") {
+            if ($post_id === "edit_desc") {
                 $returnValues['dialog'] = '$("#div_formulaire_edition_item").dialog("open");';
             } else {
                 $returnValues['dialog'] = '$("#div_formulaire_saisi").dialog("open");';
@@ -2889,6 +2898,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         * $action = 1 => Make favorite
         */
         case "action_on_quick_icon":
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             if (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) === '1') {
                 // Add new favourite
                 array_push($_SESSION['favourites'], filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT));
@@ -2906,7 +2917,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     FROM ".prefix_table("items")."
                     WHERE id = ".mysqli_real_escape_string($link, filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT))
                 );
-                $_SESSION['favourites_tab'][$_POST['id']] = array(
+                $_SESSION['favourites_tab'][$post_id] = array(
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                     );
@@ -2930,7 +2941,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 // refresh session fav list
                 if (isset($_SESSION['favourites_tab'])) {
                     foreach ($_SESSION['favourites_tab'] as $key => $value) {
-                        if ($key == $_POST['id']) {
+                        if ($key == $post_id) {
                             unset($_SESSION['favourites_tab'][$key]);
                             break;
                         }
@@ -3153,7 +3164,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         $item_id,
                         $dataSource['label'],
                         $_SESSION['user_id'],
-                        'at_modification', $_SESSION['login'],
+                        'at_modification',
+                        $_SESSION['login'],
                         'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
                     );
                 }
@@ -3388,7 +3400,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 break;
             }
             // Do
-            DB::delete(prefix_table("items_edition"), "item_id = %i",
+            DB::delete(
+                prefix_table("items_edition"),
+                "item_id = %i",
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             break;

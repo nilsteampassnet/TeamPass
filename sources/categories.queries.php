@@ -217,21 +217,25 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "categoryInFolders":
+            // Prepare POST variables
+            $post_foldersIds = filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_STRING);
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             // update order
-            if (empty(filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_STRING)) === false) {
+            if (empty($post_foldersIds) === false) {
                 // delete all existing inputs
                 DB::delete(
                     $pre."categories_folders",
                     "id_category = %i",
-                    intval($_POST['id'])
+                    $post_id
                 );
                 // create new list
                 $list = "";
-                foreach (explode(';', filter_var($_POST['foldersIds'], FILTER_SANITIZE_STRING)) as $folder) {
+                foreach (explode(';', $post_foldersIds) as $folder) {
                     DB::insert(
                         prefix_table("categories_folders"),
                         array(
-                            'id_category' => intval($_POST['id']),
+                            'id_category' => $post_id,
                             'id_folder' => $folder
                             )
                     );
@@ -249,14 +253,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "dataIsEncryptedInDB":
+            // Prepare POST variables
+            $post_encrypt = filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING);
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             // store key
             DB::update(
                 prefix_table("categories"),
                 array(
-                    'encrypted_data' => $_POST['encrypt']
+                    'encrypted_data' => $post_encrypt
                     ),
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // encrypt/decrypt existing data
@@ -265,11 +273,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 FROM ".$pre."categories_items AS i
                 INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id = c.id)
                 WHERE c.id = %i",
-                $_POST['id']
+                $post_id
             );
             foreach ($rowsF as $recordF) {
                 // decrypt/encrypt
-                if (filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING) === "0") {
+                if ($post_encrypt === "0") {
                     $encrypt = cryption(
                         $recordF['data'],
                         "",

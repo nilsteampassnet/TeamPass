@@ -607,7 +607,10 @@ function mainQuery()
             $number = 0;
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING),
+                "decode"
+            );
 
             //Prepare variables
             $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
@@ -836,20 +839,27 @@ function mainQuery()
                 );
             }
             break;
+
         /**
          * Store error
          */
         case "store_error":
             if (!empty($_SESSION['user_id'])) {
                 // update DB
-                logEvents('error', urldecode($_POST['error']), $_SESSION['user_id'], $_SESSION['login']);
+                logEvents(
+                    'error',
+                    urldecode(filter_input(INPUT_POST, 'error', FILTER_SANITIZE_STRING)),
+                    $_SESSION['user_id'],
+                    $_SESSION['login']
+                );
             }
             break;
+
         /**
          * Generate a password generic
          */
         case "generate_a_password":
-            if ($_POST['size'] > $SETTINGS['pwd_maximum_length']) {
+            if (filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) > $SETTINGS['pwd_maximum_length']) {
                 echo prepareExchangedData(
                     array(
                         "error_msg" => "Password length is too long!",
@@ -1035,7 +1045,7 @@ function mainQuery()
                 array(
                     'user_id' => $_SESSION['user_id'],
                     'token' => $token,
-                    'reason' => $_POST['reason'],
+                    'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_STRING),
                     'creation_timestamp' => time(),
                     'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT)    // in secs
                 )
