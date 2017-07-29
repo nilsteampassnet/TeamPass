@@ -85,6 +85,12 @@ require_once 'sources/main.functions.php';
 // Load CORE
 require_once $SETTINGS['cpassman_dir'].'/sources/core.php';
 
+// Prepare POST variables
+$post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STRING);
+$post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
+$post_duo_login = filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
+$post_duo_data = filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
+
 /* DEFINE WHAT LANGUAGE TO USE */
 if (isset($_GET['language'])) {
     // case of user has change language in the login page
@@ -96,7 +102,7 @@ if (isset($_GET['language'])) {
     );
     $_SESSION['user_language'] = $dataLanguage['name'];
     $_SESSION['user_language_flag'] = $dataLanguage['flag'];
-} elseif (!isset($_SESSION['user_id']) && !isset($_POST['language']) && !isset($_SESSION['user_language'])) {
+} elseif (!isset($_SESSION['user_id']) && null === $post_language && !isset($_SESSION['user_language'])) {
     //get default language
     $dataLanguage = DB::queryFirstRow(
         "SELECT m.valeur AS valeur, l.flag AS flag
@@ -117,11 +123,11 @@ if (isset($_GET['language'])) {
     }
 } elseif (isset($SETTINGS['default_language']) && !isset($_SESSION['user_language'])) {
     $_SESSION['user_language'] = $SETTINGS['default_language'];
-} elseif (isset($_POST['language'])) {
-    $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
+} elseif (null !== $post_language) {
+    $_SESSION['user_language'] = $post_language;
 } elseif (!isset($_SESSION['user_language']) || empty($_SESSION['user_language'])) {
-    if (isset($_POST['language'])) {
-        $_SESSION['user_language'] = filter_var((string) $_POST['language'], FILTER_SANITIZE_STRING);
+    if (null !== $post_language) {
+        $_SESSION['user_language'] = $post_language;
     } elseif (isset($SETTINGS['default_language'])) {
         $_SESSION['user_language'] = $SETTINGS['default_language'];
     }
@@ -347,7 +353,7 @@ if (isset($_SESSION['CPM'])) {
         <input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($SETTINGS['encryptClientServer']) ? $SETTINGS['encryptClientServer'] : '1', '" />
         <input type="hidden" name="please_login" id="please_login" value="" />
         <input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
-        <input type="hidden" id="duo_sig_response" value="', isset($_POST['sig_response']) ? intval($_POST['sig_response']) : '', '" />';
+        <input type="hidden" id="duo_sig_response" value="', null !== $post_sig_response ? intval($post_sig_response) : '', '" />';
 
 // SENDING STATISTICS?
     if (isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === "1"
@@ -756,8 +762,8 @@ if (isset($_SESSION['CPM'])) {
     <div id="div_duo"></div>
     '.$LANG['duo_loading_iframe'].'
     <form method="post" id="duo_form" action="#">
-        <input type="hidden" id="duo_login" name="duo_login" value="', isset($_POST['duo_login']) ? $_POST['duo_login'] : '', '" />
-        <input type="hidden" id="duo_data" name="duo_data" value="', isset($_POST['duo_data']) ? htmlentities(base64_decode($_POST['duo_data'])) : '', '" />
+        <input type="hidden" id="duo_login" name="duo_login" value="', null !== $post_duo_login ? $post_duo_login : '', '" />
+        <input type="hidden" id="duo_data" name="duo_data" value="', null !== $post_duo_data ? htmlentities(base64_decode($post_duo_data)) : '', '" />
     </form>
 </div>';
 
