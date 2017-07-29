@@ -49,27 +49,37 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-//Build tree
+// Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-//User's language loading
+// User's language loading
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
+// Prepare POST variables
+$id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_idTree = filter_input(INPUT_POST, 'idTree', FILTER_SANITIZE_NUMBER_INT);
+$post_idsList = filter_input(INPUT_POST, 'idsList', FILTER_SANITIZE_STRING);
+$post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+$post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
+$post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_STRING);
+$post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_STRING);
+$post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
+$post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
+$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
+
+
 //Manage type of action asked
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "initialize_export_table":
             DB::query("TRUNCATE TABLE ".prefix_table("export"));
             break;
 
         //CASE export to PDF format
         case "export_to_pdf_format":
-            // Prepare POST variables
-            $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-            $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
-
             if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                 // get path
                 $tree->rebuild();
@@ -199,9 +209,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "finalize_export_pdf":
-            // Prepare POST variables
-            $post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_STRING);
-
             // query
             $rows = DB::query("SELECT * FROM ".prefix_table("export"));
             $counter = DB::count();
@@ -308,9 +315,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         //CASE export in CSV format
         case "export_to_csv_format":
-            // Prepare POST variables
-            $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
-
+            //Init
             $full_listing = array();
             $full_listing[0] = array(
                 'id' => "id",
@@ -360,10 +365,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 //exclude this case
                             } else {
                                 //encrypt PW
-                                if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                                if (empty($post_salt_key) === false && null !== $post_salt_key) {
                                     $pw = cryption(
                                         $record['pw'],
-                                        mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                        mysqli_escape_string($link, stripslashes($post_salt_key)),
                                         "decrypt"
                                     );
                                 } else {
@@ -454,9 +459,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
             $idsList = array();
             $objNumber = 0;
-
-            // Prepare POST variables
-            $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
 
             foreach (explode(';', $post_ids) as $id) {
                 if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
@@ -558,16 +560,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         //CASE export in HTML format - Iteration loop
         case "export_to_html_format_loop":
-            // Prepare POST variables
-            $post_idTree = filter_input(INPUT_POST, 'idTree', FILTER_SANITIZE_NUMBER_INT);
-            $post_idsList = filter_input(INPUT_POST, 'idsList', FILTER_SANITIZE_STRING);
-            $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
-            $post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
-            $post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_STRING);
-            $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_STRING);
-            $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_STRING);
-            $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
-
             // do checks ... if fails, return an error
             if (null !== $post_idTree || null !== $post_idsList) {
                 echo '[{"error":"true"}]';
@@ -698,11 +690,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             //CASE export in HTML format - Iteration loop
         case "export_to_html_format_finalize":
-            // Prepare POST variable
-            $post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
-            $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_STRING);
-
+            // Load includes
             include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+
             // open file
             $outstream = fopen($post_file, "a");
 

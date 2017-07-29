@@ -77,6 +77,8 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
     $post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
     $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
     $post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
+    $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
+    $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
 
     if (isset($_SESSION[$post_user_token])
         && ($chunk < $chunks - 1)
@@ -96,9 +98,9 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
         // create a session if several files to upload
         if (isset($_SESSION[$post_user_token]) === false
             || empty($_SESSION[$post_user_token])
-            || $_SESSION[$post_user_token] === 0
+            || $_SESSION[$post_user_token] === "0"
         ) {
-            $_SESSION[$post_user_token] = $_POST['files_number'];
+            $_SESSION[$post_user_token] = $post_files_number;
         } elseif ($_SESSION[$post_user_token] > 0) {
             // increase end_timestamp for token
             DB::update(
@@ -166,8 +168,8 @@ $valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-if (isset($_POST['timezone'])) {
-    date_default_timezone_set((string) $_POST['timezone']);
+if (null !== $post_timezone) {
+    date_default_timezone_set($post_timezone);
 }
 
 // Check post_max_size

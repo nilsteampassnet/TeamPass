@@ -75,7 +75,23 @@ $aes->register();
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
 $antiXss = new protect\AntiXSS\AntiXSS();
 
-switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
+$post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
+$post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
+$post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
+$post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_NUMBER_INT);
+$post_object = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_STRING);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+$post_length = filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT);
+$post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
+$post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
+
+switch ($post_type) {
     #CASE for getting informations about the tool
     # connection to author's cpassman website
     case "cpm_status":
@@ -275,9 +291,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         $return = "";
 
-        // Prepare POST variables
-        $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
-
         //Get all tables
         $tables = array();
         $result = DB::query('SHOW TABLES');
@@ -372,9 +385,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     #CASE for restoring a DB backup
     case "admin_action_db_restore":
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-
-        // Prepare POST variables
-        $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
 
         $dataPost = explode('&', $post_option);
         $file = htmlspecialchars($dataPost[0]);
@@ -546,9 +556,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     * Decrypt a backup file
     */
     case "admin_action_backup_decrypt":
-        // Prepare POST variables
-        $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
-
         // Init
         $msg = "";
         $result = "";
@@ -621,7 +628,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     */
     case "admin_action_change_salt_key___start":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -714,15 +721,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     */
     case "admin_action_change_salt_key___encrypt":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
-
-        // Prepare POST variables
-        $post_object = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_STRING);
-        $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
-        $post_length = filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT);
 
         // Allowed values for $_POST['object'] : "items,logs,files,categories"
         if (!in_array($post_object, explode("items,logs,files,categories", ","), true)) {
@@ -1011,10 +1013,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
             }
 
-            $nextStart = intval($_POST['start']) + intval($_POST['length']);
+            $nextStart = intval($post_start) + intval($post_length);
 
             // check if last item to change has been treated
-            if ($nextStart >= intval($_POST['nbItems'])) {
+            if ($nextStart >= intval($post_nbItems)) {
                 array_shift($objects);
                 $nextAction = implode(",", $objects); // remove first object of the list
 
@@ -1036,7 +1038,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $nb_of_items = $error = $nextStart = "";
                 }
             } else {
-                $nextAction = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_STRING);
+                $nextAction = $post_object;
                 $nb_of_items = "";
             }
         }
@@ -1049,7 +1051,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     */
     case "admin_action_change_salt_key___end":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1075,7 +1077,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     */
     case "admin_action_change_salt_key___restore_backup":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1127,7 +1129,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     */
     case "admin_action_change_salt_key___delete_backup":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1298,9 +1300,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $filesList = "";
         $continu = true;
 
-        // Prepare POST variable
-        $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
-
         // get through files
         if (null !== $post_option && empty($post_option) === false) {
             // Loop on files
@@ -1345,11 +1344,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $newFilesList = "";
         $continu = true;
         $error = "";
-
-        // Prepare POST variable
-        $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_NUMBER_INT);
-        $post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
-        $post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_STRING);
 
         // load PhpEncryption library
         require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
@@ -1428,12 +1422,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     case "admin_action_api_save_key":
         $error = "";
 
-        // Prepare POST variable
-        $post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
-        $post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
-        $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-        $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-
         // add new key
         if (null !== $post_action && $post_action === "add") {
             DB::insert(
@@ -1473,12 +1461,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     case "admin_action_api_save_ip":
         $error = "";
 
-        // Prepare POST variable
-        $post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
-        $post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING);
-        $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-        $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-
         // add new key
         if (null !== $post_action && $post_action === "add") {
             DB::insert(
@@ -1511,9 +1493,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         break;
 
     case "save_api_status":
-        // Prepare POST variable
-        $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
-
+        // Do query
         DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "api");
         $counter = DB::count();
         if ($counter == 0) {
@@ -1540,9 +1520,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         break;
 
     case "save_duo_status":
-        // Prepare POST variable
-        $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
-
         DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "duo");
         $counter = DB::count();
         if ($counter == 0) {
@@ -1569,13 +1546,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "save_duo_in_sk_file":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            $post_data,
             "decode"
         );
 
@@ -1644,13 +1621,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "save_google_options":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            $post_data,
             "decode"
         );
 
@@ -1719,13 +1696,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "save_agses_options":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            $post_data,
             "decode"
         );
 
@@ -1822,13 +1799,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "save_option_change":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
-            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            $post_data,
             "decode"
         );
         $type = "admin";
@@ -1945,7 +1922,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "get_values_for_statistics":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
@@ -1960,14 +1937,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "save_sending_statistics":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }
-
-        // Prepare POST variable
-        $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
-        $post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
 
         // send statistics
         if (null !== $post_status) {
@@ -2033,7 +2006,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "admin_ldap_test_configuration":
         // Check
-        if (!isset($_POST['option']) || empty($_POST['option'])) {
+        if (null !== $post_option || empty($post_option) === true) {
             echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No options" }]';
             break;
         }
@@ -2041,7 +2014,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         require_once 'main.functions.php';
 
         // decrypt and retreive data in JSON format
-        $dataReceived = prepareExchangedData($_POST['option'], "decode");
+        $dataReceived = prepareExchangedData($post_option, "decode");
 
         if (empty($dataReceived[0]['username_pwd']) || empty($dataReceived[0]['username'])) {
             echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No user credentials" }]';
@@ -2181,7 +2154,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
     case "is_backup_table_existing":
         // Check KEY and rights
-        if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+        if ($post_key !== $_SESSION['key']) {
             echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
             break;
         }

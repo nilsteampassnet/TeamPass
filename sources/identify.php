@@ -247,7 +247,7 @@ if ($post_type === "identify_duo_user") {
     // store some connection data in cookie
     setcookie(
         "TeamPassC",
-        $_POST['data'],
+        $post_data,
         time() + 60 * 60,
         '/'
     );

@@ -37,8 +37,8 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 }
 
 //check for session
-if (isset($_POST['PHPSESSID'])) {
-    session_id(filter_var($_POST['PHPSESSID'], FILTER_SANITIZE_STRING));
+if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
+    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
 } elseif (isset($_GET['PHPSESSID'])) {
     session_id(filter_var($_GET['PHPSESSID'], FILTER_SANITIZE_STRING));
 } else {

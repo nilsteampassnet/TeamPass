@@ -71,17 +71,23 @@ function utf8Urldecode($value)
     return $value;
 }
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, $_POST['id'], FILTER_SANITIZE_NUMBER_INT);
+
 // Construction de la requéte en fonction du type de valeur
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "kb_in_db":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             //decrypt and retreive data in JSON format
-            $data_received = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);
@@ -174,12 +180,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "open_kb":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-
-            $post_id = filter_input(INPUT_POST, $_POST['id'], FILTER_SANITIZE_NUMBER_INT);
 
             $ret = DB::queryfirstrow(
                 "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
@@ -212,11 +216,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "delete_kb":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete(prefix_table("kb"), "id=%i", $_POST['id']);
+            DB::delete(prefix_table("kb"), "id=%i", $post_id);
             break;
     }
 }

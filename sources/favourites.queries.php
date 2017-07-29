@@ -44,9 +44,14 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
 // manage action required
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         #CASE adding a new function
         case "del_fav":
             //Get actual favourites
@@ -55,14 +60,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $favs = "";
             $tab_favs = array();
             //redefine new list of favourites
-            foreach ($tmp as $f) {
-                if (!empty($f) && $f != $_POST['id']) {
+            foreach ($tmp as $favorite) {
+                if (!empty($favorite) && $favorite != $post_id) {
                     if (empty($favs)) {
-                        $favs = $f;
+                        $favs = $favorite;
                     } else {
-                        $favs = ';'.$f;
+                        $favs = ';'.$favorite;
                     }
-                    array_push($tab_favs, $f);
+                    array_push($tab_favs, $favorite);
                 }
             }
             //update user's account

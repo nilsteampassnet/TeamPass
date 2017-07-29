@@ -61,15 +61,22 @@ $link->set_charset($encoding);
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+// Prepare POST variables
+$post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+if (null !== $post_type) {
+    switch ($post_type) {
         case "addNewCategory":
             // store key
             DB::insert(
                 prefix_table("categories"),
                 array(
                     'parent_id' => 0,
-                    'title' => filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING),
+                    'title' => $post_title,
                     'level' => 0,
                     'order' => 1
                 )
@@ -78,21 +85,21 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "deleteCategory":
-            DB::delete(prefix_table("categories"), "id = %i", filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT));
-            DB::delete(prefix_table("categories_folders"), "id_category = %i", filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT));
+            DB::delete(prefix_table("categories"), "id = %i", $post_id);
+            DB::delete(prefix_table("categories_folders"), "id_category = %i", $post_id);
             echo '[{"error" : ""}]';
             break;
 
         case "addNewField":
             // store key
-            if (!empty(filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING))
-                && !empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT))
+            if (!empty($post_title)
+                && !empty($post_id)
             ) {
                 DB::insert(
                     prefix_table("categories"),
                     array(
-                        'parent_id' => filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
-                        'title' => filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING),
+                        'parent_id' => $post_id,
+                        'title' => $post_title,
                         'level' => 1,
                         'type' => 'text',
                         'order' => 1
@@ -104,43 +111,43 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "renameItem":
             // update key
-            if (empty(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING)) === false
-                && empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) === false
+            if (empty($post_data) === false
+                && empty($post_id) === false
             ) {
                 DB::update(
                     prefix_table("categories"),
                     array(
-                        'title' => filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING)
+                        'title' => $post_data
                         ),
                     "id=%i",
-                    $_POST['id']
+                    $post_id
                 );
-                echo '[{"error" : "", "id" : "'.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT).'"}]';
+                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
             }
             break;
 
         case "moveItem":
             // update key
-            if (empty(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING)) === false
-                && empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) === false
+            if (empty($post_data) === false
+                && empty($post_id) === false
             ) {
                 DB::update(
                     prefix_table("categories"),
                     array(
-                        'parent_id' => filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                        'parent_id' => $post_data,
                         'order' => 99
                         ),
                     "id=%i",
-                    $_POST['id']
+                    $post_id
                 );
-                echo '[{"error" : "", "id" : "'.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT).'"}]';
+                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
             }
             break;
 
         case "saveOrder":
             // update order
-            if (empty(filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) === false) {
-                foreach (explode(';', filter_var($_POST['data'], FILTER_SANITIZE_STRING)) as $data) {
+            if (empty($post_type) === false) {
+                foreach (explode(';', $post_data) as $data) {
                     $elem = explode(':', $data);
                     DB::update(
                         prefix_table("categories"),
@@ -219,7 +226,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "categoryInFolders":
             // Prepare POST variables
             $post_foldersIds = filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_STRING);
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_id = $post_id;
 
             // update order
             if (empty($post_foldersIds) === false) {
@@ -255,7 +262,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "dataIsEncryptedInDB":
             // Prepare POST variables
             $post_encrypt = filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING);
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_id = $post_id;
 
             // store key
             DB::update(

@@ -77,17 +77,24 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_folder_id = filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT);
+
 // treatment by action
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "add_new":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             // decrypt and retrieve data in JSON format
-            $data_received = prepareExchangedData(filter_var($_POST['data'], FILTER_SANITIZE_STRING), "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             // prepare variables
             $label = htmlspecialchars_decode($data_received['label']);
@@ -151,20 +158,20 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "delete_suggestion":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             DB::delete(
                 prefix_table("suggestion"),
                 "id = %i",
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                $post_id
             );
             break;
 
         case "duplicate_suggestion":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -172,7 +179,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, folder_id FROM ".prefix_table("suggestion")." WHERE id = %i",
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                $post_id
             );
 
             // check if similar exists
@@ -191,12 +198,12 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "validate_suggestion":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_id = $post_id;
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
@@ -303,14 +310,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "get_complexity_level":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
             $data = DB::queryfirstrow(
                 "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
-                $_POST['folder_id'],
+                $post_folder_id,
                 "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
@@ -324,14 +331,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "get_item_change_detail":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
             $data = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
             $tmp = cryption($data['pw'], "", "decrypt");
             $data['pw'] = $tmp['string'];
@@ -435,7 +442,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "approve_item_change":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -443,7 +450,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // read changes proposal
             $data = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // read current item
@@ -479,7 +486,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // prepare query
             $fields_array = array();
-            $fields_to_update = explode(";", filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING));
+            $fields_to_update = explode(";", $post_data);
             foreach ($fields_to_update as $field) {
                 if (!empty($field)) {
                     $fields_array[$field] = $data[$field];
@@ -519,7 +526,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::delete(
                 $pre."items_change",
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             echo '[ { "error" : "" } ]';
@@ -528,7 +535,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "reject_item_change":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -537,7 +544,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::delete(
                 $pre."items_change",
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             break;

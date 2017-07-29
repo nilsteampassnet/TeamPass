@@ -37,7 +37,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
-    && filter_var($_POST['session'], FILTER_SANITIZE_STRING) === "expired"
+    && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired"
 ) {
     //Include files
     require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';

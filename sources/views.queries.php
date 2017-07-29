@@ -16,8 +16,8 @@ require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -117,7 +117,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     }
                     $pdf->cell(80, 6, $record['label'], 1, 0, "L");
                     $pdf->cell(75, 6, $arboTxt, 1, 0, "L");
-                    $pdf->cell(21, 6, $post_date], 1, 0, "C");
+                    $pdf->cell(21, 6, $post_date, 1, 0, "C");
                     $pdf->cell(15, 6, $record['login'], 1, 1, "C");
                 }
             }

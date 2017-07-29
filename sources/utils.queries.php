@@ -45,15 +45,23 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_freq = filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT);
+$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
+$post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+$post_current_id = filter_input(INPUT_POST, 'currentId', FILTER_SANITIZE_NUMBER_INT);
+$post_data_to_share = filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING);
+$post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+
 // Construction de la requ?te en fonction du type de valeur
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         #CASE export in CSV format
         case "export_to_csv_format":
-            //Prepare variables
-            $post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
-            $post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
-
             // Init
             $full_listing = array();
             $full_listing[0] = array(
@@ -148,7 +156,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         #CASE start user personal pwd re-encryption
         case "reencrypt_personal_pwd_start":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
@@ -168,7 +176,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 LEFT JOIN ".prefix_table("items")." AS i ON i.id_tree = n.id
                 WHERE i.perso = %i AND n.title = %i",
                 "1",
-                $_POST['user_id']
+                $post_user_id
             );
             foreach ($rows as $record) {
                 if (empty($currentID)) {
@@ -184,25 +192,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         #CASE user personal pwd re-encryption
         case "reencrypt_personal_pwd":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
-
-            // Prepare POST variable
-            $post_current_id = filter_input(INPUT_POST, 'currentId', FILTER_SANITIZE_NUMBER_INT);
 
             if (empty($post_current_id) === true) {
                 echo '[{"error" : "No ID provided"}]';
                 break;
             }
 
-            if (null !== filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING)) {
+            if (null !== $post_data_to_share) {
                 // ON DEMAND
 
                 //decrypt and retreive data in JSON format
                 $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING),
+                    $post_data_to_share,
                     "decode"
                 );
 
@@ -389,14 +394,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             #CASE auto update server password
         case "server_auto_update_password":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                $post_data,
                 "decode"
             );
 
@@ -497,7 +502,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "server_auto_update_password_frequency":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']
+            if ($post_key !== $_SESSION['key']
                 || null !== filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
                 || null !== filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_STRING)
             ) {
@@ -509,8 +514,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::update(
                 prefix_table("items"),
                 array(
-                    'auto_update_pwd_frequency' => $_POST['freq'],
-                    'auto_update_pwd_next_date' => time() + (2592000 * filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT))
+                    'auto_update_pwd_frequency' => $post_freq,
+                    'auto_update_pwd_next_date' => time() + (2592000 * $post_freq)
                     ),
                 "id = %i",
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)

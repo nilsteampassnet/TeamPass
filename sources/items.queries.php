@@ -93,23 +93,41 @@ use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
 $antiXss = new protect\AntiXSS\AntiXSS();
 
+// Prepare POST variables
+$post_page = filter_input(INPUT_POST, 'page', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
+$post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
+$post_cat = filter_input(INPUT_POST, 'cat', FILTER_SANITIZE_STRING);
+$post_receipt = filter_input(INPUT_POST, 'receipt', FILTER_SANITIZE_STRING);
+$post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
+$post_id_tree = filter_input(INPUT_POST, 'id_tree', FILTER_SANITIZE_NUMBER_INT);
+$post_folder_id = filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_destination = filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_NUMBER_INT);
+$post_source = filter_input(INPUT_POST, 'source', FILTER_SANITIZE_NUMBER_INT);
+$post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+$post_iFolderId = filter_input(INPUT_POST, 'iFolderId', FILTER_SANITIZE_NUMBER_INT);
+
 // Do asked action
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         /*
         * CASE
         * creating a new ITEM
         */
         case "new_item":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                $post_data,
                 "decode"
             );
 
@@ -448,7 +466,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "update_item":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -458,7 +476,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $returnValues = array();
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                $post_data,
                 "decode"
             );
 
@@ -517,8 +535,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     )
                     ||
                     (@in_array(
-                        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
-                        $_SESSION['list_folders_limited'][filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)]
+                        $post_id,
+                        $_SESSION['list_folders_limited'][$post_folder_id]
                     ))
                 ) {
                     // Is pwd empty?
@@ -1040,7 +1058,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "copy_item":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "1'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
@@ -1063,15 +1081,15 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $returnValues = $pw = "";
             $is_perso = 0;
 
-            if (null !== filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
-                && empty(filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)) === false
+            if (null !== $post_item_id
+                && empty($post_item_id) === false
                 && empty($post_dest_id) === false
             ) {
                 // load the original record into an array
                 $originalRecord = DB::queryfirstrow(
                     "SELECT * FROM ".prefix_table("items")."
                     WHERE id=%i",
-                    filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                    $post_item_id
                 );
                 $dataDestination = DB::queryfirstrow(
                     "SELECT personal_folder FROM ".prefix_table("nested_tree")."
@@ -1206,7 +1224,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $newID
                 );
                 // Add attached itms
-                $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT));
+                $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $post_item_id);
                 foreach ($rows as $record) {
                     // duplicate file
                     $fileRandomId = md5($record['name'].time());
@@ -1231,7 +1249,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
 
                 // Add specific restrictions
-                $rows = DB::query("SELECT * FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i", filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT));
+                $rows = DB::query("SELECT * FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i", $post_item_id);
                 foreach ($rows as $record) {
                     DB::insert(
                         prefix_table('restriction_to_roles'),
@@ -1243,7 +1261,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
 
                 // Add Tags
-                $rows = DB::query("SELECT * FROM ".prefix_table("tags")." WHERE item_id = %i", filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT));
+                $rows = DB::query("SELECT * FROM ".prefix_table("tags")." WHERE item_id = %i", $post_item_id);
                 foreach ($rows as $record) {
                     DB::insert(
                         prefix_table('tags'),
@@ -1280,14 +1298,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "show_details_item":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
                 break;
             }
-
-            // Prepare POST variables
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             $arrData = array();
             // return ID
@@ -1444,9 +1459,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
-                (null !== filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
-                    && isset($_SESSION['list_folders_limited'][filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)])
-                    && in_array($post_id, $_SESSION['list_folders_limited'][filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)]))
+                (null !== $post_folder_id
+                    && isset($_SESSION['list_folders_limited'][$post_folder_id])
+                    && in_array($post_id, $_SESSION['list_folders_limited'][$post_folder_id]))
             ) {
                 // Allow show details
                 $arrData['show_details'] = 1;
@@ -1556,7 +1571,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 // get fields
                 $fieldsTmp = $arrCatList = "";
                 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1'
-                    && isset($_POST['page']) && $_POST['page'] === "items"
+                    && null !== $post_page && $post_page === "items"
                 ) {
                     // get list of associated Categories
                     $arrCatList = array();
@@ -1564,7 +1579,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         "SELECT id_category
                         FROM ".prefix_table("categories_folders")."
                         WHERE id_folder=%i",
-                        $_POST['folder_id']
+                        $post_folder_id
                     );
                     if (DB::count() > 0) {
                         foreach ($rows_tmp as $row) {
@@ -1701,9 +1716,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
            * Display History of the selected Item
         */
         case "showDetailsStep2":
-            // Prepare POST variables
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-
             // get Item info
             $dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $post_id);
 
@@ -1839,14 +1851,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "del_item":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
-
-            // Prepare POST variables
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             // perform a check in case of Read-Only user creating an item in his PF
             if ($_SESSION['user_read_only'] === true && !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])) {
@@ -1864,7 +1873,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $post_id
             );
             // log
-            logItems($post_id, $_POST['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login']);
+            logItems($post_id, $post_label, $_SESSION['user_id'], 'at_delete', $_SESSION['login']);
             // Update CACHE table
             updateCacheTable("delete_value", $post_id);
             break;
@@ -1875,13 +1884,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "update_rep":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($post_key !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData($post_data, "decode");
 
             // Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -1967,13 +1976,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "move_folder":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if ($post_key !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 $returnValues = '[{"error" :  "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData($post_data, "decode");
 
             $tmp_source = DB::queryFirstRow(
                 "SELECT title, parent_id, personal_folder
@@ -2036,10 +2045,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::update(
                 prefix_table("nested_tree"),
                 array(
-                    'parent_id' => $_POST['destination']
+                    'parent_id' => $post_destination
                     ),
                 'id = %i',
-                $_POST['source']
+                $post_source
             );
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
             $tree->rebuild();
@@ -2051,14 +2060,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case 'lister_items_groupe':
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.str_replace('"', '\"', $LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
                 break;
             }
 
             // Prepare POST variables
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
             $post_restricted = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_NUMBER_INT);
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
             $post_nb_items_to_display_once = filter_input(INPUT_POST, 'nb_items_to_display_once', FILTER_SANITIZE_NUMBER_INT);
@@ -2618,7 +2626,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "get_complixity_level":
             // Prepare POST variables
-            $post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
             $post_groupe = filter_input(INPUT_POST, 'groupe', FILTER_SANITIZE_STRING);
             $post_context = filter_input(INPUT_POST, 'context', FILTER_SANITIZE_STRING);
 
@@ -2801,7 +2808,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "get_clipboard_item":
             $dataItem = DB::queryfirstrow(
                 "SELECT pw,login,perso FROM ".prefix_table("items")." WHERE id=%i",
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                $post_id
             );
 
             if (filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING) === "pw") {
@@ -2898,11 +2905,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         * $action = 1 => Make favorite
         */
         case "action_on_quick_icon":
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-
             if (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) === '1') {
                 // Add new favourite
-                array_push($_SESSION['favourites'], filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT));
+                array_push($_SESSION['favourites'], $post_id);
                 DB::update(
                     prefix_table("users"),
                     array(
@@ -2915,16 +2920,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $data = DB::queryfirstrow(
                     "SELECT label,id_tree
                     FROM ".prefix_table("items")."
-                    WHERE id = ".mysqli_real_escape_string($link, filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT))
+                    WHERE id = ".mysqli_real_escape_string($link, $post_id)
                 );
                 $_SESSION['favourites_tab'][$post_id] = array(
                     'label' => $data['label'],
-                    'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                    'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$post_id
                     );
             } elseif (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) === '0') {
                 // delete from session
                 foreach ($_SESSION['favourites'] as $key => $value) {
-                    if ($_SESSION['favourites'][$key] === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) {
+                    if ($_SESSION['favourites'][$key] === $post_id) {
                         unset($_SESSION['favourites'][$key]);
                         break;
                     }
@@ -2956,7 +2961,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "move_item":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']
+            if ($post_key !== $_SESSION['key']
                 || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])
             ) {
                 // error
@@ -2968,12 +2973,12 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 FROM ".prefix_table("items")." as i
                 INNER JOIN ".prefix_table("nested_tree")." as f ON (i.id_tree=f.id)
                 WHERE i.id=%i",
-                filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                $post_item_id
             );
             // get data about new folder
             $dataDestination = DB::queryfirstrow(
                 "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
-                filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
+                $post_folder_id
             );
 
             // previous is non personal folder and new too
@@ -2982,10 +2987,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::update(
                     prefix_table("items"),
                     array(
-                        'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
+                        'id_tree' => $post_folder_id
                         ),
                     "id=%i",
-                    $_POST['item_id']
+                    $post_item_id
                 );
             } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
                 $decrypt = cryption(
@@ -3002,13 +3007,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::update(
                     prefix_table("items"),
                     array(
-                        'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT),
+                        'id_tree' => $post_folder_id,
                         'pw' => $encrypt['string'],
                         'pw_iv' => "",
                         'perso' => 1
                     ),
                     "id=%i",
-                    $_POST['item_id']
+                    $post_item_id
                 );
             // If previous is personal folder and new is personal folder too => no key exist on item
             } elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '1') {
@@ -3016,10 +3021,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::update(
                     prefix_table("items"),
                     array(
-                        'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
+                        'id_tree' => $post_folder_id
                     ),
                     "id=%i",
-                    $_POST['item_id']
+                    $post_item_id
                 );
             // If previous is personal folder and new is not personal folder => no key exist on item => add new
             } elseif ($dataSource['personal_folder'] === '1' && $dataDestination['personal_folder'] === '0') {
@@ -3038,18 +3043,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::update(
                     prefix_table("items"),
                     array(
-                        'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT),
+                        'id_tree' => $post_folder_id,
                         'pw' => $encrypt['string'],
                         'pw_iv' => "",
                         'perso' => 0
                     ),
                     "id=%i",
-                    filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                    $post_item_id
                 );
             }
             // Log item moved
             logItems(
-                filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT),
+                $post_item_id,
                 $dataSource['label'],
                 $_SESSION['user_id'],
                 'at_modification',
@@ -3057,7 +3062,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
             );
 
-            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$_POST['folder_id'].'"}]';
+            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$folder_id.'"}]';
             break;
 
         /*
@@ -3066,7 +3071,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "mass_move_items":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])) {
+            if ($post_key !== $_SESSION['key'] || $_SESSION['user_read_only'] === true || !isset($SETTINGS['pwd_maximum_length'])) {
                 // error
                 exit();
             }
@@ -3085,7 +3090,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     // get data about new folder
                     $dataDestination = DB::queryfirstrow(
                         "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
-                        filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
+                        $post_folder_id
                     );
 
                     // previous is non personal folder and new too
@@ -3094,10 +3099,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         DB::update(
                             prefix_table("items"),
                             array(
-                                'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
+                                'id_tree' => $post_folder_id
                                 ),
                             "id=%i",
-                            filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                            $post_item_id
                         );
                     } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
                         $decrypt = cryption(
@@ -3114,7 +3119,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         DB::update(
                             prefix_table("items"),
                             array(
-                                'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT),
+                                'id_tree' => $post_folder_id,
                                 'pw' => $encrypt['string'],
                                 'pw_iv' => "",
                                 'perso' => 1
@@ -3128,7 +3133,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         DB::update(
                             prefix_table("items"),
                             array(
-                                'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)
+                                'id_tree' => $post_folder_id
                             ),
                             "id=%i",
                             $item_id
@@ -3150,7 +3155,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         DB::update(
                             prefix_table("items"),
                             array(
-                                'id_tree' => filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT),
+                                'id_tree' => $post_folder_id,
                                 'pw' => $encrypt['string'],
                                 'pw_iv' => "",
                                 'perso' => 0
@@ -3184,7 +3189,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "mass_delete_items":
             // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
@@ -3232,7 +3237,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
            * Send email
         */
         case "send_email":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             } else {
@@ -3243,7 +3248,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 if (empty($SETTINGS['email_server_url'])) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
-                if ($_POST['cat'] === "request_access_to_author") {
+                if ($post_cat === "request_access_to_author") {
                     $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".prefix_table("users")." WHERE id= ".$content[1]);
                     $dataItem = DB::queryfirstrow("SELECT label FROM ".prefix_table("items")." WHERE id= ".$content[0]);
                     $ret = sendEmail(
@@ -3251,22 +3256,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_request_access_mail']),
                         $dataAuthor['email']
                     );
-                } elseif ($_POST['cat'] === "share_this_item") {
+                } elseif ($post_cat === "share_this_item") {
                     $dataItem = DB::queryfirstrow(
                         "SELECT label,id_tree
                         FROM ".prefix_table("items")."
                         WHERE id= %i",
-                        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                        $post_id
                     );
                     // send email
                     $ret = sendEmail(
                         $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT), addslashes($_SESSION['login']), addslashes($dataItem['label'])),
+                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($dataItem['label'])),
                             $LANG['email_share_item_mail']
                         ),
-                        $_POST['receipt']
+                        $post_receipt
                     );
                 }
                 echo '[{'.$ret.'}]';
@@ -3278,7 +3283,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
            * manage notification of an Item
         */
         case "notify_a_user":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             } else {
@@ -3286,11 +3291,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     // Check if values already exist
                     $data = DB::queryfirstrow(
                         "SELECT notification FROM ".prefix_table("items")." WHERE id = %i",
-                        filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                        $post_item_id
                     );
                     $notifiedUsers = explode(';', $data['notification']);
                     // User is not in actual notification list
-                    if ($_POST['status'] === "true" && !in_array($_POST['user_id'], $notifiedUsers)) {
+                    if ($post_status === "true" && !in_array($post_user_id, $notifiedUsers)) {
                         // User is not in actual notification list and wants to be notified
                         DB::update(
                             prefix_table("items"),
@@ -3300,11 +3305,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                     : $data['notification'].filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT)
                                 ),
                             "id=%i",
-                            filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                            $post_item_id
                         );
                         echo '[{"error" : "", "new_status":"true"}]';
                         break;
-                    } elseif ($_POST['status'] === false && in_array($_POST['user_id'], $notifiedUsers)) {
+                    } elseif ($post_status === false && in_array($post_user_id, $notifiedUsers)) {
                         // TODO : delete user from array and store in DB
                         // User is in actual notification list and doesn't want to be notified
                         DB::update(
@@ -3315,7 +3320,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                     : $data['notification'].";".filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT)
                                 ),
                             "id=%i",
-                            filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                            $post_item_id
                         );
                     }
                 }
@@ -3327,13 +3332,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         * Item History Log - add new entry
         */
         case "history_entry_add":
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 $data = array("error" => "key_is_wrong");
                 echo prepareExchangedData($data, "encode");
                 break;
             } else {
                 // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+                $dataReceived = prepareExchangedData($post_data, "decode");
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -3362,8 +3367,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     )
                     ||
                     (@in_array(
-                        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
-                        $_SESSION['list_folders_limited'][filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT)]
+                        $post_id,
+                        $_SESSION['list_folders_limited'][$post_folder_id]
                     ))
                 ) {
                     $error = "";
@@ -3395,7 +3400,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "free_item_for_edition":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3403,7 +3408,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::delete(
                 prefix_table("items_edition"),
                 "item_id = %i",
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                $post_id
             );
             break;
 
@@ -3415,7 +3420,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $data = DB::queryFirstRow(
                 "SELECT date FROM ".prefix_table("log_items")." WHERE action = %s AND id_item = %i ORDER BY date DESC",
                 "at_modification",
-                filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT)
+                $post_item_id
             );
             // Check if it's in a personal folder. If yes, then force complexity overhead.
             if ($data['date'] > filter_input(INPUT_POST, 'timestamp', FILTER_SANITIZE_STRING)) {
@@ -3431,7 +3436,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "generate_OTV_url":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3449,7 +3454,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 prefix_table("otv"),
                 array(
                     'id' => null,
-                    'item_id' => filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
+                    'item_id' => $post_id,
                     'timestamp' => time(),
                     'originator' => intval($_SESSION['user_id']),
                     'code' => $otv_code
@@ -3486,7 +3491,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "image_preview_preparation":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3545,7 +3550,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "delete_file":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3566,7 +3571,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "get_refined_list_of_users":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3583,7 +3588,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 FROM ".prefix_table("roles_values")." AS r
                 INNER JOIN ".prefix_table("roles_title")." AS t ON (r.role_id = t.id)
                 WHERE r.folder_id = %i",
-                $_POST['iFolderId']
+                $post_iFolderId
             );
             foreach ($rows as $record) {
                 $selOptionsRoles .= '<option value="role_'.$record['role_id'].'" class="folder_rights_role">'.$record['title'].'</option>';
@@ -3618,7 +3623,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "check_for_title_duplicate":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3626,7 +3631,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $duplicate = 0;
 
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData($post_data, "decode");
             // Prepare variables
             $label = htmlspecialchars_decode($dataReceived['label']);
             $idFolder = $dataReceived['idFolder'];
@@ -3696,7 +3701,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "refresh_visible_folders":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -3757,10 +3762,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             );
                             $nbChildrenItems += DB::count();
                         }
-                        if (in_array(
-                                $node,
-                                array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])
-                            )
+                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))
                             || @in_array($node, $listFoldersLimitedKeys)
                             || @in_array($node, $listRestrictedFoldersForItemsKeys)
                         ) {
@@ -3831,13 +3833,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         */
         case "load_item_history":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
 
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData($post_data, "decode");
 
             // Prepare variables
             $id = noHTML(htmlspecialchars_decode($dataReceived['id']));
@@ -3931,12 +3933,12 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "suggest_item_change":
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             // decrypt and retrieve data in JSON format
-            $data_received = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             // prepare variables
             $label = htmlspecialchars_decode($data_received['label']);
