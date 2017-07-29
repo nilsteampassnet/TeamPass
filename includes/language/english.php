@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          english.php
@@ -13,17 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'continue' => 'Continue',
-    'please_confirm_operation' => 'Please confirm the operation',
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'file_is_now_ready' => 'File is now ready.',
-    'feature_support_canal' => 'For Support and Help, please use ',
+$LANG = array (
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',
@@ -214,7 +204,7 @@ $LANG = array(
     'admin_setting_enable_delete_after_consultation' => 'Passwords may expire after limited views',
     'admin_setting_enable_delete_after_consultation_tip' => 'When enabled, item creators can decide whether a password item will be automatically deleted after a limited number of views.',
     'enable_delete_after_consultation' => 'Item will be automatically deleted after being seen',
-    'times' => 'times',
+    'times' => 'times.',
     'automatic_deletion_activated' => 'Automatic deletion enabled',
     'at_automatic_del' => 'automatic deletion',
     'error_times_before_deletion' => 'Number of views before deletion needs to be more than 0!',
@@ -245,7 +235,7 @@ $LANG = array(
     'error_empty_data' => 'No data to proceed!',
     'error_not_allowed_to' => 'You are not allowed to do that!',
     'personal_saltkey_lost' => 'Reset my personal salt key',
-    'new_saltkey_warning_lost' => 'Important warning! This operation will delete all your personal items. As your Saltkey is lost, those items cannot be retreived. If you know your old salt key, use the `change key` feature instead.',
+    'new_saltkey_warning_lost' => 'Input a new user salt key without re-encrypting any existing items. If you change your salt key here, all previous personal item passwords will be lost! If you know your old salt key, use the change key feature instead.',
     'previous_pw' => 'Previous passwords used:',
     'no_previous_pw' => 'No previous password',
     'request_access_ot_item' => 'Request access to modify',
@@ -659,7 +649,7 @@ $LANG = array(
     'settings_anyone_can_modify' => '<i>Anyone can modify</i> feature enabled',
     'settings_anyone_can_modify_tip' => 'This adds a checkbox during new password item creation that can set the item to be modifiable by anyone.',
     'settings_default_language' => 'Default user interface language',
-    'settings_kb' => 'Knowledge base feature enabled (beta test)',
+    'settings_kb' => 'Knowledge base feature',
     'settings_kb_tip' => 'Adds a menu item to access the knowledge base feature. The knowledge base is a searchable FAQ, allowing you create help and notes, and attach them to password items.',
     'settings_ldap_domain' => 'LDAP account suffix for your domain',
     'settings_ldap_domain_controler' => 'LDAP domain controller(s)',
@@ -1054,5 +1044,15 @@ $LANG = array(
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
     'no_username_needed' => 'No username needed',
+    'feature_support_canal' => 'For Support and Help, please use',
+    'file_is_now_ready' => 'File is now ready.',
+    'category' => 'Category',
+    'knowledge_base' => 'Knowledge Base',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
+    'nothing_to_do' => 'Nothing to do.',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

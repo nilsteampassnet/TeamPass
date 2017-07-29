@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          portuguese.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,14 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'For Support and Help, please use ',
+$LANG = array (
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'Este utilizador não possui uma conta de email definida!',
@@ -914,7 +907,7 @@ $LANG = array(
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
-    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
+    'folder_will_be_moved_below' => 'The folder <b><span id=\\\'move_folder_title\\\'></span></b> will be moved below folder:',
     'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
     'runtime_upload' => 'Upload feature: runtime',
     'encrypted_data' => 'Data is encrypted in database',
@@ -968,7 +961,7 @@ $LANG = array(
     'suggest_password_change' => 'Suggest a password change',
     'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
     'suggestion_done' => 'Suggestion has been stored.',
-    'suggest_change_password_blank' => 'Leave this field empty if you DON\'T want to suggest a password change',
+    'suggest_change_password_blank' => 'Leave this field empty if you DON\\\'T want to suggest a password change',
     'item_id' => 'Item ID',
     'approve' => 'Approve',
     'reject' => 'Reject',
@@ -1027,7 +1020,7 @@ $LANG = array(
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'consider_a_donation' => 'You may consider a donation',
     'more_information' => 'More information',
-    'feature_request_canal' => 'For Feature Requests or Questions, please use',
+    'feature_request_canal' => 'For Feature Requests, please use',
     'bug_canal' => 'For Bugs, please use',
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
@@ -1050,5 +1043,15 @@ $LANG = array(
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
     'no_username_needed' => 'No username needed',
+    'feature_support_canal' => 'For Support and Help, please use',
+    'file_is_now_ready' => 'File is now ready.',
+    'category' => 'Category',
+    'knowledge_base' => 'Knowledge Base',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
+    'nothing_to_do' => 'Nothing to do.',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

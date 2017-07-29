@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          spanish.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,14 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'For Support and Help, please use ',
+$LANG = array (
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',
@@ -1050,5 +1043,15 @@ $LANG = array(
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
     'no_username_needed' => 'No username needed',
+    'feature_support_canal' => 'For Support and Help, please use',
+    'file_is_now_ready' => 'File is now ready.',
+    'category' => 'Category',
+    'knowledge_base' => 'Knowledge Base',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
+    'nothing_to_do' => 'Nothing to do.',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

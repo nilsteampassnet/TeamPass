@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          french.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,17 +13,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'Pour du Support et de l\'Aide, merci d\'utiliser ',
+$LANG = array (
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
-    'error_no_email' => 'Cet utilisateur n\'a pas d\'email de défini !',
+    'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',
     'error_no_user' => 'Aucun utilisateur trouvé !',
     'email_ga_subject' => 'Votre code Google Authenticator pour Teampass',
     'email_ga_text' => 'Bonjour,<br><br>Merci de cliquer ce <a href=\'#link#\'>lien</a> et de flasher le code avec l\'application Google Authenticator de façon à recevoir vos codes d\'identification pour Teampass.<br /><br />Salutations',
@@ -1051,5 +1044,15 @@ $LANG = array(
     'ldap_test_username' => 'Nom d\'utilisateur',
     'ldap_test_username_pwd' => 'Mot de passe utilisateur',
     'no_username_needed' => 'Aucune nom d\'utilisateur fourni',
+    'feature_support_canal' => 'Pour obtenir du soutien et de l\'aide, SVP utilisez',
+    'file_is_now_ready' => 'Le fichier est prêt',
+    'category' => 'Catégorie',
+    'knowledge_base' => 'Base de Connaissance',
+    'anyone_can_modify_it' => 'Tous peuvent modifier',
+    'manage_entries_in_kb' => 'Gérer les saisies de la Base de Connaissance',
+    'add_new_kb' => 'Ajouter une entrée dans la Base de Connaissance',
+    'nothing_to_do' => 'Aucune action à réaliser',
+    'continue' => 'Continuer',
+    'please_confirm_operation' => 'Merci de confirmer',
     '' => ''
 );
