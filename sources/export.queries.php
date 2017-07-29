@@ -784,7 +784,7 @@ function nbLines($width, $txt)
         if ($var_c == "\n") {
             $var_i++;
             $sep = -1;
-            $var_j = $i;
+            $var_j = $var_i;
             $var_l = 0;
             $var_nl++;
             continue;

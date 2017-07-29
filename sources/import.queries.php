@@ -172,7 +172,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     if (!empty($account)) {
                         if ($continue_on_next_line === false) {
                             // Prepare listing that will be shown to user
-                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pwd.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
                             // Initialize this variable in order to restart from scratch
                             $account = "";
@@ -184,7 +184,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 if ($account == "" && $continue_on_next_line === false) {
                     $account = addslashes($row['Label']);
                     $login = addslashes($row['Login']);
-                    $pw = str_replace('"', "&quot;", $row['Password']);
+                    $pwd = str_replace('"', "&quot;", $row['Password']);
                     $url = addslashes($row['url']);
                     $to_find = array("\"", "'");
                     $to_ins = array("&quot", "&#39;");
@@ -208,7 +208,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         if ($line_number > 0) {
             //add last line
-            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pwd).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
             $display .= '<tr><td colspan=\"2\"><br><input type=\"checkbox\" id=\"item_all_selection\" />&nbsp;'.$LANG['all'].'</td></tr>';
@@ -360,7 +360,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     //Check if import KEEPASS file format is what expected
     case "import_file_format_keepass":
         //Initialization
-        $root = $meta = $group = $entry = $key = $title = $notes = $pw = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
+        $root = $meta = $group = $entry = $key = $title = $notes = $pwd = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
         $name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = "";
         $numGroups = $numItems = 0;
         $temparray = $arrFolders = array();
@@ -389,7 +389,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
-            global $meta, $root, $group, $name, $entry, $levelMin, $title, $notes, $pw, $username, $url,
+            global $meta, $root, $group, $name, $entry, $levelMin, $title, $notes, $pwd, $username, $url,
                 $newItem, $temparray, $history, $levelInProgress, $historyLevel,
                 $path, $previousLevel, $generatorFound, $cacheFile, $cacheFileF, $numGroups,
                 $numItems, $foldersSeparator, $itemsSeparator, $keepassVersion, $arrFolders;
@@ -546,21 +546,21 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         //Check each node name and get data from some of them
                         if ($entry === true && $nom == "Key" && $elem == "Title") {
                             $title = true;
-                            $notes = $pw = $url = $username = false;
+                            $notes = $pwd = $url = $username = false;
                         } elseif ($entry === true && $nom == "Key" && $elem == "Notes") {
                             $notes = true;
-                            $title = $pw = $url = $username = false;
+                            $title = $pwd = $url = $username = false;
                         } elseif ($entry === true && $nom == "UUID") {
                             $temparray[KP_UUID] = $elem;
                         } elseif ($entry === true && $nom == "Key" && $elem == "Password") {
-                            $pw = true;
+                            $pwd = true;
                             $notes = $title = $url = $username = false;
                         } elseif ($entry === true && $nom == "Key" && $elem == "URL") {
                             $url = true;
-                            $notes = $pw = $title = $username = false;
+                            $notes = $pwd = $title = $username = false;
                         } elseif ($entry === true && $nom == "Key" && $elem == "UserName") {
                             $username = true;
-                            $notes = $pw = $url = $title = false;
+                            $notes = $pwd = $url = $title = false;
                         } elseif ($group === true && $nom == "Name") {
                             $temparray[KP_GROUP] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                             $temparray['level'] = $xmlLevel;
@@ -612,8 +612,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         } elseif ($notes === true && $nom == "Value") {
                             $notes = false;
                             $temparray[KP_NOTES] = sanitiseString($elem, '');
-                        } elseif ($pw === true && $nom == "Value") {
-                            $pw = false;
+                        } elseif ($pwd === true && $nom == "Value") {
+                            $pwd = false;
                             $temparray[KP_PW] = sanitiseString($elem, '');
                         } elseif ($url === true && $nom == "Value") {
                             $url = false;
@@ -853,7 +853,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     //check if not exists
                     $results .= str_replace($foldersSeparator, "\\", $item[KP_PATH]).'\\'.$item[KP_TITLE];
 
-                    $pw = $item[KP_PASSWORD];
+                    $pwd = $item[KP_PASSWORD];
 
                     //Get folder label
                     if (count($foldersArray) == 0 || empty($item[KP_PATH])) {
@@ -873,13 +873,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         // prepare PW
                         if ($import_perso === true) {
                             $encrypt = cryption(
-                                $pw,
+                                $pwd,
                                 $_SESSION['user_settings']['session_psk'],
                                 "encrypt"
                             );
                         } else {
                             $encrypt = cryption(
-                                $pw,
+                                $pwd,
                                 "",
                                 "encrypt"
                             );

@@ -58,7 +58,7 @@ if (isset($post_type) && ($post_type === "ga_generate_qr" || $post_type === "sen
 */
 function mainQuery()
 {
-    global $server, $user, $pass, $database, $port, $encoding, $pre, $k, $LANG;
+    global $server, $user, $pass, $database, $port, $encoding, $pre, $LANG;
     global $SETTINGS;
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';

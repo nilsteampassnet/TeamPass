@@ -258,7 +258,7 @@ if ($post_type === "identify_duo_user") {
 */
 function identifyUser($sentData)
 {
-    global $debugLdap, $debugDuo, $k, $SETTINGS;
+    global $debugLdap, $debugDuo, $SETTINGS;
 
     // Load config
     if (file_exists('../includes/config/tp.config.php')) {
