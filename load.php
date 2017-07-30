@@ -157,12 +157,6 @@ $htmlHeaders .= '
         }
     }
 
-    function aes_encrypt(text)
-    {
-        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
-    }
-
-
     function launchIdentify(isDuo, redirect, psk)
     {
         $("#connection_error").hide();

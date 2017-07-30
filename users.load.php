@@ -1319,10 +1319,6 @@ function login_exists(text) {
     );
 }
 
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
 
 function htmlspecialchars_decode (string, quote_style)
 {

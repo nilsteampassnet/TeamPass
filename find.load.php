@@ -19,11 +19,6 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 <script type="text/javascript">
 //<![CDATA[
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
-
 /*
 * Copying an item from find page
 */

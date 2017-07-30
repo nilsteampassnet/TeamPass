@@ -4011,17 +4011,6 @@ function manage_history_entry(type, id)
 }
 
 
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
-
-
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
-
 /*
 * Launch the redirection to OTV page
 */

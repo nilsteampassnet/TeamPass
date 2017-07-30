@@ -429,8 +429,8 @@ foreach ($folders as $t) {
             "sources/import.queries.php",
             {
                 type        : "import_items",
-                folder    : $("#import_items_to").val(),
-                data        : aes_encrypt(items),
+                folder      : $("#import_items_to").val(),
+                data        : prepareExchangedData(items , "encode", "<?php echo $_SESSION['key']; ?>"),
                 import_csv_anyone_can_modify    : $("#import_csv_anyone_can_modify").prop("checked"),
                 import_csv_anyone_can_modify_in_role    : $("#import_csv_anyone_can_modify_in_role").prop("checked")
             },

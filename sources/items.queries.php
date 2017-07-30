@@ -89,10 +89,6 @@ $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'paren
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
-// Load AntiXSS
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
-$antiXss = new protect\AntiXSS\AntiXSS();
-
 // Prepare POST variables
 $post_page = filter_input(INPUT_POST, 'page', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);

@@ -145,20 +145,21 @@ function decryptOld($text, $personalSalt = "")
                 )
             )
         );
-    } else {
-        return trim(
-            mcrypt_decrypt(
-                MCRYPT_RIJNDAEL_256,
-                SALT,
-                base64_decode($text),
-                MCRYPT_MODE_ECB,
-                mcrypt_create_iv(
-                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
-                    MCRYPT_RAND
-                )
-            )
-        );
     }
+
+    // No personal SK
+    return trim(
+        mcrypt_decrypt(
+            MCRYPT_RIJNDAEL_256,
+            SALT,
+            base64_decode($text),
+            MCRYPT_MODE_ECB,
+            mcrypt_create_iv(
+                mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                MCRYPT_RAND
+            )
+        )
+    );
 }
 
 /**
@@ -178,9 +179,9 @@ function encrypt($decrypted, $personalSalt = "")
     }
 
     if (!empty($personalSalt)) {
-            $staticSalt = $personalSalt;
+        $staticSalt = $personalSalt;
     } else {
-            $staticSalt = SALT;
+        $staticSalt = SALT;
     }
 
     //set our salt to a variable

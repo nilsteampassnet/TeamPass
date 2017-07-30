@@ -236,9 +236,15 @@ function LaunchAdminActions(action, option)
     } else if (action === "admin_action_backup_decrypt") {
         option = $("#bck_script_decrypt_file").val();
     } else if (action === "admin_action_change_salt_key") {
-        option = aes_encrypt(sanitizeString($("#new_salt_key").val()));
+        option = prepareExchangedData(
+            sanitizeString($("#new_salt_key").val()),
+            "encode",
+            "<?php echo $_SESSION['key']; ?>"
+        );
     } else if (action === "admin_email_send_backlog") {
-        $("#email_testing_results").show().html("<?php echo addslashes($LANG['please_wait']); ?>").attr("class","ui-corner-all ui-state-focus");
+        $("#email_testing_results")
+            .show().
+            html("<?php echo addslashes($LANG['please_wait']); ?>").attr("class","ui-corner-all ui-state-focus");
     } else if (action === "admin_action_attachments_cryption") {
         option = $("input[name=attachments_cryption]:checked").val();
         if (option === "" || option === undefined) {
