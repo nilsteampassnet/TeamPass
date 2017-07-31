@@ -19,6 +19,7 @@ header("Content-type: text/html; charset=utf-8");
 require_once '../sources/SplClassLoader.php';
 
 require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;

@@ -45,6 +45,7 @@ $dbgDuo = fopen("upgrade.log", "w");
 $finish = false;
 $next = ($_POST['nb'] + $_POST['start']);
 
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
     $_SESSION['server'],
     $_SESSION['user'],

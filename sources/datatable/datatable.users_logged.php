@@ -34,6 +34,7 @@ require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_lan
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;

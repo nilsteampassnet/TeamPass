@@ -353,7 +353,8 @@ if (null !== ($post_type_upload)
     //Connect to mysql server
     require_once '../../includes/config/settings.php';
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;

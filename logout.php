@@ -30,7 +30,8 @@ if (!empty($user_id)) {
     // connect to the server
     require_once './includes/config/settings.php';
     require_once './includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;

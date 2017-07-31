@@ -66,9 +66,36 @@ if (!isset($SETTINGS['cpassman_dir']) || $SETTINGS['cpassman_dir'] === "") {
 require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
+/*
+// check if settings is correct
+if (substr($pass, 0, 3) !== "def") {
+    $encrypted_text = cryption(
+        $pass,
+        "",
+        "encrypt"
+    );
+
+    $result = '';
+    $lines = file($SETTINGS['cpassman_dir'].'/includes/config/settings.php');
+    foreach ($lines as $line) {
+        if (substr($line, 0, 9) === '$pass = "') {
+            $result .= '$pass = "'.$encrypted_text['string'].'";'."\r\n";
+        } else {
+            $result .= $line;
+        }
+    }
+    file_put_contents($SETTINGS['cpassman_dir'].'/includes/config/settings.php', $result);
+} else {
+    $pass = cryption($pass, "", "decrypt");
+    $pass = $pass['string'];
+}
+*/
 
 // connect to the server
 require_once './includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -80,10 +107,9 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 
-//load main functions needed
-require_once 'sources/main.functions.php';
-// Load CORE
+// Load Core library
 require_once $SETTINGS['cpassman_dir'].'/sources/core.php';
+
 
 // Prepare POST variables
 $post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STRING);

@@ -35,6 +35,7 @@ $post_start = intval($_POST['start']);
 $next = ($post_nb + $post_start);
 
 // Open DB connection
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
     $server,
     $user,

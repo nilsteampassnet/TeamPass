@@ -43,6 +43,7 @@ if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles']
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;

@@ -39,6 +39,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -318,17 +319,17 @@ if (null !== $post_type) {
             //Init
             $full_listing = array();
             $full_listing[0] = array(
-                'id' => "id",
-                'label' => "label",
-                'description' => "description",
-                'pw' => "pw",
-                'login' => "login",
+                'id'            => "id",
+                'label'         => "label",
+                'description'   => "description",
+                'pw'            => "pw",
+                'login'         => "login",
                 'restricted_to' => "restricted_to",
-                'perso' => "perso",
-                'url' => "url",
-                'email' => "email",
-                'kbs' => "kb",
-                'tags' => "tag"
+                'perso'         => "perso",
+                'url'           => "url",
+                'email'         => "email",
+                'kbs'           => "kb",
+                'tags'          => "tag"
             );
 
             $id_managed = '';
@@ -338,9 +339,9 @@ if (null !== $post_type) {
             foreach (explode(';', htmlentities($post_ids, ENT_QUOTES)) as $id) {
                 if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                     $rows = DB::query(
-                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
-                           l.date as date, i.pw_iv as pw_iv,
-                           n.renewal_period as renewal_period
+                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                            i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url,
+                            i.email as email,l.date as date, i.pw_iv as pw_iv,n.renewal_period as renewal_period
                         FROM ".prefix_table("items")." as i
                         INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
                         INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
@@ -436,12 +437,11 @@ if (null !== $post_type) {
             }
             //save the file
             $csv_file = '/print_out_csv_'.time().'_'.generateKey().'.csv';
-            //print_r($full_listing);
             $outstream = fopen($SETTINGS['path_to_files_folder'].$csv_file, "w");
 
-            function outPutCsv(&$vals, $filehandler)
+            function outPutCsv(&$vals, $outstream)
             {
-                fputcsv($filehandler, $vals, ";"); // add parameters if you want
+                fputcsv($outstream, $vals, ";"); // add parameters if you want
             }
 
             array_walk($full_listing, "outPutCsv", $outstream);

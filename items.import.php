@@ -54,6 +54,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 //load main functions needed
 require_once 'sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;

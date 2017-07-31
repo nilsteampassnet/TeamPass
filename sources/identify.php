@@ -114,7 +114,8 @@ if ($post_type === "identify_duo_user") {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -292,6 +293,7 @@ function identifyUser($sentData)
 
     // connect to the server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;

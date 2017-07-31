@@ -35,6 +35,7 @@ $post_nb = intval($_POST['nb']);
 $post_start = intval($_POST['start']);
 $next = ($post_nb + $post_start);
 
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
     $server,
     $user,
@@ -42,7 +43,6 @@ $dbTmp = mysqli_connect(
     $database,
     $port
 );
-
 
 // if no encryption then stop
 if ($SETTINGS['enable_attachment_encryption'] === "0") {
@@ -54,22 +54,24 @@ if ($SETTINGS['enable_attachment_encryption'] === "0") {
 
 // If $SETTINGS['saltkey_ante_2127'] is set to'none', then encryption is done with Defuse, so exit
 // Also quit if no new defuse saltkey was generated
-if ($SETTINGS['files_with_defuse'] !== "done") {
-    if ($SETTINGS['saltkey_ante_2127'] === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
-        // update
-        mysqli_query(
-            $dbTmp,
-            "UPDATE `".$pre."misc`
-            SET `valeur` = 'done'
-            WHERE type='admin' AND intitule='files_with_defuse'"
-        );
+if (isset($SETTINGS['files_with_defuse'])) {
+    if ($SETTINGS['files_with_defuse'] !== "done") {
+        if (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false) {
+            // update
+            mysqli_query(
+                $dbTmp,
+                "UPDATE `".$pre."misc`
+                SET `valeur` = 'done'
+                WHERE type='admin' AND intitule='files_with_defuse'"
+            );
 
+            echo '[{"finish":"1" , "next":"", "error":""}]';
+            exit();
+        }
+    } else {
         echo '[{"finish":"1" , "next":"", "error":""}]';
         exit();
     }
-} else {
-    echo '[{"finish":"1" , "next":"", "error":""}]';
-    exit();
 }
 
 // get total items
@@ -97,11 +99,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
     // Prepare encryption options for Defuse
     $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-    $key = substr(
-        hash("md5", "ssapmeat1".$ascii_key, true),
-        0,
-        24
-    );
+    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
     $opts_encrypt = array('iv'=>$iv, 'key'=>$key);
 
     // Prepare encryption options - with old KEY
@@ -114,7 +112,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
             0,
             24
         );
-    } elseif (empty($SETTINGS['saltkey_ante_2127']) === true) {
+    } else {
         // Encoding option were set as this in Teampass version = 2.1.27.0
         $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
         $key = substr(

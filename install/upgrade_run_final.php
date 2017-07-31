@@ -40,6 +40,7 @@ $finish = 0;
 $next = ""; // init on 1st task to be done
 
 
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
     $_SESSION['server'],
     $_SESSION['user'],

@@ -15,11 +15,9 @@ require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
 header("Content-type: text/html; charset=utf-8");
-$_SESSION['db_encoding'] = "utf8";
+$session_db_encoding = "utf8";
 
-$_SESSION['CPM'] = 1;
-
-function chmod_r($dir, $dirPermissions, $filePermissions)
+function chmodRecursive($dir, $dirPermissions, $filePermissions)
 {
     $pointer_dir = opendir($dir);
     $res = true;
@@ -32,7 +30,7 @@ function chmod_r($dir, $dirPermissions, $filePermissions)
 
         if (is_dir($fullPath)) {
             if ($res = @chmod($fullPath, $dirPermissions)) {
-                $res = @chmod_r($fullPath, $dirPermissions, $filePermissions);
+                $res = @chmodRecursive($fullPath, $dirPermissions, $filePermissions);
             }
         } else {
             $res = chmod($fullPath, $filePermissions);
@@ -70,66 +68,87 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-if (isset($_POST['type'])) {
-    switch ($_POST['type']) {
+
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_activity = filter_input(INPUT_POST, 'activity', FILTER_SANITIZE_STRING);
+$post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_STRING);
+$post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
+$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_STRING);
+$post_db = filter_input(INPUT_POST, 'db', FILTER_SANITIZE_STRING);
+
+// Load libraries
+require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+// Prepare SESSION variables
+$session_url_path = $superGlobal->get("url_path", "SESSION");
+$session_abspath = $superGlobal->get("abspath", "SESSION");
+$session_db_encoding = $superGlobal->get("db_encoding", "SESSION");
+
+$superGlobal->put("CPM", 1, "SESSION");
+
+if (null !== $post_type) {
+    switch ($post_type) {
         case "step_2":
             //decrypt
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_data, "cpm", 128);
             $data = json_decode($json, true);
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_activity, "cpm", 128);
             $data = array_merge($data, array("activity" => $json));
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_task, "cpm", 128);
             $data = array_merge($data, array("task" => $json));
 
             $abspath = str_replace('\\', '/', $data['root_path']);
             if (substr($abspath, strlen($abspath) - 1) == "/") {
                 $abspath = substr($abspath, 0, strlen($abspath) - 1);
             }
-            $_SESSION['abspath'] = $abspath;
-            $_SESSION['url_path'] = $data['url_path'];
+            $session_abspath = $abspath;
+            $session_url_path = $data['url_path'];
 
             if (isset($data['activity']) && $data['activity'] === "folder") {
                 if (is_writable($abspath."/".$data['task']."/") === true) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } else {
-                    echo '[{"error" : " Path '.$data['task'].' is not writable!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : " Path '.$data['task'].' is not writable!", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === "extension") {
                 if (extension_loaded($data['task'])) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } else {
-                    echo '[{"error" : " Extension '.$data['task'].' is not loaded!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : " Extension '.$data['task'].' is not loaded!", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === "function") {
                 if (function_exists($data['task'])) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } else {
-                    echo '[{"error" : " Function '.$data['task'].' is not available!", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : " Function '.$data['task'].' is not available!", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === "version") {
                 if (version_compare(phpversion(), '5.5.0', '>=')) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } else {
-                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.5.0)", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "PHP version '.phpversion().' is not OK (minimum is 5.5.0)", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
                 break;
             }
 
             if (isset($data['activity']) && $data['activity'] === "ini") {
                 if (ini_get($data['task']) >= 60) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'"}]';
                 } else {
-                    echo '[{"error" : "PHP \"Maximum execution time\" is set to '.ini_get('max_execution_time').' seconds. Please try to set to 60s at least during installation.", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "PHP \"Maximum execution time\" is set to '.ini_get('max_execution_time').' seconds. Please try to set to 60s at least during installation.", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
                 break;
             }
@@ -138,9 +157,9 @@ if (isset($_POST['type'])) {
         case "step_3":
             //decrypt
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_data, "cpm", 128);
             $data = json_decode($json, true);
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_db, "cpm", 128);
             $db = json_decode($json, true);
 
             // launch
@@ -155,7 +174,7 @@ if (isset($_POST['type'])) {
                 );
                 // store values
                 foreach ($data as $key => $value) {
-                    $_SESSION[$key] = $value;
+                    $superGlobal->put($key, $value, "SESSION");
                     $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = '".$key."'"));
                     if ($tmp[0] == 0 || empty($tmp[0])) {
                         mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
@@ -165,15 +184,15 @@ if (isset($_POST['type'])) {
                 }
                 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'url_path'"));
                 if ($tmp[0] == 0 || empty($tmp[0])) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'], "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['url_path']) ? $db['url_path'] : $_SESSION['url_path'], "' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'abspath'"));
                 if ($tmp[0] == 0 || empty($tmp[0])) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'], "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($session_abspath) ? $db['abspath'] : $session_abspath, "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($_SESSION['abspath']) ? $db['abspath'] : $_SESSION['abspath'], "' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_abspath) ? $db['abspath'] : $session_abspath, "' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -186,9 +205,9 @@ if (isset($_POST['type'])) {
         case "step_4":
             //decrypt
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_data, "cpm", 128);
             $data = json_decode($json, true);
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_db, "cpm", 128);
             $db = json_decode($json, true);
 
             $dbTmp = mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
@@ -200,7 +219,7 @@ if (isset($_POST['type'])) {
 
             // check skpath
             if (empty($data['sk_path'])) {
-                $data['sk_path'] = $_SESSION['abspath']."/includes";
+                $data['sk_path'] = $session_abspath."/includes";
             } else {
                 $data['sk_path'] = str_replace("&#92;", "/", $data['sk_path']);
             }
@@ -211,7 +230,7 @@ if (isset($_POST['type'])) {
                 if (is_writable($data['sk_path'])) {
                     // store all variables in SESSION
                     foreach ($data as $key => $value) {
-                        $_SESSION[$key] = $value;
+                        $superGlobal->put($key, $value, "SESSION");
                         $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = '".$key."'"));
                         if ($tmp[0] == 0 || empty($tmp[0])) {
                             mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
@@ -232,9 +251,9 @@ if (isset($_POST['type'])) {
         case "step_5":
             //decrypt
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
-            $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $activity = Encryption\Crypt\aesctr::decrypt($post_activity, "cpm", 128);
+            $task = Encryption\Crypt\aesctr::decrypt($post_task, "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_db, "cpm", 128);
             $db = json_decode($json, true);
 
             // launch
@@ -317,7 +336,7 @@ if (isset($_POST['type'])) {
                         $tp_config_file = "../includes/config/tp.config.php";
                         if (file_exists($tp_config_file)) {
                             if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                                echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                                echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                                 break;
                             } else {
                                 unlink($tp_config_file);
@@ -910,9 +929,9 @@ global \$SETTINGS;
                 }
                 // answer back
                 if ($mysqli_result) {
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "task" : "'.$task.'", "activity" : "'.$activity.'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'", "task" : "'.$task.'", "activity" : "'.$activity.'"}]';
                 } else {
-                    echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error())).'", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'", "table" : "'.$task.'"}]';
+                    echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_error())).'", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'", "table" : "'.$task.'"}]';
                 }
             } else {
                 echo '[{"error" : "'.addslashes(str_replace(array("'", "\n", "\r"), array('"', '', ''), mysqli_connect_error())).'", "result" : "Failed", "multiple" : ""}]';
@@ -927,11 +946,11 @@ global \$SETTINGS;
         case "step_6":
             //decrypt
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
-            $data_sent = Encryption\Crypt\aesctr::decrypt($_POST['data'], "cpm", 128);
+            $activity = Encryption\Crypt\aesctr::decrypt($post_activity, "cpm", 128);
+            $data_sent = Encryption\Crypt\aesctr::decrypt($post_data, "cpm", 128);
             $data_sent = json_decode($data_sent, true);
-            $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $task = Encryption\Crypt\aesctr::decrypt($post_task, "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_db, "cpm", 128);
             $db = json_decode($json, true);
 
             $dbTmp = mysqli_connect(
@@ -967,15 +986,20 @@ global \$SETTINGS;
 
                     if (file_exists($filename)) {
                         if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                            echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                            echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
                             $events .= "The file $filename already exist. A copy has been created.<br />";
                             unlink($filename);
                         }
                     }
-                    $fh = fopen($filename, 'w');
 
+                    // Encrypt the DB password
+                    require_once "../sources/main.functions.php";
+                    $encrypted_text = cryption($db['db_pw'], "", "encrypt")['string'];
+
+                    // Open and write Settings file
+                    $fh = fopen($filename, 'w');
                     $result = fwrite(
                         $fh,
                         utf8_encode(
@@ -986,11 +1010,11 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 ### DATABASE connexion parameters ###
 \$server = \"".$db['db_host']."\";
 \$user = \"".$db['db_login']."\";
-\$pass = \"".str_replace("$", "\\$", $db['db_pw'])."\";
+\$pass = \"".str_replace("$", "\\$", $encrypted_text)."\";
 \$database = \"".$db['db_bdd']."\";
 \$pre = \"".$var['tbl_prefix']."\";
 \$port = ".$db['db_port'].";
-\$encoding = \"".$_SESSION['db_encoding']."\";
+\$encoding = \"".$session_db_encoding."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".$securePath."');
@@ -1002,15 +1026,15 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     );
                     fclose($fh);
                     if ($result === false) {
-                        echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     }
                 } elseif ($task === "sk.php") {
 //Create sk.php file
                     if (file_exists($skFile)) {
                         if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                            echo '[{"error" : "sk.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                            echo '[{"error" : "sk.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
                             unlink($skFile);
@@ -1034,9 +1058,9 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
 
                     // finalize
                     if ($result === false) {
-                        echo '[{"error" : "sk.php file could not be created. Please check the path and the rights.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "sk.php file could not be created. Please check the path and the rights.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     }
                 } elseif ($task === "security") {
                     # Sort out the file permissions
@@ -1044,19 +1068,19 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     // is server Windows or Linux?
                     if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
                         // Change directory permissions
-                        $result = chmod_r($_SESSION['abspath'], 0770, 0740);
+                        $result = chmodRecursive($session_abspath, 0770, 0740);
                         if ($result) {
-                            $result = chmod_r($_SESSION['abspath'].'/files', 0770, 0770);
+                            $result = chmodRecursive($session_abspath.'/files', 0770, 0770);
                         }
                         if ($result) {
-                            $result = chmod_r($_SESSION['abspath'].'/upload', 0770, 0770);
+                            $result = chmodRecursive($session_abspath.'/upload', 0770, 0770);
                         }
                     }
 
                     if ($result === false) {
-                        echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "Cannot change directory permissions - please fix manually", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     }
                 } elseif ($task === "teampass-seckey") {
                     // create teampass-seckey.txt
@@ -1078,14 +1102,14 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                         $new_salt
                     );
 
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } elseif ($task === "csrfp-token") {
                     // update CSRFP TOKEN
                     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                     $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
                     if (file_exists($csrfp_file)) {
                         if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                            echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
                             $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
@@ -1099,7 +1123,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
                     file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
 
-                    echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
             }
 
@@ -1112,9 +1136,9 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
         case "step_7":
             // Decrypt
             require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $activity = Encryption\Crypt\aesctr::decrypt($_POST['activity'], "cpm", 128);
-            $task = Encryption\Crypt\aesctr::decrypt($_POST['task'], "cpm", 128);
-            $json = Encryption\Crypt\aesctr::decrypt($_POST['db'], "cpm", 128);
+            $activity = Encryption\Crypt\aesctr::decrypt($post_activity, "cpm", 128);
+            $task = Encryption\Crypt\aesctr::decrypt($post_task, "cpm", 128);
+            $json = Encryption\Crypt\aesctr::decrypt($post_db, "cpm", 128);
             $db = json_decode($json, true);
             // launch
             $dbTmp = @mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
@@ -1133,13 +1157,13 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
 
                     $result = true;
                     $errorMsg = "Cannot delete `install` folder. Please do it manually.";
-                    if (file_exists($_SESSION['abspath'].'/install')) {
+                    if (file_exists($session_abspath.'/install')) {
                         // set the permissions on the install directory and delete
                         // is server Windows or Linux?
                         if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
-                            chmod_r($_SESSION['abspath'].'/install', 0755, 0440);
+                            chmodRecursive($session_abspath.'/install', 0755, 0440);
                         }
-                        $result = delTree($_SESSION['abspath'].'/install');
+                        $result = delTree($session_abspath.'/install');
                     }
 
                     // delete temporary install table
@@ -1147,9 +1171,9 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     $errorMsg = "Cannot remove `_install` table. Please do it manually.";
 
                     if ($result === false) {
-                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$_POST['index'].'", "result" : "", "multiple" : ""}]';
+                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$post_index.'", "result" : "", "multiple" : ""}]';
                     } else {
-                        echo '[{"error" : "", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     }
                 }
             }
