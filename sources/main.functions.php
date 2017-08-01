@@ -302,9 +302,7 @@ function cryption_before_defuse($message, $saltkey, $init_vect, $type = null, $s
 function cryption_phpCrypt($string, $key, $init_vect, $type)
 {
     // manage key origin
-    define('SALT', 'LEfzTjADMTzV6qHC');
-
-    if ($key != SALT) {
+    if (null != SALT && $key != SALT) {
         // check key (AES-128 requires a 16 bytes length key)
         if (strlen($key) < 16) {
             for ($inc = strlen($key) + 1; $inc <= 16; $inc++) {
@@ -866,7 +864,7 @@ function updateCacheTable($action, $ident = "")
     //Connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -1426,7 +1424,7 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -1477,7 +1475,7 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -1564,7 +1562,7 @@ function handleConfigFile($action, $field = null, $value = null)
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;

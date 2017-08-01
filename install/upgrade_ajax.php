@@ -157,7 +157,7 @@ function addIndexIfNotExist($table, $index, $sql)
 
 function tableExists($tablename)
 {
-    global $db_link;
+    global $db_link, $database;
 
     $res = mysqli_query(
         $db_link,
