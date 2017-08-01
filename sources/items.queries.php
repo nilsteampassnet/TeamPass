@@ -1585,7 +1585,9 @@ if (null !== $post_type) {
 
                         // get fields for this Item
                         $rows_tmp = DB::query(
-                            "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id
+                            "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
+                            i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
+                            c.type as field_type
                             FROM ".prefix_table("categories_items")." AS i
                             INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
                             WHERE i.item_id=%i AND c.parent_id IN %ls",
@@ -1607,9 +1609,13 @@ if (null !== $post_type) {
 
                             // build returned list of Fields text
                             if (empty($fieldsTmp)) {
-                                $fieldsTmp = $row['field_id']."~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'];
+                                $fieldsTmp = $row['field_id'].
+                                    "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
+                                    "~~".$row['field_type'];
                             } else {
-                                $fieldsTmp .= "_|_".$row['field_id']."~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'];
+                                $fieldsTmp .= "_|_".$row['field_id'].
+                                "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
+                                "~~".$row['field_type'];
                             }
                         }
                     }

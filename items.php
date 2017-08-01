@@ -269,7 +269,7 @@ echo '
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td>
                         &nbsp;
-                        <div id="id_pw" style="float:left; cursor:pointer; width:300px;"></div>
+                        <div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>
                         <input type="hidden" id="hid_pw" value="" />
                         <input type="hidden" id="pw_shown" value="0" />
                     </td>
@@ -346,11 +346,18 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                         <td></td>
                     </tr>';
         foreach ($elem[2] as $field) {
-                    echo '
+            echo '
                     <tr class="tr_cf tr_fields" id="cf_tr_'.$field[0].'" style="display:none;">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
-                        <td>
-                            <div id="id_field_'.$field[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />
+                        <td>';
+            if ($field[3] === "masked") {
+                echo '
+                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="display:inline;" class="fields_div unhide_masked_data pointer"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
+            } else {
+                echo '
+                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
+            }
+            echo '
                         </td>
                     </tr>';
         }
@@ -520,9 +527,9 @@ echo '
                 <div style="line-height:10px;">&nbsp;</div>
                 <label for="" class="label_cpm">'.$LANG['email_announce'].' : </label>
                 <select id="annonce_liste_destinataires" multiple="multiple" style="width:100%">';
-                foreach ($usersList as $user) {
+foreach ($usersList as $user) {
                     echo '<option value="'.$user['email'].'">'.$user['login'].'</option>';
-                }
+}
                 echo '
                 </select>
             </div>';

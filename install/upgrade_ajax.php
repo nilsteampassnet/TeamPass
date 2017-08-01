@@ -15,7 +15,6 @@
 require_once('../sources/SecureHandler.php');
 session_start();
 error_reporting(E_ERROR | E_PARSE);
-$_SESSION['db_encoding'] = "utf8";
 $_SESSION['CPM'] = 1;
 
 require_once '../includes/language/english.php';
@@ -45,7 +44,70 @@ if (!file_exists("../includes/config/settings.php")) {
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 
+
+//define pbkdf2 iteration count
+define('ITCOUNT', '2072');
+
+
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
+$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_STRING);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
+$post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_STRING);
+$post_fullurl = filter_input(INPUT_POST, 'fullurl', FILTER_SANITIZE_STRING);
+$post_abspath = filter_input(INPUT_POST, 'abspath', FILTER_SANITIZE_STRING);
+$post_no_previous_sk = filter_input(INPUT_POST, 'no_previous_sk', FILTER_SANITIZE_STRING);
+$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_STRING);
+$post_previous_sk = filter_input(INPUT_POST, 'previous_sk', FILTER_SANITIZE_STRING);
+$post_tbl_prefix = filter_input(INPUT_POST, 'tbl_prefix', FILTER_SANITIZE_STRING);
+$post_no_maintenance_mode = filter_input(INPUT_POST, 'no_maintenance_mode', FILTER_SANITIZE_STRING);
+$post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', FILTER_SANITIZE_STRING);
+$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
+
+
+// Test DB connexion
+$pass = defuse_return_decrypted($pass);
+if (mysqli_connect(
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+    $res = "Connection is successful";
+    echo 'document.getElementById("but_next").disabled = "";';
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo 'document.getElementById("but_next").disabled = "disabled";';
+    echo 'document.getElementById("res_".$post_type).innerHTML = "'.$res.'";';
+    echo 'document.getElementById("loader").style.display = "none";';
+    return false;
+}
+
+
+// Load libraries
+require_once '../includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+// Set Session
+$superGlobal->put("CPM", 1, "SESSION");
+$superGlobal->put("db_encoding", "utf8", "SESSION");
 $_SESSION['settings']['loaded'] = "";
+$superGlobal->put("fullurl", $post_fullurl, "SESSION");
+$superGlobal->put("abspath", $abspath, "SESSION");
+
+// Get Sessions
+$session_url_path = $superGlobal->get("url_path", "SESSION");
 
 ################
 ## Function permits to get the value from a line
@@ -64,9 +126,9 @@ function getSettingValue($val)
 ################
 function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
 {
-    global $dbTmp;
+    global $db_link;
     $exists = false;
-    $columns = mysqli_query($dbTmp, "show columns from $db");
+    $columns = mysqli_query($db_link, "show columns from $db");
     while ($c = mysqli_fetch_assoc($columns)) {
         if ($c['Field'] == $column) {
             $exists = true;
@@ -74,20 +136,20 @@ function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
         }
     }
     if (!$exists) {
-        return mysqli_query($dbTmp, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
+        return mysqli_query($db_link, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
     }
 }
 
 function addIndexIfNotExist($table, $index, $sql)
 {
-    global $dbTmp;
+    global $db_link;
 
-    $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
+    $mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
     $res = mysqli_fetch_row($mysqli_result);
 
     // if index does not exist, then add it
     if (!$res) {
-        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` ".$sql);
+        $res = mysqli_query($db_link, "ALTER TABLE `$table` ".$sql);
     }
 
     return $res;
@@ -95,13 +157,13 @@ function addIndexIfNotExist($table, $index, $sql)
 
 function tableExists($tablename)
 {
-    global $dbTmp;
+    global $db_link;
 
     $res = mysqli_query(
-        $dbTmp,
+        $db_link,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
-        WHERE table_schema = '".$_SESSION['database']."'
+        WHERE table_schema = '".$database."'
         AND table_name = '$tablename'"
     );
 
@@ -112,11 +174,8 @@ function tableExists($tablename)
     }
 }
 
-//define pbkdf2 iteration count
-define('ITCOUNT', '2072');
-
-if (isset($_POST['type'])) {
-    switch ($_POST['type']) {
+if (isset($post_type)) {
+    switch ($post_type) {
         case "step0":
             // erase session table
             $_SESSION = array();
@@ -125,7 +184,6 @@ if (isset($_POST['type'])) {
 
             echo 'document.getElementById("res_step0").innerHTML = "";';
             require_once 'libs/aesctr.php';
-            require_once "../includes/config/settings.php";
 
             // check if path in settings.php are consistent
             if (!is_dir(SECUREPATH)) {
@@ -169,20 +227,12 @@ if (isset($_POST['type'])) {
             require_once '../includes/libraries/PasswordLib/PasswordLib.php';
             $pwdlib = new PasswordLib\PasswordLib();
 
-            //connect to db and check user is granted
-            $link = mysqli_connect(
-                $server,
-                $user,
-                $pass,
-                $database,
-                $port
-            );
-
+            // Connect to db and check user is granted
             $user_info = mysqli_fetch_array(
                 mysqli_query(
-                    $link,
+                    $db_link,
                     "SELECT pw, admin FROM ".$pre."users
-                    WHERE login='".mysqli_escape_string($link, stripslashes($_POST['login']))."'"
+                    WHERE login='".mysqli_escape_string($db_link, stripslashes($post_login))."'"
                 )
             );
 
@@ -190,19 +240,19 @@ if (isset($_POST['type'])) {
                 echo 'document.getElementById("but_next").disabled = "disabled";';
                 echo 'document.getElementById("res_step0").innerHTML = "This user is not allowed!";';
                 echo 'document.getElementById("user_granted").value = "0";';
-                $_SESSION['user_granted'] = false;
+                $superGlobal->put("user_granted", false, "SESSION");
             } else {
-                if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($_POST['pwd']), "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
+                if ($pwdlib->verifyPasswordHash(Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), "cpm", 128), $user_info['pw']) === true && $user_info['admin'] === "1") {
                     echo 'document.getElementById("but_next").disabled = "";';
                     echo 'document.getElementById("res_step0").innerHTML = "User is granted.";';
                     echo 'document.getElementById("step").value = "1";';
                     echo 'document.getElementById("user_granted").value = "1";';
-                    $_SESSION['user_granted'] = true;
+                    $superGlobal->put("user_granted", true, "SESSION");
                 } else {
                     echo 'document.getElementById("but_next").disabled = "disabled";';
                     echo 'document.getElementById("res_step0").innerHTML = "This user is not allowed!";';
                     echo 'document.getElementById("user_granted").value = "0";';
-                    $_SESSION['user_granted'] = false;
+                    $superGlobal->put("user_granted", false, "SESSION");
                 }
             }
 
@@ -210,22 +260,22 @@ if (isset($_POST['type'])) {
             break;
 
         case "step1":
-            if ($_SESSION['user_granted'] !== "1") {
+            $session_user_granted = $superGlobal->get("user_granted", "SESSION");
+
+            if (intval($session_user_granted) !== 1) {
                 echo 'document.getElementById("res_step1").innerHTML = "User not connected anymore!";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 break;
             }
 
-            $_SESSION['fullurl'] = $_POST['fullurl'];
-            $abspath = str_replace('\\', '/', $_POST['abspath']);
-            $_SESSION['abspath'] = $abspath;
+            $abspath = str_replace('\\', '/', $post_abspath);
             if (substr($abspath, strlen($abspath) - 1) == "/") {
                 $abspath = substr($abspath, 0, strlen($abspath) - 1);
             }
             $okWritable = true;
             $okExtensions = true;
             $txt = "";
-            $x = 1;
+            $var_x = 1;
             $tab = array(
                 $abspath."/includes/config/settings.php",
                 $abspath."/includes/libraries/csrfp/libs/",
@@ -250,7 +300,7 @@ if (isset($_POST['type'])) {
                         $elem.'&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
                     $okWritable = false;
                 }
-                $x++;
+                $var_x++;
             }
 
             if (!extension_loaded('mcrypt')) {
@@ -345,69 +395,71 @@ if (isset($_POST['type'])) {
                 $settingsFile = file($filename);
                 while (list($key, $val) = each($settingsFile)) {
                     if (substr_count($val, 'charset') > 0) {
-                        $_SESSION['charset'] = getSettingValue($val);
+                        $superGlobal->put("charset", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '@define(') > 0 && substr_count($val, 'SALT') > 0) {
-                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
+                        $superGlobal->put("encrypt_key", substr($val, 17, strpos($val, "')") - 17), "SESSION");
                     } elseif (substr_count($val, '$smtp_server') > 0) {
-                        $_SESSION['smtp_server'] = getSettingValue($val);
+                        $superGlobal->put("smtp_server", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$smtp_auth') > 0) {
-                        $_SESSION['smtp_auth'] = getSettingValue($val);
+                        $superGlobal->put("smtp_auth", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$smtp_auth_username') > 0) {
-                        $_SESSION['smtp_auth_username'] = getSettingValue($val);
+                        $superGlobal->put("smtp_auth_username", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$smtp_auth_password') > 0) {
-                        $_SESSION['smtp_auth_password'] = getSettingValue($val);
+                        $superGlobal->put("smtp_auth_password", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$smtp_port') > 0) {
-                        $_SESSION['smtp_port'] = getSettingValue($val);
+                        $superGlobal->put("smtp_port", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$smtp_security') > 0) {
-                        $_SESSION['smtp_security'] = getSettingValue($val);
+                        $superGlobal->put("smtp_security", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$email_from') > 0) {
-                        $_SESSION['email_from'] = getSettingValue($val);
+                        $superGlobal->put("email_from", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$email_from_name') > 0) {
-                        $_SESSION['email_from_name'] = getSettingValue($val);
+                        $superGlobal->put("email_from_name", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$server') > 0) {
-                        $_SESSION['server'] = getSettingValue($val);
+                        $superGlobal->put("server", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$user') > 0) {
-                        $_SESSION['user'] = getSettingValue($val);
+                        $superGlobal->put("user", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$pass') > 0) {
-                        $_SESSION['pass'] = getSettingValue($val);
+                        $superGlobal->put("pass", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$port') > 0) {
-                        $_SESSION['port'] = getSettingValue($val);
+                        $superGlobal->put("port", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '$database') > 0) {
-                        $_SESSION['database'] = getSettingValue($val);
+                        $database = getSettingValue($val);
                     } elseif (substr_count($val, '$pre') > 0) {
-                        $_SESSION['pre'] = getSettingValue($val);
+                        $pre = getSettingValue($val);
                     } elseif (substr_count($val, "define('SECUREPATH',") > 0) {
-                        $_SESSION['sk_file'] = substr($val, 23, strpos($val, ');')-24)."/sk.php";
+                        $superGlobal->put("sk_file", substr($val, 23, strpos($val, ');')-24)."/sk.php", "SESSION");
                     }
                 }
             }
-            if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
-                && file_exists($_SESSION['sk_file'])
+            $session_sk_file = $superGlobal->get("sk_file", "SESSION");
+            if (isset($session_sk_file) && !empty($session_sk_file)
+                && file_exists($session_sk_file)
             ) {
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">sk.php file'.
-                    ' found in \"'.addslashes($_SESSION['sk_file']).'\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                    ' found in \"'.addslashes($session_sk_file).'\"&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                     '</span><br />';
                 //copy some constants from this existing file
-                $skFile = file($_SESSION['sk_file']);
+                $skFile = file($session_sk_file);
                 while (list($key, $val) = each($skFile)) {
                     if (substr_count($val, "@define('SALT'") > 0) {
-                        $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
-                        echo '$("#session_salt").val("'.$_SESSION['encrypt_key'].'");';
+                        $superGlobal->put("encrypt_key", substr($val, 17, strpos($val, "')") - 17), "SESSION");
+                        $session_encrypt_key = $superGlobal->get("encrypt_key", "SESSION");
+                        echo '$("#session_salt").val("'.$session_encrypt_key.'");';
                     }
                 }
             }
 
-            if (!isset($_SESSION['encrypt_key']) || empty($_SESSION['encrypt_key'])) {
+            if (!isset($session_encrypt_key) || empty($session_encrypt_key)) {
                 // check if 2.1.27 already installed
-                $defuse_file = substr($_SESSION['sk_file'], 0, strrpos($_SESSION['sk_file'], "/"))."/teampass-seckey.txt";
+                $defuse_file = substr($session_sk_file, 0, strrpos($session_sk_file, "/"))."/teampass-seckey.txt";
                 if (file_exists($defuse_file)) {
                     $okEncryptKey = true;
-                    $_SESSION['tp_defuse_installed'] = true;
+                    $superGlobal->put("tp_defuse_installed", true, "SESSION");
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Defuse encryption key is defined&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
                         '</span><br />';
                 } else {
                     $okEncryptKey = false;
-                    $_SESSION['tp_defuse_installed'] = false;
+                    $superGlobal->put("tp_defuse_installed", false, "SESSION");
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
                         ' could not be recovered &nbsp;&nbsp;'.
                         '<img src=\"images/minus-circle.png\"></span><br />';
@@ -434,8 +486,9 @@ if (isset($_POST['type'])) {
             #==========================
         case "step2":
             $res = "";
+            $session_user_granted = $superGlobal->get("user_granted", "SESSION");
 
-            if ($_SESSION['user_granted'] !== "1") {
+            if ($session_user_granted !== "1") {
                 echo 'document.getElementById("res_step2").innerHTML = "User not connected anymore!";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 break;
@@ -444,139 +497,118 @@ if (isset($_POST['type'])) {
             // AES Counter Mode implementation
             require_once 'libs/aesctr.php';
 
-            // connexion
-            if (mysqli_connect(
-                $_SESSION['server'],
-                $_SESSION['user'],
-                $_SESSION['pass'],
-                $_SESSION['database'],
-                $_SESSION['port']
-            )
-            ) {
-                $dbTmp = mysqli_connect(
-                    $_SESSION['server'],
-                    $_SESSION['user'],
-                    $_SESSION['pass'],
-                    $_SESSION['database'],
-                    $_SESSION['port']
-                );
-                $res = "Connection is successful";
-                echo 'document.getElementById("but_next").disabled = "";';
-
-                // check in db if previous saltk exists
-                if ($_POST['no_previous_sk'] === "false" || $_POST['no_previous_sk'] === "previous_sk_sel") {
-                    $db_sk = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM ".$_SESSION['pre']."misc
-                    WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
-                    if (!empty($_POST['previous_sk']) || !empty($_POST['session_salt'])) {
-                        // get sk
-                        if (!empty($_POST['session_salt'])) {
-                            $sk_val = filter_var($_POST['session_salt'], FILTER_SANITIZE_STRING);
-                        } else {
-                            $sk_val = filter_var($_POST['previous_sk'], FILTER_SANITIZE_STRING);
-                        }
-
-                        // Update
-                        if (!empty($db_sk[0])) {
-                            mysqli_query(
-                                $dbTmp,
-                                "UPDATE `".$_SESSION['pre']."misc`
-                                SET `valeur` = '".$sk_val."'
-                                WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
-                            );
-                        } else {
-                            mysqli_query(
-                                $dbTmp,
-                                "INSERT INTO `".$_SESSION['pre']."misc`
-                                (`valeur`, `type`, `intitule`)
-                                VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
-                            );
-                        }
-                    } elseif (empty($db_sk[0])) {
-                        $res = "Please provide Teampass instance history.";
-                        echo 'document.getElementById("but_next").disabled = "disabled";';
-                        echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
-                        echo 'document.getElementById("loader").style.display = "none";';
-                        echo 'document.getElementById("no_encrypt_key").style.display = "";';
+            // check in db if previous saltk exists
+            if ($post_no_previous_sk === "false" || $post_no_previous_sk === "previous_sk_sel") {
+                $db_sk = mysqli_fetch_row(mysqli_query($db_link, "SELECT count(*) FROM ".$pre."misc
+                WHERE type='admin' AND intitule = 'saltkey_ante_2127'"));
+                if (!empty($post_previous_sk) || !empty($post_session_salt)) {
+                    // get sk
+                    if (!empty($post_session_salt)) {
+                        $sk_val = filter_var($post_session_salt, FILTER_SANITIZE_STRING);
+                    } else {
+                        $sk_val = filter_var($post_previous_sk, FILTER_SANITIZE_STRING);
                     }
-                } else {
-                    // user said that database has not being used for an older version
-                    // no old sk is available
-                        $tmp = mysqli_num_rows(mysqli_query(
-                            $dbTmp,
-                            "SELECT * FROM `".$var['tbl_prefix']."misc` WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
-                        ));
-                    if ($tmp == 0) {
+
+                    // Update
+                    if (!empty($db_sk[0])) {
                         mysqli_query(
-                            $dbTmp,
-                            "INSERT INTO `".$_SESSION['pre']."misc`
-                            (`valeur`, `type`, `intitule`)
-                            VALUES ('none', 'admin', 'saltkey_ante_2127')"
+                            $db_link,
+                            "UPDATE `".$pre."misc`
+                            SET `valeur` = '".$sk_val."'
+                            WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                         );
                     } else {
                         mysqli_query(
-                            $dbTmp,
-                            "INSERT INTO `".$_SESSION['pre']."misc`
+                            $db_link,
+                            "INSERT INTO `".$pre."misc`
                             (`valeur`, `type`, `intitule`)
-                            VALUES ('none', 'admin', 'saltkey_ante_2127')"
+                            VALUES ('".$sk_val."', 'admin', 'saltkey_ante_2127')"
                         );
                     }
-                    $_SESSION['tp_defuse_installed'] = true;
+                } elseif (empty($db_sk[0])) {
+                    $res = "Please provide Teampass instance history.";
+                    echo 'document.getElementById("but_next").disabled = "disabled";';
+                    echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
+                    echo 'document.getElementById("loader").style.display = "none";';
+                    echo 'document.getElementById("no_encrypt_key").style.display = "";';
                 }
-
-                //What CPM version
-                if (mysqli_query(
-                    $dbTmp,
-                    "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
-                    WHERE type='admin' AND intitule = 'cpassman_version'"
-                )) {
-                    $tmpResult = mysqli_query(
-                        $dbTmp,
-                        "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
-                        WHERE type='admin' AND intitule = 'cpassman_version'"
-                    );
-                    $cpmVersion = mysqli_fetch_row($tmpResult);
-                    echo 'document.getElementById("actual_cpm_version").value = "'.
-                        $cpmVersion[0].'";';
-                } else {
-                    echo 'document.getElementById("actual_cpm_version").value = "0";';
-                }
-
-                //Get some infos from DB
-                if (@mysqli_fetch_row(
+            } else {
+                // user said that database has not being used for an older version
+                // no old sk is available
+                    $tmp = mysqli_num_rows(mysqli_query(
+                        $db_link,
+                        "SELECT * FROM `".$var['tbl_prefix']."misc`
+                        WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
+                    ));
+                if ($tmp == 0) {
                     mysqli_query(
-                        $dbTmp,
-                        "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
+                        $db_link,
+                        "INSERT INTO `".$pre."misc`
+                        (`valeur`, `type`, `intitule`)
+                        VALUES ('none', 'admin', 'saltkey_ante_2127')"
+                    );
+                } else {
+                    mysqli_query(
+                        $db_link,
+                        "INSERT INTO `".$pre."misc`
+                        (`valeur`, `type`, `intitule`)
+                        VALUES ('none', 'admin', 'saltkey_ante_2127')"
+                    );
+                }
+                $superGlobal->put("tp_defuse_installed", true, "SESSION");
+            }
+
+            //What CPM version
+            if (mysqli_query(
+                $db_link,
+                "SELECT valeur FROM ".$post_tbl_prefix."misc
+                WHERE type='admin' AND intitule = 'cpassman_version'"
+            )) {
+                $tmpResult = mysqli_query(
+                    $db_link,
+                    "SELECT valeur FROM ".$post_tbl_prefix."misc
+                    WHERE type='admin' AND intitule = 'cpassman_version'"
+                );
+                $cpmVersion = mysqli_fetch_row($tmpResult);
+                echo 'document.getElementById("actual_cpm_version").value = "'.
+                    $cpmVersion[0].'";';
+            } else {
+                echo 'document.getElementById("actual_cpm_version").value = "0";';
+            }
+
+            //Get some infos from DB
+            if (@mysqli_fetch_row(
+                mysqli_query(
+                    $db_link,
+                    "SELECT valeur FROM ".$post_tbl_prefix."misc
+                    WHERE type='admin' AND intitule = 'utf8_enabled'"
+                )
+            )
+            ) {
+                $cpmIsUTF8 = mysqli_fetch_row(
+                    mysqli_query(
+                        $db_link,
+                        "SELECT valeur FROM ".$post_tbl_prefix."misc
                         WHERE type='admin' AND intitule = 'utf8_enabled'"
                     )
-                )
-                ) {
-                    $cpmIsUTF8 = mysqli_fetch_row(
-                        mysqli_query(
-                            $dbTmp,
-                            "SELECT valeur FROM ".$_POST['tbl_prefix']."misc
-                            WHERE type='admin' AND intitule = 'utf8_enabled'"
-                        )
-                    );
-                    echo 'document.getElementById("cpm_isUTF8").value = "'.$cpmIsUTF8[0].'";';
-                    $_SESSION['utf8_enabled'] = $cpmIsUTF8[0];
-                } else {
-                    echo 'document.getElementById("cpm_isUTF8").value = "0";';
-                    $_SESSION['utf8_enabled'] = 0;
-                }
-
-                // put TP in maintenance mode or not
-                @mysqli_query(
-                    $dbTmp,
-                    "UPDATE `".$_SESSION['pre']."misc`
-                    SET `valeur` = 'maintenance_mode'
-                    WHERE type = 'admin' AND intitule = '".$_POST['no_maintenance_mode']."'"
                 );
-
-                echo 'document.getElementById("dump").style.display = "";';
+                echo 'document.getElementById("cpm_isUTF8").value = "'.$cpmIsUTF8[0].'";';
+                $superGlobal->put("utf8_enabled", $cpmIsUTF8[0], "SESSION");
             } else {
-                $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
-                echo 'document.getElementById("but_next").disabled = "disabled";';
+                echo 'document.getElementById("cpm_isUTF8").value = "0";';
+                $superGlobal->put("utf8_enabled", 0, "SESSION");
             }
+
+            // put TP in maintenance mode or not
+            @mysqli_query(
+                $db_link,
+                "UPDATE `".$pre."misc`
+                SET `valeur` = 'maintenance_mode'
+                WHERE type = 'admin' AND intitule = '".$post_no_maintenance_mode."'"
+            );
+
+            echo 'document.getElementById("dump").style.display = "";';
+
 
             echo 'document.getElementById("res_step2").innerHTML = "'.$res.'";';
             echo 'document.getElementById("loader").style.display = "none";';
@@ -584,58 +616,44 @@ if (isset($_POST['type'])) {
 
             #==========================
         case "step3":
-            if ($_SESSION['user_granted'] !== "1") {
+            $session_user_granted = $superGlobal->get("user_granted", "SESSION");
+
+            if ($session_user_granted !== "1") {
                 echo 'document.getElementById("res_step3").innerHTML = "User not connected anymore!";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 break;
             }
 
-            mysqli_connect(
-                $_SESSION['server'],
-                $_SESSION['user'],
-                $_SESSION['pass'],
-                $_SESSION['database'],
-                $_SESSION['port']
-            );
-            $dbTmp = mysqli_connect(
-                $_SESSION['server'],
-                $_SESSION['user'],
-                $_SESSION['pass'],
-                $_SESSION['database'],
-                $_SESSION['port']
-            );
-            $status = "";
-
             //rename tables
-            if (isset($_POST['prefix_before_convert']) && $_POST['prefix_before_convert'] == "true") {
-                $tables = mysqli_query($dbTmp, 'SHOW TABLES');
+            if (isset($post_prefix_before_convert) && $post_prefix_before_convert == "true") {
+                $tables = mysqli_query($db_link, 'SHOW TABLES');
                 while ($table = mysqli_fetch_row($tables)) {
                     if (tableExists("old_".$table[0]) != 1 && substr($table[0], 0, 4) != "old_") {
-                        mysqli_query($dbTmp, "CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
-                        mysqli_query($dbTmp, "INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
+                        mysqli_query($db_link, "CREATE TABLE old_".$table[0]." LIKE ".$table[0]);
+                        mysqli_query($db_link, "INSERT INTO old_".$table[0]." SELECT * FROM ".$table[0]);
                     }
                 }
             }
 
             //convert database
             mysqli_query(
-                $dbTmp,
-                "ALTER DATABASE `".$_SESSION['database']."`
+                $db_link,
+                "ALTER DATABASE `".$database."`
                 DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
             );
 
             //convert tables
-            $res = mysqli_query($dbTmp, "SHOW TABLES FROM `".$_SESSION['database']."`");
+            $res = mysqli_query($db_link, "SHOW TABLES FROM `".$database."`");
             while ($table = mysqli_fetch_row($res)) {
                 if (substr($table[0], 0, 4) != "old_") {
                     mysqli_query(
-                        $dbTmp,
-                        "ALTER TABLE ".$_SESSION['database'].".`{$table[0]}`
+                        $db_link,
+                        "ALTER TABLE ".$database.".`{$table[0]}`
                         CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
                     mysqli_query(
-                        $dbTmp,
-                        "ALTER TABLE".$_SESSION['database'].".`{$table[0]}`
+                        $db_link,
+                        "ALTER TABLE".$database.".`{$table[0]}`
                         DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci"
                     );
                 }
@@ -646,7 +664,7 @@ if (isset($_POST['type'])) {
             echo 'document.getElementById("but_next").disabled = "";';
             echo 'document.getElementById("but_launch").disabled = "disabled";';
 
-            mysqli_close($dbTmp);
+            mysqli_close($db_link);
             break;
 
             #==========================
@@ -654,7 +672,9 @@ if (isset($_POST['type'])) {
 
             //=============================
         case "step5":
-            if ($_SESSION['user_granted'] !== "1") {
+            $session_user_granted = $superGlobal->get("user_granted", "SESSION");
+
+            if ($session_user_granted !== "1") {
                 echo 'document.getElementById("res_step5").innerHTML = "User not connected anymore!";';
                 echo 'document.getElementById("loader").style.display = "none";';
                 break;
@@ -682,9 +702,9 @@ if (isset($_POST['type'])) {
                 }
 
                 //manage SK path
-                if (isset($_POST['sk_path']) && !empty($_POST['sk_path'])) {
-                    $skFile = str_replace('\\', '/', $_POST['sk_path'].'/sk.php');
-                    $securePath = str_replace('\\', '/', $_POST['sk_path']);
+                if (isset($post_sk_path) && !empty($post_sk_path)) {
+                    $skFile = str_replace('\\', '/', $post_sk_path.'/sk.php');
+                    $securePath = str_replace('\\', '/', $post_sk_path);
                 } else {
                     echo 'document.getElementById("res_step5").innerHTML = '.
                         '"<img src=\"images/exclamation-red.png\"> The SK path must be indicated.";
@@ -710,37 +730,37 @@ if (isset($_POST['type'])) {
                     break;
                 }
 
-                $fh = fopen($filename, 'w');
+                $file_handled = fopen($filename, 'w');
 
                 //prepare smtp_auth variable
-                if (empty($_SESSION['smtp_auth'])) {
-                    $_SESSION['smtp_auth'] = 'false';
+                if (empty($superGlobal->get("smtp_auth", "SESSION"))) {
+                    $superGlobal->put("smtp_auth", "false", "SESSION");
                 }
-                if (empty($_SESSION['smtp_auth_username'])) {
-                    $_SESSION['smtp_auth_username'] = 'false';
+                if (empty($superGlobal->get("smtp_auth_username", "SESSION"))) {
+                    $superGlobal->put("smtp_auth_username", "false", "SESSION");
                 }
-                if (empty($_SESSION['smtp_auth_password'])) {
-                    $_SESSION['smtp_auth_password'] = 'false';
+                if (empty($superGlobal->get("smtp_auth_password", "SESSION"))) {
+                    $superGlobal->put("smtp_auth_password", "false", "SESSION");
                 }
-                if (empty($_SESSION['email_from_name'])) {
-                    $_SESSION['email_from_name'] = 'false';
+                if (empty($superGlobal->get("email_from_name", "SESSION"))) {
+                    $superGlobal->put("email_from_name", "false", "SESSION");
                 }
 
                 $result1 = fwrite(
-                    $fh,
+                    $file_handled,
                     utf8_encode(
                         "<?php
 global \$lang, \$txt, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
 global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 
 ### DATABASE connexion parameters ###
-\$server = \"".filter_var($_SESSION['server'], FILTER_SANITIZE_STRING)."\";
-\$user = \"". filter_var($_SESSION['user'], FILTER_SANITIZE_STRING)."\";
-\$pass = \"". str_replace("$", "\\$", filter_var($_SESSION['pass'], FILTER_SANITIZE_STRING))."\";
-\$database = \"". filter_var($_SESSION['database'], FILTER_SANITIZE_STRING)."\";
-\$port = ". filter_var($_SESSION['port'], FILTER_SANITIZE_STRING).";
-\$pre = \"". filter_var($_SESSION['pre'], FILTER_SANITIZE_STRING)."\";
-\$encoding = \"".filter_var($_SESSION['db_encoding'], FILTER_SANITIZE_STRING)."\";
+\$server = \"".$server."\";
+\$user = \"".$user."\";
+\$pass = \"". str_replace("$", "\\$", $pass)."\";
+\$database = \"".$database."\";
+\$port = ".$port.";
+\$pre = \"".$pre."\";
+\$encoding = \"".$encoding."\";
 
 @date_default_timezone_set(\$_SESSION['settings']['timezone']);
 @define('SECUREPATH', '".substr($skFile, 0, strlen($skFile) - 7)."');
@@ -752,7 +772,7 @@ if (file_exists(\"".$skFile."\")) {
                     )
                 );
 
-                fclose($fh);
+                fclose($file_handled);
                 if ($result1 === false) {
                     echo 'document.getElementById("res_step5").innerHTML = '.
                         '"Setting.php file could not be created. '.
@@ -764,10 +784,10 @@ if (file_exists(\"".$skFile."\")) {
 
                 //Create sk.php file
                 if (!file_exists($skFile)) {
-                    $fh = fopen($skFile, 'w');
+                    $file_handled = fopen($skFile, 'w');
 
                     $result2 = fwrite(
-                        $fh,
+                        $file_handled,
                         utf8_encode(
                             "<?php
 @define('COST', '13'); // Don't change this.
@@ -778,7 +798,7 @@ if (file_exists(\"".$skFile."\")) {
 ?>"
                         )
                     );
-                    fclose($fh);
+                    fclose($file_handled);
                 }
 
                 // update CSRFP TOKEN
@@ -786,7 +806,7 @@ if (file_exists(\"".$skFile."\")) {
                 $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
                 if (file_exists($csrfp_file)) {
                     if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
-                        echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$_POST['index'].'", "multiple" : "'.$_POST['multiple'].'"}]';
+                        echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                         break;
                     } else {
                         $events .= "The file $csrfp_file already exist. A copy has been created.<br />";
@@ -837,9 +857,12 @@ if (file_exists(\"".$skFile."\")) {
         case "perform_database_dump":
             $filename = "../includes/config/settings.php";
 
+            require_once "../sources/main.functions.php";
+            $pass = defuse_return_decrypted($pass);
+
             $mtables = array();
 
-            $mysqli = new mysqli($_SESSION['server'], $_SESSION['user'], $_SESSION['pass'], $_SESSION['database'], $_SESSION['port']);
+            $mysqli = new mysqli($server, $user, $pass, $database, $port);
             if ($mysqli->connect_error) {
                 die('Error : ('.$mysqli->connect_errno.') '.$mysqli->connect_error);
             }

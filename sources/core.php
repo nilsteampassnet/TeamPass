@@ -375,7 +375,8 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
                             array(
                                 $field['id'],
                                 addslashes($field['title']),
-                                $field['encrypted_data']
+                                $field['encrypted_data'],
+                                $field['type']
                             )
                         );
                     }

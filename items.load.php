@@ -1409,8 +1409,14 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');
                                 $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).show();
-                                $('#id_field_' + field[0]).html(field[1]);
                                 $('#hid_field_' + field[0] + '_' + field[2]).val(field[1]);
+                                if (field[3] === "masked") {
+                                    $('#id_field_' + field[0] + '_' + field[2])
+                                        .html('<?php echo $var['hidden_asterisk']; ?>');
+                                } else {
+                                    $('#id_field_' + field[0] + '_' + field[2])
+                                        .html(field[1]);
+                                }
                             }
                         }
 
@@ -3767,25 +3773,25 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
 
 // show password during longpress
 var mouseStillDown = false;
-$("#id_pw").mousedown(function(event) {
-     mouseStillDown = true;
-     showPwdContinuous();
-}).mouseup(function(event) {
+$('#item_details_ok').on('mousedown', '.unhide_masked_data', function(event) {
+    mouseStillDown = true;
+     showPwdContinuous($(this).attr('id'));
+}).on('mouseup', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
-}).mouseleave(function(event) {
+}).on('mouseleave', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
 });
-var showPwdContinuous = function(){
+var showPwdContinuous = function(elem_id){
     if(mouseStillDown){
-        $('#id_pw').text($('#hid_pw').val());
-        setTimeout("showPwdContinuous()", 50);
+        $('#'+elem_id).text($('#h'+elem_id).val());
+        setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
-        if ($("#pw_shown").val() == "0") {
+        if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
             itemLog("item_password_shown");
             $("#pw_shown").val("1");
         }
     } else {
-        $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
+        $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
         $('.tip').tooltipster({multiple: true});
     }
 }

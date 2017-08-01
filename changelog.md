@@ -1,6 +1,7 @@
 2.1.27
 
  8/
+ Custom Field value can be masked
  Database password is encrypted in settings.php file
  PHPMailer library updated to 5.2.23
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.

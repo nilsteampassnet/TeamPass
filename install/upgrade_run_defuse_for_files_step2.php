@@ -33,11 +33,13 @@ use \Defuse\Crypto\Crypto;
 use \Defuse\Crypto\File;
 use \Defuse\Crypto\Exception as Ex;
 
+// Prepare POST variables
+$post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
 // Some init
 $_SESSION['settings']['loaded'] = "";
 $finish = false;
-$post_nb = intval($_POST['nb']);
-$post_start = intval($_POST['start']);
 $next = ($post_nb + $post_start);
 
 // Open DB connection
@@ -137,15 +139,15 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
 
                 // Open the file
                 unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file']);
-                $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
+                $file_primary = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
                 $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", 'wb');
 
                 // decrypt using old
-                stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt_defuse);
+                stream_filter_append($file_primary, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt_defuse);
                 // copy to file
-                stream_copy_to_stream($fp, $out);
+                stream_copy_to_stream($file_primary, $out);
                 // clean
-                fclose($fp);
+                fclose($file_primary);
                 fclose($out);
                 unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy");
 

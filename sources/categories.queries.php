@@ -64,6 +64,8 @@ $aes->register();
 
 // Prepare POST variables
 $post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
+$post_field_title = filter_input(INPUT_POST, 'field_title', FILTER_SANITIZE_STRING);
+$post_field_type = filter_input(INPUT_POST, 'field_type', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
@@ -93,16 +95,16 @@ if (null !== $post_type) {
 
         case "addNewField":
             // store key
-            if (!empty($post_title)
-                && !empty($post_id)
+            if (empty($post_field_title) === false
+                && empty($post_id) === false
             ) {
                 DB::insert(
                     prefix_table("categories"),
                     array(
                         'parent_id' => $post_id,
-                        'title' => $post_title,
+                        'title' => $post_field_title,
+                        'type' => $post_field_type,
                         'level' => 1,
-                        'type' => 'text',
                         'order' => 1
                     )
                 );
@@ -137,6 +139,23 @@ if (null !== $post_type) {
                     array(
                         'parent_id' => $post_data,
                         'order' => 99
+                        ),
+                    "id=%i",
+                    $post_id
+                );
+                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
+            }
+            break;
+
+        case "changeFieldType":
+            // update key
+            if (empty($post_data) === false
+                && empty($post_id) === false
+            ) {
+                DB::update(
+                    prefix_table("categories"),
+                    array(
+                        'type' => $post_data
                         ),
                     "id=%i",
                     $post_id
@@ -215,7 +234,8 @@ if (null !== $post_type) {
                                 $field['title'],
                                 $field['order'],
                                 $field['encrypted_data'],
-                                ""
+                                "",
+                                $field['type']
                             )
                         );
                     }

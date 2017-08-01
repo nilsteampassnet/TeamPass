@@ -28,11 +28,13 @@ require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once '../includes/config/tp.config.php';
 
+// Prepare POST variables
+$post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
 // Some init
 $_SESSION['settings']['loaded'] = "";
 $finish = false;
-$post_nb = intval($_POST['nb']);
-$post_start = intval($_POST['start']);
 $next = ($post_nb + $post_start);
 
 $pass = defuse_return_decrypted($pass);
@@ -143,31 +145,31 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
 
             // Open the file
             unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file']);
-            $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
+            $file_primary = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
             $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", 'wb');
 
             // decrypt using old
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
+            stream_filter_append($file_primary, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
             // copy to file
-            stream_copy_to_stream($fp, $out);
+            stream_copy_to_stream($file_primary, $out);
             // clean
-            fclose($fp);
+            fclose($file_primary);
             fclose($out);
             unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy");
 
 
             // Now encrypt the file with new saltkey
-            $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", "rb");
+            $file_primary = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", "rb");
             $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'], 'wb');
             // encrypt using new
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
             // copy to file
-            while (($line = fgets($fp)) !== false) {
+            while (($line = fgets($file_primary)) !== false) {
                 fputs($out, (string) $line);
             }
 
             // clean
-            fclose($fp);
+            fclose($file_primary);
             fclose($out);
             unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp");
 

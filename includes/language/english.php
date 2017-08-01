@@ -14,6 +14,14 @@
  */
 global $LANG;
 $LANG = array (
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'confirm_change_field_type' => 'Confirm changing the field type',
+    'select_type_of_field' => 'Select the field type',
+    'define_new_field' => 'Define a new field',
+    'data_is_text' => 'Data is text',
+    'data_is_masked' => 'Data is masked',
     'at_export' => 'Export',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',

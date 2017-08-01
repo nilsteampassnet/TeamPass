@@ -119,6 +119,16 @@ function moveItem() {
     $("#category_confirm_text").html("<?php echo $LANG['confirm_moveto']; ?>");
     $("#category_confirm").dialog("open");
 }
+/*
+* Change Field Type
+*/
+function changeFieldTypeNow() {
+    var data = $("input[name=sel_item]:checked").attr("id").split('_');
+    $("#post_id").val(data[1]);
+    $("#post_type").val("changeFieldType");
+    $("#category_confirm_text").html("<?php echo $LANG['confirm_change_field_type']; ?>");
+    $("#category_confirm").dialog("open");
+}
 
 /*
 * Save the position of the Categories
@@ -191,22 +201,32 @@ function loadFieldsList() {
                     '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
                     '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
                 } else {
-                    newList += '<tr id="t_field_'+val[1]+'"><td width="20px"></td>'+
-                    '<td><input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
+                    newList += '<tr id="t_field_'+val[1]+'"><td width="60px"></td>'+
+                    '<td colspan="2"><input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
                     '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
                     '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>';
 
                     if (val[4] !== "") {
                         newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
                         if (val[4] === "1") {
-                            newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>" onclick="changeEncrypMode('+val[1]+', 1)"></i>';
+                            newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 1)"></i>';
                         } else if (val[4] === "0") {
-                            newList += '<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data']; ?>" onclick="changeEncrypMode('+val[1]+', 0)"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>';
+                            newList += '<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 0)"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>';
                         }
                         newList += '</span>'
                     }
 
-                    newList += '</td><td></td></tr>';
+                    if (val[6] !== "") {
+                        newList += '<span style="margin-left:4px;">';
+                        if (val[6] === "text") {
+                            newList += '<i class="fa fa-paragraph tip" title="<?php echo $LANG['data_is_text'];?>"></i>';
+                        } else if (val[6] === "masked") {
+                            newList += '<i class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked'];?>"></i>';
+                        }
+                        newList += '</span>'
+                    }
+
+                    newList += '</td></tr>';
                 }
             });
 
@@ -642,6 +662,7 @@ $(function() {
     $(document).on("click","input[name=sel_item]",function(){
         var data = $("input[name=sel_item]:checked").attr("id").split('_');
         $("#new_item_title").val($("#item_"+data[1]).html());
+        $("#moveItemTo, #changeFieldType").val(0);
     });
 
     // confirm dialogbox
@@ -650,7 +671,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 400,
-        height: 120,
+        height: 140,
         title: "<?php echo $LANG['confirm']; ?>",
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
@@ -658,10 +679,15 @@ $(function() {
                 var $this = $(this);
                 // prepare data to send
                 var data = "";
-                if ($("#post_type").val() == "renameItem") {
+                if ($("#post_type").val() === "renameItem") {
                     data = sanitizeString($("#new_item_title").val());
-                } else if ($("#post_type").val() == "moveItem") {
+                } else if ($("#post_type").val() === "moveItem") {
                     data = $("#moveItemTo").val();
+                } else if ($("#post_type").val() === "changeFieldType") {
+                    data = $("#changeFieldType").val();
+                }
+                if (data === "") {
+                    return false;
                 }
                 // send query
                 $.post(
@@ -672,13 +698,10 @@ $(function() {
                         data    : data
                     },
                     function(data) {
-                        if ($("#post_type").val() == "deleteCategory") {
+                        if ($("#post_type").val() === "deleteCategory") {
                             $("#t_field_"+$("#post_id").val()).hide();
-                        } else if ($("#post_type").val() == "renameItem") {
+                        } else if ($("#post_type").val() === "renameItem") {
                             $("#item_"+$("#post_id").val()).html($("#new_item_title").val());
-                        } else if ($("#post_type").val() == "moveItem") {
-                            // reload table
-                            //loadFieldsList();
                         }
                         loadFieldsList();
                         $("#new_category_label, #new_item_title").val("");
@@ -699,9 +722,9 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 500,
-        height: 150,
-        title: "<?php echo $LANG['category_in_folders']; ?>",
+        width: 550,
+        height: 210,
+        title: "<?php echo $LANG['define_new_field']; ?>",
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
                 if ($("#new_field_title").val() !== "" && $("#post_id").val() !== "") {
@@ -711,9 +734,10 @@ $(function() {
                     $.post(
                         "sources/categories.queries.php",
                         {
-                            type    : "addNewField",
-                            title   : sanitizeString($("#new_field_title").val()),
-                            id      : $("#post_id").val()
+                            type        : "addNewField",
+                            field_title : sanitizeString($("#new_field_title").val()),
+                            field_type  : sanitizeString($("#new_field_type").val()),
+                            id          : $("#post_id").val()
                         },
                         function(data) {
                             $("#new_field_title").val("");
