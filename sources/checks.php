@@ -33,13 +33,19 @@ $pagesRights = array(
         "home", "items", "find", "kb", "favourites", "suggestion", "folders"
     ),
     "manager" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders", "manage_views", "manage_users"
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "manage_views", "manage_users"
     ),
     "admin" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders", "manage_views", "manage_users", "manage_settings", "manage_main"
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "manage_views", "manage_users", "manage_settings", "manage_main"
     )
 );
 
+/**
+ * Returns the page the user is visiting
+ * @return string The page name
+ */
 function curPage()
 {
     global $SETTINGS;
@@ -59,20 +65,27 @@ function curPage()
     return $result['page'];
 }
 
+/**
+ * Checks if user is allowed to open the page
+ * @param  integer $userId      User's ID
+ * @param  integer $userKey     User's temporary key
+ * @param  String $pageVisited  Page visited
+ * @return Boolean              False/True
+ */
 function checkUser($userId, $userKey, $pageVisited)
 {
     global $pagesRights, $SETTINGS;
-    global $server, $user, $pass, $database, $pre, $port, $encoding;
+    global $server, $user, $pass, $database, $port, $encoding;
 
     // Load libraries
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-    if (empty($userId) || empty($pageVisited) || empty($userKey)) {
+    if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
         return false;
     }
 
-    if (!is_array($pageVisited)) {
+    if (is_array($pageVisited) === false) {
         $pageVisited = array($pageVisited);
     }
 
@@ -83,7 +96,7 @@ function checkUser($userId, $userKey, $pageVisited)
     // Connect to mysql server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -100,34 +113,39 @@ DB::$host = $server;
     );
 
     // check if user exists and tempo key is coherant
-    if (empty($data['login']) || empty($data['key_tempo']) || $data['key_tempo'] != $userKey) {
+    if (empty($data['login']) === true || empty($data['key_tempo']) === true || $data['key_tempo'] !== $userKey) {
         return false;
     }
 
     // check if user is allowed to see this page
-    if (empty($data['admin']) === true
-        && empty($data['gestionnaire'] === true)
-        && !IsInArray($pageVisited, $pagesRights['user'])
+    if ($data['admin'] !== '1'
+        && $data['gestionnaire'] !== '1'
+        && IsInArray($pageVisited, $pagesRights['user']) === true
     ) {
-        return false;
-    } elseif (empty($data['admin']) === true
-        && empty($data['gestionnaire']) === false
-        && !IsInArray($pageVisited, $pagesRights['manager'])
+        return true;
+    } elseif ($data['admin'] !== '1'
+        && $data['gestionnaire'] === '1'
+        && IsInArray($pageVisited, $pagesRights['manager']) === true
     ) {
-        return false;
-    } elseif (empty($data['admin']) === false
-        && !IsInArray($pageVisited, $pagesRights['admin'])
+        return true;
+    } elseif ($data['admin'] === '1'
+        && IsInArray($pageVisited, $pagesRights['admin']) === true
     ) {
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
+/**
+ * Permits to check if at least one input is in array
+ * @param array $pages  Input
+ * @param array $table  Checked against this array
+ */
 function IsInArray($pages, $table)
 {
     foreach ($pages as $page) {
-        if (in_array($page, $table)) {
+        if (in_array($page, $table) === true) {
             return true;
         }
     }

@@ -45,6 +45,9 @@ if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
     handleUploadError('No Session was found.');
 }
 
+// load functions
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
 // Prepare POST variables
 $post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
 $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
@@ -106,8 +109,6 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-// load functions
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 if (null !== $post_type_upload && $post_type_upload === "upload_profile_photo") {
     $targetDir = $SETTINGS['cpassman_dir'].'/includes/avatars';

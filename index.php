@@ -265,7 +265,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
         <span id="menu_suggestion_position">';
         // SUGGESTION menu
-        if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
+        if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
             && ($_SESSION['user_read_only'] == 1 || $_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
         ) {
             echo '
@@ -481,7 +481,7 @@ if (isset($_SESSION['CPM'])) {
 
 // display an item in the context of OTV link
     if ((!isset($_SESSION['validite_pw']) || empty($_SESSION['validite_pw']) || empty($_SESSION['user_id'])) &&
-        isset($_GET['otv']) && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === "true"
+        isset($_GET['otv']) && filter_var($_GET['otv'], FILTER_SANITIZE_STRING) === 'true'
     ) {
         // case where one-shot viewer
         if (isset($_GET['code']) && !empty($_GET['code'])
@@ -490,11 +490,16 @@ if (isset($_SESSION['CPM'])) {
             include 'otv.php';
         } else {
             $_SESSION['error']['code'] = ERR_VALID_SESSION;
-            $_SESSION['initial_url'] = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")), FILTER_SANITIZE_URL);
+            $_SESSION['initial_url'] = filter_var(
+                substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")),
+                FILTER_SANITIZE_URL
+            );
             include $SETTINGS['cpassman_dir'].'/error.php';
         }
     // Ask the user to change his password
-    } else if ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false) && !empty($_SESSION['user_id']) && $_SESSION['is_admin'] !== '1') {
+    } elseif ((!isset($_SESSION['validite_pw']) || $_SESSION['validite_pw'] === false)
+        && !empty($_SESSION['user_id']) && $_SESSION['is_admin'] !== '1'
+    ) {
         //Check if password is valid
         echo '
         <div style="margin:auto; padding:20px; width:500px;" class="ui-state-focus ui-corner-all">
@@ -617,7 +622,7 @@ if (isset($_SESSION['CPM'])) {
                     class="ui-state-error ui-corner-all">
                     <b>'.addslashes($LANG['index_maintenance_mode']).'</b>
                 </div>';
-        } elseif (isset($_GET['session_over']) && $_GET['session_over'] == "true") {
+        } elseif (isset($_GET['session_over']) && $_GET['session_over'] == 'true') {
             // SESSION FINISHED => RECONNECTION ASKED
             echo '
                     <div style="text-align:center;margin-top:30px;margin-bottom:20px;padding:10px;"
@@ -628,7 +633,19 @@ if (isset($_SESSION['CPM'])) {
 
         // case where user not logged and can't access a direct link
         if (!empty($_GET['page'])) {
-            $_SESSION['initial_url'] = filter_var(substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")), FILTER_SANITIZE_URL);
+            $_SESSION['initial_url'] = filter_var(
+                substr($_SERVER["REQUEST_URI"], strpos($_SERVER["REQUEST_URI"], "index.php?")),
+                FILTER_SANITIZE_URL
+            );
+            // REDIRECTION PAGE ERREUR
+            echo '
+            <script language="javascript" type="text/javascript">
+            <!--
+                sessionStorage.clear();
+                window.location.href = "index.php";
+            -->
+            </script>';
+            exit;
         } else {
             $_SESSION['initial_url'] = "";
         }

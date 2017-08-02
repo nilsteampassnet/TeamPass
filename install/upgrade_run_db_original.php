@@ -49,25 +49,26 @@ function getSettingValue($val)
 ################
 ## Function permits to check if a column exists, and if not to add it
 ################
-function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
+function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL")
 {
     global $dbTmp;
     $exists = false;
-    $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc($columns)) {
-        if ($c['Field'] == $column) {
+    $columns = mysqli_query($dbTmp, "show columns from $dbname");
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ($col['Field'] == $column) {
             $exists = true;
             return true;
         }
     }
     if (!$exists) {
-        return mysqli_query($dbTmp, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
+        return mysqli_query($dbTmp, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
     } else {
         return false;
     }
 }
 
-function addIndexIfNotExist($table, $index, $sql) {
+function addIndexIfNotExist($table, $index, $sql)
+{
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");

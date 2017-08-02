@@ -47,7 +47,7 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     // connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -79,23 +79,24 @@ DB::$host = $server;
 } else {
     require_once $SETTINGS['cpassman_dir'].'/includes/language/english.php';
     echo '
-    <div style="width:800px;margin:auto;">';
+    <div style="width:800px;margin:auto;">
+        <div class="ui-state-error ui-corner-all error" style="margin-top:60px; padding:15px; text-align:center; font-size:16px;" >
+            <i class="fa fa-warning fa-2x"></i><br /><br />';
+
     if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
-        echo '
-        <div class="ui-state-error ui-corner-all error" >'.$LANG['error_not_authorized'].'</div>';
+        echo $LANG['error_not_authorized'];
     } elseif (@$_SESSION['error']['code'] === ERR_NOT_EXIST) {
-        echo '
-        <div class="ui-state-error ui-corner-all error" >'.$LANG['error_not_exists'].'</div>';
+        echo $LANG['error_not_exists'];
     } elseif (@$_SESSION['error']['code'] === ERR_SESS_EXPIRED) {
-        echo '
-        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['index_session_expired'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
+        echo $LANG['index_session_expired'];
     } elseif (@$_SESSION['error']['code'] === ERR_NO_MCRYPT) {
-        echo '
-        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_mcrypt_not_loaded'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
+        echo $LANG['error_mcrypt_not_loaded'];
     } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
-        echo '
-        <div class="ui-state-error ui-corner-all error" style="text-align:center;" >'.$LANG['error_not_authorized'].'<br /><br /><a href="index.php" />'.$LANG['home'].'</a></div>';
+        echo $LANG['error_not_authorized'];
     }
+    echo '
+            <br /><br /><a href="index.php" />'.$LANG['home'].'</a>
+        </div>';
 }
 
 // erase session table

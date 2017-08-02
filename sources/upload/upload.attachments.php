@@ -45,6 +45,9 @@ if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
     handleAttachmentError('No Session was found.', 110);
 }
 
+// load functions
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
 
 // Get parameters
 $chunk = isset($_REQUEST["chunk"]) ? (int) $_REQUEST["chunk"] : 0;
@@ -61,7 +64,7 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
     require_once '../../includes/config/settings.php';
     require_once '../../includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -157,9 +160,6 @@ header("Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
-
-// load functions
-require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 $targetDir = $SETTINGS['path_to_upload_folder'];
 

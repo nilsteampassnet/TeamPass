@@ -102,19 +102,19 @@ function getSettingValue($val)
 ################
 ## Function permits to check if a column exists, and if not to add it
 ################
-function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
+function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL")
 {
     global $db_link;
     $exists = false;
-    $columns = mysqli_query($db_link, "show columns from $db");
-    while ($c = mysqli_fetch_assoc($columns)) {
-        if ($c['Field'] == $column) {
+    $columns = mysqli_query($db_link, "show columns from $dbname");
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ($col['Field'] == $column) {
             $exists = true;
             return true;
         }
     }
     if (!$exists) {
-        return mysqli_query($db_link, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
+        return mysqli_query($db_link, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
     } else {
         return false;
     }

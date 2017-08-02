@@ -352,7 +352,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                         <td>';
             if ($field[3] === "masked") {
                 echo '
-                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="display:inline;" class="fields_div unhide_masked_data pointer"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
+                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="float:left; cursor:pointer; width:300px;" class="fields_div unhide_masked_data pointer"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
             } else {
                 echo '
                             <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';

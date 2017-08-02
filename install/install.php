@@ -94,12 +94,24 @@ if (isset($_SERVER['HTTPS'])) {
 echo '
 <div id="text_step2" style="display:none;">
     <h5>Teampass instance information:</h5>
-    <div class="line_entry">
-        <label for="root_path" class="label_block_big">Absolute path to teampass folder :</label><input type="text" id="root_path" name="root_path" class="ui-widget" style="width:450px;" value="'.$abs_path.'" />
-    </div>
-    <div class="line_entry">
-        <label for="url_path" class="label_block_big">Full URL to teampass :</label><input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /><span style="padding-left:10px;" id="url_path_res"></span>
-    </div>
+    <table>
+        <tr>
+            <td style="width:150px;">
+                <label for="root_path" class="label_block_big">Absolute path to teampass folder :</label>
+            </td>
+            <td>
+                <input type="text" id="root_path" name="root_path" class="ui-widget" style="width:450px;" value="'.$abs_path.'" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="url_path" class="label_block_big">Full URL to teampass :</label>
+            </td>
+            <td>
+                <input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /
+            </td>
+        </tr>
+    </table>
 
     <h5>Following elements will be checked:</h5>
     <ul>
@@ -129,22 +141,49 @@ echo '
 echo '
 <div id="text_step3" style="display:none;">
     <h5>Database information:</h5>
-    <div>Indicate here the credentials for Database connection.</div>
-    <div class="line_entry">
-    <label for="db_host" class="label_block">Host :</label><input type="text" id="db_host" style="width:250px;"  />
-    </div>
-    <div class="line_entry">
-    <label for="db_bdd" class="label_block">dataBase name :</label><input type="text" id="db_bdd" style="width:250px;" />
-    </div>
-    <div class="line_entry">
-    <label for="db_login" class="label_block">Login :</label><input type="text" id="db_login" style="width:250px;" />
-    </div>
-    <div class="line_entry">
-    <label for="db_pw" class="label_block">Password :</label><input type="text" id="db_pw" tilte="Double quotes not allowed!" style="width:250px;" />
-    </div>
-    <div class="line_entry">
-    <label for="db_port" class="label_block">Port :</label><input type="text" id="db_port" value="3306" style="width:250px;" />
-    </div>
+    <div style="margin:5px 0 5px 0;">Database connection Information</div>
+    <table>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_host" class="label_block_big">Host :</label>
+            </td>
+            <td>
+                <input type="text" id="db_host" value="" style="width:350px;" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_bdd" class="label_block_big">DataBase name :</label>
+            </td>
+            <td>
+                <input type="text" id="db_bdd" value="" style="width:350px;" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_login" class="label_block_big">Login :</label>
+            </td>
+            <td>
+                <input type="text" id="db_login" value="" style="width:350px;" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_pw" class="label_block_big">Password :</label>
+            </td>
+            <td>
+                <input type="text" id="db_pw" value="" style="width:350px;" title="Double quotes not allowed!" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_port" class="label_block_big">Port :</label>
+            </td>
+            <td>
+                <input type="text" id="db_port" value="3306" style="width:350px;" />
+            </td>
+        </tr>
+    </table>
 </div>';
 
 echo '

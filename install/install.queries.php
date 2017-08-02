@@ -68,6 +68,49 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
+/**
+ * Permits to encrypt a message using Defuse
+ * @param  string $message   Message to encrypt
+ * @param  string $ascii_key Key to hash
+ * @return array             String + Error
+ */
+function encryptFollowingDefuse($message, $ascii_key)
+{
+    // load PhpEncryption library
+    $path = '../includes/libraries/Encryption/Encryption/';
+    require_once $path.'Crypto.php';
+    require_once $path.'Encoding.php';
+    require_once $path.'DerivedKeys.php';
+    require_once $path.'Key.php';
+    require_once $path.'KeyOrPassword.php';
+    require_once $path.'File.php';
+    require_once $path.'RuntimeTests.php';
+    require_once $path.'KeyProtectedByPassword.php';
+    require_once $path.'Core.php';
+
+    // convert KEY
+    $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
+
+    try {
+        $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
+    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+        $err = "an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+        $err = $ex;
+    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+        $err = $ex;
+    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+        $err = $ex;
+    } catch (Defuse\Crypto\Exception\IOException $ex) {
+        $err = $ex;
+    }
+
+    return array(
+        'string' => isset($text) ? $text : "",
+        'error' => $err
+    );
+}
+
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -175,21 +218,21 @@ if (null !== $post_type) {
                 // store values
                 foreach ($data as $key => $value) {
                     $superGlobal->put($key, $value, "SESSION");
-                    $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = '".$key."'"));
-                    if ($tmp[0] == 0 || empty($tmp[0])) {
+                    $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
+                    if (intval($tmp) === 0) {
                         mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
                     } else {
                         mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$value."' WHERE `key` = '".$key."';");
                     }
                 }
-                $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'url_path'"));
-                if ($tmp[0] == 0 || empty($tmp[0])) {
+                $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
+                if (intval($tmp) === 0) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "');");
                 } else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
                 }
-                $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = 'abspath'"));
-                if ($tmp[0] == 0 || empty($tmp[0])) {
+                $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
+                if (intval($tmp) === 0) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($session_abspath) ? $db['abspath'] : $session_abspath, "');");
                 } else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_abspath) ? $db['abspath'] : $session_abspath, "' WHERE `key` = 'abspath';");
@@ -231,8 +274,8 @@ if (null !== $post_type) {
                     // store all variables in SESSION
                     foreach ($data as $key => $value) {
                         $superGlobal->put($key, $value, "SESSION");
-                        $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT COUNT(*) FROM `_install` WHERE `key` = '".$key."'"));
-                        if ($tmp[0] == 0 || empty($tmp[0])) {
+                        $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
+                        if (intval($tmp) === 0) {
                             mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
                         } else {
                             mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$value."' WHERE `key` = '".$key."';");
@@ -342,7 +385,7 @@ if (null !== $post_type) {
                                 unlink($tp_config_file);
                             }
                         }
-                        $fh = fopen($tp_config_file, 'w');
+                        $file_handler = fopen($tp_config_file, 'w');
                         $config_text = "<?php
 global \$SETTINGS;
 \$SETTINGS = array (";
@@ -473,7 +516,7 @@ global \$SETTINGS;
                                     WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
                                 )
                             );
-                            if ($tmp[0] == 0) {
+                            if (intval($tmp[0]) === 0) {
                                 $queryRes = mysqli_query(
                                     $dbTmp,
                                     "INSERT INTO `".$var['tbl_prefix']."misc`
@@ -490,13 +533,13 @@ global \$SETTINGS;
 
                         // write to config file
                         $result = fwrite(
-                            $fh,
+                            $file_handler,
                             utf8_encode(
                                 substr_replace($config_text, "", -1)."
 );"
                             )
                         );
-                        fclose($fh);
+                        fclose($file_handler);
                     } elseif ($task === "nested_tree") {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -995,13 +1038,15 @@ global \$SETTINGS;
                     }
 
                     // Encrypt the DB password
-                    require_once "../sources/main.functions.php";
-                    $encrypted_text = cryption($db['db_pw'], "", "encrypt")['string'];
+                    $encrypted_text = encryptFollowingDefuse(
+                        $db['db_pw'],
+                        file_get_contents($securePath."/teampass-seckey.txt")
+                    )['string'];
 
                     // Open and write Settings file
-                    $fh = fopen($filename, 'w');
+                    $file_handler = fopen($filename, 'w');
                     $result = fwrite(
-                        $fh,
+                        $file_handler,
                         utf8_encode(
                             "<?php
 global \$lang, \$txt, \$pathTeampas, \$urlTeampass, \$pwComplexity, \$mngPages;
@@ -1024,7 +1069,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
 "
                         )
                     );
-                    fclose($fh);
+                    fclose($file_handler);
                     if ($result === false) {
                         echo '[{"error" : "Setting.php file could not be created. Please check the path and the rights", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     } else {
@@ -1040,10 +1085,10 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                             unlink($skFile);
                         }
                     }
-                    $fh = fopen($skFile, 'w');
+                    $file_handler = fopen($skFile, 'w');
 
                     $result = fwrite(
-                        $fh,
+                        $file_handler,
                         utf8_encode(
                             "<?php
 @define('COST', '13'); // Don't change this.
@@ -1054,7 +1099,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
 ?>"
                         )
                     );
-                    fclose($fh);
+                    fclose($file_handler);
 
                     // finalize
                     if ($result === false) {

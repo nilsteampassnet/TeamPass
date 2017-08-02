@@ -407,16 +407,21 @@ function identifyUser($sentData)
                 fputs($dbgLdap, "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."\n");
             }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
-            if ($ldapconn) {
-                if ($SETTINGS['ldap_bind_dn'] != "" && $SETTINGS['ldap_bind_passwd'] != "") {
+
+            // Is LDAP connection ready?
+            if ($ldapconn !== false) {
+                // Should we bind the connection?
+                if ($SETTINGS['ldap_bind_dn'] !== "" && $SETTINGS['ldap_bind_passwd'] !== "") {
                     $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
                     if ($debugLdap == 1) {
                         fputs($dbgLdap, "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."\n");
                     }
                 }
-                if (($SETTINGS['ldap_bind_dn'] == "" && $SETTINGS['ldap_bind_passwd'] == "") || $ldapbind) {
+                if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
                     $filter = "(&(".$SETTINGS['ldap_user_attribute']."=$username)(objectClass=".$SETTINGS['ldap_object_class']."))";
                     $result = ldap_search($ldapconn, $SETTINGS['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
+
+                    // Should we restrain the search in specified user groups
                     if (isset($SETTINGS['ldap_usergroup'])) {
                         $filter_group = "memberUid=".$username;
                         $result_group = ldap_search($ldapconn, $SETTINGS['ldap_usergroup'], $filter_group, array('dn'));
@@ -427,7 +432,8 @@ function identifyUser($sentData)
                                     'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
                                 );
                         }
-                        if (!ldap_count_entries($ldapconn, $result_group)) {
+                        // Is user in the specified user groups?
+                        if (ldap_count_entries($ldapconn, $result_group) === false) {
                             $ldapConnection = false;
                         } else {
                             $ldapConnection = true;
@@ -440,12 +446,14 @@ function identifyUser($sentData)
                             'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
                         );
                     }
-                    if ($ldapConnection && ldap_count_entries($ldapconn, $result)) {
-                        // try auth
+
+                    // Is user in the LDAP?
+                    if (ldap_count_entries($ldapconn, $result) !== false) {
+                        // Try to auth inside LDAP
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
                         $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
-                        if ($ldapbind) {
+                        if ($ldapbind === true) {
                             $ldapConnection = true;
 
                             // Update user's password
@@ -493,12 +501,14 @@ function identifyUser($sentData)
             $adldap->register();
 
             // Posix style LDAP handles user searches a bit differently
-            if ($SETTINGS['ldap_type'] == 'posix') {
+            if ($SETTINGS['ldap_type'] === 'posix') {
                 $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
-            } elseif ($SETTINGS['ldap_type'] == 'windows' && $ldap_suffix == '') {
+            } elseif ($SETTINGS['ldap_type'] === 'windows' && empty($ldap_suffix)) {
                 //Multiple Domain Names
                 $ldap_suffix = $SETTINGS['ldap_suffix'];
             }
+
+            // Create LDAP connection
             $adldap = new adLDAP\adLDAP(
                 array(
                     'base_dn' => $SETTINGS['ldap_domain_dn'],
@@ -514,14 +524,14 @@ function identifyUser($sentData)
                 fputs($dbgLdap, "Create new adldap object : ".$adldap->getLastError()."\n\n\n"); //Debug
             }
 
-            // openLDAP expects an attribute=value pair
-            if ($SETTINGS['ldap_type'] == 'posix') {
+            // OpenLDAP expects an attribute=value pair
+            if ($SETTINGS['ldap_type'] === 'posix') {
                 $auth_username = $SETTINGS['ldap_user_attribute'].'='.$username;
             } else {
                 $auth_username = $username;
             }
 
-            // authenticate the user
+            // Authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 $ldapConnection = true;
                 // Update user's password
@@ -595,7 +605,7 @@ function identifyUser($sentData)
     ) {
         // If LDAP enabled, create user in TEAMPASS if doesn't exist
 
-        // get user info from LDAP
+        // Get user info from LDAP
         if ($SETTINGS['ldap_type'] === 'posix-search') {
             //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
             $user_info_from_ad = $result;
@@ -852,23 +862,23 @@ function identifyUser($sentData)
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
         if ((
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 0
+                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '0'
                 && $userPasswordVerified === true && $data['disabled'] == 0
             )
             ||
             (
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 1
-                && $ldapConnection === true && $data['disabled'] == 0 && $username != "admin"
+                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1'
+                && $ldapConnection === true && $data['disabled'] === '0' && $username != "admin"
             )
             ||
             (
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 2
-                && $ldapConnection === true && $data['disabled'] == 0 && $username != "admin"
+                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '2'
+                && $ldapConnection === true && $data['disabled'] === '0' && $username != "admin"
             )
             ||
             (
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 1
-                && $username == "admin" && $userPasswordVerified === true && $data['disabled'] == 0
+                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1'
+                && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
             )
         ) {
             $_SESSION['autoriser'] = true;
@@ -885,7 +895,7 @@ function identifyUser($sentData)
             }
 
             // Log into DB the user's connection
-            if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] == 1) {
+            if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1') {
                 logEvents('user_connection', 'connection', $data['id'], stripslashes($username));
             }
             // Save account in SESSION
@@ -1026,7 +1036,7 @@ function identifyUser($sentData)
                 );
             } else {
                 // is new LDAP user. Show only his personal folder
-                if ($SETTINGS['enable_pf_feature'] == "1") {
+                if ($SETTINGS['enable_pf_feature'] === '1') {
                     $_SESSION['personal_visible_groups'] = array($data['id']);
                     $_SESSION['personal_folders'] = array($data['id']);
                 } else {
@@ -1051,9 +1061,9 @@ function identifyUser($sentData)
                 if (!empty($item)) {
                     $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id=%i", $item);
                     $_SESSION['latest_items_tab'][$item] = array(
-                            'id' => $item,
-                            'label' => $data['label'],
-                            'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$item
+                        'id' => $item,
+                        'label' => $data['label'],
+                        'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$item
                     );
                 }
             }
@@ -1061,7 +1071,7 @@ function identifyUser($sentData)
             $return = $dataReceived['randomstring'];
             // Send email
             if (isset($SETTINGS['enable_send_email_on_user_login'])
-                    && $SETTINGS['enable_send_email_on_user_login'] == 1
+                    && $SETTINGS['enable_send_email_on_user_login'] === '1'
                     && $_SESSION['user_admin'] != 1
             ) {
                 // get all Admin users
@@ -1112,7 +1122,7 @@ function identifyUser($sentData)
                 $userIsLocked = 1;
                 // log it
                 if (isset($SETTINGS['log_connections'])
-                        && $SETTINGS['log_connections'] == 1
+                        && $SETTINGS['log_connections'] === '1'
                 ) {
                     logEvents('user_locked', 'connection', $data['id'], stripslashes($username));
                 }
@@ -1131,7 +1141,7 @@ function identifyUser($sentData)
             // What return shoulb we do
             if ($userIsLocked == 1) {
                 $return = "user_is_locked";
-            } elseif ($SETTINGS['nb_bad_authentication'] == 0) {
+            } elseif ($SETTINGS['nb_bad_authentication'] === '0') {
                 $return = "false";
             } else {
                 $return = $nbAttempts;
@@ -1161,7 +1171,7 @@ function identifyUser($sentData)
     echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
     $_SESSION['initial_url'] = "";
-    if ($SETTINGS['cpassman_dir'] == "..") {
-        $SETTINGS['cpassman_dir'] = ".";
+    if ($SETTINGS['cpassman_dir'] === '..') {
+        $SETTINGS['cpassman_dir'] = '.';
     }
 }
