@@ -50,6 +50,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -91,6 +92,10 @@ foreach ($rows as $record) {
     // build selection list
     $categoriesSelect .= '<option value="'.$record['id'].'">'.($record['title']).'</option>';
 }
+
+// Build list of Field Types
+$options_field_types = '<option value="text">'.$LANG['text'].'</option>'.
+                '<option value="masked">'.$LANG['masked'].'</option>';
 
 echo '
 <div id="tabs-8">
@@ -171,7 +176,17 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                 <input type="radio" name="sel_item" id="item_'.$field['id'].'_cat" />
                 <label for="item_'.$field['id'].'_cat" id="item_'.$field['id'].'">'.($field['title']).'</label>
                 <span id="encryt_data_'.$field['id'].'" style="margin-left:4px; cursor:pointer;">', (isset($field['encrypted_data']) && $field['encrypted_data'] === "1") ? '<i class="fa fa-key tip" title="'.$LANG['encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'1\')"></i>' : '<span class="fa-stack" title="'.$LANG['not_encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>', '
-                </span>
+                </span>';
+                if (isset($field['type'])) {
+                    if ($field['type'] === "text") {
+                        echo '
+                <span style="margin-left:4px;"><i class="fa fa-paragraph tip" title="'.$LANG['data_is_text'].'"></i></span>';
+                    } elseif ($field['type'] === "masked") {
+                        echo '
+                <span style="margin-left:4px;"><i class="fa fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
+                    }
+                }
+                echo '
             </td>
             <td></td>
         </tr>';
@@ -206,7 +221,16 @@ echo '
             <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" />
             &nbsp;|&nbsp;
             <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" />
-            <select id="moveItemTo" style="margin-left:10px;"><option style="display: none ! important;" value="HTML validation placeholder"></option>'.$categoriesSelect.'</select>
+            <select id="moveItemTo" style="margin-left:10px;">
+                <option style="display: none ! important;" value="HTML validation placeholder"></option>
+                '.$categoriesSelect.'
+            </select>
+            &nbsp;|&nbsp;
+            <input type="button" value="'.$LANG['type'].'" onclick="changeFieldTypeNow()" style="margin-left:5px;" />
+            <select id="changeFieldType" style="margin-left:10px;">
+                <option style="display: none ! important;" value="HTML validation placeholder"></option>
+                '.$options_field_types.'
+            </select>
         </div>
         <div style="margin-top:5px;">
             <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" />
@@ -232,7 +256,16 @@ echo '
 
 echo '
     <div id="add_new_field" style="display:none;">
-        '.$LANG['new_field_title'].'<input type="text" id="new_field_title" style="width: 200px; margin-left:20px;" />
+        <div style="width:100%;">
+            <label for="new_field_title" style="display:inline-block;width:220px;">'.$LANG['new_field_title'].'</label>
+            <input type="text" id="new_field_title" style="width: 200px; margin-left:20px; padding:3px;" />
+        </div>
+        <div style="margin-top:3px;">
+            <label for="new_field_type" style="display:inline-block;width:220px;">'.$LANG['select_type_of_field'].'</label>
+            <select id="new_field_type" style="width: 200px; margin-left:20px; padding:3px;">'.
+                $options_field_types.'
+            </select>
+        </div>
     </div>';
 
 echo '

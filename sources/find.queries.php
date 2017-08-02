@@ -43,6 +43,7 @@ if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles']
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -363,7 +364,7 @@ if (!isset($_GET['type'])) {
         }
         // Manage the restricted_to variable
         if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
-            $restrictedTo = $_POST['restricted'];
+            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
         } else {
             $restrictedTo = "";
         }

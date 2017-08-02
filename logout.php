@@ -28,8 +28,10 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
 
 if (!empty($user_id)) {
     // connect to the server
+    require_once './sources/main.functions.php';
     require_once './includes/config/settings.php';
     require_once './includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;

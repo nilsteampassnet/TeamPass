@@ -67,6 +67,7 @@ if (isset($SETTINGS_EXT['pwComplexity']) === false) {
 
 // connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -77,17 +78,24 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_folder_id = filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT);
+
 // treatment by action
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "add_new":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             // decrypt and retrieve data in JSON format
-            $data_received = prepareExchangedData(filter_var($_POST['data'], FILTER_SANITIZE_STRING), "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             // prepare variables
             $label = htmlspecialchars_decode($data_received['label']);
@@ -151,16 +159,20 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "delete_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+            DB::delete(
+                prefix_table("suggestion"),
+                "id = %i",
+                $post_id
+            );
             break;
 
         case "duplicate_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -168,7 +180,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, folder_id FROM ".prefix_table("suggestion")." WHERE id = %i",
-                intval($_POST['id'])
+                $post_id
             );
 
             // check if similar exists
@@ -187,17 +199,19 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "validate_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
+            $post_id = $post_id;
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, description, pw, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")."
                 WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // check if similar Item exists (based upon Label and folder id)
@@ -239,7 +253,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     updateCacheTable("update_value", $existing_item_id['id']);
 
                     // delete suggestion
-                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+                    DB::delete(
+                        prefix_table("suggestion"),
+                        "id = %i",
+                        $post_id
+                    );
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -278,7 +296,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     updateCacheTable("add_value", $newID);
 
                     // delete suggestion
-                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+                    DB::delete(
+                        prefix_table("suggestion"),
+                        "id = %i",
+                        $post_id
+                    );
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -289,14 +311,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "get_complexity_level":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
             $data = DB::queryfirstrow(
                 "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
-                $_POST['folder_id'],
+                $post_folder_id,
                 "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
@@ -310,14 +332,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "get_item_change_detail":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
             $data = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
             $tmp = cryption($data['pw'], "", "decrypt");
             $data['pw'] = $tmp['string'];
@@ -421,7 +443,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "approve_item_change":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -429,7 +451,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // read changes proposal
             $data = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // read current item
@@ -465,7 +487,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // prepare query
             $fields_array = array();
-            $fields_to_update = explode(";", filter_var($_POST['data'], FILTER_SANITIZE_STRING));
+            $fields_to_update = explode(";", $post_data);
             foreach ($fields_to_update as $field) {
                 if (!empty($field)) {
                     $fields_array[$field] = $data[$field];
@@ -485,7 +507,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 if (!empty($field)) {
                     if ($field !== "pw") {
                         logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$current_item[$field].' => '.$data[$field]);
-                    } else if ($field === "description") {
+                    } elseif ($field === "description") {
                         logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field);
                     } else {
                         $oldPwClear = cryption(
@@ -505,7 +527,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::delete(
                 $pre."items_change",
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             echo '[ { "error" : "" } ]';
@@ -514,7 +536,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "reject_item_change":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -523,7 +545,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::delete(
                 $pre."items_change",
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             break;

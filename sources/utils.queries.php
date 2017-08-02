@@ -35,6 +35,7 @@ require_once 'main.functions.php';
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -45,11 +46,24 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_freq = filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT);
+$post_ids = filter_input(INPUT_POST, 'ids', FILTER_SANITIZE_STRING);
+$post_salt_key = filter_input(INPUT_POST, 'salt_key', FILTER_SANITIZE_STRING);
+$post_current_id = filter_input(INPUT_POST, 'currentId', FILTER_SANITIZE_NUMBER_INT);
+$post_data_to_share = filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING);
+$post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+
 // Construction de la requ?te en fonction du type de valeur
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         #CASE export in CSV format
         case "export_to_csv_format":
+            // Init
             $full_listing = array();
             $full_listing[0] = array(
                 'id' => "id",
@@ -61,10 +75,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 'perso' => "perso"
             );
 
-            foreach (explode(';', $_POST['ids']) as $id) {
+            foreach (explode(';', $post_ids) as $id) {
                 if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
                     $rows = DB::query(
-                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
+                        "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
+                        i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
                         l.date as date,
                         n.renewal_period as renewal_period
                         FROM ".prefix_table("items")." as i
@@ -88,17 +103,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) || $id_managed != $record['id']) {
-                            if ((in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] === "1" && $_SESSION['user_id'] === $record['restricted_to']) && !empty($record['restricted_to']))
+                            if ((in_array($id, $_SESSION['personal_visible_groups'])
+                                && !($record['perso'] === "1"
+                                    && $_SESSION['user_id'] === $record['restricted_to'])
+                                && !empty($record['restricted_to']))
                                 ||
-                                (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
+                                (!empty($record['restricted_to'])
+                                    && !in_array($_SESSION['user_id'], $restricted_users_array)
+                                )
                             ) {
                                 //exclude this case
                             } else {
                                 //encrypt PW
-                                if (!empty($_POST['salt_key']) && isset($_POST['salt_key'])) {
+                                if (empty($post_salt_key) === false && null !== $post_salt_key) {
                                     $pw = cryption(
                                         $record['pw'],
-                                        mysqli_escape_string($link, stripslashes($_POST['salt_key'])),
+                                        mysqli_escape_string($link, stripslashes($post_salt_key)),
                                         "decrypt"
                                     );
                                 } else {
@@ -137,7 +157,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         #CASE start user personal pwd re-encryption
         case "reencrypt_personal_pwd_start":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
@@ -157,7 +177,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 LEFT JOIN ".prefix_table("items")." AS i ON i.id_tree = n.id
                 WHERE i.perso = %i AND n.title = %i",
                 "1",
-                $_POST['user_id']
+                $post_user_id
             );
             foreach ($rows as $record) {
                 if (empty($currentID)) {
@@ -173,20 +193,24 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         #CASE user personal pwd re-encryption
         case "reencrypt_personal_pwd":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
-            if (empty($_POST['currentId'])) {
+
+            if (empty($post_current_id) === true) {
                 echo '[{"error" : "No ID provided"}]';
                 break;
             }
 
-            if (isset($_POST['data_to_share'])) {
+            if (null !== $post_data_to_share) {
                 // ON DEMAND
 
                 //decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData($_POST['data_to_share'], "decode");
+                $dataReceived = prepareExchangedData(
+                    $post_data_to_share,
+                    "decode"
+                );
 
                 // do a check on old PSK
                 if (empty($dataReceived['sk']) || empty($dataReceived['old_sk'])) {
@@ -203,7 +227,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     "SELECT id, pw, pw_iv, encryption_type
                     FROM ".prefix_table("items")."
                     WHERE id = %i",
-                    $_POST['currentId']
+                    $post_current_id
                 );
                 if ($data['encryption_type'] === "defuse") {
                     $decrypt = cryption(
@@ -274,7 +298,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     "SELECT id, pw, pw_iv, encryption_type
                     FROM ".prefix_table("items")."
                     WHERE id = %i",
-                    $_POST['currentId']
+                    $post_current_id
                 );
                 if (empty($data['pw_iv']) && $data['encryption_type'] === "not_set") {
                 // check if pw encrypted with protocol #2
@@ -371,13 +395,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             #CASE auto update server password
         case "server_auto_update_password":
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
             }
 
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                "decode"
+            );
 
             // get data about item
             $dataItem = DB::queryfirstrow(
@@ -451,7 +478,15 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $dataReceived['currentId']
                 );
                 // update log
-                logItems($dataReceived['currentId'], $dataItem['label'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, $oldPwIV);
+                logItems(
+                    $dataReceived['currentId'],
+                    $dataItem['label'],
+                    $_SESSION['user_id'],
+                    'at_modification',
+                    $_SESSION['login'],
+                    'at_pw :'.$oldPw,
+                    $oldPwIV
+                );
                 $ret .= "<br />".$LANG['ssh_action_performed'];
             } else {
                 $ret .= "<br /><i class='fa fa-warning'></i>&nbsp;".$LANG['ssh_action_performed_with_error']."<br />";
@@ -468,9 +503,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "server_auto_update_password_frequency":
-            if (filter_var($_POST['key'], FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
-                || isset($_POST['id']) === false
-                || isset($_POST['freq']) === false
+            if ($post_key !== $_SESSION['key']
+                || null !== filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
+                || null !== filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_STRING)
             ) {
                 echo '[{"error" : "something_wrong"}]';
                 break;
@@ -480,11 +515,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::update(
                 prefix_table("items"),
                 array(
-                    'auto_update_pwd_frequency' => $_POST['freq'],
-                    'auto_update_pwd_next_date' => time() + (2592000 * intval($_POST['freq']))
+                    'auto_update_pwd_frequency' => $post_freq,
+                    'auto_update_pwd_next_date' => time() + (2592000 * $post_freq)
                     ),
                 "id = %i",
-                intval($_POST['id'])
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
             );
 
             echo '[{"error" : ""}]';

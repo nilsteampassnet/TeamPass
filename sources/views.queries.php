@@ -16,8 +16,8 @@ require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -48,6 +48,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -71,6 +72,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         #CASE generating the log for passwords renewal
         case "log_generate":
+            // Prepare POST variable
+            $post_date = filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING);
+
             //Prepare the PDF file
             include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
             $pdf = new TFPDF();
@@ -101,7 +105,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 "at_pw :%"
             );
             foreach ($rows as $record) {
-                if (date($SETTINGS['date_format'], $record['date']) === $_POST['date']) {
+                if (date($SETTINGS['date_format'], $record['date']) === $post_date) {
                     //get the tree grid
                     $arbo = $tree->getPath($record['id_tree'], true);
                     $arboTxt = "";
@@ -114,11 +118,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     }
                     $pdf->cell(80, 6, $record['label'], 1, 0, "L");
                     $pdf->cell(75, 6, $arboTxt, 1, 0, "L");
-                    $pdf->cell(21, 6, $_POST['date'], 1, 0, "C");
+                    $pdf->cell(21, 6, $post_date, 1, 0, "C");
                     $pdf->cell(15, 6, $record['login'], 1, 1, "C");
                 }
             }
-            list($d, $m, $y) = explode('/', $_POST['date']);
+            list($d, $m, $y) = explode('/', filter_input(INPUT_POST, 'date', FILTER_SANITIZE_STRING));
             $nomFichier = "log_followup_passwords_".date("Y-m-d", mktime(0, 0, 0, $m, $d, $y)).".pdf";
             //send the file
             $pdf->Output($SETTINGS['path_to_files_folder'].'/'.$nomFichier);
@@ -149,7 +153,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             //ITEMS deleted
             $texte .= "<tr><td><span class='fa fa-key'></span>&nbsp;<u><b>".$LANG['email_altbody_1']."</b></u></td></tr>";
             $rows = DB::query(
-                "SELECT u.login as login, i.id as id, i.label as label, i.id_tree as id_tree, l.date as date, n.title as folder_title
+                "SELECT u.login as login, i.id as id, i.label as label,
+                i.id_tree as id_tree, l.date as date, n.title as folder_title
                 FROM ".prefix_table("log_items")." as l
                 INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
                 INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
@@ -184,9 +189,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          * CASE admin want to restaure a list of deleted items
          */
         case "restore_deleted__items":
+            // Prepare POST variable
+            $post_list_f = explode(';', filter_input(INPUT_POST, 'list_f', FILTER_SANITIZE_STRING));
+            $post_list_i = explode(';', filter_input(INPUT_POST, 'list_i', FILTER_SANITIZE_STRING));
+
             //restore FOLDERS
-            if (count($_POST['list_f']) > 0) {
-                foreach (explode(';', $_POST['list_f']) as $id) {
+            if (count($post_list_f) > 0) {
+                foreach ($post_list_f as $id) {
                     $data = DB::queryfirstrow(
                         "SELECT valeur
                         FROM ".prefix_table("misc")."
@@ -218,8 +227,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
             }
             //restore ITEMS
-            if (count($_POST['list_i']) > 0) {
-                foreach (explode(';', $_POST['list_i']) as $id) {
+            if (count($post_list_i) > 0) {
+                foreach ($post_list_i as $id) {
                     DB::update(
                         prefix_table("items"),
                         array(
@@ -249,10 +258,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          * CASE admin want to delete a list of deleted items
          */
         case "really_delete_items":
-            $folders = explode(';', $_POST['folders']);
-            if (count($folders) > 0) {
+            // Prepare POST variable
+            $post_folders = explode(';', filter_input(INPUT_POST, 'folders', FILTER_SANITIZE_STRING));
+            $post_items = explode(';', filter_input(INPUT_POST, 'items', FILTER_SANITIZE_STRING));
+
+            if (count($post_folders) > 0) {
                 //delete folders
-                foreach ($folders as $fId) {
+                foreach ($post_folders as $fId) {
                     //get folder ID
                     $id = substr($fId, 1);
 
@@ -289,7 +301,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
             }
 
-            foreach (explode(';', $_POST['items']) as $id) {
+            foreach ($post_items as $id) {
                 //delete from ITEMS
                 DB::delete(prefix_table("items"), "id=%i", $id);
                 //delete from LOG_ITEMS
@@ -310,6 +322,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          * CASE generating the pdf of items to rennew
          */
         case "generate_renewal_pdf":
+            // Prepare POST variable
+            $post_text = explode(';', filter_input(INPUT_POST, 'text', FILTER_SANITIZE_STRING));
+
             //Prepare the PDF file
             include $SETTINGS['cpassman_dir'].'/includes/libraries/Pdf/Tfpdf/tfpdf.class.php';
             $pdf = new tFPDF();
@@ -332,7 +347,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $pdf->cell(25, 6, $LANG['author'], 1, 1, "C", true);
             $pdf->SetFont('helvetica', '', 9);
 
-            foreach (explode('@|@', addslashes($_POST['text'])) as $line) {
+            foreach (explode('@|@', addslashes($post_text)) as $line) {
                 $elem = explode('@;@', $line);
                 if (!empty($elem[0])) {
                     $pdf->cell(70, 6, $elem[0], 1, 0, "L");
@@ -354,31 +369,37 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          * CASE purging logs
          */
         case "purgeLogs":
-            if (!empty($_POST['purgeFrom']) && !empty($_POST['purgeTo']) && !empty($_POST['logType'])
+            // Prepare POST variable
+            $post_purgeFrom = explode(';', filter_input(INPUT_POST, 'purgeFrom', FILTER_SANITIZE_NUMBER_INT));
+            $post_purgeTo = explode(';', filter_input(INPUT_POST, 'purgeTo', FILTER_SANITIZE_NUMBER_INT));
+            $post_logType = explode(';', filter_input(INPUT_POST, 'logType', FILTER_SANITIZE_STRING));
+
+            // Check conditions
+            if (empty($post_purgeFrom) === false && empty($post_purgeTo) === false && empty($post_logType) === false
                 && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
-                if ($_POST['logType'] == "items_logs") {
+                if ($post_logType === "items_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                         "AND date BETWEEN %i AND %i",
                         "at_shown",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                     $counter = DB::count();
                         // Delete
                         DB::delete(
                             prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
                             "at_shown",
-                            intval(strtotime($_POST['purgeFrom'])),
-                            intval(strtotime($_POST['purgeTo']))
+                            strtotime($post_purgeFrom),
+                            strtotime($post_purgeTo)
                         );
-                } elseif ($_POST['logType'] == "connections_logs") {
+                } elseif ($post_logType === "connections_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "user_connection",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -386,16 +407,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "user_connection",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
-                } elseif ($_POST['logType'] == "errors_logs") {
+                } elseif ($post_logType === "errors_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "error",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -403,16 +424,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "error",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
-                } elseif ($_POST['logType'] == "copy_logs") {
+                } elseif ($post_logType === "copy_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                         "AND date BETWEEN %i AND %i",
                         "at_copy",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -420,16 +441,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_items"),
                         "action=%s AND date BETWEEN %i AND %i",
                         "at_copy",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
-                } elseif ($_POST['logType'] == "admin_logs") {
+                } elseif ($post_logType === "admin_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "admin_action",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -437,16 +458,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "admin_action",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
-                } elseif ($_POST['logType'] == "failed_auth_logs") {
+                } elseif ($post_logType === "failed_auth_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "failed_auth",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -454,8 +475,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "failed_auth",
-                        intval(strtotime($_POST['purgeFrom'])),
-                        intval(strtotime($_POST['purgeTo']))
+                        strtotime($post_purgeFrom),
+                        strtotime($post_purgeTo)
                     );
                 } else {
                     $counter = 0;

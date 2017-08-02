@@ -36,6 +36,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -46,17 +47,22 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id_item = filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_NUMBER_INT);
+
 // Check KEY and rights
-if (null === filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING)
-    || filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) != $_SESSION['key']
+if (null === $post_key
+    || $post_key != $_SESSION['key']
 ) {
     echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
     exit();
 }
 
 // Do asked action
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         /*
         * CASE
         * log if item's password is shown
@@ -66,7 +72,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => intval($_POST['id_item']),
+                        'id_item' => $post_id_item,
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_shown'
@@ -76,7 +82,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 // SysLog
                 if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
                     send_syslog(
-                        "The password of Item #".filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_STRING)." was shown to ".$_SESSION['login'].".",
+                        "The password of Item #".$post_id_item." was shown to ".$_SESSION['login'].".",
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"
@@ -94,7 +100,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => $_POST['id_item'],
+                        'id_item' => $post_id_item,
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_copied'
@@ -104,7 +110,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 // SysLog
                 if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
                     send_syslog(
-                        "The password of Item #".filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_STRING)." was copied to clipboard by ".$_SESSION['login'].".",
+                        "The password of Item #".$post_id_item." was copied to clipboard by ".$_SESSION['login'].".",
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"

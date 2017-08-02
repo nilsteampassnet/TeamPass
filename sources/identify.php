@@ -42,7 +42,15 @@ $ldap_suffix = "";
 $result = "";
 $adldap = "";
 
-if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") {
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
+$post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
+$post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+
+if ($post_type === "identify_duo_user") {
 //--------
 // DUO AUTHENTICATION
 //--------
@@ -52,14 +60,14 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
 
     // load library
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $_POST['login']);
+    $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "w");
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig request : ".filter_var($_POST['login'], FILTER_SANITIZE_STRING)."\n".
+            "sig request : ".$post_login."\n".
             'resp : '.$sig_request."\n"
         );
     }
@@ -70,7 +78,7 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.$_COOKIE[$csrfp_config['CSRFP_TOKEN']].'"}]';
 // DUO Identification
-} elseif (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user_check") {
+} elseif ($post_type === "identify_duo_user_check") {
 //--------
 // DUO AUTHENTICATION
 // this step is verifying the response received from the server
@@ -79,25 +87,25 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     // load library
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
-    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING));
+    $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "a");
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig response : ".filter_var($_POST['sig_response'], FILTER_SANITIZE_STRING)."\n".
+            "sig response : ".$post_sig_response."\n".
             'resp : '.$resp."\n"
         );
     }
 
     // return the response (which should be the user name)
-    if ($resp === $_POST['login']) {
+    if ($resp === $post_login) {
         echo '[{"resp" : "'.$resp.'"}]';
     } else {
         echo '[{"resp" : "'.$resp.'"}]';
     }
-} elseif (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_user_with_agses") {
+} elseif ($post_type === "identify_user_with_agses") {
 //--------
 //-- AUTHENTICATION WITH AGSES
 //--------
@@ -106,7 +114,8 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -117,26 +126,26 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
     $link->set_charset($encoding);
 
     // do checks
-    if (isset($_POST['cardid']) && empty($_POST['cardid']) === true) {
+    if (null !== $post_cardid && empty(post_cardid) === true) {
         // no card id is given
         // check if it is DB
         $row = DB::queryFirstRow(
             "SELECT `agses-usercardid` FROM ".prefix_table("users")."
             WHERE login = %s",
-            filter_var($_POST['login'], FILTER_SANITIZE_STRING)
+            $post_login
         );
-    } elseif (!empty($_POST['cardid']) && is_numeric($_POST['cardid'])) {
+    } elseif (empty($post_cardid) === false && is_numeric($post_cardid)) {
         // card id is given
         // save it in DB
         DB::update(
             prefix_table('users'),
             array(
-                'agses-usercardid' =>  filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT)
+                'agses-usercardid' => $post_cardid
                 ),
             "login = %s",
-            filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING)
+            $post_login
         );
-        $row['agses-usercardid'] = filter_var($_POST['cardid'], FILTER_SANITIZE_NUMBER_INT);
+        $row['agses-usercardid'] = $post_cardid;
     } else {
         // error
         echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
@@ -201,7 +210,7 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
             echo '[{"error" : "something_wrong" , "agses_message" : ""}]'; // user not found but not displayed as this in the error message
         }
     }
-} elseif ($_POST['type'] === "identify_user") {
+} elseif ($post_type === "identify_user") {
 //--------
 // NORMAL IDENTICATION STEP
 //--------
@@ -216,30 +225,30 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
     // manage brute force
     if ($_SESSION["pwd_attempts"] <= 3) {
         // identify the user through Teampass process
-        identifyUser($_POST['data']);
+        identifyUser($post_data);
     } elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
         $_SESSION["pwd_attempts"] = 1;
         // identify the user through Teampass process
-        identifyUser($_POST['data']);
+        identifyUser($post_data);
     } else {
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
         echo '[{"error" : "bruteforce_wait"}]';
         return false;
     }
-} elseif ($_POST['type'] == "store_data_in_cookie") {
+} elseif ($post_type === "store_data_in_cookie") {
 //--------
 // STORE DATA IN COOKIE
 //--------
 //
     // not used any more (only development purpose)
-    if ($_POST['key'] != $_SESSION['key']) {
+    if ($post_key !== $_SESSION['key']) {
         echo '[{"error" : "something_wrong"}]';
         return false;
     }
     // store some connection data in cookie
     setcookie(
         "TeamPassC",
-        $_POST['data'],
+        $post_data,
         time() + 60 * 60,
         '/'
     );
@@ -250,7 +259,7 @@ if (filter_var($_POST['type'], FILTER_SANITIZE_STRING) === "identify_duo_user") 
 */
 function identifyUser($sentData)
 {
-    global $debugLdap, $debugDuo, $k, $SETTINGS;
+    global $debugLdap, $debugDuo, $SETTINGS;
 
     // Load config
     if (file_exists('../includes/config/tp.config.php')) {
@@ -284,6 +293,7 @@ function identifyUser($sentData)
 
     // connect to the server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;

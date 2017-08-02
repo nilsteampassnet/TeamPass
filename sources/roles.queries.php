@@ -47,6 +47,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -66,16 +67,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         #CASE adding a new role
         case "add_new_role":
+            // Prepare POST variables
+            $post_name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
+
             //Check if role already exist : No similar roles
-            $tmp = DB::query("SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s", stripslashes($_POST['name']));
+            $tmp = DB::query(
+                "SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s",
+                stripslashes($post_name)
+            );
             $counter = DB::count();
             if ($counter == 0) {
                 db::debugmode(false);
                 DB::insert(
                     prefix_table("roles_title"),
                     array(
-                        'title' => noHTML($_POST['name']),
-                        'complexity' => $_POST['complexity'],
+                        'title' => noHTML($post_name),
+                        'complexity' => filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT),
                         'creator_id' => $_SESSION['user_id']
                     )
                 );
@@ -86,7 +93,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $_SESSION['nb_roles']++;
 
                     // get some data
-                    $data_tmp = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s", $_SESSION['user_id']);
+                    $data_tmp = DB::queryfirstrow(
+                        "SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %s",
+                        $_SESSION['user_id']
+                    );
 
                     // add new role to user
                     $tmp = str_replace(";;", ";", $data_tmp['fonction_id']);
@@ -119,8 +129,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //-------------------------------------------
         #CASE delete a role
         case "delete_role":
-            DB::delete(prefix_table("roles_title"), "id = %i", $_POST['id']);
-            DB::delete(prefix_table("roles_values"), "role_id = %i", $_POST['id']);
+            // Prepare POST variables
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+            // Delete roles
+            DB::delete(prefix_table("roles_title"), "id = %i", $post_id);
+            DB::delete(prefix_table("roles_values"), "role_id = %i", $post_id);
+
             //Actualize the variable
             $_SESSION['nb_roles']--;
 
@@ -131,7 +146,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             );
             foreach ($rows as $record) {
                 $tab = explode(";", $record['fonction_id']);
-                if (($key = array_search($_POST['id'], $tab)) !== false) {
+                if (($key = array_search($post_id, $tab)) !== false) {
                     // remove the deleted role id
                     unset($tab[$key]);
 
@@ -153,18 +168,26 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //-------------------------------------------
         #CASE editing a role
         case "edit_role":
+            // Prepare POST variables
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            $post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
+
             //Check if role already exist : No similar roles
-            DB::query("SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s AND id != %i", $_POST['title'], $_POST['id']);
+            DB::query(
+                "SELECT * FROM ".prefix_table("roles_title")." WHERE title = %s AND id != %i",
+                $post_title,
+                $post_id
+            );
             $counter = DB::count();
             if ($counter == 0) {
                 DB::update(
                     prefix_table("roles_title"),
                     array(
-                        'title' => noHTML($_POST['title']),
-                        'complexity' => $_POST['complexity']
+                        'title' => noHTML(filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING)),
+                        'complexity' => filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT),
                     ),
                     'id = %i',
-                    $_POST['id']
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 echo '[ { "error" : "no" } ]';
             } else {
@@ -179,44 +202,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::update(
                 prefix_table("roles_title"),
                 array(
-                    'allow_pw_change' => $_POST['value']
+                    'allow_pw_change' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_STRING)
                 ),
                 'id = %i',
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             break;
 
         //-------------------------------------------
         #CASE change right for a role on a folder via the TM
-        case "change_role_via_tm_old":
-            //get full tree dependencies
-            $tree = $tree->getDescendants($_POST['folder'], true);
-
-            if (isset($_POST['allowed']) && $_POST['allowed'] == 1) {
-                //case where folder was allowed but not any more
-                foreach ($tree as $node) {
-                    //Store in DB
-                    DB::delete(prefix_table("roles_values"), "folder_id = %i AND role_id = %i", $node->id, $_POST['role']);
-                }
-            } elseif ($_POST['allowed'] == 0) {
-                //case where folder was not allowed but allowed now
-                foreach ($tree as $node) {
-                    //Store in DB
-                    DB::insert(
-                        prefix_table("roles_values"),
-                        array(
-                            'folder_id' => $node->id,
-                            'role_id' => $_POST['role']
-                        )
-                    );
-                }
-            }
-            break;
-
-        //-------------------------------------------
-        #CASE change right for a role on a folder via the TM
         case "change_role_via_tm":
-            $arr = explode(",", $_POST['multiselection']);
+            // Prepare POST variables
+            $post_access = filter_input(INPUT_POST, 'access', FILTER_SANITIZE_STRING);
+            $post_accessoption = filter_input(INPUT_POST, 'accessoption', FILTER_SANITIZE_STRING);
+
+            // Loop on selection
+            $arr = explode(",", filter_input(INPUT_POST, 'multiselection', FILTER_SANITIZE_STRING));
             foreach ($arr as $elem) {
                 $tmp = explode('-', $elem);
                 $folder_id = $tmp[0];
@@ -225,18 +226,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 //get full tree dependencies
                 $tree_list = $tree->getDescendants($folder_id, true);
 
-                if ($_POST['access'] === "read" || $_POST['access'] === "write" || $_POST['access'] === "nodelete") {
+                if ($post_access === "read" || $post_access === "write" || $post_access === "nodelete") {
                     // define code to use
-                    if ($_POST['access'] == "read") {
+                    if ($post_access == "read") {
                         $access = "R";
-                    } elseif ($_POST['access'] == "write") {
-                        if ($_POST['accessoption'] == "") {
+                    } elseif ($post_access == "write") {
+                        if (empty($post_accessoption) === true) {
                             $access = "W";
-                        } elseif ($_POST['accessoption'] == "nodelete") {
+                        } elseif ($post_accessoption === "nodelete") {
                             $access = "ND";
-                        } elseif ($_POST['accessoption'] == "noedit") {
+                        } elseif ($post_accessoption === "noedit") {
                             $access = "NE";
-                        } elseif ($_POST['accessoption'] == "nodelete_noedit") {
+                        } elseif ($post_accessoption === "nodelete_noedit") {
                             $access = "NDNE";
                         }
                     } else {
@@ -285,6 +286,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 );
             }
 
+            // Prepare POST variables
+            $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
             $tree = $tree->getDescendants();
             $texte = '<table><thead><tr><th>'.$LANG['groups'].'</th>';
             $gpes_ok = array();
@@ -306,11 +310,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count = DB::count();
             if ($roles_count > $display_nb) {
-                if (!isset($_POST['start']) || $_POST['start'] == 0) {
+                if (null !== $post_start || $post_start === 0) {
                     $start = 0;
                     $previous = 0;
                 } else {
-                    $start = intval($_POST['start']);
+                    $start = $post_start;
                     $previous = $start - $display_nb;
                 }
                 $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));

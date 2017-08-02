@@ -52,7 +52,7 @@ function IncreaseSessionTime(messageEnd, messageWait, duration){
                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
-                $('#countdown').css("color","white");
+                $("#countdown").css("color","white");
                 $("#div_increase_session_time").dialog("close");
             } else {
                 document.location = "index.php?session=expired";
@@ -67,7 +67,7 @@ function IncreaseSessionTime(messageEnd, messageWait, duration){
 **/
 function countdown()
 {
-    var DayTill
+    var DayTill;
     var theDay =  $("#temps_restant").val();
     var today = new Date(); //Create an Date Object that contains today's date.
     var second = Math.floor(theDay - (today.getTime()/1000));
@@ -179,7 +179,7 @@ function CreateRandomString(size,type){
 **/
 function unsanitizeString(string){
     if(string !== "" && string !== null){
-        string = string.replace(/\\/g,'').replace(/&#92;/g,'\\');
+        string = string.replace(/\\/g,"").replace(/&#92;/g,"\\");
     }
     return string;
 }
@@ -208,7 +208,7 @@ function SendMail(category, contentEmail, keySent, message){
             key     : keySent
         },
         function(data){
-            if (data[0].error !== undefined && data[0].error !== "") {
+            if (typeof data[0].error !== 'undefined' && data[0].error !== "") {
                 message = data[0].message;
             }
             $("#div_dialog_message_text").html(message);
@@ -245,7 +245,7 @@ function extractLast( term ) {
 }
 
 
-function store_error(messageError, dialogDiv, textDiv){
+function storeError(messageError, dialogDiv, textDiv){
     //Store error in DB
     $.post(
         "sources/main.queries.php",
@@ -259,13 +259,13 @@ function store_error(messageError, dialogDiv, textDiv){
     $("#"+dialogDiv).dialog("open");
 }
 
-function aes_encrypt(text, key)
+function aesEncrypt(text, key)
 {
     return Aes.Ctr.encrypt(text, key, 256);
 }
 
 
-function aes_decrypt(text, key)
+function aesDecrypt(text, key)
 {
     return Aes.Ctr.decrypt(text, key, 256);
 }
@@ -297,7 +297,7 @@ function prepareExchangedData(data, type, key)
             }
         } else {
             try {
-                return $.parseJSON(aes_decrypt(data, key));
+                return $.parseJSON(aesDecrypt(data, key));
             }
             catch (e) {
                 return "Error: " + jsonErrorHdl(e);
@@ -307,7 +307,7 @@ function prepareExchangedData(data, type, key)
         if ($("#encryptClientServer").val() === "0") {
             return data;
         } else {
-            return aes_encrypt(data, key);
+            return aesEncrypt(data, key);
         }
     } else {
         return false;

@@ -423,7 +423,7 @@ $(function() {
                             numerals   : true
                         },
                         function(data) {
-                            prepareExchangedData
+                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                             if (data.error == "true") {
                                 $("#div_dialog_message_text").html(data.error_msg);
                                 $("#div_dialog_message").dialog("open");
@@ -499,16 +499,16 @@ $(function() {
             $.post(
                 "sources/users.queries.php",
                 {
-                    type    : "user_log_items",
-                    page    : $("#log_page").val(),
-                    nb_items_by_page:    $("#nb_items_by_page").val(),
-                    id        : $("#selected_user").val(),
-                    scope    : $("#activity").val()
+                    type                : "user_log_items",
+                    page                : $("#log_page").val(),
+                    nb_items_by_page    : $("#nb_items_by_page").val(),
+                    id                  : $("#selected_user").val(),
+                    scope               : 'user_activity'
                 },
                 function(data) {
                     if (data[0].error == "no") {
                         $("#tbody_logs").empty().append(data[0].table_logs);
-                        $("#log_pages").empty().append(data[0].pages);
+                        $("#log_pages").empty().html(data[0].pages);
                     }
                 },
                 "json"
@@ -901,6 +901,7 @@ function confirmDeletion()
 
 function pwGenerate(elem)
 {
+    console.log(">> "+elem);
     $.post(
         "sources/main.queries.php",
         {
@@ -915,7 +916,7 @@ function pwGenerate(elem)
         },
         function(data) {
             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-            if (data.error == "true") {
+            if (data.error === "true") {
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
             } else {
@@ -1085,14 +1086,14 @@ function displayLogs(page, scope)
     $.post(
         "sources/users.queries.php",
         {
-            type    : "user_log_items",
-            page    :page,
-            nb_items_by_page:    $("#nb_items_by_page").val(),
-            filter    :$("#activity_filter").val(),
-            id        : $("#selected_user").val(),
-            scope    : scope
+            type                : "user_log_items",
+            page                : page,
+            nb_items_by_page    : $("#nb_items_by_page").val(),
+            filter              : $("#activity_filter").val(),
+            id                  : $("#selected_user").val(),
+            scope               : scope
         },
-        function(data) {
+        function(data) {console.log(">>" + data[0].table_logs);
             if (data[0].error == "no") {
                 $("#tbody_logs").empty().append(data[0].table_logs);
                 $("#log_pages").empty().append(data[0].pages);
@@ -1318,10 +1319,6 @@ function login_exists(text) {
     );
 }
 
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
 
 function htmlspecialchars_decode (string, quote_style)
 {

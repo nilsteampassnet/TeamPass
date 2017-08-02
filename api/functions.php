@@ -61,7 +61,8 @@ function teampass_connect()
     global $server, $user, $pass, $database, $link, $port, $encoding;
     require_once("../includes/config/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -97,7 +98,7 @@ function rest_head()
     header('HTTP/1.1 402 Payment Required');
 }
 
-function addToCacheTable($id)
+function addToCacheTable($item_id)
 {
     teampass_connect();
     // get data
@@ -107,13 +108,13 @@ function addToCacheTable($id)
         AND ".prefix_table("log_items")." AS l ON (l.id_item = i.id)
         WHERE i.id = %i
         AND l.action = %s",
-        intval($id),
+        intval($item_id),
         at_creation
     );
 
     // Get all TAGS
     $tags = "";
-    $data_tags = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $id);
+    $data_tags = DB::query("SELECT tag FROM ".prefix_table("tags")." WHERE item_id=%i", $item_id);
     foreach ($data_tags as $itemTag) {
         if (!empty($itemTag['tag'])) {
             $tags .= $itemTag['tag']." ";
@@ -332,7 +333,7 @@ function rest_get()
                     WHERE inactif='0' AND ".$condition,
                     $condition_value
                 );
-                $x = 0;
+                $inc = 0;
                 foreach ($response as $data) {
                     // build the path to the Item
                     $path = "";
@@ -346,22 +347,22 @@ function rest_get()
                     }
 
                     // prepare output
-                    $json[$x]['id'] = $data['id'];
-                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
-                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
-                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$inc]['id'] = $data['id'];
+                    $json[$inc]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$inc]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$inc]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$inc]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$inc]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption(
                         $data['pw'],
                         "",
                         "decrypt"
                     );
-                    $json[$x]['pw'] = $crypt_pw['string'];
-                    $json[$x]['folder_id'] = $data['id_tree'];
-                    $json[$x]['path'] = $path;
+                    $json[$inc]['pw'] = $crypt_pw['string'];
+                    $json[$inc]['folder_id'] = $data['id_tree'];
+                    $json[$inc]['path'] = $path;
 
-                    $x++;
+                    $inc++;
                 }
             } elseif ($GLOBALS['request'][1] == "userpw") {
                 /*
@@ -417,7 +418,7 @@ function rest_get()
                     WHERE inactif='0' AND ".$condition,
                     $condition_value
                 );
-                $x = 0;
+                $inc = 0;
                 foreach ($response as $data) {
                     // build the path to the Item
                     $path = "";
@@ -442,7 +443,7 @@ function rest_get()
                     $json[$data['id']]['folder_id'] = $data['id_tree'];
                     $json[$data['id']]['path'] = $path;
 
-                    $x++;
+                    $inc++;
                 }
             } elseif ($GLOBALS['request'][1] == "userfolders") {
                 /*
@@ -464,7 +465,7 @@ function rest_get()
 
                 $folder_arr = array();
                 $roles = explode(";", $role_str);
-                $x = 0;
+                $inc = 0;
                 foreach ($roles as $role) {
                     $response = DB::query("SELECT folder_id, type FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
                     foreach ($response as $data) {
@@ -479,7 +480,7 @@ function rest_get()
                                 $json[$folder_id]['title'] = $response2['title'];
                                 $json[$folder_id]['level'] = $response2['nlevel'];
                                 $json[$folder_id]['access_type'] = $data['type'];
-                                $x++;
+                                $inc++;
                             }
                         }
                     }
@@ -514,10 +515,11 @@ function rest_get()
                 $response = DB::query(
                     "SELECT id,label,login,pw, pw_iv, url, id_tree, description, email
                     FROM ".prefix_table("items")."
-                    WHERE inactif = %i AND id IN %ls", "0",
+                    WHERE inactif = %i AND id IN %ls",
+                    "0",
                     $array_items
                 );
-                $x = 0;
+                $inc = 0;
                 foreach ($response as $data) {
                     // build the path to the Item
                     $path = "";
@@ -531,18 +533,18 @@ function rest_get()
                     }
 
                     // prepare output
-                    $json[$x]['id'] = $data['id'];
-                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
-                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
-                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$inc]['id'] = $data['id'];
+                    $json[$inc]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$inc]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$inc]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$inc]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$inc]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], "", "decrypt");
-                    $json[$x]['pw'] = $crypt_pw['string'];
-                    $json[$x]['folder_id'] = $data['id_tree'];
-                    $json[$x]['path'] = $path;
+                    $json[$inc]['pw'] = $crypt_pw['string'];
+                    $json[$inc]['folder_id'] = $data['id_tree'];
+                    $json[$inc]['path'] = $path;
 
-                    $x++;
+                    $inc++;
                 }
             }
 
@@ -595,7 +597,7 @@ function rest_get()
                     $array_category,
                     $item
                 );
-                $x = 0;
+                $inc = 0;
                 foreach ($response as $data) {
                     // build the path to the Item
                     $path = "";
@@ -609,19 +611,19 @@ function rest_get()
                     }
 
                     // prepare output
-                    $json[$x]['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
-                    $json[$x]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                    $json[$x]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
-                    $json[$x]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                    $json[$x]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
-                    $json[$x]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
+                    $json[$inc]['id'] = mb_convert_encoding($data['id'], mb_detect_encoding($data['id']), 'UTF-8');
+                    $json[$inc]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                    $json[$inc]['description'] = mb_convert_encoding($data['description'], mb_detect_encoding($data['description']), 'UTF-8');
+                    $json[$inc]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                    $json[$inc]['email'] = mb_convert_encoding($data['email'], mb_detect_encoding($data['email']), 'UTF-8');
+                    $json[$inc]['url'] = mb_convert_encoding($data['url'], mb_detect_encoding($data['url']), 'UTF-8');
                     $crypt_pw = cryption($data['pw'], "", "decrypt");
-                    $json[$x]['pw'] = $crypt_pw['string'];
-                    $json[$x]['folder_id'] = $data['id_tree'];
-                    $json[$x]['path'] = $path;
-                    $json[$x]['status'] = utf8_encode("OK");
+                    $json[$inc]['pw'] = $crypt_pw['string'];
+                    $json[$inc]['folder_id'] = $data['id_tree'];
+                    $json[$inc]['path'] = $path;
+                    $json[$inc]['status'] = utf8_encode("OK");
 
-                    $x++;
+                    $inc++;
                 }
                 if (isset($json) && $json) {
                     echo json_encode($json);
@@ -2160,18 +2162,18 @@ function apikey_checker($apikey_used)
     }
 }
 
-function teampass_pbkdf2_hash($p, $s, $c, $kl, $st = 0, $a = 'sha256')
+function teampass_pbkdf2_hash($var_p, $var_s, $var_c, $var_kl, $var_st = 0, $var_a = 'sha256')
 {
-    $kb = $st + $kl;
-    $dk = '';
+    $var_kb = $var_st + $var_kl;
+    $var_dk = '';
 
-    for ($block = 1; $block <= $kb; $block++) {
-        $ib = $h = hash_hmac($a, $s.pack('N', $block), $p, true);
-        for ($i = 1; $i < $c; $i++) {
-            $ib ^= ($h = hash_hmac($a, $h, $p, true));
+    for ($block = 1; $block <= $var_kb; $block++) {
+        $var_ib = $var_h = hash_hmac($var_a, $var_s.pack('N', $block), $var_p, true);
+        for ($var_i = 1; $var_i < $var_c; $var_i++) {
+            $var_ib ^= ($var_h = hash_hmac($var_a, $var_h, $var_p, true));
         }
-        $dk .= $ib;
+        $var_dk .= $var_ib;
     }
 
-    return substr($dk, $st, $kl);
+    return substr($var_dk, $var_st, $var_kl);
 }

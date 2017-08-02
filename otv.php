@@ -38,7 +38,8 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
 
     // connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -58,7 +59,7 @@ if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
         WHERE code = %s",
         $_GET['code']
     );
-    if ( $data['timestamp'] == intval($_GET['stamp'])) {
+    if ($data['timestamp'] == intval($_GET['stamp'])) {
         // otv is too old
         if ($data['timestamp'] < (time() - ($SETTINGS['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";

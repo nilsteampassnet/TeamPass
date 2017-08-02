@@ -23,6 +23,7 @@ require_once "../sources/main.functions.php";
 // connect to DB
 require_once '../sources/SplClassLoader.php';
 require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;

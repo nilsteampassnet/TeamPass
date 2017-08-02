@@ -50,7 +50,10 @@ function curPage()
 
     // Parse the url
     parse_str(
-        substr((string) $superGlobal->get("REQUEST_URI", "SERVER"), strpos((string) $superGlobal->get("REQUEST_URI", "SERVER"), "?") + 1),
+        substr(
+            (string) $superGlobal->get("REQUEST_URI", "SERVER"),
+            strpos((string) $superGlobal->get("REQUEST_URI", "SERVER"), "?") + 1
+        ),
         $result
     );
     return $result['page'];
@@ -79,7 +82,8 @@ function checkUser($userId, $userKey, $pageVisited)
 
     // Connect to mysql server
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -101,11 +105,19 @@ function checkUser($userId, $userKey, $pageVisited)
     }
 
     // check if user is allowed to see this page
-    if (empty($data['admin']) && empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['user'])) {
+    if (empty($data['admin']) === true
+        && empty($data['gestionnaire'] === true)
+        && !IsInArray($pageVisited, $pagesRights['user'])
+    ) {
         return false;
-    } elseif (empty($data['admin']) && !empty($data['gestionnaire']) && !IsInArray($pageVisited, $pagesRights['manager'])) {
+    } elseif (empty($data['admin']) === true
+        && empty($data['gestionnaire']) === false
+        && !IsInArray($pageVisited, $pagesRights['manager'])
+    ) {
         return false;
-    } elseif (!empty($data['admin']) && !IsInArray($pageVisited, $pagesRights['admin'])) {
+    } elseif (empty($data['admin']) === false
+        && !IsInArray($pageVisited, $pagesRights['admin'])
+    ) {
         return false;
     }
 

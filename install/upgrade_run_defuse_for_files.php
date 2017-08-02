@@ -28,13 +28,16 @@ require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once '../includes/config/tp.config.php';
 
+// Prepare POST variables
+$post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
 // Some init
 $_SESSION['settings']['loaded'] = "";
 $finish = false;
-$post_nb = intval($_POST['nb']);
-$post_start = intval($_POST['start']);
 $next = ($post_nb + $post_start);
 
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
     $server,
     $user,
@@ -42,7 +45,6 @@ $dbTmp = mysqli_connect(
     $database,
     $port
 );
-
 
 // if no encryption then stop
 if ($SETTINGS['enable_attachment_encryption'] === "0") {
@@ -54,22 +56,24 @@ if ($SETTINGS['enable_attachment_encryption'] === "0") {
 
 // If $SETTINGS['saltkey_ante_2127'] is set to'none', then encryption is done with Defuse, so exit
 // Also quit if no new defuse saltkey was generated
-if ($SETTINGS['files_with_defuse'] !== "done") {
-    if ($SETTINGS['saltkey_ante_2127'] === 'none' || (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false)) {
-        // update
-        mysqli_query(
-            $dbTmp,
-            "UPDATE `".$pre."misc`
-            SET `valeur` = 'done'
-            WHERE type='admin' AND intitule='files_with_defuse'"
-        );
+if (isset($SETTINGS['files_with_defuse'])) {
+    if ($SETTINGS['files_with_defuse'] !== "done") {
+        if (isset($_SESSION['tp_defuse_new_key']) && $_SESSION['tp_defuse_new_key'] === false) {
+            // update
+            mysqli_query(
+                $dbTmp,
+                "UPDATE `".$pre."misc`
+                SET `valeur` = 'done'
+                WHERE type='admin' AND intitule='files_with_defuse'"
+            );
 
+            echo '[{"finish":"1" , "next":"", "error":""}]';
+            exit();
+        }
+    } else {
         echo '[{"finish":"1" , "next":"", "error":""}]';
         exit();
     }
-} else {
-    echo '[{"finish":"1" , "next":"", "error":""}]';
-    exit();
 }
 
 // get total items
@@ -97,11 +101,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
     // Prepare encryption options for Defuse
     $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     $iv = substr(hash("md5", "iv".$ascii_key), 0, 8);
-    $key = substr(
-        hash("md5", "ssapmeat1".$ascii_key, true),
-        0,
-        24
-    );
+    $key = substr(hash("md5", "ssapmeat1".$ascii_key, true), 0, 24);
     $opts_encrypt = array('iv'=>$iv, 'key'=>$key);
 
     // Prepare encryption options - with old KEY
@@ -114,7 +114,7 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
             0,
             24
         );
-    } elseif (empty($SETTINGS['saltkey_ante_2127']) === true) {
+    } else {
         // Encoding option were set as this in Teampass version = 2.1.27.0
         $iv = substr(md5("\x1B\x3C\x58".$ascii_key, true), 0, 8);
         $key = substr(
@@ -145,31 +145,31 @@ if (file_exists(SECUREPATH."/teampass-seckey.txt")) {
 
             // Open the file
             unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file']);
-            $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
+            $file_primary = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy", "rb");
             $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", 'wb');
 
             // decrypt using old
-            stream_filter_append($fp, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
+            stream_filter_append($file_primary, 'mdecrypt.tripledes', STREAM_FILTER_READ, $opts_decrypt);
             // copy to file
-            stream_copy_to_stream($fp, $out);
+            stream_copy_to_stream($file_primary, $out);
             // clean
-            fclose($fp);
+            fclose($file_primary);
             fclose($out);
             unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".copy");
 
 
             // Now encrypt the file with new saltkey
-            $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", "rb");
+            $file_primary = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp", "rb");
             $out = fopen($SETTINGS['path_to_upload_folder'].'/'.$data['file'], 'wb');
             // encrypt using new
             stream_filter_append($out, 'mcrypt.tripledes', STREAM_FILTER_WRITE, $opts_encrypt);
             // copy to file
-            while (($line = fgets($fp)) !== false) {
+            while (($line = fgets($file_primary)) !== false) {
                 fputs($out, (string) $line);
             }
 
             // clean
-            fclose($fp);
+            fclose($file_primary);
             fclose($out);
             unlink($SETTINGS['path_to_upload_folder'].'/'.$data['file'].".tmp");
 

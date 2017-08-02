@@ -2,9 +2,9 @@
 /**
  *
  * @file          main.functions.php
- * @author        Nils LaumaillÃ©
+ * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils LaumaillÃ©
+ * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
@@ -45,32 +45,32 @@ use \Defuse\Crypto\Exception as Ex;
 
 //Generate N# of random bits for use as salt
 /**
- * @param integer $n
+ * @param integer $size
  */
-function getBits($n)
+function getBits($size)
 {
     $str = '';
-    $x = $n + 10;
-    for ($i = 0; $i < $x; $i++) {
+    $var_x = $size + 10;
+    for ($var_i = 0; $var_i < $var_x; $var_i++) {
         $str .= base_convert(mt_rand(1, 36), 10, 36);
     }
-    return substr($str, 0, $n);
+    return substr($str, 0, $size);
 }
 
 //generate pbkdf2 compliant hash
-function strHashPbkdf2($p, $s, $c, $kl, $a = 'sha256', $st = 0)
+function strHashPbkdf2($var_p, $var_s, $var_c, $var_kl, $var_a = 'sha256', $var_st = 0)
 {
-    $kb = $st + $kl; // Key blocks to compute
-    $dk = ''; // Derived key
+    $var_kb = $var_st + $var_kl; // Key blocks to compute
+    $var_dk = ''; // Derived key
 
-    for ($block = 1; $block <= $kb; $block++) { // Create key
-        $ib = $h = hash_hmac($a, $s.pack('N', $block), $p, true); // Initial hash for this block
-        for ($i = 1; $i < $c; $i++) { // Perform block iterations
-            $ib ^= ($h = hash_hmac($a, $h, $p, true)); // XOR each iterate
+    for ($block = 1; $block <= $var_kb; $block++) { // Create key
+        $var_ib = $var_h = hash_hmac($var_a, $var_s.pack('N', $block), $var_p, true); // Initial hash for this block
+        for ($var_i = 1; $var_i < $var_c; $var_i++) { // Perform block iterations
+            $var_ib ^= ($var_h = hash_hmac($var_a, $var_h, $var_p, true)); // XOR each iterate
         }
-        $dk .= $ib; // Append iterated block
+        $var_dk .= $var_ib; // Append iterated block
     }
-    return substr($dk, $st, $kl); // Return derived key of correct length
+    return substr($var_dk, $var_st, $var_kl); // Return derived key of correct length
 }
 
 /**
@@ -145,20 +145,21 @@ function decryptOld($text, $personalSalt = "")
                 )
             )
         );
-    } else {
-        return trim(
-            mcrypt_decrypt(
-                MCRYPT_RIJNDAEL_256,
-                SALT,
-                base64_decode($text),
-                MCRYPT_MODE_ECB,
-                mcrypt_create_iv(
-                    mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
-                    MCRYPT_RAND
-                )
-            )
-        );
     }
+
+    // No personal SK
+    return trim(
+        mcrypt_decrypt(
+            MCRYPT_RIJNDAEL_256,
+            SALT,
+            base64_decode($text),
+            MCRYPT_MODE_ECB,
+            mcrypt_create_iv(
+                mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB),
+                MCRYPT_RAND
+            )
+        )
+    );
 }
 
 /**
@@ -178,9 +179,9 @@ function encrypt($decrypted, $personalSalt = "")
     }
 
     if (!empty($personalSalt)) {
-            $staticSalt = $personalSalt;
+        $staticSalt = $personalSalt;
     } else {
-            $staticSalt = SALT;
+        $staticSalt = SALT;
     }
 
     //set our salt to a variable
@@ -188,16 +189,16 @@ function encrypt($decrypted, $personalSalt = "")
     $pbkdf2Salt = getBits(64);
     // generate a pbkdf2 key to use for the encryption.
     $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
-    // Build $iv and $ivBase64.  We use a block size of 256 bits (AES compliant)
+    // Build $init_vect and $ivBase64.  We use a block size of 256 bits (AES compliant)
     // and CTR mode.  (Note: ECB mode is inadequate as IV is not used.)
-    $iv = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
+    $init_vect = mcrypt_create_iv(mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, 'ctr'), MCRYPT_RAND);
 
     //base64 trim
-    if (strlen($ivBase64 = rtrim(base64_encode($iv), '=')) != 43) {
+    if (strlen($ivBase64 = rtrim(base64_encode($init_vect), '=')) != 43) {
         return false;
     }
     // Encrypt $decrypted
-    $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $decrypted, 'ctr', $iv);
+    $encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $key, $decrypted, 'ctr', $init_vect);
     // MAC the encrypted text
     $mac = hash_hmac('sha256', $encrypted, $staticSalt);
     // We're done!
@@ -231,9 +232,9 @@ function decrypt($encrypted, $personalSalt = "")
     //remove the salt from the string
     $encrypted = substr($encrypted, 0, -64);
     $key = substr(pbkdf2('sha256', $staticSalt, $pbkdf2Salt, ITCOUNT, 16 + 32, true), 32, 16);
-    // Retrieve $iv which is the first 22 characters plus ==, base64_decoded.
-    $iv = base64_decode(substr($encrypted, 0, 43).'==');
-    // Remove $iv from $encrypted.
+    // Retrieve $init_vect which is the first 22 characters plus ==, base64_decoded.
+    $init_vect = base64_decode(substr($encrypted, 0, 43).'==');
+    // Remove $init_vect from $encrypted.
     $encrypted = substr($encrypted, 43);
     // Retrieve $mac which is the last 64 characters of $encrypted.
     $mac = substr($encrypted, -64);
@@ -244,7 +245,7 @@ function decrypt($encrypted, $personalSalt = "")
         return false;
     }
     // Decrypt the data.
-    $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $iv), "\0\4");
+    $decrypted = rtrim(mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $key, $encrypted, 'ctr', $init_vect), "\0\4");
     // Yay!
     return $decrypted;
 }
@@ -270,13 +271,13 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "public")
+function cryption_before_defuse($message, $saltkey, $init_vect, $type = null, $scope = "public")
 {
     if (DEFUSE_ENCRYPTION === true) {
         if ($scope === "perso") {
             return defuse_crypto(
                 $message,
-                $sk,
+                $saltkey,
                 $type
             );
         } else {
@@ -287,7 +288,7 @@ function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "publ
             );
         }
     } else {
-        return cryption_phpCrypt($message, $sk, $iv, $type);
+        return cryption_phpCrypt($message, $saltkey, $init_vect, $type);
     }
 }
 
@@ -296,17 +297,15 @@ function cryption_before_defuse($message, $sk, $iv, $type = null, $scope = "publ
  *
  * Using AES_128 and mode CBC
  *
- * $key and $iv have to be given in hex format
+ * $key and $init_vect have to be given in hex format
  */
-function cryption_phpCrypt($string, $key, $iv, $type)
+function cryption_phpCrypt($string, $key, $init_vect, $type)
 {
     // manage key origin
-    define('SALT', 'LEfzTjADMTzV6qHC');
-
-    if ($key != SALT) {
+    if (null != SALT && $key != SALT) {
         // check key (AES-128 requires a 16 bytes length key)
         if (strlen($key) < 16) {
-            for ($x = strlen($key) + 1; $x <= 16; $x++) {
+            for ($inc = strlen($key) + 1; $inc <= 16; $inc++) {
                 $key .= chr(0);
             }
         } elseif (strlen($key) > 16) {
@@ -319,17 +318,17 @@ function cryption_phpCrypt($string, $key, $iv, $type)
 
     if ($type == "encrypt") {
         // generate IV and encrypt
-        $iv = $crypt->createIV();
+        $init_vect = $crypt->createIV();
         $encrypt = $crypt->encrypt($string);
         // return
         return array(
             "string" => bin2hex($encrypt),
-            "iv" => bin2hex($iv),
+            "iv" => bin2hex($init_vect),
             "error" => empty($encrypt) ? "ERR_ENCRYPTION_NOT_CORRECT" : ""
         );
     } elseif ($type == "decrypt") {
         // case if IV is empty
-        if (empty($iv)) {
+        if (empty($init_vect)) {
                     return array(
                 'string' => "",
                 'error' => "ERR_ENCRYPTION_NOT_CORRECT"
@@ -339,7 +338,7 @@ function cryption_phpCrypt($string, $key, $iv, $type)
         // convert
         try {
             $string = testHex2Bin(trim($string));
-            $iv = testHex2Bin($iv);
+            $init_vect = testHex2Bin($init_vect);
         } catch (Exception $e) {
             return array(
                 'string' => "",
@@ -348,7 +347,7 @@ function cryption_phpCrypt($string, $key, $iv, $type)
         }
 
         // load IV
-        $crypt->IV($iv);
+        $crypt->IV($init_vect);
         // decrypt
         $decrypt = $crypt->decrypt($string);
         // return
@@ -488,6 +487,14 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
     return $user_key_encoded; // store it in session once user has entered his psk
 }
 
+function defuse_return_decrypted($value)
+{
+    if (substr($value, 0, 3) === "def") {
+        $value = cryption($value, "", "decrypt")['string'];
+    }
+    return $value;
+}
+
 /**
  * trimElement()
  *
@@ -554,6 +561,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 
     //Connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -681,11 +689,11 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         ORDER BY i.id_tree ASC",
                         $roleId
                     );
-                    $x = 0;
+                    $inc = 0;
                     foreach ($rows as $record) {
                         if (isset($record['id_tree'])) {
-                            $listFoldersLimited[$record['id_tree']][$x] = $record['item_id'];
-                            $x++;
+                            $listFoldersLimited[$record['id_tree']][$inc] = $record['item_id'];
+                            $inc++;
                         }
                     }
                 }
@@ -693,7 +701,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
 
         // Does this user is allowed to see other items
-        $x = 0;
+        $inc = 0;
         $rows = DB::query(
             "SELECT id, id_tree FROM ".prefix_table("items")."
             WHERE restricted_to LIKE %ss AND inactif=%s",
@@ -701,8 +709,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             '0'
         );
         foreach ($rows as $record) {
-            $listRestrictedFoldersForItems[$record['id_tree']][$x] = $record['id'];
-            $x++;
+            $listRestrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
+            $inc++;
         }
         // => Build final lists
         // Clean arrays
@@ -714,9 +722,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         );
         // Exclude from allowed folders all the specific user forbidden folders
         $allowedFolders = array();
-        foreach ($allowedFoldersTmp as $id) {
-            if (!in_array($id, $groupesInterditsUser) && !empty($id)) {
-                array_push($allowedFolders, $id);
+        foreach ($allowedFoldersTmp as $ident) {
+            if (!in_array($ident, $groupesInterditsUser) && !empty($ident)) {
+                array_push($allowedFolders, $ident);
             }
         }
 
@@ -737,9 +745,9 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
 
-        $pfs = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
-        foreach ($pfs as $pfId) {
-            array_push($_SESSION['forbiden_pfs'], $pfId['id']);
+        $persoFlds = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
+        foreach ($persoFlds as $persoFldId) {
+            array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
         }
         // Get IDs of personal folders
         if (isset($SETTINGS['enable_pf_feature']) &&
@@ -747,16 +755,16 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $pf = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
-            if (!empty($pf['id'])) {
-                if (!in_array($pf['id'], $listAllowedFolders)) {
-                    array_push($_SESSION['personal_folders'], $pf['id']);
+            $persoFld = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
+            if (!empty($persoFld['id'])) {
+                if (!in_array($persoFld['id'], $listAllowedFolders)) {
+                    array_push($_SESSION['personal_folders'], $persoFld['id']);
                     // get all descendants
-                    $ids = $tree->getDescendants($pf['id'], true, false);
-                    foreach ($ids as $id) {
-                        array_push($listAllowedFolders, $id->id);
-                        array_push($_SESSION['personal_visible_groups'], $id->id);
-                        array_push($_SESSION['personal_folders'], $id->id);
+                    $ids = $tree->getDescendants($persoFld['id'], true, false);
+                    foreach ($ids as $ident) {
+                        array_push($listAllowedFolders, $ident->id);
+                        array_push($_SESSION['personal_visible_groups'], $ident->id);
+                        array_push($_SESSION['personal_folders'], $ident->id);
                     }
                 }
             }
@@ -846,7 +854,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
  * Update the CACHE table
  * @param string $action
  */
-function updateCacheTable($action, $id = "")
+function updateCacheTable($action, $ident = "")
 {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
@@ -855,6 +863,7 @@ function updateCacheTable($action, $id = "")
 
     //Connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -937,11 +946,11 @@ function updateCacheTable($action, $id = "")
             "SELECT label, description, id_tree, perso, restricted_to, login, url
             FROM ".prefix_table('items')."
             WHERE id=%i",
-            $id
+            $ident
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $id);
+        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $ident);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -976,7 +985,7 @@ function updateCacheTable($action, $id = "")
                 'author' => $_SESSION['user_id'],
                 ),
             "id = %i",
-            $id
+            $ident
         );
         // ADD an item
     } elseif ($action === "add_value") {
@@ -987,12 +996,12 @@ function updateCacheTable($action, $id = "")
             INNER JOIN ".prefix_table('log_items')." as l ON (l.id_item = i.id)
             WHERE i.id = %i
             AND l.action = %s",
-            $id,
+            $ident,
             'at_creation'
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id = %i", $id);
+        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id = %i", $ident);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -1032,7 +1041,7 @@ function updateCacheTable($action, $id = "")
 
         // DELETE an item
     } elseif ($action === "delete_value") {
-        DB::delete(prefix_table('cache'), "id = %i", $id);
+        DB::delete(prefix_table('cache'), "id = %i", $ident);
     }
 }
 
@@ -1088,7 +1097,7 @@ function getStatisticsData()
         "SELECT id FROM ".prefix_table("users")." WHERE read_only = %i",
         1
     );
-    $ro = DB::count();
+    $readOnly = DB::count();
 
     // list the languages
     $usedLang = [];
@@ -1126,7 +1135,7 @@ function getStatisticsData()
         "stat_users" => $counter_users,
         "stat_admins" => $admins,
         "stat_managers" => $managers,
-        "stat_ro" => $ro,
+        "stat_ro" => $readOnly,
         "stat_kb" => $SETTINGS['enable_kb'],
         "stat_pf" => $SETTINGS['enable_pf_feature'],
         "stat_fav" => $SETTINGS['enable_favourites'],
@@ -1414,6 +1423,7 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1457,13 +1467,14 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
  * @param string $item
  * @param string $action
  */
-function logItems($id, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
+function logItems($ident, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
 {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1476,7 +1487,7 @@ function logItems($id, $item, $id_user, $action, $login = "", $raison = null, $r
     DB::insert(
         prefix_table("log_items"),
         array(
-            'id_item' => $id,
+            'id_item' => $ident,
             'date' => time(),
             'id_user' => $id_user,
             'action' => $action,
@@ -1550,6 +1561,7 @@ function handleConfigFile($action, $field = null, $value = null)
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1584,7 +1596,7 @@ function handleConfigFile($action, $field = null, $value = null)
         $data = array_unique($data);
     } elseif ($action == "update" && !empty($field)) {
         $data = file($tp_config_file);
-        $x = 0;
+        $inc = 0;
         $bFound = false;
         foreach ($data as $line) {
             if (stristr($line, ");")) {
@@ -1593,14 +1605,14 @@ function handleConfigFile($action, $field = null, $value = null)
 
             //
             if (stristr($line, "'".$field."' => '")) {
-                $data[$x] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
+                $data[$inc] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
                 $bFound = true;
                 break;
             }
-            $x++;
+            $inc++;
         }
         if ($bFound === false) {
-            $data[($x - 1)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
+            $data[($inc - 1)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
         }
     }
 
@@ -1700,6 +1712,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 
     // Include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -1717,20 +1730,26 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
     );
     if (empty($fileInfo['id']) === false) {
         // Load PhpEncryption library
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+        $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
+        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
         // Get KEY
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
-        if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === "1" && isset($filename_status) && ($filename_status === "clear" || $filename_status === "0")) {
+        if (isset($SETTINGS['enable_attachment_encryption'])
+            && $SETTINGS['enable_attachment_encryption'] === "1" &&
+            isset($filename_status)
+            && ($filename_status === "clear"
+                || $filename_status === "0")
+        ) {
             // File needs to be encrypted
             if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework)) {
                 // Make a copy of file
@@ -1780,7 +1799,11 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
                     $fileInfo['id']
                 );
             }
-        } elseif (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === "0" && isset($filename_status) && $filename_status === "encrypted") {
+        } elseif (isset($SETTINGS['enable_attachment_encryption'])
+            && $SETTINGS['enable_attachment_encryption'] === "0"
+            && isset($filename_status)
+            && $filename_status === "encrypted"
+        ) {
             // file needs to be decrypted
             if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework)) {
                 // make a copy of file
@@ -1862,15 +1885,16 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     $target_file = $antiXss->xss_clean($target_file);
 
     // load PhpEncryption library
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+    $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
+    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
     if (empty($password) === true) {
     /*
@@ -1989,13 +2013,13 @@ function fileDelete($file)
 /*
 * Permits to extract the file extension
 */
-function getFileExtension($f)
+function getFileExtension($file)
 {
-    if (strpos($f, '.') === false) {
-        return $f;
+    if (strpos($file, '.') === false) {
+        return $file;
     }
 
-    return substr($f, strrpos($f, '.') + 1);
+    return substr($file, strrpos($file, '.') + 1);
 }
 
 /**

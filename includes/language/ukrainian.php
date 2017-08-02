@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          ukrainian.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,23 +14,16 @@
  */
 global $LANG;
 $LANG = array (
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'For Support and Help, please use ',
     'user_ga_code' => 'Відправити Google Authenticator користувачу на електронну пошту',
     'send_ga_code' => 'Код Google Authenticator для користувача',
     'error_no_email' => 'У цього користувача не вказано електронну пошту!',
     'error_no_user' => 'Користувач не знайдений!',
     'email_ga_subject' => 'Ваш Google Authenticator флеш код для Teampass',
-    'email_ga_text' => 'Будь-ласка, <a href=\'#link#\'>перейдіть за цим посиланням</a> і зіскануйте QR код за допомогою застосунка Google Authenticator. Це потрибно для налаштування вашого флеш-коду',
+    'email_ga_text' => 'Вітаю, <a href=\'#link#\'>перейдіть за цим посиланням</a> і зіскануйте QR код за допомогою застосунка Google Authenticator. Це потрибно для налаштування вашого флеш-коду',
     'settings_attachments_encryption' => 'Ввімкнути шифрування для вкладень',
     'settings_attachments_encryption_tip' => 'ЦЕ НАЛАШТУВАННЯ МОЖЕ ПОШКОДИТИ ІСНУЮЧІ ВКЛАДЕНН�',
     'admin_action_attachments_cryption' => 'Зашифрувати або розшифрувати вкладення',
-    'admin_action_attachments_cryption_tip' => 'Warning: Only encrypt or decrypt files after changing attachment encryption settings to match. Select whether to encrypt or decrypt, then press start. Make a backup of the upload folder before running this function.',
+    'admin_action_attachments_cryption_tip' => 'Увага: Лише зашифровані чи розшифровані файли після зміни до',
     'encrypt' => 'Зашифрувати',
     'decrypt' => 'Розшифрувати',
     'admin_ga_website_name' => 'Ім\'я, котре відображається в Гугл Аутентифікаторі для Teampass',
@@ -656,7 +649,7 @@ $LANG = array (
     'settings_anyone_can_modify' => '<i>Anyone can modify</i> feature enabled',
     'settings_anyone_can_modify_tip' => 'This adds a checkbox during new password item creation that can set the item to be modifiable by anyone.',
     'settings_default_language' => 'Default user interface language',
-    'settings_kb' => 'Knowledge base feature enabled (beta test)',
+    'settings_kb' => 'Knowledge base feature',
     'settings_kb_tip' => 'Adds a menu item to access the knowledge base feature. The knowledge base is a searchable FAQ, allowing you create help and notes, and attach them to password items.',
     'settings_ldap_domain' => 'LDAP account suffix for your domain',
     'settings_ldap_domain_controler' => 'LDAP domain controller(s)',
@@ -1028,7 +1021,7 @@ $LANG = array (
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'consider_a_donation' => 'You may consider a donation',
     'more_information' => 'Більше інформації',
-    'feature_request_canal' => 'For Feature Requests or Questions, please use',
+    'feature_request_canal' => 'For Feature Requests, please use',
     'bug_canal' => 'For Bugs, please use',
     'documentation_canal' => 'Повна документація знаходиться',
     'website_canal' => 'Клікнути для переходу на Teampass вебсайт',
@@ -1051,5 +1044,15 @@ $LANG = array (
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
     'no_username_needed' => 'No username needed',
+    'feature_support_canal' => 'For Support and Help, please use',
+    'file_is_now_ready' => 'File is now ready.',
+    'category' => 'Category',
+    'knowledge_base' => 'Knowledge Base',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
+    'nothing_to_do' => 'Nothing to do.',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

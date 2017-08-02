@@ -4,6 +4,14 @@ session_start();
 //Session teampass tag
 $_SESSION['CPM'] = 1;
 
+// Prepare POST variables
+$post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_STRING);
+$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
+$post_actual_cpm_version = filter_input(INPUT_POST, 'actual_cpm_version', FILTER_SANITIZE_STRING);
+$post_cpm_isUTF8 = filter_input(INPUT_POST, 'cpm_isUTF8', FILTER_SANITIZE_STRING);
+$post_user_granted = filter_input(INPUT_POST, 'user_granted', FILTER_SANITIZE_STRING);
+$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_STRING);
+
 ################
 ## Function permits to get the value from a line
 ################
@@ -306,8 +314,8 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 
 
-if (isset($_POST['root_url'])) {
-    $_SESSION['fullurl'] = $_POST['root_url'];
+if (isset($post_root_url)) {
+    $_SESSION['fullurl'] = $post_root_url;
 }
 
 
@@ -336,14 +344,14 @@ echo '
 
 //HIDDEN THINGS
 echo '
-                    <input type="hidden" id="step" name="step" value="', isset($_POST['step']) ? $_POST['step'] : '', '" />
-                    <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($_POST['actual_cpm_version']) ? $_POST['actual_cpm_version'] : '', '" />
-                    <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($_POST['cpm_isUTF8']) ? $_POST['cpm_isUTF8'] : '', '" />
+                    <input type="hidden" id="step" name="step" value="', isset($post_step) ? $post_step : '', '" />
+                    <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($post_actual_cpm_version) ? $post_actual_cpm_version : '', '" />
+                    <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($post_cpm_isUTF8) ? $post_cpm_isUTF8 : '', '" />
                     <input type="hidden" name="menu_action" id="menu_action" value="" />
                     <input type="hidden" name="user_granted" id="user_granted" value="" />
-                    <input type="hidden" name="session_salt" id="session_salt" value="', (isset($_POST['session_salt']) && !empty($_POST['session_salt'])) ? $_POST['session_salt'] : @$_SESSION['encrypt_key'], '" />';
+                    <input type="hidden" name="session_salt" id="session_salt" value="', (isset($post_session_salt) && !empty($post_session_salt)) ? $post_session_salt : @$_SESSION['encrypt_key'], '" />';
 
-if (!isset($_GET['step']) && !isset($_POST['step'])) {
+if (!isset($_GET['step']) && !isset($post_step)) {
     //ETAPE O
     echo '
                     <div>
@@ -382,12 +390,12 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 
                      </div>';
 // STEP1
-} elseif ((isset($_POST['step']) && $_POST['step'] == 1)
+} elseif ((isset($post_step) && $post_step == 1)
     || (isset($_GET['step']) && $_GET['step'] == 1)
-    && $_POST['user_granted'] === "1"
+    && $post_user_granted === "1"
 ) {
     //ETAPE 1
-    $_SESSION['user_granted'] = $_POST['user_granted'];
+    $_SESSION['user_granted'] = $post_user_granted;
     echo '
                      <h3>Step 1 - Check server</h3>
 
@@ -415,7 +423,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step1_error"></div>
                      <input type="hidden" id="step1" name="step1" value="" />';
 // STEP2
-} elseif ((isset($_POST['step']) && $_POST['step'] == 2)
+} elseif ((isset($post_step) && $post_step == 2)
     || (isset($_GET['step']) && $_GET['step'] == 2)
     && $_SESSION['user_granted'] === "1"
 ) {
@@ -497,14 +505,14 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
                      <input type="hidden" id="step2" name="step2" value="" />';
 // STEP3
-} elseif ((isset($_POST['step']) && $_POST['step'] == 3 || isset($_GET['step']) && $_GET['step'] == 3)
-    && isset($_POST['actual_cpm_version'])
+} elseif ((isset($post_step) && $post_step == 3 || isset($_GET['step']) && $_GET['step'] == 3)
+    && isset($post_actual_cpm_version)
     && $_SESSION['user_granted'] === "1"
 ) {
     echo '
                      <h3>Step 3 - Converting database to UTF-8</h3>';
 
-    if (version_compare($_POST['actual_cpm_version'], $SETTINGS_EXT['version'], "<")) {
+    if (version_compare($post_actual_cpm_version, $SETTINGS_EXT['version'], "<")) {
         echo '
             Notice that TeamPass is now only using UTF-8 charset.
             This step will convert the database to this charset.<br />
@@ -521,7 +529,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
         $conversion_utf8 = false;
     }
 // STEP4
-} elseif ((isset($_POST['step']) && $_POST['step'] == 4) || (isset($_GET['step'])
+} elseif ((isset($post_step) && $post_step == 4) || (isset($_GET['step'])
     && $_GET['step'] == 4)
     && $_SESSION['user_granted'] === "1"
 ) {
@@ -545,7 +553,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
                      <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
                      <input type="hidden" id="step4" name="step4" value="" />';
 // STEP5
-} elseif ((isset($_POST['step']) && $_POST['step'] == 5)
+} elseif ((isset($post_step) && $post_step == 5)
     || (isset($_GET['step']) && $_GET['step'] == 5)
     && $_SESSION['user_granted'] === "1"
 ) {
@@ -573,7 +581,7 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
     }
     echo '
         <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step5"></div>';
-} elseif ((isset($_POST['step']) && $_POST['step'] == 6)
+} elseif ((isset($post_step) && $post_step == 6)
     || (isset($_GET['step']) && $_GET['step'] == 6)
     && $_SESSION['user_granted'] === "1"
 ) {
@@ -587,30 +595,30 @@ if (!isset($_GET['step']) && !isset($_POST['step'])) {
 }
 
 //buttons
-if (!isset($_POST['step'])) {
+if (!isset($post_step)) {
     echo '
                  <div id="buttons_bottom">
                      <input type="button" id="but_launch" onclick="Check(\'step0\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
                     <input type="button" id="but_next" target_id="1" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                  </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === "1") {
+} elseif ($post_step == 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
+                            <input type="button" id="but_next" target_id="'. (intval($post_step) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" />
                         </div>
                     </div>';
-} elseif ($_POST['step'] == 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === "1") {
+} elseif ($post_step == 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === "1") {
     echo '
                     <div style="width:900px;margin:auto;margin-top:30px;">
                         <div id="progressbar" style="float:left;margin-top:9px;"></div>
                         <div id="buttons_bottom">
-                            <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'].'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                            <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                            <input type="button" id="but_launch" onclick="Check(\'step'.$post_step.'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                            <input type="button" id="but_next" target_id="'. (intval($post_step) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                         </div>
                     </div>';
-} elseif ($_POST['step'] == 6 && $_SESSION['user_granted'] === "1") {
+} elseif ($post_step == 6 && $_SESSION['user_granted'] === "1") {
     echo '
                  <div style="margin-top:30px; text-align:center; width:100%; font-size:24px;">
                      <a href="#" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\';"><b>Open TeamPass</b></a>
@@ -620,8 +628,8 @@ if (!isset($_POST['step'])) {
                      <div style="width:900px;margin:auto;margin-top:30px;">
                          <div id="progressbar" style="float:left;margin-top:9px;"></div>
                          <div id="buttons_bottom">
-                             <input type="button" id="but_launch" onclick="Check(\'step'.$_POST['step'].'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
-                             <input type="button" id="but_next" target_id="'. (intval($_POST['step']) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
+                             <input type="button" id="but_launch" onclick="Check(\'step'.$post_step.'\')" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="LAUNCH" />
+                             <input type="button" id="but_next" target_id="'. (intval($post_step) + 1).'" style="padding:3px;cursor:pointer;font-size:20px;" class="ui-state-default ui-corner-all" value="NEXT" disabled="disabled" />
                          </div>
                      </div>';
 }

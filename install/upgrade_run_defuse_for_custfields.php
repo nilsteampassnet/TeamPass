@@ -28,14 +28,17 @@ require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once '../includes/config/tp.config.php';
 
+// Prepare POST variables
+$post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
 // Some init
 $_SESSION['settings']['loaded'] = "";
 $finish = false;
-$post_nb = intval($_POST['nb']);
-$post_start = intval($_POST['start']);
 $next = ($post_nb + $post_start);
 
 // Open DB connection
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
     $server,
     $user,

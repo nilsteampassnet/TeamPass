@@ -53,7 +53,7 @@ if (isset($_SERVER['HTTPS'])) {
                 <li id="menu_step4"><span id="step_4">Preparation</span>&nbsp;<span id="res_4"></span></li>
                 <li id="menu_step5"><span id="step_5">Tables creation</span>&nbsp;<span id="res_5"></span></li>
                 <li id="menu_step6"><span id="step_6">Finalization</span>&nbsp;<span id="res_6"></span></li>
-        		<li id="menu_step7"><span id="step_7">Clean Up</span>&nbsp;<span id="res_7"></span></li>
+                <li id="menu_step7"><span id="step_7">Clean Up</span>&nbsp;<span id="res_7"></span></li>
                 <li id="menu_step8">Resume&nbsp;<span id="res_8"></span></li>
             </ul>
         </div>
@@ -81,7 +81,7 @@ if (isset($_SERVER['HTTPS'])) {
     </div>
         <div id="action_buttons">
             <span id="step_result"></span>
-            <input type="button" id="but_launch" onclick="CheckPage()" class="button" value="LAUNCH" />
+            <input type="button" id="but_launch" onclick="checkPage()" class="button" value="LAUNCH" />
             <input type="button" id="but_next" onclick="GotoNextStep()" class="button" value="NEXT" />
             <input type="button" id="but_restart" onclick="document.location = \'install.php\'" class="button" value="RESTART" />
             <input type="button" id="but_start" onclick="document.location = \''.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\'" class="button" style="display: none;" value="Start" />
@@ -149,28 +149,46 @@ echo '
 
 echo '
 <div id="text_step4" style="display:none;">
-    <h5>Teampass set-up:</h5>
-    <div class="line_entry">
-    <label for="tbl_prefix" class="label_block_big">Table prefix :</label><input type="text" id="tbl_prefix" value="teampass_" style="width:250px;" />&nbsp;<span id="res4_check0"></span>
-    </div>
-    <div class="line_entry">
-    <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
-        <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
-    </label>
-    <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
-    </div>
-    <h5>Administrator account set-up:</h5>
-    <div class="line_entry">
-    <label for="admin_pwd" class="label_block_big">Administrator password :</label><input type="text" id="admin_pwd" style="width:250px;" />&nbsp;<span id="res4_check10"></span>
-    </div>
-    <!--
-    <h5>Anonymous statistics:</h5>
-    <div class="line_entry">
-    <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
-    <div style="font-style: italic; font-size:9px;">Please consider sending your statistics as a way to contribute to future improvements of Teampass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the following information : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
-    This option can be enabled or disabled through the administration panel.</div>
-    </div>
-    -->
+    <table>
+        <tr>
+            <td colspan="2">
+                <h5>Teampass set-up:</h5>
+            </td>
+        </tr>
+        <tr>
+            <td style="width:250px;">
+                <label for="tbl_prefix" class="label_block_big">Table prefix :</label>
+            </td>
+            <td>
+                <input type="text" id="tbl_prefix" value="teampass_" style="width:350px;" />&nbsp;<span id="res4_check0"></span>
+            </td>
+        </tr>
+        <tr>
+            <td style="width:250px;">
+                <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
+                    <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
+                </label>
+            </td>
+            <td>
+                <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
+            </td>
+
+            <div class="line_entry">
+        </tr>
+        <tr>
+            <td colspan="2">
+                <h5>Administrator account set-up:</h5>
+            </td>
+        </tr>
+        <tr>
+            <td style="width:250px;">
+                <label for="admin_pwd" class="label_block_big">Administrator password :</label>
+            </td>
+            <td>
+                <input type="text" id="admin_pwd" style="width:350px;" />&nbsp;<span id="res4_check10"></span>
+            </td>
+        </tr>
+    </table>
 </div>';
 
 echo '

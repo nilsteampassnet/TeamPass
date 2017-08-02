@@ -54,6 +54,7 @@ require_once 'main.functions.php';
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -71,17 +72,23 @@ function utf8Urldecode($value)
     return $value;
 }
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, $_POST['id'], FILTER_SANITIZE_NUMBER_INT);
+
 // Construction de la requéte en fonction du type de valeur
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "kb_in_db":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             //decrypt and retreive data in JSON format
-            $data_received = prepareExchangedData($_POST['data'], "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);
@@ -174,21 +181,22 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "open_kb":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
             $ret = DB::queryfirstrow(
                 "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
                 FROM ".prefix_table("kb")." AS k
                 INNER JOIN ".prefix_table("kb_categories")." AS c ON (c.id = k.category_id)
                 INNER JOIN ".prefix_table("users")." AS u ON (u.id = k.author_id)
                 WHERE k.id = %i",
-                $_POST['id']
+                $post_id
             );
 
             //select associated items
-            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $_POST['id']);
+            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $post_id);
             $arrOptions = array();
             foreach ($rows as $record) {
                 array_push($arrOptions, $record['item_id']);
@@ -209,11 +217,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "delete_kb":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete(prefix_table("kb"), "id=%i", $_POST['id']);
+            DB::delete(prefix_table("kb"), "id=%i", $post_id);
             break;
     }
 }

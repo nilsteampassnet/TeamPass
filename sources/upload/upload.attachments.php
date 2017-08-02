@@ -38,7 +38,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 
 //check for session
 if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
-    session_id($_POST['PHPSESSID']);
+    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
 } elseif (isset($_GET['PHPSESSID'])) {
     session_id($_GET['PHPSESSID']);
 } else {
@@ -60,7 +60,8 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
     //Connect to mysql server
     require_once '../../includes/config/settings.php';
     require_once '../../includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -73,9 +74,16 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    if (isset($_SESSION[filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)])
+    // Prepare POST variables
+    $post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
+    $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
+    $post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
+    $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
+    $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
+
+    if (isset($_SESSION[$post_user_token])
         && ($chunk < $chunks - 1)
-        && $_SESSION[filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)] >= 0
+        && $_SESSION[$post_user_token] >= 0
     ) {
         // increase end_timestamp for token
         DB::update(
@@ -85,13 +93,16 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
                 ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            $_POST['user_token']
+            $post_user_token
         );
     } else {
         // create a session if several files to upload
-        if (!isset($_SESSION[$_POST['user_token']]) || empty($_SESSION[$_POST['user_token']]) || $_SESSION[$_POST['user_token']] === 0) {
-            $_SESSION[$_POST['user_token']] = $_POST['files_number'];
-        } else if ($_SESSION[$_POST['user_token']] > 0) {
+        if (isset($_SESSION[$post_user_token]) === false
+            || empty($_SESSION[$post_user_token])
+            || $_SESSION[$post_user_token] === "0"
+        ) {
+            $_SESSION[$post_user_token] = $post_files_number;
+        } elseif ($_SESSION[$post_user_token] > 0) {
             // increase end_timestamp for token
             DB::update(
                 prefix_table('tokens'),
@@ -100,13 +111,13 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
                     ),
                 "user_id = %i AND token = %s",
                 $_SESSION['user_id'],
-                $_POST['user_token']
+                $post_user_token
             );
             // decrease counter of files to upload
-            $_SESSION[$_POST['user_token']]--;
+            $_SESSION[$post_user_token]--;
         } else {
             // no more files to upload, kill session
-            unset($_SESSION[$_POST['user_token']]);
+            unset($_SESSION[$post_user_token]);
             handleAttachmentError('No user token found.', 110);
             die();
         }
@@ -115,17 +126,22 @@ if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
         $data = DB::queryFirstRow(
             "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            $_POST['user_token']
+            $post_user_token
         );
         // clear user token
-        if ($_SESSION[$_POST['user_token']] === 0) {
-            DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
-            unset($_SESSION[$_POST['user_token']]);
+        if ($_SESSION[$post_user_token] === 0) {
+            DB::delete(
+                prefix_table("tokens"),
+                "user_id = %i AND token = %s",
+                $_SESSION['user_id'],
+                $post_user_token
+            );
+            unset($_SESSION[$post_user_token]);
         }
 
         if (time() > $data['end_timestamp']) {
             // too old
-            unset($_SESSION[$_POST['user_token']]);
+            unset($_SESSION[$post_user_token]);
             handleAttachmentError('User token expired.', 110);
             die();
         }
@@ -153,8 +169,8 @@ $valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-if (isset($_POST['timezone'])) {
-    date_default_timezone_set((string) $_POST['timezone']);
+if (null !== $post_timezone) {
+    date_default_timezone_set($post_timezone);
 }
 
 // Check post_max_size
@@ -354,11 +370,11 @@ if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attach
 }
 
 // Case ITEM ATTACHMENTS - Store to database
-if (isset($_POST['edit_item']) && $_POST['type_upload'] === "item_attachments") {
+if (null !== $post_type_upload && $post_type_upload === "item_attachments") {
     DB::insert(
         $pre.'files',
         array(
-            'id_item' => $_POST['itemId'],
+            'id_item' => $post_itemId,
             'name' => $fileName,
             'size' => $_FILES['file']['size'],
             'extension' => getFileExtension($fileName),
@@ -372,7 +388,7 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] === "item_attachments") 
     DB::insert(
         $pre.'log_items',
         array(
-            'id_item' => $_POST['itemId'],
+            'id_item' => $post_itemId,
             'date' => time(),
             'id_user' => $_SESSION['user_id'],
             'action' => 'at_modification',

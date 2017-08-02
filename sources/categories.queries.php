@@ -47,6 +47,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -61,15 +62,24 @@ $link->set_charset($encoding);
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
-if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+// Prepare POST variables
+$post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
+$post_field_title = filter_input(INPUT_POST, 'field_title', FILTER_SANITIZE_STRING);
+$post_field_type = filter_input(INPUT_POST, 'field_type', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+if (null !== $post_type) {
+    switch ($post_type) {
         case "addNewCategory":
             // store key
             DB::insert(
                 prefix_table("categories"),
                 array(
                     'parent_id' => 0,
-                    'title' => filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING),
+                    'title' => $post_title,
                     'level' => 0,
                     'order' => 1
                 )
@@ -78,23 +88,23 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "deleteCategory":
-            DB::delete(prefix_table("categories"), "id = %i", filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT));
-            DB::delete(prefix_table("categories_folders"), "id_category = %i", filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT));
+            DB::delete(prefix_table("categories"), "id = %i", $post_id);
+            DB::delete(prefix_table("categories_folders"), "id_category = %i", $post_id);
             echo '[{"error" : ""}]';
             break;
 
         case "addNewField":
             // store key
-            if (!empty(filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING))
-                && !empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT))
+            if (empty($post_field_title) === false
+                && empty($post_id) === false
             ) {
                 DB::insert(
                     prefix_table("categories"),
                     array(
-                        'parent_id' => filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT),
-                        'title' => filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING),
+                        'parent_id' => $post_id,
+                        'title' => $post_field_title,
+                        'type' => $post_field_type,
                         'level' => 1,
-                        'type' => 'text',
                         'order' => 1
                     )
                 );
@@ -104,43 +114,60 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         case "renameItem":
             // update key
-            if (empty(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING)) === false
-                && empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) === false
+            if (empty($post_data) === false
+                && empty($post_id) === false
             ) {
                 DB::update(
                     prefix_table("categories"),
                     array(
-                        'title' => filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING)
+                        'title' => $post_data
                         ),
                     "id=%i",
-                    $_POST['id']
+                    $post_id
                 );
-                echo '[{"error" : "", "id" : "'.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT).'"}]';
+                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
             }
             break;
 
         case "moveItem":
             // update key
-            if (empty(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING)) === false
-                && empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) === false
+            if (empty($post_data) === false
+                && empty($post_id) === false
             ) {
                 DB::update(
                     prefix_table("categories"),
                     array(
-                        'parent_id' => filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                        'parent_id' => $post_data,
                         'order' => 99
                         ),
                     "id=%i",
-                    $_POST['id']
+                    $post_id
                 );
-                echo '[{"error" : "", "id" : "'.filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT).'"}]';
+                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
+            }
+            break;
+
+        case "changeFieldType":
+            // update key
+            if (empty($post_data) === false
+                && empty($post_id) === false
+            ) {
+                DB::update(
+                    prefix_table("categories"),
+                    array(
+                        'type' => $post_data
+                        ),
+                    "id=%i",
+                    $post_id
+                );
+                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
             }
             break;
 
         case "saveOrder":
             // update order
-            if (empty(filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) === false) {
-                foreach (explode(';', filter_var($_POST['data'], FILTER_SANITIZE_STRING)) as $data) {
+            if (empty($post_type) === false) {
+                foreach (explode(';', $post_data) as $data) {
                     $elem = explode(':', $data);
                     DB::update(
                         prefix_table("categories"),
@@ -207,7 +234,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 $field['title'],
                                 $field['order'],
                                 $field['encrypted_data'],
-                                ""
+                                "",
+                                $field['type']
                             )
                         );
                     }
@@ -217,21 +245,25 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "categoryInFolders":
+            // Prepare POST variables
+            $post_foldersIds = filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_STRING);
+            $post_id = $post_id;
+
             // update order
-            if (empty(filter_input(INPUT_POST, 'foldersIds', FILTER_SANITIZE_STRING)) === false) {
+            if (empty($post_foldersIds) === false) {
                 // delete all existing inputs
                 DB::delete(
                     $pre."categories_folders",
                     "id_category = %i",
-                    intval($_POST['id'])
+                    $post_id
                 );
                 // create new list
                 $list = "";
-                foreach (explode(';', filter_var($_POST['foldersIds'], FILTER_SANITIZE_STRING)) as $folder) {
+                foreach (explode(';', $post_foldersIds) as $folder) {
                     DB::insert(
                         prefix_table("categories_folders"),
                         array(
-                            'id_category' => intval($_POST['id']),
+                            'id_category' => $post_id,
                             'id_folder' => $folder
                             )
                     );
@@ -249,14 +281,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         case "dataIsEncryptedInDB":
+            // Prepare POST variables
+            $post_encrypt = filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING);
+            $post_id = $post_id;
+
             // store key
             DB::update(
                 prefix_table("categories"),
                 array(
-                    'encrypted_data' => $_POST['encrypt']
+                    'encrypted_data' => $post_encrypt
                     ),
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // encrypt/decrypt existing data
@@ -265,11 +301,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 FROM ".$pre."categories_items AS i
                 INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id = c.id)
                 WHERE c.id = %i",
-                $_POST['id']
+                $post_id
             );
             foreach ($rowsF as $recordF) {
                 // decrypt/encrypt
-                if (filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING) === "0") {
+                if ($post_encrypt === "0") {
                     $encrypt = cryption(
                         $recordF['data'],
                         "",

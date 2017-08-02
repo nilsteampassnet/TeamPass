@@ -39,18 +39,23 @@ if (!file_exists("../includes/config/settings.php")) {
 require_once '../includes/config/settings.php';
 require_once '../sources/main.functions.php';
 
+// Prepare POST variables
+$post_nb = filter_input(INPUT_POST, 'nb', FILTER_SANITIZE_NUMBER_INT);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+
+// Some init
+$next = ($post_nb + $post_start);
 $_SESSION['settings']['loaded'] = "";
-
-$dbgDuo = fopen("upgrade.log", "w");
+$dbgDuo = fopen("upgrade.log", "a");
 $finish = false;
-$next = ($_POST['nb'] + $_POST['start']);
 
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
-    $_SESSION['server'],
-    $_SESSION['user'],
-    $_SESSION['pass'],
-    $_SESSION['database'],
-    $_SESSION['port']
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
 );
 
 fputs($dbgDuo, (string) "\nStarting suggestion.\n\n");
@@ -58,7 +63,7 @@ fputs($dbgDuo, (string) "\nStarting suggestion.\n\n");
 $resData = mysqli_query(
     $dbTmp,
     "SELECT id, pw, pw_iv
-    FROM ".$_SESSION['pre']."suggestion"
+    FROM ".$pre."suggestion"
 );
 if (!$resData) {
     echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
@@ -80,7 +85,7 @@ while ($record = mysqli_fetch_array($resData)) {
         // store Password
         mysqli_query(
             $dbTmp,
-            "UPDATE ".$_SESSION['pre']."suggestion
+            "UPDATE ".$pre."suggestion
             SET pw = '".$encrypt['string']."', pw_iv = '".$encrypt['iv']."'
             WHERE id =".$record['id']
         );

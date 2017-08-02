@@ -47,6 +47,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -62,56 +63,69 @@ $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includ
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
+// Prepare POST variables
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_newtitle = filter_input(INPUT_POST, 'newtitle', FILTER_SANITIZE_STRING);
+$post_renewal_period = filter_input(INPUT_POST, 'renewal_period', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_newparent_id = filter_input(INPUT_POST, 'newparent_id', FILTER_SANITIZE_STRING);
+$post_changer_complexite = filter_input(INPUT_POST, 'changer_complexite', FILTER_SANITIZE_STRING);
+
 // CASE where title is changed
-if (isset($_POST['newtitle'])) {
-    $id = explode('_', $_POST['id']);
+if (null !== $post_newtitle) {
+    $id = explode('_', $post_id);
     // Update DB
     DB::update(
         prefix_table("nested_tree"),
         array(
-            'title' => mysqli_escape_string($link, stripslashes(($_POST['newtitle'])))
+            'title' => mysqli_escape_string($link, stripslashes($post_newtitle))
         ),
         "id=%i",
         $id[1]
     );
     //Show value
-    echo htmlentities($_POST['newtitle'], ENT_QUOTES);
+    echo htmlentities($post_newtitle, ENT_QUOTES);
 
 // CASE where RENEWAL PERIOD is changed
-} elseif (isset($_POST['renewal_period']) && !isset($_POST['type'])) {
+} elseif (null !== $post_renewal_period && null === $post_type) {
     // Check if renewal period is an integer
-    if (parseInt(intval($_POST['renewal_period']))) {
-        $id = explode('_', $_POST['id']);
+    if (parseInt($post_renewal_period)) {
+        $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
         //update DB
         DB::update(
             prefix_table("nested_tree"),
             array(
-                'renewal_period' => mysqli_escape_string($link, stripslashes(($_POST['renewal_period'])))
+                'renewal_period' => mysqli_escape_string($link, stripslashes($post_renewal_period))
             ),
             "id=%i",
             $id[1]
         );
         //Show value
-        echo htmlentities($_POST['renewal_period'], ENT_QUOTES);
+        echo htmlentities($post_renewal_period, ENT_QUOTES);
     } else {
         //Show ERROR
         echo ($LANG['error_renawal_period_not_integer']);
     }
 
     // CASE where the parent is changed
-} elseif (isset($_POST['newparent_id'])) {
-    $id = explode('_', $_POST['id']);
+} elseif (null !== $post_newparent_id) {
+    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
     //Store in DB
     DB::update(
         prefix_table("nested_tree"),
         array(
-            'parent_id' => $_POST['newparent_id']
+            'parent_id' => $post_newparent_id
         ),
         "id=%i",
         $id[1]
     );
     //Get the title to display it
-    $data = DB::queryfirstrow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", $_POST['newparent_id']);
+    $data = DB::queryfirstrow(
+        "SELECT title
+        FROM ".prefix_table("nested_tree")."
+        WHERE id = %i",
+        $post_newparent_id
+    );
     //show value
     echo $antiXss->xss_clean($data['title']);
     //rebuild the tree grid
@@ -119,7 +133,7 @@ if (isset($_POST['newtitle'])) {
     $tree->rebuild();
 
     // CASE where complexity is changed
-} elseif (isset($_POST['changer_complexite'])) {
+} elseif (null !== $post_changer_complexite) {
     /* do checks */
     require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
     if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_folders")) {
@@ -128,10 +142,15 @@ if (isset($_POST['newtitle'])) {
         exit();
     }
 
-    $id = explode('_', $_POST['id']);
+    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
 
     // Check if group exists
-    $tmp = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s' AND intitule = %i", "complex", $id[1]);
+    $tmp = DB::query(
+        "SELECT * FROM ".prefix_table("misc")."
+        WHERE type = %s' AND intitule = %i",
+        "complex",
+        $id[1]
+    );
     $counter = DB::count();
     if ($counter == 0) {
         // Insert into DB
@@ -140,7 +159,7 @@ if (isset($_POST['newtitle'])) {
             array(
                 'type' => 'complex',
                 'intitule' => $id[1],
-                'valeur' => $_POST['changer_complexite']
+                'valeur' => $post_changer_complexite
             )
         );
     } else {
@@ -148,7 +167,7 @@ if (isset($_POST['newtitle'])) {
         DB::update(
             prefix_table("misc"),
             array(
-                'valeur' => $_POST['changer_complexite']
+                'valeur' => $post_changer_complexite
             ),
             "type=%s AND  intitule = %i",
             "complex",
@@ -157,25 +176,24 @@ if (isset($_POST['newtitle'])) {
     }
 
     // Get title to display it
-    echo $SETTINGS_EXT['pwComplexity'][$_POST['changer_complexite']][1];
+    echo $SETTINGS_EXT['pwComplexity'][$post_changer_complexite][1];
 
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
     $tree->rebuild();
 
     // Several other cases
-} elseif (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+} elseif (null !== $post_type) {
+    switch ($post_type) {
         // CASE where DELETING a group
         case "delete_folder":
             // Check KEY and rights
-            if ($_POST['key'] !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
 
             $error = "";
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             // User shall not delete personal folder
             $data = DB::queryfirstrow(
@@ -296,12 +314,12 @@ if (isset($_POST['newtitle'])) {
         // CASE where DELETING multiple groups
         case "delete_multiple_folders":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
             $error = "";
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
             $folderForDel = array();
@@ -382,7 +400,7 @@ if (isset($_POST['newtitle'])) {
         //CASE where ADDING a new group
         case "add_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
@@ -390,7 +408,7 @@ if (isset($_POST['newtitle'])) {
             $error = $newId = $droplist = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -592,14 +610,14 @@ if (isset($_POST['newtitle'])) {
         //CASE where UPDATING a new group
         case "update_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
             $error = $droplist = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
             $title = htmlspecialchars_decode($dataReceived['title']);
@@ -774,7 +792,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 // error
                 exit();
             }
@@ -783,10 +801,10 @@ if (isset($_POST['newtitle'])) {
             DB::update(
                 prefix_table("nested_tree"),
                 array(
-                    'bloquer_creation' => $_POST['value']
+                    'bloquer_creation' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_STRING)
                 ),
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
             break;
 
@@ -801,7 +819,7 @@ if (isset($_POST['newtitle'])) {
             }
 
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 // error
                 exit();
             }
@@ -810,10 +828,10 @@ if (isset($_POST['newtitle'])) {
             DB::update(
                 prefix_table("nested_tree"),
                 array(
-                    'bloquer_modification' => $_POST['value']
+                    'bloquer_modification' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_STRING)
                 ),
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
             break;
 
@@ -821,13 +839,13 @@ if (isset($_POST['newtitle'])) {
         // CASE where selecting/deselecting sub-folders
         case "select_sub_folders":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
 
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 // error
                 exit();
             }
@@ -837,7 +855,7 @@ if (isset($_POST['newtitle'])) {
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
             // Get through each subfolder
-            $folders = $tree->getDescendants($_POST['id'], false);
+            $folders = $tree->getDescendants($post_id, false);
             foreach ($folders as $folder) {
                 if ($subfolders === "") {
                     $subfolders = $folder->id;
@@ -852,13 +870,13 @@ if (isset($_POST['newtitle'])) {
 
         case "get_list_of_folders":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
 
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 // error
                 exit();
             }
@@ -892,13 +910,13 @@ if (isset($_POST['newtitle'])) {
 
         case "copy_folder":
             // Check KEY and rights
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
                 echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
                 break;
             }
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
             $source_folder_id = htmlspecialchars_decode($dataReceived['source_folder_id']);
@@ -923,7 +941,13 @@ if (isset($_POST['newtitle'])) {
                 $nodeInfo = $tree->getNode($node->id);
 
                 // get complexity of current node
-                $nodeComplexity = DB::queryfirstrow("SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %i AND type= %s", $nodeInfo->id, 'complex');
+                $nodeComplexity = DB::queryfirstrow(
+                    "SELECT valeur
+                    FROM ".prefix_table("misc")."
+                    WHERE intitule = %i AND type= %s",
+                    $nodeInfo->id,
+                    'complex'
+                );
 
                 // prepare parent Id
                 if (empty($parentId)) {

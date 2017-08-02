@@ -83,7 +83,7 @@ function checkPage()
     } else if (step === "6") {
     // STEP 6
         data = '{"url_path":"'+sanitizeString($("#hid_url_path").val())+'"}';
-        tasks = ["file*settings.php", "file*sk.php", "file*security", "file*teampass-seckey", "file*csrfp-token"];
+        tasks = ["file*teampass-seckey", "file*settings.php", "file*sk.php", "file*security", "file*csrfp-token"];
         multiple = true;
     } else if (step === "7") {
     // STEP 7
