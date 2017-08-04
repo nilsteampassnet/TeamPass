@@ -2049,7 +2049,7 @@ switch ($_POST['type']) {
 
             // Posix style LDAP handles user searches a bit differently
             if ($dataReceived[0]['ldap_type'] === 'posix') {
-                $ldap_suffix = ','.$dataReceived[0]['ldap_suffix'].','.$dataReceived[0]['ldap_domain_dn'];
+                $ldap_suffix = $dataReceived[0]['ldap_suffix'].','.$dataReceived[0]['ldap_domain_dn'];
             } elseif ($dataReceived[0]['ldap_type'] === 'windows' && $ldap_suffix === '') { //Multiple Domain Names
                 $ldap_suffix = $dataReceived[0]['ldap_suffix'];
             }
