@@ -463,7 +463,7 @@ function identifyUser($sentData)
 
             // Posix style LDAP handles user searches a bit differently
             if ($_SESSION['settings']['ldap_type'] == 'posix') {
-                $ldap_suffix = ','.$_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
+                $ldap_suffix = $_SESSION['settings']['ldap_suffix'].','.$_SESSION['settings']['ldap_domain_dn'];
             } elseif ($_SESSION['settings']['ldap_type'] == 'windows' && $ldap_suffix == '') {
                 //Multiple Domain Names
                 $ldap_suffix = $_SESSION['settings']['ldap_suffix'];
