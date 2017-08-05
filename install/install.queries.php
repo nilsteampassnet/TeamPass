@@ -516,7 +516,7 @@ global \$SETTINGS;
                                     WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
                                 )
                             );
-                            if (intval($tmp[0]) === 0) {
+                            if (intval($tmp) === 0) {
                                 $queryRes = mysqli_query(
                                     $dbTmp,
                                     "INSERT INTO `".$var['tbl_prefix']."misc`
@@ -1153,7 +1153,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                     $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
                     if (file_exists($csrfp_file)) {
-                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
                             echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1170,60 +1170,15 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
 
                     echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
-            }
+            } elseif ($activity === "install") {
+                if ($task === "cleanup") {
+                    // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
+                    mysqli_query($dbTmp, "INSERT INTO `".$var['tbl_prefix']."misc` (`type`, `intitule`, `valeur`) VALUES ('install', 'clear_install_folder', 'true')");
 
-            mysqli_close($dbTmp);
-            // Destroy session without writing to disk
-            define('NODESTROY_SESSION', 'true');
-            session_destroy();
-            break;
-
-        case "step_7":
-            // Decrypt
-            require_once 'libs/aesctr.php'; // AES Counter Mode implementation
-            $activity = Encryption\Crypt\aesctr::decrypt($post_activity, "cpm", 128);
-            $task = Encryption\Crypt\aesctr::decrypt($post_task, "cpm", 128);
-            $json = Encryption\Crypt\aesctr::decrypt($post_db, "cpm", 128);
-            $db = json_decode($json, true);
-            // launch
-            $dbTmp = @mysqli_connect($db['db_host'], $db['db_login'], $db['db_pw'], $db['db_bdd'], $db['db_port']);
-
-            if ($activity === "file") {
-                if ($task === "deleteInstall") {
-                    function delTree($dir)
-                    {
-                        $files = array_diff(scandir($dir), array('.', '..'));
-
-                        foreach ($files as $file) {
-                            (is_dir("$dir/$file")) ? delTree("$dir/$file") : unlink("$dir/$file");
-                        }
-                        return rmdir($dir);
-                    }
-
-                    $result = true;
-                    $errorMsg = "Cannot delete `install` folder. Please do it manually.";
-                    if (file_exists($session_abspath.'/install')) {
-                        // set the permissions on the install directory and delete
-                        // is server Windows or Linux?
-                        if (strtoupper(substr(PHP_OS, 0, 3)) != 'WIN') {
-                            chmodRecursive($session_abspath.'/install', 0755, 0440);
-                        }
-                        $result = delTree($session_abspath.'/install');
-                    }
-
-                    // delete temporary install table
-                    $result = mysqli_query($dbTmp, "DROP TABLE `_install`");
-                    $errorMsg = "Cannot remove `_install` table. Please do it manually.";
-
-                    if ($result === false) {
-                        echo '[{"error" : "'.$errorMsg.'", "index" : "'.$post_index.'", "result" : "", "multiple" : ""}]';
-                    } else {
-                        echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
-                    }
+                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 }
             }
-            // delete install table
-            //
+
             mysqli_close($dbTmp);
             // Destroy session without writing to disk
             define('NODESTROY_SESSION', 'true');

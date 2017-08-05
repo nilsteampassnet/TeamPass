@@ -208,7 +208,7 @@ function SendMail(category, contentEmail, keySent, message){
             key     : keySent
         },
         function(data){
-            if (typeof data[0].error !== 'undefined' && data[0].error !== "") {
+            if (typeof data[0].error !== "undefined" && data[0].error !== "") {
                 message = data[0].message;
             }
             $("#div_dialog_message_text").html(message);
@@ -259,12 +259,23 @@ function storeError(messageError, dialogDiv, textDiv){
     $("#"+dialogDiv).dialog("open");
 }
 
+/**
+ * [aesEncrypt description]
+ * @param  {[type]} text [description]
+ * @param  {[type]} key  [description]
+ * @return {[type]}      [description]
+ */
 function aesEncrypt(text, key)
 {
     return Aes.Ctr.encrypt(text, key, 256);
 }
 
-
+/**
+ * [aesDecrypt description]
+ * @param  {[type]} text [description]
+ * @param  {[type]} key  [description]
+ * @return {[type]}      [description]
+ */
 function aesDecrypt(text, key)
 {
     return Aes.Ctr.decrypt(text, key, 256);
@@ -284,6 +295,13 @@ function jsonErrorHdl(message)
     return false;
 }
 
+/**
+ * [prepareExchangedData description]
+ * @param  {[type]} data [description]
+ * @param  {[type]} type [description]
+ * @param  {[type]} key  [description]
+ * @return {[type]}      [description]
+ */
 function prepareExchangedData(data, type, key)
 {
     var jsonResult;
@@ -314,6 +332,11 @@ function prepareExchangedData(data, type, key)
     }
 }
 
+/**
+ * Show a message to the user on top of the screen
+ * @param  {[type]} textToDisplay [description]
+ * @return {[type]}               [description]
+ */
 function displayMessage(textToDisplay)
 {
     $("#main_info_box_text").html(textToDisplay);
@@ -322,10 +345,22 @@ function displayMessage(textToDisplay)
         at: "center top+20",
         of: "#main_simple"
     });
-    setTimeout(function(){$("#main_info_box").effect( "fade", "slow");}, 2000);
+    setTimeout(
+        function(){
+            $("#main_info_box").effect( "fade", "slow");
+        },
+        2000
+    );
 }
 
-
+/**
+ * Make blinking an HMLT element
+ * @param  {[type]} elem  [description]
+ * @param  {[type]} times [description]
+ * @param  {[type]} speed [description]
+ * @param  {[type]} klass [description]
+ * @return {[type]}       [description]
+ */
 function blink(elem, times, speed, klass)
 {
     if (times > 0 || times < 0) {

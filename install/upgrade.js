@@ -12,7 +12,7 @@
  */
 
 // Function - do a pause during javascript execution
-function PauseInExecution(millis)
+function pauseInExecution(millis)
 {
     var date = new Date();
     var curDate = null;
@@ -22,8 +22,14 @@ function PauseInExecution(millis)
     } while(curDate-date < millis);
 }
 
-//Fonction qui permet d'appeler un fichier qui ex�cute une requete pass�e en parametre
-function httpRequest(file,data,type) {
+/**
+ * Execute a file
+ * @param  {[type]} file [description]
+ * @param  {[type]} data [description]
+ * @param  {[type]} type [description]
+ * @return {[type]}      [description]
+ */
+function httpRequest(file, data, type) {
     var xhrObject = null;
     var isChrome = navigator.userAgent.toLowerCase().indexOf("chrome") > -1;
 
@@ -31,17 +37,20 @@ function httpRequest(file,data,type) {
         document.getElementById("menu_action").value = "action";
     }
 
-    if(window.XMLHttpRequest) { // Firefox
+    if(window.XMLHttpRequest) {
+        // Firefox
         xhrObject = new XMLHttpRequest();
-    } else if(window.ActiveXObject) { // Internet Explorer
-        xhrObject = new ActiveXObject("Microsoft.XMLHTTP");  //Info IE8 now supports =>  xhrObject = new XMLHttpRequest()
-    } else { // XMLHttpRequest non support? par le navigateur
+    } else if(window.ActiveXObject) {
+        // Internet Explorer
+        xhrObject = new ActiveXObject("Microsoft.XMLHTTP");
+    } else {
+        // XMLHttpRequest not supported by browser
         alert("Your browser does not support XMLHTTPRequest objects ...");
         return;
     }
 
     if (type === "GET") {
-        xhrObject.open("GET", file+"?"+data, true);
+        xhrObject.open("GET", file + "?" + data, true);
         xhrObject.send(null);
     } else {
         xhrObject.open("POST", file, true);
@@ -52,7 +61,7 @@ function httpRequest(file,data,type) {
                 if (data !== "" && data !== undefined && data.indexOf("ype=identify_user") > 0 ) {
                     if (isChrome === true ) {
                         // Needed pause for Chrome
-                        PauseInExecution(100);
+                        pauseInExecution(100);
                     }
                     if (type === "") {
                         if (document.getElementById("erreur_connexion").style.display === "") {
@@ -63,10 +72,16 @@ function httpRequest(file,data,type) {
                         }
                     } else {
                         if (type === "?error=rised") {
-                            if (document.getElementById("erreur_connexion").style.display === "none") type = "";   //clean error in url
-                            else type = "?error=rised"; //Maintain the ERROR
+                            if (document.getElementById("erreur_connexion").style.display === "none") {
+                                // Clean error in url
+                                type = "";
+                            } else {
+                                // Maintain the ERROR
+                                type = "?error=rised";
+                            }
                         }
-                        window.location.href = "index.php"+type;
+                        // Redirection
+                        window.location.href = "index.php" + type;
                     }
                 }
             }

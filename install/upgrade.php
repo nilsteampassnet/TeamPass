@@ -512,7 +512,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     echo '
                      <h3>Step 3 - Converting database to UTF-8</h3>';
 
-    if (version_compare($post_actual_cpm_version, $SETTINGS_EXT['version'], "<")) {
+    if (version_compare($post_actual_cpm_version, "2.1.26", "<")) {
         echo '
             Notice that TeamPass is now only using UTF-8 charset.
             This step will convert the database to this charset.<br />

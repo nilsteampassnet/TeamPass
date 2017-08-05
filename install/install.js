@@ -22,7 +22,7 @@ $(function() {
     });
 });
 
-function aes_encrypt(text)
+function aesEncrypt(text)
 {
     return Aes.Ctr.encrypt(text, "cpm", 128);
 }
@@ -35,7 +35,7 @@ function checkPage()
     var index = "";
     var tasks = [];
     var multiple = "";
-    var errorMsg = "";
+    var tsk = "";
     $("#step_error").hide().html("");
     $("#res_"+step).html("");
 
@@ -44,7 +44,8 @@ function checkPage()
         if ($("#url_path").val() === "" || $("#root_path").val() === "") {
             error = "Fields need to be filled in!";
         } else {
-            data = '{"root_path":"'+$("#root_path").val()+'", "url_path":"'+$("#url_path").val()+'"}';
+            const my_json = {"root_path":$("#root_path").val(), "url_path":$("#url_path").val()};
+            data = JSON.stringify(my_json);
             tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log", "folder*includes/config", "extension*curl"];
             multiple = true;
             $("#hid_abspath").val($("#root_path").val());
@@ -52,12 +53,13 @@ function checkPage()
         }
     } else if (step === "3") {
     // STEP 3
-        if ($("#db_host").val() === "" || $("#db_db").val() === "" || $("#db_login").val() === "" || $("#db_port").val() == "") {
+        if ($("#db_host").val() === "" || $("#db_db").val() === "" || $("#db_login").val() === "" || $("#db_port").val() === "") {
             error = "Paths need to be filled in!";
         } else if ($("#db_pw").val().indexOf('"') > -1) {
             error = "Double quotes in password not allowed!";
         } else {
-            data = '{"db_host":"'+$("#db_host").val()+'", "db_bdd":"'+$("#db_bdd").val()+'", "db_login":"'+$("#db_login").val()+'", "db_pw":"'+$("#db_pw").val()+'", "db_port":"'+$("#db_port").val()+'", "abspath":"'+$("#hid_abspath").val()+'", "url_path":"'+$("#hid_url_path").val()+'"}';
+            const my_json = {"db_host":$("#db_host").val(), "db_bdd":$("#db_bdd").val(), "db_login":$("#db_login").val(), "db_pw":$("#db_pw").val(), "db_port":$("#db_port").val(), "abspath":$("#hid_abspath").val(), "url_path":$("#hid_url_path").val()};
+            data = JSON.stringify(my_json);
             tasks = ["connection*test"];
             multiple = "";
             $("#hid_db_host").val($("#db_host").val());
@@ -71,7 +73,9 @@ function checkPage()
         if ($("#admin_pwd").val() === "") {
             error = "You must define a password for Admin account!";
         } else{
-            data = '{"tbl_prefix":"'+sanitizeString($("#tbl_prefix").val())+'", "sk_path":"'+sanitizeString($("#sk_path").val())+'", "admin_pwd":"'+sanitizeString($("#admin_pwd").val())+'", "send_stats":""}';
+            $("#hid_db_pre").val($("#tbl_prefix").val());
+            const my_json = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
+            data = JSON.stringify(my_json);
             tasks = ["misc*preparation"];
             multiple = "";
         }
@@ -82,21 +86,17 @@ function checkPage()
         multiple = true;
     } else if (step === "6") {
     // STEP 6
-        data = '{"url_path":"'+sanitizeString($("#hid_url_path").val())+'"}';
-        tasks = ["file*teampass-seckey", "file*settings.php", "file*sk.php", "file*security", "file*csrfp-token"];
-        multiple = true;
-    } else if (step === "7") {
-    // STEP 7
-        data = '';
-        tasks = ["file*deleteInstall"];
+        const my_json = {"url_path":sanitizeString($("#hid_url_path").val())};
+        data = JSON.stringify(my_json);
+        tasks = ["file*teampass-seckey", "file*sk.php", "file*security", "install*cleanup", "file*settings.php", "file*csrfp-token"];
         multiple = true;
     }
 
     // launch query
     if (error === "" && multiple === true) {
-        var globalResult = true;
         var ajaxReqs = [];
-        var tsk;
+
+        const db_info = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
 
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
         $("#step_res").val("true");
@@ -110,17 +110,17 @@ function checkPage()
                 dataType : "json",
                 data : {
                     type:       "step_"+step,
-                    data:       aes_encrypt(data), //
-                    activity:   aes_encrypt(tsk[0]),
-                    task:       aes_encrypt(tsk[1]),
-                    db:         aes_encrypt('{"db_host" : "'+$("#hid_db_host").val()+'", "db_bdd" : "'+$("#hid_db_bdd").val()+'", "db_login" : "'+$("#hid_db_login").val()+'", "db_pw" : "'+$("#hid_db_pwd").val()+'", "db_port" : "'+$("#hid_db_port").val()+'"}'),
+                    data:       aesEncrypt(data), //
+                    activity:   aesEncrypt(tsk[0]),
+                    task:       aesEncrypt(tsk[1]),
+                    db:         aesEncrypt(JSON.stringify(db_info)),
                     index:      index,
                     multiple:   multiple
                 },
-                complete : function(data, statut){
-                    if (data.responseText == "") {
+                complete : function(data){
+                    if (data.responseText === "") {
                         // stop error occured, PHP5.5 installed?
-                        $("#step_result").html("[ERROR] Answer from server is empty. This may occur if PHP version is not at least 5.5. Please check this this fit your server configuration!");
+                        $("#step_result").html("[ERROR] Answer from server is empty.");
                     } else {
                         data = $.parseJSON(data.responseText);
                         if (data[0].error === "") {
@@ -140,7 +140,7 @@ function checkPage()
                         } else {
                             // ignore setting error if regarding setting permissions (step 6, index 2)
                             if (step+data[0].index !== "62") {
-                                $("#step_res").val("false");
+                                //$("#step_res").val("false");
                             }
                             $("#res"+step+"_check"+data[0].index).html("<img src=\"images/exclamation-red.png\">&nbsp;<i>"+data[0].error+"</i>");
                             $("#pop_db").append("<li><img src=\"images/exclamation-red.png\">&nbsp;Error on task `<b>"+data[0].activity+" > "+data[0].task+"`</b>. <i>"+data[0].error+"</i></li>");
@@ -152,11 +152,10 @@ function checkPage()
                 }
             }));
         }
-        $.when.apply($, ajaxReqs).done(function(data, statut) {
+        $.when.apply($, ajaxReqs).done(function(data) {
             setTimeout(function(){
                 // all requests are complete
                 if ($("#step_res").val() === "false") {
-                    data = $.parseJSON(data.responseText);
                     $("#step_error").show().html("At least one task has failed! Please correct and relaunch. ");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
@@ -165,7 +164,7 @@ function checkPage()
                     $("#but_next").prop("disabled", false);
                     $("#but_next").show();
                     // Hide restart button at end of step 6 if successful
-                    if (step === "7") {
+                    if (step === "6") {
                         $("#but_restart").prop("disabled", true);
                         $("#but_restart").hide();
                     }
@@ -175,21 +174,24 @@ function checkPage()
         });
     } else if (error === "" && multiple === "") {
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
-        var tsk = tasks[0].split("*");
+        tsk = tasks[0].split("*");
+
+        const db_info = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val()};
+
         $.ajax({
             url: "install.queries.php",
             type : 'POST',
             dataType : "json",
             data : {
                 type:       "step_"+step,
-                data:       aes_encrypt(data),
-                activity:   aes_encrypt(tsk[0]),
-                task:       aes_encrypt(tsk[1]),
-                db:         aes_encrypt('{"db_host" : "'+$("#hid_db_host").val()+'", "db_bdd" : "'+$("#hid_db_bdd").val()+'", "db_login" : "'+$("#hid_db_login").val()+'", "db_pw" : "'+$("#hid_db_pwd").val()+'", "db_port" : "'+$("#hid_db_port").val()+'"}'),
+                data:       aesEncrypt(data),
+                activity:   aesEncrypt(tsk[0]),
+                task:       aesEncrypt(tsk[1]),
+                db:         aesEncrypt(JSON.stringify(db_info)),
                 index:      index,
                 multiple:   multiple
             },
-            complete : function(data, statut){
+            complete : function(data){
                 data = $.parseJSON(data.responseText);
                 $("#step_result").html("");
                 if (data[0].error !== "" ) {
@@ -217,10 +219,10 @@ function GotoNextStep()
     var step = $("#page_id").val();
     var nextStep = parseInt(step)+1;
 
-    if (nextStep === "8") {
+    if (nextStep === 7) {
         $("#but_restart, #but_next, #but_launch").hide();
-        $("#but_start").show();
-        $("#step_result").html("Installation finished.");
+        $("#but_start").hide();
+        $("#step_result").html("").hide();
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
         $("#menu_step"+step).switchClass("li_inprogress", "li_done");
@@ -240,18 +242,18 @@ function GotoNextStep()
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
         $('#admin_pwd').live("paste",function(e) {
-            alert('Paste option is disabled !!');
+            alert("Paste option is disabled !!");
             e.preventDefault();
         });
         $("#admin_pwd").live("keypress", function(e){
             var key = e.charCode || e.keyCode || 0;
             // allow backspace, tab, delete, arrows, letters, numbers and keypad numbers ONLY
             return (
-                key != 39
+                key !== 39
             );
         });
         // Auto start as required
-        if (nextStep === "5" || nextStep === "6" || nextStep === "7" ) {
+        if (nextStep === "5" || nextStep === "6" ) {
             checkPage();
         }
     }

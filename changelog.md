@@ -1,6 +1,7 @@
 2.1.27
 
  8/
+ Delete install folders and files during installation process
  Custom Field value can be masked
  Database password is encrypted in settings.php file
  PHPMailer library updated to 5.2.23

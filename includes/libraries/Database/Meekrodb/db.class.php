@@ -28,7 +28,7 @@ class DB {
 
     // configure workings
     public static $param_char = '%';
-    public static $named_param_seperator = '_';
+    public static $named_param_separator = '_';
     public static $success_handler = false;
     public static $error_handler = true;
     public static $throw_exception_on_error = false;
@@ -50,8 +50,8 @@ class DB {
     if ($mdb->param_char !== DB::$param_char) {
         $mdb->param_char = DB::$param_char;
     }
-    if ($mdb->named_param_seperator !== DB::$named_param_seperator) {
-        $mdb->named_param_seperator = DB::$named_param_seperator;
+    if ($mdb->named_param_separator !== DB::$named_param_separator) {
+        $mdb->named_param_separator = DB::$named_param_separator;
     }
     if ($mdb->success_handler !== DB::$success_handler) {
         $mdb->success_handler = DB::$success_handler;
@@ -141,7 +141,7 @@ class MeekroDB {
 
     // configure workings
     public $param_char = '%';
-    public $named_param_seperator = '_';
+    public $named_param_separator = '_';
     public $success_handler = false;
     public $error_handler = true;
     public $throw_exception_on_error = false;
@@ -454,7 +454,7 @@ class MeekroDB {
     }
 
     $param_char_length = strlen($this->param_char);
-    $named_seperator_length = strlen($this->named_param_seperator);
+    $named_seperator_length = strlen($this->named_param_separator);
 
     $types = array(
         $this->param_char.'ll', // list of literals
@@ -510,7 +510,7 @@ class MeekroDB {
         $arg = $args_all[$arg_number];
 
         // handle named parameters
-        } else if (substr($sql, $new_pos_back, $named_seperator_length) == $this->named_param_seperator) {
+        } else if (substr($sql, $new_pos_back, $named_seperator_length) == $this->named_param_separator) {
         $arg_number_length = strspn($sql, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_',
             $new_pos_back + $named_seperator_length) + $named_seperator_length;
 

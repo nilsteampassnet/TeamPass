@@ -673,21 +673,21 @@ function AjouterItem()
             }
 
             //prepare data
-            var data = '{"pw":"' + sanitizeString($('#pw1').val()) + '", "label":"' + sanitizeString($('#label').val()) + '", ' +
-            '"login":"' + sanitizeString($('#item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
-            '"description":"' + (description) + '", "email":"' + $('#email').val() + '", "url":"' + url + '", "categorie":"' + selected_folder + '", ' +
-            '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val()+
-            '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
-            '"anyone_can_modify":"' + $('#anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#item_tags').val())+
-            '", "random_id_from_files":"' + $('#random_id').val() + '", "to_be_deleted":"' + to_be_deleted + '", "fields":"' + sanitizeString(fields) + '", ' +
-            '"complexity_level":"' + parseInt($("#mypassword_complex").val()) + '"}';
+            var data = {"pw": sanitizeString($('#pw1').val()) , "label": sanitizeString($('#label').val()) ,
+                "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf ,
+                "description": (description) , "email": $('#email').val() , "url": url , "categorie": selected_folder ,
+                "restricted_to": restriction , "restricted_to_roles": restriction_role ,
+                "salt_key_set": $('#personal_sk_set').val() , "diffusion": diffusion , "id": $('#id_item').val() ,
+                "anyone_can_modify": $('#anyone_can_modify:checked').val() , "tags": sanitizeString($('#item_tags').val()) ,
+                "random_id_from_files": $('#random_id').val() , "to_be_deleted": to_be_deleted ,
+                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#mypassword_complex").val())};
 
             //Send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "new_item",
-                    data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data     : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key        : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -865,7 +865,9 @@ function EditerItem()
             }
 
           //To be deleted
-            if ($("#edit_enable_delete_after_consultation").is(':checked') && ($("#edit_times_before_deletion").val() >= 1 || $("#edit_deletion_after_date").val() != "")) {
+            if ($("#edit_enable_delete_after_consultation").is(':checked')
+                && ($("#edit_times_before_deletion").val() >= 1 || $("#edit_deletion_after_date").val() != "")
+            ) {
                 if ($("#edit_times_before_deletion").val() >= 1) {
                     var to_be_deleted = $("#edit_times_before_deletion").val();
                     //var to_be_deleted_after_date = "";
@@ -887,20 +889,22 @@ function EditerItem()
             });
 
               //prepare data
-            var data = '{"pw":"' + sanitizeString($('#edit_pw1').val()) + '", "label":"' + sanitizeString($('#edit_label').val()) + '", ' +
-            '"login":"' + sanitizeString($('#edit_item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
-            '"description":"' + description + '", "email":"' + $('#edit_email').val() + '", "url":"' + url + '", "categorie":"' + $("#edit_categorie option:selected").val() + '", ' +
-            '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val() + '", "is_pf":"' + $('#recherche_group_pf').val() + '", ' +
-            '"annonce":"' + annonce + '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
-            '"anyone_can_modify":"' + $('#edit_anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#edit_tags').val()) + '" ,' +
-            '"to_be_deleted":"' + to_be_deleted + '" ,"fields":"' + sanitizeString(fields) + '", "complexity_level":"' + parseInt($("#edit_mypassword_complex").val()) + '"}';
+            var data = {"pw": sanitizeString($('#edit_pw1').val()) , "label": sanitizeString($('#edit_label').val()) ,
+                "login": sanitizeString($('#edit_item_login').val()) , "is_pf": is_pf ,
+                "description": description , "email": $('#edit_email').val() , "url": url ,
+                "categorie": $("#edit_categorie option:selected").val() , "restricted_to": restriction ,
+                "restricted_to_roles": restriction_role , "salt_key_set": $('#personal_sk_set').val() ,
+                "is_pf": $('#recherche_group_pf').val() , "annonce": annonce , "diffusion": diffusion ,
+                "id": $('#id_item').val() , "anyone_can_modify": $('#edit_anyone_can_modify:checked').val() ,
+                "tags": sanitizeString($('#edit_tags').val()) , "to_be_deleted": to_be_deleted ,
+                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#edit_mypassword_complex").val())};
 
             //send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "update_item",
-                    data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key        : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -1108,15 +1112,16 @@ function AddNewFolder()
         }
 
         //prepare data
-        var data = '{"title":"' + sanitizeString($('#new_rep_titre').val()) + '", "complexity":"' + sanitizeString($('#new_rep_complexite').val()) + '", "is_pf":"' + $('#pf_selected').val() + '", ' +
-        '"parent_id":"' + $("#new_rep_groupe option:selected").val() + '", "renewal_period":"0"}';
-console.log(data);
+        var data = {"title": sanitizeString($('#new_rep_titre').val()),
+            "complexity": sanitizeString($('#new_rep_complexite').val()), "is_pf": $('#pf_selected').val(),
+            "parent_id": $("#new_rep_groupe option:selected").val(), "renewal_period":"0"};
+
         //send query
         $.post(
             "sources/folders.queries.php",
             {
                 type   : "add_folder",
-                data   : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                data   : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key    : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
@@ -2249,7 +2254,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
     if (itemTitle != "") {
         if (checkInCurrentFolder == "1" || checkInAllFolders == "1") {
             //prepare data
-            var data = '{"label":"' + itemTitle.replace(/"/g,'&quot;') + '", "idFolder":"' + $('#hid_cat').val() + '"}';
+            var data = {"label": itemTitle.replace(/"/g,'&quot;') , "idFolder": $('#hid_cat').val()};
 
             if (checkInCurrentFolder == "1") {
                 var typeOfCheck = "same_folder";
@@ -2266,7 +2271,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
                 {
                     type    : "check_for_title_duplicate",
                     option  : typeOfCheck,
-                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key     : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -2568,16 +2573,16 @@ $(function() {
                     $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
 
                     //prepare data
-                    var data = '{"title":"' + $('#edit_folder_title').val().replace(/"/g,'&quot;') + '", ' +
-                    '"complexity":"' + $('#edit_folder_complexity').val() + '", ' +
-                    '"folder":"' + $('#edit_folder_folder').val() + '"}';
+                    var data = {"title": $('#edit_folder_title').val().replace(/"/g,'&quot;'),
+                        "complexity": $('#edit_folder_complexity').val(),
+                        "folder": $('#edit_folder_folder').val()};
 
                     //Send query
                     $.post(
                         "sources/items.queries.php",
                         {
                             type    : "update_rep",
-                            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                            data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key        : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
@@ -2696,11 +2701,12 @@ $(function() {
                     $("#move_rep_show_error").show();
                 } else {
                     $("#move_folder_loader").show();
-                    $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
+                    $("#div_editer_rep ~ .ui-dialog-buttonpane")
+                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
 
                     //prepare data
-                    var data = '{"source_folder_id":"' + $('#hid_cat').val() + '", ' +
-                    '"target_folder_id":"' + $('#move_folder_id').val() + '"}';
+                    var data = {"source_folder_id": $('#hid_cat').val(),
+                        "target_folder_id": $('#move_folder_id').val()};
 
                     //Send query
                     $.post(
@@ -2713,7 +2719,8 @@ $(function() {
                         function(data) {
                             //check if format error
                             if (data[0].error == "") {
-                                $("#div_move_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+                                $("#div_move_folder ~ .ui-dialog-buttonpane")
+                                    .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                                 ListerItems($('#hid_cat').val(), "", 0);
                                 $("#move_folder_loader").hide();
                                 refreshTree();
@@ -2803,15 +2810,15 @@ $(function() {
                     .show();
 
                 //prepare data
-                var data = '{"source_folder_id":"' + $('#copy_folder_source_id').val() + '", ' +
-                '"target_folder_id":"' + $('#copy_folder_destination_id').val() + '"}';
+                var data = {"source_folder_id": $('#copy_folder_source_id').val(),
+                    "target_folder_id": $('#copy_folder_destination_id').val()};
 
                 //Send query
                 $.post(
                     "sources/folders.queries.php",
                     {
                         type    : "copy_folder",
-                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
@@ -3079,12 +3086,12 @@ $(function() {
             $(".ui-tooltip").siblings(".tooltip").remove();
 
             // load content
-            var data = '{"id":"' + $("#id_item").val() + '"}';
+            const data = {"id":$("#id_item").val()};
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "load_item_history",
-                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key     : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -3193,13 +3200,16 @@ $(function() {
                 }
 
                 // prepare changes
-                var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '", "folder":"' + $("#hid_cat").val() + '", "comment":"' + $("#comment_change").val() + '", "item_id":"' + $("#id_item").val() + '"}';
+                var data = {"label": $("#label_change").val(), "pwd": $("#pwd_change").val(),
+                    "url": $("#url_change").val(), "login": $("#login_change").val(),
+                    "email": $("#email_change").val(), "folder": $("#hid_cat").val(),
+                    "comment": $("#comment_change").val(), "item_id": $("#id_item").val()};
 
                 $.post(
                     "sources/items.queries.php",
                     {
                         type    : "suggest_item_change",
-                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                         id      : $("#id_item").val(),
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
@@ -3341,7 +3351,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
     uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_upload_list').append(
-                '<div id="' + file.id + '"><span id="remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                '<div id= file.id><span id="remove_' + file.id + '>[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
                 file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#files_number").val(parseInt($("#files_number").val())+1);
@@ -3447,7 +3457,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
     edit_uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_edit_upload_list').append(
-                '<div id="' + file.id + '"><span id="edit_remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                '<div id= file.id><span id="edit_remove_' + file.id + '>[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
                 file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#edit_files_number").val(parseInt($("#edit_files_number").val())+1);
@@ -3990,7 +4000,7 @@ function items_list_filter(id)
 
 function manage_history_entry(type, id)
 {
-    var data = '{"item_id":"' + $("#id_item").val() + '", "label":"' + sanitizeString($('#add_history_entry_label').val()) + '"}';
+    var data = {"item_id": $("#id_item").val(), "label": sanitizeString($('#add_history_entry_label').val())};
 
     //Send query
     $.post(
@@ -3998,7 +4008,7 @@ function manage_history_entry(type, id)
         {
             type      : "history_entry_add",
             folder_id : $('#hid_cat').val(),
-            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+            data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
             key       : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {

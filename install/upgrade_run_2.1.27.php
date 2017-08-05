@@ -118,45 +118,16 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
     }
     if (!$exists) {
         return mysqli_query($db_link, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
-    } else {
-        return false;
-    }
-}
-
-function addIndexIfNotExist($table, $index, $sql)
-{
-    global $db_link;
-
-    $mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
-    $res = mysqli_fetch_row($mysqli_result);
-
-    // if index does not exist, then add it
-    if (!$res) {
-        $res = mysqli_query($db_link, "ALTER TABLE `$table` ".$sql);
     }
 
-    return $res;
+    return false;
 }
 
-function tableExists($tablename)
-{
-    global $db_link;
-
-    $res = mysqli_query(
-        $db_link,
-        "SELECT COUNT(*) as count
-        FROM information_schema.tables
-        WHERE table_schema = '".$_SESSION['db_bdd']."'
-        AND table_name = '$tablename'"
-    );
-
-    if ($res > 0) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
+/**
+ * [cleanFields description]
+ * @param  [type] $txt [description]
+ * @return [type]      [description]
+ */
 function cleanFields($txt)
 {
     $tmp = str_replace(",", ";", trim($txt));
@@ -417,7 +388,6 @@ if (!isset($session_tp_defuse_installed) || $session_tp_defuse_installed === fal
     $data = file($session_sk_file); // reads an array of lines
     function replace_a_line($data)
     {
-        global $new_salt;
         if (stristr($data, "@define('SALT'")) {
             return "";
         }

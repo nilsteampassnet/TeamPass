@@ -502,13 +502,13 @@ function updateSetting(field)
     if (field == "") return false;
 
     // store in DB
-    var data = '{"field":"'+field+'", "value":"'+$("#"+field).val()+'"}';
+    var data = {"field":field, "value":$("#"+field).val()};
     //console.log(data);
     $.post(
         "sources/admin.queries.php",
         {
             type    : "save_option_change",
-            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
             key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
@@ -578,13 +578,13 @@ $(function() {
         }
 
         // store in DB
-        var data = '{"field":"'+e.target.id+'", "value":"'+$("#"+e.target.id+"_input").val()+'"}';
+        var data = {"field": e.target.id , "value": $("#"+e.target.id+"_input").val()};
         console.log(data);
         $.post(
             "sources/admin.queries.php",
             {
                 type    : "save_option_change",
-                data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                data     : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {

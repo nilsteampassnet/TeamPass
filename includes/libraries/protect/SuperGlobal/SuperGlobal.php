@@ -16,7 +16,11 @@ namespace protect\SuperGlobal;
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once dirname(__FILE__).'/../../../../sources/SecureHandler.php';
+//start session in case its not
+if (session_id() === '') {
+    require_once __DIR__."/../../../../sources/SecureHandler.php";
+    session_start();
+}
 
 class SuperGlobal
 {

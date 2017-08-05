@@ -33,6 +33,7 @@ if (isset($_SERVER['HTTPS'])) {
     <input type="hidden" id="hid_db_pwd" value="" />
     <input type="hidden" id="hid_db_port" value="" />
     <input type="hidden" id="hid_db_bdd" value="" />
+    <input type="text" id="hid_db_pre" value="" />
     <input type="hidden" id="hid_abspath" value="" />
     <input type="hidden" id="hid_url_path" value="" />';
     // # LOADER
@@ -53,7 +54,6 @@ if (isset($_SERVER['HTTPS'])) {
                 <li id="menu_step4"><span id="step_4">Preparation</span>&nbsp;<span id="res_4"></span></li>
                 <li id="menu_step5"><span id="step_5">Tables creation</span>&nbsp;<span id="res_5"></span></li>
                 <li id="menu_step6"><span id="step_6">Finalization</span>&nbsp;<span id="res_6"></span></li>
-                <li id="menu_step7"><span id="step_7">Clean Up</span>&nbsp;<span id="res_7"></span></li>
                 <li id="menu_step8">Resume&nbsp;<span id="res_8"></span></li>
             </ul>
         </div>
@@ -278,18 +278,26 @@ echo '
     </ul>
 </div>';
 
-echo '
-<div id="text_step7" style="display:none;">
-    <h5>Clean Up:</h5>
-    <ul>
-    <li>Delete the install directory <span id="res7_check0"></span></li>
-    </ul>
-</div>';
 
 echo '
-<div id="text_step8" style="display:none;">
-    <h5>Installation finished:</h5>
-    You can log as an Administrator by using login <b>admin</b> .<br /><br />
-    For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.
+<div id="text_step7" style="display:none;">
+    <h4>Thank you for installing <b>Teampass</b>.</h4>
+    <div style="margin-top:20px;">
+        The final step is now to move to the authentication page and start using <b>Teampass</b>.<br>
+        The Administrator login is `<b>admin</b>`.
+        <br>
+        Its password is the one you have written during the installation process.
+    </div>
+    <div style="margin-top:8px;">
+        <i>Please note that first page may be longer to load. Install files and folders will be deleted for security purpose.
+        <br>
+        In case warning "Install folder has to be removed!" is shown while login, this operation has failed and requires to be done manually.</i>
+    </div>
+    <div style="margin-top:40px; text-align:center;">
+        <a id="link_home_page" href="../index.php">Move to home page</a>
+    </div>
+    <div style="margin-top:80px; font-size:10px;">
+        For news, help and information, please visit <a href="http://teampass.net" target="_blank">TeamPass website</a>.
+    </div>
 </div>';
 ?>
