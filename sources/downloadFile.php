@@ -29,12 +29,18 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
+// Include files
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+// Prepare GET variables
+$get_filename = $superGlobal->get("name", "GET");
+$get_fileid = $superGlobal->get("fileid", "GET");
+
 // prepare Encryption class calls
 use \Defuse\Crypto\Crypto;
 use \Defuse\Crypto\File;
 use \Defuse\Crypto\Exception as Ex;
-
-$get_filename = filter_var($_GET['name'], FILTER_SANITIZE_STRING);
 
 header('Content-disposition: attachment; filename='.rawurldecode(basename($get_filename)));
 header('Content-Type: application/octet-stream');
@@ -49,7 +55,7 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -60,7 +66,7 @@ DB::$host = $server;
     $link->set_charset($encoding);
 
     // get file key
-    $file_info = DB::queryfirstrow("SELECT file, status FROM ".prefix_table("files")." WHERE id=%i", $_GET['fileid']);
+    $file_info = DB::queryfirstrow("SELECT file, status FROM ".prefix_table("files")." WHERE id=%i", $get_fileid);
 
     // should we encrypt/decrypt the file
     encrypt_or_decrypt_file($file_info['file'], $file_info['status']);

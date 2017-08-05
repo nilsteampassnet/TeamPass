@@ -39,8 +39,18 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
 
-if ($_SESSION['user_admin'] == 1 && (isset($SETTINGS_EXT['admin_full_right'])
+// Prepare GET variables
+$get_group = $superGlobal->get("group", "GET");
+$get_id = $superGlobal->get("id", "GET");
+
+// Prepare SESSION variables
+$session_user_admin = $superGlobal->get("user_admin", "SESSION");
+
+
+if ($session_user_admin === '1' && (isset($SETTINGS_EXT['admin_full_right'])
     && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
@@ -76,7 +86,7 @@ foreach ($rows as $reccord) {
 
 // Hidden things
 echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', isset($_GET['group']) ? filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT) : "", '" />
+<input type="hidden" name="hid_cat" id="hid_cat" value="', $get_group !== null ? $get_group : "", '" />
 <input type="hidden" id="complexite_groupe" value="" />
 <input type="hidden" name="selected_items" id="selected_items" value="" />
 <input type="hidden" id="bloquer_creation_complexite" value="" />
@@ -104,16 +114,16 @@ echo '
 <input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : "", '" />
 <input type="hidden" id="create_item_without_password" value="', isset($SETTINGS['create_item_without_password']) ? $SETTINGS['create_item_without_password'] : "0", '" />';
 // Hidden objects for Item search
-if (isset($_GET['group']) && isset($_GET['id'])) {
+if ($get_group !== null && $get_id !== null) {
     echo '
-    <input type="hidden" name="open_folder" id="open_folder" value="'.filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT).'" />
-    <input type="hidden" name="open_id" id="open_id" value="'.filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT).'" />
-    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
+    <input type="hidden" name="open_folder" id="open_folder" value="'.$get_group.'" />
+    <input type="hidden" name="open_id" id="open_id" value="'.$get_id.'" />
+    <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($get_group, $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
     <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
-} elseif (isset($_GET['group']) && !isset($_GET['id'])) {
-    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT).'" />';
+} elseif ($get_group !== null && $get_id === null)) {
+    echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$get_group.'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array(filter_var($_GET['group'], FILTER_SANITIZE_NUMBER_INT), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($get_group), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
@@ -124,7 +134,7 @@ if (isset($_GET['group']) && isset($_GET['id'])) {
 // Is personal SK available
 echo '
 <input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['session_psk']) && !empty($_SESSION['user_settings']['session_psk']) ? '1' : '0', '" />
-<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1' : '0', '" />';
+<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1' : '0', '" />';
 // define what group todisplay in Tree
 if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
     $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
@@ -156,9 +166,9 @@ echo '
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
                         <li onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
-                        ', isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] == 1 && $_SESSION['user_admin'] != 1 ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '',
-                        (isset($SETTINGS['allow_print']) && $SETTINGS['allow_print'] == 1 && $_SESSION['user_admin'] != 1 && $_SESSION['temporary']['user_can_printout'] === true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '',
-                        (isset($SETTINGS['settings_offline_mode']) && $SETTINGS['settings_offline_mode'] == 1 && $_SESSION['user_admin'] != 1) ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '', '
+                        ', isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] == 1 && $session_user_admin !== '1' ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '',
+                        (isset($SETTINGS['allow_print']) && $SETTINGS['allow_print'] == 1 && $session_user_admin !== '1' && $_SESSION['temporary']['user_can_printout'] === true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '',
+                        (isset($SETTINGS['settings_offline_mode']) && $SETTINGS['settings_offline_mode'] == 1 && session_user_admin !== '1') ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '', '
                     </ul>
                 </li>
             </ul>
@@ -982,7 +992,7 @@ if (isset($SETTINGS['allow_print']) && $SETTINGS['allow_print'] == 1 && $_SESSIO
 }
 
 // Import items
-if (isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] == 1 && $_SESSION['user_admin'] != 1) {
+if (isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] == 1 && $session_user_admin !== '1') {
     echo '
     <div id="dialog_import_file" style="display:none;">
         <div id="div_import_file">
@@ -993,7 +1003,7 @@ if (isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] == 1 && $_SESS
 
 // USERS passwords upgrade
 if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1
-    && $_SESSION['user_admin'] != 1 && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1
+    && $session_user_admin !== '1' && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1
 ) {
     echo '
     <div id="dialog_upgrade_personal_passwords" style="display:none;">

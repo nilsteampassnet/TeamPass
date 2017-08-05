@@ -50,13 +50,20 @@ function redirect($url)
     echo '</noscript>';
 }
 
+// Include files
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+// Prepare GET variables
+$get_group = $superGlobal->get("group", "GET");
+
 // Redirect needed?
 if (isset($_SERVER['HTTPS']) === true
     && $_SERVER['HTTPS'] !== 'on'
     && isset($SETTINGS['enable_sts']) === true
     && $SETTINGS['enable_sts'] === "1"
 ) {
-    redirect("https://".$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+    redirect("https://".$superGlobal->get("HTTP_HOST", "SERVER").$superGlobal->get("REQUEST_URI", "SERVER"));
 }
 
 // LOAD CPASSMAN SETTINGS

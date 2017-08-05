@@ -43,6 +43,14 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
 //load language
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
+
+// Include files
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+// Prepare GET variables
+$get_id = $superGlobal->get("id", "GET");
+
 //build list of categories
 $tab_users = array();
 $rows = DB::query(
@@ -178,11 +186,11 @@ echo '
 require_once 'kb.load.php';
 
 //If redirection is done to a speoific KB then open it
-if (isset($_GET['id']) && !empty($_GET['id'])) {
+if ($get_id !== null && empty($get_id) === false) {
     echo '
         <script language="javascript" type="text/javascript">
         <!--
-        openKB('.filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT).');
+        openKB('.$get_id.');
         -->
         </script>';
 }

@@ -55,20 +55,23 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
+// Include files
+require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
 
 // initialize session
 $_SESSION['CPM'] = 1;
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === "") {
     $SETTINGS['cpassman_dir'] = ".";
-    $SETTINGS['cpassman_url'] = (string) $_SERVER["REQUEST_URI"];
+    $SETTINGS['cpassman_url'] = $superGlobal->get("REQUEST_URI", "SERVER");
 }
 
 // Include files
-require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 
 
 // Open MYSQL database connection
@@ -96,7 +99,6 @@ $post_duo_login =       filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_ST
 $post_duo_data =        filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
 
 // Prepare superGlobal variables
-$superGlobal = new protect\SuperGlobal\SuperGlobal();
 $session_user_language =        $superGlobal->get("user_language", "SESSION");
 $session_user_id =              $superGlobal->get("user_id", "SESSION");
 $session_user_flag =            $superGlobal->get("user_language_flag", "SESSION");

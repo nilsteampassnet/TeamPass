@@ -30,6 +30,8 @@ class SuperGlobal
             $_SESSION[$key] = $value;
         } elseif ($type === "SERVER") {
             $_SERVER[$key] = $value;
+        } elseif ($type === "GET") {
+            $_GET[$key] = $value;
         }
     }
 
@@ -39,6 +41,8 @@ class SuperGlobal
             return (isset($_SESSION[$key]) ? $_SESSION[$key] : null);
         } elseif ($type === "SERVER") {
             return (isset($_SERVER[$key]) ? $_SERVER[$key] : null);
+        } elseif ($type === "GET") {
+            return (isset($_GET[$key]) ? $_GET[$key] : null);
         }
     }
 
@@ -48,6 +52,8 @@ class SuperGlobal
             unset($_SESSION[$key]);
         } elseif ($type === "SERVER") {
             unset($_SERVER[$key]);
+        } elseif ($type === "SERVER") {
+            unset($_GET[$key]);
         }
     }
 }
