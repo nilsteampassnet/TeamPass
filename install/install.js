@@ -44,8 +44,8 @@ function checkPage()
         if ($("#url_path").val() === "" || $("#root_path").val() === "") {
             error = "Fields need to be filled in!";
         } else {
-            const my_json = {"root_path":$("#root_path").val(), "url_path":$("#url_path").val()};
-            data = JSON.stringify(my_json);
+            const jsonValues = {"root_path":$("#root_path").val(), "url_path":$("#url_path").val()};
+            data = JSON.stringify(jsonValues);
             tasks = ["folder*install", "folder*includes", "folder*files", "folder*upload", "extension*mcrypt", "extension*mbstring", "extension*openssl", "extension*bcmath", "extension*iconv", "extension*gd", "function*mysqli_fetch_all", "version*php", "ini*max_execution_time", "folder*includes/avatars", "extension*xml", "folder*includes/libraries/csrfp/libs", "folder*includes/libraries/csrfp/js", "folder*includes/libraries/csrfp/log", "folder*includes/config", "extension*curl"];
             multiple = true;
             $("#hid_abspath").val($("#root_path").val());
@@ -58,8 +58,8 @@ function checkPage()
         } else if ($("#db_pw").val().indexOf('"') > -1) {
             error = "Double quotes in password not allowed!";
         } else {
-            const my_json = {"db_host":$("#db_host").val(), "db_bdd":$("#db_bdd").val(), "db_login":$("#db_login").val(), "db_pw":$("#db_pw").val(), "db_port":$("#db_port").val(), "abspath":$("#hid_abspath").val(), "url_path":$("#hid_url_path").val()};
-            data = JSON.stringify(my_json);
+            const jsonValues = {"db_host":$("#db_host").val(), "db_bdd":$("#db_bdd").val(), "db_login":$("#db_login").val(), "db_pw":$("#db_pw").val(), "db_port":$("#db_port").val(), "abspath":$("#hid_abspath").val(), "url_path":$("#hid_url_path").val()};
+            data = JSON.stringify(jsonValues);
             tasks = ["connection*test"];
             multiple = "";
             $("#hid_db_host").val($("#db_host").val());
@@ -74,20 +74,20 @@ function checkPage()
             error = "You must define a password for Admin account!";
         } else{
             $("#hid_db_pre").val($("#tbl_prefix").val());
-            const my_json = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
-            data = JSON.stringify(my_json);
+            const jsonValues = {"tbl_prefix":sanitizeString($("#tbl_prefix").val()), "sk_path":sanitizeString($("#sk_path").val()), "admin_pwd":sanitizeString($("#admin_pwd").val()), "send_stats":""};
+            data = JSON.stringify(jsonValues);
             tasks = ["misc*preparation"];
             multiple = "";
         }
     } else if (step === "5") {
     // STEP 5
-        data = '';
+        data = "";
         tasks = ["table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "populate*admin", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens", "table*items_change"];
         multiple = true;
     } else if (step === "6") {
     // STEP 6
-        const my_json = {"url_path":sanitizeString($("#hid_url_path").val())};
-        data = JSON.stringify(my_json);
+        const jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
+        data = JSON.stringify(jsonValues);
         tasks = ["file*teampass-seckey", "file*sk.php", "file*security", "install*cleanup", "file*settings.php", "file*csrfp-token"];
         multiple = true;
     }
@@ -96,7 +96,7 @@ function checkPage()
     if (error === "" && multiple === true) {
         var ajaxReqs = [];
 
-        const db_info = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
+        const dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val(), "db_pre" : $("#hid_db_pre").val()};
 
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
         $("#step_res").val("true");
@@ -113,7 +113,7 @@ function checkPage()
                     data:       aesEncrypt(data), //
                     activity:   aesEncrypt(tsk[0]),
                     task:       aesEncrypt(tsk[1]),
-                    db:         aesEncrypt(JSON.stringify(db_info)),
+                    db:         aesEncrypt(JSON.stringify(dbInfo)),
                     index:      index,
                     multiple:   multiple
                 },
@@ -176,7 +176,7 @@ function checkPage()
         $("#step_result").html("Please wait <img src=\"images/ajax-loader.gif\">");
         tsk = tasks[0].split("*");
 
-        const db_info = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val()};
+        const dbInfo = {"db_host" : $("#hid_db_host").val(), "db_bdd" : $("#hid_db_bdd").val(), "db_login" : $("#hid_db_login").val(), "db_pw" : $("#hid_db_pwd").val(), "db_port" : $("#hid_db_port").val()};
 
         $.ajax({
             url: "install.queries.php",
@@ -187,7 +187,7 @@ function checkPage()
                 data:       aesEncrypt(data),
                 activity:   aesEncrypt(tsk[0]),
                 task:       aesEncrypt(tsk[1]),
-                db:         aesEncrypt(JSON.stringify(db_info)),
+                db:         aesEncrypt(JSON.stringify(dbInfo)),
                 index:      index,
                 multiple:   multiple
             },
