@@ -119,6 +119,7 @@ if (null !== $post_newtitle) {
         "id=%i",
         $id[1]
     );
+
     //Get the title to display it
     $data = DB::queryfirstrow(
         "SELECT title
@@ -126,8 +127,10 @@ if (null !== $post_newtitle) {
         WHERE id = %i",
         $post_newparent_id
     );
+    
     //show value
-    echo $antiXss->xss_clean($data['title']);
+    echo $data['title'];
+
     //rebuild the tree grid
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
     $tree->rebuild();

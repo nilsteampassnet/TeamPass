@@ -16,7 +16,7 @@ namespace protect\SuperGlobal;
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-//start session in case its not
+// Start session in case its not
 if (session_id() === '') {
     require_once __DIR__."/../../../../sources/SecureHandler.php";
     session_start();

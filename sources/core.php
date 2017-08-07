@@ -135,6 +135,9 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
 if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['user_settings']['usertimezone'] !== "not_defined") {
     // use user timezone
     date_default_timezone_set($_SESSION['user_settings']['usertimezone']);
+} elseif ($SETTINGS['timezone'] === null) {
+    // use server timezone
+    date_default_timezone_set('UTC');
 } else {
     // use server timezone
     date_default_timezone_set($SETTINGS['timezone']);

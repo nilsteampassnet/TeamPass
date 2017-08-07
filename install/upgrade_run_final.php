@@ -183,4 +183,43 @@ if ($SETTINGS_EXT['version'] === "2.1.27") {
 // alter ITEMS table by adding default value to encryption_type field
 mysqli_query($dbTmp, "ALTER TABLE `".$pre."items` CHANGE encryption_type encryption_type varchar(20) NOT NULL DEFAULT 'defuse'");
 
+
+
+/*
+* UPDATE CONFIG file
+*/
+$tp_config_file = "../includes/config/tp.config.php";
+if (file_exists($tp_config_file)) {
+    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+        echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+        return false;
+    } else {
+        unlink($tp_config_file);
+    }
+}
+$file_handler = fopen($tp_config_file, 'w');
+$config_text = "<?php
+global \$SETTINGS;
+\$SETTINGS = array (";
+
+$result = mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin'");
+while ($row = mysqli_fetch_assoc($result)) {
+    // append new setting in config file
+    $config_text .= "
+    '".$row['intitule']."' => '".$row['valeur']."',";
+}
+mysqli_free_result($result);
+
+// write to config file
+$result = fwrite(
+    $file_handler,
+    utf8_encode(
+        substr_replace($config_text, "", -1)."
+);"
+    )
+);
+fclose($file_handler);
+
+
+// FINISHED
 echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';

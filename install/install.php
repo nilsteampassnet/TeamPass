@@ -33,7 +33,7 @@ if (isset($_SERVER['HTTPS'])) {
     <input type="hidden" id="hid_db_pwd" value="" />
     <input type="hidden" id="hid_db_port" value="" />
     <input type="hidden" id="hid_db_bdd" value="" />
-    <input type="text" id="hid_db_pre" value="" />
+    <input type="hidden" id="hid_db_pre" value="" />
     <input type="hidden" id="hid_abspath" value="" />
     <input type="hidden" id="hid_url_path" value="" />';
     // # LOADER

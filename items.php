@@ -120,10 +120,10 @@ if ($get_group !== null && $get_id !== null) {
     <input type="hidden" name="open_id" id="open_id" value="'.$get_id.'" />
     <input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($get_group, $_SESSION['personal_visible_groups']) ? '1' : '0', '" />
     <input type="hidden" name="open_item_by_get" id="open_item_by_get" value="true" />';
-} elseif ($get_group !== null && $get_id === null)) {
+} elseif ($get_group !== null && $get_id === null) {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="'.$get_group.'" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($get_group), $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
+    echo '<input type="hidden" name="recherche_group_pf" id="recherche_group_pf" value="', in_array($get_group, $_SESSION['personal_visible_groups']) ? '1' : '0', '" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
