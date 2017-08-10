@@ -508,6 +508,9 @@ function identifyUser($sentData)
                 $ldap_suffix = $SETTINGS['ldap_suffix'];
             }
 
+            // Ensure no double commas exist in ldap_suffix
+            $ldap_suffix = str_replace(',,', ',', $ldap_suffix);
+
             // Create LDAP connection
             $adldap = new adLDAP\adLDAP(
                 array(
