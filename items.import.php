@@ -466,7 +466,7 @@ foreach ($folders as $t) {
             {
                 type        : "import_file_format_keepass",
                 file        : file,
-                destination        : $("#import_keepass_items_to").val()
+                destination : $("#import_keepass_items_to").val()
             },
             function(data) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");

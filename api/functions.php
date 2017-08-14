@@ -62,7 +62,7 @@ function teampass_connect()
     require_once("../includes/config/settings.php");
     require_once('../includes/libraries/Database/Meekrodb/db.class.php');
     $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+    DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
@@ -915,6 +915,9 @@ function rest_get()
                         }
                         if (empty($params[4])) {
                             $params[4] = 0;
+                        }
+                        if (empty($params[2])) {
+                            rest_error('NO_DESTINATION_FOLDER');
                         }
                         if ($params[2] < 0) {
                             rest_error('NO_DATA_EXIST');
@@ -2098,6 +2101,9 @@ function rest_error($type, $detail = 'N/A')
             break;
         case 'NO_DATA_EXIST':
             $message = array('err' => 'No data exists');
+            break;
+        case 'NO_DESTINATION_FOLDER':
+            $message = array('err' => 'No destination folder provided');
             break;
         case 'PASSWORDTOOLONG':
             $message = array('err' => 'Password is too long');

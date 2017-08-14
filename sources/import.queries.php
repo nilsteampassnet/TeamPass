@@ -673,7 +673,12 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $numItems.'<br /><br />';
             $post_destination = filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_STRING);
 
-            //if destination is not ROOT then get the complexity level
+            // If personal folder, then remove the suffix in ID
+            if (substr_count($post_destination, '-perso') > 0) {
+                $post_destination = str_replace('-perso', '', $post_destination);
+            }
+
+            // If destination is not ROOT then get the complexity level
             if (strpos($post_destination, "perso") !== 0) {
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;

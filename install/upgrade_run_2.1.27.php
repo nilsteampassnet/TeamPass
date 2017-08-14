@@ -680,23 +680,29 @@ $file_handler = fopen($tp_config_file, 'w');
 $config_text = "<?php
 global \$SETTINGS;
 \$SETTINGS = array (";
+$any_settings = false;
 
 $result = mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin'");
 while ($row = mysqli_fetch_assoc($result)) {
     // append new setting in config file
     $config_text .= "
     '".$row['intitule']."' => '".$row['valeur']."',";
+    if ($any_settings === false) {
+        $any_settings = true;
+    }
 }
 mysqli_free_result($result);
 
 // write to config file
-$result = fwrite(
-    $file_handler,
-    utf8_encode(
-        substr_replace($config_text, "", -1)."
-);"
-    )
-);
+if ($any_settings === true) {
+    $result = fwrite(
+        $file_handler,
+        utf8_encode(
+            substr_replace($config_text, "", -1)."
+    );"
+        )
+    );
+}
 fclose($file_handler);
 
 

@@ -8,6 +8,9 @@ VOLUME ${VOL}
 # Configure nginx-php-fpm image to use this dir.
 ENV WEBROOT ${VOL}/www
 
+RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing gnu-libiconv
+ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
+
 RUN echo && \
   # Install and configure missing PHP requirements
   /usr/local/bin/docker-php-ext-configure bcmath && \

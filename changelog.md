@@ -6,7 +6,11 @@
  Database password is encrypted in settings.php file
  PHPMailer library updated to 5.2.23
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
+ #1862 Import from Keepass.xml to Personalfolder no access to Item
+ #1857 API: Folders created at level 0 instead of correct level
+ #1856 Robustified tp.config.php creation in case of upgrade
  #1851 Fix ldap suffix
+ #1850 Missing iconv in Docker
  #1840 Added the "download" attribute
  #1837 JSON error in Find page when user has no folders to browse
  #1834 Typo in sources/main.functions.php
