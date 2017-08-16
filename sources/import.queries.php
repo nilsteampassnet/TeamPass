@@ -290,12 +290,12 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 prefix_table("items"),
                 array(
                     'label' => substr($item[0], 0, 500),
-                    'description' => $item[4],
+                    'description' => empty($item[4]) ? '' : $item[4],
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv'],
-                    'url' => substr($item[3], 0, 500),
+                    'url' => empty($item[3]) ? '' : substr($item[3], 0, 500),
                     'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
-                    'login' => substr($item[1], 0, 200),
+                    'login' => empty($item[1]) ? '' : substr($item[1], 0, 200),
                     'anyone_can_modify' => filter_input(INPUT_POST, 'import_csv_anyone_can_modify', FILTER_SANITIZE_STRING) === "true" ? 1 : 0
                 )
             );
@@ -339,10 +339,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 array(
                     'id' => $newId,
                     'label' => substr($item[0], 0, 500),
-                    'description' => $item[4],
+                    'description' => empty($item[4]) ? '' : $item[4],
                     'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
                     'perso' => $personalFolder == 0 ? 0 : 1,
-                    'login' => substr($item[1], 0, 500),
+                    'login' => empty($item[1]) ? '' : substr($item[1], 0, 500),
                     'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id'],
                     'timestamp' => time(),
