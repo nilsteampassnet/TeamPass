@@ -31,7 +31,7 @@ ini_set('session.cookie_secure', 0);
 if (!file_exists('includes/config/settings.php')) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
-    if (!headers_sent()) {
+    if (headers_sent()) {
         echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
     } else {
         header('Location: install/install.php');
