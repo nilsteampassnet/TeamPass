@@ -31,7 +31,7 @@ ini_set('session.cookie_secure', 0);
 if (!file_exists('includes/config/settings.php')) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
-    if (!headers_sent()) {
+    if (headers_sent()) {
         echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
     } else {
         header('Location: install/install.php');
@@ -517,7 +517,7 @@ if (isset($_SESSION['CPM'])) {
         }
     // Ask the user to change his password
     } elseif (($session_validite_pw === null || $session_validite_pw === false)
-        && empty($session_user_id) === false && $session_is_admin !== '1'
+        && empty($session_user_id) === false
     ) {
         //Check if password is valid
         echo '

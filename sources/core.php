@@ -463,12 +463,12 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 * Don't take into consideration if LDAP in use
 */
 $_SESSION['numDaysBeforePwExpiration'] = ""; //initiliaze variable
-if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] == 1) {
+if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === "1") {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
 } else {
     if (isset($_SESSION['last_pw_change']) === true) {
-        if ($SETTINGS['pw_life_duration'] == 0) {
+        if ($SETTINGS['pw_life_duration'] === "0") {
             $_SESSION['numDaysBeforePwExpiration'] = "infinite";
             $_SESSION['validite_pw'] = true;
         } else {

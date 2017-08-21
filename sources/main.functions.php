@@ -1179,7 +1179,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->SMTPDebug = 0; //value 1 can be used to debug
     $mail->Port = $SETTINGS['email_port']; //COULD BE USED
     $mail->CharSet = "utf-8";
-    if ($smtp_security === "tls" || $smtp_security === "ssl") {
+    if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
         $mail->SMTPSecure = $SETTINGS['email_security'];
     }
     $mail->isSmtp(); // send via SMTP
