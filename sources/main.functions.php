@@ -1555,7 +1555,7 @@ function handleConfigFile($action, $field = null, $value = null)
     $tp_config_file = "../includes/config/tp.config.php";
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // include librairies & connect to DB
@@ -1871,7 +1871,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     global $SETTINGS;
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // Protect against bad inputs
@@ -2000,7 +2000,7 @@ function fileDelete($file)
     global $SETTINGS;
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     $file = $antiXss->xss_clean($file);
@@ -2049,7 +2049,7 @@ function cleanText($string, $type = "")
     global $SETTINGS;
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     if ($type === "css") {

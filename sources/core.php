@@ -33,7 +33,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 function redirect($url)
 {
     // Load AntiXSS
-    require_once '../includes/libraries/protect/AntiXSS/AntiXss.php';
+    require_once '../includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect

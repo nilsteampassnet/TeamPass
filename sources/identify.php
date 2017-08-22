@@ -277,7 +277,7 @@ function identifyUser($sentData)
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXss.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     if ($debugDuo == 1) {
@@ -663,7 +663,7 @@ function identifyUser($sentData)
         )
     );
     $counter = DB::count();
-    if ($counter == 0) {
+    if ($counter === 0) {
         logEvents('failed_auth', 'user_not_exists', "", stripslashes($username));
         echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
         exit();
