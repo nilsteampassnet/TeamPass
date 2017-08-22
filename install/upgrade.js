@@ -66,9 +66,9 @@ function httpRequest(file, data, type) {
                     if (type === "") {
                         if (document.getElementById("erreur_connexion").style.display === "") {
                             //rise an error in url. This in order to display the eror after refreshing
-                            window.location.href = "index.php?error=rised";
+                            window.location.href = encodeURI("index.php?error=rised");
                         } else {
-                            window.location.href = "index.php";
+                            window.location.href = encodeURI("index.php");
                         }
                     } else {
                         if (type === "?error=rised") {
@@ -81,7 +81,7 @@ function httpRequest(file, data, type) {
                             }
                         }
                         // Redirection
-                        window.location.href = "index.php" + type;
+                        window.location.href = encodeURI("index.php" + type);
                     }
                 }
             }
