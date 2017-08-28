@@ -13,7 +13,7 @@
 
 $(function() {
     $(".button").button();
-    $("#but_launch, #step_error, #but_restart").hide();
+    $("#but_launch, #step_error, #but_restart").addClass("hidden");
 
     // no paste
     $("#admin_pwd").bind("paste",function(e) {
@@ -36,7 +36,7 @@ function checkPage()
     var tasks = [];
     var multiple = "";
     var tsk = "";
-    $("#step_error").hide().html("");
+    $("#step_error").addClass("hidden").html("");
     $("#res_"+step).html("");
 
     if (step === "2") {
@@ -156,17 +156,17 @@ function checkPage()
             setTimeout(function(){
                 // all requests are complete
                 if ($("#step_res").val() === "false") {
-                    $("#step_error").show().html("At least one task has failed! Please correct and relaunch. ");
+                    $("#step_error").removeClass("hidden").html("At least one task has failed! Please correct and relaunch. ");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
                     $("#but_launch").prop("disabled", true);
-                    $("#but_launch").hide();
+                    $("#but_launch").addClass("hidden");
                     $("#but_next").prop("disabled", false);
-                    $("#but_next").show();
+                    $("#but_next").removeClass("hidden");
                     // Hide restart button at end of step 6 if successful
                     if (step === "6") {
                         $("#but_restart").prop("disabled", true);
-                        $("#but_restart").hide();
+                        $("#but_restart").addClass("hidden");
                     }
                 }
                 $("#step_result").html("");
@@ -195,21 +195,21 @@ function checkPage()
                 data = $.parseJSON(data.responseText);
                 $("#step_result").html("");
                 if (data[0].error !== "" ) {
-                    $("#step_error").show().html("The next ERROR occurred: <i>'"+data[0].error+"'</i><br />Please correct and relaunch.");
+                    $("#step_error").removeClass("hidden").html("The next ERROR occurred: <i>'"+data[0].error+"'</i><br />Please correct and relaunch.");
                     $("#res_"+step).html("<img src=\"images/exclamation-red.png\">");
                 } else {
                     if (data[0].result !== undefined && data[0].result !== "" ) {
                         $("#step_result").html("<span style=\"font-weight:bold; margin-right:20px;\">"+data[0].result+"</span>");
                     }
                     $("#but_launch").prop("disabled", true);
-                    $("#but_launch").hide();
+                    $("#but_launch").addClass("hidden");
                     $("#but_next").prop("disabled", false);
-                    $("#but_next").show();
+                    $("#but_next").removeClass("hidden");
                 }
             }
         });
     } else {
-        $("#step_error").show().html(error);
+        $("#step_error").removeClass("hidden").html(error);
     }
 }
 
@@ -220,9 +220,9 @@ function GotoNextStep()
     var nextStep = parseInt(step)+1;
 
     if (nextStep === 7) {
-        $("#but_restart, #but_next, #but_launch").hide();
-        $("#but_start").hide();
-        $("#step_result").html("").hide();
+        $("#but_restart, #but_next, #but_launch").addClass("hidden");
+        $("#but_start").addClass("hidden");
+        $("#step_result").html("").addClass("hidden");
         $("#step_name").html($("#menu_step"+nextStep).html());
         $("#step_content").html($("#text_step"+nextStep).html());
         $("#menu_step"+step).switchClass("li_inprogress", "li_done");
@@ -230,11 +230,11 @@ function GotoNextStep()
         $("#res_"+step).html("<img src=\"images/tick.png\">");
     } else {
         $("#page_id").val(nextStep);
-        $("#but_launch").show().prop("disabled", false);
-        $("#but_launch").show();
-        $("#but_restart").show();
+        $("#but_launch").removeClass("hidden").prop("disabled", false);
+        $("#but_launch").removeClass("hidden");
+        $("#but_restart").removeClass("hidden");
         $("#but_next").prop("disabled", true);
-        $("#but_next").hide();
+        $("#but_next").addClass("hidden");
         $("#menu_step"+step).switchClass("li_inprogress", "li_done");
         $("#menu_step"+nextStep).switchClass("", "li_inprogress");
         $("#res_"+step).html("<img src=\"images/tick.png\">");

@@ -685,6 +685,8 @@ $(function() {
                     data = $("#moveItemTo").val();
                 } else if ($("#post_type").val() === "changeFieldType") {
                     data = $("#changeFieldType").val();
+                } else if ($("#post_type").val() === "deleteCategory") {
+                    data = "no_data";
                 }
                 if (data === "") {
                     return false;

@@ -16,9 +16,9 @@
 **/
 function LoadingPage(){
     if ($("#div_loading").is(":visible")) {
-        $("#div_loading").hide();
+        $("#div_loading").addClass("hidden");
     } else {
-        $("#div_loading").show();
+        $("#div_loading").removeClass("hidden");
     }
 }
 
@@ -291,7 +291,7 @@ function jsonErrorHdl(message)
     $("#div_dialog_message_text").html(message);
     $("#div_dialog_message").dialog("open");
     $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-    $("#items_list_loader").hide();
+    $("#items_list_loader").addClass("hidden");
     return false;
 }
 
