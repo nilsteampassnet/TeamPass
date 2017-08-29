@@ -2093,7 +2093,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
     }
     closedir($pointer_dir);
     if (is_dir($dir) && $res) {
-            $res = @chmod($dir, $dirPermissions);
+        $res = @chmod($dir, $dirPermissions);
     }
 
     return $res;

@@ -22,12 +22,6 @@ function LoadingPage(){
     }
 }
 
-/**
-*   Reload a page
-**/
-function RefreshPage(myform){
-    document.forms[myform].submit();
-}
 
 /**
 *   Add 1 hour to session duration
@@ -55,7 +49,7 @@ function IncreaseSessionTime(messageEnd, messageWait, duration){
                 $("#countdown").css("color","white");
                 $("#div_increase_session_time").dialog("close");
             } else {
-                window.location.href = encodeURI("index.php?session=expired");
+                $(location).attr('href',"index.php?session=expired");
             }
         },
         "json"
@@ -96,7 +90,7 @@ function countdown()
     // Manage end of session
     if ($("#temps_restant").val() !== "" && DayTill <= "00:00:00" && $("#please_login").val() !== "1") {
         $("#please_login").val("1");
-        document.location = "index.php?session=expired";
+        $(location).attr('href',"index.php?session=expired");
     }
 
     //Rewrite the string to the correct information.
@@ -105,12 +99,11 @@ function countdown()
     }
 
     //Create the timer "counter" that will automatic restart function countdown() again every second.
-    setTimeout(
-        function() {
-            countdown();
-        },
-        1000
-    );
+    $(this).delay(1000).queue(function() {
+        $(this).hide();
+        countdown();
+        $(this).dequeue();
+    });
 }
 
 /**
@@ -374,7 +367,11 @@ function blink(elem, times, speed, klass)
     clearTimeout(function() { blink(elem, times, speed, klass); });
 
     if (times > 0 || times < 0) {
-        setTimeout(function() { blink(elem, times, speed, klass); }, speed);
+        $(this).delay(speed).queue(function() {
+            $(this).hide();
+            blink(elem, times, speed, klass);
+            $(this).dequeue();
+        });
         times-= .5;
     }
 }
