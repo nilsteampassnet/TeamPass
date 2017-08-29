@@ -789,7 +789,7 @@ if (isset($_SESSION['CPM'])) {
     </div>';
 // PAGE LOADING
     echo '
-    <div id="div_loading" style="display:none;">
+    <div id="div_loading" class="hidden">
         <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all">
             <i class="fa fa-cog fa-spin fa-2x"></i>
         </div>

@@ -316,7 +316,8 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
 
 /* Force HTTPS Strict Transport Security */
 if (isset($SETTINGS['enable_sts']) === true
-    && $SETTINGS['enable_sts'] == 1
+    && $SETTINGS['enable_sts'] === '1'
+    && isset($_SERVER['SSL_SERVER_CERT']) === true
 ) {
     // do a check to make sure that the certificate is not self signed.
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled

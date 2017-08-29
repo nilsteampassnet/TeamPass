@@ -1233,7 +1233,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#request_ongoing").val("");
         return false;
     }
-    $("#div_loading").show();//LoadingPage();
+    $("#div_loading").removeClass("hidden");//LoadingPage();
     if ($("#is_admin").val() == "1") {
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
@@ -1638,7 +1638,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 */
 function showDetailsStep2(id, param)
 {
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
     $.post(
         "sources/items.queries.php",
         {
@@ -1743,7 +1743,7 @@ function open_add_group_div()
         return false;
     }
 
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) {
@@ -1766,7 +1766,7 @@ function open_edit_group_div()
         return false;
     }
 
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "edit_folder") == 0) {
@@ -1804,7 +1804,7 @@ function open_move_group_div()
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
     }
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
@@ -1826,7 +1826,7 @@ function open_del_group_div()
         displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
     }
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
 
     // check if read only or forbidden
@@ -1919,7 +1919,7 @@ function open_edit_item_div(restricted_to_roles)
         displayMessage("<?php echo addslashes($LANG['none_selected_text']); ?>");
         return false;
     }
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // Get complexity level for this folder
     // and stop edition if Item edited by another user
@@ -2084,7 +2084,7 @@ function open_del_item_div()
     }
 
     if ($("#selected_items").val() != "") {
-        $("#div_loading").show();
+        $("#div_loading").removeClass("hidden");
         //Get the associated complexity level
         var compReturn = RecupComplexite($('#hid_cat').val(), 0);
 
@@ -2160,7 +2160,7 @@ function delete_attached_file(file_id)
 //## FUNCTION : Permits to preview an attached image
 //###########
 PreviewImage = function(uri,title) {
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
     $.post(
         "sources/items.queries.php",
         {
@@ -2888,7 +2888,7 @@ $(function() {
         },
         buttons: {
             "<?php echo addslashes($LANG['save_button']); ?>": function() {
-                $("#div_loading").show();
+                $("#div_loading").removeClass("hidden");
                 $(".ui-dialog-buttonpane button:contains('<?php echo addslashes($LANG['save_button']); ?>')").button("enable");
                 AjouterItem();
             },
@@ -3032,7 +3032,7 @@ $(function() {
                         key         : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        $("#div_loading").show();
+                        $("#div_loading").removeClass("hidden");
 
                         // refresh list of items
                         $("#full_items_list").html("");
@@ -4043,7 +4043,7 @@ function manage_history_entry(type, id)
 function prepareOneTimeView()
 {
     if ($("#selected_items").val() == "") return;
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     //Send query
     $.post(

@@ -2060,3 +2060,41 @@ function cleanText($string, $type = "")
         return $antiXss->xss_clean($string);
     }
 }
+
+/**
+ * Performs chmod operation on subfolders
+ * @param  string  $dir             Parent folder
+ * @param  integer $dirPermissions  New permission on folders
+ * @param  integer $filePermissions New permission on files
+ * @return boolean                  Success/Failure
+ */
+function chmodRecursive($dir, $dirPermissions, $filePermissions)
+{
+    $pointer_dir = opendir($dir);
+    $res = true;
+    while ($file = readdir($pointer_dir)) {
+        if (($file == ".") || ($file == "..")) {
+            continue;
+        }
+
+        $fullPath = $dir."/".$file;
+
+        if (is_dir($fullPath)) {
+            if ($res = @chmod($fullPath, $dirPermissions)) {
+                $res = @chmodRecursive($fullPath, $dirPermissions, $filePermissions);
+            }
+        } else {
+            $res = chmod($fullPath, $filePermissions);
+        }
+        if (!$res) {
+            closedir($pointer_dir);
+            return false;
+        }
+    }
+    closedir($pointer_dir);
+    if (is_dir($dir) && $res) {
+            $res = @chmod($dir, $dirPermissions);
+    }
+
+    return $res;
+}

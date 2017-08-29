@@ -769,7 +769,7 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 400,
+        width: 600,
         height: 350,
         title: "<?php echo $LANG['category_in_folders']; ?>",
         open: function() {

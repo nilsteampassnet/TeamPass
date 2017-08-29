@@ -6,7 +6,10 @@
  Database password is encrypted in settings.php file
  PHPMailer library updated to 5.2.23
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
+ #1885 Undefined index: SSL_SERVER_CERT
  #1884 Cannot delete custom fields - hangs indefinitely after confirm with spinning gear
+ #1881 Doesn't auto-delete install/ folder after installation completed
+ #1880 Custom Fields, Not encrypted/decrypted when toggled in Custom-Field Settings Screen
  #1872 New Admin User login not working -JSON Parse file failure
  #1870 Logic issue in headers sending
  #1866 CSV import with empty url leads to value 0

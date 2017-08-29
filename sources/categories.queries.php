@@ -283,7 +283,6 @@ if (null !== $post_type) {
         case "dataIsEncryptedInDB":
             // Prepare POST variables
             $post_encrypt = filter_input(INPUT_POST, 'encrypt', FILTER_SANITIZE_STRING);
-            $post_id = $post_id;
 
             // store key
             DB::update(
@@ -297,38 +296,44 @@ if (null !== $post_type) {
 
             // encrypt/decrypt existing data
             $rowsF = DB::query(
-                "SELECT i.id, i.data, i.data_iv
+                "SELECT i.id, i.data, i.data_iv, i.encryption_type
                 FROM ".$pre."categories_items AS i
                 INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id = c.id)
                 WHERE c.id = %i",
                 $post_id
             );
             foreach ($rowsF as $recordF) {
+                $encryption_type = "";
                 // decrypt/encrypt
-                if ($post_encrypt === "0") {
+                if ($post_encrypt === "0" && $recordF['encryption_type'] === "defuse") {
                     $encrypt = cryption(
                         $recordF['data'],
                         "",
                         "decrypt"
                     );
-                } else {
+                    $encryption_type = "none";
+                } elseif ($recordF['encryption_type'] === "none" || $recordF['encryption_type'] === "") {
                     $encrypt = cryption(
                         $recordF['data'],
                         "",
                         "encrypt"
                     );
+                    $encryption_type = "defuse";
                 }
 
                 // store in DB
-                DB::update(
-                    prefix_table("categories_items"),
-                    array(
-                        'data' => $encrypt['string'],
-                        'data_iv' => ""
-                        ),
-                    "id = %i",
-                    $recordF['id']
-                );
+                if ($encryption_type !== "") {
+                    DB::update(
+                        prefix_table("categories_items"),
+                        array(
+                            'data' => $encrypt['string'],
+                            'data_iv' => "",
+                            'encryption_type' => $encryption_type
+                            ),
+                        "id = %i",
+                        $recordF['id']
+                    );
+                }
             }
 
             echo '[{"error" : ""}]';
