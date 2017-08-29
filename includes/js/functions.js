@@ -100,7 +100,6 @@ function countdown()
 
     //Create the timer "counter" that will automatic restart function countdown() again every second.
     $(this).delay(1000).queue(function() {
-        $(this).hide();
         countdown();
         $(this).dequeue();
     });
@@ -338,12 +337,10 @@ function displayMessage(textToDisplay)
         at: "center top+20",
         of: "#main_simple"
     });
-    setTimeout(
-        function(){
-            $("#main_info_box").effect( "fade", "slow");
-        },
-        2000
-    );
+    $(this).delay(2000).queue(function() {
+        $("#main_info_box").effect( "fade", "slow");
+        $(this).dequeue();
+    });
 }
 
 /**
@@ -368,7 +365,6 @@ function blink(elem, times, speed, klass)
 
     if (times > 0 || times < 0) {
         $(this).delay(speed).queue(function() {
-            $(this).hide();
             blink(elem, times, speed, klass);
             $(this).dequeue();
         });
