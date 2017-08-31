@@ -325,7 +325,9 @@ if (isset($SETTINGS['enable_sts']) === true
     $cert_name = $server_cert['name'];
     $cert_issuer = "";
     foreach ($server_cert['issuer'] as $key => $value) {
-        $cert_issuer .= "/$key=$value";
+        if (is_array($value) === false) {
+            $cert_issuer .= "/$key=$value";
+        }
     }
     if (isset($cert_name) === true && empty($cert_name) === false && $cert_name != $cert_issuer) {
         if (isset($_SERVER['HTTPS'])) {

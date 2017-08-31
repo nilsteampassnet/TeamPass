@@ -435,16 +435,17 @@ if (null !== $post_type) {
                     }
                 }
             }
-            //save the file
+            // Save the file
             $csv_file = '/print_out_csv_'.time().'_'.generateKey().'.csv';
             $outstream = fopen($SETTINGS['path_to_files_folder'].$csv_file, "w");
 
-            function outPutCsv(&$vals, $outstream)
-            {
-                fputcsv($outstream, $vals, ";"); // add parameters if you want
+            // Loop on Results, decode to UTF8 and write in CSV file
+            foreach ($full_listing as $value) {
+                $value = array_map("utf8_decode", $value);
+                fputcsv($outstream, $value, ";");
             }
 
-            array_walk($full_listing, "outPutCsv", $outstream);
+            // Close and display
             fclose($outstream);
 
             echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
