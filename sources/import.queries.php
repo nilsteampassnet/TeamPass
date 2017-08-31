@@ -179,8 +179,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                 // Get values of current line
                 if ($account == "" && $continue_on_next_line === false) {
-                    $account = addslashes($row['Label']);
-                    $login = addslashes($row['Login']);
+                    $account = htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8');
+                    $login = htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8');
                     $pwd = str_replace('"', "&quot;", $row['Password']);
                     $url = addslashes($row['url']);
                     $to_find = array("\"", "'");
@@ -266,7 +266,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $listItems = htmlspecialchars_decode($dataReceived);
         $list = "";
 
-        foreach (explode('@_#sep#_@', mysqli_escape_string($link, stripslashes($listItems))) as $item) {
+        foreach (explode('@_#sep#_@', stripslashes($listItems)) as $item) {
             //For each item, insert into DB
             $item = explode('@|@', $item); //explode item to get all fields
 
