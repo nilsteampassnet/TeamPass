@@ -83,7 +83,6 @@ function mainQuery()
     $link->set_charset($encoding);
 
     // User's language loading
-    $SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     // Manage type of action asked
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {

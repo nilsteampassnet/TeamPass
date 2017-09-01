@@ -276,6 +276,7 @@ function rest_delete()
 function rest_get()
 {
     global $api_version;
+    global $SETTINGS;
 
     if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
@@ -1630,7 +1631,7 @@ function rest_get()
                                 $salt,
                                 $userData['encrypted_psk']
                             );
-                            if (strpos($user_key_encoded, "Error ") !== false) {
+                            if (strpos($salt, "Error ") !== false) {
                                 // error
                                 rest_error('AUTH_NO_DATA');
                             }
@@ -2028,7 +2029,6 @@ function rest_put()
         $GLOBALS['request'] = explode('/', $matches[2]);
     }
     if (apikey_checker($GLOBALS['apikey'])) {
-        global $server, $user, $pass, $database, $pre, $link;
         teampass_connect();
     }
 }

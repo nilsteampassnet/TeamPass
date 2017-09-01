@@ -252,7 +252,7 @@ if (null !== $post_type) {
                         'login' => noHTML($login),
                         'inactif' => '0',
                         'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
-                        'perso' => ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) ? '1' : '0',
+                        'perso' => (isset($dataReceived['salt_key_set']) && $dataReceived['salt_key_set'] === '1' && isset($dataReceived['is_pf']) && $dataReceived['is_pf'] === '1') ? '1' : '0',
                         'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
                         'complexity_level' => $dataReceived['complexity_level']
                         )
@@ -2369,6 +2369,20 @@ if (null !== $post_type) {
                             $canMove = true;
                         }
 
+                        // Fix a bug on Personal Item creation - field `perso` must be set to `1`
+                        if ($record['perso'] !== '1' && (int) $folder_is_personal === 1) {
+                            DB::update(
+                                prefix_table("items"),
+                                array(
+                                    'perso' => 1
+                                ),
+                                "id=%i",
+                                $record['id']
+                            );
+                            $record['perso'] = '1';
+                        }
+
+
                         // CASE where item is restricted to a role to which the user is not associated
                         if (isset($user_is_included_in_role)
                             && $user_is_included_in_role === false
@@ -2575,9 +2589,9 @@ if (null !== $post_type) {
                 $counter_full = DB::count();
                 $uniqueLoadData['counter_full'] = $counter_full;
             }
-
+            
             // Check list to be continued status
-            if (($post_nb_items_to_display_once + $start) < $counter_full && $post_nb_items_to_display_once !== 'max') {
+            if ($post_nb_items_to_display_once !== 'max' && ($post_nb_items_to_display_once + $start) < $counter_full) {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";
@@ -2604,7 +2618,7 @@ if (null !== $post_type) {
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
-                "next_start" => $post_nb_items_to_display_once + $start,
+                "next_start" => intval($post_nb_items_to_display_once) + intval($start),
                 "list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
                 "counter_full" => $counter_full,

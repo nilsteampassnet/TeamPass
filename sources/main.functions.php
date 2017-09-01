@@ -1220,6 +1220,8 @@ function generateKey()
  */
 function dateToStamp($date)
 {
+    global $SETTINGS;
+    
     $date = date_parse_from_format($SETTINGS['date_format'], $date);
     if ($date['warning_count'] == 0 && $date['error_count'] == 0) {
         return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);

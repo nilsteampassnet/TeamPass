@@ -96,7 +96,6 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 //User's language loading
-$SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // Build query

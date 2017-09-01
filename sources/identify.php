@@ -310,7 +310,6 @@ function identifyUser($sentData)
     $pwdlib = new PasswordLib\PasswordLib();
 
     // User's language loading
-    $SETTINGS_EXT['langage'] = @$_SESSION['user_language'];
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
     // decrypt and retreive data in JSON format
@@ -378,15 +377,16 @@ function identifyUser($sentData)
 
 
     // Prepare LDAP connection if set up
-    if (isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 1
-        && $username != "admin"
+    if (isset($SETTINGS['ldap_mode'])
+        && $SETTINGS['ldap_mode'] ===' 1'
+        && $username !== "admin"
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') === true) {
             $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
             $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
-        if ($SETTINGS['ldap_type'] == 'posix-search') {
+        if ($SETTINGS['ldap_type'] === 'posix-search') {
             $ldapURIs = "";
             foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
                 if ($SETTINGS['ldap_ssl'] == 1) {
@@ -503,7 +503,7 @@ function identifyUser($sentData)
             // Posix style LDAP handles user searches a bit differently
             if ($SETTINGS['ldap_type'] === 'posix') {
                 $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
-            } elseif ($SETTINGS['ldap_type'] === 'windows' && empty($ldap_suffix)) {
+            } elseif ($SETTINGS['ldap_type'] === 'windows' && empty($ldap_suffix) === true) {
                 //Multiple Domain Names
                 $ldap_suffix = $SETTINGS['ldap_suffix'];
             }

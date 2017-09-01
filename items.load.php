@@ -609,7 +609,7 @@ function AjouterItem()
       ) {
             //Manage restrictions
             var restriction = restriction_role = "";
-            $("#restricted_to_list option:selected").each(function () {console.log($(this).val());
+            $("#restricted_to_list option:selected").each(function () {
                 //check if it's a role
                 if ($(this).val().indexOf('role_') != -1) {
                     restriction_role += $(this).val().substring(5) + ";";
@@ -629,11 +629,10 @@ function AjouterItem()
             if (diffusion == ";") diffusion = "";
 
             //Manage description
-            if (CKEDITOR.instances["edit_desc"]) {
+            if (CKEDITOR.instances && CKEDITOR.instances["edit_desc"]) {
                 CKEDITOR.instances["edit_desc"].destroy();
             }
-            if (CKEDITOR.instances["desc"]) {
-                CKEDITOR.instances["desc"].destroy();
+            if (CKEDITOR.instances && CKEDITOR.instances["desc"]) {
                 var description = sanitizeString(CKEDITOR.instances["desc"].getData()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
             } else {
                 var description = sanitizeString($("#desc").val()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
@@ -678,7 +677,7 @@ function AjouterItem()
 
             //prepare data
             var data = {"pw": sanitizeString($('#pw1').val()) , "label": sanitizeString($('#label').val()) ,
-                "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf ,
+                "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf.toString() ,
                 "description": (description) , "email": $('#email').val() , "url": url , "categorie": selected_folder ,
                 "restricted_to": restriction , "restricted_to_roles": restriction_role ,
                 "salt_key_set": $('#personal_sk_set').val() , "diffusion": diffusion , "id": $('#id_item').val() ,
@@ -1224,7 +1223,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     }
 
     // Don't show details
-    if (display == "no_display") {
+    if (display === "no_display") {
         $("#item_details_nok").show();
         $("#item_details_ok").addClass("hidden");
         $("#item_details_expired").addClass("hidden");
@@ -1233,7 +1232,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#request_ongoing").val("");
         return false;
     }
-    $("#div_loading").removeClass("hidden");//LoadingPage();
+    $("#div_loading").removeClass("hidden");
     if ($("#is_admin").val() == "1") {
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
@@ -1241,7 +1240,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     if ($("#edit_restricted_to") != undefined) {
         $("#edit_restricted_to").val("");
     }
-
+    
     // Check if personal SK is needed and set
     if (($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "0") && salt_key_required === "1") {
         $("#set_personal_saltkey_warning").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg'></span>&nbsp;</span><?php echo addslashes($LANG['alert_message_personal_sk_missing']); ?></div>").show(1).delay(2500).fadeOut(1000);
@@ -4229,7 +4228,7 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
 
  function serverAutoChangePwd()
  {
-     console.log("opening");
+    //console.log("opening");
     $("#dialog_ssh").dialog({
         open: function(event, ui) {
             $("#div_ssh").load(
