@@ -2787,7 +2787,7 @@ if (null !== $post_type) {
             }
             // Prepare Item actual visibility (what Users/Roles can see it)
             $visibilite = "";
-            if (!empty($dataPf[0])) {
+            if (empty($dataPf[0]) === false) {
                 $visibilite = $_SESSION['login'];
             } else {
                 $rows = DB::query(

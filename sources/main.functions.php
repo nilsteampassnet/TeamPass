@@ -780,7 +780,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $fonctionsAssociees,
                         array("W", "ND", "NE", "NDNE")
                     );
-                    if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
+                    if (DB::count() == 0 && in_array($folderId, $groupesVisiblesUser) === false) {
                         array_push($listReadOnlyFolders, $folderId);
                     }
                 }

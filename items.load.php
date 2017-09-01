@@ -1240,7 +1240,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     if ($("#edit_restricted_to") != undefined) {
         $("#edit_restricted_to").val("");
     }
-    
+
     // Check if personal SK is needed and set
     if (($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "0") && salt_key_required === "1") {
         $("#set_personal_saltkey_warning").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg'></span>&nbsp;</span><?php echo addslashes($LANG['alert_message_personal_sk_missing']); ?></div>").show(1).delay(2500).fadeOut(1000);
@@ -1907,7 +1907,8 @@ function open_edit_item_div(restricted_to_roles)
 {
     // is user read only and it is not a personal folder
     if (
-        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1") && ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
+        || ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
     ) {
         displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
@@ -2076,7 +2077,8 @@ function open_del_item_div()
 {
     // is user read only
     if (
-        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1") && ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
+        || ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
     ) {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
