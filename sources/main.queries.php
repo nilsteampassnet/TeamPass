@@ -33,6 +33,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 /* do checks */
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 if (isset($post_type) && ($post_type === "ga_generate_qr" || $post_type === "send_pw_by_email" || $post_type === "generate_new_password")) {
