@@ -1025,6 +1025,40 @@ global \$SETTINGS;
 
             if ($activity === "file") {
                 if ($task === "settings.php") {
+                    // first is to create teampass-seckey.txt
+                    // 0- check if exists
+                    $filename_seckey = $securePath."/teampass-seckey.txt";
+
+                    if (file_exists($filename_seckey)) {
+                        if (!copy($filename_seckey, $filename_seckey.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                            echo '[{"error" : "File `$filename_seckey` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+                            break;
+                        } else {
+                            unlink($filename);
+                        }
+                    }
+
+                    // 1- generate saltkey
+                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/File.php';
+                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+
+                    $key = \Defuse\Crypto\Key::createNewRandomKey();
+                    $new_salt = $key->saveToAsciiSafeString();
+
+                    // 2- store key in file
+                    file_put_contents(
+                        $filename_seckey,
+                        $new_salt
+                    );
+
+                    // Now create settings file
                     $filename = "../includes/config/settings.php";
 
                     if (file_exists($filename)) {
@@ -1032,7 +1066,6 @@ global \$SETTINGS;
                             echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
-                            $events .= "The file $filename already exist. A copy has been created.<br />";
                             unlink($filename);
                         }
                     }
@@ -1040,7 +1073,7 @@ global \$SETTINGS;
                     // Encrypt the DB password
                     $encrypted_text = encryptFollowingDefuse(
                         $db['db_pw'],
-                        file_get_contents($securePath."/teampass-seckey.txt")
+                        $new_salt
                     )['string'];
 
                     // Open and write Settings file
@@ -1127,27 +1160,6 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     } else {
                         echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                     }
-                } elseif ($task === "teampass-seckey") {
-                    // create teampass-seckey.txt
-                    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-                    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-                    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                    require_once '../includes/libraries/Encryption/Encryption/File.php';
-                    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-                    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-                    require_once '../includes/libraries/Encryption/Encryption/Core.php';
-
-                    $key = \Defuse\Crypto\Key::createNewRandomKey();
-                    $new_salt = $key->saveToAsciiSafeString();
-
-                    file_put_contents(
-                        $securePath."/teampass-seckey.txt",
-                        $new_salt
-                    );
-
-                    echo '[{"error" : "", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                 } elseif ($task === "csrfp-token") {
                     // update CSRFP TOKEN
                     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";

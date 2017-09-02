@@ -88,7 +88,7 @@ function checkPage()
     // STEP 6
         const jsonValues = {"url_path":sanitizeString($("#hid_url_path").val())};
         data = JSON.stringify(jsonValues);
-        tasks = ["file*teampass-seckey", "file*sk.php", "file*security", "install*cleanup", "file*settings.php", "file*csrfp-token"];
+        tasks = ["file*sk.php", "file*security", "install*cleanup", "file*settings.php", "file*csrfp-token"];
         multiple = true;
     }
 
