@@ -68,6 +68,19 @@ if (isset($userData['avatar']) && !empty($userData['avatar'])) {
     $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
 }
 
+// user type
+if (isset($LANG) === true) {
+    if ($_SESSION['user_admin'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['god'];
+    } elseif ($_SESSION['user_manager'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['gestionnaire'];
+    } elseif ($_SESSION['user_read_only'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['read_only_account'];
+    } else {
+        $_SESSION['user_privilege'] = $LANG['user'];
+    }
+}
+
 // prepare list of timezones
 foreach (timezone_identifiers_list() as $zone) {
     $arrayTimezones[$zone] = $zone;

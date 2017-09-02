@@ -397,11 +397,11 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 
         // user type
         if (isset($LANG) === true) {
-            if ($_SESSION['user_admin'] == 1) {
+            if ($_SESSION['user_admin'] === '1') {
                 $_SESSION['user_privilege'] = $LANG['god'];
-            } elseif ($_SESSION['user_manager'] == 1) {
+            } elseif ($_SESSION['user_manager'] === '1') {
                 $_SESSION['user_privilege'] = $LANG['gestionnaire'];
-            } elseif ($_SESSION['user_read_only'] == 1) {
+            } elseif ($_SESSION['user_read_only'] === '1') {
                 $_SESSION['user_privilege'] = $LANG['read_only_account'];
             } else {
                 $_SESSION['user_privilege'] = $LANG['user'];
