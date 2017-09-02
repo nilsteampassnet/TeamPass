@@ -621,6 +621,36 @@ global \$SETTINGS;
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
                         );
+
+                        require_once "../includes/config/include.php";
+                        // check that admin accounts doesn't exist
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
+                        if ($tmp === 0) {
+                            $mysqli_result = mysqli_query(
+                                $dbTmp,
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'], '13')."', '1', '0', '0', '', '', '', '".time()."')"
+                            );
+                        } else {
+                            $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'], '13')."' WHERE login = 'admin' AND id = '1'");
+                        }
+
+                        // check that API doesn't exist
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
+                        if ($tmp === 0) {
+                            $mysqli_result = mysqli_query(
+                                $dbTmp,
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".API_USER_ID."', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                            );
+                        }
+
+                        // check that OTV doesn't exist
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE id = '".OTV_USER_ID."'"));
+                        if ($tmp === 0) {
+                            $mysqli_result = mysqli_query(
+                                $dbTmp,
+                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".OTV_USER_ID."', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
+                            );
+                        }
                     } elseif ($task === "tags") {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
@@ -934,40 +964,6 @@ global \$SETTINGS;
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
-                    }
-                } elseif ($activity === "populate") {
-                    // include constants
-                    require_once "../includes/config/include.php";
-
-                    if ($task === "admin") {
-                        // check that admin accounts doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE login = 'admin'"));
-                        if ($tmp == 0) {
-                            $mysqli_result = mysqli_query(
-                                $dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `admin`, `gestionnaire`, `personal_folder`, `groupes_visibles`, `email`, `encrypted_psk`, `last_pw_change`) VALUES ('1', 'admin', '".bCrypt($var['admin_pwd'], '13')."', '1', '0', '0', '', '', '', '".time()."')"
-                            );
-                        } else {
-                            $mysqli_result = mysqli_query($dbTmp, "UPDATE `".$var['tbl_prefix']."users` SET `pw` = '".bCrypt($var['admin_pwd'], '13')."' WHERE login = 'admin' AND id = '1'");
-                        }
-
-                        // check that API doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE id = '".API_USER_ID."'"));
-                        if ($tmp == 0) {
-                            $mysqli_result = mysqli_query(
-                                $dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".API_USER_ID."', 'API', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
-                            );
-                        }
-
-                        // check that OTV doesn't exist
-                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `".$var['tbl_prefix']."users` WHERE id = '".OTV_USER_ID."'"));
-                        if ($tmp == 0) {
-                            $mysqli_result = mysqli_query(
-                                $dbTmp,
-                                "INSERT INTO `".$var['tbl_prefix']."users` (`id`, `login`, `pw`, `groupes_visibles`, `derniers`, `key_tempo`, `last_pw_change`, `last_pw`, `admin`, `fonction_id`, `groupes_interdits`, `last_connexion`, `gestionnaire`, `email`, `favourites`, `latest_items`, `personal_folder`) VALUES ('".OTV_USER_ID."', 'OTV', '', '', '', '', '', '', '1', '', '', '', '0', '', '', '', '0')"
-                            );
-                        }
                     }
                 }
                 // answer back
