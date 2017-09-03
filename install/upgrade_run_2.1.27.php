@@ -677,9 +677,7 @@ if (file_exists($tp_config_file)) {
     }
 }
 $file_handler = fopen($tp_config_file, 'w');
-$config_text = "<?php
-global \$SETTINGS;
-\$SETTINGS = array (";
+$config_text = "";
 $any_settings = false;
 
 $result = mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin'");
@@ -698,7 +696,9 @@ if ($any_settings === true) {
     $result = fwrite(
         $file_handler,
         utf8_encode(
-            substr_replace($config_text, "", -1)."
+            "<?php
+global \$SETTINGS;
+\$SETTINGS = array (" . $config_text . "            
     );"
         )
     );

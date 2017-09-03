@@ -310,12 +310,12 @@ foreach ($val as $elem) {
         WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
     );
     if (mysqli_error($dbTmp)) {
-        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.
+        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].' - '.
             addslashes($queryRes).'"}]';
         exit();
     } else {
         $resTmp = mysqli_fetch_row($queryRes);
-        if ($resTmp[0] == 0) {
+        if ($resTmp[0] === 0) {
             $queryRes = mysqli_query(
                 $dbTmp,
                 "INSERT INTO `".$pre."misc`
@@ -323,21 +323,21 @@ foreach ($val as $elem) {
                 ('".$elem[0]."', '".$elem[1]."', '".
                 str_replace("'", "", $elem[2])."');"
             );
-            if (!$queryRes) {
-                echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.addslashes($queryRes).'"}]';
+            if (mysqli_error($dbTmp)) {
+                echo '[{"finish":"1", "msg":"", "error":"MySQL Error1! '.addslashes(mysqli_error($dbTmp)).'"}]';
                 exit();
             }
         } else {
             // Force update for some settings
-            if ($elem[3] == 1) {
+            if ($elem[3] === 1) {
                 $queryRes = mysqli_query(
                     $dbTmp,
                     "UPDATE `".$pre."misc`
                     SET `valeur` = '".$elem[2]."'
-                    WHERE type = '".$elem[0]."' AND intitule = '".$elem[1]."'"
+                    WHERE `type` = '".$elem[0]."' AND `intitule` = '".$elem[1]."'"
                 );
-                if (!$queryRes) {
-                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.addslashes($queryRes).'"}]';
+                if (mysqli_error($dbTmp)) {
+                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error2! '.addslashes(mysqli_error($dbTmp)).'"}]';
                     exit();
                 }
             }
@@ -345,13 +345,6 @@ foreach ($val as $elem) {
     }
 }
 
-if ($queryRes) {
-    //
-} else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when inserting datas! '.
-            addslashes($queryError).'"}]';
-    exit();
-}
 
 ## Alter ITEMS table
 $res2 = addColumnIfNotExist(
@@ -675,9 +668,7 @@ $res8 = mysqli_query(
     UNIQUE KEY `id` (`id`)
     );"
 );
-if ($res8) {
-    //
-} else {
+if (mysqli_error($dbTmp)) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -695,7 +686,7 @@ $res8 = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if ($res8) {
+if (empty(mysqli_error($dbTmp)) === true) {
     mysqli_query(
         $dbTmp,
         "ALTER TABLE ".$pre."log_system
@@ -721,9 +712,7 @@ $res9 = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if ($res9) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -757,7 +746,7 @@ $res8 = mysqli_query(
     `renewal_period` TINYINT(4) NOT null DEFAULT '0'
     );"
 );
-if ($res8) {
+if (empty(mysqli_error($dbTmp)) === true) {
     //ADD VALUES
     $sql = "SELECT *
             FROM ".$pre."items as i
@@ -827,9 +816,7 @@ $res9 = mysqli_query(
     `creator_id` int(11) NOT null DEFAULT '0'
     );"
 );
-if ($res9) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_title! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -857,9 +844,7 @@ $res10 = mysqli_query(
     `folder_id` int(12) NOT NULL
     );"
 );
-if ($res10) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_values! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -869,7 +854,7 @@ if (tableExists($pre."functions")) {
 } else {
     $tableFunctionExists = false;
 }
-if ($res9 && $res10 && $tableFunctionExists === true) {
+if ($tableFunctionExists === true) {
     //Get data from tables FUNCTIONS and populate new ROLES tables
     $rows = mysqli_query(
         $dbTmp,
@@ -920,10 +905,6 @@ if ($res9 && $res10 && $tableFunctionExists === true) {
 
     //Drop old table
     mysqli_query($dbTmp, "DROP TABLE ".$pre."functions");
-} elseif ($tableFunctionExists === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
-    exit();
 }
 
 ## TABLE KB
@@ -939,9 +920,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -956,9 +935,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -972,9 +949,7 @@ $res = mysqli_query(
     `item_id` tinyint(12) NOT NULL
      );"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -988,15 +963,12 @@ $res = mysqli_query(
     `item_id` tinyint(12) NOT NULL
     ) CHARSET=utf8;"
 );
-
-$res = addIndexIfNotExist($pre.'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
-
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
+} else {
+    $res = addIndexIfNotExist($pre.'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
 }
 
 ## TABLE Languages
@@ -1010,9 +982,7 @@ $res = mysqli_query(
     `flag` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1055,9 +1025,7 @@ $res = mysqli_query(
     `status` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1073,9 +1041,7 @@ $res = mysqli_query(
     `del_value` varchar(35) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1090,9 +1056,7 @@ $res = mysqli_query(
     `timestamp` varchar(50) NOT NULL
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1112,9 +1076,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1131,9 +1093,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1147,9 +1107,7 @@ $res = mysqli_query(
     `id_folder` int(12) NOT NULL
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1167,9 +1125,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1187,9 +1143,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1211,9 +1165,7 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1231,9 +1183,7 @@ mysqli_query(
     `path` varchar(255) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table export! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();

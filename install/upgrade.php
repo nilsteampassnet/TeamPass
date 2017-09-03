@@ -11,6 +11,8 @@ $post_actual_cpm_version = filter_input(INPUT_POST, 'actual_cpm_version', FILTER
 $post_cpm_isUTF8 = filter_input(INPUT_POST, 'cpm_isUTF8', FILTER_SANITIZE_STRING);
 $post_user_granted = filter_input(INPUT_POST, 'user_granted', FILTER_SANITIZE_STRING);
 $post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_STRING);
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
+
 
 ################
 ## Function permits to get the value from a line
@@ -164,9 +166,9 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
                 if (step === "step5") {
                     document.getElementById("res_step5").innerHTML = "Please wait... <img src=\"images/ajax-loader.gif\" />";
                     if (document.getElementById("sk_path") == null)
-                        var data = "type="+step;
+                        var data = "type="+step+"&url_path="+document.getElementById("url_path").value;
                     else
-                        var data = "type="+step+"&sk_path="+escape(document.getElementById("sk_path").value);
+                        var data = "type="+step+"&url_path="+document.getElementById("url_path").value+"&sk_path="+escape(document.getElementById("sk_path").value);
                 }
                 if (upgrade_file !== "") httpRequest(upgrade_file, data);
             }
@@ -314,10 +316,9 @@ require_once '../includes/language/english.php';
 require_once '../includes/config/include.php';
 
 
-if (isset($post_root_url)) {
+if (empty($post_root_url) === false) {
     $_SESSION['fullurl'] = $post_root_url;
 }
-
 
 //define root path
 $abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/').substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
@@ -349,6 +350,7 @@ echo '
                     <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($post_cpm_isUTF8) ? $post_cpm_isUTF8 : '', '" />
                     <input type="hidden" name="menu_action" id="menu_action" value="" />
                     <input type="hidden" name="user_granted" id="user_granted" value="" />
+                    <input type="hidden" name="url_path" id="url_path" value="', (isset($post_root_url) === true && empty($post_root_url) === false) ? $post_root_url : $post_url_path, '" />
                     <input type="hidden" name="session_salt" id="session_salt" value="', (isset($post_session_salt) && !empty($post_session_salt)) ? $post_session_salt : @$_SESSION['encrypt_key'], '" />';
 
 if (!isset($_GET['step']) && !isset($post_step)) {

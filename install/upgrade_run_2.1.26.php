@@ -172,7 +172,7 @@ if ($res === false) {
 }
 
 // check that API doesn't exist
-$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT *  FROM `".$pre."users` WHERE id = '".API_USER_ID."'"));
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT *  FROM `".$pre."users` WHERE id = '".API_USER_ID."'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
@@ -181,7 +181,7 @@ if (intval($tmp) === 0) {
 }
 
 // check that SYSLOG doesn't exist
-$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT *  FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'syslog_enable'"));
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT *  FROM `".$pre."misc` WHERE `type` = 'admin' AND `intitule` = 'syslog_enable'"));
 if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
@@ -258,13 +258,13 @@ mysqli_free_result($result);
 
 
 // add Estonian
-$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT *  FROM `".$pre."languages` WHERE name = 'estonian'"));
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT *  FROM `".$pre."languages` WHERE name = 'estonian'"));
 if (intval($tmp) === 0) {
     mysqli_query($db_link, "INSERT INTO `".$pre."languages` VALUES (null, 'estonian', 'Estonian', 'ee', 'ee.png')");
 }
 
 // remove Estonia
-$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT *  FROM `".$pre."languages` WHERE name = 'estonia'"));
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT *  FROM `".$pre."languages` WHERE name = 'estonia'"));
 if (intval($tmp) === 0) {
     mysqli_query($db_link, "DELETE FROM `".$pre."languages` WHERE name = 'estonia'");
 }
@@ -295,12 +295,12 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
 
 
 // clean duplicate ldap_object_class from bad update script version
-$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT *  FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT *  FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if ($tmp[0] > 1) {
     mysqli_query($db_link, "DELETE FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class' AND `valeur` = 0");
 }
 // add new setting - ldap_object_class
-$tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT *  FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT *  FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_object_class'"));
 if (intval($tmp) === 0) {
     mysqli_query($db_link, "INSERT INTO `".$pre."misc` VALUES ('admin', 'ldap_object_class', '0')");
 }

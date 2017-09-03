@@ -65,6 +65,7 @@ $post_tbl_prefix = filter_input(INPUT_POST, 'tbl_prefix', FILTER_SANITIZE_STRING
 $post_no_maintenance_mode = filter_input(INPUT_POST, 'no_maintenance_mode', FILTER_SANITIZE_STRING);
 $post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', FILTER_SANITIZE_STRING);
 $post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_STRING);
 
 
 // Test DB connexion
@@ -103,8 +104,12 @@ $superGlobal = new protect\SuperGlobal\SuperGlobal();
 $superGlobal->put("CPM", 1, "SESSION");
 $superGlobal->put("db_encoding", "utf8", "SESSION");
 $_SESSION['settings']['loaded'] = "";
-$superGlobal->put("fullurl", $post_fullurl, "SESSION");
-$superGlobal->put("abspath", $abspath, "SESSION");
+if (empty($post_fullurl) === false) {
+    $superGlobal->put("fullurl", $post_fullurl, "SESSION");
+}
+if (empty($abspath) === false) {
+    $superGlobal->put("abspath", $abspath, "SESSION");
+}
 
 // Get Sessions
 $session_url_path = $superGlobal->get("url_path", "SESSION");
@@ -783,7 +788,7 @@ if (file_exists(\"".$skFile."\")) {
                 }
 
                 //Create sk.php file
-                if (!file_exists($skFile)) {
+                if (file_exists($skFile) === false) {
                     $file_handled = fopen($skFile, 'w');
 
                     $result2 = fwrite(
@@ -804,7 +809,7 @@ if (file_exists(\"".$skFile."\")) {
                 // update CSRFP TOKEN
                 $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                 $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
-                if (file_exists($csrfp_file)) {
+                if (file_exists($csrfp_file) === true) {
                     if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
                         echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                         break;
@@ -817,7 +822,7 @@ if (file_exists(\"".$skFile."\")) {
                 $data = file_get_contents("../includes/libraries/csrfp/libs/csrfp.config.php");
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "'.bin2hex(openssl_random_pseudo_bytes(25)).'"', $data);
                 $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
-                $jsUrl = $_SESSION['fullurl'].'/includes/libraries/csrfp/js/csrfprotector.js';
+                $jsUrl = $post_url_path.'/includes/libraries/csrfp/js/csrfprotector.js';
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "'.$jsUrl.'"', $newdata);
                 $newdata = str_replace('"verifyGetFor" => array()', '"verifyGetFor" => array("*page=items&type=duo_check*")', $newdata);
                 file_put_contents("../includes/libraries/csrfp/libs/csrfp.config.php", $newdata);
