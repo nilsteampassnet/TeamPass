@@ -330,14 +330,14 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     //warn user
                     $("#hid_cat").val("");
                     //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").prop('disabled', 'true');
-                    $("#item_details_nok").show();
+                    $("#item_details_nok").removeClass("hidden");
                     $("#item_details_ok, #item_details_no_personal_saltkey").addClass("hidden");
                     $("#items_list_loader").addClass("hidden");
                 } else if (($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) || data.access_level == 1) {
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     $("#item_details_no_personal_saltkey, #item_details_nok").addClass("hidden");
-                    $("#item_details_ok, #items_list").show();
+                    $("#item_details_ok, #items_list").removeClass("hidden");
 
                     $("#more_items").remove();
 
@@ -366,7 +366,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     //Display items
                     $("#item_details_no_personal_saltkey, #item_details_nok").addClass("hidden");
-                    $("#item_details_ok, #items_list").show();
+                    $("#item_details_ok, #items_list").removeClass("hidden");
 
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
@@ -1224,7 +1224,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
     // Don't show details
     if (display === "no_display") {
-        $("#item_details_nok").show();
+        $("#item_details_nok").removeClass("hidden");
         $("#item_details_ok").addClass("hidden");
         $("#item_details_expired").addClass("hidden");
         $("#item_details_expired_full").addClass("hidden");
@@ -1329,10 +1329,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                     //Show detail item
                     if (data.show_detail_option == "0") {
-                        $("#item_details_ok").show();
+                        $("#item_details_ok").removeClass("hidden");
                         $("#item_details_expired, #item_details_expired_full").addClass("hidden");
                     }if (data.show_detail_option == "1") {
-                        $("#item_details_ok, #item_details_expired").show();
+                        $("#item_details_ok, #item_details_expired").removeClass("hidden");
                         $("#item_details_expired_full").addClass("hidden");
                     } else if (data.show_detail_option == "2") {
                         $("#item_details_ok, #item_details_expired, #item_details_expired_full").addClass("hidden");
@@ -1597,7 +1597,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_loading").addClass("hidden");
                     } else {
                         //Dont show details
-                        $("#item_details_nok").show();
+                        $("#item_details_nok").removeClass("hidden");
                         $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo addslashes($LANG['author']); ?>: </b>' + data.author + '<br /><b><?php echo addslashes($LANG['restricted_to']); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="SendMail(\'request_access_to_author\',\'' + data.id + ',' + data.id_user + '\',\'<?php echo $_SESSION['key']; ?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']); ?>\')"><?php echo addslashes($LANG['request_access_ot_item']); ?></a></u></div>');
                         $("#item_details_ok").addClass("hidden");
                         $("#item_details_expired").addClass("hidden");
@@ -1910,8 +1910,13 @@ function open_edit_item_div(restricted_to_roles)
         ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
         || ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
     ) {
-        displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
-        return false;
+        // Exclude the case where the user is in his PF with PSK set
+        if ($('#recherche_group_pf').val() === "1" && $("#personal_sk_set").val() === "1") {
+            // do nothing
+        } else {
+            displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+            return false;
+        }
     }
 
     // If no Item selected, no edition possible
@@ -4092,7 +4097,7 @@ function globalItemsSearch()
         $("#items_listing_should_stop").val("1");
 
         // wait
-        $("#items_list_loader").show();
+        $("#items_list_loader").removeClass("hidden");
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching']); ?>');
 
         // clean

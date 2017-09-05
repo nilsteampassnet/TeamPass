@@ -379,7 +379,7 @@ echo '
         </div>';
 // # NOT ALLOWED
 echo '
-        <div id="item_details_nok" style="display:none; width:400px; margin:20px auto 20px auto;">
+        <div id="item_details_nok" class="hidden" style="width:400px; margin:20px auto 20px auto;">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
                 <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['not_allowed_to_see_pw'].'</b>
                 <span id="item_details_nok_restriction_list"></span>
