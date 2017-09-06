@@ -1,4 +1,4 @@
-FROM richarvey/nginx-php-fpm:1.2.1
+FROM richarvey/nginx-php-fpm:1.3.5
 
 # The location of the web files
 ARG VOL=/var/www/html

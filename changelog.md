@@ -12,6 +12,7 @@
  #1886 JSON Error when importing with an apostrophe (‘)
  #1885 Undefined index: SSL_SERVER_CERT
  #1884 Cannot delete custom fields - hangs indefinitely after confirm with spinning gear
+ #1882 Can't see any entry on any folder, using any account
  #1881 Doesn't auto-delete install/ folder after installation completed
  #1880 Custom Fields, Not encrypted/decrypted when toggled in Custom-Field Settings Screen
  #1872 New Admin User login not working -JSON Parse file failure

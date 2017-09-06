@@ -562,7 +562,7 @@ if (null !== $post_type) {
         //CASE export in HTML format - Iteration loop
         case "export_to_html_format_loop":
             // do checks ... if fails, return an error
-            if (null !== $post_idTree || null !== $post_idsList) {
+            if (null === $post_idTree || null === $post_idsList) {
                 echo '[{"error":"true"}]';
                 break;
             }
