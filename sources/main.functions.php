@@ -1165,6 +1165,11 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     global $LANG;
     global $SETTINGS;
 
+    // CAse where email not defined
+    if ($email === "none") {
+        return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+    }
+
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     //load library
     $user_language = isset($_SESSION['user_language']) ? $_SESSION['user_language'] : "english";

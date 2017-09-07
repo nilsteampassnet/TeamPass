@@ -6,6 +6,7 @@
  Database password is encrypted in settings.php file
  PHPMailer library updated to 5.2.23
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
+ Fix: issue on offline export
  #1891 Install error - Uncaught Defuse\\Crypto\\Exception\\BadFormatException: Encoded data is shorter than expected
  #1890 access rights in manage roles
  #1888 Export to CVS --> empty file (0 kb)

@@ -534,6 +534,11 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."users` ADD `user_ip` VARCHAR(60) NOT NULL DEFAULT 'none';"
 );
+// alter table USERS to allow NULL on field "email"
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."users` CHANGE `email` `email` VARCHAR(300) NOT NULL DEFAULT 'none';"
+);
 
 
 // alter table EXPORT to add a new fields

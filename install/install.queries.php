@@ -591,7 +591,7 @@ global \$SETTINGS;
                             `groupes_interdits` varchar(255) NULL,
                             `last_connexion` varchar(30) NULL,
                             `gestionnaire` int(11) NOT null DEFAULT '0',
-                            `email` varchar(300) NOT NULL,
+                            `email` varchar(300) NOT NULL DEFAULT 'none',
                             `favourites` varchar(300) NULL,
                             `latest_items` varchar(300) NULL,
                             `personal_folder` int(1) NOT null DEFAULT '0',
