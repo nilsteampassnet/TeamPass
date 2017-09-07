@@ -61,7 +61,6 @@ $post_abspath = filter_input(INPUT_POST, 'abspath', FILTER_SANITIZE_STRING);
 $post_no_previous_sk = filter_input(INPUT_POST, 'no_previous_sk', FILTER_SANITIZE_STRING);
 $post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_STRING);
 $post_previous_sk = filter_input(INPUT_POST, 'previous_sk', FILTER_SANITIZE_STRING);
-$post_tbl_prefix = filter_input(INPUT_POST, 'tbl_prefix', FILTER_SANITIZE_STRING);
 $post_no_maintenance_mode = filter_input(INPUT_POST, 'no_maintenance_mode', FILTER_SANITIZE_STRING);
 $post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', FILTER_SANITIZE_STRING);
 $post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_STRING);
@@ -542,7 +541,7 @@ if (isset($post_type)) {
                 // no old sk is available
                     $tmp = mysqli_num_rows(mysqli_query(
                         $db_link,
-                        "SELECT * FROM `".$var['tbl_prefix']."misc`
+                        "SELECT * FROM `".$pre."misc`
                         WHERE type = 'admin' AND intitule = 'saltkey_ante_2127'"
                     ));
                 if ($tmp == 0) {
@@ -566,12 +565,12 @@ if (isset($post_type)) {
             //What CPM version
             if (mysqli_query(
                 $db_link,
-                "SELECT valeur FROM ".$post_tbl_prefix."misc
+                "SELECT valeur FROM ".$pre."misc
                 WHERE type='admin' AND intitule = 'cpassman_version'"
             )) {
                 $tmpResult = mysqli_query(
                     $db_link,
-                    "SELECT valeur FROM ".$post_tbl_prefix."misc
+                    "SELECT valeur FROM ".$pre."misc
                     WHERE type='admin' AND intitule = 'cpassman_version'"
                 );
                 $cpmVersion = mysqli_fetch_row($tmpResult);
@@ -585,7 +584,7 @@ if (isset($post_type)) {
             if (@mysqli_fetch_row(
                 mysqli_query(
                     $db_link,
-                    "SELECT valeur FROM ".$post_tbl_prefix."misc
+                    "SELECT valeur FROM ".$pre."misc
                     WHERE type='admin' AND intitule = 'utf8_enabled'"
                 )
             )
@@ -593,7 +592,7 @@ if (isset($post_type)) {
                 $cpmIsUTF8 = mysqli_fetch_row(
                     mysqli_query(
                         $db_link,
-                        "SELECT valeur FROM ".$post_tbl_prefix."misc
+                        "SELECT valeur FROM ".$pre."misc
                         WHERE type='admin' AND intitule = 'utf8_enabled'"
                     )
                 );
@@ -836,6 +835,13 @@ if (file_exists(\"".$skFile."\")) {
                     echo 'document.getElementById("step5_skFile").innerHTML = '.
                         '"<img src=\"images/tick.png\">";';
                 }
+                
+                // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
+                mysqli_query(
+                    $db_link,
+                    "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('install', 'clear_install_folder', 'true')"
+                );
+            
 
                 //Finished
                 if ($result1 !== false
