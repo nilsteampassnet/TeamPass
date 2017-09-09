@@ -190,7 +190,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         }
         query_in_progress = groupe_id;
         //LoadingPage();
-        $("#items_list_loader").show();
+        $("#items_list_loader").removeClass("hidden");
         if (start == 0) {
             //clean form
             $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
@@ -452,7 +452,7 @@ function pwGenerate(elem)
     $("#"+elem+"pw1").show().focus();
 
     //show ajax image
-    $("#"+elem+"pw_wait").show();
+    $("#"+elem+"pw_wait").removeClass("hidden");
 
     $.post(
         "sources/main.queries.php",
@@ -4135,7 +4135,7 @@ function searchItemsWithTags(tag)
     if (tag == "") return false
 
     // wait
-    $("#items_list_loader").show();
+    $("#items_list_loader").removeClass("hidden");
     $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching_tag']); ?>&nbsp;<b>' + tag + '</b> ...');
 
     // clean

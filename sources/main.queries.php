@@ -664,6 +664,7 @@ function mainQuery()
             $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
 
             // Change encryption
+            // Build list of items to be re-encrypted
             $rows = DB::query(
                 "SELECT i.id as id, i.pw as pw
                 FROM ".prefix_table("items")." as i

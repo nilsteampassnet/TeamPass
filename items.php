@@ -209,7 +209,7 @@ echo '
                         <input class="form-control text ui-widget-content" type="text" onkeypress="javascript:if (event.keyCode == 13) globalItemsSearch();" id="search_item" />
                     </div>
 
-                    <i id="items_list_loader" style="display:none;float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red"></i>&nbsp;
+                    <i id="items_list_loader" style="float:right;margin-right:5px;" class="fa fa-cog fa-spin mi-red hidden"></i>&nbsp;
                 </div>
             </div>
             <div id="items_list"></div>
@@ -651,7 +651,7 @@ echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
                     <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold; padding:2px;" class="ui-corner-all ui-state-default"></span>
-                    <span id="edit_pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
+                    <span id="edit_pw_wait" style="margin-left:10px;" class="hidden"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-history tip" style="cursor:pointer;" id="edit_past_pwds" onclick="showPasswordsHistory()"></span>

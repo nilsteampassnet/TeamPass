@@ -341,17 +341,27 @@ $(function() {
                         }
                         $("#password_change_wait").hide();
                         $("#profile_info_box").html("<?php echo $LANG['alert_message_done']; ?>").show();
-                        setTimeout(function(){$("#profile_info_box").effect( "fade", "slow" );}, 1000);
+
+                        $(this).delay(2000).queue(function() {
+                            $("#profile_info_box").effect( "fade", "slow" );
+                            $(this).dequeue();
+                        });
                     },
                     "json"
                 );
             } else {
                 $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
-                setTimeout(function(){$("#change_pwd_error").effect( "fade", "slow" );}, 1000);
+                $(this).delay(1000).queue(function() {
+                    $("#change_pwd_error").effect( "fade", "slow" );
+                    $(this).dequeue();
+                });
             }
         } else {
             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['index_pw_error_identical']; ?>");
-            setTimeout(function(){$("#change_pwd_error").effect( "fade", "slow" );}, 1000);
+            $(this).delay(1000).queue(function() {
+                $("#change_pwd_error").effect( "fade", "slow" );
+                $(this).dequeue();
+            });
         }
     });
 
@@ -527,7 +537,11 @@ $(function() {
             $("#psk_change_wait").hide();
             $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']); ?></div>');
 
-            setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 1000);
+            $(this).delay(1000).queue(function() {
+                $("#tmp_msg").effect( "fade", "slow" );
+                $("#tmp_msg").remove();
+                $(this).dequeue();
+            });
             return false;
         }
 
@@ -551,7 +565,11 @@ $(function() {
                     $("#psk_change_wait").hide();
                     $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;">' + data.error + '</div>');
 
-                    setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 3000);
+                    $(this).delay(3000).queue(function() {
+                        $("#tmp_msg").effect( "fade", "slow" );
+                        $("#tmp_msg").remove();
+                        $(this).dequeue();
+                    });
                     return false;
                 }
             }
@@ -583,7 +601,13 @@ $(function() {
                 function(data) {
                     $("#psk_reset_wait").hide();
                     $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done']; ?></div>');
-                    setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
+
+                    $(this).delay(1500).queue(function() {
+                        $("#div_reset_psk").effect( "fade", "slow" );
+                        $("#reset_temp").remove();
+                        $(this).dequeue();
+                    });
+
                     $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done']; ?>");
                     location.reload();
                 }
@@ -649,11 +673,15 @@ function changePersonalSaltKey(credentials, ids, nb_total)
            debug   : true
         },
         function(data){
-            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            console.log(data);
             if (data.error !== "") {
                 // display error
                 $("#psk_change_wait_info").html(data.error);
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 4000);
+                $(this).delay(4000).queue(function() {
+                    $("#main_info_box").effect( "fade", "slow" );
+                    $(this).dequeue();
+                });
             } else {
                 $.post(
                     "sources/utils.queries.php",
@@ -664,11 +692,11 @@ function changePersonalSaltKey(credentials, ids, nb_total)
                         key             : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data){
-                        if (currentID == "") {
+                        if (currentID === "") {
                             $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done']; ?>");
                             location.reload();
                         } else {
-                            if (data[0].error == "") {
+                            if (data[0].error === "") {
                             changePersonalSaltKey(credentials, aIds, nb_total);
                             } else {
                                 $("#psk_change_wait_info").html(data[0].error);
