@@ -1,6 +1,7 @@
 <?php
 
-namespace RobThree\Auth\Providers\Qr;
+namespace Authentication\TwoFactorAuth\Providers\Qr;
+require_once(dirname(__FILE__)."/BaseHTTPQRCodeProvider.php");
 
 // http://qrickit.com/qrickit_apps/qrickit_api.php
 class QRicketProvider extends BaseHTTPQRCodeProvider 
@@ -26,14 +27,14 @@ class QRicketProvider extends BaseHTTPQRCodeProvider
     {
         switch (strtolower($this->format))
         {
-            case 'p':
+        	case 'p':
                 return 'image/png';
-            case 'g':
+        	case 'g':
                 return 'image/gif';
-            case 'j':
+        	case 'j':
                 return 'image/jpeg';
         }
-        throw new QRException(sprintf('Unknown MIME-type: %s', $this->format));
+        throw new \QRException(sprintf('Unknown MIME-type: %s', $this->format));
     }
     
     public function getQRCodeImage($qrtext, $size) 
@@ -44,11 +45,11 @@ class QRicketProvider extends BaseHTTPQRCodeProvider
     public function getUrl($qrtext, $size) 
     {
         return 'http://qrickit.com/api/qr'
-            . '?qrsize='.$size
-            . '&e='.strtolower($this->errorcorrectionlevel)
-            . '&bgdcolor='.$this->bgcolor
-            . '&fgdcolor='.$this->color
-            . '&t='.strtolower($this->format)
-            . '&d='.rawurlencode($qrtext);
+            . '?qrsize=' . $size
+            . '&e=' . strtolower($this->errorcorrectionlevel)
+            . '&bgdcolor=' . $this->bgcolor
+            . '&fgdcolor=' . $this->color
+            . '&t=' . strtolower($this->format)
+            . '&d=' . rawurlencode($qrtext);
     }
 }

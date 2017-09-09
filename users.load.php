@@ -1115,21 +1115,27 @@ function user_action_ga_code(id)
     $.post(
     "sources/main.queries.php",
     {
-        type        : "ga_generate_qr",
-        id          : id,
-        send_email  : "1"
+        type          : "ga_generate_qr",
+        id            : id,
+        demand_origin : "users_management_list",
+        send_email    : "1"
     },
     function(data) {
         if (data[0].error == "0") {
-            $("#manager_dialog_error").html("<div><?php echo $LANG['share_sent_ok']; ?></div>");
+            $("#div_dialog_message_text")
+                .html("<div><?php echo $LANG['share_sent_ok']; ?></div>")
+                .addClass("ui-state-highlight ui-corner-all");
         } else {
             if (data[0].error == "no_email") {
-                $("#manager_dialog_error").html("<?php echo $LANG['error_no_email']; ?>");
+                $("#div_dialog_message_text").html("<?php echo $LANG['error_no_email']; ?>");
             } else if (data[0].error == "no_user") {
-                $("#manager_dialog_error").html("<?php echo $LANG['error_no_user']; ?>");
+                $("#div_dialog_message_text").html("<?php echo $LANG['error_no_user']; ?>");
+            } else if (data[0].error == "not_allowed") {
+                $("#div_dialog_message_text").html("<?php echo $LANG['error_not_allowed_to']; ?>");
             }
+            $("#div_dialog_message_text").addClass("ui-state-error ui-corner-all");
         }
-        $("#manager_dialog").dialog('open');
+        $("#div_dialog_message").dialog('open');
         $("#div_loading").hide();
     },
     "json"

@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     'text' => 'Text',
     'masked' => 'Masked',
     'type' => 'Type',

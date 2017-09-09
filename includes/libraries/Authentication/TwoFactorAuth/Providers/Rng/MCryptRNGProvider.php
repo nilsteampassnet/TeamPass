@@ -1,6 +1,7 @@
 <?php
 
-namespace RobThree\Auth\Providers\Rng;
+namespace Authentication\TwoFactorAuth\Providers\Rng;
+require_once(dirname(__FILE__)."/IRNGProvider.php");
 
 class MCryptRNGProvider implements IRNGProvider
 {
@@ -12,9 +13,8 @@ class MCryptRNGProvider implements IRNGProvider
     
     public function getRandomBytes($bytecount) {
         $result = mcrypt_create_iv($bytecount, $this->source);
-        if ($result === false) {
-                    throw new RNGException('mcrypt_create_iv returned an invalid value');
-        }
+        if ($result === false)
+            throw new \RNGException('mcrypt_create_iv returned an invalid value');
         return $result;
     }
     

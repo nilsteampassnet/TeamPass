@@ -36,7 +36,9 @@ if (file_exists('../includes/config/tp.config.php')) {
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-if (isset($post_type) && ($post_type === "ga_generate_qr" || $post_type === "send_pw_by_email" || $post_type === "generate_new_password")) {
+if (isset($post_type) && ($post_type === "ga_generate_qr"
+    || $post_type === "send_pw_by_email" || $post_type === "generate_new_password")
+) {
     // continue
     mainQuery();
 } elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
@@ -44,7 +46,8 @@ if (isset($post_type) && ($post_type === "ga_generate_qr" || $post_type === "sen
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
-    (isset($post_type) && $post_type === "change_user_language" && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING))
+    (isset($post_type) && $post_type === "change_user_language"
+        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING))
 ) {
     // continue
     mainQuery();
@@ -289,9 +292,13 @@ function mainQuery()
          */
         case "ga_generate_qr":
             // is this allowed by setting
-            if (!isset($SETTINGS['ga_reset_by_user']) || $SETTINGS['ga_reset_by_user'] !== "1") {
+            if ((isset($SETTINGS['ga_reset_by_user']) === false || $SETTINGS['ga_reset_by_user'] !== "1")
+                && (null === filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING)
+                    || filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING) !== "users_management_list")
+            ) {
                 // User cannot ask for a new code
                 echo '[{"error" : "not_allowed"}]';
+                break;
             }
 
             // Check if user exists

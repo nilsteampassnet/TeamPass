@@ -797,7 +797,7 @@ if (isset($_SESSION['CPM'])) {
 // Alert BOX
     echo '
     <div id="div_dialog_message" style="display:none;">
-        <div id="div_dialog_message_text"></div>
+        <div id="div_dialog_message_text" style="text-align:center; padding:4px; font-size:12px; margin-top:10px;"></div>
     </div>';
 
 // WARNING FOR QUERY ERROR

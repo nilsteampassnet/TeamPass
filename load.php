@@ -342,6 +342,9 @@ $htmlHeaders .= '
                 } else if (data[0].error === "no_user") {
                     $("#connection_error").html("'.addslashes($LANG['error_no_user']).'")
                         .show().delay(3000).fadeOut(500);
+                } else if (data[0].error === "not_allowed") {
+                    $("#connection_error").html("'.addslashes($LANG['setting_disabled_by_admin']).'")
+                        .show().delay(3000).fadeOut(500);
                 } else {
 
                 }
@@ -774,7 +777,7 @@ $htmlHeaders .= '
             height: 150,
             title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
-                "'.$LANG['ok'].'": function() {
+                "'.$LANG['close'].'": function() {
                     $("#div_dialog_message").dialog("close");
                 }
             },
@@ -782,6 +785,7 @@ $htmlHeaders .= '
                 $("#div_dialog_message_text").html("");
             },
             close: function() {
+                $("#div_dialog_message_text").removeClass();
                 $("#div_dialog_message").dialog("close");
             }
         });
