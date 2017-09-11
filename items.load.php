@@ -1412,7 +1412,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.fields === "") {
                             $(".tr_fields").addClass("hidden");
                         } else {
-                            $(".tr_cf, .tr_fields").addClass("hidden");
+                            $(".tr_cf, .tr_fields").removeClass("hidden");
                             var liste = data.fields.split('_|_');
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');

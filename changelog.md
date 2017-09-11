@@ -5,6 +5,7 @@
  Custom Field value can be masked
  Database password is encrypted in settings.php file
  PHPMailer library updated to 5.2.23
+ TwoFactorAuth library was updated
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
  Fix: issue on offline export
  #1891 Install error - Uncaught Defuse\\Crypto\\Exception\\BadFormatException: Encoded data is shorter than expected

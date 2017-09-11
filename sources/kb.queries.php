@@ -76,7 +76,6 @@ function utf8Urldecode($value)
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_id = filter_input(INPUT_POST, $_POST['id'], FILTER_SANITIZE_NUMBER_INT);
 
 // Construction de la requéte en fonction du type de valeur
 if (null !== $post_type) {
@@ -186,6 +185,8 @@ if (null !== $post_type) {
                 break;
             }
 
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             $ret = DB::queryfirstrow(
                 "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
                 FROM ".prefix_table("kb")." AS k
@@ -221,7 +222,11 @@ if (null !== $post_type) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             DB::delete(prefix_table("kb"), "id=%i", $post_id);
+
             break;
     }
 }

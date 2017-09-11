@@ -205,6 +205,8 @@ if (null !== $post_type) {
                 ||
                 (isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '1')
             ) {
+                // Handle case where pw is empty
+                // if not allowed then warn user
                 if ((isset($_SESSION['user_settings']['create_item_without_password'])
                     && $_SESSION['user_settings']['create_item_without_password'] !== '1'
                     ) ||
@@ -2589,7 +2591,7 @@ if (null !== $post_type) {
                 $counter_full = DB::count();
                 $uniqueLoadData['counter_full'] = $counter_full;
             }
-            
+
             // Check list to be continued status
             if ($post_nb_items_to_display_once !== 'max' && ($post_nb_items_to_display_once + $start) < $counter_full) {
                 $listToBeContinued = "yes";

@@ -119,7 +119,7 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
         }
 
         // Delete temporary install table
-        DB::query("DROP TABLE `_install`");
+        DB::query("DROP TABLE IF EXISTS `_install`");
 
         // Delete tag
         DB::delete(

@@ -351,13 +351,13 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
     foreach ($_SESSION['item_fields'] as $elem) {
         $itemCatName = $elem[0];
         echo '
-                    <tr class="tr_fields" id="tr_catfield_'.$elem[0].'" style="display:none;">
+                    <tr class="tr_fields hidden" id="tr_catfield_'.$elem[0].'">
                         <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
                         <td></td>
                     </tr>';
         foreach ($elem[2] as $field) {
             echo '
-                    <tr class="tr_cf tr_fields" id="cf_tr_'.$field[0].'" style="display:none;">
+                    <tr class="tr_cf tr_fields hidden" id="cf_tr_'.$field[0].'">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
                         <td>';
             if ($field[3] === "masked") {
