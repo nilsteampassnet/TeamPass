@@ -1056,14 +1056,14 @@ echo '
                         <td><label for="ldap_domain_dn">'.$LANG['settings_ldap_domain_dn'].'</label></td>
                         <td><input type="text" size="50" id="ldap_domain_dn" name="ldap_domain_dn" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($SETTINGS['ldap_domain_dn']) ? $SETTINGS['ldap_domain_dn'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
-
+/*
 // Subtree for posix / openldap
         echo '
                 <tr>
                     <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain_posix'].'</label></td>
                     <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($SETTINGS['ldap_suffix']) ? $SETTINGS['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
-
+*/
 // LDAP username attribute
         // LDAP Object Class
         echo '
