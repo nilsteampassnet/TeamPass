@@ -8,6 +8,7 @@
  TwoFactorAuth library was updated
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
  Fix: issue on offline export
+ #1900 Forgot your password --> Page reload automatic
  #1891 Install error - Uncaught Defuse\\Crypto\\Exception\\BadFormatException: Encoded data is shorter than expected
  #1890 access rights in manage roles
  #1888 Export to CVS --> empty file (0 kb)

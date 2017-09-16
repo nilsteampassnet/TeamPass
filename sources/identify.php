@@ -320,7 +320,7 @@ function identifyUser($sentData)
     $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
     $logError = "";
     $userPasswordVerified = false;
-
+    
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,

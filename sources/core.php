@@ -198,7 +198,7 @@ if (empty($_SESSION['fin_session']) === false) {
     $dataSession['key_tempo'] = "";
 }
 
-if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && (
+if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && isset($_GET['action']) === false && (
         empty($_SESSION['fin_session']) === true
         || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
         || empty($dataSession['key_tempo']) === true

@@ -606,7 +606,7 @@ if (isset($_SESSION['CPM'])) {
             include $SETTINGS['cpassman_dir'].'/error.php';
         }
     // Case of password recovery
-    } elseif (empty($session_user_id) ===true && isset($_GET['action']) && $_GET['action'] == "password_recovery") {
+    } elseif (isset($_GET['action']) && $_GET['action'] === "password_recovery") {
         // Case where user has asked new PW
         echo '
             <div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
@@ -762,7 +762,7 @@ if (isset($_SESSION['CPM'])) {
                     <br />
                     <label for="forgot_pw_login">'.$LANG['login'].'</label>
                     <input type="text" size="20" name="forgot_pw_login" id="forgot_pw_login" />
-                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none; padding:5px;" class="ui-corner-all"><
+                    <div id="div_forgot_pw_status" style="text-align:center;margin-top:15px;display:none; padding:5px;" class="ui-corner-all">
                         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
                     </div>
                 </div>';

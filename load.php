@@ -369,7 +369,7 @@ $htmlHeaders .= '
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
-                if (data == "done") {
+                if (data === "done") {
                     window.location.href="index.php";
                 } else {
                     $("#generate_new_pw_error").show().html(data);

@@ -489,16 +489,13 @@ function mainQuery()
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                 $pwdlib->register();
                 $pwdlib = new PasswordLib\PasswordLib();
+
                 // generate key
                 $newPwNotCrypted = $pwdlib->getRandomToken(10);
 
-                // load passwordLib library
-                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                $pwdlib->register();
-                $pwdlib = new PasswordLib\PasswordLib();
-
                 // Prepare variables
-                $newPw = $pwdlib->createPasswordHash(stringUtf8Decode($newPwNotCrypted));
+                $newPw = $pwdlib->createPasswordHash(($newPwNotCrypted));
+
                 // update DB
                 DB::update(
                     prefix_table("users"),
@@ -525,7 +522,7 @@ function mainQuery()
                 $_SESSION['validite_pw'] = false;
                 // send to user
                 $ret = json_decode(
-                    @sendEmail(
+                    sendEmail(
                         $LANG['forgot_pw_email_subject_confirm'],
                         $LANG['forgot_pw_email_body']." ".$newPwNotCrypted,
                         $dataUser['email'],
