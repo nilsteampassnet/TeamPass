@@ -10,6 +10,7 @@
  Fix: issue on offline export
  #1900 Forgot your password --> Page reload automatic
  #1891 Install error - Uncaught Defuse\\Crypto\\Exception\\BadFormatException: Encoded data is shorter than expected
+ #1899 Active Directory authentication not working on fresh installed Cent OS 7
  #1890 access rights in manage roles
  #1888 Export to CVS --> empty file (0 kb)
  #1886 JSON Error when importing with an apostrophe (‘)

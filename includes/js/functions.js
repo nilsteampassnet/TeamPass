@@ -170,7 +170,7 @@ function CreateRandomString(size,type){
 *
 **/
 function unsanitizeString(string){
-    if(string !== "" && string !== null){
+    if(string !== "" && string !== null && string !== undefined){
         string = string.replace(/\\/g,"").replace(/&#92;/g,"\\");
     }
     return string;
@@ -180,7 +180,7 @@ function unsanitizeString(string){
 *   Clean up a string and delete any scripting tags
 **/
 function sanitizeString(string){
-    if(string !== "" && string !== null) {
+    if(string !== "" && string !== null && string !== undefined) {
         string = string.replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
         string = string.replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
     }

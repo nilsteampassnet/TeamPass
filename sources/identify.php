@@ -320,7 +320,7 @@ function identifyUser($sentData)
     $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
     $logError = "";
     $userPasswordVerified = false;
-    
+
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
@@ -378,7 +378,7 @@ function identifyUser($sentData)
 
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
-        && $SETTINGS['ldap_mode'] ===' 1'
+        && $SETTINGS['ldap_mode'] === '1'
         && $username !== "admin"
     ) {
         //Multiple Domain Names
