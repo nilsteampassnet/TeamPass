@@ -66,10 +66,9 @@ if (isset($_SERVER['HTTPS']) === true
     redirect("https://".$superGlobal->get("HTTP_HOST", "SERVER").$superGlobal->get("REQUEST_URI", "SERVER"));
 }
 
-// LOAD CPASSMAN SETTINGS
-if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1") {
-    $SETTINGS_EXT['loaded'] = 1;
 
+// Load pwComplexity
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
     // Pw complexity levels
     if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== "0") {
         require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -83,6 +82,12 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
             90=>array(90, $LANG['complex_level6'])
         );
     }
+}
+
+
+// LOAD CPASSMAN SETTINGS
+if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1") {
+    $SETTINGS_EXT['loaded'] = 1;
 
     // Should we delete folder INSTALL?
     $row = DB::queryFirstRow(

@@ -71,6 +71,22 @@ $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_newparent_id = filter_input(INPUT_POST, 'newparent_id', FILTER_SANITIZE_STRING);
 $post_changer_complexite = filter_input(INPUT_POST, 'changer_complexite', FILTER_SANITIZE_STRING);
 
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+    // Pw complexity levels
+    if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== "0") {
+        require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+        $SETTINGS_EXT['pwComplexity'] = array(
+            0=>array(0, $LANG['complex_level0']),
+            25=>array(25, $LANG['complex_level1']),
+            50=>array(50, $LANG['complex_level2']),
+            60=>array(60, $LANG['complex_level3']),
+            70=>array(70, $LANG['complex_level4']),
+            80=>array(80, $LANG['complex_level5']),
+            90=>array(90, $LANG['complex_level6'])
+        );
+    }
+}
+
 // CASE where title is changed
 if (null !== $post_newtitle) {
     $id = explode('_', $post_id);
