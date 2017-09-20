@@ -326,7 +326,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     $('#menu_button_add_item').prop('disabled', 'true');
                     $("#items_list_loader, #div_loading").addClass("hidden");
-                } else if (data.error == "not_authorized" || data.access_level == 2) {
+                } else if (data.error == "not_authorized" || data.access_level === "") {
                     //warn user
                     $("#hid_cat").val("");
                     //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").prop('disabled', 'true');
@@ -1908,7 +1908,7 @@ function open_edit_item_div(restricted_to_roles)
     // is user read only and it is not a personal folder
     if (
         ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
-        || ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+        || ($("#access_level").val() === "1" || $("#access_level").val() === "3")
     ) {
         // Exclude the case where the user is in his PF with PSK set
         if ($('#recherche_group_pf').val() === "1" && $("#personal_sk_set").val() === "1") {
