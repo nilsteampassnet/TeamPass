@@ -26,7 +26,7 @@ if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
     $user_id = "";
 }
 
-if (!empty($user_id)) {
+if (!empty($user_id) && isset($_SESSION['CPM'])) {
     // connect to the server
     require_once './sources/main.functions.php';
     require_once './includes/config/settings.php';

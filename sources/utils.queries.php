@@ -413,14 +413,7 @@ if (null !== $post_type) {
                 WHERE id=%i",
                 $dataReceived['currentId']
             );
-
-            // decrypt password
-            $oldPwClear = cryption(
-                $dataItem['pw'],
-                "",
-                "decrypt"
-            );
-
+            
             // encrypt new password
             $encrypt = cryption(
                 $dataReceived['new_pwd'],
@@ -456,7 +449,7 @@ if (null !== $post_type) {
                 } else {
                     // send ssh script for user change
                     $ret .= "<br />".$LANG['ssh_answer_from_server'].':&nbsp;<div style="margin-left:20px;font-style: italic;">';
-                    $ret_server = $ssh->exec('echo -e "'.$dataReceived['ssh_pwd'].'\n'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
+                    $ret_server = $ssh->exec('echo -e "'.$dataReceived['new_pwd'].'\n'.$dataReceived['new_pwd'].'" | passwd '.$dataItem['login']);
                     if (strpos($ret_server, "updated successfully") !== false) {
                         $err = false;
                     } else {
@@ -472,7 +465,7 @@ if (null !== $post_type) {
                     prefix_table("items"),
                     array(
                         'pw' => $encrypt['string'],
-                        'pw_iv' => $encrypt['iv']
+                        'pw_iv' => ""
                         ),
                     "id = %i",
                     $dataReceived['currentId']
@@ -484,8 +477,9 @@ if (null !== $post_type) {
                     $_SESSION['user_id'],
                     'at_modification',
                     $_SESSION['login'],
-                    'at_pw :'.$oldPw,
-                    $oldPwIV
+                    'at_pw :'.$dataItem['pw'],
+                    "",
+                    "defuse"
                 );
                 $ret .= "<br />".$LANG['ssh_action_performed'];
             } else {
