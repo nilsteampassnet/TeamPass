@@ -390,8 +390,10 @@ if (isset($_POST['type'])) {
                 $returnValues = array("error" => "item_exists");
             }
 
-            // Update CACHE table
-            updateCacheTable("add_value", $newID);
+            // Add item to CACHE table if new item has been created
+            if($newID){
+                updateCacheTable("add_value", $newID);
+            }
 
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
