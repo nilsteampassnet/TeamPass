@@ -19,6 +19,7 @@ header("Content-type: text/html; charset=utf-8");
 require_once '../sources/SplClassLoader.php';
 
 require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -29,10 +30,6 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 
 // Load libraries
 require_once '../sources/main.functions.php';
-
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
 
 //get backups infos
 $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");

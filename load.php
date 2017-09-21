@@ -17,6 +17,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...2');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // Common elements
 $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/jquery-ui/jquery-ui.min.css" type="text/css" />
@@ -62,7 +71,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
         -->
         <link rel="stylesheet" type="text/css" href="includes/css/items.css" />';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_settings") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
@@ -72,12 +81,12 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_main") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_main") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
         <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
+} elseif (isset($_GET['page']) && ($_GET['page'] == "manage_users" || $_GET['page'] == "manage_folders")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
@@ -87,13 +96,13 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_views") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_views") {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.js"></script>
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.js"></script>';
-} else if (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
+} elseif (isset($_GET['page']) && ($_GET['page'] == "find" || $_GET['page'] == "kb")) {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/js/ckeditor/ckeditor.js"></script>
         <script type="text/javascript" src="includes/js/ckeditor/adapters/jquery.js"></script>
@@ -104,14 +113,14 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/ui-multiselect/css/ui.multiselect.css" />
         <script type="text/javascript" src="includes/js/ui-multiselect/js/ui.multiselect.min.js"></script>
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />';
-} else if (isset($_GET['page']) && ($_GET['page'] == "suggestion")) {
+} elseif (isset($_GET['page']) && ($_GET['page'] == "suggestion")) {
     $htmlHeaders .= '
         <link rel="stylesheet" type="text/css" href="includes/css/kb.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/jquery.dataTables.min.css" />
         <link rel="stylesheet" type="text/css" href="includes/js/datatable/css/dataTables.jqueryui.min.css" />
         <script type="text/javascript" src="includes/js/datatable/js/jquery.dataTables.min.js"></script>
         <script type="text/javascript" src="includes/js/datatable/js/dataTables.jqueryui.min.js"></script>';
-} else if (!isset($_GET['page'])) {
+} elseif (!isset($_GET['page'])) {
     $htmlHeaders .= '
         <script type="text/javascript" src="includes/js/numeric/jquery.numeric.js"></script>';
     if (!empty($_SESSION['user_id']) && isset($_SESSION['user_id'])) {
@@ -120,14 +129,14 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
     }
 }
 // Get Favicon
-$htmlHeaders .= isset($_SESSION['settings']['favicon']) ? '
-        <link rel="icon" href="'.$_SESSION['settings']['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
+$htmlHeaders .= isset($SETTINGS['favicon']) ? '
+        <link rel="icon" href="'.$SETTINGS['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
 // get some init
 if (!isset($_SESSION["user_id"])) {
     $_SESSION["key"] = mt_rand();
     $_SESSION["user_id"] = "0";
-    $_SESSION["my_sk"] = "0";
+    $_SESSION['user_settings']['clear_psk'] = "";
 }
 
 $htmlHeaders .= '
@@ -148,28 +157,24 @@ $htmlHeaders .= '
         }
     }
 
-    function aes_encrypt(text)
-    {
-        return Aes.Ctr.encrypt(text, "'.$_SESSION['key'].'", 256);
-    }
-
-
     function launchIdentify(isDuo, redirect, psk)
     {
         $("#connection_error").hide();
-        if (redirect == undefined) redirect = ""; //Check if redirection
+        if (redirect == undefined) {
+            redirect = ""; //Check if redirection
+        }
         // Check form data
-        if (psk == 1 && $("#psk").val() == "") {
+        if (psk === "1" && $("#psk").val() === "") {
             $("#psk").addClass("ui-state-error");
             return false;
-        } else if (psk == 1) {
+        } else if (psk === "1") {
             $("#psk").removeClass("ui-state-error");
         }
-        if ($("#pw").val() == "") {
+        if ($("#pw").val() === "") {
             $("#pw").addClass("ui-state-error");
             return false;
         }
-        if ($("#login").val() == "") {
+        if ($("#login").val() === "") {
             $("#login").addClass("ui-state-error");
             return false;
         }
@@ -178,15 +183,15 @@ $htmlHeaders .= '
         $("#ajax_loader_connexion").show();
 
         //create random string
-        var randomstring =CreateRandomString(10);
+        var randomstring = CreateRandomString(10);
 
         var data = "";
-        if ($("#ga_code").val() != undefined) {
-            data = \', "GACode":"\'+sanitizeString($("#ga_code").val())+\'"\';
+        if ($("#ga_code").val() !== undefined) {
+            data = \', "GACode":"\' + sanitizeString($("#ga_code").val()) + \'"\';
         }
-        if ($("#psk").val() != undefined) {
-            data = \', "psk":"\'+sanitizeString($("#psk").val())+\'"\'+
-                \', "psk_confirm":"\'+sanitizeString($("#psk_confirm").val())+\'"\';
+        if ($("#psk").val() !== undefined) {
+            data = \', "psk":"\' + sanitizeString($("#psk").val()) + \'"\'+
+                \', "psk_confirm":"\' + sanitizeString($("#psk_confirm").val()) + \'"\';
         }
 
         // get timezone
@@ -196,7 +201,7 @@ $htmlHeaders .= '
         data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\'}\';
 
         // Handle if DUOSecurity is enabled
-        if (isDuo == 0 || (isDuo == 1 && $("#login").val() == "admin")) {
+        if (isDuo !== "1" || $("#login").val() === "admin") {
             identifyUser(redirect, psk, data, randomstring);
         } else {
             $("#duo_data").val(window.btoa(data));
@@ -215,12 +220,16 @@ $htmlHeaders .= '
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
-                if (data[0].value == randomstring) {
+                if (data[0].value === randomstring) {
                     $("#connection_error").hide();
                     //redirection for admin is specific
-                    if (data[0].user_admin === "1") window.location.href="index.php?page=manage_main";
-                    else if (data[0].initial_url !== "") window.location.href=data[0].initial_url;
-                    else window.location.href = "index.php?page=items";
+                    if (data[0].user_admin === "1") {
+                        window.location.href="index.php?page=manage_main";
+                    } else if (data[0].initial_url !== "") {
+                        window.location.href=data[0].initial_url;
+                    } else {
+                        window.location.href = "index.php?page=items";
+                    }
                 } else if (data[0].value === "user_is_locked") {
                     $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
                 } else if (data[0].value === "bad_psk") {
@@ -236,7 +245,7 @@ $htmlHeaders .= '
                 } else if (data[0].value === "user_not_exists") {
                     $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                 } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$_SESSION['settings']['nb_bad_authentication'] + 1).'").show();
+                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
                 } else if (data[0].value === "error") {
                     $("#mysql_error_warning").html(data[0].text).show();
                     $("#div_mysql_error").show().dialog("open");
@@ -294,10 +303,12 @@ $htmlHeaders .= '
                 },
                 function(data) {
                     if (data[0].error === "0") {
-                        //$("#ga_qr").attr("src", data[0].ga_url);
                         $("#div_ga_url").show();
                     } else if (data[0].error === "not_allowed") {
                         $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
+                        $("#div_ga_url").hide();
+                    } else if (data[0].error === "no_user") {
+                        $("#connection_error").html("'.addslashes($LANG['error_no_user']).'").show();
                         $("#div_ga_url").hide();
                     } else {
                         $("#connection_error").html("'.addslashes($LANG['index_bas_pw']).'").show();
@@ -328,6 +339,12 @@ $htmlHeaders .= '
             function(data) {
                 if (data[0].error === "0") {
                     $("#div_dialog_message").html(data[0].msg).dialog("open");
+                } else if (data[0].error === "no_user") {
+                    $("#connection_error").html("'.addslashes($LANG['error_no_user']).'")
+                        .show().delay(3000).fadeOut(500);
+                } else if (data[0].error === "not_allowed") {
+                    $("#connection_error").html("'.addslashes($LANG['setting_disabled_by_admin']).'")
+                        .show().delay(3000).fadeOut(500);
                 } else {
 
                 }
@@ -352,7 +369,7 @@ $htmlHeaders .= '
                 data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
             },
             function(data) {
-                if (data == "done") {
+                if (data === "done") {
                     window.location.href="index.php";
                 } else {
                     $("#generate_new_pw_error").show().html(data);
@@ -368,7 +385,7 @@ $htmlHeaders .= '
         $("#dialog_user_profil").dialog({
             open: function(event, ui) {
                 $("#div_user_profil").load(
-                    "'.$_SESSION['settings']['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
+                    "'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
                 );
             },
             close: function() {
@@ -407,7 +424,7 @@ $htmlHeaders .= '
     function displayItemNumber (item_id, tree_id)
     {
         if (window.location.href.indexOf("page=items") == -1) {
-            location.replace("'.$_SESSION['settings']['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
+            location.replace("'.$SETTINGS['cpassman_url'].'/index.php?page=items&group="+tree_id+"&id="+item_id);
         } else {
             $("#items_list").html("<ul class=\'liste_items\' id=\'full_items_list\'></ul>");
             AfficherDetailsItem(item_id);
@@ -460,7 +477,7 @@ $htmlHeaders .= '
             title: "DUO Security",
             open: function(event, ui) {
                 $("#div_duo").load(
-                    "'.$_SESSION['settings']['cpassman_url'].'/duo.load.php", function(){}
+                    "'.$SETTINGS['cpassman_url'].'/duo.load.php", function(){}
                 );
             }
         }).dialog("open");
@@ -495,6 +512,9 @@ $htmlHeaders .= '
                         if (data[0].error == "complexity_level_not_reached") {
                             $("#new_pw, #new_pw2").val("");
                             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['error_complex_not_enought'].'></span>");
+                        } else if (data[0].error == "pwd_hash_not_correct") {
+                            $("#new_pw, #new_pw2").val("");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span>'.$LANG['error_not_allowed_to'].'></span>");
                         } else {
                             location.reload(true);
                         }
@@ -760,7 +780,7 @@ $htmlHeaders .= '
             height: 150,
             title: "'.$LANG['div_dialog_message_title'].'",
             buttons: {
-                "'.$LANG['ok'].'": function() {
+                "'.$LANG['close'].'": function() {
                     $("#div_dialog_message").dialog("close");
                 }
             },
@@ -768,6 +788,7 @@ $htmlHeaders .= '
                 $("#div_dialog_message_text").html("");
             },
             close: function() {
+                $("#div_dialog_message_text").removeClass();
                 $("#div_dialog_message").dialog("close");
             }
         });
@@ -781,7 +802,9 @@ $htmlHeaders .= '
             height: 190,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
-                $("#input_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
+                $("#input_personal_saltkey").val("'.
+                    addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).
+                '");
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {
@@ -837,7 +860,7 @@ $htmlHeaders .= '
             title: "'.$LANG['menu_title_new_personal_saltkey'].'",
             open: function() {
                 $("#new_personal_saltkey").val("");
-                $("#old_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['my_sk'])).'");
+                $("#old_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).'");
             },
             buttons: {
                 "'.$LANG['ok'].'": function() {
@@ -1097,7 +1120,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
     // JAVASCRIPT FOR FIND PAGE
     $htmlHeaders .= '
     ';
-} else if (isset($_GET['page']) && $_GET['page'] == "manage_main") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "manage_main") {
     // JAVASCRIPT FOR ADMIN PAGE
     $htmlHeaders .= '
     //Function loads informations from cpassman FTP
@@ -1287,7 +1310,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
 
         LoadCPMInfo();
     });';
-} else if (isset($_GET['page']) && $_GET['page'] == "favourites") {
+} elseif (isset($_GET['page']) && $_GET['page'] == "favourites") {
     // JAVASCRIPT FOR FAVOURITES PAGE
     $htmlHeaders .= '
     $(function() {
@@ -1326,7 +1349,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         $("#detele_fav_id").val(id);
         OpenDialog("div_delete_fav");
     }';
-} else if (isset($_GET['page']) && isset($_SESSION['user_id'])) {
+} elseif (isset($_GET['page']) && isset($_SESSION['user_id'])) {
     // simulate a CRON activity (only 4 secs after page loading)
     // check for existing suggestions / changes
     $htmlHeaders .= '

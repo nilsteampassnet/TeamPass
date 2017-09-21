@@ -1,31 +1,39 @@
 <?php
 /**
  *
- * @file 		  find.php
- * @author 		  Nils Laumaillé
+ * @file          find.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright 	  (c) 2009-2017 Nils Laumaillé
- * @licensing	  GNU AFFERO GPL 3.0
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU AFFERO GPL 3.0
  * @link
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Build list of visible folders
 $select_visible_folders_options = $select_visible_nonpersonal_folders_options = "";
@@ -35,7 +43,9 @@ if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_li
     $list_folders_limited_keys = array();
 }
 // list of items accessible but not in an allowed folder
-if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['list_restricted_folders_for_items']) > 0) {
+if (isset($_SESSION['list_restricted_folders_for_items'])
+    && count($_SESSION['list_restricted_folders_for_items']) > 0
+) {
     $list_restricted_folders_for_items_keys = @array_keys($_SESSION['list_restricted_folders_for_items']);
 } else {
     $list_restricted_folders_for_items_keys = array();
@@ -43,7 +53,7 @@ if (isset($_SESSION['list_restricted_folders_for_items']) && count($_SESSION['li
 
 // Is personal SK available
 echo '
-<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['my_sk']) && !empty($_SESSION['my_sk']) ? '1' : '0', '" />';
+<input type="hidden" name="personal_sk_set" id="personal_sk_set" value="', isset($_SESSION['user_settings']['clear_psk']) && !empty($_SESSION['user_settings']['clear_psk']) ? '1' : '0', '" />';
 
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />

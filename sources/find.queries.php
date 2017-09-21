@@ -18,27 +18,32 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
 
-global $k, $settings, $link;
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
+global $settings, $link;
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // if no folders are visible then return no results
 if (!isset($_SESSION['groupes_visibles']) || empty($_SESSION['groupes_visibles'])) {
-    $returnValues = array(
-        "items_html" => '',
-        "message" => str_replace("%X%", 0, $LANG['find_message'])
-    );
-
-    echo prepareExchangedData($returnValues, "encode");
+    echo '{"sEcho": '.intval($_GET['sEcho']).' ,"iTotalRecords": "0", "iTotalDisplayRecords": "0", "aaData": [] }';
     exit;
 }
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -106,8 +111,7 @@ if (isset($_GET['iSortCol_0'])) {
     } else {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -222,7 +226,7 @@ if (!isset($_GET['type'])) {
 
         // massive move/delete enabled?
         $checkbox = '';
-        if (isset($_SESSION['settings']['enable_massive_move_delete']) && $_SESSION['settings']['enable_massive_move_delete'] === "1") {
+        if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === "1") {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
@@ -235,7 +239,7 @@ if (!isset($_GET['type'])) {
                 );
                 if ($access['type'] == "R") {
                     array_push($arrTmp, 1);
-                } else if ($access['type'] == "W") {
+                } elseif ($access['type'] == "W") {
                     array_push($arrTmp, 0);
                 } else {
                     array_push($arrTmp, 2);
@@ -261,7 +265,8 @@ if (!isset($_GET['type'])) {
         //get restriction from ROles
         $restrictedToRole = false;
         $rTmp = DB::query(
-            "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i", $record['id']
+            "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i",
+            $record['id']
         );
         foreach ($rTmp as $aTmp) {
             if ($aTmp['role_id'] != "") {
@@ -271,8 +276,8 @@ if (!isset($_GET['type'])) {
             }
         }
 
-        if (
-            ($record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
+        if ((
+            $record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
             ||
             (
                 !empty($record['restricted_to'])
@@ -319,20 +324,19 @@ if (!isset($_GET['type'])) {
     $sOutput .= '] }';
 
     echo $sOutput;
-} else if (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
+} elseif (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
     require_once 'main.functions.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
 
     foreach ($rows as $record) {
         $expirationFlag = '';
         $expired_item = 0;
-        if ($_SESSION['settings']['activate_expiration'] == 1) {
+        if ($SETTINGS['activate_expiration'] == 1) {
             $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
-            if (
-                $record['renewal_period'] > 0 &&
-                ($record['timestamp'] + ($record['renewal_period'] * $k['one_month_seconds'])) < time()
+            if ($record['renewal_period'] > 0 &&
+                ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
             ) {
                 $expirationFlag = '<i class="fa fa-flag mi-red"></i>&nbsp;';
                 $expired_item = 1;
@@ -359,8 +363,8 @@ if (!isset($_GET['type'])) {
             }
         }
         // Manage the restricted_to variable
-        if (isset($_POST['restricted'])) {
-            $restrictedTo = $_POST['restricted'];
+        if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
+            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
         } else {
             $restrictedTo = "";
         }
@@ -374,8 +378,7 @@ if (!isset($_GET['type'])) {
         }
 
         // CASE where item is restricted to a role to which the user is not associated
-        if (
-            isset($user_is_included_in_role)
+        if (isset($user_is_included_in_role)
             && $user_is_included_in_role == 0
             && isset($item_is_restricted_to_role)
             && $item_is_restricted_to_role == 1
@@ -386,10 +389,8 @@ if (!isset($_GET['type'])) {
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 0;
-        }
         // Case where item is in own personal folder
-        elseif (
-            in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
+        } elseif (in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
             $perso = '<i class="fa fa-warning mi-red"></i>&nbsp;';
@@ -397,10 +398,8 @@ if (!isset($_GET['type'])) {
             $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = $need_sk = $canMove = 1;
-        }
         // CAse where item is restricted to a group of users included user
-        elseif (
-            !empty($record['restricted_to'])
+        } elseif (!empty($record['restricted_to'])
             && in_array($_SESSION['user_id'], $restricted_users_array)
             || (isset($_SESSION['list_folders_editable_by_role'])
                 && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
@@ -411,10 +410,8 @@ if (!isset($_GET['type'])) {
             $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
             $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
             $displayItem = 1;
-        }
         // CAse where item is restricted to a group of users not including user
-        elseif (
-            $record['perso'] == 1
+        } elseif ($record['perso'] == 1
             ||
             (
                 !empty($record['restricted_to'])
@@ -428,8 +425,7 @@ if (!isset($_GET['type'])) {
                 && $item_is_restricted_to_role == 1
             )
         ) {
-            if (
-                isset($user_is_included_in_role)
+            if (isset($user_is_included_in_role)
                 && isset($item_is_restricted_to_role)
                 && $user_is_included_in_role == 0
                 && $item_is_restricted_to_role == 1
@@ -469,7 +465,7 @@ if (!isset($_GET['type'])) {
         $sOutput .= '<li class="item trunc_line" id="'.$record['id'].'"><a id="fileclass'.$record['id'].'" class="file_search">'.
             '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
             '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
-        if (!empty($record['description']) && isset($_SESSION['settings']['show_description']) && $_SESSION['settings']['show_description'] == 1) {
+        if (!empty($record['description']) && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] == 1) {
             $tempo = explode("<br />", $record['description']);
             if (count($tempo) == 1) {
                 $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($record['description']), 0, 30))).']</font>';
@@ -489,7 +485,7 @@ if (!isset($_GET['type'])) {
         }
 
         // prepare pwd copy if enabled
-        if (isset($_SESSION['settings']['copy_to_clipboard_small_icons']) && $_SESSION['settings']['copy_to_clipboard_small_icons'] == 1) {
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] == 1) {
             $data_item = DB::queryFirstRow(
                 "SELECT pw
                 from ".prefix_table("items")." WHERE id=%i",

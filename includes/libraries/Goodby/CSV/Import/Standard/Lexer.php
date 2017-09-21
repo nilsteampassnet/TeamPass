@@ -9,11 +9,11 @@ use Goodby\CSV\Import\Standard\LexerConfig;
 use Goodby\CSV\Import\Standard\StreamFilter\ConvertMbstringEncoding;
 use SplFileObject;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/LexerInterface.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/InterpreterInterface.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/Exception/CsvFileNotFoundException.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Standard/StreamFilter/ConvertMbstringEncoding.php";
+require_once dirname(__FILE__)."/../Protocol/LexerInterface.php";
+require_once dirname(__FILE__)."/../Protocol/InterpreterInterface.php";
+require_once dirname(__FILE__)."/../Protocol/Exception/CsvFileNotFoundException.php";
+require_once dirname(__FILE__)."/LexerConfig.php";
+require_once dirname(__FILE__)."/StreamFilter/ConvertMbstringEncoding.php";
 
 class Lexer implements LexerInterface
 {

@@ -17,15 +17,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 global $k, $settings;
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -58,8 +67,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -136,7 +144,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
         $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
@@ -164,8 +172,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -235,7 +242,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
         $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
@@ -263,8 +270,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -336,7 +342,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
         $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
@@ -364,8 +370,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -435,7 +440,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'", ';
@@ -457,7 +462,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 /*
 * ADMIN LOG
  **/
-} elseif (isset($_GET['action']) && $_GET['action'] == "admin") {
+} elseif (isset($_GET['action']) && $_GET['action'] === "admin") {
     //Columns name
     $aColumns = array('l.date', 'u.login', 'l.label');
 
@@ -465,8 +470,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -536,7 +540,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput_item = "[";
 
         //col1
-        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
+        $sOutput_item .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'", ';
 
         //col2
         $sOutput_item .= '"'.htmlspecialchars(stripslashes($record['login']), ENT_QUOTES).'", ';
@@ -557,8 +561,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     $sOutput .= '] }';
 
 /* ITEMS */
-} elseif (isset($_GET['action']) && $_GET['action'] == "items") {
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+} elseif (isset($_GET['action']) && $_GET['action'] === "items") {
+    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
     $aColumns = array('l.date', 'i.label', 'u.login', 'l.action', 'i.perso');
 
@@ -566,8 +570,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -585,7 +588,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
      * Filtering
     */
     $sWhere = "";
-    if ($_GET['sSearch'] != "") {
+    if ($_GET['sSearch'] !== "") {
         $sWhere .= " WHERE (";
         for ($i = 1; $i < count($aColumns) - 1; $i++) {
             $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
@@ -644,7 +647,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput_item = "[";
 
         //col1
-        $sOutput_item .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'", ';
+        $sOutput_item .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'", ';
 
         //col3
         $sOutput_item .= '"'.(stripslashes("<b>".handleBackslash($record['label'])."</b>&nbsp;<span style='font-size:10px;font-style:italic;'><i class='fa fa-folder-o'></i>&nbsp;".$record['folder']."</span>")).'", ';
@@ -673,10 +676,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput = substr_replace($sOutput, "", -2);
     }
     $sOutput .= '] }';
-}
-
 /* FAILED AUTHENTICATIO? */
-elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
+} elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     //Columns name
     $aColumns = array('l.date', 'l.label', 'l.qui');
 
@@ -684,8 +685,7 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if (
-                $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
                 preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -753,7 +753,7 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
         $sOutput .= "[";
 
         //col1
-        $sOutput .= '"'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['auth_date']).'", ';
+        $sOutput .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['auth_date']).'", ';
 
         //col2
         $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
@@ -772,7 +772,5 @@ elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
         $sOutput .= '[] }';
     }
 }
-
-
 
 echo $sOutput;

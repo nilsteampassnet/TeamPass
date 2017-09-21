@@ -6,33 +6,41 @@
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
- * @link	      http://www.teampass.net
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
@@ -111,14 +119,14 @@ echo '
     <label for="ajouter_groupe_titre" class="label_cpm">'.$LANG['group_title'].'</label>
     <input type="text" id="ajouter_groupe_titre" class="input_text text ui-widget-content ui-corner-all" />
 
-    <label for="parent_id" class="label_cpm">'.$LANG['group_parent'].'</label>
+    <label for="parent_id" class="label_cpm">'.addslashes($LANG['group_parent']).'</label>
     <select id="parent_id" class="input_text text ui-widget-content ui-corner-all">
-		'.$droplist.'
-	</select>
+        '.$droplist.'
+    </select>
 
     <label for="new_rep_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
     <select id="new_rep_complexite" class="input_text text ui-widget-content ui-corner-all">';
-foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -127,21 +135,21 @@ echo '
     <label for="add_node_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].'</label>
     <input type="text" id="add_node_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 
-	<label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
-	<select id="folder_block_creation" class="ui-widget-content ui-corner-all">
-		<option value="0">'.$LANG['no'].'</option>
-		<option value="1">'.$LANG['yes'].'</option>
-	</select>
+    <label for="folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
+    <select id="folder_block_creation" class="ui-widget-content ui-corner-all">
+        <option value="0">'.$LANG['no'].'</option>
+        <option value="1">'.$LANG['yes'].'</option>
+    </select>
 
-	<div style="margin-top:10px;">
-		<label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
-		<select id="folder_block_modif" class="ui-widget-content ui-corner-all">
-			<option value="0">'.$LANG['no'].'</option>
-			<option value="1">'.$LANG['yes'].'</option>
-		</select>
-	</div>
+    <div style="margin-top:10px;">
+        <label for="folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
+        <select id="folder_block_modif" class="ui-widget-content ui-corner-all">
+            <option value="0">'.$LANG['no'].'</option>
+            <option value="1">'.$LANG['yes'].'</option>
+        </select>
+    </div>
 
-	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="new_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
 </div>';
@@ -161,7 +169,7 @@ echo '
 
     <label for="edit_folder_complexite" class="label_cpm">'.$LANG['complex_asked'].'</label>
     <select id="edit_folder_complexite" class="input_text text ui-widget-content ui-corner-all">';
-foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
@@ -170,21 +178,21 @@ echo '
     <label for="edit_folder_renewal_period" class="label_cpm">'.$LANG['group_pw_duration'].'</label>
     <input type="text" id="edit_folder_renewal_period" value="0" class="input_text text ui-widget-content ui-corner-all" />
 
-	<label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
-	<select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
-		<option value="0">'.$LANG['no'].'</option>
-		<option value="1">'.$LANG['yes'].'</option>
-	</select>
+    <label for="edit_folder_block_creation" class="">'.$LANG['auth_creation_without_complexity'].'</label>
+    <select id="edit_folder_block_creation" class="ui-widget-content ui-corner-all">
+        <option value="0">'.$LANG['no'].'</option>
+        <option value="1">'.$LANG['yes'].'</option>
+    </select>
 
-	<div style="margin-top:10px;">
-		<label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
-		<select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
-			<option value="0">'.$LANG['no'].'</option>
-			<option value="1">'.$LANG['yes'].'</option>
-		</select>
-	</div>
+    <div style="margin-top:10px;">
+        <label for="edit_folder_block_modif">'.$LANG['auth_modification_without_complexity'].'</label>
+        <select id="edit_folder_block_modif" class="ui-widget-content ui-corner-all">
+            <option value="0">'.$LANG['no'].'</option>
+            <option value="1">'.$LANG['yes'].'</option>
+        </select>
+    </div>
 
-	<div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
+    <div style="padding:5px; z-index:9999999;" class="ui-widget-content ui-state-focus ui-corner-all" id="edit_folder_wait">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;'.$LANG['please_wait'].'
     </div>
 </div>';

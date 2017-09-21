@@ -39,39 +39,44 @@ require_once '../sources/SplClassLoader.php';
 $finish = 0;
 $next = ""; // init on 1st task to be done
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 
+
+$pass = defuse_return_decrypted($pass);
 $dbTmp = mysqli_connect(
-    $_SESSION['server'],
-    $_SESSION['user'],
-    $_SESSION['pass'],
-    $_SESSION['database'],
-    $_SESSION['port']
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
 );
 
 //Update CACHE table -> this will be the last task during update
-if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
-
+if ($post_type === "reload_cache_table" || empty($post_type)) {
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // truncate table
-    mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['pre']."cache");
+    mysqli_query($dbTmp, "TRUNCATE TABLE ".$pre."cache");
 
     // reload table
-    $rows = mysqli_query($dbTmp,
+    $rows = mysqli_query(
+        $dbTmp,
         "SELECT *
-        FROM ".$_SESSION['pre']."items as i
-        INNER JOIN ".$_SESSION['pre']."log_items as l ON (l.id_item = i.id)
+        FROM ".$pre."items as i
+        INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
         AND l.action = 'at_creation'
         AND i.inactif = 0"
     );
     foreach ($rows as $record) {
         // Get all TAGS
         $tags = "";
-        $itemTags = mysqli_query($dbTmp,
-            "SELECT tag FROM ".$_SESSION['pre']."tags WHERE item_id=".intval($record['id'])
+        $itemTags = mysqli_query(
+            $dbTmp,
+            "SELECT tag FROM ".$pre."tags WHERE item_id=".intval($record['id'])
         );
         $itemTags = mysqli_fetch_array($itemTags);
         foreach ($itemTags as $itemTag) {
@@ -82,7 +87,7 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         // Get renewal period
         $resNT = mysqli_query(
             $dbTmp,
-            "SELECT renewal_period FROM ".$_SESSION['pre']."nested_tree WHERE id=".intval($record['id_tree'])
+            "SELECT renewal_period FROM ".$pre."nested_tree WHERE id=".intval($record['id_tree'])
         );
         $resNT = mysqli_fetch_array($resNT);
 
@@ -109,8 +114,9 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
         }
 
         // store data
-        $res = mysqli_query($dbTmp,
-            "INSERT INTO `".$_SESSION['pre']."cache`
+        $res = mysqli_query(
+            $dbTmp,
+            "INSERT INTO `".$pre."cache`
             (`id`, `label`, `description`, `tags`, `id_tree`, `perso`, `restricted_to`, `login`, `folder`, `author`, `renewal_period`, `timestamp`) VALUES (
             '".$record['id']."',
             '".addslashes($record['label'])."',
@@ -137,32 +143,36 @@ if ($_POST['type'] == "reload_cache_table" || empty($_POST['type'])) {
 
 
 // 2.1.27
-if ($k['version'] === "2.1.27") {
-    $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'migration_to_2127'"));
-    if ($tmp[0] === '0') {
-        $mysqli_result = mysqli_query($dbTmp,
-            "INSERT INTO `".$_SESSION['pre']."misc`
+if ($SETTINGS_EXT['version'] === "2.1.27") {
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'migration_to_2127'"));
+    if (intval($tmp) === 0) {
+        $mysqli_result = mysqli_query(
+            $dbTmp,
+            "INSERT INTO `".$pre."misc`
             (`increment_id`, `type`, `intitule`, `valeur`)
             VALUES (NULL, 'admin', 'migration_to_2127', 'done')"
         );
     } else {
-        mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['pre']."misc
+        mysqli_query(
+            $dbTmp,
+            "UPDATE ".$pre."misc
             SET `valeur` = 'done'
             WHERE type = 'admin' AND intitule = 'migration_to_2127'"
         );
     }
 
-    $tmp = mysqli_fetch_row(mysqli_query($dbTmp, "SELECT count(*) FROM `".$_SESSION['pre']."misc` WHERE type = 'admin' AND intitule = 'files_with_defuse'"));
-    if ($tmp[0] === '0') {
-        $mysqli_result = mysqli_query($dbTmp,
-            "INSERT INTO `".$_SESSION['pre']."misc`
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'files_with_defuse'"));
+    if (intval($tmp) === 0) {
+        $mysqli_result = mysqli_query(
+            $dbTmp,
+            "INSERT INTO `".$pre."misc`
             (`increment_id`, `type`, `intitule`, `valeur`)
             VALUES (NULL, 'admin', 'files_with_defuse', 'done')"
         );
     } else {
-        mysqli_query($dbTmp,
-            "UPDATE ".$_SESSION['pre']."misc
+        mysqli_query(
+            $dbTmp,
+            "UPDATE ".$pre."misc
             SET `valeur` = 'done'
             WHERE type = 'admin' AND intitule = 'files_with_defuse'"
         );
@@ -171,6 +181,51 @@ if ($k['version'] === "2.1.27") {
 
 
 // alter ITEMS table by adding default value to encryption_type field
-mysqli_query($dbTmp, "ALTER TABLE `".$_SESSION['pre']."items` CHANGE encryption_type encryption_type varchar(20) NOT NULL DEFAULT 'defuse'");
+mysqli_query($dbTmp, "ALTER TABLE `".$pre."items` CHANGE encryption_type encryption_type varchar(20) NOT NULL DEFAULT 'defuse'");
 
+
+
+/*
+* UPDATE CONFIG file
+*/
+$tp_config_file = "../includes/config/tp.config.php";
+if (file_exists($tp_config_file)) {
+    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+        echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
+        return false;
+    } else {
+        unlink($tp_config_file);
+    }
+}
+$file_handler = fopen($tp_config_file, 'w');
+$config_text = "";
+$any_settings = false;
+
+$result = mysqli_query($dbTmp, "SELECT * FROM `".$pre."misc` WHERE `type` = 'admin'");
+while ($row = mysqli_fetch_assoc($result)) {
+    // append new setting in config file
+    $config_text .= "
+    '".$row['intitule']."' => '".$row['valeur']."',";
+    if ($any_settings === false) {
+        $any_settings = true;
+    }
+}
+mysqli_free_result($result);
+
+// write to config file
+if ($any_settings === true) {
+    $result = fwrite(
+        $file_handler,
+        utf8_encode(
+            "<?php
+global \$SETTINGS;
+\$SETTINGS = array (" . $config_text . "            
+    );"
+        )
+    );
+}
+fclose($file_handler);
+
+
+// FINISHED
 echo '[{"finish":"'.$finish.'" , "next":"'.$next.'", "error":""}]';

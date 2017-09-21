@@ -15,37 +15,46 @@
 
 require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])) &&
-    $_GET['key'] != $_SESSION['key'])
-{
+if ((!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) &&
+    $_GET['key'] != $_SESSION['key']
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
 //load main functions needed
 require_once 'sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -167,6 +176,7 @@ foreach ($folders as $t) {
         $("#import_tabs").tabs();
 
         // CSV IMPORT
+        var csv_filename = '';
         var uploader_csv = new plupload.Uploader({
             runtimes : "gears,html5,flash,silverlight,browserplus",
             browse_button : "pickfiles_csv",
@@ -208,14 +218,13 @@ foreach ($folders as $t) {
                 BeforeUpload: function (up, file) {
                     up.settings.multipart_params = {
                         "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
-                        "csvFile":file.name,
                         "type_upload":"import_items_from_csv",
                         "user_token": $("#import_user_token").val()
                     };
                 },
                 UploadComplete: function(up, files) {
                     $.each(files, function(i, file) {
-                        ImportCSV(file.name);
+                        ImportCSV(csv_filename);
                         up.splice();    // clear the file queue
                     });
                 }
@@ -238,6 +247,15 @@ foreach ($folders as $t) {
         uploader_csv.bind("+", function(up, file) {
             $("#" + file.id + " b").html("100%");
         });
+        uploader_csv.bind('FileUploaded', function(upldr, file, object) {
+            var myData;
+            try {
+                myData = eval(object.response);
+            } catch(err) {
+                myData = eval('(' + object.response + ')');
+            }
+            csv_filename = myData.newfilename;
+        });
 
         // Load CSV click
         $("#uploadfiles_csv").click(function(e) {
@@ -249,6 +267,7 @@ foreach ($folders as $t) {
         //-----------------------------------------------------
 
         // KEYPASS IMPORT
+        var kp_filename = '';
         var uploader_kp = new plupload.Uploader({
             runtimes : "gears,html5,flash,silverlight,browserplus",
             browse_button : "pickfiles_kp",
@@ -291,13 +310,12 @@ foreach ($folders as $t) {
                     $("#import_status_ajax_loader").show();
                     up.settings.multipart_params = {
                         "PHPSESSID":"'.$_SESSION['user_id'];?>",
-                        "xmlFile":file.name,
                         "type_upload":"import_items_from_keypass",
                         "user_token": $("#import_user_token").val()
                     };
                 },
                 UploadComplete: function(up, files) {
-                    ImportKEEPASS(files[0].name);
+                    ImportKEEPASS(kp_filename);
                     up.splice();        // clear the file queue
                 }
             }
@@ -317,6 +335,15 @@ foreach ($folders as $t) {
         });
         uploader_kp.bind("+", function(up, file) {
             $("#" + file.id + " b").html("100%");
+        });
+        uploader_csv.bind('FileUploaded', function(upldr, file, object) {
+            var myData;
+            try {
+                myData = eval(object.response);
+            } catch(err) {
+                myData = eval('(' + object.response + ')');
+            }
+            kp_filename = myData.newfilename;
         });
 
         // Load CSV click
@@ -403,8 +430,8 @@ foreach ($folders as $t) {
             "sources/import.queries.php",
             {
                 type        : "import_items",
-                folder    : $("#import_items_to").val(),
-                data        : aes_encrypt(items),
+                folder      : $("#import_items_to").val(),
+                data        : prepareExchangedData(items , "encode", "<?php echo $_SESSION['key']; ?>"),
                 import_csv_anyone_can_modify    : $("#import_csv_anyone_can_modify").prop("checked"),
                 import_csv_anyone_can_modify_in_role    : $("#import_csv_anyone_can_modify_in_role").prop("checked")
             },
@@ -439,7 +466,7 @@ foreach ($folders as $t) {
             {
                 type        : "import_file_format_keepass",
                 file        : file,
-                destination        : $("#import_keepass_items_to").val()
+                destination : $("#import_keepass_items_to").val()
             },
             function(data) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");

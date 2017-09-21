@@ -15,44 +15,70 @@
 
 require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
 // reload user avatar
-$userData = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".prefix_table("users")." WHERE id=%i", $_SESSION['user_id']);
+$userData = DB::queryFirstRow(
+    "SELECT avatar, avatar_thumb
+    FROM ".prefix_table("users")."
+    WHERE id=%i",
+    $_SESSION['user_id']
+);
 $_SESSION['user_avatar'] = $userData['avatar'];
 $_SESSION['user_avatar_thumb'] = $userData['avatar_thumb'];
 
 // prepare avatar
 if (isset($userData['avatar']) && !empty($userData['avatar'])) {
     if (file_exists('includes/avatars/'.$userData['avatar'])) {
-        $avatar = $_SESSION['settings']['cpassman_url'].'/includes/avatars/'.$userData['avatar'];
+        $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$userData['avatar'];
     } else {
-        $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+        $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
     }
 } else {
-    $avatar = $_SESSION['settings']['cpassman_url'].'/includes/images/photo.jpg';
+    $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
+}
+
+// user type
+if (isset($LANG) === true) {
+    if ($_SESSION['user_admin'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['god'];
+    } elseif ($_SESSION['user_manager'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['gestionnaire'];
+    } elseif ($_SESSION['user_read_only'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['read_only_account'];
+    } else {
+        $_SESSION['user_privilege'] = $LANG['user'];
+    }
 }
 
 // prepare list of timezones
@@ -95,11 +121,11 @@ echo '
       <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
          <ul class="menu_250" style="text-align:left;">
             <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
-            if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) {
-                echo '
+if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
+    echo '
             <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
-            }
-            echo '
+}
+echo '
             <li id="but_change_psk"><i class="fa fa-lock fa-fw"></i> &nbsp;'.$LANG['menu_title_new_personal_saltkey'].'</li>
             <li id="but_reset_psk"><i class="fa fa-eraser fa-fw"></i> &nbsp;'.$LANG['personal_saltkey_lost'].'</li>
          </ul>
@@ -111,12 +137,12 @@ echo '
     <hr>
     <div style="margin-bottom:6px;">
         <i class="fa fa-child fa-fw fa-lg"></i>&nbsp;
-        '.$LANG['index_last_seen'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($_SESSION['settings']['time_format']) ? date($_SESSION['settings']['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
+        '.$LANG['index_last_seen'].' ', isset($SETTINGS['date_format']) ? date($SETTINGS['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($SETTINGS['time_format']) ? date($SETTINGS['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
     </div>';
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     echo '
     <div style="margin-bottom:6px;">
-        <i class="fa fa-calendar fa-fw fa-lg"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($_SESSION['settings']['date_format']) ? date($_SESSION['settings']['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-").'. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'
+        <i class="fa fa-calendar fa-fw fa-lg"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($SETTINGS['date_format']) ? date($SETTINGS['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-").'. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'
     </div>';
 }
 echo '
@@ -130,13 +156,13 @@ echo '
         <i class="fa fa-code-fork fa-fw fa-lg"></i>&nbsp;'. $LANG['tree_load_strategy'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_select" id="treeloadstrategy_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">'.$_SESSION['user_settings']['treeloadstrategy'].'</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>
     <div style="margin-bottom:6px;">
-        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $_SESSION['settings']['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
+        <i class="fa fa-clock-o fa-fw fa-lg"></i>&nbsp;'. $LANG['timezone_selection'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_timezone" id="usertimezone_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $SETTINGS['timezone'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>
     <div style="margin-bottom:6px;">
-        <i class="fa fa-language fa-fw fa-lg"></i>&nbsp;'. $LANG['user_language'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_language" id="userlanguage_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_language']) ? $_SESSION['user_language'] : $_SESSION['settings']['default_language'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
+        <i class="fa fa-language fa-fw fa-lg"></i>&nbsp;'. $LANG['user_language'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_language" id="userlanguage_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_language']) ? $_SESSION['user_language'] : $SETTINGS['default_language'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>';
 
-if (isset($_SESSION['settings']['agses_authentication_enabled']) && $_SESSION['settings']['agses_authentication_enabled'] == 1) {
+if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1) {
     echo '
     <hr>
 
@@ -159,7 +185,7 @@ echo '
     <div id="filelist_photo" style="display:none;"></div>';
 
 // if DUOSecurity enabled then changing PWD is not allowed
-if (!isset($_SESSION['settings']['duo']) || $_SESSION['settings']['duo'] == 0) {
+if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
     echo '
     <div id="div_change_password" style="display:none; padding:5px;" class="ui-widget ui-state-default">
         <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
@@ -212,13 +238,27 @@ echo '
    </div>';
 echo '
 </div>';
+
+// Pw complexity levels
+if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
+    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    $SETTINGS_EXT['pwComplexity'] = array(
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
+    );
+}
 ?>
 <script type="text/javascript">
 $(function() {
     $(".tip").tooltipster({multiple: true});
     // password
     $("#but_change_password").click(function() {
-        $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked']; ?> : <?php echo $_SESSION['settings']['pwComplexity'][$_SESSION['user_pw_complexity']][1]; ?>");
+        $("#change_pwd_complexPw").html("<?php echo $LANG['complex_asked']; ?> : <?php echo $SETTINGS_EXT['pwComplexity'][$_SESSION['user_pw_complexity']][1]; ?>");
         $("#change_pwd_error").hide();
       $("#div_change_psk, #div_reset_psk").hide();
 
@@ -294,6 +334,9 @@ $(function() {
                         } else if (data[0].error == "complexity_level_not_reached") {
                             $("#new_pw, #new_pw2").val("");
                             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought']; ?></span>");
+                        } else if (data[0].error == "pwd_hash_not_correct") {
+                            $("#new_pw, #new_pw2").val("");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_not_allowed_to']; ?></span>");
                         } else {
                             $("#div_change_password").hide();
                             $("#dialog_user_profil").dialog("option", "height", 450);
@@ -301,17 +344,27 @@ $(function() {
                         }
                         $("#password_change_wait").hide();
                         $("#profile_info_box").html("<?php echo $LANG['alert_message_done']; ?>").show();
-                        setTimeout(function(){$("#profile_info_box").effect( "fade", "slow" );}, 1000);
+
+                        $(this).delay(2000).queue(function() {
+                            $("#profile_info_box").effect( "fade", "slow" );
+                            $(this).dequeue();
+                        });
                     },
                     "json"
                 );
             } else {
                 $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
-                setTimeout(function(){$("#change_pwd_error").effect( "fade", "slow" );}, 1000);
+                $(this).delay(1000).queue(function() {
+                    $("#change_pwd_error").effect( "fade", "slow" );
+                    $(this).dequeue();
+                });
             }
         } else {
             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['index_pw_error_identical']; ?>");
-            setTimeout(function(){$("#change_pwd_error").effect( "fade", "slow" );}, 1000);
+            $(this).delay(1000).queue(function() {
+                $("#change_pwd_error").effect( "fade", "slow" );
+                $(this).dequeue();
+            });
         }
     });
 
@@ -473,7 +526,7 @@ $(function() {
 
       // prepare fields
       $("#new_personal_saltkey").val("");
-      $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['my_sk'])); ?>");
+      $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['user_settings']['clear_psk'])); ?>");
 
       $("#div_change_psk").show();
       $("#dialog_user_profil").dialog("option", "height", 600);
@@ -483,11 +536,15 @@ $(function() {
     $("#button_change_psk").click(function() {
         $("#psk_change_wait").show();
 
-        if ($("#new_personal_saltkey").val() === "" || $("#new_personal_saltkey").val() === "") {
+        if ($("#new_personal_saltkey").val() === "" || $("#old_personal_saltkey").val() === "") {
             $("#psk_change_wait").hide();
             $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']); ?></div>');
 
-            setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 1000);
+            $(this).delay(1000).queue(function() {
+                $("#tmp_msg").effect( "fade", "slow" );
+                $("#tmp_msg").remove();
+                $(this).dequeue();
+            });
             return false;
         }
 
@@ -511,7 +568,11 @@ $(function() {
                     $("#psk_change_wait").hide();
                     $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;">' + data.error + '</div>');
 
-                    setTimeout(function(){$("#tmp_msg").effect( "fade", "slow" );$("#tmp_msg").remove();}, 3000);
+                    $(this).delay(3000).queue(function() {
+                        $("#tmp_msg").effect( "fade", "slow" );
+                        $("#tmp_msg").remove();
+                        $(this).dequeue();
+                    });
                     return false;
                 }
             }
@@ -543,7 +604,13 @@ $(function() {
                 function(data) {
                     $("#psk_reset_wait").hide();
                     $("#button_reset_psk").after('<div id="reset_temp"><?php echo $LANG['alert_message_done']; ?></div>');
-                    setTimeout(function(){$("#div_reset_psk").effect( "fade", "slow" ); $("#reset_temp").remove();}, 1500);
+
+                    $(this).delay(1500).queue(function() {
+                        $("#div_reset_psk").effect( "fade", "slow" );
+                        $("#reset_temp").remove();
+                        $(this).dequeue();
+                    });
+
                     $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done']; ?>");
                     location.reload();
                 }
@@ -609,11 +676,15 @@ function changePersonalSaltKey(credentials, ids, nb_total)
            debug   : true
         },
         function(data){
-            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            console.log(data);
             if (data.error !== "") {
                 // display error
                 $("#psk_change_wait_info").html(data.error);
-                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 4000);
+                $(this).delay(4000).queue(function() {
+                    $("#main_info_box").effect( "fade", "slow" );
+                    $(this).dequeue();
+                });
             } else {
                 $.post(
                     "sources/utils.queries.php",
@@ -624,11 +695,11 @@ function changePersonalSaltKey(credentials, ids, nb_total)
                         key             : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data){
-                        if (currentID == "") {
+                        if (currentID === "") {
                             $("#psk_change_wait_info").html("<?php echo $LANG['alert_message_done']; ?>");
                             location.reload();
                         } else {
-                            if (data[0].error == "") {
+                            if (data[0].error === "") {
                             changePersonalSaltKey(credentials, aIds, nb_total);
                             } else {
                                 $("#psk_change_wait_info").html(data[0].error);

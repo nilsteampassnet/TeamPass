@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          polish.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,14 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'For Support and Help, please use ',
+$LANG = array (
     'user_ga_code' => 'Wyślij do użytkownika Google Authenticator za pośrednictwem e-mail ',
     'send_ga_code' => 'Google Authenticator dla użytkownika',
     'error_no_email' => 'Ten użytkownik nie ma ustawionego adresu e-mail',
@@ -878,41 +871,40 @@ $LANG = array(
     'error_bad_credentials' => 'Poświadczenia logowania nie odpowiadają!',
     'reload_page_after_user_account_creation' => 'Twoje konto zostało dodane. Strona zostanie automatycznie przekierowana w ciągu 3 sekund ...',
     'settings_ldap_usergroup' => 'Grupa LDAP do przeszukiwania',
-    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa?',
-    'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze(używając połączenia SSH)',
+    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa�',
+    'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze (używając połączenia SSH)',
     'error_login_missing' => 'Nie podano loginu!',
     'error_pwd_missing' => 'Nie podano hasła!',
     'error_url_missing' => 'Nie podano adresu URL!',
     'error_ssh_credentials_missing' => 'Poświadczenia SSH są niepoprawne.',
     'error_url_must_be_ssh' => 'URL musi zawierać protokół SSH!',
-    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki: < ul > <li > Połączenie przez SSH do
-    serwera wykorzystując dane logowania i pole `URL`, < / li > <li > Zmiana hasła użytkownika na serwerze < /il > <li > Zachowanie nowego hasła w Teampass < /il > <li > Zakończenie połączenia SSH < /li > < / ul > <br / > < b > Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze(jeśli nie, określ hasło użytkownika root) przed uruchomieniem.< / b > ',
+    'auto_update_server_password_info' => 'Kliknięcie start, automatycznie wykona poniższe kroki:<ul><li>Połączenie przez SSH do serwera wykorzystując dane logowania i pole `URL`,</li><li>Zmiana hasła użytkownika na serwerze</il><li>Zachowanie nowego hasła w Teampass</il><li>Zakończenie połączenia SSH</li></ul><br /><b>Upewnij się, że użytkownik posiada prawa do zalogowania się i zmiany hasła na serwerze (jeśli nie, określ hasło użytkownika root) przed uruchomieniem.</b> ',
     'update_server_password' => 'Zaktualizuj hasło serwera',
     'error_personal_sk_expected' => 'Musisz najpierw wprowadzić swój prywatny saltkety!',
     'click_to_generate' => 'Kliknij by wygenerować',
     'error_new_pwd_missing' => 'Nie podano nowego hasła!',
     'ssh_pwd' => 'Hasło SSH',
     'ssh_user' => 'Użytkownik SSH',
-    'ssh_action_performed_with_error' => 'Wystąpił błąd.<br > Sprawdź odpowiedź serwera i popraw dane',
-    'ssh_action_performed' => 'Hasło zostało uaktualnione.<br / > < br / >Możesz zamknąć to okno.',
+    'ssh_action_performed_with_error' => 'Wystąpił błąd. <br>Sprawdź odpowiedź serwera i popraw dane',
+    'ssh_action_performed' => 'Hasło zostało uaktualnione.<br /><br />Możesz zamknąć to okno.',
     'ssh_answer_from_server' => 'Odpowiedź z serwera',
-    'ssh_password_frequency_change_info' => 'Wskaż interwał pomiędzy automatycznym uaktualnieniem hasła na serwerze(wybranie 0 spowoduje wyłączenie automatycznej zmiany hasła).<br / >Automatyczna aktualizacja hasła zostanie przeprowadzona jedynie, gdy administrator również skonfiguruje plan aktualizacji hasła.',
-    'ssh_password_frequency_change' => 'Częstotliwość zmiany hasła(w miesiącach)',
+    'ssh_password_frequency_change_info' => 'Wskaż interwał pomiędzy automatycznym uaktualnieniem hasła na serwerze (wybranie 0 spowoduje wyłączenie automatycznej zmiany hasła).<br />Automatyczna aktualizacja hasła zostanie przeprowadzona jedynie, gdy administrator również skonfiguruje plan aktualizacji hasła.',
+    'ssh_password_frequency_change' => 'Częstotliwość zmiany hasła (w miesiącach)',
     'ssh_scheduled_change' => 'Zaplanowana zmiana',
     'ssh_one_shot_change' => 'Jednorazowa zmiana',
     'month' => 'miesiąc',
     'server_auto_update_password_enabled_tip' => 'Aktywacja automatycznego zmieniania hasła Użytkownika',
-    'server_password_change_enable_tip' => 'Ta opcja pozwala użytkownikom na automatyczna zmianę hasła użytkownika na serwerze z pola URL używając połączenia SSH.<br > Zauważ, że automatyczna zmiana z określoną częstotliwością może być wykonywana gdy plik < i > /files / script.ssh.php < /i > jest dodany do listy zadań crona na serwerze.Dobrym pomysłem jest uruchamianie automatycznej zmiany raz dziennie.',
-    'can_manage_all_users' => 'Zasoby ludzkie < br > <i > Może zarządzać wszystkimi użytkownikami niezależnie od ich przypisania do grup.<br > Użytkownik może także awansować do roli Menedżera.<br > Nie będzie mógł zmienić istniejącego administratora(tylko Administrator może usunąć uprawnienia administratora dla użytkownika).< / i > ',
-    'error_bad_credentials_more_than_3_times' => 'Dane logowania są niepoprawne! < br > Proszę zaczekaj 10 sekund przed kolejną próbą',
+    'server_password_change_enable_tip' => 'Ta opcja pozwala użytkownikom na automatyczna zmianę hasła użytkownika na serwerze z pola URL używając połączenia SSH.<br>Zauważ, że automatyczna zmiana z określoną częstotliwością może być wykonywana gdy plik <i>/files/script.ssh.php</i> jest dodany do listy zadań crona na serwerze. Dobrym pomysłem jest uruchamianie automatycznej zmiany raz dziennie.',
+    'can_manage_all_users' => 'Zasoby ludzkie<br><i>Może zarządzać wszystkimi użytkownikami niezależnie od ich przypisania do grup.<br>Użytkownik może także awansować do roli Menedżera.<br>Nie będzie mógł zmienić istniejącego administratora (tylko Administrator może usunąć uprawnienia administratora dla użytkownika).</i>',
+    'error_bad_credentials_more_than_3_times' => 'Dane logowania są niepoprawne!<br>Proszę zaczekaj 10 sekund przed kolejną próbą',
     'settings_ldap_object_class' => 'Klasa do wyszukiwania',
-    'settings_ldap_object_class_tip' => 'Klasa LDAP do wyszukiwania np.Osoba lub konto posix',
+    'settings_ldap_object_class_tip' => 'Klasa LDAP do wyszukiwania np. Osoba lub konto posix',
     'rebuild_config_file' => 'Przebuduj plik konfiguracyjny',
-    'rebuild_config_file_tip' => 'Plik konfiguracyjny znajduje się w katalogu./includes / config / tp.config.php.Zawiera zmienne konfiguracyjne zdefiniowane w ustawieniach oraz niestandardowe zakładki.Przebudowa pliku konfiguracyjnego może być wykonana w każdym momencie.',
+    'rebuild_config_file_tip' => 'Plik konfiguracyjny znajduje się w katalogu ./includes/config/tp.config.php. Zawiera zmienne konfiguracyjne zdefiniowane w ustawieniach oraz niestandardowe zakładki. Przebudowa pliku konfiguracyjnego może być wykonana w każdym momencie.',
     'error_folder_complexity_lower_than_top_folder' => 'Wymagane jest, aby skomplikowanie hasła było co najmniej takie samo jak dla katalogu nadrzędnego.',
     'rebuild_config_file' => 'Przebuduj plik konfiguracyjny',
-    'csv_import_information' => 'Plik CSV powinien być zgodny z zasadami: < ul > <li > Pierwsza linia powinna być nagłówkiem, < / li > <li > Nagłówek musi zawierać 5 kolumn, < / li > <li > Separator kolumn powinien być przecinkiem `,`, < / li > <li > Znak enkapsulacji, to cudzysłów `"`, < / li > <li > Wymagane kolumny, to: `Etykieta`, `Login`, `Hasło`, `URL`, `Komentarz`.< / li > < / ul > ',
-    'new_item_email_body' => 'Cześć, <br / > < br / >Nowa pozycja \'#label\' została stworzona w Teampas',
+    'csv_import_information' => 'Plik CSV powinien być zgodny z zasadami:<ul><li>Pierwsza linia powinna być nagłówkiem,</li><li>Nagłówek musi zawierać 5 kolumn,</li><li>Separator kolumn powinien być przecinkiem `,`,</li><li>Znak enkapsulacji, to cudzysłów `"`,</li><li>Wymagane kolumny, to: `Etykieta` , `Login` , `Hasło` , `URL` , `Komentarz`.</li></ul> ',
+    'new_item_email_body' => 'Cześć, <br /><br />Nowa pozycja \'#label\' została stworzona w Teampas',
     'failed_logins' => 'Nieudane logowania',
     'admin_2factor_authentication_tab' => 'Opcje 2FA',
     'error_only_numbers_in_folder_name' => 'Opis folderu nie może być numerem. Proszę użyj nazwy zawierającej litery.',
@@ -1029,7 +1021,7 @@ $LANG = array(
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'consider_a_donation' => 'You may consider a donation',
     'more_information' => 'More information',
-    'feature_request_canal' => 'For Feature Requests or Questions, please use',
+    'feature_request_canal' => 'For Feature Requests, please use',
     'bug_canal' => 'For Bugs, please use',
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
@@ -1052,5 +1044,15 @@ $LANG = array(
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
     'no_username_needed' => 'No username needed',
+    'feature_support_canal' => 'For Support and Help, please use',
+    'file_is_now_ready' => 'File is now ready.',
+    'category' => 'Category',
+    'knowledge_base' => 'Knowledge Base',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
+    'nothing_to_do' => 'Nothing to do.',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

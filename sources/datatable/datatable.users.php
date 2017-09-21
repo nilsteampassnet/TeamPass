@@ -18,15 +18,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 global $k, $settings;
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -38,7 +47,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre."nested_tree", 'id', 'parent_id', 'title');
 
@@ -70,8 +79,7 @@ if (isset($_GET['length']) && $_GET['length'] != '-1') {
 //Ordering
 if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
-    if (
-        preg_match("#^(asc|desc)\$#i", $_GET['order'][0]['column'])
+    if (preg_match("#^(asc|desc)\$#i", $_GET['order'][0]['column'])
     ) {
         $sOrder .= "".$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)]." "
         .mysqli_escape_string($link, $_GET['order'][0]['column']).", ";
@@ -146,7 +154,6 @@ if (DB::count() > 0) {
 }
 
 foreach ($rows as $record) {
-
     // Get list of allowed functions
     $listAlloFcts = "";
     if ($record['admin'] != 1) {
@@ -193,8 +200,7 @@ foreach ($rows as $record) {
     }
 
     //Show user only if can be administrated by the adapted Roles manager
-    if (
-        $_SESSION['is_admin'] ||
+    if ($_SESSION['is_admin'] ||
         ($record['isAdministratedByRole'] > 0 &&
         in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
         ($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)

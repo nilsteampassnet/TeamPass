@@ -15,35 +15,44 @@
 
 require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if ((!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])) &&
-    $_GET['key'] != $_SESSION['key'])
-{
+    $_GET['key'] != $_SESSION['key']
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
 header("Pragma: no-cache");
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -100,7 +109,7 @@ echo '
     <input type="password" id="offline_password" name="offline_password" />
     <div id="offline_pw_strength" style="margin:10px 0 0 130px;"></div>
     <input type="hidden" id="offline_pw_strength_value" />
-    <input type="hidden" id="min_offline_pw_strength_value" value="'.$_SESSION['settings']['offline_key_level'].'" />
+    <input type="hidden" id="min_offline_pw_strength_value" value="'.$SETTINGS['offline_key_level'].'" />
 </div>
 
 <div style="text-align:center;margin-top:8px; display:none;" id="offline_information"></div>
@@ -227,9 +236,9 @@ echo '
             $.post(
                 "sources/export.queries.php",
                 {
-                    type 	: "export_to_html_format_loop",
-                    idsList	: idsList,
-                    idTree 	: idTree,
+                    type    : "export_to_html_format_loop",
+                    idsList : idsList,
+                    idTree  : idTree,
                     file    : file,
                     cpt     : cpt,
                     number  : number,
@@ -253,7 +262,7 @@ echo '
             $.post(
                 "sources/export.queries.php",
                 {
-                    type 	: "export_to_html_format_finalize",
+                    type    : "export_to_html_format_finalize",
                     file    : file,
                     file_link : file_link
                 },

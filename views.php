@@ -12,19 +12,27 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
@@ -47,10 +55,10 @@ echo '
     <div id="tabs-1">
         <p>
         '.$LANG['logs_1'].' : <input type="text" id="log_jours" />&nbsp;
-		<span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="GenererLog()" style="cursor:pointer;">
-			<i class="fa fa-square fa-stack-2x"></i>
-			<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-		</span>&nbsp;
+        <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="GenererLog()" style="cursor:pointer;">
+            <i class="fa fa-square fa-stack-2x"></i>
+            <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+        </span>&nbsp;
         </p>
         <div id="lien_pdf" style="text-align:center; width:100%; margin-top:15px;"></div>
     </div>';
@@ -72,10 +80,10 @@ echo '
             <option value="6months">'.$LANG['expir_six_months'].'</option>
             <option value="1year">'.$LANG['expir_one_year'].'</option>
         </select>
-		<span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="generate_renewal_listing()" style="cursor:pointer;">
-			<i class="fa fa-square fa-stack-2x"></i>
-			<i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
-		</span>&nbsp;
+        <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="generate_renewal_listing()" style="cursor:pointer;">
+            <i class="fa fa-square fa-stack-2x"></i>
+            <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+        </span>&nbsp;
         <span id="renewal_icon_pdf" style="margin-left:15px;display:none;cursor:pointer;" title="'.htmlentities(strip_tags($LANG['generate_pdf']), ENT_QUOTES).'" onclick="generate_renewal_pdf()">
             <span class="fa fa-file-pdf-o"></span>
         </span>

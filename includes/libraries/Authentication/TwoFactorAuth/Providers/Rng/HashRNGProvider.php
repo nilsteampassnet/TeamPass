@@ -1,15 +1,15 @@
 <?php
-namespace RobThree\Auth\Providers\Rng;
+namespace Authentication\TwoFactorAuth\Providers\Rng;
+require_once(dirname(__FILE__)."/IRNGProvider.php");
 
 class HashRNGProvider implements IRNGProvider
 {
     private $algorithm;
     
-    function __construct($algorithm = 'sha256') {
+    function __construct($algorithm = 'sha256' ) {
         $algos = array_values(hash_algos());
-        if (!in_array($algorithm, $algos, true)) {
-                    throw new RNGException('Unsupported algorithm specified');
-        }
+        if (!in_array($algorithm, $algos, true))
+            throw new \RNGException('Unsupported algorithm specified');
         $this->algorithm = $algorithm;
     }
     

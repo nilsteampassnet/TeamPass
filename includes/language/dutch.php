@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          dutch.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,14 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'For Support and Help, please use ',
+$LANG = array (
     'user_ga_code' => 'Email Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google authenticatie in en stuur email',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',
@@ -38,12 +31,12 @@ $LANG = array(
     'admin_action_pw_prefix_correct' => 'Repareer wachtwoord prefix',
     'admin_action_pw_prefix_correct_tip' => 'Alvorens dit bestand uit te voeren, gelieve een kopie van uw database te maken. Dit bestand zal de wachtwoorden updaten. Dit zal alleen gebruikt moeten worden als u opgevallen is dat de wachtwoorden worden weergegeven met een rare voorvoegsel.',
     'items_changed' => 'zijn veranderd.',
-    'ga_not_yet_synchronized' => 'Raak geïdentificeerd met Google Authenticator',
-    'ga_scan_url' => 'Gelieve deze code te scannen met uw mobiele Google Authenticator applicatie. Kopieer hier van uw identificatie code.',
+    'ga_not_yet_synchronized' => 'Identificeer jezelf met Google Authenticator',
+    'ga_scan_url' => 'Scan deze QR code met uw mobiele Google Authenticator app. Gebruik uw identificatie code om in te loggen.',
     'ga_identification_code' => 'Identificatiecode',
-    'ga_enter_credentials' => 'U moet uw login gegevens invoeren.',
+    'ga_enter_credentials' => 'U dient uw login gegevens invoeren.',
     'ga_bad_code' => 'De Google Authenticator code is verkeerd',
-    'settings_get_tp_info' => 'Laad Teampass informatie automatisch',
+    'settings_get_tp_info' => 'Laat software nieuws en informatie aan admins zien',
     'settings_get_tp_info_tip' => 'Deze optie laat de administratie pagina toe on informatie te laten zien zoals versies en gegevens gebruikt van uw Teampass server',
     'at_field' => 'Veld',
     'category_in_folders_title' => 'geassocieerde mappen',
@@ -1036,20 +1029,30 @@ $LANG = array(
     'item_has_change_proposal' => 'Dit item heeft een wijzigingsverzoek',
     'select_all' => 'Selecteer alles',
     'add_category' => 'Categorie toevoegen',
-    'what_action_to_perform' => 'Select the action to perform',
-    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
-    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
-    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
-    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
-    'revert' => 'Revert?',
-    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
-    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
-    'bad_psk' => 'This personal Saltkey is not correct!',
-    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
-    'psk_required' => 'The personal saltkey is required!',
-    'ldap_test_config' => 'Test current configuration',
-    'ldap_test_username' => 'Username to use for testing purpose',
-    'ldap_test_username_pwd' => 'Username password',
-    'no_username_needed' => 'No username needed',
+    'what_action_to_perform' => 'Selecteer actie om uit te voeren',
+    'confirm_database_reencryption' => 'Dit zal de database opnieuw versleutelen met de nieuwe saltkey. Bevestig aub?',
+    'previous_backup_exists' => 'Er bestaat een eerdere backup.<br>Wil je de eerdere data terugzetten?',
+    'previous_backup_exists_delete' => 'Wil je deze oude data wissen?',
+    'check_data_after_reencryption' => 'Controleer de data. Een nieuwe tabel <b>Backup</b> is aangemaakt die het mogelijk maakt om om terug te zetten.',
+    'revert' => 'Terugzetten?',
+    'revert_the_database' => 'Je hebt besloten de database terug te zetten. Bevestig aub?',
+    'wipe_backup_data' => 'Je hebt besloten de backup data te wissen. Dit moet alleen worden gedaan na data verificatie. Bevestig aub?',
+    'bad_psk' => 'De persoonlijke saltkey is niet correct!',
+    'bad_psk_confirmation' => 'De persoonlijke saltkey bevestiging is niet correct!',
+    'psk_required' => 'De persoonlijke saltkey is benodigd!',
+    'ldap_test_config' => 'Test huidige configuratie',
+    'ldap_test_username' => 'Te gebruiken gebruikersnaam voor test',
+    'ldap_test_username_pwd' => 'Gebuikersnaam wachtwoord',
+    'no_username_needed' => 'Geen gebruikersnaam benodigd',
+    'feature_support_canal' => 'Gebruik voor ondersteuning en hulp',
+    'file_is_now_ready' => 'Bestand is gereed',
+    'category' => 'Categorieen',
+    'knowledge_base' => 'Kennisbank',
+    'anyone_can_modify_it' => 'Iedereen kan dit wijzigen',
+    'manage_entries_in_kb' => 'Beheer Kb items',
+    'add_new_kb' => 'Nieuw Kb artikel toevoegen',
+    'nothing_to_do' => 'Niets te doen',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

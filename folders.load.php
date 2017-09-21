@@ -47,10 +47,7 @@ $(function() {
             {"width": "5%"},
             {"width": "5%"}
         ]
-    })
-    .on('xhr.dt', function ( e, settings, json, xhr ) {
-        //$(".tip").tooltipster();
-    } );
+    });
 
 
     $("#div_add_group").dialog({
@@ -86,15 +83,21 @@ $(function() {
                         $("#new_folder_wait").show();
                         $("#addgroup_show_error").hide();
                         //prepare data
-                        var data = '{"title":"'+$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#new_rep_complexite').val().replace(/"/g,'&quot;')+'", '+
-                        '"parent_id":"'+$('#parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#add_node_renewal_period').val().replace(/"/g,'&quot;')+'" , "block_creation":"'+$("#folder_block_creation").val()+'" , "block_modif":"'+$("#folder_block_modif").val()+'"}';
+                        var data = {
+                            "title":$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') ,
+                            "complexity": $('#new_rep_complexite').val().replace(/"/g,'&quot;'),
+                            "parent_id": $('#parent_id').val().replace(/"/g,'&quot;') ,
+                            "renewal_period": $('#add_node_renewal_period').val().replace(/"/g,'&quot;') ,
+                            "block_creation": $("#folder_block_creation").val() ,
+                            "block_modif": $("#folder_block_modif").val()
+                        };
 
                         //send query
                         $.post(
                             "sources/folders.queries.php",
                             {
                                 type    : "add_folder",
-                                data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                                 key     : "<?php echo $_SESSION['key']; ?>"
                             },
                             function(data) {

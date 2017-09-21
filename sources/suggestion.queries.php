@@ -14,46 +14,60 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
-    || !isset($_SESSION['settings']['enable_suggestion'])
-    || $_SESSION['settings']['enable_suggestion'] != 1)
-{
+) {
+    die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+// Is SUGGESTION enabled
+if (isset($SETTINGS['enable_suggestion']) === false || $SETTINGS['enable_suggestion'] != 1) {
     die('Hacking attempt...');
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "suggestion")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
 header("Pragma: no-cache");
 require_once 'main.functions.php';
 
-// pw complexity levels
-$_SESSION['settings']['pwComplexity'] = array(
-    0 => array(0, $LANG['complex_level0']),
-    25 => array(25, $LANG['complex_level1']),
-    50 => array(50, $LANG['complex_level2']),
-    60 => array(60, $LANG['complex_level3']),
-    70 => array(70, $LANG['complex_level4']),
-    80 => array(80, $LANG['complex_level5']),
-    90 => array(90, $LANG['complex_level6'])
-);
+// Ensure Complexity levels are translated
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+    $SETTINGS_EXT['pwComplexity'] = array(
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
+    );
+}
 
 // connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -64,21 +78,24 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-// load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_folder_id = filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT);
 
 // treatment by action
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "add_new":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             // decrypt and retrieve data in JSON format
-            $data_received = prepareExchangedData($_POST['data'], "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             // prepare variables
             $label = htmlspecialchars_decode($data_received['label']);
@@ -138,20 +155,24 @@ if (!empty($_POST['type'])) {
             } else {
                 echo '[ { "status" : "duplicate_suggestion" } ]';
             }
-        break;
+            break;
 
         case "delete_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
-        break;
+            DB::delete(
+                prefix_table("suggestion"),
+                "id = %i",
+                $post_id
+            );
+            break;
 
         case "duplicate_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -159,7 +180,7 @@ if (!empty($_POST['type'])) {
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, folder_id FROM ".prefix_table("suggestion")." WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // check if similar exists
@@ -178,17 +199,19 @@ if (!empty($_POST['type'])) {
 
         case "validate_suggestion":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
+            $post_id = $post_id;
 
             // get suggestion details
             $suggestion = DB::queryfirstrow(
                 "SELECT label, description, pw, folder_id, author_id, comment, pw_iv
                 FROM ".prefix_table("suggestion")."
                 WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // check if similar Item exists (based upon Label and folder id)
@@ -230,7 +253,11 @@ if (!empty($_POST['type'])) {
                     updateCacheTable("update_value", $existing_item_id['id']);
 
                     // delete suggestion
-                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+                    DB::delete(
+                        prefix_table("suggestion"),
+                        "id = %i",
+                        $post_id
+                    );
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -269,7 +296,11 @@ if (!empty($_POST['type'])) {
                     updateCacheTable("add_value", $newID);
 
                     // delete suggestion
-                    DB::delete(prefix_table("suggestion"), "id = %i", $_POST['id']);
+                    DB::delete(
+                        prefix_table("suggestion"),
+                        "id = %i",
+                        $post_id
+                    );
 
                     echo '[ { "status" : "done" } ]';
                 } else {
@@ -280,33 +311,35 @@ if (!empty($_POST['type'])) {
 
         case "get_complexity_level":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
             $data = DB::queryfirstrow(
-                "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s", $_POST['folder_id'], "complex"
+                "SELECT valeur FROM ".$pre."misc WHERE intitule = %s AND type = %s",
+                $post_folder_id,
+                "complex"
             );
             if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] == 0)) {
-                $complexity = $_SESSION['settings']['pwComplexity'][$data['valeur']][1];
+                $complexity = $SETTINGS_EXT['pwComplexity'][$data['valeur']][1];
             } else {
                 $complexity = $LANG['not_defined'];
             }
 
             echo '[ { "status" : "ok" , "complexity" : "'.$data['valeur'].'" , "complexity_text" : "'.$complexity.'" } ]';
-        break;
+            break;
 
         case "get_item_change_detail":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
 
             $data = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
             $tmp = cryption($data['pw'], "", "decrypt");
             $data['pw'] = $tmp['string'];
@@ -405,12 +438,12 @@ if (!empty($_POST['type'])) {
                 ),
                 "encode"
             );
-        break;
+            break;
 
 
         case "approve_item_change":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -418,7 +451,7 @@ if (!empty($_POST['type'])) {
             // read changes proposal
             $data = DB::queryfirstrow(
                 "SELECT * FROM ".$pre."items_change WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             // read current item
@@ -442,8 +475,7 @@ if (!empty($_POST['type'])) {
             );
 
             // is user allowed?
-            if (
-                (isset($_SESSION['user_admin']) && $_SESSION['user_admin'] !== "1") &&
+            if ((isset($_SESSION['user_admin']) && $_SESSION['user_admin'] !== "1") &&
                 (isset($_SESSION['user_manager']) && $_SESSION['user_manager'] !== "1") &&
                 ($data['user_id'] !== $_SESSION['user_id']) &&
                 ($ret_item_creator['id_user'] !== $_SESSION['user_id'])
@@ -455,7 +487,7 @@ if (!empty($_POST['type'])) {
 
             // prepare query
             $fields_array = array();
-            $fields_to_update = explode(";", $_POST['data']);
+            $fields_to_update = explode(";", $post_data);
             foreach ($fields_to_update as $field) {
                 if (!empty($field)) {
                     $fields_array[$field] = $data[$field];
@@ -475,7 +507,7 @@ if (!empty($_POST['type'])) {
                 if (!empty($field)) {
                     if ($field !== "pw") {
                         logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$current_item[$field].' => '.$data[$field]);
-                    } else if ($field === "description") {
+                    } elseif ($field === "description") {
                         logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field);
                     } else {
                         $oldPwClear = cryption(
@@ -495,16 +527,16 @@ if (!empty($_POST['type'])) {
             DB::delete(
                 $pre."items_change",
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
             echo '[ { "error" : "" } ]';
-        break;
+            break;
 
 
         case "reject_item_change":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -513,9 +545,9 @@ if (!empty($_POST['type'])) {
             DB::delete(
                 $pre."items_change",
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
 
-        break;
+            break;
     }
 }

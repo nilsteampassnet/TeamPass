@@ -100,3 +100,7 @@ h5 {
     width:  270px;
     margin-bottom: 2px;
 }
+
+.hidden {
+  display: none;
+}

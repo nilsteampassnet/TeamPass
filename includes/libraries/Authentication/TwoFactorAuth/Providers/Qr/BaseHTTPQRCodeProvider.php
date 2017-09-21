@@ -10,7 +10,7 @@ abstract class BaseHTTPQRCodeProvider implements IQRCodeProvider
     protected function getContent($url)
     {
         $curlhandle = curl_init();
-
+        
         curl_setopt_array($curlhandle, array(
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -21,7 +21,7 @@ abstract class BaseHTTPQRCodeProvider implements IQRCodeProvider
             CURLOPT_USERAGENT => 'TwoFactorAuth'
         ));
         $data = curl_exec($curlhandle);
-
+        
         curl_close($curlhandle);
         return $data;
     }

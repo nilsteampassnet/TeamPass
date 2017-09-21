@@ -16,10 +16,19 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 $var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LANG['show_password'].'"></i>&nbsp;&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>';
 
 // load csrfprotector
-$csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+$csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 ?>
 
 <script type="text/javascript">
@@ -86,7 +95,7 @@ $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/librari
             itemLog("item_password_shown");
             $('#id_pw').text($('#hid_pw').val());
         } else {
-            $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
+            $('#id_pw').html('<?php echo $var["hidden_asterisk"]; ?>');
         }
     }
 
@@ -101,7 +110,7 @@ $csrfp_config = include $_SESSION['settings']['cpassman_dir'].'/includes/librari
     function ShowPasswords_EditForm()
     {
         if ($('#edit_visible_pw').is(":visible")) {
-            $('#edit_visible_pw').hide();
+            $('#edit_visible_pw').addClass("hidden");
         } else {
             $('#edit_visible_pw').show();
         }
@@ -181,7 +190,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         }
         query_in_progress = groupe_id;
         //LoadingPage();
-        $("#items_list_loader").show();
+        $("#items_list_loader").removeClass("hidden");
         if (start == 0) {
             //clean form
             $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
@@ -190,12 +199,12 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         $("#items_list").css("display", "");
 
         $("#hid_cat").val(groupe_id);
-        if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").hide();
+        if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").addClass("hidden");
 
         //Disable menu buttons
-        $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+        $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
 
-        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['opening_folder']); ?>');
+        $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG["opening_folder"]); ?>');
 
         //ajax query
         request = $.post("sources/items.queries.php",
@@ -224,7 +233,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                    $("#div_dialog_message_text").html(data.error_text);
                    $("#div_dialog_message").dialog("open");
                    $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-                   $("#items_list_loader").hide();
+                   $("#items_list_loader").addClass("hidden");
                    return false;
                 }
 
@@ -313,22 +322,22 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 if (data.error == "is_pf_but_no_saltkey") {
                     //warn user about his saltkey
                     $("#item_details_no_personal_saltkey").show();
-                    $("#item_details_ok, #item_details_nok").hide();
+                    $("#item_details_ok, #item_details_nok").addClass("hidden");
 
                     $('#menu_button_add_item').prop('disabled', 'true');
-                    $("#items_list_loader, #div_loading").hide();
-                } else if (data.error == "not_authorized" || data.access_level == 2) {
+                    $("#items_list_loader, #div_loading").addClass("hidden");
+                } else if (data.error == "not_authorized" || data.access_level === "") {
                     //warn user
                     $("#hid_cat").val("");
                     //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").prop('disabled', 'true');
-                    $("#item_details_nok").show();
-                    $("#item_details_ok, #item_details_no_personal_saltkey").hide();
-                    $("#items_list_loader").hide();
+                    $("#item_details_nok").removeClass("hidden");
+                    $("#item_details_ok, #item_details_no_personal_saltkey").addClass("hidden");
+                    $("#items_list_loader").addClass("hidden");
                 } else if (($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) || data.access_level == 1) {
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
-                    $("#item_details_no_personal_saltkey, #item_details_nok").hide();
-                    $("#item_details_ok, #items_list").show();
+                    $("#item_details_no_personal_saltkey, #item_details_nok").addClass("hidden");
+                    $("#item_details_ok, #items_list").removeClass("hidden");
 
                     $("#more_items").remove();
 
@@ -348,7 +357,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             }
                         }
                         if (data.saltkey_is_required == 1) {
-                            if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+                            if ($(".tr_fields") != undefined) $(".tr_fields").addClass("hidden");
                         }
                     }
 
@@ -356,8 +365,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 } else {
                     $("#recherche_group_pf").val(data.saltkey_is_required);
                     //Display items
-                    $("#item_details_no_personal_saltkey, #item_details_nok").hide();
-                    $("#item_details_ok, #items_list").show();
+                    $("#item_details_no_personal_saltkey, #item_details_nok").addClass("hidden");
+                    $("#item_details_ok, #items_list").removeClass("hidden");
 
                     $('#complexite_groupe').val(data.folder_complexity);
                     $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
@@ -380,7 +389,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             }
                         }
                         if (data.saltkey_is_required == 1) {
-                            if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+                            if ($(".tr_fields") != undefined) $(".tr_fields").addClass("hidden");
                         }
                     }
 
@@ -405,7 +414,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                             hoverClass: "ui-state-error",
                             tolerance: 'pointer',
                             drop: function(event, ui) {
-                                ui.draggable.hide();
+                                ui.draggable.addClass("hidden");
                                 LoadingPage();
                                 //move item
                                 $.post(
@@ -443,7 +452,7 @@ function pwGenerate(elem)
     $("#"+elem+"pw1").show().focus();
 
     //show ajax image
-    $("#"+elem+"pw_wait").show();
+    $("#"+elem+"pw_wait").removeClass("hidden");
 
     $.post(
         "sources/main.queries.php",
@@ -468,7 +477,7 @@ function pwGenerate(elem)
                 $("#"+elem+"pw1").focus();
                }
             //$("#"+elem+"pw1").show().blur();
-            $("#"+elem+"pw_wait").hide();
+            $("#"+elem+"pw_wait").addClass("hidden");
         }
    );
 }
@@ -523,14 +532,14 @@ function RecupComplexite(val, edit, context)
                 funcReturned = 0;
             } else if (data.error == "no_folder_creation_possible" || data.error == "no_folder_edition_possible"  || data.error == "delete_folder") {
                 displayMessage('<i class="fa fa-warning"></i>&nbsp;' + data.error_msg);
-                $("#div_loading").hide();
+                $("#div_loading").addClass("hidden");
                 funcReturned = 0;
             } else {
                 $("#div_formulaire_edition_item").dialog("close");
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
             }
-            $("#div_loading").hide();
+            $("#div_loading").addClass("hidden");
         }
    );
     $.ajaxSetup({async: true});
@@ -600,7 +609,7 @@ function AjouterItem()
       ) {
             //Manage restrictions
             var restriction = restriction_role = "";
-            $("#restricted_to_list option:selected").each(function () {console.log($(this).val());
+            $("#restricted_to_list option:selected").each(function () {
                 //check if it's a role
                 if ($(this).val().indexOf('role_') != -1) {
                     restriction_role += $(this).val().substring(5) + ";";
@@ -620,7 +629,10 @@ function AjouterItem()
             if (diffusion == ";") diffusion = "";
 
             //Manage description
-            if (CKEDITOR.instances["desc"]) {
+            if (CKEDITOR.instances && CKEDITOR.instances["edit_desc"]) {
+                CKEDITOR.instances["edit_desc"].destroy();
+            }
+            if (CKEDITOR.instances && CKEDITOR.instances["desc"]) {
                 var description = sanitizeString(CKEDITOR.instances["desc"].getData()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
             } else {
                 var description = sanitizeString($("#desc").val()).replace(/\n/g, '<br />').replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
@@ -664,21 +676,21 @@ function AjouterItem()
             }
 
             //prepare data
-            var data = '{"pw":"' + sanitizeString($('#pw1').val()) + '", "label":"' + sanitizeString($('#label').val()) + '", ' +
-            '"login":"' + sanitizeString($('#item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
-            '"description":"' + (description) + '", "email":"' + $('#email').val() + '", "url":"' + url + '", "categorie":"' + selected_folder + '", ' +
-            '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val()+
-            '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
-            '"anyone_can_modify":"' + $('#anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#item_tags').val())+
-            '", "random_id_from_files":"' + $('#random_id').val() + '", "to_be_deleted":"' + to_be_deleted + '", "fields":"' + sanitizeString(fields) + '", ' +
-            '"complexity_level":"' + parseInt($("#mypassword_complex").val()) + '"}';
+            var data = {"pw": sanitizeString($('#pw1').val()) , "label": sanitizeString($('#label').val()) ,
+                "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf.toString() ,
+                "description": (description) , "email": $('#email').val() , "url": url , "categorie": selected_folder ,
+                "restricted_to": restriction , "restricted_to_roles": restriction_role ,
+                "salt_key_set": $('#personal_sk_set').val() , "diffusion": diffusion , "id": $('#id_item').val() ,
+                "anyone_can_modify": $('#anyone_can_modify:checked').val() , "tags": sanitizeString($('#item_tags').val()) ,
+                "random_id_from_files": $('#random_id').val() , "to_be_deleted": to_be_deleted ,
+                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#mypassword_complex").val())};
 
             //Send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "new_item",
-                    data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data     : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key        : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -687,7 +699,7 @@ function AjouterItem()
                         data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                     } catch (e) {
                         // error
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#request_ongoing").val("");
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
                         $("#div_dialog_message").dialog("open");
@@ -696,7 +708,7 @@ function AjouterItem()
                     }
 
                     //Check errors
-                    if (data.error == "item_exists") {
+                    if (data.error === "item_exists") {
                         $("#div_formulaire_saisi").dialog("open");
                         $("#new_show_error").html('<?php echo addslashes($LANG['error_item_exists']); ?>');
                         $("#new_show_error").show();
@@ -732,7 +744,7 @@ function AjouterItem()
                         $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.new_id != "") {
-                        $("#new_show_error").hide();
+                        $("#new_show_error").addClass("hidden");
 
                         //add new line directly in list of items
                         $("#full_items_list").append(data.new_entry);
@@ -760,26 +772,26 @@ function AjouterItem()
                         $("#div_formulaire_saisi").dialog('close');
                         $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                     }
-                    $("#div_formulaire_saisi_info").hide().html("");
-                    $("#div_loading").hide();
+                    $("#div_formulaire_saisi_info").addClass("hidden").html("");
+                    $("#div_loading").addClass("hidden");
                 }
            );
         } else {
             $('#new_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>").show();
             $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
-            $("#div_formulaire_saisi_info").hide().html("");
+            $("#div_formulaire_saisi_info").addClass("hidden").html("");
         }
     }
     if (erreur != "") {
         $('#new_show_error').html(erreur).show();
-        $("#div_formulaire_saisi_info").hide().html("");
+        $("#div_formulaire_saisi_info").addClass("hidden").html("");
     }
 }
 
 function EditerItem()
 {
     $("#div_formulaire_edition_item_info").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show();
-    $("#item_detail_zone_loader").hide();
+    $("#item_detail_zone_loader").addClass("hidden");
     var erreur = "";
     var  reg=new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
@@ -856,7 +868,9 @@ function EditerItem()
             }
 
           //To be deleted
-            if ($("#edit_enable_delete_after_consultation").is(':checked') && ($("#edit_times_before_deletion").val() >= 1 || $("#edit_deletion_after_date").val() != "")) {
+            if ($("#edit_enable_delete_after_consultation").is(':checked')
+                && ($("#edit_times_before_deletion").val() >= 1 || $("#edit_deletion_after_date").val() != "")
+            ) {
                 if ($("#edit_times_before_deletion").val() >= 1) {
                     var to_be_deleted = $("#edit_times_before_deletion").val();
                     //var to_be_deleted_after_date = "";
@@ -878,20 +892,22 @@ function EditerItem()
             });
 
               //prepare data
-            var data = '{"pw":"' + sanitizeString($('#edit_pw1').val()) + '", "label":"' + sanitizeString($('#edit_label').val()) + '", ' +
-            '"login":"' + sanitizeString($('#edit_item_login').val()) + '", "is_pf":"' + is_pf + '", ' +
-            '"description":"' + description + '", "email":"' + $('#edit_email').val() + '", "url":"' + url + '", "categorie":"' + $("#edit_categorie option:selected").val() + '", ' +
-            '"restricted_to":"' + restriction + '", "restricted_to_roles":"' + restriction_role + '", "salt_key_set":"' + $('#personal_sk_set').val() + '", "is_pf":"' + $('#recherche_group_pf').val() + '", ' +
-            '"annonce":"' + annonce + '", "diffusion":"' + diffusion + '", "id":"' + $('#id_item').val() + '", ' +
-            '"anyone_can_modify":"' + $('#edit_anyone_can_modify:checked').val() + '", "tags":"' + sanitizeString($('#edit_tags').val()) + '" ,' +
-            '"to_be_deleted":"' + to_be_deleted + '" ,"fields":"' + sanitizeString(fields) + '", "complexity_level":"' + parseInt($("#edit_mypassword_complex").val()) + '"}';
+            var data = {"pw": sanitizeString($('#edit_pw1').val()) , "label": sanitizeString($('#edit_label').val()) ,
+                "login": sanitizeString($('#edit_item_login').val()) , "is_pf": is_pf ,
+                "description": description , "email": $('#edit_email').val() , "url": url ,
+                "categorie": $("#edit_categorie option:selected").val() , "restricted_to": restriction ,
+                "restricted_to_roles": restriction_role , "salt_key_set": $('#personal_sk_set').val() ,
+                "is_pf": $('#recherche_group_pf').val() , "annonce": annonce , "diffusion": diffusion ,
+                "id": $('#id_item').val() , "anyone_can_modify": $('#edit_anyone_can_modify:checked').val() ,
+                "tags": sanitizeString($('#edit_tags').val()) , "to_be_deleted": to_be_deleted ,
+                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#edit_mypassword_complex").val())};
 
             //send query
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "update_item",
-                    data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key        : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -900,7 +916,7 @@ function EditerItem()
                         data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                     } catch (e) {
                         // error
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#request_ongoing").val("");
                         $("#div_dialog_message_text")
                             .html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+
@@ -911,21 +927,21 @@ function EditerItem()
 
                     //check if format error
                     if (data.error == "ERR_JSON_FORMAT") {
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#edit_show_error").html(data.error + ' ERROR (JSON is broken)!!!!!');
                         $("#edit_show_error").show();
                     } else if (data.error == "ERR_KEY_NOT_CORRECT") {
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#edit_show_error").html('Key verification for Query is not correct!');
                         $("#edit_show_error").show();
                         LoadingPage();
                     }else if (data.error == "ERR_ENCRYPTION_NOT_CORRECT") {
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#edit_show_error").html('Item password could not be correctly encrypted!');
                         $("#edit_show_error").show();
                         LoadingPage();
                     } else if (data.error == "ERR_PWD_TOO_LONG") {
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#edit_show_error").html('<?php echo addslashes($LANG['error_pw_too_long']); ?>');
                         $("#edit_show_error").show();
                         LoadingPage();
@@ -935,7 +951,7 @@ function EditerItem()
                         $("#new_show_error").show();
                         LoadingPage();
                     } else if (data.error != "") {
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#edit_show_error").html('<?php echo addslashes($LANG['error_not_allowed_to']); ?>');
                         $("#edit_show_error").show();
                         LoadingPage();
@@ -973,7 +989,7 @@ function EditerItem()
 
                         // refresh fields
                         if ($('.edit_item_field').val() != undefined) {
-                            $('.tr_fields').hide();
+                            $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
                                 id = $(this).attr('id').split('_');
                                 if ($(this).val() !== "") {
@@ -1026,7 +1042,7 @@ function EditerItem()
 
                             $("#button_quick_pw_copy").show();
                         } else {
-                            $("#button_quick_pw_copy").hide();
+                            $("#button_quick_pw_copy").addClass("hidden");
                         }
                         if ($('#edit_item_login').val() != "") {
                             var clipboard_elogin = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
@@ -1036,7 +1052,7 @@ function EditerItem()
                             });
                             $("#button_quick_login_copy").show();
                         } else {
-                            $("#button_quick_login_copy").hide();
+                            $("#button_quick_login_copy").addClass("hidden");
                         }
 
 
@@ -1045,7 +1061,7 @@ function EditerItem()
                         $("#div_formulaire_edition_item").dialog('close');
                         $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                         //hide loader
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                     }
                 }
            );
@@ -1066,13 +1082,13 @@ function EditerItem()
         } else {
             $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>").show();
             $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
-            $("#div_formulaire_edition_item_info").hide().html("");
+            $("#div_formulaire_edition_item_info").addClass("hidden").html("");
         }
     }
 
     if (erreur != "") {
         $('#edit_show_error').html(erreur).show();
-        $("#div_formulaire_edition_item_info").hide().html("");
+        $("#div_formulaire_edition_item_info").addClass("hidden").html("");
         $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
     }
 }
@@ -1091,7 +1107,7 @@ function AddNewFolder()
     } else if ($("#user_ongoing_action").val() == "") {
         $("#add_folder_loader").show();
         $("#user_ongoing_action").val("true");
-        $("#new_rep_show_error").hide();
+        $("#new_rep_show_error").addClass("hidden");
         if ($("#new_rep_role").val() == undefined) {
             role_id = "<?php echo $_SESSION['fonction_id']; ?>";
         } else {
@@ -1099,15 +1115,16 @@ function AddNewFolder()
         }
 
         //prepare data
-        var data = '{"title":"' + sanitizeString($('#new_rep_titre').val()) + '", "complexity":"' + sanitizeString($('#new_rep_complexite').val()) + '", "is_pf":"' + $('#pf_selected').val() + '", ' +
-        '"parent_id":"' + $("#new_rep_groupe option:selected").val() + '", "renewal_period":"0"}';
+        var data = {"title": sanitizeString($('#new_rep_titre').val()),
+            "complexity": sanitizeString($('#new_rep_complexite').val()), "is_pf": $('#pf_selected').val(),
+            "parent_id": $("#new_rep_groupe option:selected").val(), "renewal_period":"0"};
 
         //send query
         $.post(
             "sources/folders.queries.php",
             {
                 type   : "add_folder",
-                data   : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                data   : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key    : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
@@ -1126,7 +1143,7 @@ function AddNewFolder()
                     refreshTree(data[0].newid);
                     $("#div_ajout_rep").dialog("close");
                 }
-                $("#add_folder_loader").hide();
+                $("#add_folder_loader").addClass("hidden");
             },
             "json"
            );
@@ -1152,14 +1169,14 @@ function SupprimerFolder()
                 key        : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
-                $("#del_folder_loader").hide();
+                $("#del_folder_loader").addClass("hidden");
 
                 //decrypt data
                 try {
                     data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                 } catch (e) {
                     // error
-                    $("#div_loading").hide();
+                    $("#div_loading").addClass("hidden");
                     $("#div_dialog_message_text")
                         .html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+
                         data);
@@ -1206,16 +1223,16 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     }
 
     // Don't show details
-    if (display == "no_display") {
-        $("#item_details_nok").show();
-        $("#item_details_ok").hide();
-        $("#item_details_expired").hide();
-        $("#item_details_expired_full").hide();
+    if (display === "no_display") {
+        $("#item_details_nok").removeClass("hidden");
+        $("#item_details_ok").addClass("hidden");
+        $("#item_details_expired").addClass("hidden");
+        $("#item_details_expired_full").addClass("hidden");
         $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_url, #menu_button_copy_link").attr("disabled","disabled");
         $("#request_ongoing").val("");
         return false;
     }
-    $("#div_loading").show();//LoadingPage();
+    $("#div_loading").removeClass("hidden");
     if ($("#is_admin").val() == "1") {
         $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
     }
@@ -1230,7 +1247,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $('#div_set_personal_saltkey').dialog('open');
 
         //$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg mi-red'></span>&nbsp;<\/span><?php echo addslashes($LANG['alert_message_personal_sk_missing']); ?><\/div>");
-        $("#div_loading").hide();
+        $("#div_loading").addClass("hidden");
         //$("#div_dialog_message").dialog("open");
         $("#request_ongoing").val("");
         return false;
@@ -1239,7 +1256,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         if (open_edit == 1 && $("#item_editable").val() == 1 && reload != 1) {
             $("#request_ongoing").val("");
             open_edit_item_div(
-                <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] === "1") {
+                <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
     echo 1;
 } else {
     echo 0;
@@ -1271,7 +1288,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         data = prepareExchangedData(data_raw , "decode", "<?php echo $_SESSION['key']; ?>");
                     } catch (e) {
                         // error
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#request_ongoing").val("");
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data_raw);
                         $("#div_dialog_message").show();
@@ -1304,7 +1321,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     if (data.edit_item_salt_key == "1") {
                         $("#edit_item_salt_key").show();
                     } else {
-                        $("#edit_item_salt_key").hide();
+                        $("#edit_item_salt_key").addClass("hidden");
                     }
 
                     // clean some not used fields
@@ -1312,15 +1329,15 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                     //Show detail item
                     if (data.show_detail_option == "0") {
-                        $("#item_details_ok").show();
-                        $("#item_details_expired, #item_details_expired_full").hide();
+                        $("#item_details_ok").removeClass("hidden");
+                        $("#item_details_expired, #item_details_expired_full").addClass("hidden");
                     }if (data.show_detail_option == "1") {
-                        $("#item_details_ok, #item_details_expired").show();
-                        $("#item_details_expired_full").hide();
+                        $("#item_details_ok, #item_details_expired").removeClass("hidden");
+                        $("#item_details_expired_full").addClass("hidden");
                     } else if (data.show_detail_option == "2") {
-                        $("#item_details_ok, #item_details_expired, #item_details_expired_full").hide();
+                        $("#item_details_ok, #item_details_expired, #item_details_expired_full").addClass("hidden");
                     }
-                    $("#item_details_nok").hide();
+                    $("#item_details_nok").addClass("hidden");
                     $("#fileclass"+data.id).addClass("fileselected");
                     $("item_editable").val(0);
 
@@ -1393,15 +1410,21 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $(".fields_div").html("");
                         // If no CF then hide
                         if (data.fields === "") {
-                            $(".tr_fields").hide();
+                            $(".tr_fields").addClass("hidden");
                         } else {
-                            $(".tr_cf, .tr_fields").hide();
+                            $(".tr_cf, .tr_fields").removeClass("hidden");
                             var liste = data.fields.split('_|_');
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');
                                 $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).show();
-                                $('#id_field_' + field[0]).html(field[1]);
                                 $('#hid_field_' + field[0] + '_' + field[2]).val(field[1]);
+                                if (field[3] === "masked") {
+                                    $('#id_field_' + field[0] + '_' + field[2])
+                                        .html('<?php echo $var['hidden_asterisk']; ?>');
+                                } else {
+                                    $('#id_field_' + field[0] + '_' + field[2])
+                                        .html(field[1]);
+                                }
                             }
                         }
 
@@ -1411,12 +1434,12 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             $("#new_history_entry_form").show();
                         } else {
                             $("#edit_anyone_can_modify").attr('checked', false);
-                            $("#new_history_entry_form").hide();
+                            $("#new_history_entry_form").addClass("hidden");
                         }
 
                         //Show to be deleted in case activated
                         if (data.to_be_deleted == "not_enabled") {
-                            $("#edit_to_be_deleted").hide();
+                            $("#edit_to_be_deleted").addClass("hidden");
                         } else {
                             $("#edit_to_be_deleted").show();
                             if (data.to_be_deleted != "") {
@@ -1501,7 +1524,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                             $("#button_quick_pw_copy").show();
                         } else {
-                            $("#button_quick_pw_copy").hide();
+                            $("#button_quick_pw_copy").addClass("hidden");
                         }
                         if (data.login != "") {
                             var clipboard_login = new Clipboard("#menu_button_copy_login, #button_quick_login_copy", {
@@ -1516,7 +1539,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             });
                             $("#button_quick_login_copy").show();
                         } else {
-                            $("#button_quick_login_copy").hide();
+                            $("#button_quick_login_copy").addClass("hidden");
                         }
                         // #525
                         if (data.url != "") {
@@ -1535,7 +1558,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //prepare link to clipboard
                         var clipboard_link = new Clipboard("#menu_button_copy_link", {
                             text: function() {
-                                return "<?php echo $_SESSION['settings']['cpassman_url']; ?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
+                                return "<?php echo $SETTINGS['cpassman_url']; ?>"+"/index.php?page=items&group="+data.folder+"&id="+data.id;
                             }
                         });
                         clipboard_link.on('success', function(e) {
@@ -1553,7 +1576,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         //Manage double click
                         if (open_edit === true && (data.restricted == "1" || data.user_can_modify == "1")) {
                             open_edit_item_div(
-                            <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
+                            <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
     echo 1;
 } else {
     echo 0;
@@ -1567,20 +1590,20 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         showDetailsStep2(id, param);
 
                     } else if (data.show_details == "1" && data.show_detail_option == "2") {
-                        $("#item_details_nok").hide();
-                        $("#item_details_ok").hide();
+                        $("#item_details_nok").addClass("hidden");
+                        $("#item_details_ok").addClass("hidden");
                         $("#item_details_expired_full").show();
                         $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").attr("disabled","disabled");
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                     } else {
                         //Dont show details
-                        $("#item_details_nok").show();
+                        $("#item_details_nok").removeClass("hidden");
                         $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo addslashes($LANG['author']); ?>: </b>' + data.author + '<br /><b><?php echo addslashes($LANG['restricted_to']); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="SendMail(\'request_access_to_author\',\'' + data.id + ',' + data.id_user + '\',\'<?php echo $_SESSION['key']; ?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']); ?>\')"><?php echo addslashes($LANG['request_access_ot_item']); ?></a></u></div>');
-                        $("#item_details_ok").hide();
-                        $("#item_details_expired").hide();
-                        $("#item_details_expired_full").hide();
+                        $("#item_details_ok").addClass("hidden");
+                        $("#item_details_expired").addClass("hidden");
+                        $("#item_details_expired_full").addClass("hidden");
                         $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link").attr("disabled","disabled");
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                     }
                     $("#request_ongoing").val("");
                 }
@@ -1614,7 +1637,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 */
 function showDetailsStep2(id, param)
 {
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
     $.post(
         "sources/items.queries.php",
         {
@@ -1627,7 +1650,7 @@ function showDetailsStep2(id, param)
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             } catch (e) {
                 // error
-                $("#div_loading").hide();
+                $("#div_loading").addClass("hidden");
                 $("#request_ongoing").val("");
                 $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
                 $("#div_dialog_message").dialog("open");
@@ -1667,7 +1690,7 @@ function showDetailsStep2(id, param)
 
             $(param).prop("disabled", false);
             $("#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history").prop("disabled", false);
-            $("#div_loading").hide();
+            $("#div_loading").addClass("hidden");
 
             $(".tip").tooltipster({multiple: true});
 
@@ -1719,15 +1742,17 @@ function open_add_group_div()
         return false;
     }
 
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // check if read only or forbidden
-    if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) return false;
+    if (RecupComplexite($('#hid_cat').val(), 0, "create_folder") == 0) {
+        return false;
+    }
 
     //Select the actual folder in the dialogbox
     $('#new_rep_groupe option[value=' + $('#hid_cat').val() + ']').prop('selected', true);
     $('#div_ajout_rep').dialog('open');
-    $("#div_loading").hide();
+    $("#div_loading").addClass("hidden");
 }
 
 //###########
@@ -1740,7 +1765,7 @@ function open_edit_group_div()
         return false;
     }
 
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0, "edit_folder") == 0) {
@@ -1752,7 +1777,7 @@ function open_edit_group_div()
     $('#edit_folder_title').val($.trim($('#edit_folder_folder :selected').text()));
     $('#edit_folder_complexity').val($('#complexite_groupe').val());
     $('#div_editer_rep').dialog('open');
-    $("#div_loading").hide();
+    $("#div_loading").addClass("hidden");
 }
 
 //###########
@@ -1765,8 +1790,7 @@ function open_move_group_div()
         return false;
     }
 
-    if (
-        $("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) {
+    if ($("#hid_cat").val() == "<?php if (isset($_SESSION['personal_folders'][0])) {
     echo $_SESSION['personal_folders'][0];
 } else {
     echo "";
@@ -1779,7 +1803,7 @@ function open_move_group_div()
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
     }
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // check if read only or forbidden
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
@@ -1789,7 +1813,7 @@ function open_move_group_div()
     $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+" [id"+$('#hid_cat').val()+"]");
     $('#move_folder_id').val(0);
     $('#div_move_folder').dialog('open');
-    $("#div_loading").hide();
+    $("#div_loading").addClass("hidden");
 }
 
 //###########
@@ -1801,7 +1825,7 @@ function open_del_group_div()
         displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
     }
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
 
     // check if read only or forbidden
@@ -1810,7 +1834,7 @@ function open_del_group_div()
     } else {
         $('#div_supprimer_rep').dialog('open');
         $('#delete_rep_groupe option[value=' + $('#hid_cat').val() + ']').prop('selected', true);
-        $("#div_loading").hide();
+        $("#div_loading").addClass("hidden");
     }
 }
 
@@ -1845,7 +1869,7 @@ function open_add_item_div()
 
         // exclude because user is read only
         if (compReturn == 0) {
-            $("#div_loading").hide();
+            $("#div_loading").addClass("hidden");
             return false;
         }
 
@@ -1865,13 +1889,13 @@ function open_add_item_div()
         });
 
         if ($("#recherche_group_pf").val() == 1) {
-            $("#div_editRestricted").hide();
+            $("#div_editRestricted").addClass("hidden");
         } else {
             $("#div_editRestricted").show();
         }
 
         //open dialog
-        $("#div_formulaire_saisi_info").hide().html("");
+        $("#div_formulaire_saisi_info").addClass("hidden").html("");
         $("#div_formulaire_saisi").dialog("open");
     }
 }
@@ -1883,10 +1907,16 @@ function open_edit_item_div(restricted_to_roles)
 {
     // is user read only and it is not a personal folder
     if (
-        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1") && ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
+        || ($("#access_level").val() === "1" || $("#access_level").val() === "3")
     ) {
-        displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
-        return false;
+        // Exclude the case where the user is in his PF with PSK set
+        if ($('#recherche_group_pf').val() === "1" && $("#personal_sk_set").val() === "1") {
+            // do nothing
+        } else {
+            displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+            return false;
+        }
     }
 
     // If no Item selected, no edition possible
@@ -1894,7 +1924,7 @@ function open_edit_item_div(restricted_to_roles)
         displayMessage("<?php echo addslashes($LANG['none_selected_text']); ?>");
         return false;
     }
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     // Get complexity level for this folder
     // and stop edition if Item edited by another user
@@ -1904,7 +1934,10 @@ function open_edit_item_div(restricted_to_roles)
         if (CKEDITOR.instances["edit_desc"]) {
             CKEDITOR.instances["edit_desc"].destroy();
         }
-        $("#div_loading").hide();
+        if (CKEDITOR.instances["desc"]) {
+            CKEDITOR.instances["desc"].destroy();
+        }
+        $("#div_loading").addClass("hidden");
         return;
     }
 
@@ -1914,7 +1947,7 @@ function open_edit_item_div(restricted_to_roles)
         tmp = tmp.substring(20,tmp.indexOf(")"));
         tmp = tmp.replace(/'/g, "").split(',');
         AfficherDetailsItem(tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], 1, 1);
-        $("#div_loading").hide();
+        $("#div_loading").addClass("hidden");
         return;
     }
 
@@ -1962,7 +1995,7 @@ function open_edit_item_div(restricted_to_roles)
 
     //Get list of people in restriction list
     if ($("#recherche_group_pf").val() == 1) {
-        $("#div_editRestricted").hide();
+        $("#div_editRestricted").addClass("hidden");
     } else {
         $("#div_editRestricted").show();
         // tick selected users / roles
@@ -2038,7 +2071,7 @@ function open_edit_item_div(restricted_to_roles)
     }
 
     //open dialog
-    $("#div_formulaire_edition_item_info").hide().html("");
+    $("#div_formulaire_edition_item_info").addClass("hidden").html("");
     $("#div_formulaire_edition_item").dialog("open");
 }
 
@@ -2049,14 +2082,15 @@ function open_del_item_div()
 {
     // is user read only
     if (
-        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1") && ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+        ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
+        || ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
     ) {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
     }
 
     if ($("#selected_items").val() != "") {
-        $("#div_loading").show();
+        $("#div_loading").removeClass("hidden");
         //Get the associated complexity level
         var compReturn = RecupComplexite($('#hid_cat').val(), 0);
 
@@ -2065,7 +2099,7 @@ function open_del_item_div()
             return false;
         }
 
-        $("#div_loading").hide();
+        $("#div_loading").addClass("hidden");
         $('#div_del_item').dialog('open');
     } else {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['none_selected_text']); ?>");
@@ -2132,7 +2166,7 @@ function delete_attached_file(file_id)
 //## FUNCTION : Permits to preview an attached image
 //###########
 PreviewImage = function(uri,title) {
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
     $.post(
         "sources/items.queries.php",
         {
@@ -2155,11 +2189,11 @@ PreviewImage = function(uri,title) {
             //When the image has loaded, display the dialog
             imageTag
             .error(function() {
-                $("#div_loading").hide();
+                $("#div_loading").addClass("hidden");
                 displayMessage("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".addslashes($LANG['error_file_is_missing']); ?>");
             })
             .load(function() {
-                $("#div_loading").hide();
+                $("#div_loading").addClass("hidden");
                 imageDialog.dialog({
                     modal: true,
                     resizable: false,
@@ -2203,7 +2237,7 @@ function notify_click(status)
             $("#new_show_error").html('ERROR!!');
             $("#new_show_error").show();
         } else {
-            $("#new_show_error").hide();
+            $("#new_show_error").addClass("hidden");
             if (data[0].new_status == "true") {
                 $('#menu_button_notify')
                     .attr('title','<?php echo addslashes($LANG['disable_notify']); ?>')
@@ -2228,12 +2262,12 @@ function notify_click(status)
 */
 function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders, textFieldId)
 {
-    $("#new_show_error").html("").hide();
+    $("#new_show_error").html("").addClass("hidden");
     $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").button("enable");
     if (itemTitle != "") {
         if (checkInCurrentFolder == "1" || checkInAllFolders == "1") {
             //prepare data
-            var data = '{"label":"' + itemTitle.replace(/"/g,'&quot;') + '", "idFolder":"' + $('#hid_cat').val() + '"}';
+            var data = {"label": itemTitle.replace(/"/g,'&quot;') , "idFolder": $('#hid_cat').val()};
 
             if (checkInCurrentFolder == "1") {
                 var typeOfCheck = "same_folder";
@@ -2250,7 +2284,7 @@ function checkTitleDuplicate(itemTitle, checkInCurrentFolder, checkInAllFolders,
                 {
                     type    : "check_for_title_duplicate",
                     option  : typeOfCheck,
-                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key     : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -2381,8 +2415,8 @@ $(function() {
         $("#item_details_scroll").height(inner.outerHeight(true));
     });
 
-    $('#toppathwrap').hide();
-    if ($(".tr_fields") != undefined) $(".tr_fields").hide();
+    $('#toppathwrap').addClass("hidden");
+    if ($(".tr_fields") != undefined) $(".tr_fields").addClass("hidden");
     //Expend/Collapse jstree
     $("#jstree_close").click(function() {
         $("#jstree").jstree("close_all");
@@ -2407,7 +2441,7 @@ $(function() {
     });
 
     $('.menu_200, .menu_150').on('blur', function () {
-        $(this).hide();
+        $(this).addClass("hidden");
     });
 
     $("#pw_size, #edit_pw_size").spinner({
@@ -2495,9 +2529,9 @@ $(function() {
         //alert($("ul").text());
     });
 
-    $("#for_searchtext").hide();
-    $("#copy_pw_done").hide();
-    $("#copy_login_done").hide();
+    $("#for_searchtext").addClass("hidden");
+    $("#copy_pw_done").addClass("hidden");
+    $("#copy_login_done").addClass("hidden");
 
     //PREPARE DIALOGBOXES
     //=> ADD A NEW GROUP
@@ -2513,12 +2547,12 @@ $(function() {
                 AddNewFolder();
             },
             "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
-                $("#new_rep_show_error").html("").hide();
+                $("#new_rep_show_error").html("").addClass("hidden");
                 $(this).dialog('close');
             }
         },
         open: function(event,ui) {
-            $("#new_rep_show_error").hide();
+            $("#new_rep_show_error").addClass("hidden");
             $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });
@@ -2534,7 +2568,7 @@ $(function() {
         buttons: {
             "<?php echo addslashes($LANG['save_button']); ?>": function() {
                 //Do some checks
-                $("#edit_rep_show_error").hide();
+                $("#edit_rep_show_error").addClass("hidden");
                 if ($("#edit_folder_title").val() == "") {
                     $("#edit_rep_show_error").html("<?php echo addslashes($LANG['error_group_label']); ?>");
                     $("#edit_rep_show_error").show();
@@ -2552,16 +2586,16 @@ $(function() {
                     $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
 
                     //prepare data
-                    var data = '{"title":"' + $('#edit_folder_title').val().replace(/"/g,'&quot;') + '", ' +
-                    '"complexity":"' + $('#edit_folder_complexity').val() + '", ' +
-                    '"folder":"' + $('#edit_folder_folder').val() + '"}';
+                    var data = {"title": $('#edit_folder_title').val().replace(/"/g,'&quot;'),
+                        "complexity": $('#edit_folder_complexity').val(),
+                        "folder": $('#edit_folder_folder').val()};
 
                     //Send query
                     $.post(
                         "sources/items.queries.php",
                         {
                             type    : "update_rep",
-                            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                            data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key        : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
@@ -2581,7 +2615,7 @@ $(function() {
                                 }
 
                             }
-                            $("#edit_folder_loader").hide();
+                            $("#edit_folder_loader").addClass("hidden");
                             $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                         },
                         "json"
@@ -2589,8 +2623,8 @@ $(function() {
                 }
             },
             "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
-                $("#edit_folder_loader").hide();
-                $("#edit_rep_show_error").html("").hide();
+                $("#edit_folder_loader").addClass("hidden");
+                $("#edit_rep_show_error").html("").addClass("hidden");
                 $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                 $(this).dialog('close');
             }
@@ -2614,7 +2648,7 @@ $(function() {
                 language: "<?php echo $_SESSION['user_language_code']; ?>"
             });
             $(":button:contains('<?php echo addslashes($LANG['ok']); ?>')").prop("disabled", false);
-            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").hide();
+            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").addClass("hidden");
             $(".ui-tooltip").siblings(".tooltip").remove();
             $("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
         },
@@ -2646,13 +2680,13 @@ $(function() {
                             $("#copy_in_folder").val("");
                             $("#div_copy_item_to_folder").dialog('close');
                         }
-                        $("#copy_item_info").hide();
+                        $("#copy_item_info").addClass("hidden");
                     },
                     "json"
                );
             },
             "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
-                $("#copy_item_to_folder_show_error").html("").hide();
+                $("#copy_item_to_folder_show_error").html("").addClass("hidden");
                 $("#div_copy_item_to_folder").dialog('close');
             }
         }
@@ -2670,7 +2704,7 @@ $(function() {
         buttons: {
             "<?php echo addslashes($LANG['save_button']); ?>": function() {
                 //Do some checks
-                $("#move_rep_show_error").hide();
+                $("#move_rep_show_error").addClass("hidden");
                 if ($("#move_folder_id").val() == "0") {
                     $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_group']); ?>");
                     $("#move_rep_show_error").show();
@@ -2680,11 +2714,12 @@ $(function() {
                     $("#move_rep_show_error").show();
                 } else {
                     $("#move_folder_loader").show();
-                    $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
+                    $("#div_editer_rep ~ .ui-dialog-buttonpane")
+                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
 
                     //prepare data
-                    var data = '{"source_folder_id":"' + $('#hid_cat').val() + '", ' +
-                    '"target_folder_id":"' + $('#move_folder_id').val() + '"}';
+                    var data = {"source_folder_id": $('#hid_cat').val(),
+                        "target_folder_id": $('#move_folder_id').val()};
 
                     //Send query
                     $.post(
@@ -2697,24 +2732,25 @@ $(function() {
                         function(data) {
                             //check if format error
                             if (data[0].error == "") {
-                                $("#div_move_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+                                $("#div_move_folder ~ .ui-dialog-buttonpane")
+                                    .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                                 ListerItems($('#hid_cat').val(), "", 0);
-                                $("#move_folder_loader").hide();
+                                $("#move_folder_loader").addClass("hidden");
                                 refreshTree();
                                 $("#div_move_folder").dialog("close");
                             } else {
                                 $("#move_rep_show_error").html(data[0].error).show();
                             }
-                            $("#move_folder_loader").hide();
+                            $("#move_folder_loader").addClass("hidden");
                         },
                         "json"
                    );
                 }
             },
             "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
-                $("#edit_rep_show_error").html("").hide();
+                $("#edit_rep_show_error").html("").addClass("hidden");
                 $("#div_editer_rep ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
-                $("#move_rep_show_error").html("").hide();
+                $("#move_rep_show_error").html("").addClass("hidden");
                 $(this).dialog('close');
             }
         },
@@ -2738,7 +2774,7 @@ $(function() {
             $("#div_copy_folder_msg")
                 .html('')
                 .removeClass("ui-state-highlight")
-                .hide();
+                .addClass("hidden");
         },
         open: function(event,ui) {
             $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
@@ -2751,7 +2787,7 @@ $(function() {
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
 
                         //display to user
                         $("#copy_folder_source_id, #copy_folder_destination_id").append(data[0].list_folders);
@@ -2787,15 +2823,15 @@ $(function() {
                     .show();
 
                 //prepare data
-                var data = '{"source_folder_id":"' + $('#copy_folder_source_id').val() + '", ' +
-                '"target_folder_id":"' + $('#copy_folder_destination_id').val() + '"}';
+                var data = {"source_folder_id": $('#copy_folder_source_id').val(),
+                    "target_folder_id": $('#copy_folder_destination_id').val()};
 
                 //Send query
                 $.post(
                     "sources/folders.queries.php",
                     {
                         type    : "copy_folder",
-                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
@@ -2812,7 +2848,7 @@ $(function() {
                 );
             },
             "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
-                $("#div_copy_folder_msg").html("").hide();
+                $("#div_copy_folder_msg").html("").addClass("hidden");
                 $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                 $(this).dialog('close');
             }
@@ -2841,7 +2877,7 @@ $(function() {
         },
         close: function() {
             $("#delete_rep_groupe_validate").prop("checked", false);
-            $("#del_rep_show_error").html("").hide();
+            $("#del_rep_show_error").html("").addClass("hidden");
         }
     });
     //<=
@@ -2858,7 +2894,7 @@ $(function() {
         },
         buttons: {
             "<?php echo addslashes($LANG['save_button']); ?>": function() {
-                $("#div_loading").show();
+                $("#div_loading").removeClass("hidden");
                 $(".ui-dialog-buttonpane button:contains('<?php echo addslashes($LANG['save_button']); ?>')").button("enable");
                 AjouterItem();
             },
@@ -2887,7 +2923,7 @@ $(function() {
 
             // hide complexity if PF
             if ($("#pf_selected").val() == 1) {
-                $("#expected_complexity").hide();
+                $("#expected_complexity").addClass("hidden");
             } else {
                 $("#expected_complexity").show();
             }
@@ -2903,9 +2939,9 @@ $(function() {
             $("#item_upload_list").html("");
             $(".item_field").val("");  // clean values in Fields
             $("#pw1").focus();
-            $("#new_show_error").html("").hide();
+            $("#new_show_error").html("").addClass("hidden");
             $(".ui-dialog-buttonpane button:contains('<?php echo addslashes($LANG['save_button']); ?>')").button("enable");
-            $("#div_loading").hide();
+            $("#div_loading").addClass("hidden");
         }
     });
     //<=
@@ -2927,7 +2963,7 @@ $(function() {
                 $('#item_edit_file_queue').html('');
                 //Select 1st tab
                 $("#item_edit_tabs").tabs({ selected: 0 });
-                $("#div_loading").hide();
+                $("#div_loading").addClass("hidden");
                 //Close dialog box
                 $(this).dialog('close');
             }
@@ -2936,7 +2972,10 @@ $(function() {
             if (CKEDITOR.instances["edit_desc"]) {
                 CKEDITOR.instances["edit_desc"].destroy();
             }
-            $("#div_loading, #edit_show_error").hide();
+            if (CKEDITOR.instances["desc"]) {
+                CKEDITOR.instances["desc"].destroy();
+            }
+            $("#div_loading, #edit_show_error").addClass("hidden");
             $("#item_edit_upload_list").html("");
             $(".edit_item_field").val("");  // clean values in Fields
             //Unlock the Item
@@ -2959,7 +2998,7 @@ $(function() {
 
             // show tab fields ? Not if PersonalFolder
             if ($("#recherche_group_pf").val() == 1) {
-                if ($("#edit_item_more") != undefined) $("#edit_item_more").hide();
+                if ($("#edit_item_more") != undefined) $("#edit_item_more").addClass("hidden");
             } else {
                 if ($("#edit_item_more") != undefined && $("#display_categories").val() != 1)
                     $("#edit_item_more").show();
@@ -2968,7 +3007,7 @@ $(function() {
 
             // hide complexity if PF
             if ($("#pf_selected").val() == 1) {
-                $("#edit_expected_complexity").hide();
+                $("#edit_expected_complexity").addClass("hidden");
             } else {
                 $("#edit_expected_complexity").show();
             }
@@ -2999,7 +3038,7 @@ $(function() {
                         key         : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        $("#div_loading").show();
+                        $("#div_loading").removeClass("hidden");
 
                         // refresh list of items
                         $("#full_items_list").html("");
@@ -3010,10 +3049,10 @@ $(function() {
 
                         // clean fields
                         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
-                        $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+                        $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
                         $("#selected_items").val("");
 
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                     }
                );
                 $(this).dialog('close');
@@ -3063,12 +3102,12 @@ $(function() {
             $(".ui-tooltip").siblings(".tooltip").remove();
 
             // load content
-            var data = '{"id":"' + $("#id_item").val() + '"}';
+            const data = {"id":$("#id_item").val()};
             $.post(
                 "sources/items.queries.php",
                 {
                     type    : "load_item_history",
-                    data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                    data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                     key     : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
@@ -3077,7 +3116,7 @@ $(function() {
                         data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                     } catch (e) {
                         // error
-                        $("#div_loading").hide();
+                        $("#div_loading").addClass("hidden");
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data);
                         $("#div_dialog_message").show();
                         return;
@@ -3101,7 +3140,7 @@ $(function() {
         title: "<?php echo addslashes($LANG['share']); ?>",
         buttons: {
             "<?php echo addslashes($LANG['send']); ?>": function() {
-                $("#div_item_share_error").hide();
+                $("#div_item_share_error").addClass("hidden");
                 if (IsValidEmail($("#item_share_email").val())) {    //check if email format is ok
                     $("#div_item_share_status").show();
                     $.post(
@@ -3114,7 +3153,7 @@ $(function() {
                             key        : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
-                            $("#div_item_share_status").html("").hide();
+                            $("#div_item_share_status").html("").addClass("hidden");
                             if (data[0].error == "") {
                                 $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']); ?>").show();
                             } else {
@@ -3177,13 +3216,16 @@ $(function() {
                 }
 
                 // prepare changes
-                var data = '{"label":"' + $("#label_change").val() + '", "pwd":"' + $("#pwd_change").val() + '", "url":"' + $("#url_change").val() + '", "login":"' + $("#login_change").val() + '", "email":"' + $("#email_change").val() + '", "folder":"' + $("#hid_cat").val() + '", "comment":"' + $("#comment_change").val() + '", "item_id":"' + $("#id_item").val() + '"}';
+                var data = {"label": $("#label_change").val(), "pwd": $("#pwd_change").val(),
+                    "url": $("#url_change").val(), "login": $("#login_change").val(),
+                    "email": $("#email_change").val(), "folder": $("#hid_cat").val(),
+                    "comment": $("#comment_change").val(), "item_id": $("#id_item").val()};
 
                 $.post(
                     "sources/items.queries.php",
                     {
                         type    : "suggest_item_change",
-                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                         id      : $("#id_item").val(),
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
@@ -3229,10 +3271,10 @@ $(function() {
         browse_button : "item_attach_pickfiles",
         container : "item_upload",
         max_file_size : "<?php
-if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
-    echo $_SESSION['settings']['upload_maxfilesize']."mb";
+if (strrpos($SETTINGS['upload_maxfilesize'], "mb") === false) {
+    echo $SETTINGS['upload_maxfilesize']."mb";
 } else {
-    echo $_SESSION['settings']['upload_maxfilesize'];
+    echo $SETTINGS['upload_maxfilesize'];
 }
 ?>",
         chunk_size : "1mb",
@@ -3241,17 +3283,17 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
-            {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext']; ?>"},
-            {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext']; ?>"},
-            {title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext']; ?>"},
-            {title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext']; ?>"}
+            {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
+            {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
+            {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
+            {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
         ],<?php
-if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
+if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         resize : {
-            width : <?php echo $_SESSION['settings']['upload_imageresize_width']; ?>,
-            height : <?php echo $_SESSION['settings']['upload_imageresize_height']; ?>,
-            quality : <?php echo $_SESSION['settings']['upload_imageresize_quality']; ?>
+            width : <?php echo $SETTINGS['upload_imageresize_width']; ?>,
+            height : <?php echo $SETTINGS['upload_imageresize_height']; ?>,
+            quality : <?php echo $SETTINGS['upload_imageresize_quality']; ?>
         },
 <?php
 }
@@ -3275,7 +3317,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                 });
             },
             UploadComplete: function(up, files) {
-                $("#item_upload_wait").hide();
+                $("#item_upload_wait").addClass("hidden");
                 $("#files_number").val(0);
             }
         }
@@ -3325,7 +3367,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_upload_list').append(
-                '<div id="' + file.id + '"><span id="remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                '<div id= file.id><span id="remove_' + file.id + '>[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
                 file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#files_number").val(parseInt($("#files_number").val())+1);
@@ -3339,10 +3381,10 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
         browse_button : "item_edit_attach_pickfiles",
         container : "item_edit_upload",
         max_file_size : "<?php
-if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
-    echo $_SESSION['settings']['upload_maxfilesize']."mb";
+if (strrpos($SETTINGS['upload_maxfilesize'], "mb") === false) {
+    echo $SETTINGS['upload_maxfilesize']."mb";
 } else {
-    echo $_SESSION['settings']['upload_maxfilesize'];
+    echo $SETTINGS['upload_maxfilesize'];
 }
 ?>",
         chunk_size : "1mb",
@@ -3351,17 +3393,17 @@ if (strrpos($_SESSION['settings']['upload_maxfilesize'], "mb") === false) {
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
         filters : [
-            {title : "Image files", extensions : "<?php echo $_SESSION['settings']['upload_imagesext']; ?>"},
-            {title : "Package files", extensions : "<?php echo $_SESSION['settings']['upload_pkgext']; ?>"},
-            {title : "Documents files", extensions : "<?php echo $_SESSION['settings']['upload_docext']; ?>"},
-            {title : "Other files", extensions : "<?php echo $_SESSION['settings']['upload_otherext']; ?>"}
+            {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
+            {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
+            {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
+            {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
         ],<?php
-if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
+if ($SETTINGS['upload_imageresize_options'] == 1) {
         ?>
         resize : {
-            width : <?php echo $_SESSION['settings']['upload_imageresize_width']; ?>,
-            height : <?php echo $_SESSION['settings']['upload_imageresize_height']; ?>,
-            quality : <?php echo $_SESSION['settings']['upload_imageresize_quality']; ?>
+            width : <?php echo $SETTINGS['upload_imageresize_width']; ?>,
+            height : <?php echo $SETTINGS['upload_imageresize_height']; ?>,
+            quality : <?php echo $SETTINGS['upload_imageresize_quality']; ?>
         },<?php
 }
 ?>
@@ -3379,7 +3421,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
                 });
             },
             UploadComplete: function(up, files) {
-                $("#item_edit_upload_wait").hide();
+                $("#item_edit_upload_wait").addClass("hidden");
                 $("#edit_files_number").val(0);
             }
         }
@@ -3431,7 +3473,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
     edit_uploader_attachments.bind('FilesAdded', function(up, files) {
         $.each(files, function(i, file) {
             $('#item_edit_upload_list').append(
-                '<div id="' + file.id + '"><span id="edit_remove_' + file.id + '">[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
+                '<div id= file.id><span id="edit_remove_' + file.id + '>[<a href=\'#\' onclick=\'$(\"#' + file.id + '\").remove();\'>-</a>]</span> ' +
                 file.name + ' (' + plupload.formatSize(file.size) + ')' +
             '</div>');
             $("#edit_files_number").val(parseInt($("#edit_files_number").val())+1);
@@ -3572,7 +3614,7 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
     //add date selector
     $(".datepicker").datepicker({
-        dateFormat:"<?php echo str_replace(array("Y", "M"), array("yy", "mm"), $_SESSION['settings']['date_format']); ?>",
+        dateFormat:"<?php echo str_replace(array("Y", "M"), array("yy", "mm"), $SETTINGS['date_format']); ?>",
         changeMonth: true,
         changeYear: true
     });
@@ -3757,25 +3799,25 @@ if ($_SESSION['settings']['upload_imageresize_options'] == 1) {
 
 // show password during longpress
 var mouseStillDown = false;
-$("#id_pw").mousedown(function(event) {
-     mouseStillDown = true;
-     showPwdContinuous();
-}).mouseup(function(event) {
+$('#item_details_ok').on('mousedown', '.unhide_masked_data', function(event) {
+    mouseStillDown = true;
+     showPwdContinuous($(this).attr('id'));
+}).on('mouseup', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
-}).mouseleave(function(event) {
+}).on('mouseleave', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
 });
-var showPwdContinuous = function(){
+var showPwdContinuous = function(elem_id){
     if(mouseStillDown){
-        $('#id_pw').text($('#hid_pw').val());
-        setTimeout("showPwdContinuous()", 50);
+        $('#'+elem_id).text($('#h'+elem_id).val());
+        setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
-        if ($("#pw_shown").val() == "0") {
+        if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
             itemLog("item_password_shown");
             $("#pw_shown").val("1");
         }
     } else {
-        $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
+        $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
         $('.tip').tooltipster({multiple: true});
     }
 }
@@ -3868,7 +3910,7 @@ function proceed_list_update(stop_proceeding)
         }
     } else {
         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
-        $("#items_list_loader").hide();
+        $("#items_list_loader").addClass("hidden");
 
         // prepare clipboard items
         var clipboard = new Clipboard('.mini_login');
@@ -3887,7 +3929,7 @@ function proceed_list_update(stop_proceeding)
         $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
 
-        var restricted_to_roles = <?php if (isset($_SESSION['settings']['restricted_to_roles']) && $_SESSION['settings']['restricted_to_roles'] == 1) {
+        var restricted_to_roles = <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
     echo 1;
 } else {
     echo 0;
@@ -3966,7 +4008,7 @@ function items_list_filter(id)
 {
     $("#full_items_list").find("li").show();
     if (id) {
-        $("#full_items_list").find("a:not(:contains(" + id + "))").parent().hide();
+        $("#full_items_list").find("a:not(:contains(" + id + "))").parent().addClass("hidden");
         $("#full_items_list").find("a:contains(" + id + ")").parent().show();
     }
 }
@@ -3974,22 +4016,22 @@ function items_list_filter(id)
 
 function manage_history_entry(type, id)
 {
-    var data = '{"item_id":"' + $("#id_item").val() + '", "label":"' + sanitizeString($('#add_history_entry_label').val()) + '"}';
+    var data = {"item_id": $("#id_item").val(), "label": sanitizeString($('#add_history_entry_label').val())};
 
     //Send query
     $.post(
         "sources/items.queries.php",
         {
             type      : "history_entry_add",
-            folder_id           : $('#hid_cat').val(),
-            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-            key        : "<?php echo $_SESSION['key']; ?>"
+            folder_id : $('#hid_cat').val(),
+            data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key       : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             //check if format error
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             if (data.error == "") {
-                $("#item_history_log_error").html("").hide();
+                $("#item_history_log_error").html("").addClass("hidden");
                 $("#add_history_entry_label").val("");
                 $("#item_history_log").append(htmlspecialchars_decode(data.new_line));
             } else {
@@ -4001,24 +4043,13 @@ function manage_history_entry(type, id)
 }
 
 
-function aes_encrypt(text)
-{
-    return Aes.Ctr.encrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
-
-
-function aes_decrypt(text)
-{
-    return Aes.Ctr.decrypt(text, "<?php echo $_SESSION['key']; ?>", 256);
-}
-
 /*
 * Launch the redirection to OTV page
 */
 function prepareOneTimeView()
 {
     if ($("#selected_items").val() == "") return;
-    $("#div_loading").show();
+    $("#div_loading").removeClass("hidden");
 
     //Send query
     $.post(
@@ -4053,7 +4084,7 @@ function prepareOneTimeView()
             } else {
                 $("#item_history_log_error").html(data.error).show();
             }
-            $("#div_loading").hide();
+            $("#div_loading").addClass("hidden");
         },
         "json"
    );
@@ -4066,12 +4097,12 @@ function globalItemsSearch()
         $("#items_listing_should_stop").val("1");
 
         // wait
-        $("#items_list_loader").show();
+        $("#items_list_loader").removeClass("hidden");
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching']); ?>');
 
         // clean
         $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
-        $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+        $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
         $("#full_items_list").html("");
         $("#selected_items").val("");
 
@@ -4089,7 +4120,7 @@ function globalItemsSearch()
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['search_results']); ?>');
                 $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
                 $("#full_items_list").html(data.items_html);
-                $("#items_list_loader").hide();
+                $("#items_list_loader").addClass("hidden");
             }
         );
     }
@@ -4104,12 +4135,12 @@ function searchItemsWithTags(tag)
     if (tag == "") return false
 
     // wait
-    $("#items_list_loader").show();
+    $("#items_list_loader").removeClass("hidden");
     $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching_tag']); ?>&nbsp;<b>' + tag + '</b> ...');
 
     // clean
     $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
-    $("#button_quick_login_copy, #button_quick_pw_copy").hide();
+    $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
     $("#full_items_list").html("");
     $("#selected_items").val("");
 
@@ -4126,7 +4157,7 @@ function searchItemsWithTags(tag)
             displayMessage(data.message);
             $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['search_results']); ?>&nbsp;<b>' + tag + '</b>');
             $("#full_items_list").html(data.items_html);
-            $("#items_list_loader").hide();
+            $("#items_list_loader").addClass("hidden");
         }
     );
 }
@@ -4136,7 +4167,7 @@ function loadOfflineDialog()
     $("#dialog_offline_mode").dialog({
         open: function(event, ui) {
             $("#div_offline_mode").load(
-                "<?php echo $_SESSION['settings']['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>", function(){}
             );
         }
     }).dialog("open");
@@ -4147,7 +4178,7 @@ function loadExportDialog()
     $("#dialog_export_file").dialog({
         open: function(event, ui) {
             $("#div_export_file").load(
-                "<?php echo $_SESSION['settings']['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>", function(){}
             );
         }
     }).dialog("open");
@@ -4158,7 +4189,7 @@ function loadImportDialog()
     $("#dialog_import_file").dialog({
         open: function(event, ui) {
             $("#div_import_file").load(
-                "<?php echo $_SESSION['settings']['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(), function(){}
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(), function(){}
             );
         }
     }).dialog("open");
@@ -4204,11 +4235,11 @@ function reEncryptPersonalPwds(remainingIds, currentId, nb)
 
  function serverAutoChangePwd()
  {
-     console.log("opening");
+    //console.log("opening");
     $("#dialog_ssh").dialog({
         open: function(event, ui) {
             $("#div_ssh").load(
-                "<?php echo $_SESSION['settings']['cpassman_url'].'/ssh.php?key='.$_SESSION['key']; ?>&id="+$("#selected_items").val(), function(){}
+                "<?php echo $SETTINGS['cpassman_url'].'/ssh.php?key='.$_SESSION['key']; ?>&id="+$("#selected_items").val(), function(){}
             );
         }
     }).dialog("open");

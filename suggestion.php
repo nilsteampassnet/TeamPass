@@ -12,25 +12,35 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
-    || !isset($_SESSION['settings']['enable_suggestion'])
-    || $_SESSION['settings']['enable_suggestion'] != 1)
-{
+) {
+    die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+if (isset($SETTINGS['enable_suggestion']) === false || $SETTINGS['enable_suggestion'] !== "1") {
     die('Hacking attempt...');
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
@@ -55,8 +65,7 @@ if (isset($_SESSION['list_restricted_folders_for_items'])
 $selectVisibleFoldersOptions = "<option value=\"\">--".$LANG['select']."--</option>";
 foreach ($folders as $folder) {
     // Be sure that user can only see folders he/she is allowed to
-    if (
-        !in_array($folder->id, $_SESSION['forbiden_pfs'])
+    if (!in_array($folder->id, $_SESSION['forbiden_pfs'])
         || in_array($folder->id, $_SESSION['groupes_visibles'])
         || in_array($folder->id, $listFoldersLimitedKeys)
         || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
@@ -67,8 +76,7 @@ foreach ($folders as $folder) {
         // Check if any allowed folder is part of the descendants of this node
         $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
         foreach ($nodeDescendants as $node) {
-            if (
-                ($listFoldersLimitedKeys != null || is_array($listFoldersLimitedKeys)) &&
+            if (($listFoldersLimitedKeys != null || is_array($listFoldersLimitedKeys)) &&
                 (
                     in_array(
                         $node,
@@ -233,7 +241,7 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
     echo '
         <script language="javascript" type="text/javascript">
         <!--
-        openKB('.filter_var($_GET['id'], FILTER_SANITIZE_NUMBER_INT).');
+        openKB('.filter_var((integer) $_GET['id'], FILTER_SANITIZE_NUMBER_INT).');
         -->
         </script>';
 }

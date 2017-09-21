@@ -34,40 +34,30 @@ require_once '../sources/main.functions.php';
 
 $_SESSION['settings']['loaded'] = "";
 
-################
-## Function permits to get the value from a line
-################
-/**
- * @param string $val
- */
-function getSettingValue($val)
-{
-    $val = trim(strstr($val, "="));
-    return trim(str_replace('"', '', substr($val, 1, strpos($val, ";") - 1)));
-}
 
 ################
 ## Function permits to check if a column exists, and if not to add it
 ################
-function addColumnIfNotExist($db, $column, $columnAttr = "VARCHAR(255) NULL")
+function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL")
 {
     global $dbTmp;
     $exists = false;
-    $columns = mysqli_query($dbTmp, "show columns from $db");
-    while ($c = mysqli_fetch_assoc($columns)) {
-        if ($c['Field'] == $column) {
+    $columns = mysqli_query($dbTmp, "show columns from $dbname");
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ($col['Field'] == $column) {
             $exists = true;
             return true;
         }
     }
     if (!$exists) {
-        return mysqli_query($dbTmp, "ALTER TABLE `$db` ADD `$column`  $columnAttr");
-    } else {
-        return false;
+        return mysqli_query($dbTmp, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
     }
+
+    return false;
 }
 
-function addIndexIfNotExist($table, $index, $sql) {
+function addIndexIfNotExist($table, $index, $sql)
+{
     global $dbTmp;
 
     $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
@@ -75,29 +65,33 @@ function addIndexIfNotExist($table, $index, $sql) {
 
     // if index does not exist, then add it
     if (!$res) {
-        $res = mysqli_query($dbTmp, "ALTER TABLE `$table` ".$sql);
+        $res = mysqli_query(
+            $dbTmp,
+            "ALTER TABLE `$table` ".$sql
+        );
     }
 
     return $res;
 }
 
-function tableExists($tablename, $database = false)
+function tableExists($tablename)
 {
-    global $dbTmp;
+    global $dbTmp, $database;
 
-    $res = mysqli_query($dbTmp,
+    $res = mysqli_query(
+        $dbTmp,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
-        WHERE table_schema = '".$_SESSION['database']."'
+        WHERE table_schema = '".$database."'
         AND table_name = '$tablename'"
     );
 
     if ($res > 0) {
         return true;
-    } else {
-        return false;
     }
-    }
+
+    return false;
+}
 
 //define pbkdf2 iteration count
 @define('ITCOUNT', '2072');
@@ -111,7 +105,7 @@ require_once '../includes/libraries/Tree/NestedTree/NestedTree.php';
 
 //Build tree
 $tree = new Tree\NestedTree\NestedTree(
-    $_SESSION['pre'].'nested_tree',
+    $pre.'nested_tree',
     'id',
     'parent_id',
     'title'
@@ -122,11 +116,11 @@ $res = "";
 
 
 $dbTmp = mysqli_connect(
-    $_SESSION['server'],
-    $_SESSION['user'],
-    $_SESSION['pass'],
-    $_SESSION['database'],
-    $_SESSION['port']
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
 );
 
 // 2.1.27 check with DEFUSE
@@ -134,7 +128,10 @@ $dbTmp = mysqli_connect(
 // if yes, then don't execute re-encryption
 if (isset($_SESSION['tp_defuse_installed']) !== true) {
     $_SESSION['tp_defuse_installed'] = false;
-    $columns = mysqli_query($dbTmp, "show columns from ".$_SESSION['pre']."items");
+    $columns = mysqli_query(
+        $dbTmp,
+        "show columns from ".$pre."items"
+    );
     while ($c = mysqli_fetch_assoc($columns)) {
         if ($c['Field'] === "encryption_type") {
             $_SESSION['tp_defuse_installed'] = true;
@@ -163,7 +160,7 @@ $val = array(
     array('admin', 'activate_expiration', '0', 0),
     array('admin', 'pw_life_duration', '30', 0),
     //array('admin', 'maintenance_mode','1',1),
-    array('admin', 'cpassman_version', $k['version'], 1),
+    array('admin', 'cpassman_version', $SETTINGS_EXT['version'], 1),
     array('admin', 'ldap_mode', '0', 0),
     array('admin', 'ldap_type', '0', 0),
     array('admin', 'ldap_suffix', '0', 0),
@@ -307,37 +304,40 @@ $val = array(
 $res1 = "na";
 foreach ($val as $elem) {
     //Check if exists before inserting
-    $queryRes = mysqli_query($dbTmp,
-        "SELECT COUNT(*) FROM ".$_SESSION['pre']."misc
+    $queryRes = mysqli_query(
+        $dbTmp,
+        "SELECT COUNT(*) FROM ".$pre."misc
         WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
     );
     if (mysqli_error($dbTmp)) {
-        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.
+        echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].' - '.
             addslashes($queryRes).'"}]';
         exit();
     } else {
         $resTmp = mysqli_fetch_row($queryRes);
-        if ($resTmp[0] == 0) {
-            $queryRes = mysqli_query($dbTmp,
-                "INSERT INTO `".$_SESSION['pre']."misc`
+        if ($resTmp[0] === 0) {
+            $queryRes = mysqli_query(
+                $dbTmp,
+                "INSERT INTO `".$pre."misc`
                 (`type`, `intitule`, `valeur`) VALUES
                 ('".$elem[0]."', '".$elem[1]."', '".
                 str_replace("'", "", $elem[2])."');"
             );
-            if (!$queryRes) {
-                echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.addslashes($queryRes).'"}]';
+            if (mysqli_error($dbTmp)) {
+                echo '[{"finish":"1", "msg":"", "error":"MySQL Error1! '.addslashes(mysqli_error($dbTmp)).'"}]';
                 exit();
             }
         } else {
             // Force update for some settings
-            if ($elem[3] == 1) {
-                $queryRes = mysqli_query($dbTmp,
-                    "UPDATE `".$_SESSION['pre']."misc`
+            if ($elem[3] === 1) {
+                $queryRes = mysqli_query(
+                    $dbTmp,
+                    "UPDATE `".$pre."misc`
                     SET `valeur` = '".$elem[2]."'
-                    WHERE type = '".$elem[0]."' AND intitule = '".$elem[1]."'"
+                    WHERE `type` = '".$elem[0]."' AND `intitule` = '".$elem[1]."'"
                 );
-                if (!$queryRes) {
-                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error! '.addslashes($queryRes).'"}]';
+                if (mysqli_error($dbTmp)) {
+                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error2! '.addslashes(mysqli_error($dbTmp)).'"}]';
                     exit();
                 }
             }
@@ -345,289 +345,310 @@ foreach ($val as $elem) {
     }
 }
 
-if ($queryRes) {
-    //
-} else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when inserting datas! '.
-            addslashes($queryError).'"}]';
-    exit();
-}
 
 ## Alter ITEMS table
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "anyone_can_modify",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "email",
     "VARCHAR(100) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "notification",
     "VARCHAR(250) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "viewed_no",
     "INT(12) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "complexity_level",
     "varchar(2) NOT null DEFAULT '-1'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."roles_values",
+    $pre."roles_values",
     "type",
     "VARCHAR(5) NOT NULL DEFAULT 'R'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "upgrade_needed",
     "BOOLEAN NOT NULL DEFAULT FALSE"
 );
 
-$res2 = addIndexIfNotExist($_SESSION['pre'].'items', 'restricted_inactif_idx', 'ADD INDEX `restricted_inactif_idx` (`restricted_to`,`inactif`)');
+$res2 = addIndexIfNotExist($pre.'items', 'restricted_inactif_idx', 'ADD INDEX `restricted_inactif_idx` (`restricted_to`,`inactif`)');
 
 # Alter tables
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."log_items MODIFY id_user INT(8)"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."log_items MODIFY id_user INT(8)"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."restriction_to_roles MODIFY role_id INT(12)"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."restriction_to_roles MODIFY role_id INT(12)"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."restriction_to_roles MODIFY item_id INT(12)"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."restriction_to_roles MODIFY item_id INT(12)"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."items MODIFY pw TEXT"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."items MODIFY pw TEXT"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users MODIFY pw VARCHAR(400)"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users MODIFY pw VARCHAR(400)"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."keys CHANGE `table` `sql_table` VARCHAR( 25 ) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."keys CHANGE `table` `sql_table` VARCHAR( 25 ) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users MODIFY `key_tempo` varchar(100) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users MODIFY `key_tempo` varchar(100) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."categories CHANGE `type` `type` varchar(50) NULL default ''"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."categories CHANGE `type` `type` varchar(50) NULL default ''"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."categories CHANGE `order` `order` int(12) NOT NULL default '0'"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."categories CHANGE `order` `order` int(12) NOT NULL default '0'"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `derniers` `derniers` text NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `derniers` `derniers` text NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `key_tempo` `key_tempo` varchar(100) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `key_tempo` `key_tempo` varchar(100) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `last_pw_change` `last_pw_change` varchar(30) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `last_pw_change` `last_pw_change` varchar(30) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `last_pw` `last_pw` text NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `last_pw` `last_pw` text NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `fonction_id` `fonction_id` varchar(255) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `fonction_id` `fonction_id` varchar(255) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `groupes_interdits` `groupes_interdits` varchar(255) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `groupes_interdits` `groupes_interdits` varchar(255) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `last_connexion` `last_connexion` varchar(30) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `last_connexion` `last_connexion` varchar(30) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `favourites` `favourites` varchar(300) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `favourites` `favourites` varchar(300) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `latest_items` `latest_items` varchar(300) NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `latest_items` `latest_items` varchar(300) NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `avatar` `avatar` varchar(255) NOT null DEFAULT ''"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `avatar` `avatar` varchar(255) NOT null DEFAULT ''"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."log_items CHANGE `raison` `raison` text NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."log_items CHANGE `raison` `raison` text NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."log_items CHANGE `raison_iv` `raison_iv` text NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."log_items CHANGE `raison_iv` `raison_iv` text NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."roles_values CHANGE `type` `type` VARCHAR( 5 ) NOT NULL DEFAULT 'R'"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."roles_values CHANGE `type` `type` VARCHAR( 5 ) NOT NULL DEFAULT 'R'"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."suggestion CHANGE `suggestion_key` `pw_iv` TEXT NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."suggestion CHANGE `suggestion_key` `pw_iv` TEXT NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."suggestion CHANGE `key` `pw_iv` TEXT NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."suggestion CHANGE `key` `pw_iv` TEXT NULL"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE ".$_SESSION['pre']."suggestion CHANGE `password` `pw` TEXT NULL"
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE ".$pre."suggestion CHANGE `password` `pw` TEXT NULL"
 );
 
 ## Alter USERS table
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "favourites",
     "VARCHAR(300)"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "latest_items",
     "VARCHAR(300)"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "personal_folder",
     "INT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "disabled",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "no_bad_attempts",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "can_create_root_folder",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "read_only",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "timestamp",
     "VARCHAR(30) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "user_language",
     "VARCHAR(30) NOT null DEFAULT 'english'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "name",
     "VARCHAR(100) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "lastname",
     "VARCHAR(100) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "session_end",
     "VARCHAR(30) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "isAdministratedByRole",
     "TINYINT(5) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "psk",
     "VARCHAR(400) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "ga",
     "VARCHAR(50) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "avatar",
     "VARCHAR(255) NOT null DEFAULT ''"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "avatar_thumb",
     "VARCHAR(255) NOT null DEFAULT ''"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."users",
+    $pre."users",
     "treeloadstrategy",
     "VARCHAR(30) NOT null DEFAULT 'full'"
 );
 
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."log_items",
+    $pre."log_items",
     "raison_iv",
     "TEXT null"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."categories_items",
+    $pre."categories_items",
     "data_iv",
     "TEXT NOT null"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "pw_iv",
     "TEXT NOT null"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "pw_len",
     "INT(5) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "auto_update_pwd_frequency",
     "TINYINT(2) NOT NULL DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."items",
+    $pre."items",
     "auto_update_pwd_next_date",
     "INT(15) NOT NULL DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."cache",
+    $pre."cache",
     "renewal_period",
     "TINYINT(4) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."suggestion",
+    $pre."suggestion",
     "pw_len",
     "int(5) NOT null DEFAULT '0'"
 );
 
 // Clean timestamp for users table
-mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."users SET timestamp = ''");
+mysqli_query($dbTmp, "UPDATE ".$pre."users SET timestamp = ''");
 
 ## Alter nested_tree table
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."nested_tree",
+    $pre."nested_tree",
     "personal_folder",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 $res2 = addColumnIfNotExist(
-    $_SESSION['pre']."nested_tree",
+    $pre."nested_tree",
     "renewal_period",
     "TINYINT(4) NOT null DEFAULT '0'"
 );
 
 addIndexIfNotExist(
-    $_SESSION['pre'].'nested_tree',
+    $pre.'nested_tree',
     'personal_folder_idx',
     'ADD INDEX `personal_folder_idx` (`personal_folder`)'
 );
@@ -637,8 +658,9 @@ addIndexIfNotExist(
 //include('upgrade_db_1.08.php');
 
 ## TABLE TAGS
-$res8 = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."tags` (
+$res8 = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."tags` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `tag` varchar(30) NOT NULL,
     `item_id` int(12) NOT NULL,
@@ -646,17 +668,16 @@ $res8 = mysqli_query($dbTmp,
     UNIQUE KEY `id` (`id`)
     );"
 );
-if ($res8) {
-    //
-} else {
+if (mysqli_error($dbTmp)) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE LOG_SYSTEM
-$res8 = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."log_system` (
+$res8 = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."log_system` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `type` varchar(20) NOT NULL,
     `date` varchar(30) NOT NULL,
@@ -665,9 +686,10 @@ $res8 = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
     );"
 );
-if ($res8) {
-    mysqli_query($dbTmp,
-        "ALTER TABLE ".$_SESSION['pre']."log_system
+if (empty(mysqli_error($dbTmp)) === true) {
+    mysqli_query(
+        $dbTmp,
+        "ALTER TABLE ".$pre."log_system
         ADD `field_1` VARCHAR(250) NOT NULL"
     );
 } else {
@@ -677,8 +699,9 @@ if ($res8) {
 }
 
 ## TABLE 10 - FILES
-$res9 = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."files` (
+$res9 = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."files` (
     `id` int(11) NOT null AUTO_INCREMENT,
     `id_item` int(11) NOT NULL,
     `name` varchar(100) NOT NULL,
@@ -689,26 +712,27 @@ $res9 = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
     );"
 );
-if ($res9) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
-mysqli_query($dbTmp,
-    "ALTER TABLE `".$_SESSION['pre']."files`
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$pre."files`
     CHANGE id id INT(11) AUTO_INCREMENT PRIMARY KEY;"
 );
-mysqli_query($dbTmp,
-    "ALTER TABLE `".$_SESSION['pre']."files`
+mysqli_query(
+    $dbTmp,
+    "ALTER TABLE `".$pre."files`
     CHANGE name name VARCHAR(100) NOT NULL;"
 );
 
 ## TABLE CACHE
-mysqli_query($dbTmp, "DROP TABLE IF EXISTS `".$_SESSION['pre']."cache`");
-$res8 = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."cache` (
+mysqli_query($dbTmp, "DROP TABLE IF EXISTS `".$pre."cache`");
+$res8 = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."cache` (
     `id` int(12) NOT NULL,
     `label` varchar(50) NOT NULL,
     `description` text NOT NULL,
@@ -722,19 +746,20 @@ $res8 = mysqli_query($dbTmp,
     `renewal_period` TINYINT(4) NOT null DEFAULT '0'
     );"
 );
-if ($res8) {
+if (empty(mysqli_error($dbTmp)) === true) {
     //ADD VALUES
     $sql = "SELECT *
-            FROM ".$_SESSION['pre']."items as i
-            INNER JOIN ".$_SESSION['pre']."log_items as l ON (l.id_item = i.id)
+            FROM ".$pre."items as i
+            INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
             AND l.action = 'at_creation'
             WHERE i.inactif=0";
     $rows = mysqli_query($dbTmp, $sql);
     while ($reccord = mysqli_fetch_array($rows)) {
         //Get all TAGS
         $tags = "";
-        $itemsRes = mysqli_query($dbTmp,
-            "SELECT tag FROM ".$_SESSION['pre']."tags
+        $itemsRes = mysqli_query(
+            $dbTmp,
+            "SELECT tag FROM ".$pre."tags
             WHERE item_id=".$reccord['id']
         ) or die(mysqli_error($dbTmp));
         $itemTags = mysqli_fetch_array($itemsRes);
@@ -753,8 +778,9 @@ if ($res8) {
         }
 
         //store data
-        mysqli_query($dbTmp,
-            "INSERT INTO ".$_SESSION['pre']."cache
+        mysqli_query(
+            $dbTmp,
+            "INSERT INTO ".$pre."cache
             VALUES (
             '".$reccord['id']."',
             '".$reccord['label']."',
@@ -780,8 +806,9 @@ if ($res8) {
    *  Change table FUNCTIONS
    *  By 2 tables ROLES
 */
-$res9 = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."roles_title` (
+$res9 = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."roles_title` (
     `id` int(12) NOT NULL,
     `title` varchar(50) NOT NULL,
     `allow_pw_change` TINYINT(1) NOT null DEFAULT '0',
@@ -789,56 +816,55 @@ $res9 = mysqli_query($dbTmp,
     `creator_id` int(11) NOT null DEFAULT '0'
     );"
 );
-if ($res9) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_title! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 addColumnIfNotExist(
-    $_SESSION['pre']."roles_title",
+    $pre."roles_title",
     "allow_pw_change",
     "TINYINT(1) NOT null DEFAULT '0'"
 );
 addColumnIfNotExist(
-    $_SESSION['pre']."roles_title",
+    $pre."roles_title",
     "complexity",
     "INT(5) NOT null DEFAULT '0'"
 );
 addColumnIfNotExist(
-    $_SESSION['pre']."roles_title",
+    $pre."roles_title",
     "creator_id",
     "INT(11) NOT null DEFAULT '0'"
 );
 
-$res10 = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."roles_values` (
+$res10 = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."roles_values` (
     `role_id` int(12) NOT NULL,
     `folder_id` int(12) NOT NULL
     );"
 );
-if ($res10) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_values! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
-if (tableExists($_SESSION['pre']."functions")) {
+if (tableExists($pre."functions")) {
     $tableFunctionExists = true;
 } else {
     $tableFunctionExists = false;
 }
-if ($res9 && $res10 && $tableFunctionExists === true) {
+if ($tableFunctionExists === true) {
     //Get data from tables FUNCTIONS and populate new ROLES tables
-    $rows = mysqli_query($dbTmp,
-        "SELECT * FROM ".$_SESSION['pre']."functions"
+    $rows = mysqli_query(
+        $dbTmp,
+        "SELECT * FROM ".$pre."functions"
     );
     while ($reccord = mysqli_fetch_array($rows)) {
         //Add new role title
-        mysqli_query($dbTmp,
-            "INSERT INTO ".$_SESSION['pre']."roles_title
+        mysqli_query(
+            $dbTmp,
+            "INSERT INTO ".$pre."roles_title
             VALUES (
                 '".$reccord['id']."',
                 '".$reccord['title']."'
@@ -848,8 +874,9 @@ if ($res9 && $res10 && $tableFunctionExists === true) {
         //Add each folder in roles_values
         foreach (explode(';', $reccord['groupes_visibles']) as $folderId) {
             if (!empty($folderId)) {
-                mysqli_query($dbTmp,
-                    "INSERT INTO ".$_SESSION['pre']."roles_values
+                mysqli_query(
+                    $dbTmp,
+                    "INSERT INTO ".$pre."roles_values
                     VALUES (
                     '".$reccord['id']."',
                     '".$folderId."'
@@ -860,31 +887,30 @@ if ($res9 && $res10 && $tableFunctionExists === true) {
     }
 
     //Now alter table roles_title in order to create a primary index
-    mysqli_query($dbTmp,
-        "ALTER TABLE `".$_SESSION['pre']."roles_title`
+    mysqli_query(
+        $dbTmp,
+        "ALTER TABLE `".$pre."roles_title`
         ADD PRIMARY KEY(`id`)"
     );
-    mysqli_query($dbTmp,
-        "ALTER TABLE `".$_SESSION['pre']."roles_title`
+    mysqli_query(
+        $dbTmp,
+        "ALTER TABLE `".$pre."roles_title`
         CHANGE `id` `id` INT(12) NOT null AUTO_INCREMENT "
     );
     addColumnIfNotExist(
-        $_SESSION['pre']."roles_title",
+        $pre."roles_title",
         "allow_pw_change",
         "TINYINT(1) NOT null DEFAULT '0'"
     );
 
     //Drop old table
-    mysqli_query($dbTmp, "DROP TABLE ".$_SESSION['pre']."functions");
-} elseif ($tableFunctionExists === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
-    exit();
+    mysqli_query($dbTmp, "DROP TABLE ".$pre."functions");
 }
 
 ## TABLE KB
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."kb` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."kb` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `category_id` int(12) NOT NULL,
     `label` varchar(200) NOT NULL,
@@ -894,66 +920,61 @@ $res = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
     );"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE KB_CATEGORIES
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."kb_categories` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."kb_categories` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `category` varchar(50) NOT NULL,
     PRIMARY KEY (`id`)
     );"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE KB_ITEMS
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."kb_items` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."kb_items` (
     `kb_id` tinyint(12) NOT NULL,
     `item_id` tinyint(12) NOT NULL
      );"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE restriction_to_roles
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."restriction_to_roles` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."restriction_to_roles` (
     `role_id` tinyint(12) NOT NULL,
     `item_id` tinyint(12) NOT NULL
     ) CHARSET=utf8;"
 );
-
-$res = addIndexIfNotExist($_SESSION['pre'].'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
-
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
+} else {
+    $res = addIndexIfNotExist($pre.'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
 }
 
 ## TABLE Languages
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."languages` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."languages` (
     `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY ,
     `name` VARCHAR(50) NOT null ,
     `label` VARCHAR(50) NOT null ,
@@ -961,19 +982,18 @@ $res = mysqli_query($dbTmp,
     `flag` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 $resTmp = mysqli_fetch_row(
-    mysqli_query($dbTmp, "SELECT COUNT(*) FROM ".$_SESSION['pre']."languages")
+    mysqli_query($dbTmp, "SELECT COUNT(*) FROM ".$pre."languages")
 );
-mysqli_query($dbTmp, "TRUNCATE TABLE ".$_SESSION['pre']."languages");
-mysqli_query($dbTmp,
-    "INSERT IGNORE INTO `".$_SESSION['pre']."languages`
+mysqli_query($dbTmp, "TRUNCATE TABLE ".$pre."languages");
+mysqli_query(
+    $dbTmp,
+    "INSERT IGNORE INTO `".$pre."languages`
     (`id`, `name`, `label`, `code`, `flag`) VALUES
     ('', 'french', 'French' , 'fr', 'fr.png'),
     ('', 'english', 'English' , 'us', 'us.png'),
@@ -995,8 +1015,9 @@ mysqli_query($dbTmp,
 );
 
 ## TABLE EMAILS
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."emails` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."emails` (
     `timestamp` INT(30) NOT null ,
     `subject` VARCHAR(255) NOT null ,
     `body` TEXT NOT null ,
@@ -1004,50 +1025,47 @@ $res = mysqli_query($dbTmp,
     `status` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE AUTOMATIC DELETION
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."automatic_del` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."automatic_del` (
     `item_id` int(11) NOT NULL,
     `del_enabled` tinyint(1) NOT NULL,
     `del_type` tinyint(1) NOT NULL,
     `del_value` varchar(35) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE items_edition
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."items_edition` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."items_edition` (
     `item_id` int(11) NOT NULL,
     `user_id` int(11) NOT NULL,
     `timestamp` varchar(50) NOT NULL
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE categories
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."categories` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."categories` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `parent_id` int(12) NOT NULL,
     `title` varchar(255) NOT NULL,
@@ -1058,17 +1076,16 @@ $res = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE categories_items
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."categories_items` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."categories_items` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `field_id` int(11) NOT NULL,
     `item_id` int(11) NOT NULL,
@@ -1076,32 +1093,30 @@ $res = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE categories_folders
-$res = mysqli_query($dbTmp,
-"CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."categories_folders` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."categories_folders` (
     `id_category` int(12) NOT NULL,
     `id_folder` int(12) NOT NULL
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE api
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."api` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."api` (
     `id` int(20) NOT NULL AUTO_INCREMENT,
     `type` varchar(15) NOT NULL,
     `label` varchar(255) NOT NULL,
@@ -1110,17 +1125,16 @@ $res = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE otv
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."otv` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."otv` (
     `id` int(10) NOT NULL AUTO_INCREMENT,
     `timestamp` text NOT NULL,
     `code` varchar(100) NOT NULL,
@@ -1129,17 +1143,16 @@ $res = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 ## TABLE suggestion
-$res = mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."suggestion` (
+$res = mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."suggestion` (
     `id` tinyint(12) NOT NULL AUTO_INCREMENT,
     `label` varchar(255) NOT NULL,
     `pw` text NOT NULL,
@@ -1152,17 +1165,16 @@ $res = mysqli_query($dbTmp,
     PRIMARY KEY (`id`)
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
 }
 
 # TABLE EXPORT
-mysqli_query($dbTmp,
-    "CREATE TABLE IF NOT EXISTS `".$_SESSION['pre']."export` (
+mysqli_query(
+    $dbTmp,
+    "CREATE TABLE IF NOT EXISTS `".$pre."export` (
     `id` int(12) NOT NULL,
     `label` varchar(255) NOT NULL,
     `login` varchar(100) NOT NULL,
@@ -1171,9 +1183,7 @@ mysqli_query($dbTmp,
     `path` varchar(255) NOT NULL
     ) CHARSET=utf8;"
 );
-if ($res) {
-    //
-} else {
+if (empty(mysqli_error($dbTmp)) === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears on table export! '.addslashes(mysqli_error($dbTmp)).'"}]';
     mysqli_close($dbTmp);
     exit();
@@ -1182,41 +1192,47 @@ if ($res) {
 //CLEAN UP ITEMS TABLE
 $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.
     '<blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
-$cleanRes = mysqli_query($dbTmp,
-    "SELECT id,description FROM `".$_SESSION['pre']."items`"
+$cleanRes = mysqli_query(
+    $dbTmp,
+    "SELECT id,description FROM `".$pre."items`"
 );
 while ($cleanData = mysqli_fetch_array($cleanRes)) {
-    mysqli_query($dbTmp,
-        "UPDATE `".$_SESSION['pre']."items`
+    mysqli_query(
+        $dbTmp,
+        "UPDATE `".$pre."items`
         SET description = '".strip_tags($cleanData['description'], $allowedTags).
         "' WHERE id = ".$cleanData['id']
     );
 }
 
 // 2.1.23 - check if personal need to be upgraded
-$tmpResult = mysqli_query($dbTmp,
-    "SELECT `pw_iv` FROM ".$_SESSION['pre']."items WHERE perso='1'"
+$tmpResult = mysqli_query(
+    $dbTmp,
+    "SELECT `pw_iv` FROM ".$pre."items WHERE perso='1'"
 );
 $tmp = mysqli_fetch_row($tmpResult);
 if ($tmp[0] == "") {
-    mysqli_query($dbTmp, "UPDATE ".$_SESSION['pre']."users SET upgrade_needed = true WHERE 1 = 1");
+    mysqli_query($dbTmp, "UPDATE ".$pre."users SET upgrade_needed = true WHERE 1 = 1");
 }
 
 /*// Since 2.1.17, encrypt process is changed.
 // Previous PW need to be re-encrypted
-if (@mysqli_query($dbTmp,
-    "SELECT valeur FROM ".$_SESSION['pre']."misc
+if (@mysqli_query(
+    $dbTmp,
+    "SELECT valeur FROM ".$pre."misc
     WHERE type='admin' AND intitule = 'encryption_protocol'"
 )) {
-    $tmpResult = mysqli_query($dbTmp,
-        "SELECT valeur FROM ".$_SESSION['pre']."misc
+    $tmpResult = mysqli_query(
+    $dbTmp,
+        "SELECT valeur FROM ".$pre."misc
         WHERE type='admin' AND intitule = 'encryption_protocol'"
     );
     $tmp = mysqli_fetch_row($tmpResult);
     if ($tmp[0] != "ctr") {
         //count elem
-        $res = mysqli_query($dbTmp,
-            "SELECT COUNT(*) FROM ".$_SESSION['pre']."items
+        $res = mysqli_query(
+    $dbTmp,
+            "SELECT COUNT(*) FROM ".$pre."items
             WHERE perso = '0'"
         );
         $data = mysqli_fetch_row($res);

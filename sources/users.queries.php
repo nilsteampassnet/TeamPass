@@ -15,40 +15,49 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
-    if (!isset($_POST['newValue'])) {
+    if (null !== filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING)) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-        include $_SESSION['settings']['cpassman_dir'].'/error.php';
+        include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     } else {
-        $filtered_newvalue = filter_var($_POST['newValue'], FILTER_SANITIZE_STRING);
+        $filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
         if (empty($filtered_newvalue)) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-            include $_SESSION['settings']['cpassman_dir'].'/error.php';
+            include $SETTINGS['cpassman_dir'].'/error.php';
             exit();
         }
     }
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -64,21 +73,25 @@ $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "groupes_visibles":
         case "groupes_interdits":
-            $val = explode(';', $_POST['valeur']);
-            $valeur = $_POST['valeur'];
+            // Prepare variables
+            $post_valeur = filter_input(INPUT_POST, 'valeur', FILTER_SANITIZE_STRING);
+            $val = explode(';', $post_valeur);
+            $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+
             // Check if id folder is already stored
-            $data = DB::queryfirstrow("SELECT ".$_POST['type']." FROM ".prefix_table("users")." WHERE id = %i", $val[0]);
-            $new_groupes = $data[$_POST['type']];
-            if (!empty($data[$_POST['type']])) {
-                $groupes = explode(';', $data[$_POST['type']]);
+            $data = DB::queryfirstrow(
+                "SELECT ".$post_type."
+                FROM ".prefix_table("users")."
+                WHERE id = %i",
+                $val[0]
+            );
+            $new_groupes = $data[$post_type];
+            if (empty($data[$post_type]) === false) {
+                $groupes = explode(';', $data[$post_type]);
                 if (in_array($val[1], $groupes)) {
                     $new_groupes = str_replace($val[1], "", $new_groupes);
                 } else {
@@ -93,8 +106,7 @@ if (!empty($_POST['type'])) {
             // Store id DB
             DB::update(
                 prefix_table("users"),
-                array($_POST['type'] => $new_groupes
-                    ),
+                array($post_type => $new_groupes),
                 "id = %i",
                 $val[0]
             );
@@ -103,9 +115,9 @@ if (!empty($_POST['type'])) {
          * Update a fonction
          */
         case "fonction":
-            $val = explode(';', $_POST['valeur']);
-            $valeur = $_POST['valeur'];
-            // v?rifier si l'id est d?j? pr?sent
+            $val = explode(';', filter_input(INPUT_POST, 'valeur', FILTER_SANITIZE_STRING));
+
+            // Check if ID exists
             $data = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $val[0]);
             $new_fonctions = $data['fonction_id'];
             if (!empty($data['fonction_id'])) {
@@ -137,12 +149,15 @@ if (!empty($_POST['type'])) {
          */
         case "add_new_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
 
             // Prepare variables
             $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
@@ -182,7 +197,7 @@ if (!empty($_POST['type'])) {
                         'gestionnaire' => $dataReceived['manager'] == "true" ? '1' : '0',
                         'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
                         'personal_folder' => $dataReceived['personal_folder'] == "true" ? '1' : '0',
-                        'user_language' => $_SESSION['settings']['default_language'],
+                        'user_language' => $SETTINGS['default_language'],
                         'fonction_id' => $dataReceived['groups'],
                         'groupes_interdits' => $dataReceived['forbidden_flds'],
                         'groupes_visibles' => $dataReceived['allowed_flds'],
@@ -258,13 +273,13 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // get links url
-                if (empty($_SESSION['settings']['email_server_url'])) {
-                    $_SESSION['settings']['email_server_url'] = $_SESSION['settings']['cpassman_url'];
+                if (empty($SETTINGS['email_server_url'])) {
+                    $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
                 // Send email to new user
                 sendEmail(
                     $LANG['email_subject_new_user'],
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $_SESSION['settings']['email_server_url']), $LANG['email_new_user_mail']),
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $SETTINGS['email_server_url']), $LANG['email_new_user_mail']),
                     $dataReceived['email']
                 );
                 // update LOG
@@ -275,27 +290,32 @@ if (!empty($_POST['type'])) {
                 echo '[ { "error" : "'.addslashes($LANG['error_user_exists']).'" } ]';
             }
             break;
+
         /**
          * Delete the user
          */
         case "delete_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
-            if ($_POST['action'] == "delete") {
+            // Prepare post variables
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+            if (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) == "delete") {
                 // delete user in database
                 DB::delete(
                     prefix_table("users"),
                     "id = %i",
-                    $_POST['id']
+                    $post_id
                 );
                 // delete personal folder and subfolders
                 $data = DB::queryfirstrow(
                     "SELECT id FROM ".prefix_table("nested_tree")."
                     WHERE title = %s AND personal_folder = %i",
-                    $_POST['id'],
+                    $post_id,
                     "1"
                 );
                 // Get through each subfolder
@@ -323,7 +343,7 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-        logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
             } else {
                 // lock user in database
                 DB::update(
@@ -333,58 +353,71 @@ if (!empty($_POST['type'])) {
                         'key_tempo' => ""
                         ),
                     "id=%i",
-                    $_POST['id']
+                    $post_id
                 );
                 // update LOG
-        logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $post_id);
             }
             echo '[ { "error" : "no" } ]';
             break;
+
         /**
          * UPDATE EMAIL OF USER
          */
         case "modif_mail_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
                 // error
                 echo '[ { "error" : "yes" } ]';
+                break;
             }
+
+            // Prepare post variables
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             // Get old email
             $data = DB::queryfirstrow(
                 "SELECT email FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                $post_id
             );
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'email' => $_POST['newemail']
+                    'email' => filter_input(INPUT_POST, 'newemail', FILTER_SANITIZE_STRING)
                     ),
                 "id = %i",
-                $_POST['id']
+                $post_id
             );
             // update LOG
-        logEvents('user_mngt', 'at_user_email_changed:'.$data['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+            logEvents(
+                'user_mngt',
+                'at_user_email_changed:'.$data['email'],
+                intval($_SESSION['user_id']),
+                filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING),
+                $post_id
+            );
             echo '[{"error" : "no"}]';
             break;
+
         /**
          * UPDATE CAN CREATE ROOT FOLDER RIGHT
          */
         case "can_create_root_folder":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'can_create_root_folder' => $_POST['value']
+                    'can_create_root_folder' => filter_input(INPUT_POST, 'value', FILTER_SANITIZE_STRING)
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -393,20 +426,24 @@ if (!empty($_POST['type'])) {
          */
         case "admin":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key'] || $_SESSION['is_admin'] != 1) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)
+                || $_SESSION['is_admin'] !== "1"
+            ) {
                 echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
                 exit();
             }
 
+            $post_value = filter_input(INPUT_POST, 'value', FILTER_SANITIZE_NUMBER_INT);
+
             DB::update(
                 prefix_table("users"),
                 array(
-                    'admin' => filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
-                    'gestionnaire' => $_POST['value'] === "1" ? "0" : "0",
-                    'read_only' => $_POST['value'] === "1" ? "0" : "0"
+                    'admin' => $post_value,
+                    'gestionnaire' => $post_value === 1 ? "0" : "0",
+                    'read_only' => $post_value === 1 ? "0" : "0"
                     ),
                 "id = %i",
-                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
             echo prepareExchangedData(array("error" => ""), "encode");
@@ -416,31 +453,33 @@ if (!empty($_POST['type'])) {
          */
         case "gestionnaire":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             // Get some data
             $data = DB::queryfirstrow(
                 "SELECT can_manage_all_users, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
-                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
+
+            $post_value = filter_input(INPUT_POST, 'value', FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'gestionnaire' => filter_var($_POST['value'], FILTER_SANITIZE_NUMBER_INT),
-                    'can_manage_all_users' => ($data['can_manage_all_users'] === "0" && $_POST['value'] === "1") ? "0" : (
-                        ($data['can_manage_all_users'] === "0" && $_POST['value'] === "0") ? "0" : (
-                        ($data['can_manage_all_users'] === "1" && $_POST['value'] === "0") ? "0" : "1")
+                    'gestionnaire' => $post_value,
+                    'can_manage_all_users' => ($data['can_manage_all_users'] === "0" && $post_value === "1") ? "0" : (
+                        ($data['can_manage_all_users'] === "0" && $post_value === "0") ? "0" : (
+                        ($data['can_manage_all_users'] === "1" && $post_value === "0") ? "0" : "1")
                     ),
-                    'admin' => $_POST['value'] === "1" ? "0" : "0",
-                    'read_only' => $_POST['value'] === "1" ? "0" : "0"
+                    'admin' => $post_value === 1 ? "0" : "0",
+                    'read_only' => $post_value === 1 ? "0" : "0"
                     ),
                 "id = %i",
-                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -449,20 +488,22 @@ if (!empty($_POST['type'])) {
          */
         case "read_only":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
+
+            $post_value = filter_input(INPUT_POST, 'value', FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'read_only' => $_POST['value'],
-                    'gestionnaire' => $_POST['value'] == 1 ? "0" : "0",
-                    'admin' => $_POST['value'] == 1 ? "0" : "0"
+                    'read_only' => $post_value,
+                    'gestionnaire' => $post_value === 1 ? "0" : "0",
+                    'admin' => $post_value === 1 ? 0 : "0"
                     ),
                 "id = %i",
-                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -472,28 +513,30 @@ if (!empty($_POST['type'])) {
          */
         case "can_manage_all_users":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             // Get some data
             $data = DB::queryfirstrow(
                 "SELECT admin, gestionnaire FROM ".prefix_table("users")."
                 WHERE id = %i",
-                filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
+
+            $post_value = filter_input(INPUT_POST, 'value', FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'can_manage_all_users' => $_POST['value'],
-                    'gestionnaire' => ($data['gestionnaire'] == 0 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 1) ? "1" : (($data['gestionnaire'] == 1 && $_POST['value'] == 0) ? "1" : "0")),
-                    'admin' => $_POST['value'] == 1 ? "0" : "0",
-                    'read_only' => $_POST['value'] == 1 ? "0" : "0"
+                    'can_manage_all_users' => $post_value,
+                    'gestionnaire' => ($data['gestionnaire'] === "0" && $post_value === 1) ? "1" : (($data['gestionnaire'] === "1" && $post_value === 1) ? "1" : (($data['gestionnaire'] === "1" && $post_value === 0) ? "1" : "0")),
+                    'admin' => $post_value === 1 ? "1" : "0",
+                    'read_only' => $post_value === 1 ? "1" : "0"
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -502,18 +545,20 @@ if (!empty($_POST['type'])) {
          */
         case "personal_folder":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
+
+            $post_value = filter_input(INPUT_POST, 'value', FILTER_SANITIZE_NUMBER_INT);
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'personal_folder' => $_POST['value']
+                    'personal_folder' => $post_value === 1 ? "1" : "0"
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             echo prepareExchangedData(array("error" => ""), "encode");
             break;
@@ -521,13 +566,13 @@ if (!empty($_POST['type'])) {
         /**
          * CHANGE USER FUNCTIONS
          */
-        case "open_div_functions";
+        case "open_div_functions":
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
                 "SELECT fonction_id FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
             $users_functions = explode(';', $data_user['fonction_id']);
@@ -536,7 +581,7 @@ if (!empty($_POST['type'])) {
 
             $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
             foreach ($rows as $record) {
-                if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                if ($_SESSION['is_admin'] === 1 || ($_SESSION['user_manager'] === 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] === $_SESSION['user_id']))) {
                     $text .= '<input type="checkbox" id="cb_change_function-'.$record['id'].'"';
                     if (in_array($record['id'], $users_functions)) {
                         $text .= ' checked';
@@ -551,28 +596,29 @@ if (!empty($_POST['type'])) {
         /**
          * Change user's functions
          */
-        case "change_user_functions";
+        case "change_user_functions":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // save data
             DB::update(
                 prefix_table("users"),
                 array(
-                    'fonction_id' => $_POST['list']
+                    'fonction_id' => filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING)
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             // display information
             $text = "";
             // Check if POST is empty
-            if (!empty($_POST['list'])) {
+            if (empty(filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING)) === false) {
                 $rows = DB::query(
                     "SELECT title FROM ".prefix_table("roles_title")." WHERE id IN %ls",
-                    explode(";", $_POST['list'])
+                    explode(";", filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING))
                 );
                 foreach ($rows as $record) {
                     $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$record['title']."<br />";
@@ -587,13 +633,13 @@ if (!empty($_POST['type'])) {
         /**
          * CHANGE AUTHORIZED GROUPS
          */
-        case "open_div_autgroups";
+        case "open_div_autgroups":
             $text = "";
             // Refresh list of existing functions
             $data_user = DB::queryfirstrow(
                 "SELECT groupes_visibles FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
             $user = explode(';', $data_user['groupes_visibles']);
@@ -621,20 +667,20 @@ if (!empty($_POST['type'])) {
         /**
          * CHANGE ADMINISTRATED BY
          */
-        case "change_user_adminby";
+        case "change_user_adminby":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // save data
             DB::update(
                 prefix_table("users"),
                 array(
-                    'isAdministratedByRole' => $_POST['isAdministratedByRole']
+                    'isAdministratedByRole' => filter_input(INPUT_POST, 'isAdministratedByRole', FILTER_SANITIZE_STRING)
                     ),
                 "id = %i",
-                $_POST['userId']
+                filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT)
             );
             echo '[{"done":""}]';
             break;
@@ -642,29 +688,29 @@ if (!empty($_POST['type'])) {
         /**
          * Change authorized groups
          */
-        case "change_user_autgroups";
+        case "change_user_autgroups":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
             // save data
             DB::update(
                 prefix_table("users"),
                 array(
-                    'groupes_visibles' => $_POST['list']
+                    'groupes_visibles' => filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING)
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             // display information
             $text = "";
-            $val = str_replace(';', ',', $_POST['list']);
+            $val = str_replace(';', ',', filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING));
             // Check if POST is empty
-            if (!empty($_POST['list'])) {
+            if (empty(filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING)) === false) {
                 $rows = DB::query(
                     "SELECT title,nlevel FROM ".prefix_table("nested_tree")." WHERE id IN %ls",
-                    explode(";", $_POST['list'])
+                    explode(";", filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING))
                 );
                 foreach ($rows as $record) {
                     $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$record['title']."<br />";
@@ -675,82 +721,13 @@ if (!empty($_POST['type'])) {
             break;
 
         /**
-         * Change forbidden groups
-         */
-        case "open_div_forgroups";
-            // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
-            }
-
-            $text = "";
-            // Refresh list of existing functions
-            $data_user = DB::queryfirstrow(
-                "SELECT groupes_interdits FROM ".prefix_table("users")."
-                WHERE id = %i",
-                $_POST['id']
-            );
-
-            $user = explode(';', $data_user['groupes_interdits']);
-
-            $tree_desc = $tree->getDescendants();
-            foreach ($tree_desc as $t) {
-                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-                    $text .= '<input type="checkbox" id="cb_change_forgroup-'.$t->id.'"';
-                    $ident = "";
-                    for ($y = 1; $y < $t->nlevel; $y++) {
-                        $ident .= "&nbsp;&nbsp;";
-                    }
-                    if (in_array($t->id, $user)) {
-                        $text .= ' checked';
-                    }
-                    $text .= '>&nbsp;'.$ident.$t->title.'<br />';
-                    $prev_level = $t->nlevel;
-                }
-            }
-            // return data
-            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-            echo $return_values;
-            break;
-
-        /**
-         * Change forbidden groups for user
-         */
-        case "change_user_forgroups";
-            // save data
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'groupes_interdits' => $_POST['list']
-                    ),
-                "id = %i",
-                $_POST['id']
-            );
-            // display information
-            $text = "";
-            $val = str_replace(';', ',', $_POST['list']);
-            // Check if POST is empty
-            if (!empty($_POST['list'])) {
-                $rows = DB::query(
-                    "SELECT title,nlevel FROM ".prefix_table("nested_tree")." WHERE id IN %ls",
-                    implode(";", $_POST['list'])
-                );
-                foreach ($rows as $record) {
-                    $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$ident.$record['title']."<br />";
-                }
-            }
-            // send back data
-            echo '[{"text":"'.$text.'"}]';
-            break;
-        /**
          * Unlock user
          */
         case "unlock_account":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             DB::update(
@@ -760,11 +737,18 @@ if (!empty($_POST['type'])) {
                     'no_bad_attempts' => 0
                     ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             // update LOG
-        logEvents('user_mngt', 'at_user_unlocked', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+            logEvents(
+                'user_mngt',
+                'at_user_unlocked',
+                $_SESSION['user_id'],
+                $_SESSION['login'],
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+            );
             break;
+            
         /*
         * Check the domain
         */
@@ -774,7 +758,7 @@ if (!empty($_POST['type'])) {
             $data = DB::query(
                 "SELECT * FROM ".prefix_table("nested_tree")."
                 WHERE title = %s AND parent_id = %i",
-                $_POST['domain'],
+                filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_STRING),
                 "0"
             );
             $counter = DB::count();
@@ -787,7 +771,7 @@ if (!empty($_POST['type'])) {
             $data = DB::query(
                 "SELECT * FROM ".prefix_table("roles_title")."
                 WHERE title = %s",
-                $_POST['domain']
+                filter_input(INPUT_POST, 'domain', FILTER_SANITIZE_STRING)
             );
             $counter = DB::count();
             if ($counter != 0) {
@@ -807,9 +791,16 @@ if (!empty($_POST['type'])) {
             $logs = $sql_filter = "";
             $pages = '<table style=\'border-top:1px solid #969696;\'><tr><td>'.$LANG['pages'].'&nbsp;:&nbsp;</td>';
 
-            if ($_POST['scope'] === "user_activity") {
-                if (isset($_POST['filter']) && !empty($_POST['filter']) && $_POST['filter'] !== "all") {
-                    $sql_filter = " AND l.action = '".filter_var($_POST['filter'], FILTER_SANITIZE_STRING)."'";
+            // Prepare POST variables
+            $post_nb_items_by_page = filter_input(INPUT_POST, 'nb_items_by_page', FILTER_SANITIZE_NUMBER_INT);
+            $post_scope = filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING);
+
+            if (filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === "user_activity") {
+                if (null !== filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)
+                    && !empty(filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING))
+                    && filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING) !== "all"
+                ) {
+                    $sql_filter = " AND l.action = '".filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING)."'";
                 }
                 // get number of pages
                 DB::query(
@@ -818,12 +809,15 @@ if (!empty($_POST['type'])) {
                     INNER JOIN ".prefix_table("items")." as i ON (l.id_item=i.id)
                     INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                     WHERE l.id_user = %i ".$sql_filter,
-                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
-                if (isset($_POST['page']) && $_POST['page'] > 1) {
-                    $start = ($_POST['nb_items_by_page'] * ($_POST['page'] - 1)) + 1;
+                if (null !== filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)
+                    && filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) > 1
+                ) {
+                    $start = (intval($post_nb_items_by_page)
+                        * (intval(filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)) - 1)) + 1;
                 } else {
                     $start = 0;
                 }
@@ -835,8 +829,8 @@ if (!empty($_POST['type'])) {
                     INNER JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
                     WHERE l.id_user = %i ".$sql_filter."
                     ORDER BY date DESC
-                    LIMIT ".intval($start).",".intval($_POST['nb_items_by_page']),
-                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    LIMIT ".intval($start).",".intval($post_nb_items_by_page),
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
             } else {
                 // get number of pages
@@ -845,12 +839,15 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i",
                     "user_mngt",
-                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 // define query limits
-                if (isset($_POST['page']) && $_POST['page'] > 1) {
-                    $start = ($_POST['nb_items_by_page'] * ($_POST['page'] - 1)) + 1;
+                if (null !== filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)
+                    && filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) > 1
+                ) {
+                    $start = (intval($post_nb_items_by_page)
+                        * (intval(filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT)) - 1)) + 1;
                 } else {
                     $start = 0;
                 }
@@ -860,49 +857,59 @@ if (!empty($_POST['type'])) {
                     FROM ".prefix_table("log_system")."
                     WHERE type = %s AND field_1=%i
                     ORDER BY date DESC
-                    LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($_POST['nb_items_by_page'], FILTER_SANITIZE_NUMBER_INT)),
+                    LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, $post_nb_items_by_page),
                     "user_mngt",
-                    filter_var($_POST['id'], FILTER_SANITIZE_NUMBER_INT)
+                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
             }
             // generate data
             if (isset($counter) && $counter != 0) {
-                $nb_pages = ceil($counter / $_POST['nb_items_by_page']);
+                $nb_pages = ceil($counter / intval($post_nb_items_by_page));
                 for ($i = 1; $i <= $nb_pages; $i++) {
-                    $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$_POST['scope'].'\")\'><span style=\'cursor:pointer;'.($_POST['page'] == $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
+                    $pages .= '<td onclick=\'displayLogs('.$i.',\"'.$post_scope.'\")\'><span style=\'cursor:pointer;'.(filter_input(INPUT_POST, 'page', FILTER_SANITIZE_NUMBER_INT) === $i ? 'font-weight:bold;font-size:18px;\'>'.$i : '\'>'.$i).'</span></td>';
                 }
             }
             $pages .= '</tr></table>';
             if (isset($rows)) {
                 foreach ($rows as $record) {
-                    if ($_POST['scope'] == "user_mngt") {
-                        $user = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $record['qui']);
-                        $user_1 = DB::queryfirstrow("SELECT login from ".prefix_table("users")." WHERE id=%i", $_POST['id']);
+                    if ($post_scope === "user_mngt") {
+                        $user = DB::queryfirstrow(
+                            "SELECT login
+                            from ".prefix_table("users")."
+                            WHERE id=%i",
+                            $record['qui']
+                        );
+                        $user_1 = DB::queryfirstrow(
+                            "SELECT login
+                            from ".prefix_table("users")."
+                            WHERE id=%i",
+                            filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                        );
                         $tmp = explode(":", $record['label']);
                         // extract action done
                         $label = "";
                         if ($tmp[0] == "at_user_initial_pwd_changed") {
                             $label = $LANG['log_user_initial_pwd_changed'];
-                        } else if ($tmp[0] == "at_user_email_changed") {
+                        } elseif ($tmp[0] == "at_user_email_changed") {
                             $label = $LANG['log_user_email_changed'].$tmp[1];
-                        } else if ($tmp[0] == "at_user_added") {
+                        } elseif ($tmp[0] == "at_user_added") {
                             $label = $LANG['log_user_created'];
-                        } else if ($tmp[0] == "at_user_locked") {
+                        } elseif ($tmp[0] == "at_user_locked") {
                             $label = $LANG['log_user_locked'];
-                        } else if ($tmp[0] == "at_user_unlocked") {
+                        } elseif ($tmp[0] == "at_user_unlocked") {
                             $label = $LANG['log_user_unlocked'];
-                        } else if ($tmp[0] == "at_user_pwd_changed") {
+                        } elseif ($tmp[0] == "at_user_pwd_changed") {
                             $label = $LANG['log_user_pwd_changed'];
                         }
                         // prepare log
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
+                        $logs .= '<tr><td>'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'</td><td align=\"center\">'.$label.'</td><td align=\"center\">'.$user['login'].'</td><td align=\"center\"></td></tr>';
                     } else {
-                        $logs .= '<tr><td>'.date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
+                        $logs .= '<tr><td>'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date']).'</td><td align=\"center\">'.str_replace('"', '\"', $record['label']).'</td><td align=\"center\">'.$record['login'].'</td><td align=\"center\">'.$LANG[$record['action']].'</td></tr>';
                     }
                 }
             }
 
-            echo '[ { "table_logs": "'.$logs.'", "pages": "'.$pages.'", "error" : "no" } ]';
+            echo '[ { "table_logs": "'.($logs).'", "pages": "'.($pages).'", "error" : "no" } ]';
             break;
 
         /*
@@ -910,12 +917,15 @@ if (!empty($_POST['type'])) {
         */
         case "migrate_admin_pf":
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
             // Prepare variables
             $user_id = htmlspecialchars_decode($data_received['user_id']);
             $salt_user = htmlspecialchars_decode($data_received['salt_user']);
 
-            if (!isset($_SESSION['my_sk']) || $_SESSION['my_sk'] == "") {
+            if (!isset($_SESSION['user_settings']['clear_psk']) || $_SESSION['user_settings']['clear_psk'] == "") {
                 echo '[ { "error" : "no_sk" } ]';
             } elseif ($salt_user == "") {
                 echo '[ { "error" : "no_sk_user" } ]';
@@ -974,7 +984,7 @@ if (!empty($_POST['type'])) {
          */
         case "disconnect_user":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -987,7 +997,7 @@ if (!empty($_POST['type'])) {
                     'session_end' => ""
                     ),
                 "id = %i",
-                intval($_POST['user_id'])
+                filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT)
             );
             break;
 
@@ -996,7 +1006,7 @@ if (!empty($_POST['type'])) {
          */
         case "disconnect_all_users":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
@@ -1025,9 +1035,9 @@ if (!empty($_POST['type'])) {
          */
         case "get_user_info":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             $arrData = array();
@@ -1037,7 +1047,7 @@ if (!empty($_POST['type'])) {
             $arrFldAllowed = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -1046,7 +1056,7 @@ if (!empty($_POST['type'])) {
                 "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, gestionnaire, read_only, can_create_root_folder, personal_folder, can_manage_all_users, admin
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
             // get FUNCTIONS
@@ -1208,13 +1218,16 @@ if (!empty($_POST['type'])) {
          */
         case "store_user_changes":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             // decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($_POST['data'], "decode");
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                "decode"
+            );
 
             // Empty user
             if (mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])) == "") {
@@ -1224,19 +1237,22 @@ if (!empty($_POST['type'])) {
 
             $account_status_action = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['action_on_user']));
 
+            // Prepare POST variables
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             // delete account
             // delete user in database
             if ($account_status_action === "delete") {
                 DB::delete(
                     prefix_table("users"),
                     "id = %i",
-                    $_POST['id']
+                    $post_id
                 );
                 // delete personal folder and subfolders
                 $data = DB::queryfirstrow(
                     "SELECT id FROM ".prefix_table("nested_tree")."
                     WHERE title = %s AND personal_folder = %i",
-                    $_POST['id'],
+                    $post_id,
                     "1"
                 );
                 // Get through each subfolder
@@ -1264,15 +1280,13 @@ if (!empty($_POST['type'])) {
                     $tree->rebuild();
                 }
                 // update LOG
-                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
-
+                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
             } else {
-
                 // Get old data about user
                 $oldData = DB::queryfirstrow(
                     "SELECT * FROM ".prefix_table("users")."
                     WHERE id = %i",
-                    $_POST['id']
+                    $post_id
                 );
 
                 // manage account status
@@ -1300,11 +1314,11 @@ if (!empty($_POST['type'])) {
                         'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ";"),
                         ),
                     "id = %i",
-                    $_POST['id']
+                    $post_id
                 );
 
                 // update SESSION
-                if ($_SESSION['user_id'] === $_POST['id']) {
+                if ($_SESSION['user_id'] === $post_id) {
                     $_SESSION['user_email'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']));
                     $_SESSION['name'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name']));
                     $_SESSION['lastname'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname']));
@@ -1312,12 +1326,12 @@ if (!empty($_POST['type'])) {
 
                 // update LOG
                 if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
-                    logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], intval($_POST['id']));
+                    logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
                 }
 
                 if ($oldData['disabled'] != $accountDisabled) {
                     // update LOG
-                    logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+                    logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $post_id);
                 }
             }
 
@@ -1329,20 +1343,20 @@ if (!empty($_POST['type'])) {
          */
         case "user_edit_login":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             DB::update(
                 prefix_table("users"),
                 array(
-                    'login' => $_POST['login'],
-                    'name' => $_POST['name'],
-                    'lastname' => $_POST['lastname']
+                    'login' => filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING),
+                    'name' => filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING),
+                    'lastname' => filter_input(INPUT_POST, 'lastname', FILTER_SANITIZE_STRING)
                 ),
                 "id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             break;
 
@@ -1351,15 +1365,18 @@ if (!empty($_POST['type'])) {
          */
         case "is_login_available":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             DB::queryfirstrow(
                 "SELECT * FROM ".prefix_table("users")."
                 WHERE login = %s",
-                mysqli_escape_string($link, htmlspecialchars_decode($_POST['login']))
+                mysqli_escape_string(
+                    $link,
+                    htmlspecialchars_decode(filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING))
+                )
             );
 
             echo '[ { "error" : "" , "exists" : "'.DB::count().'"} ]';
@@ -1371,14 +1388,14 @@ if (!empty($_POST['type'])) {
          */
         case "user_folders_rights":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
             $arrData = array();
 
             //Build tree
-            $tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
@@ -1387,7 +1404,7 @@ if (!empty($_POST['type'])) {
                 "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
-                $_POST['id']
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
 
             // get rights
@@ -1534,9 +1551,9 @@ if (!empty($_POST['type'])) {
          */
         case "get_list_of_users_for_sharing":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo prepareExchangedData(array("error" => "not_allowed", "error_text" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
             }
 
             $list_users_from = '';
@@ -1581,30 +1598,32 @@ if (!empty($_POST['type'])) {
          */
         case "update_users_rights_sharing":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
-                // error
-                exit();
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
             }
 
             // Check send values
-            if (empty($_POST['source_id']) || empty($_POST['destination_ids'])) {
+            if (empty(filter_input(INPUT_POST, 'source_id', FILTER_SANITIZE_NUMBER_INT)) === true
+                || empty(filter_input(INPUT_POST, 'destination_ids', FILTER_SANITIZE_NUMBER_INT)) === true
+            ) {
                 // error
                 exit();
             }
 
             // manage other rights
             /* Possible values: gestionnaire;read_only;can_create_root_folder;personal_folder;can_manage_all_users;admin*/
-            $user_other_rights = explode(';', $_POST['user_otherrights']); 
+            $user_other_rights = explode(';', filter_input(INPUT_POST, 'user_otherrights', FILTER_SANITIZE_STRING));
 
-            foreach (explode(';', $_POST['destination_ids']) as $dest_user_id) {
+            foreach (explode(';', filter_input(INPUT_POST, 'destination_ids', FILTER_SANITIZE_STRING)) as $dest_user_id) {
                 // update user
                 DB::update(
                     prefix_table("users"),
                     array(
-                        'fonction_id' => $_POST['user_functions'],
-                        'isAdministratedByRole' => $_POST['user_managedby'],
-                        'groupes_visibles' => $_POST['user_fldallowed'],
-                        'groupes_interdits' => $_POST['user_fldforbid'],
+                        'fonction_id' => filter_input(INPUT_POST, 'user_functions', FILTER_SANITIZE_NUMBER_INT),
+                        'isAdministratedByRole' => filter_input(INPUT_POST, 'user_managedby', FILTER_SANITIZE_STRING),
+                        'groupes_visibles' => filter_input(INPUT_POST, 'user_fldallowed', FILTER_SANITIZE_STRING),
+                        'groupes_interdits' => filter_input(INPUT_POST, 'user_fldforbid', FILTER_SANITIZE_STRING),
                         'gestionnaire' => $user_other_rights[0],
                         'read_only' => $user_other_rights[1],
                         'can_create_root_folder' => $user_other_rights[2],
@@ -1618,68 +1637,78 @@ if (!empty($_POST['type'])) {
             }
             break;
     }
-}
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-elseif (!empty($_POST['newValue'])) {
-    $value = explode('_', $_POST['id']);
+} elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING))) {
+    // Prepare POST variables
+    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
+    $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
+
     if ($value[0] === "userlanguage") {
         $value[0] = "user_language";
-        $_POST['newValue'] = strtolower($_POST['newValue']);
+        $post_newValue = strtolower($post_newValue);
     }
     DB::update(
         prefix_table("users"),
         array(
-            $value[0] => $_POST['newValue']
+            $value[0] => $post_newValue
             ),
         "id = %i",
         $value[1]
     );
     // update LOG
-    logEvents('user_mngt', 'at_user_new_'.$value[0].':'.$value[1], $_SESSION['user_id'], $_SESSION['login'], $_POST['id']);
+    logEvents(
+        'user_mngt',
+        'at_user_new_'.$value[0].':'.$value[1],
+        $_SESSION['user_id'],
+        $_SESSION['login'],
+        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
+    );
     // refresh SESSION if requested
     if ($value[0] === "treeloadstrategy") {
-        $_SESSION['user_settings']['treeloadstrategy'] = $_POST['newValue'];
-
-    } else if ($value[0] === "usertimezone") {
+        $_SESSION['user_settings']['treeloadstrategy'] = $post_newValue;
+    } elseif ($value[0] === "usertimezone") {
     // special case for usertimezone where session needs to be updated
-        $_SESSION['user_settings']['usertimezone'] = $_POST['newValue'];
-
-    } else if ($value[0] === "userlanguage") {
+        $_SESSION['user_settings']['usertimezone'] = $post_newValue;
+    } elseif ($value[0] === "userlanguage") {
     // special case for user_language where session needs to be updated
-        $_SESSION['user_settings']['user_language'] = $_POST['newValue'];
-        $_SESSION['user_language'] = $_POST['newValue'];
-
-    } else if ($value[0] === "agses-usercardid") {
+        $_SESSION['user_settings']['user_language'] = $post_newValue;
+        $_SESSION['user_language'] = $post_newValue;
+    } elseif ($value[0] === "agses-usercardid") {
     // special case for agsescardid where session needs to be updated
-        $_SESSION['user_settings']['agses-usercardid'] = $_POST['newValue'];
-
-    } else if ($value[0] === "email") {
+        $_SESSION['user_settings']['agses-usercardid'] = $post_newValue;
+    } elseif ($value[0] === "email") {
     // store email change in session
-        $_SESSION['user_email'] = $_POST['newValue'];
+        $_SESSION['user_email'] = $post_newValue;
     }
     // Display info
-    echo $_POST['newValue'];
-}
+    echo htmlentities($post_newValue, ENT_QUOTES);
 // # ADMIN FOR USER HAS BEEN DEFINED ##
-elseif (isset($_POST['newadmin'])) {
-    $id = explode('_', $_POST['id']);
+} elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
+    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
     DB::update(
         prefix_table("users"),
         array(
-            'admin' => $_POST['newadmin']
+            'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)
             ),
         "id = %i",
         $id[1]
     );
     // Display info
-    if ($_POST['newadmin'] == "1") {
+    if (filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
         echo "Oui";
     } else {
         echo "Non";
     }
 }
 
-function evaluate_folder_acces_level($new_val, $existing_val) {
+/**
+ * Return the level of access on a folder
+ * @param  string $new_val      New value
+ * @param  string $existing_val Current value
+ * @return string               Returned index
+ */
+function evaluate_folder_acces_level($new_val, $existing_val)
+{
     $levels = array(
         "W" => 4,
         "ND" => 3,
@@ -1696,8 +1725,7 @@ function evaluate_folder_acces_level($new_val, $existing_val) {
     $new_level_points = $levels[$new_val];
 
     // check if new is > to current one (always keep the highest level)
-    if (
-        ($new_val === "ND" && $existing_val === "NE")
+    if (($new_val === "ND" && $existing_val === "NE")
         ||
         ($new_val === "NE" && $existing_val === "ND")
     ) {

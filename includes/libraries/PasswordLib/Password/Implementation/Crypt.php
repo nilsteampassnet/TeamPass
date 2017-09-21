@@ -18,7 +18,7 @@
 namespace PasswordLib\Password\Implementation;
 
 use PasswordLib\Random\Factory as RandomFactory;
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/AbstractPassword.php";
+require_once dirname(__FILE__)."/../AbstractPassword.php";
 
 /**
  * The Blowfish password hashing implementation

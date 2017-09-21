@@ -28,7 +28,7 @@ class DB {
 
     // configure workings
     public static $param_char = '%';
-    public static $named_param_seperator = '_';
+    public static $named_param_separator = '_';
     public static $success_handler = false;
     public static $error_handler = true;
     public static $throw_exception_on_error = false;
@@ -50,8 +50,8 @@ class DB {
     if ($mdb->param_char !== DB::$param_char) {
         $mdb->param_char = DB::$param_char;
     }
-    if ($mdb->named_param_seperator !== DB::$named_param_seperator) {
-        $mdb->named_param_seperator = DB::$named_param_seperator;
+    if ($mdb->named_param_separator !== DB::$named_param_separator) {
+        $mdb->named_param_separator = DB::$named_param_separator;
     }
     if ($mdb->success_handler !== DB::$success_handler) {
         $mdb->success_handler = DB::$success_handler;
@@ -141,7 +141,7 @@ class MeekroDB {
 
     // configure workings
     public $param_char = '%';
-    public $named_param_seperator = '_';
+    public $named_param_separator = '_';
     public $success_handler = false;
     public $error_handler = true;
     public $throw_exception_on_error = false;
@@ -232,8 +232,8 @@ class MeekroDB {
 
     public function nonSQLError($message) {
     if ($this->throw_exception_on_nonsql_error) {
-        $e = new MeekroDBException($message);
-        throw $e;
+        $err = new MeekroDBException($message);
+        throw $err;
     }
 
     $error_handler = is_callable($this->nonsql_error_handler) ? $this->nonsql_error_handler : 'meekrodb_error_handler';
@@ -257,8 +257,8 @@ class MeekroDB {
 
     public function useDB() { $args = func_get_args(); return call_user_func_array(array($this, 'setDB'), $args); }
     public function setDB($dbName) {
-    $db = $this->get();
-    if (!$db->select_db($dbName)) {
+    $database = $this->get();
+    if (!$database->select_db($dbName)) {
         $this->nonSQLError("Unable to set database to $dbName");
     }
     $this->current_db = $dbName;
@@ -431,10 +431,10 @@ class MeekroDB {
     return $this->queryOneColumn('Field', "SHOW COLUMNS FROM $table");
     }
 
-    public function tableList($db = null) {
-    if ($db) {
+    public function tableList($database = null) {
+    if ($database) {
         $olddb = $this->current_db;
-        $this->useDB($db);
+        $this->useDB($database);
     }
 
     $result = $this->queryFirstColumn('SHOW TABLES');
@@ -454,7 +454,7 @@ class MeekroDB {
     }
 
     $param_char_length = strlen($this->param_char);
-    $named_seperator_length = strlen($this->named_param_seperator);
+    $named_seperator_length = strlen($this->named_param_separator);
 
     $types = array(
         $this->param_char.'ll', // list of literals
@@ -510,7 +510,7 @@ class MeekroDB {
         $arg = $args_all[$arg_number];
 
         // handle named parameters
-        } else if (substr($sql, $new_pos_back, $named_seperator_length) == $this->named_param_seperator) {
+        } else if (substr($sql, $new_pos_back, $named_seperator_length) == $this->named_param_separator) {
         $arg_number_length = strspn($sql, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_',
             $new_pos_back + $named_seperator_length) + $named_seperator_length;
 
@@ -595,11 +595,11 @@ class MeekroDB {
     }
     }
 
-    protected function parseTS($ts) {
-    if (is_string($ts)) {
-        return date('Y-m-d H:i:s', strtotime($ts));
-    } else if (is_object($ts) && ($ts instanceof DateTime)) {
-        return $ts->format('Y-m-d H:i:s');
+    protected function parseTS($datets) {
+    if (is_string($datets)) {
+        return date('Y-m-d H:i:s', strtotime($datets));
+    } else if (is_object($datets) && ($datets instanceof DateTime)) {
+        return $datets->format('Y-m-d H:i:s');
     }
     }
 
@@ -692,7 +692,7 @@ class MeekroDB {
     protected function queryHelper() {
     $args = func_get_args();
     $type = array_shift($args);
-    $db = $this->get();
+    $database = $this->get();
 
     $is_buffered = true;
     $row_type = 'assoc'; // assoc, list, raw
@@ -724,7 +724,7 @@ class MeekroDB {
     if ($this->success_handler) {
         $starttime = microtime(true);
     }
-    $result = $db->query($sql, $is_buffered ? MYSQLI_STORE_RESULT : MYSQLI_USE_RESULT);
+    $result = $database->query($sql, $is_buffered ? MYSQLI_STORE_RESULT : MYSQLI_USE_RESULT);
     if ($this->success_handler) {
         $runtime = microtime(true) - $starttime;
     } else {
@@ -732,13 +732,13 @@ class MeekroDB {
     }
 
     // ----- BEGIN ERROR HANDLING
-    if (!$sql || $db->error) {
+    if (!$sql || $database->error) {
         if ($this->error_handler) {
-        $db_error = $db->error;
-        $db_errno = $db->errno;
+        $db_error = $database->error;
+        $db_errno = $database->errno;
 
         if (isset($_SESSION['user_id'])) {
-            $db->query(
+            $database->query(
                 "INSERT INTO ".$GLOBALS['pre']."log_system SET
               date=".time().",
               qui=".$_SESSION['user_id'].",
@@ -759,8 +759,8 @@ class MeekroDB {
         }
 
         if ($this->throw_exception_on_error) {
-        $e = new MeekroDBException($db_error, $sql, $db_errno);
-        throw $e;
+        $exeption = new MeekroDBException($db_error, $sql, $db_errno);
+        throw $exeption;
         }
     } else if ($this->success_handler) {
         $runtime = sprintf('%f', $runtime * 1000);
@@ -769,14 +769,14 @@ class MeekroDB {
         call_user_func($success_handler, array(
         'query' => $sql,
         'runtime' => $runtime,
-        'affected' => $db->affected_rows
+        'affected' => $database->affected_rows
         ));
     }
 
     // ----- END ERROR HANDLING
 
-    $this->insert_id = $db->insert_id;
-    $this->affected_rows = $db->affected_rows;
+    $this->insert_id = $database->insert_id;
+    $this->affected_rows = $database->affected_rows;
 
     // mysqli_result->num_rows won't initially show correct results for unbuffered data
     if ($is_buffered && ($result instanceof MySQLi_Result)) {
@@ -811,9 +811,9 @@ class MeekroDB {
 
     // free results
     $result->free();
-    while ($db->more_results()) {
-        $db->next_result();
-        if ($result = $db->use_result()) {
+    while ($database->more_results()) {
+        $database->next_result();
+        if ($result = $database->use_result()) {
             $result->free();
         }
     }
@@ -928,15 +928,15 @@ class WhereClause {
     }
 
     function negateLast() {
-    $i = count($this->clauses) - 1;
-    if (!isset($this->clauses[$i])) {
+    $inc = count($this->clauses) - 1;
+    if (!isset($this->clauses[$inc])) {
         return;
     }
 
-    if ($this->clauses[$i] instanceof WhereClause) {
-        $this->clauses[$i]->negate();
+    if ($this->clauses[$inc] instanceof WhereClause) {
+        $this->clauses[$inc]->negate();
     } else {
-        $this->clauses[$i]['sql'] = 'NOT ('.$this->clauses[$i]['sql'].')';
+        $this->clauses[$inc]['sql'] = 'NOT ('.$this->clauses[$inc]['sql'].')';
     }
     }
 
@@ -945,9 +945,9 @@ class WhereClause {
     }
 
     function addClause($type) {
-    $r = new WhereClause($type);
-    $this->add($r);
-    return $r;
+    $ret = new WhereClause($type);
+    $this->add($ret);
+    return $ret;
     }
 
     function count() {
@@ -1032,7 +1032,7 @@ class DBHelper {
     public static function verticalSlice($array, $field, $keyfield = null) {
     $array = (array) $array;
 
-    $R = array();
+    $arrRet = array();
     foreach ($array as $obj) {
         if (!array_key_exists($field, $obj)) {
             die("verticalSlice: array doesn't have requested field\n");
@@ -1042,12 +1042,12 @@ class DBHelper {
         if (!array_key_exists($keyfield, $obj)) {
             die("verticalSlice: array doesn't have requested field\n");
         }
-        $R[$obj[$keyfield]] = $obj[$field];
+        $arrRet[$obj[$keyfield]] = $obj[$field];
         } else {
-        $R[] = $obj[$field];
+        $arrRet[] = $obj[$field];
         }
     }
-    return $R;
+    return $arrRet;
     }
 
     /*
@@ -1060,9 +1060,9 @@ class DBHelper {
     $array = array_shift($fields);
     $array = (array) $array;
 
-    $R = array();
+    $arrRet = array();
     foreach ($array as $obj) {
-        $target = & $R;
+        $target = & $arrRet;
 
         foreach ($fields as $field) {
         if (!array_key_exists($field, $obj)) {
@@ -1074,7 +1074,7 @@ class DBHelper {
         }
         $target = $obj;
     }
-    return $R;
+    return $arrRet;
     }
 }
 

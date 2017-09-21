@@ -1,10 +1,10 @@
-<?php
+<?php 
 /**
  *
  * @file          portuguese_br.php
  * @author        Nils Laumaillé
- * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @version       
+ * @copyright      Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -13,14 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'nothing_to_do' => 'Nothing to do.',
-    'knowledge_base' => 'Knowledge Base',
-    'category' => 'Category',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'feature_support_canal' => 'For Support and Help, please use ',
+$LANG = array (
     'user_ga_code' => 'Enviar ao usuário o Código do Google Authenticator por e-mail ',
     'send_ga_code' => 'Google Authenticator para usuário',
     'error_no_email' => 'Este usuário não tem e-mail definido!',
@@ -1028,7 +1021,7 @@ $LANG = array(
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'consider_a_donation' => 'You may consider a donation',
     'more_information' => 'More information',
-    'feature_request_canal' => 'For Feature Requests or Questions, please use',
+    'feature_request_canal' => 'For Feature Requests, please use',
     'bug_canal' => 'For Bugs, please use',
     'documentation_canal' => 'Complete documentation at',
     'website_canal' => 'Click to open Teampass website',
@@ -1051,5 +1044,15 @@ $LANG = array(
     'ldap_test_username' => 'Username to use for testing purpose',
     'ldap_test_username_pwd' => 'Username password',
     'no_username_needed' => 'No username needed',
+    'feature_support_canal' => 'For Support and Help, please use',
+    'file_is_now_ready' => 'File is now ready.',
+    'category' => 'Category',
+    'knowledge_base' => 'Knowledge Base',
+    'anyone_can_modify_it' => 'Anyone can modify it',
+    'manage_entries_in_kb' => 'Manage entries in KB',
+    'add_new_kb' => 'Add a new KB',
+    'nothing_to_do' => 'Nothing to do.',
+    'continue' => 'Continue',
+    'please_confirm_operation' => 'Please confirm the operation',
     '' => ''
 );

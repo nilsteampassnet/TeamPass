@@ -18,14 +18,23 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 global $k, $settings;
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -36,9 +45,21 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Ensure Complexity levels are translated
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+    $SETTINGS_EXT['pwComplexity'] = array(
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
+    );
+}
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre."nested_tree", 'id', 'parent_id', 'title');
 
@@ -91,8 +112,7 @@ foreach ($treeDesc as $t) {
         $sOutput .= "[";
 
         //col1
-        if (
-            ($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
+        if (($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
             ||
             $t->parent_id != 0
         ) {
@@ -121,7 +141,7 @@ foreach ($treeDesc as $t) {
         $sOutput .= ',';
 
         //col3
-        $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.@$_SESSION['settings']['pwComplexity'][$node_data['valeur']][1].'</span>"';
+        $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.$SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1].'</span>"';
         $sOutput .= ',';
 
         //col4

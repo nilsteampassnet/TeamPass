@@ -15,12 +15,20 @@
 
 require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1)
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 
 /*

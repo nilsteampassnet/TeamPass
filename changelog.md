@@ -1,7 +1,51 @@
 2.1.27
 
- Fix: upgrade process with encrypted attachments
+ 8/
+ Delete install folders and files during installation process
+ Custom Field value can be masked
+ Database password is encrypted in settings.php file
+ PHPMailer library updated to 5.2.23
+ TwoFactorAuth library was updated
+ Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
+ Fix: issue on offline export
+ Fix: error on deleting a folder at root
+ #1909 Roles Management - Problem with acess rights "Edit" "Delete"
+ #1903 SSH Password Change does not work
+ #1900 Forgot your password --> Page reload automatic
+ #1891 Install error - Uncaught Defuse\\Crypto\\Exception\\BadFormatException: Encoded data is shorter than expected
+ #1899 Active Directory authentication not working on fresh installed Cent OS 7
+ #1890 access rights in manage roles
+ #1888 Export to CVS --> empty file (0 kb)
+ #1886 JSON Error when importing with an apostrophe (‘)
+ #1885 Undefined index: SSL_SERVER_CERT
+ #1884 Cannot delete custom fields - hangs indefinitely after confirm with spinning gear
+ #1882 Can't see any entry on any folder, using any account
+ #1881 Doesn't auto-delete install/ folder after installation completed
+ #1880 Custom Fields, Not encrypted/decrypted when toggled in Custom-Field Settings Screen
+ #1872 New Admin User login not working -JSON Parse file failure
+ #1870 Logic issue in headers sending
+ #1866 CSV import with empty url leads to value 0
+ #1862 Import from Keepass.xml to Personalfolder no access to Item
+ #1857 API: Folders created at level 0 instead of correct level
+ #1856 Robustified tp.config.php creation in case of upgrade
+ #1851 Fix ldap suffix
+ #1850 Missing iconv in Docker
+ #1840 Added the "download" attribute
+ #1837 JSON error in Find page when user has no folders to browse
+ #1834 Typo in sources/main.functions.php
+ #1833 Opening a one time view page give a notice: A session had already been started...
+ #1830 Salt key field has already a character filled in.
+ #1829 Attachments is broken after upgrade from 2.1.27.0. Fix in progress
+ #1828 No error message when duplicate item names at personal keys
+ #1826 New dockerfile and docker-compose.yml
+ #1820 group vertical scroll bar not work correctly
+ #1819 Fix for QR sending from login page
 
+ 6-7/
+ Fix: upgrade process with encrypted attachments
+ Fix for #1806
+
+ 5/
  New: Custom Fields are only visible if defined
  Fix issue in tree if subfolder is visible while parent is not
  Fix issues regarding DUOSecurity
@@ -18,6 +62,7 @@
  #1743 Enable anonymous LDAP queries
  #1690 Unable to set/save personal salt key with LDAP user
 
+ 3-4/
  New: Multiselection in Roles vs Folders matrix
  New: LDAP configuration test mode (in progress)
  Fix: Prevent moving a folder to one of its child folder
@@ -34,6 +79,7 @@
  #1729 Protection against bigger data than database field size
  #1727 Cannot edit or delete entry in the Personal folder
 
+ 2/
  Secure fixes
  Session increase time feature is now increasing with the expected user session duration
  Default language cannot be changed fix
@@ -65,6 +111,7 @@
  #1659 Third level of sub folders in the Personal folder are not seen
  #1654 User management page - no "next" button
 
+ 2/
  New   Defuse Encryption implemented in place of phpCrypt
  NEW   AGSES authentication implemented
  NEW   Custom Fields data can be encrytped or not in database
@@ -126,7 +173,7 @@
  #1408 Display folders visible by a user
  #1299 Export to pdf or csv shows htmlencoded
 
-2.1.27
+2.1.26
  #1537 Homepage not loading in French
  #1527 Error Field 'timestamp' doesn't have a default value
  #1526 New .htaccess file in ./includes/config

@@ -18,13 +18,22 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 global $k, $settings;
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -54,8 +63,7 @@ if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
 if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
     $sOrder = "ORDER BY  ";
     for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-        if (
-            $_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
+        if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
             preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
         ) {
             $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
@@ -83,7 +91,8 @@ if ($_GET['sSearch'] != "") {
     $sWhere = substr_replace($sWhere, "", -3);
 }
 
-DB::query("SELECT id FROM ".$pre."items_change
+DB::query(
+    "SELECT id FROM ".$pre."items_change
     $sWhere
     $sOrder",
     array(
@@ -148,7 +157,7 @@ foreach ($rows as $record) {
 
     // col6
     $sOutput .= '"'.htmlspecialchars(
-        date($_SESSION['settings']['date_format']." ".$_SESSION['settings']['time_format'], $record['timestamp']),
+        date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['timestamp']),
         ENT_QUOTES
     ).'",';
 
@@ -178,8 +187,6 @@ foreach ($rows as $record) {
 
     //Finish the line
     $sOutput .= '],';
-
-
 }
 
 if (count($rows) > 0) {

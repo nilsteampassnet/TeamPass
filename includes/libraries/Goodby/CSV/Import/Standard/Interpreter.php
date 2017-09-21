@@ -6,9 +6,9 @@ use Goodby\CSV\Import\Protocol\InterpreterInterface;
 use Goodby\CSV\Import\Protocol\Exception\InvalidLexicalException;
 use Goodby\CSV\Import\Standard\Exception\StrictViolationException;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/InterpreterInterface.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/Exception/InvalidLexicalException.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Standard/Exception/StrictViolationException.php";
+require_once dirname(__FILE__)."/../Protocol/InterpreterInterface.php";
+require_once dirname(__FILE__)."/../Protocol/Exception/InvalidLexicalException.php";
+require_once dirname(__FILE__)."/Exception/StrictViolationException.php";
 /**
  * standard interpreter
  *

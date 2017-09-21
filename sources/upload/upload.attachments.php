@@ -14,12 +14,18 @@
 
 require_once('../SecureHandler.php');
 session_start();
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
 ) {
     die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 /* do checks */
@@ -31,29 +37,33 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "items")) {
 }
 
 //check for session
-if (isset($_POST['PHPSESSID'])) {
-    session_id($_POST['PHPSESSID']);
+if (null !== filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING)) {
+    session_id(filter_input(INPUT_POST, 'PHPSESSID', FILTER_SANITIZE_STRING));
 } elseif (isset($_GET['PHPSESSID'])) {
     session_id($_GET['PHPSESSID']);
 } else {
     handleAttachmentError('No Session was found.', 110);
 }
 
+// load functions
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
 
 // Get parameters
-$chunk = isset($_REQUEST["chunk"]) ? intval($_REQUEST["chunk"]) : 0;
-$chunks = isset($_REQUEST["chunks"]) ? intval($_REQUEST["chunks"]) : 0;
+$chunk = isset($_REQUEST["chunk"]) ? (int) $_REQUEST["chunk"] : 0;
+$chunks = isset($_REQUEST["chunks"]) ? (int) $_REQUEST["chunks"] : 0;
 $fileName = isset($_REQUEST["name"]) ? $_REQUEST["name"] : '';
 
 
 // token check
-if (!isset($_POST['user_token'])) {
+if (null === filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING)) {
     handleAttachmentError('No user token found.', 110);
     exit();
 } else {
     //Connect to mysql server
     require_once '../../includes/config/settings.php';
     require_once '../../includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
@@ -67,7 +77,17 @@ if (!isset($_POST['user_token'])) {
     // delete expired tokens
     DB::delete(prefix_table("tokens"), "end_timestamp < %i", time());
 
-    if (isset($_SESSION[$_POST['user_token']]) && ($chunk < $chunks - 1) && $_SESSION[$_POST['user_token']] >= 0) {
+    // Prepare POST variables
+    $post_user_token = filter_input(INPUT_POST, 'user_token', FILTER_SANITIZE_STRING);
+    $post_type_upload = filter_input(INPUT_POST, 'type_upload', FILTER_SANITIZE_STRING);
+    $post_itemId = filter_input(INPUT_POST, 'itemId', FILTER_SANITIZE_NUMBER_INT);
+    $post_files_number = filter_input(INPUT_POST, 'files_number', FILTER_SANITIZE_NUMBER_INT);
+    $post_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_STRING);
+
+    if (isset($_SESSION[$post_user_token])
+        && ($chunk < $chunks - 1)
+        && $_SESSION[$post_user_token] >= 0
+    ) {
         // increase end_timestamp for token
         DB::update(
             prefix_table('tokens'),
@@ -76,14 +96,16 @@ if (!isset($_POST['user_token'])) {
                 ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            $_POST['user_token']
+            $post_user_token
         );
     } else {
-
         // create a session if several files to upload
-        if (!isset($_SESSION[$_POST['user_token']]) || empty($_SESSION[$_POST['user_token']]) || $_SESSION[$_POST['user_token']] === 0) {
-            $_SESSION[$_POST['user_token']] = $_POST['files_number'];
-        } else if ($_SESSION[$_POST['user_token']] > 0) {
+        if (isset($_SESSION[$post_user_token]) === false
+            || empty($_SESSION[$post_user_token])
+            || $_SESSION[$post_user_token] === "0"
+        ) {
+            $_SESSION[$post_user_token] = $post_files_number;
+        } elseif ($_SESSION[$post_user_token] > 0) {
             // increase end_timestamp for token
             DB::update(
                 prefix_table('tokens'),
@@ -92,13 +114,13 @@ if (!isset($_POST['user_token'])) {
                     ),
                 "user_id = %i AND token = %s",
                 $_SESSION['user_id'],
-                $_POST['user_token']
+                $post_user_token
             );
             // decrease counter of files to upload
-            $_SESSION[$_POST['user_token']]--;
+            $_SESSION[$post_user_token]--;
         } else {
             // no more files to upload, kill session
-            unset($_SESSION[$_POST['user_token']]);
+            unset($_SESSION[$post_user_token]);
             handleAttachmentError('No user token found.', 110);
             die();
         }
@@ -107,21 +129,29 @@ if (!isset($_POST['user_token'])) {
         $data = DB::queryFirstRow(
             "SELECT end_timestamp FROM ".prefix_table("tokens")." WHERE user_id = %i AND token = %s",
             $_SESSION['user_id'],
-            $_POST['user_token']
+            $post_user_token
         );
         // clear user token
-        if ($_SESSION[$_POST['user_token']] === 0) {
-            DB::delete(prefix_table("tokens"), "user_id = %i AND token = %s", $_SESSION['user_id'], $_POST['user_token']);
-            unset($_SESSION[$_POST['user_token']]);
+        if ($_SESSION[$post_user_token] === 0) {
+            DB::delete(
+                prefix_table("tokens"),
+                "user_id = %i AND token = %s",
+                $_SESSION['user_id'],
+                $post_user_token
+            );
+            unset($_SESSION[$post_user_token]);
         }
 
         if (time() > $data['end_timestamp']) {
             // too old
-            unset($_SESSION[$_POST['user_token']]);
+            unset($_SESSION[$post_user_token]);
             handleAttachmentError('User token expired.', 110);
             die();
         }
     }
+
+    // Load Settings
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
 }
 
 // HTTP headers for no cache etc
@@ -131,10 +161,7 @@ header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 header("Pragma: no-cache");
 
-// load functions
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-
-$targetDir = filter_var($_SESSION['settings']['path_to_upload_folder'], FILTER_SANITIZE_STRING);
+$targetDir = $SETTINGS['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
@@ -142,8 +169,8 @@ $valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 
-if (isset($_POST['timezone'])) {
-    date_default_timezone_set($_POST['timezone']);
+if (null !== $post_timezone) {
+    date_default_timezone_set($post_timezone);
 }
 
 // Check post_max_size
@@ -186,8 +213,8 @@ if (!in_array(
     $ext,
     explode(
         ',',
-        $_SESSION['settings']['upload_docext'].','.$_SESSION['settings']['upload_imagesext'].
-        ','.$_SESSION['settings']['upload_pkgext'].','.$_SESSION['settings']['upload_otherext']
+        $SETTINGS['upload_docext'].','.$SETTINGS['upload_imagesext'].
+        ','.$SETTINGS['upload_pkgext'].','.$SETTINGS['upload_otherext']
     )
 )) {
     handleAttachmentError('Invalid file extension.', 115);
@@ -214,7 +241,8 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
 
-$filePath = filter_var($targetDir.DIRECTORY_SEPARATOR.$fileName, FILTER_SANITIZE_STRING);
+
+$filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
 // Create target dir
 if (!file_exists($targetDir)) {
@@ -321,7 +349,7 @@ rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
 
 
 // Encrypt the file if requested
-if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['settings']['enable_attachment_encryption'] === '1') {
+if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === '1') {
     // Do encryption
     prepareFileWithDefuse(
         'encrypt',
@@ -342,11 +370,11 @@ if (isset($_SESSION['settings']['enable_attachment_encryption']) && $_SESSION['s
 }
 
 // Case ITEM ATTACHMENTS - Store to database
-if (isset($_POST['edit_item']) && $_POST['type_upload'] === "item_attachments") {
+if (null !== $post_type_upload && $post_type_upload === "item_attachments") {
     DB::insert(
         $pre.'files',
         array(
-            'id_item' => $_POST['itemId'],
+            'id_item' => $post_itemId,
             'name' => $fileName,
             'size' => $_FILES['file']['size'],
             'extension' => getFileExtension($fileName),
@@ -360,7 +388,7 @@ if (isset($_POST['edit_item']) && $_POST['type_upload'] === "item_attachments") 
     DB::insert(
         $pre.'log_items',
         array(
-            'id_item' => $_POST['itemId'],
+            'id_item' => $post_itemId,
             'date' => time(),
             'id_user' => $_SESSION['user_id'],
             'action' => 'at_modification',
@@ -376,6 +404,5 @@ die('{"jsonrpc" : "2.0", "result" : null, "id" : "id"}');
 /* Handles the error output. */
 function handleAttachmentError($message, $code)
 {
-    echo '{"jsonrpc" : "2.0", "error" : {"code": '.$code.', "message": "'.$message.'"}, "id" : "id"}';
-    exit(0);
+    echo '{"jsonrpc" : "2.0", "error" : {"code": '.htmlentities($code, ENT_QUOTES).', "message": "'.htmlentities($message, ENT_QUOTES).'"}, "id" : "id"}';
 }

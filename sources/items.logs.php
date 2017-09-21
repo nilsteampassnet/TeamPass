@@ -18,15 +18,25 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/config/include.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once 'main.functions.php';
 
 //Class loader
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -37,25 +47,32 @@ DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_id_item = filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_NUMBER_INT);
+
 // Check KEY and rights
-if (!isset($_POST['key']) || $_POST['key'] != $_SESSION['key']) {
+if (null === $post_key
+    || $post_key != $_SESSION['key']
+) {
     echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
     exit();
 }
 
 // Do asked action
-if (isset($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== $post_type) {
+    switch ($post_type) {
         /*
         * CASE
         * log if item's password is shown
         */
         case "item_password_shown":
-            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
+            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] == 1) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => $_POST['id_item'],
+                        'id_item' => $post_id_item,
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_shown'
@@ -63,8 +80,13 @@ if (isset($_POST['type'])) {
                 );
 
                 // SysLog
-                if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                    send_syslog("The password of Item #".$_POST['id_item']." was shown to ".$_SESSION['login'].".", "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+                if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
+                    send_syslog(
+                        "The password of Item #".$post_id_item." was shown to ".$_SESSION['login'].".",
+                        $SETTINGS['syslog_host'],
+                        $SETTINGS['syslog_port'],
+                        "teampass"
+                    );
                 }
             }
 
@@ -74,11 +96,11 @@ if (isset($_POST['type'])) {
         * log if item's password is copied
         */
         case "item_password_copied":
-            if (isset($_SESSION['settings']['log_accessed']) && $_SESSION['settings']['log_accessed'] == 1) {
+            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] == 1) {
                 DB::insert(
                     prefix_table("log_items"),
                     array(
-                        'id_item' => $_POST['id_item'],
+                        'id_item' => $post_id_item,
                         'date' => time(),
                         'id_user' => $_SESSION['user_id'],
                         'action' => 'at_password_copied'
@@ -86,8 +108,13 @@ if (isset($_POST['type'])) {
                 );
 
                 // SysLog
-                if (isset($_SESSION['settings']['syslog_enable']) && $_SESSION['settings']['syslog_enable'] == 1) {
-                    send_syslog("The password of Item #".$_POST['id_item']." was copied to clipboard by ".$_SESSION['login'].".", "teampass", $_SESSION['settings']['syslog_host'], $_SESSION['settings']['syslog_port']);
+                if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
+                    send_syslog(
+                        "The password of Item #".$post_id_item." was copied to clipboard by ".$_SESSION['login'].".",
+                        $SETTINGS['syslog_host'],
+                        $SETTINGS['syslog_port'],
+                        "teampass"
+                    );
                 }
             }
 

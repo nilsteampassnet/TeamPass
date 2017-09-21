@@ -104,9 +104,14 @@ button{
 }
 #items_list{
     float:left;
-    margin-left: -35px;
-    width: 710px;
+    margin-left: 0px;
+    width: 680px;
     overflow:auto ;
+}
+
+#full_items_list{
+    margin-left: -36px;
+    width: 673px;
 }
 
 #item_details_ok{
@@ -181,4 +186,8 @@ button{
 
 .text-extract {
   color: #6B6B6B;
+}
+
+#item_details_table tr {
+    height: 22px;
 }

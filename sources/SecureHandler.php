@@ -55,23 +55,23 @@ class SecureHandler extends SessionHandler
     /**
      * Read from session and decrypt
      *
-     * @param string $id
+     * @param string $session_id
      */
-    public function read($id)
+    public function read($session_id)
     {
-        $data = parent::read($id);
+        $data = parent::read($session_id);
         return empty($data) ? '' : $this->decrypt($data, $this->key);
     }
 
     /**
      * Encrypt the data and write into the session
      *
-     * @param string $id
+     * @param string $session_id
      * @param string $data
      */
-    public function write($id, $data)
+    public function write($session_id, $data)
     {
-        return parent::write($id, $this->encrypt($data, $this->key));
+        return parent::write($session_id, $this->encrypt($data, $this->key));
     }
 
     /**
@@ -83,23 +83,23 @@ class SecureHandler extends SessionHandler
      */
     protected function encrypt($data, $key)
     {
-        $iv = random_bytes(16); // AES block size in CBC mode
+        $block_iv = random_bytes(16); // AES block size in CBC mode
         // Encryption
         $ciphertext = openssl_encrypt(
             $data,
             'AES-256-CBC',
             mb_substr($key, 0, 32, '8bit'),
             OPENSSL_RAW_DATA,
-            $iv
+            $block_iv
         );
         // Authentication
         $hmac = hash_hmac(
             'SHA256',
-            $iv.$ciphertext,
+            $block_iv.$ciphertext,
             mb_substr($key, 32, null, '8bit'),
             true
         );
-        return $hmac.$iv.$ciphertext;
+        return $hmac.$block_iv.$ciphertext;
     }
 
     /**
@@ -112,12 +112,12 @@ class SecureHandler extends SessionHandler
     protected function decrypt($data, $key)
     {
         $hmac       = mb_substr($data, 0, 32, '8bit');
-        $iv         = mb_substr($data, 32, 16, '8bit');
+        $block_iv   = mb_substr($data, 32, 16, '8bit');
         $ciphertext = mb_substr($data, 48, null, '8bit');
         // Authentication
         $hmacNew = hash_hmac(
             'SHA256',
-            $iv.$ciphertext,
+            $block_iv.$ciphertext,
             mb_substr($key, 32, null, '8bit'),
             true
         );
@@ -130,7 +130,7 @@ class SecureHandler extends SessionHandler
             'AES-256-CBC',
             mb_substr($key, 0, 32, '8bit'),
             OPENSSL_RAW_DATA,
-            $iv
+            $block_iv
         );
     }
 
@@ -142,7 +142,7 @@ class SecureHandler extends SessionHandler
      */
     protected function getKey($name)
     {
-        if (empty($_COOKIE[$name])) {
+        if (empty($_COOKIE[$name]) === true) {
             // 32 for encryption and 32 for authentication
             $key = random_bytes(64);
             $cookieParam = session_get_cookie_params();
@@ -158,10 +158,11 @@ class SecureHandler extends SessionHandler
                 $cookieParam['secure'],
                 $cookieParam['httponly']
             );
-        } else {
-            $key = base64_decode($_COOKIE[$name]);
+            return $key;
         }
-        return $key;
+
+        // If not returned before - cookie exists
+        return base64_decode($_COOKIE[$name]);
     }
 
     /**

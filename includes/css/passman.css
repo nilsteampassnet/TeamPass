@@ -45,17 +45,17 @@ color: #F0F0F0;
 }
 
 #div_right_menu{
-	position:absolute;
-	margin:54px -32px 0 1000px;
-	background-image: url(../images/canevas/menu_top_bckg.png);
-	padding:5px;
+  position:absolute;
+  margin:54px -32px 0 1000px;
+  background-image: url(../images/canevas/menu_top_bckg.png);
+  padding:5px;
 }
 
 #div_last_items{
-    background-color: #FFF0A4;
-    padding: 5px;
-    margin-top: 5px;
-    font-size: 12px;
+  background-color: #FFF0A4;
+  padding: 5px;
+  margin-top: 5px;
+  font-size: 12px;
 }
 
 #main{
@@ -165,7 +165,6 @@ float:left;
 
 .td_title{
 font-weight:bold;
-// font-family: serif;
 min-width: 150px;
 }
 
@@ -183,45 +182,45 @@ list-style-type:none;
 }
 
 .readme{
-    font-family: sans-serif;
-    font-size: 9px;
-    line-height:15px;
-    margin-top: 20px;
-    height: 150px;
-    width:600px;
-    float:left;
+  font-family: sans-serif;
+  font-size: 9px;
+  line-height:15px;
+  margin-top: 20px;
+  height: 150px;
+  width:600px;
+  float:left;
 }
 
 .last_seen_item{
-	cursor:pointer;
-    font-family: sans-serif;
-    font-size: 11px;
-	margin-left: 8px;
+  cursor:pointer;
+  font-family: sans-serif;
+  font-size: 11px;
+  margin-left: 8px;
 }
 
 .last_seen_item:hover{
-	color:red;
+  color:red;
 }
 
 .pointer{
-	cursor:pointer;
+  cursor:pointer;
 }
 
 .setting_flag{
-	margin-left:10px;
+  margin-left:10px;
 }
 
 
 /*SIMPLEPASSMETER*/
 
 .simplePassMeter {
-	border: 1px solid #aaa;
-	background-color: #f3f3f3;
-	color: #666;
-	font-size: 0.8em;
-	padding: 1px 5px 0 5px;
-	margin: 0;
-	width: 19em;
+  border: 1px solid #aaa;
+  background-color: #f3f3f3;
+  color: #666;
+  font-size: 0.8em;
+  padding: 1px 5px 0 5px;
+  margin: 0;
+  width: 19em;
 }
 
 .meterFail { border: 1px solid #daa; background-color: #fdd; }
@@ -238,11 +237,11 @@ list-style-type:none;
 .simplePassMeter p { margin: 0; }
 .simplePassMeterIcon { height: 16px; width: 16px; float: left; }
 .meterFail .simplePassMeterIcon,
-	.meterWarn .simplePassMeterIcon,
-	.meterGood .simplePassMeterIcon,
+.meterWarn .simplePassMeterIcon,
+.meterGood .simplePassMeterIcon,
 .meterExcel .simplePassMeterIcon {
-	background-image: url('../images/simplePassMeterSprite.png');
-	background-repeat: no-repeat;
+  background-image: url('../images/simplePassMeterSprite.png');
+  background-repeat: no-repeat;
 }
 .meterExcel .simplePassMeterIcon { background-position: 0 0; }
 .meterFail .simplePassMeterIcon { background-position: 0 -17px; }
@@ -252,80 +251,84 @@ list-style-type:none;
 .simplePassMeterText { margin-left: 2px; }
 
 #div_ga_url {
-    text-align:center;
-    margin:0 0 10px 0;
-    font-size:9pt;
-    display:none;
-    padding:5px;
+  text-align:center;
+  margin:0 0 10px 0;
+  font-size:9pt;
+  display:none;
+  padding:5px;
 }
 
 input.watermark {
-	color: #999;
+  color: #999;
 }
 
 /* Allow Font Awesome Icons in lieu of jQuery UI and only apply when using a FA icon */
 .ui-icon[class*=" icon-"] {
-    /* Remove the jQuery UI Icon */
-    background: none repeat scroll 0 0 transparent;
-    /* Remove the jQuery UI Text Indent */
-    text-indent: 0;
-    /* Bump it up - jQuery UI is -8px */
-    margin-top: -0.5em;
+  /* Remove the jQuery UI Icon */
+  background: none repeat scroll 0 0 transparent;
+  /* Remove the jQuery UI Text Indent */
+  text-indent: 0;
+  /* Bump it up - jQuery UI is -8px */
+  margin-top: -0.5em;
 }
 
 /* Allow use of icon-large to be properly aligned */
 .ui-icon.icon-large {
-    margin-top: -0.75em;
+  margin-top: -0.75em;
 }
 
 .ui-button-icon-only .ui-icon[class*=" icon-"] {
-    /* Bump it - jQuery UI is -8px */
-    margin-left: -7px;
+  /* Bump it - jQuery UI is -8px */
+  margin-left: -7px;
 }
 
 .menu_150 {
-    width:150px;
+  width:150px;
 }
 
 .menu_200 {
-    width:200px;
+  width:200px;
 }
 
 .menu_250 {
-    width:250px;
+  width:250px;
 }
 
-.no-icon { display:none !important;}
+.no-icon {
+  display:none !important;
+}
 
-.ui-menu li {font-size:10pt !important;}
+.ui-menu li {
+  font-size:10pt !important;
+}
 
 
 .mi-green {
-	color: #388952;
+  color: #388952;
 }
 .mi-yellow {
-	color: #FC9300;
+  color: #FC9300;
 }
 .mi-red {
-	color: #CC0000;
+  color: #CC0000;
 }
 .mi-black {
-	color: #222222;
+  color: #222222;
 }
 .mi-grey-1 {
-	color: #9B9B9B;
+  color: #9B9B9B;
 }
 
 .form_text {
-    padding:2px;
-    margin-bottom:5px;
+  padding:2px;
+  margin-bottom:5px;
 }
 
 .ui-button.redButton {
-    background-color: red;
+  background-color: red;
 }
 .ui-button.greenButton {
-    background-color: green;
+  background-color: green;
 }
 
 div.dataTables_processing { z-index: 1; }
@@ -386,3 +389,7 @@ div.dataTables_processing { z-index: 1; }
   width: 15px;
   height: 15px;
   }
+
+.hidden {
+  display: none;
+}

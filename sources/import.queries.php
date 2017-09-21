@@ -21,6 +21,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 // No time limit
 set_time_limit(0);
 
@@ -42,7 +51,8 @@ define('KP_NOTES', 7);
 /**
  * @param string $crLFReplacement
  */
-function sanitiseString($str, $crLFReplacement) {
+function sanitiseString($str, $crLFReplacement)
+{
     $str = preg_replace('#[\r\n]#', $crLFReplacement, $str);
     $str = str_replace('\\', '&#92;', $str);
     $str = str_replace('"', "&quot;", $str);
@@ -55,16 +65,17 @@ function sanitiseString($str, $crLFReplacement) {
 global $k, $settings;
 header("Content-type: text/html; charset=utf-8");
 error_reporting(E_ERROR);
-include $_SESSION['settings']['cpassman_dir'].'/includes/config/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 //Class loader
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // call needed functions
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
@@ -85,11 +96,10 @@ $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
 $aes->register();
 
 //User's language loading
-$k['langage'] = @$_SESSION['user_language'];
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 // Build query
-switch ($_POST['type']) {
+switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     //Check if import CSV file format is what expected
     case "import_file_format_csv":
         //load full tree
@@ -97,7 +107,7 @@ switch ($_POST['type']) {
         $tree = $tree->getDescendants();
 
         // do some initializations
-        $file = $_SESSION['settings']['path_to_files_folder']."/".$_POST['file'];
+        $file = $SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
@@ -113,21 +123,17 @@ switch ($_POST['type']) {
             // data from CSV
             $valuesToImport = array();
             // load libraries
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php');
-            require_once($_SESSION['settings']['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php');
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php';
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php';
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php';
 
             // Lexer configuration
             $config = new LexerConfig();
             $lexer = new Lexer($config);
-            $config
-                ->setIgnoreHeaderLine("true")
-                //->setToCharset('UTF-8')
-                //->setFromCharset('SJIS-win')
-            ;
+            $config->setIgnoreHeaderLine("true");
             // extract data from CSV file
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
                     'Label'     => $row[0],
                     'Login'     => $row[1],
@@ -162,7 +168,7 @@ switch ($_POST['type']) {
                     if (!empty($account)) {
                         if ($continue_on_next_line === false) {
                             // Prepare listing that will be shown to user
-                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pw.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pwd.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
                             // Initialize this variable in order to restart from scratch
                             $account = "";
@@ -172,9 +178,9 @@ switch ($_POST['type']) {
 
                 // Get values of current line
                 if ($account == "" && $continue_on_next_line === false) {
-                    $account = addslashes($row['Label']);
-                    $login = addslashes($row['Login']);
-                    $pw = str_replace('"', "&quot;", $row['Password']);
+                    $account = htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8');
+                    $login = htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8');
+                    $pwd = str_replace('"', "&quot;", $row['Password']);
                     $url = addslashes($row['url']);
                     $to_find = array("\"", "'");
                     $to_ins = array("&quot", "&#39;");
@@ -190,7 +196,7 @@ switch ($_POST['type']) {
             fclose($fp);
 
             // remove file
-            unlink(filter_var($file, FILTER_SANITIZE_STRING));
+            fileDelete($file);
         } else {
             echo '[{"error":"cannot_open"}]';
             break;
@@ -198,7 +204,7 @@ switch ($_POST['type']) {
 
         if ($line_number > 0) {
             //add last line
-            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pw).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pwd).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
             $display .= '<tr><td colspan=\"2\"><br><input type=\"checkbox\" id=\"item_all_selection\" />&nbsp;'.$LANG['all'].'</td></tr>';
@@ -211,7 +217,7 @@ switch ($_POST['type']) {
                     for ($x = 1; $x < $t->nlevel; $x++) {
                         $ident .= "&nbsp;&nbsp;";
                     }
-                    if (isset($_POST['folder_id']) && $_POST['folder_id'] == $t->id) {
+                    if (null !== filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT) && filter_input(INPUT_POST, 'folder_id', FILTER_SANITIZE_NUMBER_INT) === $t->id) {
                         $selected = " selected";
                     } else {
                         $selected = "";
@@ -236,21 +242,30 @@ switch ($_POST['type']) {
     //Insert into DB the items the user has selected
     case "import_items":
         //decrypt and retreive data in JSON format
-        $dataReceived = (Encryption\Crypt\aesctr::decrypt($_POST['data'], $_SESSION['key'], 256));
+        $dataReceived = (Encryption\Crypt\aesctr::decrypt(
+            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            $_SESSION['key'],
+            256
+        ));
 
         //Get some info about personal folder
-        if ($_POST['folder'] == $_SESSION['user_id']) {
+        if (filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT) === $_SESSION['user_id']) {
             $personalFolder = 1;
         } else {
             $personalFolder = 0;
         }
-        $data_fld = DB::queryFirstRow("SELECT title FROM ".prefix_table("nested_tree")." WHERE id = %i", intval($_POST['folder']));
+        $data_fld = DB::queryFirstRow(
+            "SELECT title
+            FROM ".prefix_table("nested_tree")."
+            WHERE id = %i",
+            filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT)
+        );
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
         $list = "";
 
-        foreach (explode('@_#sep#_@', mysqli_escape_string($link, stripslashes($listItems))) as $item) {
+        foreach (explode('@_#sep#_@', stripslashes($listItems)) as $item) {
             //For each item, insert into DB
             $item = explode('@|@', $item); //explode item to get all fields
 
@@ -274,19 +289,21 @@ switch ($_POST['type']) {
                 prefix_table("items"),
                 array(
                     'label' => substr($item[0], 0, 500),
-                    'description' => $item[4],
+                    'description' => empty($item[4]) ? '' : $item[4],
                     'pw' => $encrypt['string'],
                     'pw_iv' => $encrypt['iv'],
-                    'url' => substr($item[3], 0, 500),
-                    'id_tree' => $_POST['folder'],
-                    'login' => substr($item[1], 0, 200),
-                    'anyone_can_modify' => $_POST['import_csv_anyone_can_modify'] == "true" ? 1 : 0
+                    'url' => empty($item[3]) ? '' : substr($item[3], 0, 500),
+                    'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                    'login' => empty($item[1]) ? '' : substr($item[1], 0, 200),
+                    'anyone_can_modify' => filter_input(INPUT_POST, 'import_csv_anyone_can_modify', FILTER_SANITIZE_STRING) === "true" ? 1 : 0
                 )
             );
             $newId = DB::insertId();
 
             //if asked, anyone in role can modify
-            if (isset($_POST['import_csv_anyone_can_modify_in_role']) && $_POST['import_csv_anyone_can_modify_in_role'] == "true") {
+            if (null !== filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'import_csv_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) === "true"
+            ) {
                 foreach ($_SESSION['arr_roles'] as $role) {
                     DB::insert(
                         prefix_table("restriction_to_roles"),
@@ -321,10 +338,10 @@ switch ($_POST['type']) {
                 array(
                     'id' => $newId,
                     'label' => substr($item[0], 0, 500),
-                    'description' => $item[4],
-                    'id_tree' => $_POST['folder'],
+                    'description' => empty($item[4]) ? '' : $item[4],
+                    'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
                     'perso' => $personalFolder == 0 ? 0 : 1,
-                    'login' => substr($item[1], 0, 500),
+                    'login' => empty($item[1]) ? '' : substr($item[1], 0, 500),
                     'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id'],
                     'timestamp' => time(),
@@ -339,7 +356,7 @@ switch ($_POST['type']) {
     //Check if import KEEPASS file format is what expected
     case "import_file_format_keepass":
         //Initialization
-        $root = $meta = $group = $entry = $key = $title = $notes = $pw = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
+        $root = $meta = $group = $entry = $key = $title = $notes = $pwd = $username = $url = $notKeepassFile = $newItem = $history = $generatorFound = false;
         $name = $levelInProgress = $previousLevel = $fullPath = $historyLevel = $path = $display = $keepassVersion = "";
         $numGroups = $numItems = 0;
         $temparray = $arrFolders = array();
@@ -349,17 +366,17 @@ switch ($_POST['type']) {
         $lineEndSeparator = '@*1|#9*|@';
 
         //prepare CACHE files
-        $cacheFileName = $_SESSION['settings']['path_to_files_folder']."/cpassman_cache_".md5(time().mt_rand());
+        $cacheFileName = $SETTINGS['path_to_files_folder']."/cpassman_cache_".md5(time().mt_rand());
         $cacheFileNameFolder = $cacheFileName."_folders";
         $cacheFile = fopen($cacheFileName, "w");
         $cacheFileF = fopen($cacheFileNameFolder, "w");
         $logFileName = "/keepassImport_".date('YmdHis');
-        $cacheLogFile = fopen($_SESSION['settings']['path_to_files_folder'].$logFileName, 'w');
+        $cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');
 
         //read xml file
-        if (file_exists("'".$_SESSION['settings']['path_to_files_folder']."/".$_POST['file'])."'") {
+        if (file_exists("'".$SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING))."'") {
             $xml = simplexml_load_file(
-                $_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING)
+                $SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)
             );
         }
 
@@ -368,10 +385,10 @@ switch ($_POST['type']) {
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
-            global $meta, $root, $group, $name, $entry, $levelMin, $key, $title, $notes, $pw, $username, $url,
-                $newItem, $temparray, $history, $levelInProgress, $historyLevel, $nbItems,
+            global $meta, $root, $group, $name, $entry, $levelMin, $title, $notes, $pwd, $username, $url,
+                $newItem, $temparray, $history, $levelInProgress, $historyLevel,
                 $path, $previousLevel, $generatorFound, $cacheFile, $cacheFileF, $numGroups,
-                $numItems, $foldersSeparator, $itemsSeparator, $lineEndSeparator, $keepassVersion, $arrFolders;
+                $numItems, $foldersSeparator, $itemsSeparator, $keepassVersion, $arrFolders;
 
             $groupsArray = array();
 
@@ -525,21 +542,21 @@ switch ($_POST['type']) {
                         //Check each node name and get data from some of them
                         if ($entry === true && $nom == "Key" && $elem == "Title") {
                             $title = true;
-                            $notes = $pw = $url = $username = false;
+                            $notes = $pwd = $url = $username = false;
                         } elseif ($entry === true && $nom == "Key" && $elem == "Notes") {
                             $notes = true;
-                            $title = $pw = $url = $username = false;
+                            $title = $pwd = $url = $username = false;
                         } elseif ($entry === true && $nom == "UUID") {
                             $temparray[KP_UUID] = $elem;
                         } elseif ($entry === true && $nom == "Key" && $elem == "Password") {
-                            $pw = true;
+                            $pwd = true;
                             $notes = $title = $url = $username = false;
                         } elseif ($entry === true && $nom == "Key" && $elem == "URL") {
                             $url = true;
-                            $notes = $pw = $title = $username = false;
+                            $notes = $pwd = $title = $username = false;
                         } elseif ($entry === true && $nom == "Key" && $elem == "UserName") {
                             $username = true;
-                            $notes = $pw = $url = $title = false;
+                            $notes = $pwd = $url = $title = false;
                         } elseif ($group === true && $nom == "Name") {
                             $temparray[KP_GROUP] = addslashes(preg_replace('#[\r\n]#', '', $elem));
                             $temparray['level'] = $xmlLevel;
@@ -591,8 +608,8 @@ switch ($_POST['type']) {
                         } elseif ($notes === true && $nom == "Value") {
                             $notes = false;
                             $temparray[KP_NOTES] = sanitiseString($elem, '');
-                        } elseif ($pw === true && $nom == "Value") {
-                            $pw = false;
+                        } elseif ($pwd === true && $nom == "Value") {
+                            $pwd = false;
                             $temparray[KP_PW] = sanitiseString($elem, '');
                         } elseif ($url === true && $nom == "Value") {
                             $url = false;
@@ -606,7 +623,7 @@ switch ($_POST['type']) {
             }
         }
 
-        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".filter_var($_POST['file'], FILTER_SANITIZE_STRING)."\n");
+        fputs($cacheLogFile, date('H:i:s ')."Writing XML File ".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)."\n");
 
         // Go through each node of XML file
         recursiveKeepassXML($xml);
@@ -618,7 +635,7 @@ switch ($_POST['type']) {
             fclose($cacheFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['url_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['url_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
 
             fputs($cacheLogFile, date('H:i').$LANG['import_error_no_read_possible_kp']."\n");
 
@@ -644,7 +661,7 @@ switch ($_POST['type']) {
         ## STARTING IMPORTING IF NO ERRORS OR NOT EMPTY
         ##################
         if ($numItems > 0 || $numGroups > 0) {
-
+            // Write in file
             fputs($cacheLogFile, date('H:i:s ').$LANG['nb_folders'].' '.$numGroups."\n");
             fputs($cacheLogFile, date('H:i:s ').$LANG['nb_items'].' '.$numItems."\n");
 
@@ -653,20 +670,26 @@ switch ($_POST['type']) {
             $text = '<span class="fa fa-folder-open"></span>&nbsp;'.$LANG['nb_folders'].': '.
                 $numGroups.'<br /><span class="fa fa-tag"></span>>&nbsp;'.$LANG['nb_items'].': '.
                 $numItems.'<br /><br />';
+            $post_destination = filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_STRING);
 
-            //if destination is not ROOT then get the complexity level
-            if (strpos($_POST['destination'], "perso") !== 0) {
+            // If personal folder, then remove the suffix in ID
+            if (substr_count($post_destination, '-perso') > 0) {
+                $post_destination = str_replace('-perso', '', $post_destination);
+            }
+
+            // If destination is not ROOT then get the complexity level
+            if (strpos($post_destination, "perso") !== 0) {
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;
                 $import_perso = true;
-            } else if ($_POST['destination'] > 0) {
+            } elseif ($post_destination > 0) {
                 $data = DB::queryFirstRow(
                     "SELECT m.valeur as value, t.nlevel as nlevel
                     FROM ".prefix_table("misc")." as m
                     INNER JOIN ".prefix_table("nested_tree")." as t ON (m.intitule = t.id)
                     WHERE m.type = %s AND m.intitule = %s",
                     "complex",
-                    mysqli_escape_string($link, $_POST['destination'])
+                    mysqli_escape_string($link, $post_destination)
                 );
                 $levelPwComplexity = $data['value'];
                 $startPathLevel = $data['nlevel'];
@@ -703,7 +726,7 @@ switch ($_POST['type']) {
                         $parent_id = $foldersArray[$parent]['id'];
                     } else {
                         $fold = $folder;
-                        $parent_id = $_POST['destination']; //permits to select the folder destination
+                        $parent_id = $post_destination; //permits to select the folder destination
                     }
 
                     $fold = stripslashes($fold);
@@ -786,7 +809,12 @@ switch ($_POST['type']) {
             if ($nbFoldersImported > 0) {
                 fputs($cacheLogFile, date('H:i:s ')."Setting User Rights\n");
                 //Refresh the rights of actual user
-                identifyUserRights(implode(';', $_SESSION['groupes_visibles']).';'.$newId, $_SESSION['groupes_interdits'], $_SESSION['is_admin'], $_SESSION['fonction_id'], true);
+                identifyUserRights(
+                    implode(';', $_SESSION['groupes_visibles']).';'.$newId,
+                    $_SESSION['groupes_interdits'],
+                    $_SESSION['is_admin'],
+                    $_SESSION['fonction_id']
+                );
 
                 fputs($cacheLogFile, date('H:i:s ')."Rebuilding Tree\n");
                 //rebuild full tree
@@ -800,7 +828,7 @@ switch ($_POST['type']) {
             $count = 0;
 
             //Get some info about personal folder
-            if ($_POST['destination'] == $_SESSION['user_id']) {
+            if ($post_destination == $_SESSION['user_id']) {
                 $personalFolder = 1;
             } else {
                 $personalFolder = 0;
@@ -826,11 +854,11 @@ switch ($_POST['type']) {
                     //check if not exists
                     $results .= str_replace($foldersSeparator, "\\", $item[KP_PATH]).'\\'.$item[KP_TITLE];
 
-                    $pw = $item[KP_PASSWORD];
+                    $pwd = $item[KP_PASSWORD];
 
                     //Get folder label
                     if (count($foldersArray) == 0 || empty($item[KP_PATH])) {
-                        $folderId = $_POST['destination'];
+                        $folderId = $post_destination;
                     } else {
                         $folderId = $foldersArray[$item[KP_PATH]]['id'];
                     }
@@ -846,13 +874,13 @@ switch ($_POST['type']) {
                         // prepare PW
                         if ($import_perso === true) {
                             $encrypt = cryption(
-                                $pw,
+                                $pwd,
                                 $_SESSION['user_settings']['session_psk'],
                                 "encrypt"
                             );
                         } else {
                             $encrypt = cryption(
-                                $pw,
+                                $pwd,
                                 "",
                                 "encrypt"
                             );
@@ -869,13 +897,13 @@ switch ($_POST['type']) {
                                 'url' => substr(stripslashes($item[KP_URL]), 0, 500),
                                 'id_tree' => $folderId,
                                 'login' => substr(stripslashes($item[KP_USERNAME]), 0, 500),
-                                'anyone_can_modify' => $_POST['import_kps_anyone_can_modify'] == "true" ? 1 : 0
+                                'anyone_can_modify' => filter_input(INPUT_POST, 'import_kps_anyone_can_modify', FILTER_SANITIZE_STRING) === "true" ? 1 : 0
                             )
                         );
                         $newId = DB::insertId();
 
                         //if asked, anyone in role can modify
-                        if (isset($_POST['import_kps_anyone_can_modify_in_role']) && $_POST['import_kps_anyone_can_modify_in_role'] == "true") {
+                        if (null !== filter_input(INPUT_POST, 'import_kps_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) && filter_input(INPUT_POST, 'import_kps_anyone_can_modify_in_role', FILTER_SANITIZE_STRING) === "true") {
                             foreach ($_SESSION['arr_roles'] as $role) {
                                 DB::insert(
                                     prefix_table("restriction_to_roles"),
@@ -927,7 +955,7 @@ switch ($_POST['type']) {
             $text .= "Folders imported: $nbFoldersImported<br />";
             $text .= "Items imported: $nbItemsImported<br />";
             $text .= '</div><br /><br /><b>'.$LANG['import_kp_finished'].'</b>';
-            $text .= '<a href=\''.$_SESSION['settings']['url_to_files_folder'].'/'.$logFileName.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>';
+            $text .= '<a href=\''.$SETTINGS['url_to_files_folder'].'/'.$logFileName.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>';
 
             fputs($cacheLogFile, date('H:i:s ')."Import finished\n");
             fputs($cacheLogFile, date('H:i:s ')."Statistics\n");
@@ -940,7 +968,7 @@ switch ($_POST['type']) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($_SESSION['settings']['path_to_files_folder']."/".filter_var($_POST['file'], FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
@@ -949,13 +977,13 @@ switch ($_POST['type']) {
         }
         break;
 }
-spl_autoload_register(function($class) {
-    $prefix = 'League\\Csv\\'; echo "ici2";
+
+spl_autoload_register(function ($class) {
+    $prefix = 'League\\Csv\\';
     $base_dir = __DIR__.'/src/';
     $len = strlen($prefix);
     if (strncmp($prefix, $class, $len) !== 0) {
         // no, move to the next registered autoloader
-        echo "ici";
         return;
     }
     $relative_class = substr($class, $len);
