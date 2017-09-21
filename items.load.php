@@ -1908,7 +1908,10 @@ function open_edit_item_div(restricted_to_roles)
     // is user read only and it is not a personal folder
     if (
         ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
-        || ($("#access_level").val() === "1" || $("#access_level").val() === "3")
+        || (
+            ($("#access_level").val() === "1" || $("#access_level").val() === "3")
+            && $('#recherche_group_pf').val() === "0"
+        )
     ) {
         // Exclude the case where the user is in his PF with PSK set
         if ($('#recherche_group_pf').val() === "1" && $("#personal_sk_set").val() === "1") {
@@ -2083,7 +2086,10 @@ function open_del_item_div()
     // is user read only
     if (
         ($('#recherche_group_pf').val() === "0" && $("#user_is_read_only").length && $("#user_is_read_only").val() === "1")
-        || ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+        || (
+            ($("#access_level").val() === "1" || $("#access_level").val() === "2" || $("#access_level").val() === "3")
+            && $('#recherche_group_pf').val() === "0"
+        )
     ) {
         displayMessage("<i class='fa fa-warning'></i>&nbsp;<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
         return false;
