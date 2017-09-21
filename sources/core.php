@@ -224,6 +224,7 @@ if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && is
     //Log into DB the user's disconnection
     if (isset($SETTINGS['log_connections']) === true
         && $SETTINGS['log_connections'] === '1'
+        && isset($_SESSION['login']) === true
         && empty($_SESSION['login']) === false
     ) {
         logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);

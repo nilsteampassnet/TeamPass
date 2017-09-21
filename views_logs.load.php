@@ -234,7 +234,8 @@ $(function() {
                 type       : "purgeLogs",
                 purgeTo    : $("#purgeTo").val(),
                 purgeFrom  : $("#purgeFrom").val(),
-                logType    : $("#type_log_displayed").val()
+                logType    : $("#type_log_displayed").val(),
+                key        : "<?php echo $_SESSION["key"]; ?>"
             },
             function(data) {
                 if (data[0].status == "ok") {

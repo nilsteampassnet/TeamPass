@@ -334,6 +334,9 @@ $(function() {
                         } else if (data[0].error == "complexity_level_not_reached") {
                             $("#new_pw, #new_pw2").val("");
                             $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_complex_not_enought']; ?></span>");
+                        } else if (data[0].error == "pwd_hash_not_correct") {
+                            $("#new_pw, #new_pw2").val("");
+                            $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_not_allowed_to']; ?></span>");
                         } else {
                             $("#div_change_password").hide();
                             $("#dialog_user_profil").dialog("option", "height", 450);

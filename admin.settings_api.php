@@ -325,11 +325,12 @@ function deleteApiKey(id)
     $.post(
         "sources/admin.queries.php",
         {
-            type    : "admin_action_api_save_key",
-            action  : "delete",
-            label   : "",
-            key     : "",
-            id      : id
+            type        : "admin_action_api_save_key",
+            action      : "delete",
+            label       : "",
+            key         : "",
+            id          : id,
+            session_key : "'.$_SESSION['key'].'"
         },
         function(data) {
             var current_index = $("#tabs").tabs("option","active");
@@ -391,11 +392,12 @@ $(function() {
                 $.post(
                     "sources/admin.queries.php",
                     {
-                        type    : $("#api_db_type").val(),
-                        action  : $("#api_db_action").val(),
-                        label   : sanitizeString($("#api_db_label_input").val()),
-                        key     : sanitizeString($("#api_db_key_input").val()),
-                        id      : $("#api_db_id").val()
+                        type        : $("#api_db_type").val(),
+                        action      : $("#api_db_action").val(),
+                        label       : sanitizeString($("#api_db_label_input").val()),
+                        key         : sanitizeString($("#api_db_key_input").val()),
+                        id          : $("#api_db_id").val(),
+                        session_key : "'.$_SESSION['key'].'"
                     },
                     function(data) {
                         // reload tab

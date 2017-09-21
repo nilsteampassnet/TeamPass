@@ -721,75 +721,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             break;
 
         /**
-         * Change forbidden groups
-         */
-        case "open_div_forgroups":
-            // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo '[ { "error" : "key_not_conform" } ]';
-                break;
-            }
-
-            $text = "";
-            // Refresh list of existing functions
-            $data_user = DB::queryfirstrow(
-                "SELECT groupes_interdits FROM ".prefix_table("users")."
-                WHERE id = %i",
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
-            );
-
-            $user = explode(';', $data_user['groupes_interdits']);
-
-            $tree_desc = $tree->getDescendants();
-            foreach ($tree_desc as $t) {
-                if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups'])) {
-                    $text .= '<input type="checkbox" id="cb_change_forgroup-'.$t->id.'"';
-                    $ident = "";
-                    for ($y = 1; $y < $t->nlevel; $y++) {
-                        $ident .= "&nbsp;&nbsp;";
-                    }
-                    if (in_array($t->id, $user)) {
-                        $text .= ' checked';
-                    }
-                    $text .= '>&nbsp;'.$ident.$t->title.'<br />';
-                    $prev_level = $t->nlevel;
-                }
-            }
-            // return data
-            $return_values = json_encode(array("text" => $text), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-            echo $return_values;
-            break;
-
-        /**
-         * Change forbidden groups for user
-         */
-        case "change_user_forgroups":
-            // save data
-            DB::update(
-                prefix_table("users"),
-                array(
-                    'groupes_interdits' => filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING)
-                    ),
-                "id = %i",
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
-            );
-            // display information
-            $text = "";
-            $val = str_replace(';', ',', filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING));
-            // Check if POST is empty
-            if (empty(filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING)) === false) {
-                $rows = DB::query(
-                    "SELECT title,nlevel FROM ".prefix_table("nested_tree")." WHERE id IN %ls",
-                    implode(";", filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING))
-                );
-                foreach ($rows as $record) {
-                    $text .= '<i class=\'fa fa-angle-right\'></i>&nbsp;'.$ident.$record['title']."<br />";
-                }
-            }
-            // send back data
-            echo '[{"text":"'.$text.'"}]';
-            break;
-        /**
          * Unlock user
          */
         case "unlock_account":
@@ -817,6 +748,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             break;
+            
         /*
         * Check the domain
         */

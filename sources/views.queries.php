@@ -373,6 +373,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_purgeFrom = explode(';', filter_input(INPUT_POST, 'purgeFrom', FILTER_SANITIZE_NUMBER_INT));
             $post_purgeTo = explode(';', filter_input(INPUT_POST, 'purgeTo', FILTER_SANITIZE_NUMBER_INT));
             $post_logType = explode(';', filter_input(INPUT_POST, 'logType', FILTER_SANITIZE_STRING));
+            $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
 
             // Check conditions
             if (empty($post_purgeFrom) === false && empty($post_purgeTo) === false && empty($post_logType) === false
@@ -388,7 +395,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $counter = DB::count();
                         // Delete
                         DB::delete(
-                            prefix_table("log_items"), "action=%s AND date BETWEEN %i AND %i",
+                            prefix_table("log_items"),
+                            "action=%s AND date BETWEEN %i AND %i",
                             "at_shown",
                             strtotime($post_purgeFrom),
                             strtotime($post_purgeTo)

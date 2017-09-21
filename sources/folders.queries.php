@@ -235,12 +235,16 @@ if (null !== $post_newtitle) {
             // get parent folder
             $parent = $tree->getPath($post_id);
             $parent = array_pop($parent);
-            if ($parent->id === null || $parent->id === "undefined") {
-                $parent_id = "";
+            if ($parent !== null) {
+                if ($parent->id === null || $parent->id === "undefined") {
+                    $parent_id = "";
+                } else {
+                    $parent_id = $parent->id;
+                }
             } else {
-                $parent_id = $parent->id;
+                $parent_id = 0;
             }
-
+            
             // Get through each subfolder
             $folders = $tree->getDescendants($post_id, true);
 

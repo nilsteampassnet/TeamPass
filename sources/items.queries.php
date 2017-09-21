@@ -2130,6 +2130,8 @@ if (null !== $post_type) {
                         array_push($arrTmp, 1);
                     } elseif ($access['type'] === "W") {
                         array_push($arrTmp, 0);
+                    } elseif ($access['type'] === "ND") {
+                        array_push($arrTmp, 2);
                     } else {
                         array_push($arrTmp, 3);
                     }

@@ -80,6 +80,7 @@ $antiXss = new protect\AntiXSS\AntiXSS();
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+$post_session_key = filter_input(INPUT_POST, 'session_key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_STRING);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
@@ -1421,6 +1422,13 @@ switch ($post_type) {
      * API save key
      */
     case "admin_action_api_save_key":
+        // Check KEY and rights
+        if ($post_session_key !== $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // Init
         $error = "";
 
         // add new key
@@ -1460,6 +1468,13 @@ switch ($post_type) {
        * API save key
     */
     case "admin_action_api_save_ip":
+        // Check KEY and rights
+        if ($post_session_key !== $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        // Init
         $error = "";
 
         // add new key

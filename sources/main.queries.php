@@ -183,20 +183,26 @@ function mainQuery()
                 $_SESSION['last_pw'] = $oldPw;
                 $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
                 $_SESSION['validite_pw'] = true;
-                // update DB
-                DB::update(
-                    prefix_table("users"),
-                    array(
-                        'pw' => $newPw,
-                        'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
-                        'last_pw' => $oldPw
-                        ),
-                    "id = %i",
-                    $_SESSION['user_id']
-                );
-                // update LOG
-                logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-                echo '[ { "error" : "none" } ]';
+
+                // BEfore updating, check that the pwd is correct
+                if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                    // update DB
+                    DB::update(
+                        prefix_table("users"),
+                        array(
+                            'pw' => $newPw,
+                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
+                            'last_pw' => $oldPw
+                            ),
+                        "id = %i",
+                        $_SESSION['user_id']
+                    );
+                    // update LOG
+                    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                    echo '[ { "error" : "none" } ]';
+                } else {
+                     echo '[ { "error" : "pwd_hash_not_correct" } ]';
+                }
                 break;
 
             // ADMIN has decided to change the USER's PW
@@ -218,43 +224,49 @@ function mainQuery()
                     echo '[ { "error" : "not_admin_or_manager" } ]';
                     break;
                 }
-                // adapt
-                if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change") {
-                    $dataReceived['user_id'] = $_SESSION['user_id'];
-                }
 
-                // update DB
-                DB::update(
-                    prefix_table("users"),
-                    array(
-                        'pw' => $newPw,
-                        'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
-                        ),
-                    "id = %i",
-                    $dataReceived['user_id']
-                );
+                // BEfore updating, check that the pwd is correct
+                if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                    // adapt
+                    if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change") {
+                        $dataReceived['user_id'] = $_SESSION['user_id'];
+                    }
 
-                // update LOG
-                logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
-
-                //Send email to user
-                if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) !== "admin_change") {
-                    $row = DB::queryFirstRow(
-                        "SELECT email FROM ".prefix_table("users")."
-                        WHERE id = %i",
+                    // update DB
+                    DB::update(
+                        prefix_table("users"),
+                        array(
+                            'pw' => $newPw,
+                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                            ),
+                        "id = %i",
                         $dataReceived['user_id']
                     );
-                    if (!empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) && $SETTINGS['enable_email_notification_on_user_pw_change'] == 1) {
-                        sendEmail(
-                            $LANG['forgot_pw_email_subject'],
-                            $LANG['forgot_pw_email_body']." ".htmlspecialchars_decode($dataReceived['new_pw']),
-                            $row[0],
-                            $LANG['forgot_pw_email_altbody_1']." ".htmlspecialchars_decode($dataReceived['new_pw'])
-                        );
-                    }
-                }
 
-                echo '[ { "error" : "none" } ]';
+                    // update LOG
+                    logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $dataReceived['user_id']);
+
+                    //Send email to user
+                    if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) !== "admin_change") {
+                        $row = DB::queryFirstRow(
+                            "SELECT email FROM ".prefix_table("users")."
+                            WHERE id = %i",
+                            $dataReceived['user_id']
+                        );
+                        if (!empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) && $SETTINGS['enable_email_notification_on_user_pw_change'] == 1) {
+                            sendEmail(
+                                $LANG['forgot_pw_email_subject'],
+                                $LANG['forgot_pw_email_body']." ".htmlspecialchars_decode($dataReceived['new_pw']),
+                                $row[0],
+                                $LANG['forgot_pw_email_altbody_1']." ".htmlspecialchars_decode($dataReceived['new_pw'])
+                            );
+                        }
+                    }
+
+                    echo '[ { "error" : "none" } ]';
+                } else {
+                    echo '[ { "error" : "pwd_hash_not_correct" } ]';
+                }
                 break;
 
                 // ADMIN first login

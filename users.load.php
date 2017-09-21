@@ -458,6 +458,8 @@ $(function() {
                                 $("#change_user_pw").dialog("close");
                             } else if (data[0].error == "key_not_conform") {
                                 $("#change_user_pw_error").html("PROTECTION KEY NOT CONFORM!! Try to relog.");
+                            } else if (data[0].error == "pwd_hash_not_correct") {
+                                $("#change_user_pw_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_not_allowed_to']; ?></span>");
                             } else {
                                 $("#change_user_pw_error").html("Something occurs ... no data to work with!");
                             }
