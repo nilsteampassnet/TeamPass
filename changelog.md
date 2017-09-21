@@ -9,6 +9,7 @@
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
  Fix: issue on offline export
  Fix: error on deleting a folder at root
+ #1915 Cannot Edit or Delete items in the Personal folder
  #1909 Roles Management - Problem with acess rights "Edit" "Delete"
  #1903 SSH Password Change does not work
  #1900 Forgot your password --> Page reload automatic
