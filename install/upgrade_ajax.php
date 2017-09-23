@@ -760,7 +760,7 @@ global \$server, \$user, \$pass, \$database, \$pre, \$db, \$port, \$encoding;
 ### DATABASE connexion parameters ###
 \$server = \"".$server."\";
 \$user = \"".$user."\";
-\$pass = \"". str_replace("$", "\\$", $pass)."\";
+\$pass = \"".cryption($pass, "", "encrypt")['string']."\";
 \$database = \"".$database."\";
 \$port = ".$port.";
 \$pre = \"".$pre."\";
