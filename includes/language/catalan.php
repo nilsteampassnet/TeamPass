@@ -3,8 +3,8 @@
  *
  * @file          catalan.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -193,7 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => 'Màxima llargada dels passwords',
     'admin_pwd_maximum_length_tip' => 'The default maximum password length is 40 characters. Increasing the size of allowed passwords will take more time when encrypting, decrypting, and displaying passwords.',
     'settings_insert_manual_entry_item_history' => 'Manual insertions in item history log allowed',
-    'settings_insert_manual_entry_item_history_tip' => 'You normally would want to leave this off. When enabled, the history of a password item can be edited or altered.',
+    'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => 'Entrada afegida al log històric ',
     'at_manual' => 'Acció manual',
     'at_manual_add' => 'Afegit manualment',
@@ -214,7 +214,7 @@ $LANG = array (
     'at_email' => 'email',
     'enable_email_notification_on_item_shown' => 'Envia una notificació per email quan es mostra un ítem',
     'bad_email_format' => 'L\'adreça de email no te el format esperat!',
-    'item_share_text' => 'In order to share this item by mail, enter the email address and press SEND button.',
+    'item_share_text' => 'In order to share this item by mail, enter the email address and press the SEND button.',
     'share' => 'Comparteix aquest ítem',
     'share_sent_ok' => 'L\'email ha sigut enviat',
     'email_share_item_subject' => '[TeamPass] Un ítem ha sigut compartit amb tu',
@@ -246,7 +246,7 @@ $LANG = array (
     'block_admin_info' => 'Info de l\'Administrador',
     'admin_new1' => 'This profile is now an administrator account. An administrator account cannot view items or their passwords, only manage global settings.',
     'nb_items_by_query' => 'Nombre de ítems a recuperar per consulta',
-    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. More small requests may perform better than fewer large requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
+    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
     'error_no_selected_folder' => 'Has de seleccionar un directori',
     'open_url_link' => 'Obrir en una pàgina nova',
     'error_pw_too_long' => 'Contrasenya massa llarga! El màxim de caràcters es 40.',
@@ -1014,9 +1014,9 @@ $LANG = array (
     'characteristic' => 'Characteristic',
     'usage_example' => 'Usage example',
     'current_value' => 'Current value',
-    'save_statistics_choice' => 'Save your settings',
+    'save_statistics_choice' => 'Guarda les preferencies',
     'communication_means' => 'Communication means',
-    'email_format_is_not_correct' => 'Email format is not correct',
+    'email_format_is_not_correct' => 'El format del email no es correcte',
     'url_format_is_not_correct' => 'URL format is not correct',
     'Dont_update_with_this_data' => 'Don\'t update item with this data',
     'consider_a_donation' => 'You may consider a donation',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );

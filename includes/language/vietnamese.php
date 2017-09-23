@@ -3,8 +3,8 @@
  *
  * @file          vietnamese.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -84,7 +84,7 @@ $LANG = array (
     'managed_by' => 'Quản lý bởi',
     'admin_small' => 'Quản trị',
     'setting_can_create_root_folder' => 'Cho phép tạo thư mục mới ở cấp cao nhất',
-    'settings_enable_sts' => 'HTTPS strict transport security. <strong>Warning</strong>: read tooltip!',
+    'settings_enable_sts' => 'HTTPS Strict Transport Security (HSTS) <strong>Warning</strong>: read tooltip!',
     'settings_enable_sts_tip' => 'Warning! This will enforce the HTTPS strict transport security (STS) policy. STS helps prevent man-in-the-middle attacks. You must have a SSL certificate issued from a certificate authority (CA) installed before enabling this option!  A self-signed certificate will not work! Any future web connections will require HTTPS. You must have \'SSLOptions +ExportCertData\' in the Apache SSL configuration.',
     'channel_encryption_no_gmp' => 'Extension GMP is not loaded! Encryption can\'t be initiated!',
     'channel_encryption_no_openssl' => 'Extension OPENSSL is not loaded! Encryption can\'t be initiated!',
@@ -193,7 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => 'Độ dài mật khẩu tối đa',
     'admin_pwd_maximum_length_tip' => 'Giá trị mặc định của độ dài mật khẩu tối đa là 40 ký tự. Giá trị này càng lớn thì hiệu năng máy chủ càng bị ảnh hưởng vì hệ thống sẽ cần sử dụng nhiều tài nguyên hơn để mã hóa, giải mã và để hiển thị các mật khẩu.',
     'settings_insert_manual_entry_item_history' => 'Manual insertions in item history log allowed',
-    'settings_insert_manual_entry_item_history_tip' => 'You normally would want to leave this off. When enabled, the history of a password item can be edited or altered.',
+    'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => 'Add entry to history log',
     'at_manual' => 'Manual action',
     'at_manual_add' => 'Added manually',
@@ -214,7 +214,7 @@ $LANG = array (
     'at_email' => 'email',
     'enable_email_notification_on_item_shown' => 'Email administrators when password item is viewed',
     'bad_email_format' => 'Email address doesn\'t have the expected format!',
-    'item_share_text' => 'In order to share this item by mail, enter the email address and press SEND button.',
+    'item_share_text' => 'In order to share this item by mail, enter the email address and press the SEND button.',
     'share' => 'Share this item',
     'share_sent_ok' => 'Email has been sent',
     'email_share_item_subject' => 'A password item was shared with you',
@@ -246,9 +246,9 @@ $LANG = array (
     'block_admin_info' => 'Administrator\'s Info',
     'admin_new1' => 'This profile is now an administrator account. An administrator account cannot view items or their passwords, only manage global settings.',
     'nb_items_by_query' => 'Number of items to retrieve per query',
-    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. More small requests may perform better than fewer large requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
+    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
     'error_no_selected_folder' => 'You must select a folder',
-    'open_url_link' => 'Open in folder view',
+    'open_url_link' => 'Open in a new window',
     'error_pw_too_long' => 'Password longer than system maximum (default 40 characters).',
     'at_restriction' => 'Restriction',
     'pw_encryption_error' => 'Error encrypting password!',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );

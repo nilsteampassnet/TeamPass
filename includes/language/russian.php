@@ -3,8 +3,8 @@
  *
  * @file          russian.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -481,7 +481,7 @@ $LANG = array (
     'group' => 'Папка',
     'group_parent' => 'Родительская папка',
     'group_pw_duration' => 'Период обновления',
-    'group_pw_duration_tip' => 'Период обновления пароля, в месяцах. 0 - отключить обновление.',
+    'group_pw_duration_tip' => 'Период обновления пароля, в месяцах (0 - бесконечно).',
     'group_select' => 'Выберите папку',
     'group_title' => 'Имя папки',
     'history' => 'История',
@@ -1052,7 +1052,8 @@ $LANG = array (
     'manage_entries_in_kb' => 'Управление записями в базе знаний',
     'add_new_kb' => 'Добавить новую базу знаний',
     'nothing_to_do' => 'Нечего делать.',
-    'continue' => 'Continue',
-    'please_confirm_operation' => 'Please confirm the operation',
+    'continue' => 'Продолжить',
+    'please_confirm_operation' => 'Пожалуйста, подтвердите операцию',
+    'setting_disabled_by_admin' => 'Эта опция отключена администратором',
     '' => ''
 );

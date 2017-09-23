@@ -3,8 +3,8 @@
  *
  * @file          chinese.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -98,7 +98,7 @@ $LANG = array (
     'to' => '至',
     'purge_now' => '立即刷新！',
     'purge_done' => '刷新完成。已删除元素：',
-    'settings_upload_maxfilesize_tip' => 'Maximum file size allowed when uploading an attachment or other file (in megabytes, default setting 10mb). You also may need to change your php.ini settings upload_max_filesize and post_max_size, the default is often just 2M.',
+    'settings_upload_maxfilesize_tip' => 'Maximum file size allowed when uploading an attachment or other file (in megabytes, default setting 10 MB). You also may need to change your php.ini settings upload_max_filesize and post_max_size, the default is often just 2 MB.',
     'settings_upload_docext_tip' => 'List the file extensions for text and word processor files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_imagesext_tip' => '图像类型。用半角逗号（,）分隔的允许的扩展名',
     'settings_upload_pkgext_tip' => '包类型。用半角逗号（,）分隔的允许的扩展名',
@@ -193,7 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => '密码最大长度',
     'admin_pwd_maximum_length_tip' => 'The default maximum password length is 40 characters. Increasing the size of allowed passwords will take more time when encrypting, decrypting, and displaying passwords.',
     'settings_insert_manual_entry_item_history' => '启用允许手动在项目历史中插入记录',
-    'settings_insert_manual_entry_item_history_tip' => 'You normally would want to leave this off. When enabled, the history of a password item can be edited or altered.',
+    'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => '在历史日志中添加记录',
     'at_manual' => '手动操作',
     'at_manual_add' => '手动添加',
@@ -246,7 +246,7 @@ $LANG = array (
     'block_admin_info' => '管理员信息',
     'admin_new1' => 'This profile is now an administrator account. An administrator account cannot view items or their passwords, only manage global settings.',
     'nb_items_by_query' => 'Number of items to retrieve per query',
-    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. More small requests may perform better than fewer large requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
+    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
     'error_no_selected_folder' => '您需要选择一个文件夹',
     'open_url_link' => '在新页面打开',
     'error_pw_too_long' => '密码太长了！最多允许40个字符。',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );

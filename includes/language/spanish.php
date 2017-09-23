@@ -3,8 +3,8 @@
  *
  * @file          spanish.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -1028,30 +1028,31 @@ $LANG = array (
     'item_has_change_proposal' => 'Este artículo tiene una propuesta de cambio',
     'select_all' => 'Seleccionar todo',
     'add_category' => 'Añadir Categoría',
-    'what_action_to_perform' => 'Select the action to perform',
-    'confirm_database_reencryption' => 'This will reencrypt the database with new saltkey. Please confirm?',
-    'previous_backup_exists' => 'A previous backup exists.<br>Do you want to revert to previous data?',
-    'previous_backup_exists_delete' => 'Do you want to wipe out this old data?',
-    'check_data_after_reencryption' => 'Please check the data. A new table <b>Backup</b> was created during this operation permitting to revert.',
-    'revert' => 'Revert?',
-    'revert_the_database' => 'You have decided to revert the database. Please confirm?',
-    'wipe_backup_data' => 'You have decided to wipe the backup data. This should be done after data verification. Please confirm?',
-    'bad_psk' => 'This personal Saltkey is not correct!',
-    'bad_psk_confirmation' => 'The personal saltkey confirmation is not correct!',
-    'psk_required' => 'The personal saltkey is required!',
-    'ldap_test_config' => 'Test current configuration',
-    'ldap_test_username' => 'Username to use for testing purpose',
-    'ldap_test_username_pwd' => 'Username password',
-    'no_username_needed' => 'No username needed',
-    'feature_support_canal' => 'For Support and Help, please use',
-    'file_is_now_ready' => 'File is now ready.',
-    'category' => 'Category',
-    'knowledge_base' => 'Knowledge Base',
-    'anyone_can_modify_it' => 'Anyone can modify it',
-    'manage_entries_in_kb' => 'Manage entries in KB',
-    'add_new_kb' => 'Add a new KB',
-    'nothing_to_do' => 'Nothing to do.',
+    'what_action_to_perform' => 'Seleccione la acción a realizar',
+    'confirm_database_reencryption' => 'Esto volverá a cifrar la base de datos con nuevo saltkey. Por favor confírmelo',
+    'previous_backup_exists' => 'Existe una copia de seguridad anterior.<br>¿Desea volver a los datos anteriores?',
+    'previous_backup_exists_delete' => '¿Quieres eliminar estos datos antiguos?',
+    'check_data_after_reencryption' => 'Por favor compruebe los datos. Una nueva tabla <b>Copia de seguridad</b> se creó durante esta operación permitiendo revertir.',
+    'revert' => '¿Revertir?',
+    'revert_the_database' => 'Ha decidido revertir la base de datos. Por favor confirmalo',
+    'wipe_backup_data' => 'Ha decidido borrar los datos de copia de seguridad. Esto debe hacerse después de la verificación de los datos. Por favor confirmalo',
+    'bad_psk' => '¡Este Saltkey personal no es correcto!',
+    'bad_psk_confirmation' => '¡La confirmación del saltkey personal no es correcta!',
+    'psk_required' => '¡La saltkey personal es requerida!',
+    'ldap_test_config' => 'Probar la configuración actual',
+    'ldap_test_username' => 'Nombre de usuario para usar para con propósito de la prueba',
+    'ldap_test_username_pwd' => 'Contraseña del nombre de usuario',
+    'no_username_needed' => 'No necesita nombre de usuario',
+    'feature_support_canal' => 'Para soporte y ayuda, utilice',
+    'file_is_now_ready' => 'El archivo está listo.',
+    'category' => 'Categoría',
+    'knowledge_base' => 'Base de conocimientos',
+    'anyone_can_modify_it' => 'Cualquiera puede modificar',
+    'manage_entries_in_kb' => 'Manejar entradas en KB',
+    'add_new_kb' => 'Añadir una nueva KB',
+    'nothing_to_do' => 'Nada que hacer.',
     'continue' => 'Continue',
-    'please_confirm_operation' => 'Please confirm the operation',
+    'please_confirm_operation' => 'Confirme la operación por favor',
+    'setting_disabled_by_admin' => 'Este ajuste está deshabilitado por el Administrador',
     '' => ''
 );

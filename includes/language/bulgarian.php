@@ -3,8 +3,8 @@
  *
  * @file          bulgarian.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -84,7 +84,7 @@ $LANG = array (
     'managed_by' => 'Managed by',
     'admin_small' => 'Гошко',
     'setting_can_create_root_folder' => 'Root-level folder creation by users enabled',
-    'settings_enable_sts' => 'HTTPS strict transport security. <strong>Warning</strong>: read tooltip!',
+    'settings_enable_sts' => 'HTTPS Strict Transport Security (HSTS) <strong>Warning</strong>: read tooltip!',
     'settings_enable_sts_tip' => 'Warning! This will enforce the HTTPS strict transport security (STS) policy. STS helps prevent man-in-the-middle attacks. You must have a SSL certificate issued from a certificate authority (CA) installed before enabling this option!  A self-signed certificate will not work! Any future web connections will require HTTPS. You must have \'SSLOptions +ExportCertData\' in the Apache SSL configuration.',
     'channel_encryption_no_gmp' => 'Extension GMP is not loaded! Encryption can\'t be initiated!',
     'channel_encryption_no_openssl' => 'Extension OPENSSL is not loaded! Encryption can\'t be initiated!',
@@ -98,7 +98,7 @@ $LANG = array (
     'to' => 'to',
     'purge_now' => 'Унищожи сега!',
     'purge_done' => 'Унищожаването приключи! Изтрити са :   елемента',
-    'settings_upload_maxfilesize_tip' => 'Maximum file size allowed when uploading an attachment or other file (in megabytes, default setting 10mb). You also may need to change your php.ini settings upload_max_filesize and post_max_size, the default is often just 2M.',
+    'settings_upload_maxfilesize_tip' => 'Maximum file size allowed when uploading an attachment or other file (in megabytes, default setting 10 MB). You also may need to change your php.ini settings upload_max_filesize and post_max_size, the default is often just 2 MB.',
     'settings_upload_docext_tip' => 'List the file extensions for text and word processor files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_imagesext_tip' => 'List the file extensions for image files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_pkgext_tip' => 'List the file extensions for compressed archive files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
@@ -214,7 +214,7 @@ $LANG = array (
     'at_email' => 'Имейл',
     'enable_email_notification_on_item_shown' => 'Изпращане на известие по електронната поща, когато е показан обект',
     'bad_email_format' => 'Имейл адресът няма очаквания формат!',
-    'item_share_text' => 'In order to share this item by mail, enter the email address and press SEND button.',
+    'item_share_text' => 'In order to share this item by mail, enter the email address and press the SEND button.',
     'share' => 'Сподели този обект',
     'share_sent_ok' => 'Имейл беше изпратен',
     'email_share_item_subject' => 'A password item was shared with you',
@@ -246,7 +246,7 @@ $LANG = array (
     'block_admin_info' => 'Administrator\'s Info',
     'admin_new1' => 'This profile is now an administrator account. An administrator account cannot view items or their passwords, only manage global settings.',
     'nb_items_by_query' => 'Number of items to retrieve per query',
-    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. More small requests may perform better than fewer large requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
+    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
     'error_no_selected_folder' => 'Трябва да изберете папка',
     'open_url_link' => 'Отваряне в нова страница',
     'error_pw_too_long' => 'Password longer than system maximum (default 40 characters).',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );

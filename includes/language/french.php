@@ -3,8 +3,8 @@
  *
  * @file          french.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Aucune action à réaliser',
     'continue' => 'Continuer',
     'please_confirm_operation' => 'Merci de confirmer',
+    'setting_disabled_by_admin' => 'Ce paramètre a été désactivé par l\'Administrateur',
     '' => ''
 );

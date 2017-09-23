@@ -3,8 +3,8 @@
  *
  * @file          estonian.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -21,7 +21,7 @@ $LANG = array (
     'email_ga_subject' => 'Sinu Google Authenticatori ühekordne kood Teampassi jaoks',
     'email_ga_text' => 'Tere!<br /><br />Kliki sellel lingil <a href=\'#link#\'>LINK</a> ja kasuta oma GoogleAuthenticator äppi, et luua 2 astmeline OTP autentimine TeamPassi jaoks.<br /><br />Tervitades<br />TeamPass',
     'settings_attachments_encryption' => 'Lülita sisse manustatud failide krüpteering',
-    'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments!  After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
+    'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments! After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
     'admin_action_attachments_cryption' => 'Krüpteeri või dekrüpteeri manustatud faile',
     'admin_action_attachments_cryption_tip' => 'HOIATUS! - Seda valikut võib muuta alles peale seda kui vastav säte on ka Teampass sätetes muudetud. Igaks juhuks tee \'upload\' kataloogist ennem muutmist koopia. Nii igaks-juhuks ...',
     'encrypt' => 'Krüpteeri',
@@ -193,7 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => 'Maksimaalne paroolide pikkus',
     'admin_pwd_maximum_length_tip' => 'Vaikimisi paroolide pikkuseks on 40 tähemärki. Tõstes selle parameetri väärtust väheneb ka serveri jõudlus sest vajatakse rohkem aega krüpteerimiseks/dekrüpteerimiseks ning paroolide näitamiseks.',
     'settings_insert_manual_entry_item_history' => 'Luba manuaalne info lisamine kirje ajaloo logisse',
-    'settings_insert_manual_entry_item_history_tip' => 'You normally would want to leave this off. When enabled, the history of a password item can be edited or altered.',
+    'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => 'Sisesta kirje ajaloo logisse',
     'at_manual' => 'Manuaalne tegevus',
     'at_manual_add' => 'Lisatud käsitsi',
@@ -246,7 +246,7 @@ $LANG = array (
     'block_admin_info' => 'Administraatori info',
     'admin_new1' => 'Antud profiil on nüüd administraatori konto. Selle kontoga ei saa vaadata kirjeid ega nende paroole, ainult hallata globaalseid seadeid.',
     'nb_items_by_query' => 'Mitu kirjet iga päringuga kuvada',
-    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. More small requests may perform better than fewer large requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
+    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
     'error_no_selected_folder' => 'Sa pead valima kausta',
     'open_url_link' => 'Ava uuel lehel',
     'error_pw_too_long' => 'Parool on liiga pikk! On lubatud kuni 40 tähemärki.',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );
