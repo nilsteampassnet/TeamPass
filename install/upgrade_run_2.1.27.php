@@ -711,21 +711,6 @@ global \$SETTINGS;
 fclose($file_handler);
 
 
-// Encrypt the database password
-if (substr($_SESSION['pass'], 0, 3) !== "def") {
-    $encrypted_text = cryption($pass, "", "encrypt")['string'];
-
-    $result = '';
-    $lines = file('../includes/config/settings.php');
-    foreach ($lines as $line) {
-        if (substr($line, 0, 9) === '$pass = "') {
-            $result .= '$pass = "'.$encrypted_text.'";'."\r\n";
-        } else {
-            $result .= $line;
-        }
-    }
-    file_put_contents('../includes/config/settings.php', $result);
-}
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';
