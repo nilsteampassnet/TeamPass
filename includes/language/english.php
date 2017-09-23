@@ -1055,5 +1055,15 @@ $LANG = array (
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
     'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
     '' => ''
 );

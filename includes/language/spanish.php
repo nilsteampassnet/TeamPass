@@ -14,6 +14,16 @@
  */
 global $LANG;
 $LANG = array (
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',
