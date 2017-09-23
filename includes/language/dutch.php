@@ -14,6 +14,16 @@
  */
 global $LANG;
 $LANG = array (
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
     'user_ga_code' => 'E-mail Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google Authenticatie in en stuur e-mail',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',

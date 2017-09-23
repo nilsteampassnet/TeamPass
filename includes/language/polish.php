@@ -14,6 +14,16 @@
  */
 global $LANG;
 $LANG = array (
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
     'user_ga_code' => 'Wyślij do użytkownika Google Authenticator za pośrednictwem e-mail ',
     'send_ga_code' => 'Google Authenticator dla użytkownika',
     'error_no_email' => 'Ten użytkownik nie ma ustawionego adresu e-mail',
@@ -871,7 +881,7 @@ $LANG = array (
     'error_bad_credentials' => 'Poświadczenia logowania nie odpowiadają!',
     'reload_page_after_user_account_creation' => 'Twoje konto zostało dodane. Strona zostanie automatycznie przekierowana w ciągu 3 sekund ...',
     'settings_ldap_usergroup' => 'Grupa LDAP do przeszukiwania',
-    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa�',
+    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa?',
     'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze (używając połączenia SSH)',
     'error_login_missing' => 'Nie podano loginu!',
     'error_pwd_missing' => 'Nie podano hasła!',

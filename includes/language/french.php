@@ -1055,5 +1055,15 @@ $LANG = array (
     'continue' => 'Continuer',
     'please_confirm_operation' => 'Merci de confirmer',
     'setting_disabled_by_admin' => 'Ce paramètre a été désactivé par l\'Administrateur',
+    'text' => 'Texte',
+    'masked' => 'Caché',
+    'type' => 'Type',
+    'select_type_of_field' => 'Sélectionner le type de champ',
+    'define_new_field' => 'Définir un nouveau champ',
+    'data_is_text' => 'Données au format Texte',
+    'data_is_masked' => 'Données cachées',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'Cette option a été désactivée',
+    'confirm_change_field_type' => 'Confirmer le changement de type pour ce champ',
     '' => ''
 );

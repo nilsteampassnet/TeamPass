@@ -14,6 +14,16 @@
  */
 global $LANG;
 $LANG = array (
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
     'user_ga_code' => '发送 Google 身份验证器至用户，通过电子邮件',
     'send_ga_code' => 'Google 身份验证器，为用户',
     'error_no_email' => '此用户未设置电子邮件地址！',
