@@ -3,8 +3,8 @@
  *
  * @file          norwegian.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -19,9 +19,9 @@ $LANG = array (
     'error_no_email' => 'Denne brukeren har ikke definert epost',
     'error_no_user' => 'Brukeren finnes ikke!',
     'email_ga_subject' => 'Your Google Authenticator one-time code for TeamPass',
-    'email_ga_text' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your administrator is expecting you to use TwoFactor authentication to get connected to Teampass.<br>For your first connection to Teampass with TwoFactor, please use the code you will found here bellow in the "Identication code" field:<br><br>----------------------<br>#2FACode#<br>----------------------<br><br>You will then have the opportunity to set up your one-time credentials for Teampass password manager.<br><br>Greetings',
+    'email_ga_text' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your administrator is expecting you to use TwoFactor authentication to get connected to Teampass.<br>For your first connection to Teampass with TwoFactor, please use the code you will find below in the "Identication code" field:<br><br>----------------------<br>#2FACode#<br>----------------------<br><br>You will then have the opportunity to set up your one-time credentials for Teampass password manager.<br><br>Greetings',
     'settings_attachments_encryption' => 'Aktiver kryptering av vedlegg',
-    'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments!  After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
+    'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments! After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
     'admin_action_attachments_cryption' => 'Encrypt or decrypt all file attachments',
     'admin_action_attachments_cryption_tip' => 'Warning: Only encrypt or decrypt files after changing attachment encryption settings to match. Select whether to encrypt or decrypt, then press start. Make a backup of the upload folder before running this function.',
     'encrypt' => 'Kryptere',
@@ -98,7 +98,7 @@ $LANG = array (
     'to' => 'til',
     'purge_now' => 'Rens nå!',
     'purge_done' => 'Rens ferdig!',
-    'settings_upload_maxfilesize_tip' => 'Maximum file size allowed when uploading an attachment or other file (in megabytes, default setting 10mb). You also may need to change your php.ini settings upload_max_filesize and post_max_size, the default is often just 2M.',
+    'settings_upload_maxfilesize_tip' => 'Maximum file size allowed when uploading an attachment or other file (in megabytes, default setting 10 MB). You also may need to change your php.ini settings upload_max_filesize and post_max_size, the default is often just 2 MB.',
     'settings_upload_docext_tip' => 'List the file extensions for text and word processor files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_imagesext_tip' => 'List the file extensions for image files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
     'settings_upload_pkgext_tip' => 'List the file extensions for compressed archive files you will allow as attachment uploads. Indicate the file extensions allowed separated with a comma (,)',
@@ -136,7 +136,7 @@ $LANG = array (
     'at_user_new_lastname' => 'User #user_login# lastname changed',
     'at_user_new_name' => 'User #user_login# name changed',
     'info_list_of_connected_users_approximation' => 'Note: This list may show more users connected than are currently logged in.',
-    'disconnect_all_users' => 'Disconnected all users (except administrators)',
+    'disconnect_all_users' => 'Disconnect all users (except administrators)',
     'role' => 'Role',
     'admin_2factors_authentication_setting' => 'Enable Google two-factor authentication',
     'admin_2factors_authentication_setting_tip' => 'Google two-factor authentication enhances logon security. When logging in, a QR code is displayed, which must be scanned into the user\'s Google Authentication app to receive a one-time password. Requires all users to have Google authentication app on an Internet-connected mobile device.',
@@ -193,7 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => 'Maksimumslengde for passord',
     'admin_pwd_maximum_length_tip' => 'Standardlengden for passord er satt til 40 tegn. Det er viktig å vite at en større verdi vil ha noe å si på ytelsen, til lengre passordet er, jo lengre tid bruker serveren på å kryptere og dekrypere passordet.',
     'settings_insert_manual_entry_item_history' => 'Manual insertions in item history log allowed',
-    'settings_insert_manual_entry_item_history_tip' => 'You normally would want to leave this off. When enabled, the history of a password item can be edited or altered.',
+    'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => 'Add entry to history log',
     'at_manual' => 'Manual action',
     'at_manual_add' => 'Added manually',
@@ -214,7 +214,7 @@ $LANG = array (
     'at_email' => 'email',
     'enable_email_notification_on_item_shown' => 'Email administrators when password item is viewed',
     'bad_email_format' => 'Email address doesn\'t have the expected format!',
-    'item_share_text' => 'In order to share this item by mail, enter the email address and press SEND button.',
+    'item_share_text' => 'In order to share this item by mail, enter the email address and press the SEND button.',
     'share' => 'Share this item',
     'share_sent_ok' => 'Email has been sent',
     'email_share_item_subject' => 'A password item was shared with you',
@@ -246,9 +246,9 @@ $LANG = array (
     'block_admin_info' => 'Administrator\'s Info',
     'admin_new1' => 'This profile is now an administrator account. An administrator account cannot view items or their passwords, only manage global settings.',
     'nb_items_by_query' => 'Number of items to retrieve per query',
-    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. More small requests may perform better than fewer large requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
+    'nb_items_by_query_tip' => 'Input the number of items to retrieve per server request. Multiple smaller requests may perform better than fewer, larger requests. Other options: \'auto\' - tuned to user display window size. \'max\' - to load all at once.',
     'error_no_selected_folder' => 'You must select a folder',
-    'open_url_link' => 'Open in folder view',
+    'open_url_link' => 'Open in a new window',
     'error_pw_too_long' => 'Password longer than system maximum (default 40 characters).',
     'at_restriction' => 'Restriction',
     'pw_encryption_error' => 'Error encrypting password!',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );

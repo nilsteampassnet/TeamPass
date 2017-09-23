@@ -3,8 +3,8 @@
  *
  * @file          italian.php
  * @author        Nils Laumaillé
- * @version       
- * @copyright      Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     2009 - 2017 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -19,9 +19,9 @@ $LANG = array (
     'error_no_email' => 'Questo utente non ha un indirizzo email!',
     'error_no_user' => 'Nessun utente trovato!',
     'email_ga_subject' => 'Il tuo codice flash per Teampass con Google Authenticator',
-    'email_ga_text' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your administrator is expecting you to use TwoFactor authentication to get connected to Teampass.<br>For your first connection to Teampass with TwoFactor, please use the code you will found here bellow in the "Identication code" field:<br><br>----------------------<br>#2FACode#<br>----------------------<br><br>You will then have the opportunity to set up your one-time credentials for Teampass password manager.<br><br>Greetings',
+    'email_ga_text' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your administrator is expecting you to use TwoFactor authentication to get connected to Teampass.<br>For your first connection to Teampass with TwoFactor, please use the code you will find below in the "Identication code" field:<br><br>----------------------<br>#2FACode#<br>----------------------<br><br>You will then have the opportunity to set up your one-time credentials for Teampass password manager.<br><br>Greetings',
     'settings_attachments_encryption' => 'Abilita codifica (encryption) degli elementi allegati',
-    'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments!  After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
+    'settings_attachments_encryption_tip' => 'If enabled, items attachments are encrypted on the server with the system salt key. Encryption requires more server resources. -- Warning! -- Changing this option could break existing file attachments! After changing this setting, you must run the task to encrypt or decrypt existing file attachments.',
     'admin_action_attachments_cryption' => 'Codica (encrypt) o Decodifica (decrypt) gli elementi allegati',
     'admin_action_attachments_cryption_tip' => 'Warning: Only encrypt or decrypt files after changing attachment encryption settings to match. Select whether to encrypt or decrypt, then press start. Make a backup of the upload folder before running this function.',
     'encrypt' => 'Codifica',
@@ -193,7 +193,7 @@ $LANG = array (
     'admin_pwd_maximum_length' => 'Lunghezza massima delle password',
     'admin_pwd_maximum_length_tip' => 'Il valore predefinito per la lunghezza delle password è 40. È importante notare che un valore molto alto avrà un impatto negativo sulle performance del sistema. Più tale valore è alto, più tempo impiegherà il server a crittare, decrittare e visualizzare le password.',
     'settings_insert_manual_entry_item_history' => 'Permetti aggiunte manuali nel History log degli elementi',
-    'settings_insert_manual_entry_item_history_tip' => 'You normally would want to leave this off. When enabled, the history of a password item can be edited or altered.',
+    'settings_insert_manual_entry_item_history_tip' => 'You would normally want to leave this off. When enabled, the history of a password item can be edited or altered.',
     'add_history_entry' => 'Aggiunta manuale nel History log',
     'at_manual' => 'Azione manuale',
     'at_manual_add' => 'Aggiunta manuale',
@@ -1054,5 +1054,6 @@ $LANG = array (
     'nothing_to_do' => 'Nothing to do.',
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     '' => ''
 );
