@@ -2,6 +2,9 @@
 Thanks for reporting issues back to Teampass! 
 This is ONLY for ISSUE / DEFECT / BUG.
 
+IN CASE OF DEFECT, THIS TEMPLATE HAS TO BE FOLLOWED.
+IF NOT, I WILL DELETE THE TICKET WITHOUT ANSWERING IT!
+
 If you have any FEATURE REQUEST or question, please use https://teampass.userecho.com/
 
 To make it possible for us to help you please fill out below information carefully.
