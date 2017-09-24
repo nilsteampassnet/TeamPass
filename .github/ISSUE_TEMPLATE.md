@@ -47,8 +47,8 @@ PLEASE attach to this message the file `/includes/config/tp.config.php`.
 Insert your webserver log here
 ```
 
-#### Firebug log ([How to?](http://teampass.net/2014-02-09-how-to-communicate-an-error-log))
+#### Log from the web-browser developer console (CTRL + SHIFT + i)
 ```
-Insert the Firebug log here
+Insert the log here and especially the answer of the query that failed.
 ```
 
