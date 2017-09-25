@@ -2223,10 +2223,10 @@ if (null !== $post_type) {
             } else {
                 // get preloaded data
                 $uniqueLoadData = json_decode(
-                    filter_input(INPUT_POST, 'uniqueLoadData', FILTER_SANITIZE_STRING),
+                    filter_input(INPUT_POST, 'uniqueLoadData', FILTER_UNSAFE_RAW),
                     true
                 );
-
+                
                 // initialize main variables
                 $showError = $uniqueLoadData['showError'];
                 $accessLevel = $uniqueLoadData['accessLevel'];
@@ -3083,7 +3083,7 @@ if (null !== $post_type) {
                 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
             );
 
-            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$folder_id.'"}]';
+            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$post_folder_id.'"}]';
             break;
 
         /*
