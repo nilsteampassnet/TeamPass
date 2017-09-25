@@ -9,6 +9,8 @@
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
  Fix: issue on offline export
  Fix: error on deleting a folder at root
+ #1924 Moving items give error: Requested JSON parse failed
+ #1923 Red wheel keeps turning, blocks display of new items
  #1919 Upgrade to release 2.1.27.8 converts encrypted database password back to clear-text
  #1915 Cannot Edit or Delete items in the Personal folder
  #1909 Roles Management - Problem with acess rights "Edit" "Delete"
