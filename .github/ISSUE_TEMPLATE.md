@@ -2,6 +2,9 @@
 Thanks for reporting issues back to Teampass! 
 This is ONLY for ISSUE / DEFECT / BUG.
 
+IN CASE OF DEFECT, THIS TEMPLATE HAS TO BE FOLLOWED.
+IF NOT, I WILL DELETE THE TICKET WITHOUT ANSWERING IT!
+
 If you have any FEATURE REQUEST or question, please use https://teampass.userecho.com/
 
 To make it possible for us to help you please fill out below information carefully.
@@ -44,8 +47,8 @@ PLEASE attach to this message the file `/includes/config/tp.config.php`.
 Insert your webserver log here
 ```
 
-#### Firebug log ([How to?](http://teampass.net/2014-02-09-how-to-communicate-an-error-log))
+#### Log from the web-browser developer console (CTRL + SHIFT + i)
 ```
-Insert the Firebug log here
+Insert the log here and especially the answer of the query that failed.
 ```
 
