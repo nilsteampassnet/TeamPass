@@ -434,10 +434,11 @@ if (null !== $post_newtitle) {
             $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
-            $title = htmlspecialchars_decode($dataReceived['title']);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
             $complexity = htmlspecialchars_decode($dataReceived['complexity']);
             $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
             $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
+            echo $title;
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
@@ -643,7 +644,7 @@ if (null !== $post_newtitle) {
             $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
-            $title = htmlspecialchars_decode($dataReceived['title']);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
             $complexity = htmlspecialchars_decode($dataReceived['complexity']);
             $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
             $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
