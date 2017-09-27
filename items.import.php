@@ -309,7 +309,7 @@ foreach ($folders as $t) {
                 BeforeUpload: function (up, file) {
                     $("#import_status_ajax_loader").show();
                     up.settings.multipart_params = {
-                        "PHPSESSID":"'.$_SESSION['user_id'];?>",
+                        "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
                         "type_upload":"import_items_from_keypass",
                         "user_token": $("#import_user_token").val()
                     };
@@ -336,7 +336,7 @@ foreach ($folders as $t) {
         uploader_kp.bind("+", function(up, file) {
             $("#" + file.id + " b").html("100%");
         });
-        uploader_csv.bind('FileUploaded', function(upldr, file, object) {
+        uploader_kp.bind('FileUploaded', function(upldr, file, object) {
             var myData;
             try {
                 myData = eval(object.response);
@@ -398,7 +398,11 @@ foreach ($folders as $t) {
                     $("button").button();
                     $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['import_button']; ?>')").button("disable");
                     $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
-                    setTimeout(function(){$("#import_information").effect( "fade", "slow" );}, 1000);
+                    // Fade out
+                    $(this).delay(1000).queue(function() {
+                        $("#import_information").effect( "fade", "slow" );
+                        $(this).dequeue();
+                    });
                 }
             },
             "json"
@@ -421,7 +425,11 @@ foreach ($folders as $t) {
 
         if (items == "") {
             $("#csv_import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
-            setTimeout(function(){$("#csv_import_information").effect( "fade", "slow" );}, 1000);
+            // Fade out
+            $(this).delay(1000).queue(function() {
+                $("#csv_import_information").effect( "fade", "slow" );
+                $(this).dequeue();
+            });
             return;
         }
 
@@ -446,8 +454,11 @@ foreach ($folders as $t) {
                 ListerItems($('#hid_cat').val(), "", 0)
 
                 $("#csv_import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
-                setTimeout(function(){$("#csv_import_information").effect( "fade", "slow" );}, 1000);
-
+                // Fade out
+                $(this).delay(1000).queue(function() {
+                    $("#csv_import_information").effect( "fade", "slow" );
+                    $(this).dequeue();
+                });
             },
             "json"
         );
@@ -471,7 +482,12 @@ foreach ($folders as $t) {
             function(data) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");
                 $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
-                //setTimeout(function(){$("#import_information").effect( "fade", "slow" );document.location = "index.php?page=items"}, 1000);
+                // Reload page
+                $(this).delay(2000).queue(function() {
+                    $("#import_information").effect( "fade", "slow" );
+                    document.location = "index.php?page=items";
+                    $(this).dequeue();
+                });
             },
             "json"
         );

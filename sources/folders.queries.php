@@ -143,7 +143,7 @@ if (null !== $post_newtitle) {
         WHERE id = %i",
         $post_newparent_id
     );
-    
+
     //show value
     echo $data['title'];
 
@@ -244,7 +244,7 @@ if (null !== $post_newtitle) {
             } else {
                 $parent_id = 0;
             }
-            
+
             // Get through each subfolder
             $folders = $tree->getDescendants($post_id, true);
 
@@ -434,10 +434,11 @@ if (null !== $post_newtitle) {
             $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
-            $title = htmlspecialchars_decode($dataReceived['title']);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
             $complexity = htmlspecialchars_decode($dataReceived['complexity']);
             $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
             $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
+            echo $title;
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
@@ -643,7 +644,7 @@ if (null !== $post_newtitle) {
             $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
 
             //Prepare variables
-            $title = htmlspecialchars_decode($dataReceived['title']);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
             $complexity = htmlspecialchars_decode($dataReceived['complexity']);
             $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
             $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
@@ -1008,8 +1009,13 @@ if (null !== $post_newtitle) {
 
                 // add new folder id in SESSION
                 array_push($_SESSION['groupes_visibles'], $newFolderId);
+                $_SESSION['groupes_visibles_list'] .= ','.$newFolderId;
                 if ($nodeInfo->personal_folder == 1) {
                     array_push($_SESSION['personal_folders'], $newFolderId);
+                    array_push($_SESSION['personal_visible_groups'], $newFolderId);
+                    $_SESSION['personal_visible_groups_list'] .= ','.$newFolderId;
+                } else {
+                    array_push($_SESSION['all_non_personal_folders'], $newFolderId);
                 }
 
 

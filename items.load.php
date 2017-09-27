@@ -2721,7 +2721,8 @@ $(function() {
                 } else {
                     $("#move_folder_loader").show();
                     $("#div_editer_rep ~ .ui-dialog-buttonpane")
-                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", true);
+                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+                        .prop("disabled", true);
 
                     //prepare data
                     var data = {"source_folder_id": $('#hid_cat').val(),
@@ -2732,8 +2733,8 @@ $(function() {
                         "sources/items.queries.php",
                         {
                             type    : "move_folder",
-                            data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key        : "<?php echo $_SESSION['key']; ?>"
+                            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             //check if format error

@@ -81,8 +81,8 @@ function countdown()
     }
     DayTill = CHour+":"+CMinute+":"+CSecond;
 
-    //Avertir de la fin imminante de la session
-    if (DayTill === "00:01:00") {
+    // Session will soon be closed
+    if (DayTill === "00:00:50") {
         $("#div_increase_session_time").dialog("open");
         $("#countdown").css("color","red");
     }
