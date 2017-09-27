@@ -238,7 +238,7 @@ foreach ($rows as $record) {
             </tr>
             <tr>
                 <td>
-                    <input type="checkbox" id="new_personal_folder"', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 ? ' checked="checked"' : '', ' />
+                    <input type="checkbox" id="new_personal_folder"', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] === "1" ? ' checked="checked"' : '', ' />
                     <label for="new_personal_folder">'.cleanText($LANG['personal_folder']).'</label>
                 </td>
             </tr>

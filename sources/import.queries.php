@@ -340,13 +340,16 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     'label' => substr($item[0], 0, 500),
                     'description' => empty($item[4]) ? '' : $item[4],
                     'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
+                    'url' => "0",
                     'perso' => $personalFolder == 0 ? 0 : 1,
                     'login' => empty($item[1]) ? '' : substr($item[1], 0, 500),
                     'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id'],
                     'timestamp' => time(),
                     'tags' => '',
-                    'restricted_to' => ''
+                    'restricted_to' => '0',
+                    'renewal_period' => "0",
+                    'timestamp' => time()
                 )
             );
         }
@@ -370,7 +373,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $cacheFileNameFolder = $cacheFileName."_folders";
         $cacheFile = fopen($cacheFileName, "w");
         $cacheFileF = fopen($cacheFileNameFolder, "w");
-        $logFileName = "/keepassImport_".date('YmdHis');
+        $logFileName = "/keepassImport_".date('YmdHis').".log";
         $cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');
 
         //read xml file
@@ -934,11 +937,15 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 'id' => $newId,
                                 'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
+                                'url' => (isset($item[KP_NOTES]) && !empty($item[KP_NOTES])) ? $item[KP_NOTES] : "0",
+                                'tags' => "",
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
                                 'login' => substr(stripslashes($item[KP_USERNAME]), 0, 500),
+                                'restricted_to' => "0",
                                 'folder' => $data['title'],
                                 'author' => $_SESSION['user_id'],
+                                'renewal_period' => "0",
                                 'timestamp' => time()
                             )
                         );
@@ -948,6 +955,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     } else {
                         $results .= " - ".$item[KP_TITLE]." was not imported\n";
                     }
+                    fputs($cacheLogFile, date('H:i:s ')." ".$results."\n");
                 }
             }
 

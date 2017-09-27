@@ -143,7 +143,7 @@ if (null !== $post_newtitle) {
         WHERE id = %i",
         $post_newparent_id
     );
-    
+
     //show value
     echo $data['title'];
 
@@ -244,7 +244,7 @@ if (null !== $post_newtitle) {
             } else {
                 $parent_id = 0;
             }
-            
+
             // Get through each subfolder
             $folders = $tree->getDescendants($post_id, true);
 
@@ -1009,8 +1009,13 @@ if (null !== $post_newtitle) {
 
                 // add new folder id in SESSION
                 array_push($_SESSION['groupes_visibles'], $newFolderId);
+                $_SESSION['groupes_visibles_list'] .= ','.$newFolderId;
                 if ($nodeInfo->personal_folder == 1) {
                     array_push($_SESSION['personal_folders'], $newFolderId);
+                    array_push($_SESSION['personal_visible_groups'], $newFolderId);
+                    $_SESSION['personal_visible_groups_list'] .= ','.$newFolderId;
+                } else {
+                    array_push($_SESSION['all_non_personal_folders'], $newFolderId);
                 }
 
 

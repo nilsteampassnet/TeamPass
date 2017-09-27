@@ -9,6 +9,9 @@
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
  Fix: issue on offline export
  Fix: error on deleting a folder at root
+ #1933 Trying to move folder results in error message
+ #1932 Keepass upload fails
+ #1927 Changing language is not possible for users
  #1924 Moving items give error: Requested JSON parse failed
  #1923 Red wheel keeps turning, blocks display of new items
  #1919 Upgrade to release 2.1.27.8 converts encrypted database password back to clear-text

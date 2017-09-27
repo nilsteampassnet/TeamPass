@@ -143,6 +143,7 @@ if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['use
 } elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
     // use server timezone
     date_default_timezone_set('UTC');
+    $SETTINGS['timezone'] = "UTC";
 } else {
     // use server timezone
     date_default_timezone_set($SETTINGS['timezone']);
@@ -203,7 +204,7 @@ if (empty($_SESSION['fin_session']) === false) {
     $dataSession['key_tempo'] = "";
 }
 
-if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && isset($_GET['action']) === false && (
+if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && isset($_GET['action']) === false && $_SESSION['user_id'] !== "0" && (
         empty($_SESSION['fin_session']) === true
         || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
         || empty($dataSession['key_tempo']) === true

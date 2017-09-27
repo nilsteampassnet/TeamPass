@@ -2011,20 +2011,20 @@ if (null !== $post_type) {
             }
 
             // check if source or target folder is PF. If Yes, then cancel operation
-            if (!($tmp_source['personal_folder'] === '1' && $tmp_target['personal_folder'] === '1')
-                && !($tmp_source['personal_folder'] === '0' && $tmp_target['personal_folder'] === '0')
-            ) {
+            if ($tmp_source['personal_folder'] === '1' || $tmp_target['personal_folder'] === '1') {
                 $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
                 break;
             }
 
-            if ($tmp_source['parent_id'] != 0
-                || $tmp_source['title'] != $_SESSION['user_id']
-                || $tmp_source['personal_folder'] != 1
-                || $tmp_target['title'] != $_SESSION['user_id']
-                || $tmp_target['personal_folder'] != 1
-            ) {
+            // check if source or target folder is PF. If Yes, then cancel operation
+            if ($tmp_source['title'] === $_SESSION['user_id'] || $tmp_target['title'] === $_SESSION['user_id']) {
+                $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                echo $returnValues;
+                break;
+            }
+
+            if ($tmp_source['parent_id'] !== "0") {
                 // moving SOURCE folder
                 DB::update(
                     prefix_table("nested_tree"),
@@ -2226,7 +2226,7 @@ if (null !== $post_type) {
                     filter_input(INPUT_POST, 'uniqueLoadData', FILTER_UNSAFE_RAW),
                     true
                 );
-                
+
                 // initialize main variables
                 $showError = $uniqueLoadData['showError'];
                 $accessLevel = $uniqueLoadData['accessLevel'];

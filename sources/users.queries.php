@@ -34,20 +34,23 @@ if (file_exists('../includes/config/tp.config.php')) {
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
+$filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
-    if (null !== filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING)) {
+    if (null === $filtered_newvalue) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
         include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     } else {
         $filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
-        if (empty($filtered_newvalue)) {
+        // Do special check to allow user to change attributes of his profile
+        if (empty($filtered_newvalue) || !checkUser($_SESSION['user_id'], $_SESSION['key'], "profile")) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $SETTINGS['cpassman_dir'].'/error.php';
             exit();
         }
     }
 }
+
 
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
@@ -748,7 +751,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
             );
             break;
-            
+
         /*
         * Check the domain
         */
