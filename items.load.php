@@ -1096,16 +1096,16 @@ function EditerItem()
 function AddNewFolder()
 {
     if ($("#new_rep_titre").val() == "") {
-        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_label']); ?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_label']); ?>").removeClass("hidden");
     } else if ($("#new_rep_groupe").val() === "") {
-        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']); ?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_noparent']); ?>").removeClass("hidden");
     } else if ($("#new_rep_complexite").val() == "") {
-        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']); ?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_complex']); ?>").removeClass("hidden");
     } else if (/^\d+$/.test($("#new_rep_titre").val())) {
         // check if folder title contains only numbers
-        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").show();
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").removeClass("hidden");
     } else if ($("#user_ongoing_action").val() == "") {
-        $("#add_folder_loader").show();
+        $("#add_folder_loader").removeClass("hidden");
         $("#user_ongoing_action").val("true");
         $("#new_rep_show_error").addClass("hidden");
         if ($("#new_rep_role").val() == undefined) {
@@ -1131,13 +1131,13 @@ function AddNewFolder()
                 $("#user_ongoing_action").val("");
                 //Check errors
                 if (data[0].error == "error_group_exist") {
-                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']); ?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_group_exist']); ?>").removeClass("hidden");
                 } else if (data[0].error == "error_html_codes") {
-                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_html_codes']); ?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_html_codes']); ?>").removeClass("hidden");
                 } else if (data[0].error == "error_title_only_with_numbers") {
-                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").show();
+                    $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").removeClass("hidden");
                 } else if (data[0].error != "") {
-                    $("#new_rep_show_error").html(data[0].error).show();
+                    $("#new_rep_show_error").html(data[0].error).removeClass("hidden");
                 } else {
                     $("#new_rep_titre").val("");
                     refreshTree(data[0].newid);
@@ -2559,6 +2559,7 @@ $(function() {
         },
         open: function(event,ui) {
             $("#new_rep_show_error").addClass("hidden");
+            $("#new_rep_show_error").html("");
             $(".ui-tooltip").siblings(".tooltip").remove();
         }
     });

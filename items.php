@@ -791,7 +791,7 @@ echo '
 */
 echo '
 <div id="div_ajout_rep" style="display:none;">
-    <div id="new_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div id="new_rep_show_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all"></div>
     <table>
         <tr>
             <td>'.$LANG['label'].' : </td>
