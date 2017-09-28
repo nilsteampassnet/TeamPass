@@ -16,8 +16,8 @@ require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key']))
-{
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
     die('Hacking attempt...');
 }
 
@@ -310,7 +310,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count = DB::count();
             if ($roles_count > $display_nb) {
-                if (null !== $post_start || $post_start === 0) {
+                if (null === $post_start || $post_start === 0) {
                     $start = 0;
                     $previous = 0;
                 } else {
