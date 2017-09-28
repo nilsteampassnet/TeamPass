@@ -15,10 +15,15 @@
 include '../includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 
+$_SESSION['CPM'] = 1;
+
 // connect to DB
 require_once '../sources/SplClassLoader.php';
-
 require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+
+// Load libraries
+require_once '../sources/main.functions.php';
+
 $pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
@@ -27,9 +32,6 @@ DB::$dbName = $database;
 DB::$port = $port;
 DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
-
-// Load libraries
-require_once '../sources/main.functions.php';
 
 //get backups infos
 $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");
@@ -78,7 +80,6 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
     // Encrypt file is required
     $bck_filename = $settings['bck_script_filename'].'-'.time();
     if (!empty($settings['bck_script_key'])) {
-
         // Encrypt the file
         prepareFileWithDefuse(
             'encrypt',
@@ -89,7 +90,7 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 
         // Do clean
         unlink($settings['bck_script_path'].'/'.$bck_filename.'.sql');
-        rename (
+        rename(
             $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
             $settings['bck_script_path'].'/'.$bck_filename.'.sql'
         );
@@ -103,11 +104,13 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
     // store this file in DB
     $tmp = mysqli_num_rows(mysqli_query($link, "SELECT * FROM `".$pre."misc` WHERE type = 'backup' AND intitule = 'filename'"));
     if ($tmp === 0) {
-        $mysqli_result = mysqli_query($link,
+        $mysqli_result = mysqli_query(
+            $link,
             "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('backup', 'filename', '".$bck_filename."')"
         );
     } else {
-        $mysqli_result = mysqli_query($link,
+        $mysqli_result = mysqli_query(
+            $link,
             "UPDATE `".$pre."misc` SET `valeur` = '".$bck_filename."' WHERE type = 'backup' AND intitule = 'filename'"
         );
     }
