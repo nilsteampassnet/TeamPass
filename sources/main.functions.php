@@ -487,6 +487,11 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
     return $user_key_encoded; // store it in session once user has entered his psk
 }
 
+/**
+ * Decrypt a defuse string if encrypted
+ * @param  [type] $value Encrypted string
+ * @return [type]        Decrypted string
+ */
 function defuse_return_decrypted($value)
 {
     if (substr($value, 0, 3) === "def") {

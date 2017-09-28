@@ -9,6 +9,7 @@
  Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
  Fix: issue on offline export
  Fix: error on deleting a folder at root
+ #1937 Error while using script.backup.php in standalone
  #1935 Add folder results in Requested JSON parse failed
  #1933 Trying to move folder results in error message
  #1932 Keepass upload fails
