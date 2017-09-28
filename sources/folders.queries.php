@@ -438,7 +438,6 @@ if (null !== $post_newtitle) {
             $complexity = htmlspecialchars_decode($dataReceived['complexity']);
             $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
             $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
-            echo $title;
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
