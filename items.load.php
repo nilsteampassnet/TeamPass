@@ -2042,7 +2042,7 @@ function open_edit_item_div(restricted_to_roles)
                 optgroup.attr('label', "<?php echo addslashes($LANG['users']); ?>");
                 $("#edit_restricted_to_list option:last").wrapAll(optgroup);
             }
-            var liste = $('#input_liste_utilisateurs').val().split(';');
+            /*var liste = $('#input_liste_utilisateurs').val().split(';');
             for (var i=0; i<liste.length; i++) {
                 var elem = liste[i].split('#');
                 if (elem[0] != "") {
@@ -2052,7 +2052,7 @@ function open_edit_item_div(restricted_to_roles)
                         $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
                     }
                 }
-            }
+            }*/
         }
 
         //Add list of roles if option is set
@@ -3040,6 +3040,41 @@ $(function() {
             $("#edit_categorie").select2({
                 language: "<?php echo $_SESSION['user_language_code']; ?>"
             });
+
+            // get list of Users
+            $.post(
+                "sources/items.queries.php",
+                {
+                    type    : "build_list_of_users",
+                    key     : "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    //decrypt data
+                    try {
+                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                    } catch (e) {
+                        // error
+                        $("#div_loading").addClass("hidden");
+                        $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data);
+                        $("#div_dialog_message").show();
+                        return;
+                    }
+
+                    if (data.error === "") {
+                        var list = data.list.split(';');
+                        for (var i=0; i<list.length; i++) {
+                            var elem = list[i].split('#');
+                            if (elem[0] != "") {
+                                $("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
+                                var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
+                                if (index != -1) {
+                                    $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
+                                }
+                            }
+                        }
+                    }
+                }
+           );
         }
     });
     //<=

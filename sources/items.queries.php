@@ -4114,6 +4114,35 @@ if (null !== $post_type) {
 
             echo '[ { "error" : "" } ]';
             break;
+
+        case "build_list_of_users":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // Get list of users
+            $usersList = array();
+            $usersString = "";
+            $rows = DB::query("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
+            foreach ($rows as $record) {
+                $usersList[$record['login']] = array(
+                    "id" => $record['id'],
+                    "login" => $record['login'],
+                    "email" => $record['email'],
+                    );
+                $usersString .= $record['id']."#".$record['login'].";";
+            }
+
+            $data = array(
+                'error' => "",
+                'list' => $usersString
+            );
+
+            // send data
+            echo prepareExchangedData($data, "encode");
+            break;
     }
 }
 // Build the QUERY in case of GET
