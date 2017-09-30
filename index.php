@@ -177,7 +177,9 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 
 // Load user languages files
 if (in_array($session_user_language, $languagesList) === true) {
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
+    if (file_exists($SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php') === true) {
+        require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
+    }
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';

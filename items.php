@@ -58,7 +58,6 @@ if ($session_user_admin === '1' && (isset($SETTINGS_EXT['admin_full_right'])
 
 // Get list of users
 $usersList = array();
-$usersString = "";
 $rows = DB::query("SELECT id,login,email FROM ".$pre."users ORDER BY login ASC");
 foreach ($rows as $record) {
     $usersList[$record['login']] = array(
@@ -66,7 +65,6 @@ foreach ($rows as $record) {
         "login" => $record['login'],
         "email" => $record['email'],
         );
-    $usersString .= $record['id']."#".$record['login'].";";
 }
 // Get list of roles
 $arrRoles = array();
@@ -105,7 +103,6 @@ echo '
 <input type="hidden" id="timestamp_item_displayed" value="" />
 <input type="hidden" id="pf_selected" value="" />
 <input type="hidden" id="user_ongoing_action" value="" />
-<input type="hidden" id="input_liste_utilisateurs" value="'.$usersString.'" />
 <input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
 <input type="hidden" id="path_fontsize" value="" />
 <input type="hidden" id="access_level" value="" />

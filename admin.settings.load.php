@@ -526,7 +526,6 @@ function updateSetting(field)
 
                 return;
             }
-            console.log(data);
             if (data.error == "") {
                 $("#"+field).after("<span class='fa fa-check fa-lg mi-green new_check'></span>");
                 $(".new_check").fadeOut(2000);

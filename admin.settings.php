@@ -1254,7 +1254,6 @@ echo '
                         <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_script_backup_path_tip']), ENT_QUOTES).'"></i></span>
                         </td>
                         <td>
-                        <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <input id="bck_script_path" name="bck_script_path" type="text" size="60px" value="', isset($SETTINGS['bck_script_path']) ? $SETTINGS['bck_script_path'] : $SETTINGS['cpassman_dir'].'/backups', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
@@ -1267,8 +1266,34 @@ echo '
                         <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_script_backup_filename_tip']), ENT_QUOTES).'"></i></span>
                         </td>
                         <td>
-                        <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <input id="bck_script_filename" name="bck_script_filename" type="text" size="50px" value="', isset($SETTINGS['bck_script_filename']) ? $SETTINGS['bck_script_filename'] : 'bck_teampass', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
+                        </td>
+                    </tr>';
+// Backup key
+if (isset($SETTINGS['bck_script_passkey'])) {
+    require_once './sources/main.functions.php';
+    $currentKey = cryption(
+        $SETTINGS['bck_script_passkey'],
+        "",
+        "decrypt"
+    )['string'];
+} else {
+    $currentKey = "";
+}
+echo '
+                    <tr style="margin-bottom:3px">
+                        <td>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                        '.$LANG['admin_script_backup_secret'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_script_backup_secret_tip']), ENT_QUOTES).'"></i></span>
+                        </td>
+                        <td>
+                        <input id="bck_script_passkey" name="bck_script_passkey" type="text" size="50px" value="', isset($SETTINGS['bck_script_passkey']) ? $currentKey : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
+                        &nbsp;
+                        <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="generateRandomKey(\'bck_script_passkey\', \'40\', \'true\', \'true\', \'false\', \'false\');$(\'#bck_script_passkey\').focus().delay(1000);" style="cursor:pointer;">
+                            <i class="fa fa-square fa-stack-2x"></i>
+                            <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
+                        </span>
                         </td>
                     </tr>';
 // Backups script encryption
@@ -1280,7 +1305,6 @@ echo '
                         <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_script_backup_encryption_tip']), ENT_QUOTES).'"></i></span>
                         </td>
                         <td>
-                        <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <input id="bck_script_key" name="bck_script_key" type="password" size="50px" value="', isset($SETTINGS['bck_script_key']) ? $SETTINGS['bck_script_key'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         </td>
                     </tr>';
@@ -1293,7 +1317,6 @@ echo '
                         <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['admin_script_backup_decrypt_tip']), ENT_QUOTES).'"></i></span>
                         </td>
                         <td>
-                        <span id="result_admin_action_db_restore" style="margin-left:10px;"></span>
                         <input id="bck_script_decrypt_file" name="bck_script_decrypt_file" type="text" size="50px" value="" />
                         &nbsp;
                         <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['admin_action_db_backup_start_tip']), ENT_QUOTES).'" onclick="LaunchAdminActions(\'admin_action_backup_decrypt\')" style="cursor:pointer;">
