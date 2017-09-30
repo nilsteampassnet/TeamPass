@@ -146,7 +146,7 @@ $(function() {
                     $("#div_loading").hide();
 
                     // manage not allowed
-                    if (data.error == "not_allowed") {
+                    if (data.error === "not_allowed") {
                        $("#div_dialog_message_text").html(data.error_text);
                        $("#div_dialog_message").dialog("open");
                        return false;
@@ -208,95 +208,6 @@ $(function() {
         }
     });
 
-    $("#change_user_functions").dialog({
-        bgiframe: true,
-        modal: true,
-        autoOpen: false,
-        width: 400,
-        height: 400,
-        title: "<?php echo $LANG['change_user_functions_title']; ?>",
-        buttons: {
-            "<?php echo $LANG['save_button']; ?>": function() {
-                Change_user_rights(document.getElementById("selected_user").value,"functions");
-                $(this).dialog("close");
-            },
-            "<?php echo $LANG['cancel_button']; ?>": function() {
-                $(this).dialog("close");
-            }
-        }
-    });
-
-    $("#change_user_autgroups").dialog({
-        bgiframe: true,
-        modal: true,
-        autoOpen: false,
-        width: 400,
-        height: 400,
-        title: "<?php echo $LANG['change_user_autgroups_title']; ?>",
-        buttons: {
-            "<?php echo $LANG['save_button']; ?>": function() {
-                Change_user_rights(document.getElementById("selected_user").value,"autgroups");
-                $(this).dialog("close");
-            },
-            "<?php echo $LANG['cancel_button']; ?>": function() {
-                $(this).dialog("close");
-            }
-        }
-    });
-
-    $("#change_user_forgroups").dialog({
-        bgiframe: true,
-        modal: true,
-        autoOpen: false,
-        width: 400,
-        height: 400,
-        title: "<?php echo $LANG['change_user_forgroups_title']; ?>",
-        buttons: {
-            "<?php echo $LANG['save_button']; ?>": function() {
-                Change_user_rights(document.getElementById("selected_user").value,"forgroups");
-                $(this).dialog("close");
-            },
-            "<?php echo $LANG['cancel_button']; ?>": function() {
-                $(this).dialog("close");
-            }
-        }
-    });;
-
-    $("#change_user_adminby").dialog({
-        bgiframe: true,
-        modal: true,
-        autoOpen: false,
-        width: 400,
-        height: 200,
-        title: "<?php echo $LANG['is_administrated_by_role']; ?>",
-        buttons: {
-            "<?php echo $LANG['save_button']; ?>": function() {
-                $.post(
-                    "sources/users.queries.php",
-                    {
-                        type    :"change_user_adminby",
-                        userId : $("#selected_user").val(),
-                        isAdministratedByRole : $("#user_admin_by").val(),
-                        key    : "<?php echo $_SESSION['key']; ?>"
-                    },
-                    function(data) {
-                        if ($("#user_admin_by").val() == "0") {
-                            $("#list_adminby_"+$("#selected_user").val()).
-                            html("<?php echo $LANG['admin_small']; ?>");
-                        } else {
-                            $("#list_adminby_"+$("#selected_user").val()).
-                            html($("#user_admin_by option:selected").text().match(/"([^"]+)"/)[1]);
-                        }
-                        $("#change_user_adminby").dialog("close");
-                    }
-               )
-            },
-            "<?php echo $LANG['cancel_button']; ?>": function() {
-                $(this).dialog("close");
-            }
-        }
-    });
-
     $("#add_new_user").dialog({
         bgiframe: true,
         modal: true,
@@ -349,7 +260,7 @@ $(function() {
                         },
                         function(data) {
                             $("#add_new_user_info").hide().html("");
-                            if (data[0].error == "no") {
+                            if (data[0].error === "no") {
                                 // clear form fields
                                 $("#new_name, #new_lastname, #new_login, #new_pwd, #new_is_admin_by, #new_email, #new_domain").val("");
                                 $("#new_admin, #new_manager, #new_read_only, #new_personal_folder").prop("checked", false);
@@ -384,13 +295,17 @@ $(function() {
                 $.post(
                     "sources/users.queries.php",
                     {
-                        type    : "delete_user",
-                        id        : $("#delete_user_id").val(),
-                        action    : $("#delete_user_action").val(),
-                        key        : "<?php echo $_SESSION['key']; ?>"
+                        type   : "delete_user",
+                        id     : $("#delete_user_id").val(),
+                        action : $("#delete_user_action").val(),
+                        key    : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        window.location.href = "index.php?page=manage_users";
+                        if (data[0].error !== "no") {
+                            $("#user_action_html").html(data[0].error);
+                        } else {
+                            window.location.href = "index.php?page=manage_users";
+                        }
                     },
                     "json"
                );
@@ -631,15 +546,16 @@ $(function() {
         open:  function() {
             $("#user_edit_functions_list, #user_edit_managedby, #user_edit_auth, #user_edit_forbid").empty();
             $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button']; ?>')").button("disable");
+            $("#user_edit_error").html("").hide();
             $.post(
                 "sources/users.queries.php",
                 {
                     type : "get_user_info",
-                    id   : $('#user_edit_id').val(),
+                    id   : 9,
                     key  : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
-                    if (data.error == "no") {
+                    if (data.error === "no") {
                         $(".ui-dialog-buttonpane button:contains('<?php echo $LANG['save_button']; ?>')").button("enable");
 
                         $("#user_edit_login").val(data.log);
@@ -668,7 +584,7 @@ $(function() {
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
                     } else {
-                        $("#user_edit_error").html("<?php echo $LANG['error_unknown']; ?>")
+                        $("#user_edit_error").html("<?php echo $LANG['error_unknown']; ?>").show();
                         $("#user_edit_wait").hide();
                         $("#user_edit_div").show();
                     }
@@ -724,12 +640,15 @@ $(function() {
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        if (data[0].error == "no") {
-
+                        if (data[0].error !=="no") {
+                            $("#user_edit_error").html(data[0].error).show(1).delay(2000).fadeOut(1000);
+                            $("#user_edit_wait").hide();
+                            $(".chk").attr("checked", false);
+                        } else {
+                            // refresh table content
+                            tableUsers.api().ajax.reload();
+                            $("#user_management_dialog").dialog("close");
                         }
-                        // refresh table content
-                        tableUsers.api().ajax.reload();
-                        $("#user_management_dialog").dialog("close");
                     },
                     "json"
                 );
@@ -999,44 +918,6 @@ function ChangeUSerAdminBy(id)
 {
     $("#selected_user").val(id);
     $("#change_user_adminby").dialog("open");
-}
-
-function Change_user_rights(id,type)
-{
-    var list = "";
-    if (type == "functions") var form = document.forms.tmp_functions;
-    if (type == "autgroups") var form = document.forms.tmp_autgroups;
-    if (type == "forgroups") var form = document.forms.tmp_forgroups;
-
-    $("#div_loading").show();
-
-    for (i=0 ; i<= form.length-1 ; i++) {
-        if (form[i].type == "checkbox" && form[i].checked) {
-            function_id = form[i].id.split("-")
-            if (list == "") list = function_id[1];
-            else list = list + ";" + function_id[1];
-        }
-    }
-
-    $.post("sources/users.queries.php",
-        {
-            type    : "change_user_"+type,
-            id      : id,
-            list    : list,
-            key     : "<?php echo $_SESSION['key']; ?>"
-        },
-        function(data) {
-            if (type == "functions") {
-                $("#list_function_user_"+id).html(data[0].text);
-            } else if (type == "autgroups") {
-                $("#list_autgroups_user_"+id).html(data[0].text);
-            } else if (type == "forgroups") {
-                $("#list_forgroups_user_"+id).html(data[0].text);
-            }
-            $("#div_loading").hide();
-        },
-        "json"
-   );
 }
 
 function unlock_user(id)
