@@ -1826,6 +1826,17 @@ switch ($post_type) {
         );
         $type = "admin";
 
+        require_once 'main.functions.php';
+
+        // In case of key, then encrypt it
+        if ($dataReceived['field'] === 'bck_script_passkey') {
+            $dataReceived['value'] = cryption(
+                $dataReceived['value'],
+                "",
+                "encrypt"
+            )['string'];
+        }
+
         // Check if setting is already in DB. If NO then insert, if YES then update.
         $data = DB::query(
             "SELECT * FROM ".prefix_table("misc")."
@@ -1834,7 +1845,7 @@ switch ($post_type) {
             $dataReceived['field']
         );
         $counter = DB::count();
-        if ($counter == 0) {
+        if ($counter === 0) {
             DB::insert(
                 prefix_table("misc"),
                 array(
@@ -1844,7 +1855,7 @@ switch ($post_type) {
                     )
             );
             // in case of stats enabled, add the actual time
-            if ($dataReceived['field'] == 'send_stats') {
+            if ($dataReceived['field'] === 'send_stats') {
                 DB::insert(
                     prefix_table("misc"),
                     array(
@@ -1865,7 +1876,7 @@ switch ($post_type) {
                 $dataReceived['field']
             );
             // in case of stats enabled, update the actual time
-            if ($dataReceived['field'] == 'send_stats') {
+            if ($dataReceived['field'] === 'send_stats') {
                 // Check if previous time exists, if not them insert this value in DB
                 $data_time = DB::query(
                     "SELECT * FROM ".prefix_table("misc")."
@@ -1874,7 +1885,7 @@ switch ($post_type) {
                     $dataReceived['field'].'_time'
                 );
                 $counter = DB::count();
-                if ($counter == 0) {
+                if ($counter === 0) {
                     DB::insert(
                         prefix_table("misc"),
                         array(

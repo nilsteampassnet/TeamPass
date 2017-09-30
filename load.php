@@ -552,6 +552,34 @@ $htmlHeaders .= '
         return html;
     }
 
+    function generateRandomKey(elem, size, numerals, capitalize, symbols, secure) {
+        size = size || 20;
+        numerals = numerals || true;
+        capitalize = capitalize || true;
+        symbols = symbols || true;
+        secure = secure || true;
+
+        $.post(
+            "sources/main.queries.php",
+            {
+                type    : "generate_a_password",
+                size      : size,
+                numerals      : numerals,
+                capitalize      : capitalize,
+                symbols      : symbols,
+                secure  : secure
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                if (elem !== "") {
+                    $("#"+elem).val(data.key);
+                } else {
+                    return data.key;
+                }
+            }
+        );
+    }
+
     $(function() {
         // AGSES authentication
         if ($("#axs_canvas").length > 0) {

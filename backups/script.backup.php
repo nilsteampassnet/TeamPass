@@ -33,11 +33,32 @@ DB::$port = $port;
 DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 
+// Check provided key
+if (isset($_GET['key']) === false || empty($_GET['key']) === true) {
+    echo '[{"Error":"no_key_provided"}]';
+    return false;
+}
+
 //get backups infos
 $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");
 foreach ($rows as $record) {
     $settings[$record['intitule']] = $record['valeur'];
 }
+
+// Check if key is conform
+if (!empty($settings['bck_script_passkey']) && !empty($settings['bck_script_passkey'])) {
+    $currentKey = cryption(
+        $_GET['key'],
+        "",
+        "decrypt"
+    )['string'];
+    if ($currentKey !== $settings['bck_script_passkey']) {
+        echo '[{"Error":"not_allowed"}]';
+        return false;
+    }
+}
+
+// Now can we start backup?
 if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_path'])) {
     //get all of the tables
     $tables = array();

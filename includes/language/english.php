@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'admin_script_backup_secret' => 'Passkey to permit backup',
+    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added as a parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',
