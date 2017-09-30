@@ -630,7 +630,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
 
         // get complete list of ROLES
-        $tmp = explode(";", $_SESSION['fonction_id']);
+        $tmp = explode(";", $idFonctions);
         $rows = DB::query(
             "SELECT * FROM ".prefix_table("roles_title")."
             ORDER BY title ASC"
@@ -656,6 +656,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['groupes_interdits'] = array();
         $_SESSION['personal_visible_groups'] = array();
         $_SESSION['read_only_folders'] = array();
+        $_SESSION['fonction_id'] = $idFonctions;
         $groupesInterdits = array();
         if (!is_array($groupesInterditsUser)) {
             $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
@@ -2109,4 +2110,26 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
     }
 
     return $res;
+}
+
+/**
+ * Check if user can access to this item
+ * @param $item_id
+ */
+function accessToItemIsGranted($item_id)
+{
+    // Load item data
+    $data = DB::queryFirstRow(
+        "SELECT id_tree
+        FROM ".prefix_table("items")."
+        WHERE id = %i",
+        $item_id
+    );
+
+    // Check if user can access this folder
+    if (!in_array($data['id'], $_SESSION['groupes_visibles'])) {
+        return "ERR_FOLDER_NOT_ALLOWED";
+    }
+
+    return true;
 }

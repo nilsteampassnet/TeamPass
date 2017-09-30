@@ -71,7 +71,9 @@ if (isset($_SERVER['HTTPS']) === true
 if (isset($SETTINGS_EXT['pwComplexity']) === false) {
     // Pw complexity levels
     if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== "0") {
-        require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+        if (file_exists($SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php') === true) {
+            require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+        }
         $SETTINGS_EXT['pwComplexity'] = array(
             0=>array(0, $LANG['complex_level0']),
             25=>array(25, $LANG['complex_level1']),

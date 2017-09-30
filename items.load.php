@@ -290,7 +290,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     }
 
                     // store the categories to be displayed
-                    $("#display_categories").val(data.displayCategories);
+                    if (data.displayCategories !== undefined) {
+                        $("#display_categories").val(data.displayCategories);
+                    }
 
                     // store type of access on folder
                     $("#access_level").val(data.access_level);
@@ -350,7 +352,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $("#query_next_start").val(data.list_to_be_continued);
 
                         // display Categories if needed
-                        if ($(".tr_fields") != undefined && data.displayCategories != "") {
+                        if ($(".tr_fields") !== undefined && data.displayCategories !== undefined && data.displayCategories !== "") {
                             var liste = data.displayCategories.split(';');
                             for (var i=0; i<liste.length; i++) {
                                 $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).show();
@@ -382,7 +384,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $("#query_next_start").val(data.list_to_be_continued);
 
                         // display Categories if needed
-                        if ($(".tr_fields") != undefined && data.displayCategories != "") {
+                        if ($(".tr_fields") != undefined && data.displayCategories !== undefined && data.displayCategories != "") {
                             var liste = data.displayCategories.split(';');
                             for (var i=0; i<liste.length; i++) {
                                 $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).show();
@@ -420,10 +422,10 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                                 $.post(
                                     "sources/items.queries.php",
                                     {
-                                        type     : "move_item",
-                                        item_id : ui.draggable.attr("id"),
+                                        type      : "move_item",
+                                        item_id   : ui.draggable.attr("id"),
                                         folder_id : $(this).attr("id").substring(4),
-                                        key        : "<?php echo $_SESSION['key']; ?>"
+                                        key       : "<?php echo $_SESSION['key']; ?>"
                                     },
                                     function(data) {
                                         //increment / decrement number of items in folders
@@ -926,34 +928,40 @@ function EditerItem()
                     }
 
                     //check if format error
-                    if (data.error == "ERR_JSON_FORMAT") {
+                    if (data.error === "ERR_JSON_FORMAT") {
                         $("#div_loading").addClass("hidden");
-                        $("#edit_show_error").html(data.error + ' ERROR (JSON is broken)!!!!!');
-                        $("#edit_show_error").show();
-                    } else if (data.error == "ERR_KEY_NOT_CORRECT") {
+                        $("#edit_show_error")
+                            .html(data.error + ' ERROR (JSON is broken)!!!!!')
+                            .show();
+                    } else if (data.error === "ERR_KEY_NOT_CORRECT") {
                         $("#div_loading").addClass("hidden");
-                        $("#edit_show_error").html('Key verification for Query is not correct!');
-                        $("#edit_show_error").show();
+                        $("#edit_show_error")
+                            .html('Key verification for Query is not correct!')
+                            .show();
                         LoadingPage();
-                    }else if (data.error == "ERR_ENCRYPTION_NOT_CORRECT") {
+                    }else if (data.error === "ERR_ENCRYPTION_NOT_CORRECT") {
                         $("#div_loading").addClass("hidden");
-                        $("#edit_show_error").html('Item password could not be correctly encrypted!');
-                        $("#edit_show_error").show();
+                        $("#edit_show_error")
+                            .html('Item password could not be correctly encrypted!')
+                            .show();
                         LoadingPage();
-                    } else if (data.error == "ERR_PWD_TOO_LONG") {
+                    } else if (data.error === "ERR_PWD_TOO_LONG") {
                         $("#div_loading").addClass("hidden");
-                        $("#edit_show_error").html('<?php echo addslashes($LANG['error_pw_too_long']); ?>');
-                        $("#edit_show_error").show();
+                        $("#edit_show_error")
+                            .html('<?php echo addslashes($LANG['error_pw_too_long']); ?>')
+                            .show();
                         LoadingPage();
-                    } else if (data.error == "ERR_NOT_ALLOWED_TO_EDIT") {
+                    } else if (data.error === "ERR_NOT_ALLOWED_TO_EDIT") {
                         $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error").html('User not allowed to edit this Item!');
-                        $("#new_show_error").show();
+                        $("#new_show_error")
+                            .html('User not allowed to edit this Item!')
+                            .show();
                         LoadingPage();
-                    } else if (data.error != "") {
+                    } else if (data.error !== "") {
                         $("#div_loading").addClass("hidden");
-                        $("#edit_show_error").html('<?php echo addslashes($LANG['error_not_allowed_to']); ?>');
-                        $("#edit_show_error").show();
+                        $("#edit_show_error")
+                            .html('<?php echo addslashes($LANG['error_not_allowed_to']); ?>')
+                            .show();
                         LoadingPage();
                     } else {
                         //refresh item in list
@@ -1268,19 +1276,23 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
             return;
         } else {
             $("#timestamp_item_displayed").val("");
+            var data = {
+                "id" : id,
+                "folder_id" : $('#hid_cat').val(),
+                "salt_key_required" : $('#recherche_group_pf').val(),
+                "salt_key_set" : $('#personal_sk_set').val(),
+                "expired_item" : expired_item,
+                "restricted" : restricted,
+                "page" : "items"
+            };
+
             //Send query
             $.post(
                 "sources/items.queries.php",
                 {
-                    type                : 'show_details_item',
-                    id                  : id,
-                    folder_id           : $('#hid_cat').val(),
-                    salt_key_required   : $('#recherche_group_pf').val(),
-                    salt_key_set        : $('#personal_sk_set').val(),
-                    expired_item        : expired_item,
-                    restricted          : restricted,
-                    page                : "items",
-                    key                 : "<?php echo $_SESSION['key']; ?>"
+                    type : 'show_details_item',
+                    data : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key  : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data_raw) {
                     //decrypt data
@@ -1589,7 +1601,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         // continue loading data
                         showDetailsStep2(id, param);
 
-                    } else if (data.show_details == "1" && data.show_detail_option == "2") {
+                    } else if (data.show_details === "1" && data.show_detail_option === "2") {
                         $("#item_details_nok").addClass("hidden");
                         $("#item_details_ok").addClass("hidden");
                         $("#item_details_expired_full").show();
@@ -1656,6 +1668,11 @@ function showDetailsStep2(id, param)
                 $("#div_dialog_message").dialog("open");
 
                 return;
+            }
+
+            if (data.error !== "") {
+                $("#div_dialog_message_text").html(data.error_text);
+                $("#div_dialog_message").show();
             }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
@@ -2601,7 +2618,7 @@ $(function() {
                     $.post(
                         "sources/items.queries.php",
                         {
-                            type    : "update_rep",
+                            type    : "update_folder",
                             data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key        : "<?php echo $_SESSION['key']; ?>"
                         },
