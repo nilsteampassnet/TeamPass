@@ -1306,6 +1306,7 @@ if (null !== $post_type) {
         */
         case "show_details_item":
             // Check KEY and rights
+            $_SESSION['user_settings']['show_step2'] = false;
             if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
@@ -1752,6 +1753,8 @@ if (null !== $post_type) {
             }
             $arrData['timestamp'] = time();
 
+            $_SESSION['user_settings']['show_step2'] = true;
+
             // Encrypt data to return
             echo prepareExchangedData($arrData, "encode");
             break;
@@ -1762,144 +1765,191 @@ if (null !== $post_type) {
         */
         case "showDetailsStep2":
             // get Item info
-            $dataItem = DB::queryfirstrow(
-                "SELECT * FROM ".prefix_table("items")." 
-                WHERE id=%i",
-                $post_id
-            );
-
-            // Check if the folder where this item is, is accessible to the user
-            if (!in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) {
+            if ($_SESSION['user_settings']['show_step2'] !== true) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
                 break;
             }
 
-            // GET Audit trail
-            $history = "";
-            $historyOfPws = "";
-            $rows = DB::query(
-                "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login, l.raison_iv AS raison_iv
-                FROM ".prefix_table("log_items")." as l
-                LEFT JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
-                WHERE id_item=%i AND action <> %s
-                ORDER BY date ASC",
-                $post_id,
-                "at_shown"
+            // Load item data
+            $dataItem = DB::queryFirstRow(
+                "SELECT *
+                FROM ".prefix_table("items")."
+                WHERE id = %i",
+                $post_id
             );
-            foreach ($rows as $record) {
-                $reason = explode(':', $record['raison']);
-                if ($record['action'] === "at_modification" && $reason[0] === "at_pw ") {
-                    // check if item is PF
-                    if ($dataItem['perso'] != 1) {
-                        $reason[1] = cryption(
-                            $reason[1],
-                            "",
-                            "decrypt"
-                        );
-                    } else {
-                        $reason[1] = cryption(
-                            $reason[1],
-                            $_SESSION['user_settings']['session_psk'],
-                            "decrypt"
-                        );
-                    }
-                    $reason[1] = @$reason[1]['string'];
-                    // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
-                    if (!isUTF8($reason[1]) || is_array($reason[1])) {
-                        $reason[1] = "";
-                    }
-                }
-                // imported via API
-                if (empty($record['login'])) {
-                    $record['login'] = $LANG['imported_via_api'];
-                }
 
-                if (!empty($reason[1]) || $record['action'] === "at_copy" || $record['action'] === "at_creation" || $record['action'] === "at_manual" || $record['action'] === "at_modification" || $record['action'] === "at_delete" || $record['action'] === "at_restored") {
-                    if (trim($reason[0]) === "at_pw" && empty($reason[1]) === false) {
-                        if (empty($historyOfPws)) {
-                            $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
+            // check that actual user can access this item
+            $restrictionActive = true;
+            $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+            if (in_array($_SESSION['user_id'], $restrictedTo)) {
+                $restrictionActive = false;
+            }
+            if (empty($dataItem['restricted_to'])) {
+                $restrictionActive = false;
+            }
+
+
+            // Check if user has a role that is accepted
+            $rows_tmp = DB::query(
+                "SELECT role_id
+                FROM ".prefix_table("restriction_to_roles")."
+                WHERE item_id=%i",
+                $post_id
+            );
+            foreach ($rows_tmp as $rec_tmp) {
+                if (in_array($rec_tmp['role_id'], explode(';', $_SESSION['fonction_id']))) {
+                    $restrictionActive = false;
+                }
+            }
+
+            // check user is admin
+            if ($_SESSION['user_admin'] === '1' && $dataItem['perso'] != 1 && (isset($SETTINGS_EXT['admin_full_right']) && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
+                $arrData['show_details'] = 0;
+            // Check if actual USER can see this ITEM
+            } elseif ((
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                ||
+                (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
+                ||
+                (null !== $post_folder_id
+                    && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
+                    && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id])
+                    && $post_restricted === '1'
+                    && $user_in_restricted_list_of_item === true)
+                ||
+                (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === '1'
+                    && $restrictionActive === false
+                )
+            ) {
+                // GET Audit trail
+                $history = "";
+                $historyOfPws = "";
+                $rows = DB::query(
+                    "SELECT l.date as date, l.action as action, l.raison as raison, u.login as login, l.raison_iv AS raison_iv
+                    FROM ".prefix_table("log_items")." as l
+                    LEFT JOIN ".prefix_table("users")." as u ON (l.id_user=u.id)
+                    WHERE id_item=%i AND action <> %s
+                    ORDER BY date ASC",
+                    $post_id,
+                    "at_shown"
+                );
+                foreach ($rows as $record) {
+                    $reason = explode(':', $record['raison']);
+                    if ($record['action'] === "at_modification" && $reason[0] === "at_pw ") {
+                        // check if item is PF
+                        if ($dataItem['perso'] != 1) {
+                            $reason[1] = cryption(
+                                $reason[1],
+                                "",
+                                "decrypt"
+                            );
                         } else {
-                            $historyOfPws .= "\n".$reason[1];
+                            $reason[1] = cryption(
+                                $reason[1],
+                                $_SESSION['user_settings']['session_psk'],
+                                "decrypt"
+                            );
+                        }
+                        $reason[1] = @$reason[1]['string'];
+                        // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
+                        if (!isUTF8($reason[1]) || is_array($reason[1])) {
+                            $reason[1] = "";
+                        }
+                    }
+                    // imported via API
+                    if (empty($record['login'])) {
+                        $record['login'] = $LANG['imported_via_api'];
+                    }
+
+                    if (!empty($reason[1]) || $record['action'] === "at_copy" || $record['action'] === "at_creation" || $record['action'] === "at_manual" || $record['action'] === "at_modification" || $record['action'] === "at_delete" || $record['action'] === "at_restored") {
+                        if (trim($reason[0]) === "at_pw" && empty($reason[1]) === false) {
+                            if (empty($historyOfPws)) {
+                                $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
+                            } else {
+                                $historyOfPws .= "\n".$reason[1];
+                            }
                         }
                     }
                 }
-            }
 
-            // generate 2d key
-            $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
+                // generate 2d key
+                $_SESSION['key_tmp'] = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
 
-            // Prepare files listing
-            $files = $filesEdit = "";
-            // launch query
-            $rows = DB::query("SELECT id, name, file, extension FROM ".prefix_table("files")." WHERE id_item=%i", $post_id);
-            foreach ($rows as $record) {
-                // get icon image depending on file format
-                $iconImage = fileFormatImage($record['extension']);
+                // Prepare files listing
+                $files = $filesEdit = "";
+                // launch query
+                $rows = DB::query("SELECT id, name, file, extension FROM ".prefix_table("files")." WHERE id_item=%i", $post_id);
+                foreach ($rows as $record) {
+                    // get icon image depending on file format
+                    $iconImage = fileFormatImage($record['extension']);
 
-                // prepare text to display
-                if (strlen($record['name']) > 60 && strrpos($record['name'], ".") >= 56) {
-                    $filename = substr($record['name'], 0, 50)."(...)".substr($record['name'], strrpos($record['name'], "."));
+                    // prepare text to display
+                    if (strlen($record['name']) > 60 && strrpos($record['name'], ".") >= 56) {
+                        $filename = substr($record['name'], 0, 50)."(...)".substr($record['name'], strrpos($record['name'], "."));
+                    } else {
+                        $filename = $record['name'];
+                    }
+
+                    // If file is an image, then prepare lightbox. If not image, then prepare donwload
+                    if (in_array($record['extension'], $SETTINGS_EXT['image_file_ext'])) {
+                        $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a></div>';
+                    } else {
+                        $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
+                    }
+                    // Prepare list of files for edit dialogbox
+                    $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
+                }
+                // display lists
+                $filesEdit = str_replace('"', '&quot;', $filesEdit);
+                $files_id = $files;
+
+                // disable add bookmark if alread bookmarked
+                if (in_array($post_id, $_SESSION['favourites'])) {
+                    $favourite = 1;
                 } else {
-                    $filename = $record['name'];
+                    $favourite = 0;
                 }
 
-                // If file is an image, then prepare lightbox. If not image, then prepare donwload
-                if (in_array($record['extension'], $SETTINGS_EXT['image_file_ext'])) {
-                    $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-image-o\' /></i>&nbsp;<a class=\'image_dialog\' href=\'#'.$record['id'].'\' title=\''.$record['name'].'\'>'.$filename.'</a></div>';
-                } else {
-                    $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
+                // Add the fact that item has been viewed in logs
+                if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1') {
+                    logItems($post_id, $dataItem['label'], $_SESSION['user_id'], 'at_shown', $_SESSION['login']);
                 }
-                // Prepare list of files for edit dialogbox
-                $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
-            }
-            // display lists
-            $filesEdit = str_replace('"', '&quot;', $filesEdit);
-            $files_id = $files;
 
-            // disable add bookmark if alread bookmarked
-            if (in_array($post_id, $_SESSION['favourites'])) {
-                $favourite = 1;
-            } else {
-                $favourite = 0;
-            }
-
-            // Add the fact that item has been viewed in logs
-            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1') {
-                logItems($post_id, $dataItem['label'], $_SESSION['user_id'], 'at_shown', $_SESSION['login']);
-            }
-
-            // Add this item to the latests list
-            if (isset($_SESSION['latest_items']) && isset($SETTINGS['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
-                if (count($_SESSION['latest_items']) >= $SETTINGS['max_latest_items']) {
-                    array_pop($_SESSION['latest_items']); //delete last items
+                // Add this item to the latests list
+                if (isset($_SESSION['latest_items']) && isset($SETTINGS['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
+                    if (count($_SESSION['latest_items']) >= $SETTINGS['max_latest_items']) {
+                        array_pop($_SESSION['latest_items']); //delete last items
+                    }
+                    array_unshift($_SESSION['latest_items'], $dataItem['id']);
+                    // update DB
+                    DB::update(
+                        prefix_table("users"),
+                        array(
+                            'latest_items' => implode(';', $_SESSION['latest_items'])
+                            ),
+                        "id=".$_SESSION['user_id']
+                    );
                 }
-                array_unshift($_SESSION['latest_items'], $dataItem['id']);
-                // update DB
-                DB::update(
-                    prefix_table("users"),
+
+                // has this item a change proposal
+                DB::query("SELECT * FROM ".$pre."items_change WHERE item_id = %i", $post_id);
+
+                $_SESSION['user_settings']['show_step2'] = false;
+
+                echo prepareExchangedData(
                     array(
-                        'latest_items' => implode(';', $_SESSION['latest_items'])
-                        ),
-                    "id=".$_SESSION['user_id']
+                        "history" => htmlspecialchars($history, ENT_QUOTES, 'UTF-8'),
+                        "history_of_pwds" => htmlspecialchars($historyOfPws, ENT_QUOTES, 'UTF-8'),
+                        "favourite" => $favourite,
+                        "files_edit" => $filesEdit,
+                        "files_id" => $files_id,
+                        "has_change_proposal" => DB::count(),
+                        "error" => ""
+                    ),
+                    "encode"
                 );
             }
-
-            // has this item a change proposal
-            DB::query("SELECT * FROM ".$pre."items_change WHERE item_id = %i", $post_id);
-
-            echo prepareExchangedData(
-                array(
-                    "history" => htmlspecialchars($history, ENT_QUOTES, 'UTF-8'),
-                    "history_of_pwds" => htmlspecialchars($historyOfPws, ENT_QUOTES, 'UTF-8'),
-                    "favourite" => $favourite,
-                    "files_edit" => $filesEdit,
-                    "files_id" => $files_id,
-                    "has_change_proposal" => DB::count(),
-                    "error" => ""
-                ),
-                "encode"
-            );
             break;
 
         /*
