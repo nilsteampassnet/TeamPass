@@ -1119,8 +1119,8 @@ function mainQuery()
             }
 
             if (isset($SETTINGS['send_statistics_items']) && isset($SETTINGS['send_stats']) && isset($SETTINGS['send_stats_time'])
-                && $SETTINGS['send_stats'] === "1"
-                && ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
+                //&& $SETTINGS['send_stats'] === "1"
+                //&& ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
             ) {
                 // get statistics data
                 $stats_data = getStatisticsData();
@@ -1158,10 +1158,10 @@ function mainQuery()
 
                 // connect to Teampass Statistics database
                 $link2 = new MeekroDB(
-                    "teampass.pw",
-                    "tp_stats",
-                    "KI6pIYk5ZSAA9ZsknnOC",
-                    "teampass_statistics",
+                    "sql11.freemysqlhosting.net",
+                    "sql11197223",
+                    "3QzpXYQ9dZ",
+                    "statistics",
                     "3306",
                     "utf8"
                 );

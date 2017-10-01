@@ -1048,5 +1048,16 @@ function changeEncrypMode(id, encrypted_data) {
         "json"
    );
 }
+
+/*
+**
+*/
+function generateAndStoreBackupPass() {
+    $.when(
+        generateRandomKey('bck_script_passkey', '40', 'true', 'true', 'false', 'false')
+    ).then(function(x) {
+        updateSetting('bck_script_passkey');
+    });
+}
 //]]>
 </script>

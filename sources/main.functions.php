@@ -2127,7 +2127,7 @@ function accessToItemIsGranted($item_id)
     );
 
     // Check if user can access this folder
-    if (!in_array($data['id'], $_SESSION['groupes_visibles'])) {
+    if (!in_array($data['id_tree'], $_SESSION['groupes_visibles'])) {
         return "ERR_FOLDER_NOT_ALLOWED";
     }
 

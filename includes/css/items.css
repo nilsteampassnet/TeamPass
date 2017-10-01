@@ -111,7 +111,7 @@ button{
 
 #full_items_list{
     margin-left: -36px;
-    width: 673px;
+    max-width: 673px;
 }
 
 #item_details_ok{
