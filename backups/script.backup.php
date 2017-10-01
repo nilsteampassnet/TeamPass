@@ -35,7 +35,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 
 // Check provided key
 if (isset($_GET['key']) === false || empty($_GET['key']) === true) {
-    echo '[{"Error":"no_key_provided"}]';
+    echo '[{"error":"no_key_provided"}]';
     return false;
 }
 
@@ -48,12 +48,12 @@ foreach ($rows as $record) {
 // Check if key is conform
 if (!empty($settings['bck_script_passkey']) && !empty($settings['bck_script_passkey'])) {
     $currentKey = cryption(
-        $_GET['key'],
+        $settings['bck_script_passkey'],
         "",
         "decrypt"
     )['string'];
-    if ($currentKey !== $settings['bck_script_passkey']) {
-        echo '[{"Error":"not_allowed"}]';
+    if ($currentKey !== $_GET['key']) {
+        echo '[{"error":"not_allowed"}]';
         return false;
     }
 }
@@ -135,4 +135,6 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
             "UPDATE `".$pre."misc` SET `valeur` = '".$bck_filename."' WHERE type = 'backup' AND intitule = 'filename'"
         );
     }
+
+    echo '[{"error":"" , "status":"success"}]';
 }
