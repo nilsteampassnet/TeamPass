@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'admin_script_backup_secret' => 'Passkey for backup execution',
+    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
     'text' => 'Text',
     'masked' => 'Masked',
     'type' => 'Type',
