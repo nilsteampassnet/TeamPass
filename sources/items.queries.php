@@ -1762,10 +1762,14 @@ if (null !== $post_type) {
         */
         case "showDetailsStep2":
             // get Item info
-            $dataItem = DB::queryfirstrow("SELECT * FROM ".prefix_table("items")." WHERE id=%i", $post_id);
+            $dataItem = DB::queryfirstrow(
+                "SELECT * FROM ".prefix_table("items")." 
+                WHERE id=%i",
+                $post_id
+            );
 
             // Check if the folder where this item is, is accessible to the user
-            if (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) {
+            if (!in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
                 break;

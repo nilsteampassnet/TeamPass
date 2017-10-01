@@ -1,4 +1,15 @@
 2.1.27
+ 9/
+ Fixed a possible XSS (credit to ADLab of Venustech)
+ Improved security related to User Management
+ 	> a manager could potentially act on users not related to him
+ Improved security related to Items Management
+ 	> a user could potentially act on Items he should not have access to
+ Securized script.backup.php by adding a security key
+ Fixed some other security failures (credit to ​security at Amossys)
+ #1945 Cannot delete items
+ #1944 File upload results in error
+ #1941 Visualisation problems
 
  8/
  Delete install folders and files during installation process

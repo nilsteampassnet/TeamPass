@@ -1281,8 +1281,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 "folder_id" : $('#hid_cat').val(),
                 "salt_key_required" : $('#recherche_group_pf').val(),
                 "salt_key_set" : $('#personal_sk_set').val(),
-                "expired_item" : expired_item,
-                "restricted" : restricted,
+                "expired_item" : expired_item === undefined ? "" : expired_item,
+                "restricted" : expired_item === undefined ? "" : expired_item,
                 "page" : "items"
             };
 
@@ -1673,6 +1673,7 @@ function showDetailsStep2(id, param)
             if (data.error !== "") {
                 $("#div_dialog_message_text").html(data.error_text);
                 $("#div_dialog_message").show();
+                return false;
             }
 
             $("#item_history_log").html(htmlspecialchars_decode(data.history));
@@ -1701,7 +1702,7 @@ function showDetailsStep2(id, param)
             }
 
             // set indicator if item has change proposal
-            if (data.has_change_proposal !== 0) {
+            if (parseInt(data.has_change_proposal) > 0) {
                 $("#item_extra_info").prepend('<i class="fa fa-lightbulb-o fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['item_has_change_proposal']); ?>" onclick=""></i>&nbsp;');
             }
 

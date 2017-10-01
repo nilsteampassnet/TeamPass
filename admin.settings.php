@@ -1290,7 +1290,7 @@ echo '
                         <td>
                         <input id="bck_script_passkey" name="bck_script_passkey" type="text" size="50px" value="', isset($SETTINGS['bck_script_passkey']) ? $currentKey : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
                         &nbsp;
-                        <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="generateRandomKey(\'bck_script_passkey\', \'40\', \'true\', \'true\', \'false\', \'false\');$(\'#bck_script_passkey\').focus().delay(1000);" style="cursor:pointer;">
+                        <span class="fa-stack tip" title="'.htmlentities(strip_tags($LANG['pw_generate']), ENT_QUOTES).'" onclick="generateAndStoreBackupPass();" style="cursor:pointer;">
                             <i class="fa fa-square fa-stack-2x"></i>
                             <i class="fa fa-cogs fa-stack-1x fa-inverse"></i>
                         </span>
