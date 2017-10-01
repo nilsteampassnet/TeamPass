@@ -2125,10 +2125,18 @@ function accessToItemIsGranted($item_id)
         WHERE id = %i",
         $item_id
     );
-
+//echo in_array($item_id, $_SESSION['list_restricted_folders_for_items'][$data['id_tree']])." - ".$item_id." - ".$data['id_tree']." - ";
+print_r($_SESSION['list_folders_editable_by_role']);
     // Check if user can access this folder
     if (!in_array($data['id_tree'], $_SESSION['groupes_visibles'])) {
-        return "ERR_FOLDER_NOT_ALLOWED";
+        // Now check if this folder is restricted to user
+        if (isset($_SESSION['list_restricted_folders_for_items'][$data['id_tree']])
+            && !in_array($item_id, $_SESSION['list_restricted_folders_for_items'][$data['id_tree']])
+        ) {
+            return "ERR_FOLDER_NOT_ALLOWED";
+        } else {
+            return "ERR_FOLDER_NOT_ALLOWED";
+        }
     }
 
     return true;
