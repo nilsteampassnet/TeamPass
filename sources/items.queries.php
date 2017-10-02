@@ -452,8 +452,10 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Update CACHE table
-            updateCacheTable("add_value", $newID);
+            // Add item to CACHE table if new item has been created
+            if($newID){
+                updateCacheTable("add_value", $newID);
+            }
 
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
