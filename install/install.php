@@ -117,24 +117,23 @@ echo '
     <ul>
     <li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
     <li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
-    <li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check18"></span></li>
-    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check13"></span></li>
-    <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
-    <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>
-    <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check15"></span></li>
-    <li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check16"></span></li>
-    <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check17"></span></li>
-    <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check4"></span></li>
-    <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check5"></span></li>
-    <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>
-    <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check7"></span></li>
-    <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
+    <li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>
+    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check3"></span></li>
+    <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
+    <li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
+    <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
+    <li>Directory "/files/" is writable&nbsp;<span id="res2_check7"></span></li>
+    <li>Directory "/upload/" is writable&nbsp;<span id="res2_check8"></span></li>
+    <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check9"></span></li>
+    <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check10"></span></li>
+    <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check11"></span></li>
+    <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check12"></span></li>
+    <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check13"></span></li>
     <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check14"></span></li>
-    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check9"></span></li>
-    <li>PHP extension "curl" is loaded&nbsp;<span id="res2_check19"></span></li>
-    <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check10"></span></li>
-    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check11"></span></li>
-    <li>Execution time limit&nbsp;<span id="res2_check12"></span></li>
+    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check15"></span></li>
+    <li>PHP extension "curl" is loaded&nbsp;<span id="res2_check16"></span></li>
+    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check17"></span></li>
+    <li>Execution time limit&nbsp;<span id="res2_check18"></span></li>
     </ul>
 </div>';
 
