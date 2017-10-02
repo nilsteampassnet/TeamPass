@@ -36,7 +36,6 @@ Teampass is a Collaborative Passwords Manager
   * gd
   * openssl
   * curl
-* Function 'mysqli_fetch_all'
 
 ## Usage
 
