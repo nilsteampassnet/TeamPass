@@ -252,7 +252,10 @@ function LaunchAdminActions(action, option)
     if (action === "admin_action_db_backup") {
         option = $("#result_admin_action_db_backup_key").val();
     } else if (action === "admin_action_db_restore") {
-        $("#restore_bck_encryption_key_dialog_error").html("").hide();
+        $("#restore_bck_encryption_key_dialog_error")
+            .html("<span class='fa fa-cog fa-spin fa'>&nbsp;</span><?php echo addslashes($LANG['please_wait']); ?>")
+            .attr("class","ui-corner-all ui-state-focus")
+            .show();
     } else if (action === "admin_action_backup_decrypt") {
         option = $("#bck_script_decrypt_file").val();
     } else if (action === "admin_action_change_salt_key") {
@@ -293,6 +296,7 @@ function LaunchAdminActions(action, option)
         // convert to json string
         option = prepareExchangedData(JSON.stringify(option) , "encode", "<?php echo $_SESSION['key']; ?>");
     }
+
     //Lauchn ajax query
     $.post(
         "sources/admin.queries.php",
@@ -309,7 +313,10 @@ function LaunchAdminActions(action, option)
                     $("#result_admin_action_check_pf").html("<span class='fa fa-check mi-green'></span>").show();
                 } else if (data[0].result == "db_restore") {
                     if (data[0].message !== "") {
-                        $("#restore_bck_encryption_key_dialog_error").html(data[0].message).show();
+                        $("#restore_bck_encryption_key_dialog_error")
+                            .html(data[0].message)
+                            .attr("class","ui-corner-all ui-state-error")
+                            .show();
                     } else {
                         $("#restore_bck_encryption_key_dialog").dialog("close");
                         $("#result_admin_action_db_restore").html("<span class='fa fa-check mi-green'></span>").show();
@@ -834,6 +841,7 @@ $(function() {
     });
 
     // SQL IMPORT FOR RESTORING
+    var restore_operation_id = '';
     var uploader_restoreDB = new plupload.Uploader({
         runtimes : "gears,html5,flash,silverlight,browserplus",
         browse_button : "pickfiles_restoreDB",
@@ -876,17 +884,15 @@ $(function() {
             BeforeUpload: function (up, file) {
                 $("#import_status_ajax_loader").show();
                 up.settings.multipart_params = {
-                    "PHPSESSID":"'.$_SESSION['user_id'].'",
+                    "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
                     "File":file.name,
                     "type_upload":"restore_db",
                     "user_token": $("#user_token").val()
                 };
             },
             UploadComplete: function(up, files) {
-                $.each(files, function(i, file) {
-                    $("#restore_bck_fileObj").val(file.name);
-                    $("#restore_bck_encryption_key_dialog").dialog("open");
-                });
+                $("#restore_bck_fileObj").val(restore_operation_id);
+                $("#restore_bck_encryption_key_dialog").dialog("open");
             }
         }
     });
@@ -904,6 +910,11 @@ $(function() {
     });
     uploader_restoreDB.bind("+", function(up, file) {
         $("#" + file.id + " b").html("100%");
+    });
+    uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
+        var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+
+        restore_operation_id = myData.operation_id;
     });
     // Load CSV click
     $("#uploadfiles_restoreDB").click(function(e) {

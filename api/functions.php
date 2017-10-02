@@ -188,16 +188,16 @@ function rest_delete()
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".filter_var($array_category[$slot], FILTER_SANITIZE_STRING)."' AND parent_id = 0";
                         } else {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".filter_var($array_category[$slot], FILTER_SANITIZE_STRING)."' AND parent_id = (";
                         }
                     }
                     for ($i = 1; $i < count($array_category); $i++) {
                         $category_query .= ")";
                     }
                 } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".filter_var($array_category[0], FILTER_SANITIZE_STRING)."' AND parent_id = 0";
                 } else {
                     rest_error('NO_CATEGORY');
                 }
@@ -236,22 +236,22 @@ function rest_delete()
                     for ($i = count($array_category); $i > 0; $i--) {
                         $slot = $i - 1;
                         if (!$slot) {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = 0";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".filter_var($array_category[$slot], FILTER_SANITIZE_STRING)."' AND parent_id = 0";
                         } else {
-                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[$slot]."' AND parent_id = (";
+                            $category_query .= "select id from ".prefix_table("nested_tree")." where title LIKE '".filter_var($array_category[$slot], FILTER_SANITIZE_STRING)."' AND parent_id = (";
                         }
                     }
                     for ($i = 1; $i < count($array_category); $i++) {
                         $category_query .= ")";
                     }
                 } elseif (count($array_category) == 1) {
-                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".$array_category[0]."' AND parent_id = 0";
+                    $category_query = "select id from ".prefix_table("nested_tree")." where title LIKE '".filter_var($array_category[0], FILTER_SANITIZE_STRING)."' AND parent_id = 0";
                 } else {
                     rest_error('NO_CATEGORY');
                 }
 
                 // Delete item
-                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.") and label LIKE '".$item."'");
+                $response = DB::delete(prefix_table("items"), "id_tree = (".$category_query.") and label LIKE '".filter_var($item, FILTER_SANITIZE_STRING)."'");
                 $json['type'] = 'item';
                 $json['item'] = $item;
                 $json['category'] = $GLOBALS['request'][2];
@@ -382,7 +382,12 @@ function rest_get()
                 if (strcmp($username, "admin") == 0) {
                     // forbid admin access
                 }
-                $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                $response = DB::query(
+                    "SELECT fonction_id
+                    FROM ".prefix_table("users")."
+                    WHERE login = %s'",
+                    $username
+                );
                 if (count($response) === 0) {
                     rest_error('USER_NOT_EXISTS');
                 }
@@ -392,7 +397,12 @@ function rest_get()
                 $folder_arr = array();
                 $roles = explode(";", $role_str);
                 foreach ($roles as $role) {
-                    $response = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
+                    $response = DB::query(
+                        "SELECT folder_id
+                        FROM ".prefix_table("roles_values")."
+                        WHERE role_id = %i",
+                        $role
+                    );
                     foreach ($response as $data) {
                         $folder_id = $data['folder_id'];
                         if (!array_key_exists($folder_id, $folder_arr)) {
@@ -456,7 +466,12 @@ function rest_get()
                 if (strcmp($username, "admin") == 0) {
                     // forbid admin access
                 }
-                $response = DB::query("SELECT fonction_id FROM ".prefix_table("users")." WHERE login='".$username."'");
+                $response = DB::query(
+                    "SELECT fonction_id
+                    FROM ".prefix_table("users")."
+                    WHERE login = %s",
+                    $username
+                );
                 if (count($response) === 0) {
                     rest_error('USER_NOT_EXISTS');
                 }
@@ -468,13 +483,23 @@ function rest_get()
                 $roles = explode(";", $role_str);
                 $inc = 0;
                 foreach ($roles as $role) {
-                    $response = DB::query("SELECT folder_id, type FROM ".prefix_table("roles_values")." WHERE role_id='".$role."'");
+                    $response = DB::query(
+                        "SELECT folder_id, type
+                        FROM ".prefix_table("roles_values")."
+                        WHERE role_id = %i",
+                        $role
+                    );
                     foreach ($response as $data) {
                         $folder_id = $data['folder_id'];
                         if (!array_key_exists($folder_id, $folder_arr)) {
                             array_push($folder_arr, $folder_id);
 
-                            $response2 = DB::queryFirstRow("SELECT title, nlevel FROM ".prefix_table("nested_tree")." WHERE id='".$folder_id."'");
+                            $response2 = DB::queryFirstRow(
+                                "SELECT title, nlevel
+                                FROM ".prefix_table("nested_tree")."
+                                WHERE id = %i",
+                                $folder_id
+                            );
 
                             if (!empty($response2['title'])) {
                                 $json[$folder_id]['id'] = $folder_id;
@@ -667,7 +692,13 @@ function rest_get()
                     // check if element doesn't already exist
                     $item_duplicate_allowed = getSettingValue("duplicate_item");
                     if ($item_duplicate_allowed !== "1") {
-                        DB::query("SELECT * FROM ".prefix_table("items")." WHERE label = %s AND inactif = %i", addslashes($item_label), "0");
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("items")."
+                            WHERE label = %s AND inactif = %i",
+                            addslashes($item_label),
+                            "0"
+                        );
                         $counter = DB::count();
                         if ($counter != 0) {
                             $itemExists = 1;
@@ -804,8 +835,9 @@ function rest_get()
                 }
                 // Check if user already exists
                 $data = DB::query(
-                    "SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM ".prefix_table("users")."
-            WHERE login LIKE %ss",
+                    "SELECT id, fonction_id, groupes_interdits, groupes_visibles
+                    FROM ".prefix_table("users")."
+                    WHERE login LIKE %ss",
                     mysqli_escape_string($link, stripslashes($login))
                 );
 
@@ -821,7 +853,9 @@ function rest_get()
 
                         // get default language
                         $lang = DB::queryFirstRow(
-                            "SELECT `valeur` FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+                            "SELECT `valeur`
+                            FROM ".prefix_table("misc")."
+                            WHERE type = %s AND intitule = %s",
                             "admin",
                             "default_language"
                         );
@@ -830,7 +864,9 @@ function rest_get()
                         $rolesList = "";
                         foreach (explode(',', $roles) as $role) {//echo $role."-";
                             $tmp = DB::queryFirstRow(
-                                "SELECT `id` FROM ".prefix_table("roles_title")." WHERE title = %s",
+                                "SELECT `id`
+                                FROM ".prefix_table("roles_title")."
+                                WHERE title = %s",
                                 $role
                             );
                             if (empty($rolesList)) {
@@ -944,7 +980,12 @@ function rest_get()
                         );
                         // if valeur = 0 then duplicate folders not allowed
                         if ($data === 0) {
-                            DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE title = %s", $params[0]);
+                            DB::query(
+                                "SELECT *
+                                FROM ".prefix_table("nested_tree")."
+                                WHERE title = %s",
+                                $params[0]
+                            );
                             $counter = DB::count();
                             if ($counter != 0) {
                                 rest_error('ALREADY_EXISTS');
@@ -1035,7 +1076,12 @@ function rest_get()
                         }
 
                         // Check Folder ID
-                        DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $params[3]);
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %i",
+                            $params[3]
+                        );
                         $counter = DB::count();
                         if ($counter == 0) {
                             rest_error('NOSUCHFOLDER');
@@ -1043,7 +1089,9 @@ function rest_get()
 
                         // check if item exists
                         DB::query(
-                            "SELECT * FROM ".prefix_table("items")." WHERE id = %i",
+                            "SELECT *
+                            FROM ".prefix_table("items")."
+                            WHERE id = %i",
                             $GLOBALS['request'][2]
                         );
                         $counter = DB::count();
@@ -1094,7 +1142,9 @@ function rest_get()
                                     if (!empty($tag)) {
                                         // check if already exists
                                         DB::query(
-                                            "SELECT * FROM ".prefix_table("tags")." WHERE tag = %s AND item_id = %i",
+                                            "SELECT *
+                                            FROM ".prefix_table("tags")."
+                                            WHERE tag = %s AND item_id = %i",
                                             strtolower($tag),
                                             $GLOBALS['request'][2]
                                         );
@@ -1163,7 +1213,12 @@ function rest_get()
                         }
 
                         // check if folder exists and get folder data
-                        $data_folder = DB::queryfirstrow("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %s", $GLOBALS['request'][2]);
+                        $data_folder = DB::queryfirstrow(
+                            "SELECT *
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %s",
+                            $GLOBALS['request'][2]
+                        );
                         $counter = DB::count();
                         if ($counter === 0) {
                             rest_error('NO_DATA_EXIST');
@@ -1252,7 +1307,9 @@ function rest_get()
                 if (isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
+                        FROM ".$pre."users
+                        WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
 
@@ -1345,7 +1402,9 @@ function rest_get()
                     // is user granted?
                     //db::debugMode(true);
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
+                        FROM ".$pre."users
+                        WHERE login = %s",
                         $GLOBALS['request'][2]
                     );
 
@@ -1463,7 +1522,9 @@ function rest_get()
                 if (isset($GLOBALS['request'][1]) && isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
+                        FROM ".$pre."users
+                        WHERE login = %s",
                         $GLOBALS['request'][4]
                     );
                     if (DB::count() == 0) {
@@ -1596,7 +1657,9 @@ function rest_get()
                 if (isset($GLOBALS['request'][1])) {
                     // is user granted?
                     $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk` FROM ".$pre."users WHERE login = %s",
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
+                        FROM ".$pre."users
+                        WHERE login = %s",
                         $GLOBALS['request'][2]
                     );
                     if (DB::count() == 0) {

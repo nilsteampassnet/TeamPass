@@ -549,7 +549,7 @@ echo '
         <div id="tabs-03">
             <div id="item_upload">
                 <div id="item_upload_list"></div><br />
-                <div id="item_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
+                <div id="item_upload_wait" class="ui-state-focus ui-corner-all hidden" style="padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
                 <a id="item_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
                 <input type="hidden" id="files_number" value="0" />
@@ -743,7 +743,7 @@ echo '
             </div>
             <div id="item_edit_upload">
                 <div id="item_edit_upload_list"></div><br />
-                <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
+                <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all hidden" style="padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
                 <a id="item_edit_attach_uploadfiles" href="#sd" class="button">'.$LANG['start_upload'].'</a>
                 <input type="hidden" id="edit_files_number" value="0" />

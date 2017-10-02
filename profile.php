@@ -260,6 +260,7 @@ if (isset($_SESSION['user_language']) && $_SESSION['user_language'] !== "0") {
     );
 }
 ?>
+<script type="text/javascript" src="includes/js/functions.js"></script>
 <script type="text/javascript">
 $(function() {
     $(".tip").tooltipster({multiple: true});
@@ -424,7 +425,6 @@ $(function() {
 
                 up.settings.multipart_params = {
                     "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
-                    "newFileName":"user<?php echo $_SESSION['user_id']; ?>"+tmp,
                     "type_upload":"upload_profile_photo",
                     "user_token": $("#profile_user_token").val()
                 };
@@ -450,12 +450,10 @@ $(function() {
 
      // get response
     uploader_photo.bind("FileUploaded", function(up, file, object) {
-        var myData;
-        try {
-            myData = eval(object.response);
-        } catch(err) {
-            myData = eval('(' + object.response + ')');
-        }
+        // Decode returned data
+        var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+
+        // update form
         $("#profile_photo").html('<img src="includes/avatars/'+myData.filename+'" />');
         $("#user_avatar_thumb").attr('src', 'includes/avatars/'+myData.filename_thumb);
         $("#filelist_photo").html('').hide();
@@ -718,7 +716,5 @@ function changePersonalSaltKey(credentials, ids, nb_total)
             }
         }
     );
-
-
 }
- </script>
+</script>

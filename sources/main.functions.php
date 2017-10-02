@@ -1286,7 +1286,7 @@ function prepareExchangedData($data, $type)
     //load ClassLoader
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+    $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $aes->register();
 
     if ($type == "encode") {
@@ -1372,8 +1372,11 @@ function prefix_table($table)
  */
 function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capitalize = false, $ambiguous = false, $symbols = false)
 {
+    global $SETTINGS;
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
     // load library
-    $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+    $pwgen = new SplClassLoader('Encryption\PwGen', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $pwgen->register();
     $pwgen = new Encryption\PwGen\pwgen();
 

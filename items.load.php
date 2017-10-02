@@ -3361,7 +3361,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         init: {
             BeforeUpload: function (up, file) {
-                $("#item_upload_wait").show();
+                $("#item_upload_wait").removeClass("hidden");
 
                 if ($("#random_id").val() == "") {
                     var post_id = CreateRandomString(9,"num_no_0");
@@ -3470,7 +3470,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         init: {
             BeforeUpload: function (up, file) {
-                $("#item_edit_upload_wait").show();
+                $("#item_edit_upload_wait").removeClass("hidden");
 
                 up.setOption('multipart_params', {
                     PHPSESSID : "<?php echo $_SESSION['user_id']; ?>",

@@ -392,6 +392,23 @@ switch ($post_type) {
         $file = htmlspecialchars($dataPost[0]);
         $key = htmlspecialchars($dataPost[1]);
 
+        // Get filename from database
+        $data = DB::queryFirstRow(
+            "SELECT valeur
+            FROM ".$pre."misc
+            WHERE increment_id = %i",
+            $file
+        );
+
+        $file = $data['valeur'];
+
+        // Delete operation id
+        DB::delete(
+            prefix_table('misc'),
+            "increment_id = %i",
+            $file
+        );
+
         // Undecrypt the file
         if (empty($key) === false) {
             // Decrypt the file
@@ -432,7 +449,7 @@ switch ($post_type) {
         fileDelete($file);
 
         //Show done
-        echo '[{"result":"db_restore"}]';
+        echo '[{"result":"db_restore" , "message":""}]';
         break;
 
     ###########################################################
@@ -483,7 +500,7 @@ switch ($post_type) {
         }
 
         //Show done
-        echo '[{"result":"db_optimize"}]';
+        echo '[{"result":"db_optimize" , "message":""}]';
         break;
 
     ###########################################################

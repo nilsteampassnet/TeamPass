@@ -7,6 +7,8 @@
  	> a user could potentially act on Items he should not have access to
  Securized script.backup.php by adding a security key
  Fixed some other security failures (credit to ​security at Amossys)
+ Improved security regarding uploading files
+ Fixed issue while restoring DB from administration page
  #1945 Cannot delete items
  #1944 File upload results in error
  #1941 Visualisation problems

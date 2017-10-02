@@ -223,10 +223,8 @@ foreach ($folders as $t) {
                     };
                 },
                 UploadComplete: function(up, files) {
-                    $.each(files, function(i, file) {
-                        ImportCSV(csv_filename);
-                        up.splice();    // clear the file queue
-                    });
+                    ImportCSV(csv_filename);
+                    up.splice();    // clear the file queue
                 }
             }
         });
@@ -248,13 +246,9 @@ foreach ($folders as $t) {
             $("#" + file.id + " b").html("100%");
         });
         uploader_csv.bind('FileUploaded', function(upldr, file, object) {
-            var myData;
-            try {
-                myData = eval(object.response);
-            } catch(err) {
-                myData = eval('(' + object.response + ')');
-            }
-            csv_filename = myData.newfilename;
+            var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+
+            csv_filename = myData.operation_id;
         });
 
         // Load CSV click
@@ -337,13 +331,9 @@ foreach ($folders as $t) {
             $("#" + file.id + " b").html("100%");
         });
         uploader_kp.bind('FileUploaded', function(upldr, file, object) {
-            var myData;
-            try {
-                myData = eval(object.response);
-            } catch(err) {
-                myData = eval('(' + object.response + ')');
-            }
-            kp_filename = myData.newfilename;
+            var myData = prepareExchangedData(object.response, "decode", "<?php echo $_SESSION['key']; ?>");
+
+            kp_filename = myData.operation_id;
         });
 
         // Load CSV click
@@ -483,11 +473,11 @@ foreach ($folders as $t) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");
                 $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
                 // Reload page
-                $(this).delay(2000).queue(function() {
+                /*$(this).delay(2000).queue(function() {
                     $("#import_information").effect( "fade", "slow" );
                     document.location = "index.php?page=items";
                     $(this).dequeue();
-                });
+                });*/
             },
             "json"
         );

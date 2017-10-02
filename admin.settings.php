@@ -1618,6 +1618,6 @@ echo '
 <div id="restore_bck_encryption_key_dialog" style="display:none; text-align:center;">
     <input id="restore_bck_encryption_key" name="restore_bck_encryption_key" type="text" value="" />
     <br>
-    <div class=ui-state-error ui-corner-all" style="display:none;padding:5px;display:none;margin:2px;" id="restore_bck_encryption_key_dialog_error"></div>
+    <div class="ui-state-error ui-corner-all" style="display:none;padding:5px;display:none;margin:2px;" id="restore_bck_encryption_key_dialog_error"></div>
 </div>';
 include "admin.settings.load.php";
