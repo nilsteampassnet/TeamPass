@@ -43,7 +43,7 @@ if (isset($SETTINGS['send_statistics_items'])) {
 }
 
 echo '
-<input type="hidden" id="setting_send_stats" value="',isset($SETTINGS['send_stats']) ? $SETTINGS['send_stats'] : '0', '" />
+<input type="hidden" id="setting_send_stats" value="', isset($SETTINGS['send_stats']) ? $SETTINGS['send_stats'] : '0', '" />
 <div class="title ui-widget-content ui-corner-all">'.$LANG['thku'].' <span style="float:right;">', isset($SETTINGS_EXT['version_full']) ? '<span class="fa fa-plug"></span>&nbsp;'.$SETTINGS_EXT['version_full'] : '', '</span></div>
 
 <div style="margin:auto; line-height:20px; padding:10px;" id="tabs">

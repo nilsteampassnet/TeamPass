@@ -1119,8 +1119,8 @@ function mainQuery()
             }
 
             if (isset($SETTINGS['send_statistics_items']) && isset($SETTINGS['send_stats']) && isset($SETTINGS['send_stats_time'])
-                //&& $SETTINGS['send_stats'] === "1"
-                //&& ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
+                && $SETTINGS['send_stats'] === "1"
+                && ($SETTINGS['send_stats_time'] + $SETTINGS_EXT['one_day_seconds']) > time()
             ) {
                 // get statistics data
                 $stats_data = getStatisticsData();
@@ -1186,6 +1186,9 @@ function mainQuery()
                 //permits to test only once by session
                 $_SESSION['temporary']['send_stats_done'] = true;
                 $SETTINGS['send_stats_time'] = time();
+        
+                // save change in config file
+                handleConfigFile("update", 'send_stats_time', $SETTINGS['send_stats_time']);
 
                 echo '[ { "error" : "'.$err.'" , "done" : "1"} ]';
             } else {

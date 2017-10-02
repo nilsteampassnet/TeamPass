@@ -446,7 +446,7 @@ switch ($post_type) {
         }
 
         //delete file
-        fileDelete($file);
+        unlink($SETTINGS['path_to_files_folder']."/".$file);
 
         //Show done
         echo '[{"result":"db_restore" , "message":""}]';
@@ -2015,6 +2015,9 @@ switch ($post_type) {
             $SETTINGS['send_stats'] = "0";
         }
 
+        // save change in config file
+        handleConfigFile("update", 'send_stats', $SETTINGS['send_stats']);
+
         // send statistics items
         if (null !== $post_list) {
             DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
@@ -2043,6 +2046,9 @@ switch ($post_type) {
         } else {
             $SETTINGS['send_statistics_items'] = "";
         }
+        
+        // save change in config file
+        handleConfigFile("update", 'send_statistics_items', $SETTINGS['send_statistics_items']);
 
         // send data
         echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';

@@ -211,9 +211,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
             // close file
             fclose($fp);
-
-            // remove file
-            fileDelete($file);
         } else {
             echo '[{"error":"cannot_open"}]';
             break;
@@ -254,6 +251,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Show results to user.
             echo '[{"error":"no" , "output" : "'.$display.'"}]';
         }
+        
+        //delete file
+        unlink($file);
 
         break;
 
@@ -1015,7 +1015,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['path_to_files_folder']."/".$file);
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
