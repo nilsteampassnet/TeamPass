@@ -310,8 +310,12 @@ if (!$chunks || $chunk == $chunks - 1) {
     die();
 }
 
+// phpcrypt
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
+use PHP_Crypt\PHP_Crypt as PHP_Crypt;
+
 // generate file name
-$newFileName = GenerateCryptKey(40, false, true, true, false, false);
+$newFileName = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
 
 //Connect to mysql server
 require_once '../../includes/config/settings.php';

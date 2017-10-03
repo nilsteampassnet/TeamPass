@@ -1324,8 +1324,7 @@ switch ($post_type) {
             // Loop on files
             $rows = DB::query(
                 "SELECT id, file, status
-                FROM ".prefix_table("files")."
-                LIMIT ".$post_start.", ". $post_length
+                FROM ".prefix_table("files")
             );
             foreach ($rows as $record) {
                 if (is_file($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
@@ -1336,11 +1335,11 @@ switch ($post_type) {
                         $addFile = 1;
                     }
 
-                    if ($addFile === '1') {
-                        if (empty($filesList)) {
-                            $filesList = $entry;
+                    if ($addFile === 1) {
+                        if (empty($filesList) === true) {
+                            $filesList = $record['id'];
                         } else {
-                            $filesList .= ";".$entry;
+                            $filesList .= ";".$record['id'];
                         }
                     }
                 }
@@ -1382,28 +1381,36 @@ switch ($post_type) {
         $filesList = explode(';', $post_list);
         foreach ($filesList as $file) {
             if ($cpt < 5) {
+                // Get file name
+                $file_info = DB::queryfirstrow(
+                    "SELECT file
+                    FROM ".prefix_table("files")."
+                    WHERE id = %i",
+                    $file
+                );
+
                 // skip file is Coherancey not respected
-                if (is_file($SETTINGS['path_to_upload_folder'].'/'.$file)) {
+                if (is_file($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'])) {
                     // Case where we want to decrypt
                     if ($post_option === "decrypt") {
                         prepareFileWithDefuse(
                             'decrypt',
-                            $SETTINGS['path_to_upload_folder'].'/'.$file,
-                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file
+                            $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file']
                         );
                     // Case where we want to encrypt
                     } elseif ($post_option === "encrypt") {
                         prepareFileWithDefuse(
                             'encrypt',
-                            $SETTINGS['path_to_upload_folder'].'/'.$file,
-                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file
+                            $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file']
                         );
                     }
                     // Do file cleanup
-                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file);
+                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file_info['file']);
                     rename(
-                        $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file,
-                        $SETTINGS['path_to_upload_folder'].'/'.$file
+                        $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file'],
+                        $SETTINGS['path_to_upload_folder'].'/'.$file_info['file']
                     );
 
                     // store in DB
@@ -1412,7 +1419,7 @@ switch ($post_type) {
                             array(
                                 'status' => $post_option === "decrypt" ? "clear" : "encrypted"
                                 ),
-                            "file=%s",
+                            "id = %i",
                             $file
                         );
 
@@ -2046,7 +2053,7 @@ switch ($post_type) {
         } else {
             $SETTINGS['send_statistics_items'] = "";
         }
-        
+
         // save change in config file
         handleConfigFile("update", 'send_statistics_items', $SETTINGS['send_statistics_items']);
 

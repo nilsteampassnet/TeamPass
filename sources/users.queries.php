@@ -929,8 +929,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
-            $data_user = DB::queryfirstrow(
-                "SELECT admin, isAdministratedByRole, gestionnaire
+            $rowUser = DB::queryfirstrow(
+                "SELECT *
                 FROM ".prefix_table("users")."
                 WHERE id = %i",
                 $post_id
@@ -938,8 +938,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Is this user allowed to do this?
             if ($_SESSION['is_admin'] === "1"
-                || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
-                || ($_SESSION['user_can_manage_all_users'] === "1" && $data_user['admin'] !== "1")
+                || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']))
+                || ($_SESSION['user_can_manage_all_users'] === "1" && $rowUser['admin'] !== "1")
             ) {
                 $arrData = array();
                 $arrFunction = array();
@@ -951,14 +951,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
                 $tree->register();
                 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-
-                // get User info
-                $rowUser = DB::queryFirstRow(
-                    "SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, gestionnaire, read_only, can_create_root_folder, personal_folder, can_manage_all_users, admin
-                    FROM ".prefix_table("users")."
-                    WHERE id = %i",
-                    $post_id
-                );
 
                 // get FUNCTIONS
                 $functionsList = "";
@@ -1275,7 +1267,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 WHERE id = %i",
                 $post_id
             );
-            
+
             // Is this user allowed to do this?
             if ($_SESSION['is_admin'] === "1"
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
@@ -1555,7 +1547,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 WHERE id = %i",
                 $post_source_id
             );
-            
+
             // Is this user allowed to do this?
             if ($_SESSION['is_admin'] === "1"
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))

@@ -1491,7 +1491,7 @@ if (null !== $post_type) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] == $_SESSION['user_id'])) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -1753,8 +1753,11 @@ if (null !== $post_type) {
                 }
                 $arrData['restricted_to'] = $listOfRestricted;
             }
+
+            // Set a timestamp
             $arrData['timestamp'] = time();
 
+            // Set temporary session variable to allow step2
             $_SESSION['user_settings']['show_step2'] = true;
 
             // Encrypt data to return
@@ -1766,7 +1769,7 @@ if (null !== $post_type) {
            * Display History of the selected Item
         */
         case "showDetailsStep2":
-            // get Item info
+            // Is this query expected (must be run after a step1 and not standalone)
             if ($_SESSION['user_settings']['show_step2'] !== true) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
@@ -1810,7 +1813,7 @@ if (null !== $post_type) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] === $_SESSION['user_id'])) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||

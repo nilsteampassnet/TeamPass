@@ -9,6 +9,8 @@
  Fixed some other security failures (credit to ​security at Amossys)
  Improved security regarding uploading files
  Fixed issue while restoring DB from administration page
+ Improved / Fixed administration task for encrypting/decrypting files
+ Improved security regarding item history display
  #1947 Dependency & array update in install checks
  #1945 Cannot delete items
  #1944 File upload results in error

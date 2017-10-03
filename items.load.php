@@ -1653,8 +1653,8 @@ function showDetailsStep2(id, param)
     $.post(
         "sources/items.queries.php",
         {
-        type     : "showDetailsStep2",
-        id         : id
+        type    : "showDetailsStep2",
+        id      : id
         },
         function(data) {
             //decrypt data

@@ -97,7 +97,7 @@ echo '
 <table style="margin-left:7px;">
     <tr>
         <td rowspan="4" style="width:94px">
-            <div id="profile_photo" class="ui-widget ui-state-highlight" style="padding:2px; text-align:center;"><img src="'.$avatar.'" /></div>
+            <div id="profile_photo" class="ui-widget ui-state-highlight tip" style="padding:2px; text-align:center; cursor:pointer;" title="'.$LANG['upload_new_avatar'].'"><img src="'.$avatar.'" /></div>
         </td>
         <td style="width:70px;">&nbsp;'.$LANG['name'].':</td>
         <td><b>', isset($_SESSION['name']) && !empty($_SESSION['name']) ? $_SESSION['name'].' '.$_SESSION['lastname'] : $_SESSION['login'], '</b></td>
@@ -119,8 +119,7 @@ echo '
 <div style="float:left; margin-left:10px;">
    <ul class="menu" style="">
       <li class="menu_150" style="padding:4px; text-align:left;"><i class="fa fa-bars fa-fw"></i>&nbsp;'.$LANG['admin_actions_title'].'
-         <ul class="menu_250" style="text-align:left;">
-            <li id="but_pickfiles_photo"><i class="fa fa-camera fa-fw"></i> &nbsp;'.$LANG['upload_new_avatar'].'</li>';
+         <ul class="menu_250" style="text-align:left;">';
 if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
     echo '
             <li id="but_change_password"><i class="fa fa-key fa-fw"></i> &nbsp;'.$LANG['index_change_pw'].'</li>';
@@ -379,7 +378,7 @@ $(function() {
     // AVATAR IMPORT
     var uploader_photo = new plupload.Uploader({
         runtimes : "gears,html5,flash,silverlight,browserplus",
-        browse_button : "but_pickfiles_photo",
+        browse_button : "profile_photo",
         container : "upload_container_photo",
         max_file_size : "2mb",
         chunk_size : "1mb",
@@ -461,7 +460,7 @@ $(function() {
 
     uploader_photo.init();
 
-   $("#but_pickfiles_photo").click(function() {
+   $("#profile_photo").click(function() {
       $("#div_change_psk, #div_reset_psk, #div_change_password").hide();
       $("#dialog_user_profil").dialog("option", "height", 450);
    });

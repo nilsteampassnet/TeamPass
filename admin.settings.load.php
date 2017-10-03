@@ -347,7 +347,7 @@ function LaunchAdminActions(action, option)
                 } else if (data[0].result == "pw_prefix_correct") {
                     $("result_admin_action_pw_prefix_correct").html(data[0].ret).show();
                 } else if (data[0].result == "attachments_cryption") {
-                    if (data[0].continu === true) {
+                    if (data[0].continu === "1") {
                         $("#result_admin_action_attachments_cryption").html('').show();
                         manageEncryptionOfAttachments(data[0].list, data[0].cpt);
                     } else if (data[0].error == "file_not_encrypted") {
@@ -1010,7 +1010,7 @@ function manageEncryptionOfAttachments(list, cpt) {
             cpt     : cpt,
             list    : list
         },
-        function(data) {
+        function(data) {console.log(">" + data[0].continu);
             if (data[0].continu === "1" ) {
                 manageEncryptionOfAttachments(data[0].list, data[0].cpt);
             } else {
