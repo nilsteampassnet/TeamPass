@@ -226,11 +226,11 @@ echo'
                         <i class="fa fa-warning"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
-                <table width="100%" id="item_details_table">';
+                <table width="100%" class="no-border" id="item_details_table">';
 // Line for LABEL
 echo '
                 <tr>
-                    <td valign="top" class="td_title" colspan="2">
+                    <td valign="top" class="td_title" width="120px" style="background-color:rgba(178, 178, 178, 0.13);">
                         <div class="quick_menu2" style="float:left; margin-right: 5px;">
                             <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
@@ -252,7 +252,11 @@ echo '
                                 </li>
                             </ul>
                         </div>
-                        <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
+                    </td>
+                    <td valign="middle" style="background-color:rgba(178, 178, 178, 0.13);">
+                        <span id="id_label" style="font-weight:bold;"></span>
+                    </td>
+                    <td style="background-color:rgba(178, 178, 178, 0.13);">
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
 
@@ -266,7 +270,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title" width="180px">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['description'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? htmlspecialchars($dataItem['description']) : '', '" />
                     </td>
                 </tr>';
@@ -274,7 +278,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
-                    <td>
+                    <td colspan="2">
                         &nbsp;
                         <div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>
                         <input type="hidden" id="hid_pw" value="" />
@@ -285,7 +289,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
                     </td>
@@ -294,7 +298,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['email'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_email" style="display:inline;"></div><input type="hidden" id="hid_email" value="" />
                     </td>
                 </tr>';
@@ -302,7 +306,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['url'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_url" style="display:inline;"></div><input type="hidden" id="hid_url" value="" />
                     </td>
                 </tr>';
@@ -310,7 +314,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['files_&_images'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_files" style="display:inline;font-size:11px;"></div><input type="hidden" id="hid_files" />
                         <div id="dialog_files" style="display: none;">
 
@@ -321,7 +325,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['restricted_to'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
                     </td>
                 </tr>';
@@ -329,34 +333,34 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['tags'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_tags" style="display:inline;"></div><input type="hidden" id="hid_tags" />
                     </td>
                 </tr>';
 // Line for KBs
 if (isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] == 1) {
     echo '
-                    <tr>
-                        <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['kbs'].' :</td>
-                        <td>
-                            <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
-                        </td>
-                    </tr>';
+                <tr>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['kbs'].' :</td>
+                    <td colspan="2">
+                        <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
+                    </td>
+                </tr>';
 }
 // lines for FIELDS
 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1) {
     foreach ($_SESSION['item_fields'] as $elem) {
         $itemCatName = $elem[0];
         echo '
-                    <tr class="tr_fields hidden" id="tr_catfield_'.$elem[0].'">
-                        <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
-                        <td></td>
-                    </tr>';
+                <tr class="tr_fields hidden" id="tr_catfield_'.$elem[0].'">
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
+                    <td colspan="2"></td>
+                </tr>';
         foreach ($elem[2] as $field) {
             echo '
                     <tr class="tr_cf tr_fields hidden" id="cf_tr_'.$field[0].'">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
-                        <td>';
+                        <td colspan="2">';
             if ($field[3] === "masked") {
                 echo '
                             <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="float:left; cursor:pointer; width:300px;" class="fields_div unhide_masked_data pointer"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
@@ -778,7 +782,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
     </div>';
 }
 echo '
-    <div style="display:none; padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
+    <div style="padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all hidden"></div>
     </div>
     </form>
 </div>';

@@ -251,7 +251,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Show results to user.
             echo '[{"error":"no" , "output" : "'.$display.'"}]';
         }
-        
+
         //delete file
         unlink($file);
 

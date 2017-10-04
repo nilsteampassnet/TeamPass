@@ -792,7 +792,9 @@ function AjouterItem()
 
 function EditerItem()
 {
-    $("#div_formulaire_edition_item_info").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show();
+    $("#div_formulaire_edition_item_info")
+        .html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>")
+        .removeClass("hidden");
     $("#item_detail_zone_loader").addClass("hidden");
     var erreur = "";
     var  reg=new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
@@ -965,7 +967,7 @@ function EditerItem()
                         LoadingPage();
                     } else {
                         //refresh item in list
-                        $("#fileclass"+data.id).text($('#edit_label').val());
+                        $("#fileclass"+data.id).html('<div class="truncate">' + $('#edit_label').val() + '</div>');
 
                         //Refresh form
                         $("#id_label").text($('#edit_label').val());
@@ -1088,16 +1090,24 @@ function EditerItem()
             );*/
 
         } else {
-            $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>").show();
+            $('#edit_show_error')
+                .html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>")
+                .show();
             $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
-            $("#div_formulaire_edition_item_info").addClass("hidden").html("");
+            $("#div_formulaire_edition_item_info")
+                .addClass("hidden")
+                .html("");
         }
     }
 
     if (erreur != "") {
         $('#edit_show_error').html(erreur).show();
-        $("#div_formulaire_edition_item_info").addClass("hidden").html("");
-        $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+        $("#div_formulaire_edition_item_info")
+            .addClass("hidden")
+            .html("");
+        $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
+            .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+            .prop("disabled", false);
     }
 }
 
@@ -3293,6 +3303,11 @@ $(function() {
                     function(data) {
                         if (data[0].error === "") {
                             $("#div_suggest_change_wait").html("<?php echo addslashes($LANG['suggestion_done']); ?>").show(1).delay(1500).fadeOut(1000);
+
+                            // set indicator if item has change proposal
+                            $("#item_extra_info").prepend('<i class="fa fa-lightbulb-o fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['item_has_change_proposal']); ?>" onclick=""></i>&nbsp;');
+                            $(".tip").tooltipster({multiple: true});
+
                             setTimeout(
                                 function() {
                                     $("#div_suggest_change").dialog("close");

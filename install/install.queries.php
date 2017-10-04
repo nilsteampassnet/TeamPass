@@ -364,7 +364,7 @@ if (null !== $post_type) {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."misc` (
-                            `id` int(12) NOT null AUTO_INCREMENT,
+                            `increment_id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
                             `valeur` varchar(500) NOT NULL,
