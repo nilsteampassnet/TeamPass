@@ -2181,19 +2181,40 @@ function clear_html_tags()
 //###########
 //## FUNCTION : Permits to delete an attached file
 //###########
-function delete_attached_file(file_id)
+function delete_attached_file(file_id, confirm)
 {
-    $.post(
-        "sources/items.queries.php",
-        {
-            type    : "delete_attached_file",
-            file_id : file_id,
-            key     : "<?php echo $_SESSION['key']; ?>"
-        },
-        function(data) {
-            $("#span_edit_file_"+file_id).css("textDecoration", "line-through");
-        }
-   );
+    if (parseInt(confirm) === 1) {
+        // user has confirmed deletion
+        $.post(
+            "sources/items.queries.php",
+            {
+                type    : "delete_attached_file",
+                file_id : file_id,
+                key     : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                $("#span_edit_file_"+file_id).css("textDecoration", "line-through");
+            }
+       );
+    } else {
+        // Ask user to confirm
+        $("#delete-edit-file_"+file_id)
+            .hide()
+            .after(
+                '<span class="delete_me">&nbsp;<span id="confirm-delete-edit-file_'+file_id+'" class="fa fa-thumbs-up tip" style="cursor:pointer;" onclick="delete_attached_file('+file_id+', 1)" title="<?php echo addslashes($LANG['confirm']);?>"></span>' +
+                '&nbsp;<span id="cancel-delete-edit-file_'+file_id+'" class="fa fa-thumbs-down tip" style="cursor:pointer;" onclick="cancel_delete_attached_file('+file_id+')" title="<?php echo addslashes($LANG['cancel']);?>"></span>&nbsp;</span>'
+            );
+            $(".tip").tooltipster({multiple: true});
+    }
+}
+
+/*
+**
+*/
+function cancel_delete_attached_file(file_id)
+{
+    $(".delete_me").remove();
+    $("#delete-edit-file_"+file_id).show();
 }
 
 //###########
@@ -3024,6 +3045,7 @@ $(function() {
                 }
             );
             $("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+            $(".delete_me").remove();
         },
         open: function(event,ui) {
             //refresh pw complexity

@@ -1903,7 +1903,7 @@ if (null !== $post_type) {
                         $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
                     }
                     // Prepare list of files for edit dialogbox
-                    $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
+                    $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span id=\'delete-edit-file_'.$record['id'].'\' class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'", "0")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
                 }
                 // display lists
                 $filesEdit = str_replace('"', '&quot;', $filesEdit);
