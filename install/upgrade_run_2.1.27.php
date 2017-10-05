@@ -192,7 +192,7 @@ mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NUL
 $result = mysqli_query("SHOW COLUMNS FROM `misc` LIKE 'id'");
 if (mysqli_num_rows($result) !== 0) {
     // Change name of field
-    mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL");
+    mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
 } else {
     // alter table misc to add an index
     $res = addColumnIfNotExist(

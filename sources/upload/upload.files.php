@@ -337,7 +337,7 @@ if (null !== ($post_type_upload)
 ) {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName.".".$ext
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
 
     // Add in DB
@@ -345,8 +345,8 @@ if (null !== ($post_type_upload)
         prefix_table("misc"),
         array(
             'type' => "temp_file",
-            'intitule' => "filename",
-            'valeur' => $newFileName.".".$ext
+            'intitule' => time(),
+            'valeur' => $newFileName
         )
     );
 
@@ -364,7 +364,7 @@ if (null !== ($post_type_upload)
 ) {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName.".".$ext
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
 
     // Add in DB
@@ -372,8 +372,8 @@ if (null !== ($post_type_upload)
         prefix_table("misc"),
         array(
             'type' => "temp_file",
-            'intitule' => "filename",
-            'valeur' => $newFileName.".".$ext
+            'intitule' => time(),
+            'valeur' => $newFileName
         )
     );
 
@@ -437,7 +437,7 @@ if (null !== ($post_type_upload)
 ) {
     rename(
         $filePath,
-        $targetDir.DIRECTORY_SEPARATOR.$newFileName.".".$ext
+        $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
 
     // Add in DB
@@ -445,8 +445,8 @@ if (null !== ($post_type_upload)
         prefix_table("misc"),
         array(
             'type' => "temp_file",
-            'intitule' => "filename",
-            'valeur' => $newFileName.".".$ext
+            'intitule' => time(),
+            'valeur' => $newFileName
         )
     );
 

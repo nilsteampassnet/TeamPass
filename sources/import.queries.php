@@ -112,14 +112,14 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $data = DB::queryFirstRow(
             "SELECT valeur
             FROM ".$pre."misc
-            WHERE increment_id = %i",
+            WHERE increment_id = %i AND type = 'temp_file'",
             $post_operation_id
         );
 
         // Delete operation id
         DB::delete(
             prefix_table('misc'),
-            "increment_id = %i",
+            "increment_id = %i AND type = 'temp_file'",
             $post_operation_id
         );
 
@@ -213,6 +213,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($fp);
         } else {
             echo '[{"error":"cannot_open"}]';
+
+            //delete file
+            unlink($file);
             break;
         }
 
@@ -401,14 +404,14 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $data = DB::queryFirstRow(
             "SELECT valeur
             FROM ".$pre."misc
-            WHERE increment_id = %i",
+            WHERE increment_id = %i AND type = 'temp_file'",
             $post_operation_id
         );
 
         // Delete operation id
         DB::delete(
             prefix_table('misc'),
-            "increment_id = %i",
+            "increment_id = %i AND type = 'temp_file'",
             $post_operation_id
         );
 
