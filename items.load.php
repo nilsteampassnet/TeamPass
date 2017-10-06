@@ -112,7 +112,7 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
         if ($('#edit_visible_pw').is(":visible")) {
             $('#edit_visible_pw').addClass("hidden");
         } else {
-            $('#edit_visible_pw').show();
+            $('#edit_visible_pw').removeClass("hidden");
         }
     }
 
@@ -2198,6 +2198,8 @@ function delete_attached_file(file_id, confirm)
        );
     } else {
         // Ask user to confirm
+        $(".delete_me").remove();
+        $(".file-eraser_icon").show();
         $("#delete-edit-file_"+file_id)
             .hide()
             .after(
@@ -2518,10 +2520,11 @@ $(function() {
 
     //automatic height
     var window_height = $(window).height();
-    $("#div_items, #content").height(window_height-170);
-    $("#items_center").height(window_height-390);
-    $("#items_list").height(window_height-440);
-    $(".items_tree").height(window_height-160);
+    $("#div_items, #content").height(window_height-130);
+    $("#items_center").height(window_height-360);
+    $("#items_list").height(window_height-410);
+    $(".items_tree").height(window_height-140);
+    $("#items_content").height(window_height-130);
     $("#jstree").height(window_height-185);
 
     //warning if screen height too short
@@ -3046,6 +3049,8 @@ $(function() {
             );
             $("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
             $(".delete_me").remove();
+            $(".file-eraser_icon").show();
+            $('#edit_visible_pw').addClass("hidden");
         },
         open: function(event,ui) {
             //refresh pw complexity

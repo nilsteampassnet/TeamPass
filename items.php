@@ -466,8 +466,8 @@ echo'
             </div>';
 // Line for PW
 echo '
-            <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
-                <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+            <label class="label_cpm">'.$LANG['used_pw'].' :
+                <span id="visible_pw" class="hidden" style="margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
@@ -651,7 +651,7 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold; padding:2px;" class="ui-corner-all ui-state-default"></span>
+                    <span id="edit_visible_pw" style="margin-left:10px;font-weight:bold; padding:2px;" class="ui-corner-all ui-state-default hidden"></span>
                     <span id="edit_pw_wait" style="margin-left:10px;" class="hidden"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
@@ -962,7 +962,7 @@ echo '
 echo '
 <div id="div_item_updated" style="display:none;">
     <div style="">'.$LANG['item_updated_text'].'</div>
-</div><br />';
+</div>';
 
 // DIALOG FOR SUGGESTING PWD CHANGE
 echo '
@@ -970,7 +970,7 @@ echo '
     <div style="padding:5px; text-align:center;" class="ui-corner-all ui-state-default"><i class="fa fa-info-circle fa-lg"></i>&nbsp;'.$LANG['suggest_password_change_intro'].'</div>
     <div style=" margin-top:10px;" id="div_suggest_change_html"></div>
     <div id="div_suggest_change_wait" style="margin-top:10; padding:5px; display:none;" class="ui-state-focus ui-corner-all"></div>
-</div><br />';
+</div>';
 
 // Off line mode
 if (isset($SETTINGS['settings_offline_mode']) && $SETTINGS['settings_offline_mode'] == 1) {
