@@ -1157,16 +1157,17 @@ function mainQuery()
                 }
 
                 // connect to Teampass Statistics database
+                db::debugmode(true);
                 $link2 = new MeekroDB(
                     "sql11.freemysqlhosting.net",
                     "sql11197223",
                     "3QzpXYQ9dZ",
-                    "statistics",
+                    "sql11197223",
                     "3306",
                     "utf8"
                 );
 
-                $err = $link2->insert(
+                $link2->insert(
                     "statistics",
                     $statsToSend
                 );
@@ -1190,7 +1191,7 @@ function mainQuery()
                 // save change in config file
                 handleConfigFile("update", 'send_stats_time', $SETTINGS['send_stats_time']);
 
-                echo '[ { "error" : "'.$err.'" , "done" : "1"} ]';
+                echo '[ { "error" : "" , "done" : "1"} ]';
             } else {
                 echo '[ { "error" : "" , "done" : "0"} ]';
             }
