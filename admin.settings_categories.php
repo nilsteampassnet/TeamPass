@@ -12,13 +12,15 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+
+require_once('sources/SecureHandler.php');
+session_start();
+header("Content-type: text/html; charset=utf-8");
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html><head><title>API Settings</title></head><body>
 <?php
-require_once('sources/SecureHandler.php');
-session_start();
-
+    
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -43,7 +45,6 @@ if (!checkUser(@$_SESSION['user_id'], @$_SESSION['key'], "manage_settings")) {
 
 include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-header("Content-type: text/html; charset=utf-8");
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
