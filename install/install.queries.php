@@ -616,7 +616,7 @@ global \$SETTINGS;
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
                             `encrypted_psk` text NULL,
-                            `user_ip` varchar(60) NOT null DEFAULT 'none',
+                            `user_ip` varchar(400) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

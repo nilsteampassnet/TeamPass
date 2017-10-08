@@ -12,7 +12,11 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+
+require_once 'sources/SecureHandler.php';
+session_start();
 ?>
+
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html><head><title>API Settings</title>
 <style type="text/css">
@@ -52,7 +56,6 @@ padding: 0 5px 0 5px;
  text-align: center;
 }
 
-
 </style>
 </head><body>
 <?php
@@ -66,8 +69,6 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-require_once 'sources/SecureHandler.php';
-session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
