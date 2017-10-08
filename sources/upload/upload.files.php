@@ -73,7 +73,7 @@ if (null === $post_user_token) {
             prefix_table('tokens'),
             array(
                 'end_timestamp' => time() + 10
-                ),
+            ),
             "user_id = %i AND token = %s",
             $_SESSION['user_id'],
             $post_user_token
@@ -310,31 +310,85 @@ if (!$chunks || $chunk == $chunks - 1) {
     die();
 }
 
+// phpcrypt
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
+use PHP_Crypt\PHP_Crypt as PHP_Crypt;
+
+// generate file name
+$newFileName = bin2hex(PHP_Crypt::createKey(PHP_Crypt::RAND, 16));
+
+//Connect to mysql server
+require_once '../../includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
+DB::$host = $server;
+DB::$user = $user;
+DB::$password = $pass;
+DB::$dbName = $database;
+DB::$port = $port;
+DB::$encoding = $encoding;
+DB::$error_handler = true;
+$link = mysqli_connect($server, $user, $pass, $database, $port);
+$link->set_charset($encoding);
 
 if (null !== ($post_type_upload)
     && empty($post_type_upload) === false
     && $post_type_upload === "import_items_from_csv"
 ) {
-    $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
+
+    // Add in DB
+    DB::insert(
+        prefix_table("misc"),
+        array(
+            'type' => "temp_file",
+            'intitule' => time(),
+            'valeur' => $newFileName
+        )
+    );
+
+    // return info
+    echo prepareExchangedData(
+        array(
+            "operation_id" => DB::insertId()
+        ),
+        "encode"
+    );
+
+    exit();
 } elseif (null !== ($post_type_upload)
     && $post_type_upload === "import_items_from_keypass"
 ) {
-    $newFileName = time()."_".$_SESSION['user_id'];
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
+
+    // Add in DB
+    DB::insert(
+        prefix_table("misc"),
+        array(
+            'type' => "temp_file",
+            'intitule' => time(),
+            'valeur' => $newFileName
+        )
+    );
+
+    // return info
+    echo prepareExchangedData(
+        array(
+            "operation_id" => DB::insertId()
+        ),
+        "encode"
+    );
+
+    exit();
 } elseif (null !== ($post_type_upload)
     && $post_type_upload === "upload_profile_photo"
 ) {
-    // sanitize the new file name
-    $newFileName = preg_replace('/[^\w\._]+/', '_', htmlentities($post_newFileName, ENT_QUOTES));
-    $newFileName = preg_replace('/[^'.$valid_chars_regex.'\.]/', '', strtolower(basename($newFileName)));
-
     // get file extension
     $ext = pathinfo($filePath, PATHINFO_EXTENSION);
 
@@ -350,20 +404,6 @@ if (null !== ($post_type_upload)
         $targetDir.DIRECTORY_SEPARATOR.$newFileName."_thumb".'.'.$ext,
         40
     );
-
-    //Connect to mysql server
-    require_once '../../includes/config/settings.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
 
     // get current avatar and delete it
     $data = DB::queryFirstRow("SELECT avatar, avatar_thumb FROM ".$pre."users WHERE id=%i", $_SESSION['user_id']);
@@ -382,18 +422,45 @@ DB::$host = $server;
     $_SESSION['user_avatar'] = $newFileName.'.'.$ext;
     $_SESSION['user_avatar_thumb'] = $newFileName."_thumb".'.'.$ext;
 
-    echo '{"filename" : "'.htmlentities($_SESSION['user_avatar'], ENT_QUOTES).'" , "filename_thumb" : "'.htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES).'"}';
+    // return info
+    echo prepareExchangedData(
+        array(
+            "filename" => htmlentities($_SESSION['user_avatar'], ENT_QUOTES),
+            "filename_thumb" => htmlentities($_SESSION['user_avatar_thumb'], ENT_QUOTES)
+        ),
+        "encode"
+    );
+
     exit();
-} else {
-    $newFileName = time()."_".$_SESSION['user_id'];
+} elseif (null !== ($post_type_upload)
+    && $post_type_upload === "restore_db"
+) {
     rename(
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
+
+    // Add in DB
+    DB::insert(
+        prefix_table("misc"),
+        array(
+            'type' => "temp_file",
+            'intitule' => time(),
+            'valeur' => $newFileName
+        )
+    );
+
+    // return info
+    echo prepareExchangedData(
+        array(
+            "operation_id" => DB::insertId()
+        ),
+        "encode"
+    );
+
+    exit();
 }
 
-// Return JSON-RPC response
-die('{"jsonrpc" : "2.0", "result" : null, "id" : "id" , "newfilename" : "'.$newFileName.'"}');
 
 
 /* Handles the error output. */

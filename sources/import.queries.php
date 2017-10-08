@@ -105,9 +105,26 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //load full tree
         $tree->rebuild();
         $tree = $tree->getDescendants();
+       // Init post variable
+        $post_operation_id = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_NUMBER_INT);
+
+        // Get filename from database
+        $data = DB::queryFirstRow(
+            "SELECT valeur
+            FROM ".$pre."misc
+            WHERE increment_id = %i AND type = 'temp_file'",
+            $post_operation_id
+        );
+
+        // Delete operation id
+        DB::delete(
+            prefix_table('misc'),
+            "increment_id = %i AND type = 'temp_file'",
+            $post_operation_id
+        );
 
         // do some initializations
-        $file = $SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
+        $file = $SETTINGS['path_to_files_folder']."/".$data['valeur'];
         $size = 4096;
         $separator = ",";
         $enclosure = '"';
@@ -194,11 +211,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
             // close file
             fclose($fp);
-
-            // remove file
-            fileDelete($file);
         } else {
             echo '[{"error":"cannot_open"}]';
+
+            //delete file
+            unlink($file);
             break;
         }
 
@@ -237,6 +254,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Show results to user.
             echo '[{"error":"no" , "output" : "'.$display.'"}]';
         }
+
+        //delete file
+        unlink($file);
+
         break;
 
     //Insert into DB the items the user has selected
@@ -376,10 +397,31 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         $logFileName = "/keepassImport_".date('YmdHis').".log";
         $cacheLogFile = fopen($SETTINGS['path_to_files_folder'].$logFileName, 'w');
 
+        // Init post variable
+        $post_operation_id = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING);
+
+        // Get filename from database
+        $data = DB::queryFirstRow(
+            "SELECT valeur
+            FROM ".$pre."misc
+            WHERE increment_id = %i AND type = 'temp_file'",
+            $post_operation_id
+        );
+
+        // Delete operation id
+        DB::delete(
+            prefix_table('misc'),
+            "increment_id = %i AND type = 'temp_file'",
+            $post_operation_id
+        );
+
+        // do some initializations
+        $file = $data['valeur'];
+
         //read xml file
-        if (file_exists("'".$SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING))."'") {
+        if (file_exists($SETTINGS['path_to_files_folder']."/".$file)) {
             $xml = simplexml_load_file(
-                $SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING)
+                $SETTINGS['path_to_files_folder']."/".$file
             );
         }
 
@@ -976,7 +1018,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             fclose($cacheLogFile);
             unlink($cacheFileName);
             unlink($cacheFileNameFolder);
-            unlink($SETTINGS['path_to_files_folder']."/".filter_input(INPUT_POST, 'file', FILTER_SANITIZE_STRING));
+            unlink($SETTINGS['path_to_files_folder']."/".$file);
 
             //Display all messages to user
             echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';

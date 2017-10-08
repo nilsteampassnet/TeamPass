@@ -198,15 +198,25 @@ $htmlHeaders .= '
         var d = new Date();
         var TimezoneOffset = d.getTimezoneOffset()*60;
 
-        data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\'}\';
+        // get some info
+        var client_info = "";
+        $.getJSON("http://ip-api.com/json", function() {
+            // nothing to do
+        })
+        .always(function(answered_data) {
+            if (answered_data.status === "success") {
+                client_info = answered_data.countryCode+"-"+answered_data.city+"-"+answered_data.timezone;
+            }
+            data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'"}\';
 
-        // Handle if DUOSecurity is enabled
-        if (isDuo !== "1" || $("#login").val() === "admin") {
-            identifyUser(redirect, psk, data, randomstring);
-        } else {
-            $("#duo_data").val(window.btoa(data));
-            loadDuoDialog();
-        }
+            // Handle if DUOSecurity is enabled
+            if (isDuo !== "1" || $("#login").val() === "admin") {
+                identifyUser(redirect, psk, data, randomstring);
+            } else {
+                $("#duo_data").val(window.btoa(data));
+                loadDuoDialog();
+            }
+        });
     }
 
     //Identify user

@@ -165,7 +165,7 @@ float:left;
 
 .td_title{
 font-weight:bold;
-min-width: 150px;
+min-width: 120px;
 }
 
 ul{
@@ -179,6 +179,11 @@ list-style-type:none;
   color: #464646;
   margin: 3px 0px 10px 0px;
   padding: 10px;
+}
+
+.normal {
+  font: normal;
+  color: #464646;
 }
 
 .readme{
@@ -392,4 +397,9 @@ div.dataTables_processing { z-index: 1; }
 
 .hidden {
   display: none;
+}
+
+.no-border {
+  border: none;
+  border-collapse: collapse;
 }

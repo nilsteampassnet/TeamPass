@@ -12,13 +12,15 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><title>API Settings</title></head><body>
-<?php
+
 require_once('sources/SecureHandler.php');
 session_start();
+?>
 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>API Settings</title></head><body>
+
+<?php
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }

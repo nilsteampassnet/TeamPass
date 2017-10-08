@@ -188,11 +188,19 @@ if (isset($session_tp_defuse_installed) !== true) {
 // alter table Items
 mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
-// alter table misc to add an index
-mysqli_query(
-    $db_link,
-    "ALTER TABLE `".$pre."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`)"
-);
+// alter table MISC - rename ID is exists
+$result = mysqli_query("SHOW COLUMNS FROM `misc` LIKE 'id'");
+if (mysqli_num_rows($result) !== 0) {
+    // Change name of field
+    mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
+} else {
+    // alter table misc to add an index
+    $res = addColumnIfNotExist(
+        $pre."misc",
+        "increment_id",
+        "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`)"
+    );
+}
 
 // alter table misc to add an index
 mysqli_query(
@@ -530,10 +538,18 @@ mysqli_query(
     "ALTER TABLE `".$pre."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
 );
 // alter table USERS to add a new field "user_ip"
-mysqli_query(
-    $db_link,
-    "ALTER TABLE `".$pre."users` ADD `user_ip` VARCHAR(60) NOT NULL DEFAULT 'none';"
-);
+$result = mysqli_query("SHOW COLUMNS FROM `users` LIKE 'user_ip'");
+if (mysqli_num_rows($result) !== 0) {
+    // Change name of field
+    mysqli_query($db_link, "ALTER TABLE `".$pre."users` CHANGE `user_ip` `user_ip` VARCHAR(400) NOT NULL DEFAULT 'none'");
+} else {
+    // alter table misc to add an index
+    $res = addColumnIfNotExist(
+        $pre."users",
+        "user_ip",
+        "VARCHAR(400) NOT NULL DEFAULT 'none'"
+    );
+}
 // alter table USERS to allow NULL on field "email"
 mysqli_query(
     $db_link,
@@ -703,7 +719,7 @@ if ($any_settings === true) {
         utf8_encode(
             "<?php
 global \$SETTINGS;
-\$SETTINGS = array (" . $config_text . "            
+\$SETTINGS = array (" . $config_text . "
     );"
         )
     );

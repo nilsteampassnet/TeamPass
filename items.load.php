@@ -112,7 +112,7 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
         if ($('#edit_visible_pw').is(":visible")) {
             $('#edit_visible_pw').addClass("hidden");
         } else {
-            $('#edit_visible_pw').show();
+            $('#edit_visible_pw').removeClass("hidden");
         }
     }
 
@@ -792,7 +792,9 @@ function AjouterItem()
 
 function EditerItem()
 {
-    $("#div_formulaire_edition_item_info").html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>").show();
+    $("#div_formulaire_edition_item_info")
+        .html("<?php echo "<i class='fa fa-cog fa-spin fa-lg'></i>&nbsp;".addslashes($LANG['please_wait'])."..."; ?>")
+        .removeClass("hidden");
     $("#item_detail_zone_loader").addClass("hidden");
     var erreur = "";
     var  reg=new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
@@ -965,7 +967,7 @@ function EditerItem()
                         LoadingPage();
                     } else {
                         //refresh item in list
-                        $("#fileclass"+data.id).text($('#edit_label').val());
+                        $("#fileclass"+data.id).html('<div class="truncate">' + $('#edit_label').val() + '</div>');
 
                         //Refresh form
                         $("#id_label").text($('#edit_label').val());
@@ -1088,16 +1090,24 @@ function EditerItem()
             );*/
 
         } else {
-            $('#edit_show_error').html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>").show();
+            $('#edit_show_error')
+                .html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>")
+                .show();
             $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
-            $("#div_formulaire_edition_item_info").addClass("hidden").html("");
+            $("#div_formulaire_edition_item_info")
+                .addClass("hidden")
+                .html("");
         }
     }
 
     if (erreur != "") {
         $('#edit_show_error').html(erreur).show();
-        $("#div_formulaire_edition_item_info").addClass("hidden").html("");
-        $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+        $("#div_formulaire_edition_item_info")
+            .addClass("hidden")
+            .html("");
+        $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
+            .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+            .prop("disabled", false);
     }
 }
 
@@ -1653,8 +1663,8 @@ function showDetailsStep2(id, param)
     $.post(
         "sources/items.queries.php",
         {
-        type     : "showDetailsStep2",
-        id         : id
+        type    : "showDetailsStep2",
+        id      : id
         },
         function(data) {
             //decrypt data
@@ -2171,19 +2181,42 @@ function clear_html_tags()
 //###########
 //## FUNCTION : Permits to delete an attached file
 //###########
-function delete_attached_file(file_id)
+function delete_attached_file(file_id, confirm)
 {
-    $.post(
-        "sources/items.queries.php",
-        {
-            type    : "delete_attached_file",
-            file_id : file_id,
-            key     : "<?php echo $_SESSION['key']; ?>"
-        },
-        function(data) {
-            $("#span_edit_file_"+file_id).css("textDecoration", "line-through");
-        }
-   );
+    if (parseInt(confirm) === 1) {
+        // user has confirmed deletion
+        $.post(
+            "sources/items.queries.php",
+            {
+                type    : "delete_attached_file",
+                file_id : file_id,
+                key     : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                $("#span_edit_file_"+file_id).css("textDecoration", "line-through");
+            }
+       );
+    } else {
+        // Ask user to confirm
+        $(".delete_me").remove();
+        $(".file-eraser_icon").show();
+        $("#delete-edit-file_"+file_id)
+            .hide()
+            .after(
+                '<span class="delete_me">&nbsp;<span id="confirm-delete-edit-file_'+file_id+'" class="fa fa-thumbs-up tip" style="cursor:pointer;" onclick="delete_attached_file('+file_id+', 1)" title="<?php echo addslashes($LANG['confirm']);?>"></span>' +
+                '&nbsp;<span id="cancel-delete-edit-file_'+file_id+'" class="fa fa-thumbs-down tip" style="cursor:pointer;" onclick="cancel_delete_attached_file('+file_id+')" title="<?php echo addslashes($LANG['cancel']);?>"></span>&nbsp;</span>'
+            );
+            $(".tip").tooltipster({multiple: true});
+    }
+}
+
+/*
+**
+*/
+function cancel_delete_attached_file(file_id)
+{
+    $(".delete_me").remove();
+    $("#delete-edit-file_"+file_id).show();
 }
 
 //###########
@@ -2487,10 +2520,11 @@ $(function() {
 
     //automatic height
     var window_height = $(window).height();
-    $("#div_items, #content").height(window_height-170);
-    $("#items_center").height(window_height-390);
-    $("#items_list").height(window_height-440);
-    $(".items_tree").height(window_height-160);
+    $("#div_items, #content").height(window_height-130);
+    $("#items_center").height(window_height-360);
+    $("#items_list").height(window_height-410);
+    $(".items_tree").height(window_height-140);
+    $("#items_content").height(window_height-130);
     $("#jstree").height(window_height-185);
 
     //warning if screen height too short
@@ -3014,6 +3048,9 @@ $(function() {
                 }
             );
             $("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+            $(".delete_me").remove();
+            $(".file-eraser_icon").show();
+            $('#edit_visible_pw').addClass("hidden");
         },
         open: function(event,ui) {
             //refresh pw complexity
@@ -3293,6 +3330,11 @@ $(function() {
                     function(data) {
                         if (data[0].error === "") {
                             $("#div_suggest_change_wait").html("<?php echo addslashes($LANG['suggestion_done']); ?>").show(1).delay(1500).fadeOut(1000);
+
+                            // set indicator if item has change proposal
+                            $("#item_extra_info").prepend('<i class="fa fa-lightbulb-o fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['item_has_change_proposal']); ?>" onclick=""></i>&nbsp;');
+                            $(".tip").tooltipster({multiple: true});
+
                             setTimeout(
                                 function() {
                                     $("#div_suggest_change").dialog("close");
@@ -3361,7 +3403,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         init: {
             BeforeUpload: function (up, file) {
-                $("#item_upload_wait").show();
+                $("#item_upload_wait").removeClass("hidden");
 
                 if ($("#random_id").val() == "") {
                     var post_id = CreateRandomString(9,"num_no_0");
@@ -3470,7 +3512,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         init: {
             BeforeUpload: function (up, file) {
-                $("#item_edit_upload_wait").show();
+                $("#item_edit_upload_wait").removeClass("hidden");
 
                 up.setOption('multipart_params', {
                     PHPSESSID : "<?php echo $_SESSION['user_id']; ?>",

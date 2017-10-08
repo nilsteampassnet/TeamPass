@@ -1016,7 +1016,7 @@ function identifyUser($sentData)
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
                     'psk' => isset($psk) ? $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)) : '',
-                    'user_ip' =>  get_client_ip_server()
+                    'user_ip' =>  $dataReceived['client']
                 ),
                 "id=%i",
                 $data['id']

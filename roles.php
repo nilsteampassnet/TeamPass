@@ -50,17 +50,30 @@ echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_functions'].'&nbsp;&nbsp;
     <button title="'.htmlentities(strip_tags($LANG['add_role_tip']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
-        <i class="fa fa-plus"></i>
+        <span class="fa fa-plus"></span>
     </button>
+    &nbsp;
+    <span class="normal"><input id="filter_roles" class="ui-widget ui-corner-all" type="text" value="" placeholder="No filter" /></span>
     <button title="'.htmlentities(strip_tags($LANG['refresh_matrix']), ENT_QUOTES).'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
-        <i class="fa fa-refresh"></i>
+        <span class="fa fa-refresh"></span>
+    </button>
+    &nbsp;
+    <button onclick="refresh_roles_matrix(\'previous\')" class="button roles_previous" style="font-size:16px;">
+        <span class="fa fa-arrow-left"></span>
+    </button>
+    <button onclick="refresh_roles_matrix(\'next\')" class="button roles_next" style="font-size:16px;">
+        <span class="fa fa-arrow-right"></span>
     </button>
 </div>
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
     <div style="">
-        <span class="fa fa-arrow-left" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')"></span>&nbsp;
-        <span class="fa fa-arrow-right" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')"></span>
+        <button onclick="refresh_roles_matrix(\'previous\')" class="button roles_previous" style="font-size:16px;">
+            <span class="fa fa-arrow-left"></span>
+        </button>
+        <button onclick="refresh_roles_matrix(\'next\')" class="button roles_next" style="font-size:16px;">
+            <span class="fa fa-arrow-right"></span>
+        </button>
     </div>
 </div>
 <input type="hidden" id="selected_function" />

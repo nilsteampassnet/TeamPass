@@ -551,7 +551,7 @@ $(function() {
                 "sources/users.queries.php",
                 {
                     type : "get_user_info",
-                    id   : 9,
+                    id   : $("#user_edit_id").val(),
                     key  : "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {

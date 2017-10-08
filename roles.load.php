@@ -205,8 +205,6 @@ $(function() {
         }
     });
 
-
-
     refresh_roles_matrix();
 });
 
@@ -280,7 +278,7 @@ function refresh_roles_matrix(order)
     $("#div_loading").show();
 
     //clean up
-    $("#roles_next, #roles_previous").hide();
+    $(".roles_next, .roles_previous").hide();
 
     //manage start query
     if (order == "next") {
@@ -299,26 +297,42 @@ function refresh_roles_matrix(order)
         "sources/roles.queries.php",
         {
             type    : "refresh_roles_matrix",
-            start    : start
+            start   : start,
+            filter  : $("#filter_roles").val()
         },
         function(data) {
             //decrypt data
             data = $.parseJSON(data);
             $("#matrice_droits").html("");
-            if (data.new_table != "") {
+            if (data.new_table !== "") {
                 $("#matrice_droits").html(data.new_table);
-                if (data.next < data.all) {
-                    $("#roles_next").show();
+                if (data.next < data.all && data.next >= 9) {
+                    $(".roles_next").show();
                 }
                 if (data.next >= 9 && data.previous >= 0) {
-                    $("#roles_previous").show();
+                    $(".roles_previous").show();
                 }
                 //manage next & previous arrows
                 $('#next_role').val(data.next);
                 $('#previous_role').val(data.previous);
+
+                $("#filter_roles").val("");
             } else {
                 $("#matrice_droits").html(data.error);
             }
+
+            // Prepare autocomplete for filterbox
+            //Prepare autocomplete for filter
+            $("#filter_roles")
+                .autocomplete({
+                    source: data.list_of_roles,
+                    focus: function() {
+                        // prevent value inserted on focus
+                        return false;
+                    }
+                }
+            );
+
             $("#div_loading").hide();
         }
    );

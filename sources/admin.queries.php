@@ -392,6 +392,23 @@ switch ($post_type) {
         $file = htmlspecialchars($dataPost[0]);
         $key = htmlspecialchars($dataPost[1]);
 
+        // Get filename from database
+        $data = DB::queryFirstRow(
+            "SELECT valeur
+            FROM ".$pre."misc
+            WHERE increment_id = %i",
+            $file
+        );
+
+        $file = $data['valeur'];
+
+        // Delete operation id
+        DB::delete(
+            prefix_table('misc'),
+            "increment_id = %i",
+            $file
+        );
+
         // Undecrypt the file
         if (empty($key) === false) {
             // Decrypt the file
@@ -429,10 +446,10 @@ switch ($post_type) {
         }
 
         //delete file
-        fileDelete($file);
+        unlink($SETTINGS['path_to_files_folder']."/".$file);
 
         //Show done
-        echo '[{"result":"db_restore"}]';
+        echo '[{"result":"db_restore" , "message":""}]';
         break;
 
     ###########################################################
@@ -483,7 +500,7 @@ switch ($post_type) {
         }
 
         //Show done
-        echo '[{"result":"db_optimize"}]';
+        echo '[{"result":"db_optimize" , "message":""}]';
         break;
 
     ###########################################################
@@ -1307,8 +1324,7 @@ switch ($post_type) {
             // Loop on files
             $rows = DB::query(
                 "SELECT id, file, status
-                FROM ".prefix_table("files")."
-                LIMIT ".$post_start.", ". $post_length
+                FROM ".prefix_table("files")
             );
             foreach ($rows as $record) {
                 if (is_file($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
@@ -1319,11 +1335,11 @@ switch ($post_type) {
                         $addFile = 1;
                     }
 
-                    if ($addFile === '1') {
-                        if (empty($filesList)) {
-                            $filesList = $entry;
+                    if ($addFile === 1) {
+                        if (empty($filesList) === true) {
+                            $filesList = $record['id'];
                         } else {
-                            $filesList .= ";".$entry;
+                            $filesList .= ";".$record['id'];
                         }
                     }
                 }
@@ -1365,28 +1381,36 @@ switch ($post_type) {
         $filesList = explode(';', $post_list);
         foreach ($filesList as $file) {
             if ($cpt < 5) {
+                // Get file name
+                $file_info = DB::queryfirstrow(
+                    "SELECT file
+                    FROM ".prefix_table("files")."
+                    WHERE id = %i",
+                    $file
+                );
+
                 // skip file is Coherancey not respected
-                if (is_file($SETTINGS['path_to_upload_folder'].'/'.$file)) {
+                if (is_file($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'])) {
                     // Case where we want to decrypt
                     if ($post_option === "decrypt") {
                         prepareFileWithDefuse(
                             'decrypt',
-                            $SETTINGS['path_to_upload_folder'].'/'.$file,
-                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file
+                            $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file']
                         );
                     // Case where we want to encrypt
                     } elseif ($post_option === "encrypt") {
                         prepareFileWithDefuse(
                             'encrypt',
-                            $SETTINGS['path_to_upload_folder'].'/'.$file,
-                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file
+                            $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file']
                         );
                     }
                     // Do file cleanup
-                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file);
+                    fileDelete($SETTINGS['path_to_upload_folder'].'/'.$file_info['file']);
                     rename(
-                        $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file,
-                        $SETTINGS['path_to_upload_folder'].'/'.$file
+                        $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file'],
+                        $SETTINGS['path_to_upload_folder'].'/'.$file_info['file']
                     );
 
                     // store in DB
@@ -1395,7 +1419,7 @@ switch ($post_type) {
                             array(
                                 'status' => $post_option === "decrypt" ? "clear" : "encrypted"
                                 ),
-                            "file=%s",
+                            "id = %i",
                             $file
                         );
 
@@ -1998,6 +2022,9 @@ switch ($post_type) {
             $SETTINGS['send_stats'] = "0";
         }
 
+        // save change in config file
+        handleConfigFile("update", 'send_stats', $SETTINGS['send_stats']);
+
         // send statistics items
         if (null !== $post_list) {
             DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
@@ -2026,6 +2053,9 @@ switch ($post_type) {
         } else {
             $SETTINGS['send_statistics_items'] = "";
         }
+
+        // save change in config file
+        handleConfigFile("update", 'send_statistics_items', $SETTINGS['send_statistics_items']);
 
         // send data
         echo '[{"result" : "'.addslashes($LANG['done']).'" , "error" : ""}]';

@@ -1286,7 +1286,7 @@ function prepareExchangedData($data, $type)
     //load ClassLoader
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     //Load AES
-    $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
+    $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $aes->register();
 
     if ($type == "encode") {
@@ -1372,8 +1372,11 @@ function prefix_table($table)
  */
 function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capitalize = false, $ambiguous = false, $symbols = false)
 {
+    global $SETTINGS;
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
     // load library
-    $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
+    $pwgen = new SplClassLoader('Encryption\PwGen', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $pwgen->register();
     $pwgen = new Encryption\PwGen\pwgen();
 
@@ -2125,8 +2128,7 @@ function accessToItemIsGranted($item_id)
         WHERE id = %i",
         $item_id
     );
-//echo in_array($item_id, $_SESSION['list_restricted_folders_for_items'][$data['id_tree']])." - ".$item_id." - ".$data['id_tree']." - ";
-print_r($_SESSION['list_folders_editable_by_role']);
+
     // Check if user can access this folder
     if (!in_array($data['id_tree'], $_SESSION['groupes_visibles'])) {
         // Now check if this folder is restricted to user

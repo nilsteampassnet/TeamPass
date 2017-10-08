@@ -288,24 +288,33 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Prepare POST variables
             $post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+            $post_filter = filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING);
 
             $tree = $tree->getDescendants();
             $texte = '<table><thead><tr><th>'.$LANG['groups'].'</th>';
             $gpes_ok = array();
             $gpes_nok = array();
-            $tab_fonctions = array();
+            $arrRolesTitle = array();
             $arrRoles = array();
             $display_nb = 8;
             $sql_limit = "";
             $next = 1;
             $previous = 1;
+            $where = "";
+
+            // Should we filter on role names
+            if (empty($post_filter) === false) {
+                $where = " WHERE title LIKE '".$post_filter."%'";
+            }
 
             //count nb of roles
             $arrUserRoles = array_filter($_SESSION['user_roles']);
-            if (count($arrUserRoles) == 0 || $_SESSION['is_admin'] == 1) {
-                $where = "";
-            } else {
-                $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
+            if (count($arrUserRoles) >= 0 && $_SESSION['is_admin'] !== "1") {
+                if (empty($where) === false) {
+                    $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
+                } else {
+                    $where .= " AND id IN (".implode(',', $arrUserRoles).")";
+                }
             }
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count = DB::count();
@@ -318,7 +327,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $previous = $start - $display_nb;
                 }
                 $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));
-                $next = $start + $display_nb;
+                $next = $start + $display_nb + 1;
             }
 
             // array of roles for actual user
@@ -348,6 +357,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         '<div style=\'margin-top:-8px;\'>[&nbsp;'.$SETTINGS_EXT['pwComplexity'][$record['complexity']][1].'&nbsp;]</div></th>';
 
                     array_push($arrRoles, $record['id']);
+                    array_push($arrRolesTitle, $record['title']);
                 }
             }
             $texte .= '</tr></thead><tbody>';
@@ -419,7 +429,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 "new_table" => $texte,
                 "all" => $roles_count,
                 "next" => $next,
-                "previous" => $previous
+                "previous" => $previous,
+                "list_of_roles" => $arrRolesTitle
             );
 
             $return_values = json_encode($return_values, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);

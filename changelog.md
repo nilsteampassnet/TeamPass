@@ -7,6 +7,14 @@
  	> a user could potentially act on Items he should not have access to
  Securized script.backup.php by adding a security key
  Fixed some other security failures (credit to ​security at Amossys)
+ Improved security regarding uploading files
+ Fixed issue while restoring DB from administration page
+ Improved / Fixed administration task for encrypting/decrypting files
+ Improved security regarding item history display
+ Added filter in Roles
+ New: confirm deletion of attachment
+ #1956 Warning appears on Category and API pages in admin mode
+ #1947 Dependency & array update in install checks
  #1945 Cannot delete items
  #1944 File upload results in error
  #1941 Visualisation problems

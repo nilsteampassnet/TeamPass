@@ -364,7 +364,7 @@ if (null !== $post_type) {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."misc` (
-                            `id` int(12) NOT null AUTO_INCREMENT,
+                            `increment_id` int(12) NOT null AUTO_INCREMENT,
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
                             `valeur` varchar(500) NOT NULL,
@@ -616,7 +616,7 @@ global \$SETTINGS;
                             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
                             `encrypted_psk` text NULL,
-                            `user_ip` varchar(60) NOT null DEFAULT 'none',
+                            `user_ip` varchar(400) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

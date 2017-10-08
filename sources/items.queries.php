@@ -210,7 +210,7 @@ if (null !== $post_type) {
                 if ((isset($_SESSION['user_settings']['create_item_without_password'])
                     && $_SESSION['user_settings']['create_item_without_password'] !== '1'
                     ) ||
-                    !empty($pw)
+                    empty($pw) === false
                 ) {
                     // encrypt PW
                     if ($dataReceived['salt_key_set'] === '1' &&
@@ -235,7 +235,7 @@ if (null !== $post_type) {
                     $passwd['string'] = '';
                 }
 
-                if (!empty($passwd["error"])) {
+                if (empty($passwd["error"]) === false) {
                     echo prepareExchangedData(array("error" => "ERR_ENCRYPTION", "msg" => $passwd["error"]), "encode");
                     break;
                 }
@@ -266,7 +266,7 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
                     foreach (explode("_|_", $dataReceived['fields']) as $field) {
                         $field_data = explode("~~", $field);
-                        if (count($field_data) > 1 && !empty($field_data[1])) {
+                        if (count($field_data) > 1 && empty($field_data[1]) === false) {
                             // should we encrypt the data
                             $dataTmp = DB::queryFirstRow(
                                 "SELECT encrypted_data
@@ -302,7 +302,7 @@ if (null !== $post_type) {
                 }
 
                 // If automatic deletion asked
-                if ($dataReceived['to_be_deleted'] != 0 && !empty($dataReceived['to_be_deleted'])) {
+                if ($dataReceived['to_be_deleted'] != 0 && empty($dataReceived['to_be_deleted']) === false) {
                     $date_stamp = dateToStamp($dataReceived['to_be_deleted']);
                     DB::insert(
                         prefix_table('automatic_del'),
@@ -332,7 +332,7 @@ if (null !== $post_type) {
                 // Add tags
                 $tags = explode(' ', $tags);
                 foreach ($tags as $tag) {
-                    if (!empty($tag)) {
+                    if (empty($tag) === false) {
                         DB::insert(
                             prefix_table('tags'),
                             array(
@@ -343,7 +343,7 @@ if (null !== $post_type) {
                     }
                 }
                 // Check if any files have been added
-                if (!empty($dataReceived['random_id_from_files'])) {
+                if (empty($dataReceived['random_id_from_files']) === false) {
                     $rows = DB::query(
                         "SELECT id
                         FROM ".prefix_table("files")."
@@ -364,14 +364,14 @@ if (null !== $post_type) {
                 }
 
                 // Announce by email?
-                if (!empty($dataReceived['diffusion'])) {
+                if (empty($dataReceived['diffusion']) === false) {
                     // get links url
                     if (empty($SETTINGS['email_server_url'])) {
                         $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                     }
                     // send email
                     foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
-                        if (!empty($emailAddress)) {
+                        if (empty($emailAddress) === false) {
                             // send it
                             sendEmail(
                                 $LANG['email_subject'],
@@ -402,7 +402,7 @@ if (null !== $post_type) {
                 .$expirationFlag.'<i class="fa fa-sm fa-warning mi-yellow"></i>&nbsp;'.
                 '&nbsp;<a id="fileclass'.$newID.'" class="file" onclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', \'\', \'\')" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')">'.
                 stripslashes($dataReceived['label']);
-                if (!empty($dataReceived['description']) && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1') {
+                if (empty($dataReceived['description']) === false && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1') {
                     $html .= '&nbsp;<font size=2px>['.strip_tags(stripslashes(substr(cleanString($dataReceived['description']), 0, 30))).']</font>';
                 }
                 $html .= '</a><span style="float:right;margin:2px 10px 0px 0px;">';
@@ -416,10 +416,10 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
                     $itemLogin = $itemPw = "";
 
-                    if (!empty($dataReceived['login'])) {
+                    if (empty($dataReceived['login']) === false) {
                         $itemLogin = '<span id="iconlogin_'.$newID.'" class="copy_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-user mi-black"></i>&nbsp;</span>';
                     }
-                    if (!empty($dataReceived['pw'])) {
+                    if (empty($dataReceived['pw']) === false) {
                         $itemPw = '<span id="iconpw_'.$newID.'" class="copy_clipboard tip" title="'.$LANG['item_menu_copy_login'].'"><i class="fa fa-sm fa-lock mi-black"></i>&nbsp;</span>';
                     }
                     $html .= $itemLogin.'&nbsp;'.$itemPw;
@@ -452,8 +452,10 @@ if (null !== $post_type) {
                 break;
             }
 
-            // Update CACHE table
-            updateCacheTable("add_value", $newID);
+            // Add item to CACHE table if new item has been created
+            if (isset($newID) === true) {
+                updateCacheTable("add_value", $newID);
+            }
 
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
@@ -562,7 +564,7 @@ if (null !== $post_type) {
                         $dataReceived['id']
                     );
                     // encrypt PW
-                    if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') || !empty($pw)) {
+                    if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') || empty($pw) === false) {
                         if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) {
                             $sentPw = $pw;
                             $passwd = cryption(
@@ -579,7 +581,7 @@ if (null !== $post_type) {
                             );
                         }
 
-                        if (!empty($passwd["error"])) {
+                        if (empty($passwd["error"]) === false) {
                             echo prepareExchangedData(array("error" => $passwd["error"]), "encode");
                             break;
                         }
@@ -595,7 +597,7 @@ if (null !== $post_type) {
                     $return_tags = "";
                     $tags = explode(' ', $tags);
                     foreach ($tags as $tag) {
-                        if (!empty($tag)) {
+                        if (empty($tag) === false) {
                             // save in DB
                             DB::insert(
                                 prefix_table('tags'),
@@ -636,7 +638,7 @@ if (null !== $post_type) {
                     if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
                         foreach (explode("_|_", $dataReceived['fields']) as $field) {
                             $field_data = explode("~~", $field);
-                            if (count($field_data) > 1 && !empty($field_data[1])) {
+                            if (count($field_data) > 1 && empty($field_data[1]) === false) {
                                 $dataTmpCat = DB::queryFirstRow(
                                     "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data
                                     FROM ".prefix_table("categories_items")." AS i
@@ -744,7 +746,7 @@ if (null !== $post_type) {
                         DB::query("SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id = %i", $dataReceived['id']);
                         if (DB::count() === 0) {
                             // No automatic deletion for this item
-                            if (!empty($dataReceived['to_be_deleted']) || ($dataReceived['to_be_deleted'] > 0 && is_numeric($dataReceived['to_be_deleted']))) {
+                            if (empty($dataReceived['to_be_deleted']) === false || ($dataReceived['to_be_deleted'] > 0 && is_numeric($dataReceived['to_be_deleted']))) {
                                 // Automatic deletion to be added
                                 DB::insert(
                                     prefix_table('automatic_del'),
@@ -760,7 +762,7 @@ if (null !== $post_type) {
                             }
                         } else {
                             // Automatic deletion exists for this item
-                            if (!empty($dataReceived['to_be_deleted']) || ($dataReceived['to_be_deleted'] > 0 && is_numeric($dataReceived['to_be_deleted']))) {
+                            if (empty($dataReceived['to_be_deleted']) === false || ($dataReceived['to_be_deleted'] > 0 && is_numeric($dataReceived['to_be_deleted']))) {
                                 // Update automatic deletion
                                 DB::update(
                                     $pre."automatic_del",
@@ -782,9 +784,9 @@ if (null !== $post_type) {
 
                     // get readable list of restriction
                     $listOfRestricted = $oldRestrictionList = "";
-                    if (!empty($dataReceived['restricted_to']) && $SETTINGS['restricted_to'] === '1') {
+                    if (empty($dataReceived['restricted_to']) === false && $SETTINGS['restricted_to'] === '1') {
                         foreach (explode(';', $dataReceived['restricted_to']) as $userRest) {
-                            if (!empty($userRest)) {
+                            if (empty($userRest) === false) {
                                 $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= %i", $userRest);
                                 if (empty($listOfRestricted)) {
                                     $listOfRestricted = $dataTmp['login'];
@@ -795,9 +797,9 @@ if (null !== $post_type) {
                         }
                     }
                     if ($data['restricted_to'] != $dataReceived['restricted_to'] && $SETTINGS['restricted_to'] === '1') {
-                        if (!empty($data['restricted_to'])) {
+                        if (empty($data['restricted_to']) === false) {
                             foreach (explode(';', $data['restricted_to']) as $userRest) {
-                                if (!empty($userRest)) {
+                                if (empty($userRest) === false) {
                                     $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$userRest);
                                     if (empty($oldRestrictionList)) {
                                         $oldRestrictionList = $dataTmp['login'];
@@ -926,11 +928,11 @@ if (null !== $post_type) {
                         $reason = explode(':', $record['raison']);
                         if (empty($history)) {
                             $history = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']].
-                            " - ".(!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : $LANG[trim($reason[0])]) : '');
+                            " - ".(empty($record['raison']) === false ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : $LANG[trim($reason[0])]) : '');
                         } else {
                             $history .= "<br />".date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])." - ".
                             $record['login']." - ".$LANG[$record['action']]." - ".
-                            (!empty($record['raison']) ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] != "at_manual" ? $LANG[trim($reason[0])] : trim($reason[0]))) : '');
+                            (empty($record['raison']) === false ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] != "at_manual" ? $LANG[trim($reason[0])] : trim($reason[0]))) : '');
                         }
                     }
                     // decrypt PW
@@ -970,9 +972,9 @@ if (null !== $post_type) {
                         $filesEdit .= '<span id="span_edit_file_'.$record['id'].'"><span class="fa fa-'.$iconImage.'"></span>&nbsp;<span class="fa fa-eraser tip" style="cursor:pointer;"  onclick="delete_attached_file(\"'.$record['id'].'\")" title="'.$LANG['at_delete'].'"></span>&nbsp;'.$record['name']."</span><br />";
                     }
                     // Send email
-                    if (!empty($dataReceived['diffusion'])) {
+                    if (empty($dataReceived['diffusion']) === false) {
                         foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
-                            if (!empty($emailAddress)) {
+                            if (empty($emailAddress) === false) {
                                 sendEmail(
                                     $LANG['email_subject_item_updated'],
                                     str_replace(
@@ -988,7 +990,7 @@ if (null !== $post_type) {
                     }
 
                     // send email to user that whant to be notified
-                    if ($dataItem['notification'] !== null && !empty($dataItem['notification'])) {
+                    if ($dataItem['notification'] !== null && empty($dataItem['notification']) === false) {
                         $users_to_be_notified = array_filter(explode(";", $dataItem['notification']));
 
                         // perform query to get emails
@@ -1215,7 +1217,7 @@ if (null !== $post_type) {
                         array_push($aSet, array("id_tree" => $post_dest_id));
                     } elseif ($key === "viewed_no") {
                         array_push($aSet, array("viewed_no" => "0"));
-                    } elseif ($key === "pw" && !empty($pw)) {
+                    } elseif ($key === "pw" && empty($pw) === false) {
                         array_push($aSet, array("pw" => $originalRecord['pw']));
                         array_push($aSet, array("pw_iv" => ""));
                     } elseif ($key === "perso") {
@@ -1489,7 +1491,7 @@ if (null !== $post_type) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] == $_SESSION['user_id'])) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -1572,7 +1574,7 @@ if (null !== $post_type) {
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = htmlspecialchars_decode($dataItem['url']);
                 $arrData['folder'] = $dataItem['id_tree'];
-                if (!empty($dataItem['url'])) {
+                if (empty($dataItem['url']) === false) {
                     $arrData['link'] = "&nbsp;<a href='".$dataItem['url']."' target='_blank'>&nbsp;<i class='fa fa-link tip' title='".$LANG['open_url_link']."'></i></a>";
                 }
 
@@ -1673,11 +1675,14 @@ if (null !== $post_type) {
                     $arrData['restricted'] = "";
                 }
                 // Decrement the number before being deleted
-                $dataDelete = DB::queryfirstrow("SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id=%i", $post_id);
-                $arrData['to_be_deleted'] = $dataDelete['del_value'];
-                $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
                 if (isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] === '1') {
-                    if ($dataDelete['del_enabled'] === '1' || $arrData['id_user'] != $_SESSION['user_id']) {
+                    // Is the Item to be deleted?
+                    $dataDelete = DB::queryfirstrow("SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id=%i", $post_id);
+                    $arrData['to_be_deleted'] = $dataDelete['del_value'];
+                    $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
+
+                    // Now delete if required
+                    if ($dataDelete['del_enabled'] === '1' || intval($arrData['id_user']) !== intval($_SESSION['user_id'])) {
                         if ($dataDelete['del_type'] === '1' && $dataDelete['del_value'] >= 1) {
                             // decrease counter
                             DB::update(
@@ -1716,30 +1721,16 @@ if (null !== $post_type) {
                 } else {
                     $arrData['to_be_deleted'] = "not_enabled";
                 }
-                // send notification if enabled
-                if (isset($SETTINGS['enable_email_notification_on_item_shown']) && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
-                    // send back infos
-                    DB::insert(
-                        prefix_table('emails'),
-                        array(
-                            'timestamp' => time(),
-                            'subject' => $LANG['email_on_open_notification_subject'],
-                            'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($arrData['author']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_on_open_notification_mail']),
-                            'receivers' => $listNotificationEmails,
-                            'status' => ''
-                            )
-                    );
-                } else {
-                    $arrData['notification_list'] = "";
-                    $arrData['notification_status'] = "";
-                }
+
+                $arrData['notification_list'] = "";
+                $arrData['notification_status'] = "";
             } else {
                 $arrData['show_details'] = 0;
                 // get readable list of restriction
                 $listOfRestricted = "";
-                if (!empty($dataItem['restricted_to'])) {
+                if (empty($dataItem['restricted_to']) === false) {
                     foreach (explode(';', $dataItem['restricted_to']) as $userRest) {
-                        if (!empty($userRest)) {
+                        if (empty($userRest) === false) {
                             $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$userRest);
                             if (empty($listOfRestricted)) {
                                 $listOfRestricted = $dataTmp['login'];
@@ -1751,8 +1742,11 @@ if (null !== $post_type) {
                 }
                 $arrData['restricted_to'] = $listOfRestricted;
             }
+
+            // Set a timestamp
             $arrData['timestamp'] = time();
 
+            // Set temporary session variable to allow step2
             $_SESSION['user_settings']['show_step2'] = true;
 
             // Encrypt data to return
@@ -1764,7 +1758,7 @@ if (null !== $post_type) {
            * Display History of the selected Item
         */
         case "showDetailsStep2":
-            // get Item info
+            // Is this query expected (must be run after a step1 and not standalone)
             if ($_SESSION['user_settings']['show_step2'] !== true) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo prepareExchangedData($returnValues, "encode");
@@ -1789,7 +1783,6 @@ if (null !== $post_type) {
                 $restrictionActive = false;
             }
 
-
             // Check if user has a role that is accepted
             $rows_tmp = DB::query(
                 "SELECT role_id
@@ -1808,7 +1801,7 @@ if (null !== $post_type) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] === $_SESSION['user_id'])) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -1862,7 +1855,7 @@ if (null !== $post_type) {
                         $record['login'] = $LANG['imported_via_api'];
                     }
 
-                    if (!empty($reason[1]) || $record['action'] === "at_copy" || $record['action'] === "at_creation" || $record['action'] === "at_manual" || $record['action'] === "at_modification" || $record['action'] === "at_delete" || $record['action'] === "at_restored") {
+                    if (empty($reason[1]) === false || $record['action'] === "at_copy" || $record['action'] === "at_creation" || $record['action'] === "at_manual" || $record['action'] === "at_modification" || $record['action'] === "at_delete" || $record['action'] === "at_restored") {
                         if (trim($reason[0]) === "at_pw" && empty($reason[1]) === false) {
                             if (empty($historyOfPws)) {
                                 $historyOfPws = $LANG['previous_pw']."\n".$reason[1];
@@ -1898,7 +1891,7 @@ if (null !== $post_type) {
                         $files .= '<div class=\'small_spacing\'><i class=\'fa fa-file-text-o\' /></i>&nbsp;<a href=\'sources/downloadFile.php?name='.urlencode($record['name']).'&key='.$_SESSION['key'].'&key_tmp='.$_SESSION['key_tmp'].'&fileid='.$record['id'].'\' class=\'small_spacing\'>'.$filename.'</a></div>';
                     }
                     // Prepare list of files for edit dialogbox
-                    $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span class=\'fa fa-eraser tip\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
+                    $filesEdit .= '<span id=\'span_edit_file_'.$record['id'].'\'><span class=\'fa fa-'.$iconImage.'\'></span>&nbsp;<span id=\'delete-edit-file_'.$record['id'].'\' class=\'fa fa-eraser tip file-eraser_icon\' style=\'cursor:pointer;\' onclick=\'delete_attached_file("'.$record['id'].'", "0")\' title=\''.$LANG['at_delete'].'\'></span>&nbsp;'.$filename."</span><br />";
                 }
                 // display lists
                 $filesEdit = str_replace('"', '&quot;', $filesEdit);
@@ -1929,6 +1922,21 @@ if (null !== $post_type) {
                             'latest_items' => implode(';', $_SESSION['latest_items'])
                             ),
                         "id=".$_SESSION['user_id']
+                    );
+                }
+
+                // send notification if enabled
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
+                    // send back infos
+                    DB::insert(
+                        prefix_table('emails'),
+                        array(
+                            'timestamp' => time(),
+                            'subject' => $LANG['email_on_open_notification_subject'],
+                            'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataItem['author']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_on_open_notification_mail']),
+                            'receivers' => $listNotificationEmails,
+                            'status' => ''
+                        )
                     );
                 }
 
@@ -2039,7 +2047,7 @@ if (null !== $post_type) {
             $createNewFolder = true;
             if (isset($SETTINGS['duplicate_folder']) && $SETTINGS['duplicate_folder'] === '0') {
                 $data = DB::queryFirstRow("SELECT id, title FROM ".prefix_table("nested_tree")." WHERE title = %s", $title);
-                if (!empty($data['id']) && $dataReceived['folder'] != $data['id']) {
+                if (empty($data['id']) === false && $dataReceived['folder'] != $data['id']) {
                     echo '[ { "error" : "'.addslashes($LANG['error_group_exist']).'" } ]';
                     break;
                 }
@@ -2249,7 +2257,7 @@ if (null !== $post_type) {
                 setcookie(
                     "jstree_select",
                     $post_id,
-                    time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
+                    time() + $SETTINGS_EXT['one_day_seconds'] * $SETTINGS['personal_saltkey_cookie_duration'],
                     '/'
                 );
 
@@ -2283,7 +2291,7 @@ if (null !== $post_type) {
 
                 // check if items exist
                 $where = new WhereClause('and');
-                if (null !== $post_restricted && $post_restricted === 1 && !empty($_SESSION['list_folders_limited'][$post_id])) {
+                if (null !== $post_restricted && $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
                     $counter = count($_SESSION['list_folders_limited'][$post_id]);
                     $uniqueLoadData['counter'] = $counter;
                 // check if this folder is visible
@@ -2379,7 +2387,7 @@ if (null !== $post_type) {
 
             // prepare query WHere conditions
             $where = new WhereClause('and');
-            if (null !== $post_restricted && $post_restricted === 1 && !empty($_SESSION['list_folders_limited'][$post_id])) {
+            if (null !== $post_restricted && $post_restricted === 1 && empty($_SESSION['list_folders_limited'][$post_id]) === false) {
                 $where->add('i.id IN %ls', $_SESSION['list_folders_limited'][$post_id]);
             } else {
                 $where->add('i.id_tree=%i', $post_id);
@@ -2396,7 +2404,7 @@ if (null !== $post_type) {
                 if ($folderIsPf === false) {
                     $where->add('i.inactif=%i', 0);
                     $where->add('l.date=%l', "(SELECT date FROM ".prefix_table("log_items")." WHERE action IN ('at_creation', 'at_modification') AND id_item=i.id ORDER BY date DESC LIMIT 1)");
-                    if (!empty($limited_to_items)) {
+                    if (empty($limited_to_items) === false) {
                         $where->add('i.id IN %ls', explode(",", $limited_to_items));
                     }
 
@@ -2444,7 +2452,7 @@ if (null !== $post_type) {
 
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
-                    if (empty($idManaged) || $idManaged != $record['id']) {
+                    if (empty($idManaged) === true || $idManaged !== $record['id']) {
                         $new_line = '';
 
                         // Get Expiration date
@@ -2550,7 +2558,7 @@ if (null !== $post_type) {
                             $need_sk = true;
                             $canMove = true;
                         // CAse where item is restricted to a group of users included user
-                        } elseif (!empty($record['restricted_to'])
+                        } elseif (empty($record['restricted_to']) === false
                             || (int) $list_folders_editable_by_role === 1
                             && (int) $is_user_in_restricted_list === 1
                         ) {
@@ -2564,7 +2572,7 @@ if (null !== $post_type) {
                         } elseif ((int) $record['perso'] === 1
                             ||
                             (
-                                !empty($record['restricted_to'])
+                                empty($record['restricted_to']) === false
                                 && (int) $is_user_in_restricted_list !== 1
                             )
                             ||
@@ -2597,7 +2605,7 @@ if (null !== $post_type) {
                                     $init_personal_folder = true;
                                 }
 
-                                if (!empty($record['restricted_to']) && $is_user_in_restricted_list === '1') {
+                                if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === '1') {
                                     $displayItem = true;
                                 }
                             }
@@ -2633,7 +2641,7 @@ if (null !== $post_type) {
                         $new_line .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
 
                         // manage desc to show
-                        if (!empty($record['description']) && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1') {
+                        if (empty($record['description']) === false && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1') {
                             $desc = explode("<br>", $record['description']);
                             $new_line .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
                         }
@@ -2683,10 +2691,10 @@ if (null !== $post_type) {
                         // display quick icon shortcuts ?
                         if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
                             if ($displayItem === true) {
-                                if (!empty($record['login'])) {
+                                if (empty($record['login']) === false) {
                                     $new_line .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
                                 }
-                                if (!empty($pw)) {
+                                if (empty($pw) === false) {
                                     $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
                                 }
                             }
@@ -2825,7 +2833,7 @@ if (null !== $post_type) {
 
                 // If token is taken for this Item and delay is passed then delete it.
                 if (isset($SETTINGS['delay_item_edition']) &&
-                    $SETTINGS['delay_item_edition'] > 0 && !empty($dataTmp['timestamp']) &&
+                    $SETTINGS['delay_item_edition'] > 0 && empty($dataTmp['timestamp']) === false &&
                     round(abs(time() - $dataTmp['timestamp']) / 60, 2) > $SETTINGS['delay_item_edition']
                 ) {
                     DB::delete(prefix_table("items_edition"), "item_id = %i", $post_item_id);
@@ -2837,7 +2845,7 @@ if (null !== $post_type) {
                 }
 
                 // If edition by same user (and token not freed before for any reason, then update timestamp)
-                if (!empty($dataTmp['timestamp']) && $dataTmp['user_id'] == $_SESSION['user_id']) {
+                if (empty($dataTmp['timestamp']) === false && $dataTmp['user_id'] == $_SESSION['user_id']) {
                     DB::update(
                         prefix_table("items_edition"),
                         array(
@@ -2909,7 +2917,7 @@ if (null !== $post_type) {
                 $post_groupe
             );
 
-            if (isset($data['valeur']) && (!empty($data['valeur']) || $data['valeur'] === '0')) {
+            if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
                 $complexity = $SETTINGS_EXT['pwComplexity'][$data['valeur']][1];
                 $folder_is_personal = $data['personal_folder'];
             } else {
@@ -2985,7 +2993,7 @@ if (null !== $post_type) {
                 break;
             }
 
-            if (!empty($data['id_item'])) {
+            if (empty($data['id_item']) === false) {
                 // Delete from FILES table
                 DB::delete(
                     prefix_table("files"),
@@ -3227,7 +3235,7 @@ if (null !== $post_type) {
 
             // loop on items to move
             foreach (explode(";", filter_input(INPUT_POST, 'item_ids', FILTER_SANITIZE_STRING)) as $item_id) {
-                if (!empty($item_id)) {
+                if (empty($item_id) === false) {
                     // get data about item
                     $dataSource = DB::queryfirstrow(
                         "SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
@@ -3355,7 +3363,7 @@ if (null !== $post_type) {
 
             // loop on items to move
             foreach (explode(";", filter_input(INPUT_POST, 'item_ids', FILTER_SANITIZE_STRING)) as $item_id) {
-                if (!empty($item_id)) {
+                if (empty($item_id) === false) {
                     // get info
                     $dataSource = DB::queryfirstrow(
                         "SELECT label, id_tree
@@ -3387,8 +3395,10 @@ if (null !== $post_type) {
                         "id = %i",
                         $item_id
                     );
+
                     // log
                     logItems($item_id, $dataSource['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login']);
+
                     // Update CACHE table
                     updateCacheTable("delete_value", $item_id);
                 }
@@ -3823,7 +3833,7 @@ if (null !== $post_type) {
                     //get list of personal folders
                     $arrayPf = array();
                     $listPf = "";
-                    if (!empty($row['id'])) {
+                    if (empty($row['id']) === false) {
                         $rows = DB::query(
                             "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
                             "1"
@@ -3839,7 +3849,7 @@ if (null !== $post_type) {
                     $where = new WhereClause('and');
                     $where->add('id_tree = %i', $idFolder);
                     $where->add('label = %s', $label);
-                    if (!empty($arrayPf)) {
+                    if (empty($arrayPf) === false) {
                         $where->add("id_tree NOT IN (".implode(',', $arrayPf).")");
                     }
 
@@ -4058,7 +4068,7 @@ if (null !== $post_type) {
                     $record['login'] = $LANG['imported_via_api']." [".$record['raison']."]";
                 }
 
-                if (!empty($reason[1])
+                if (empty($reason[1]) === false
                     || $record['action'] === "at_copy"
                     || $record['action'] === "at_creation"
                     || $record['action'] === "at_manual"
@@ -4066,7 +4076,7 @@ if (null !== $post_type) {
                     || $record['action'] === "at_delete"
                     || $record['action'] === "at_restored") {
                     // Prepare avatar
-                    if (isset($record['avatar_thumb']) && !empty($record['avatar_thumb'])) {
+                    if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
                         if (file_exists($SETTINGS['cpassman_dir'].'/includes/avatars/'.$record['avatar_thumb'])) {
                             $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$record['avatar_thumb'];
                         } else {
@@ -4080,7 +4090,7 @@ if (null !== $post_type) {
                         '<td rowspan="2" style="width:40px;"><img src="'.$avatar.'" style="border-radius:20px; height:35px;"></td>'.
                         '<td colspan="2" style="font-size:11px;"><i>'.$LANG['by'].' '.$record['login'].' '.$LANG['at'].' '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']).'</i></td></tr>'.
                         '<tr style="border-bottom:3px solid #C9C9C9;"><td style="width:100px;"><b>'.$LANG[$record['action']].'</b></td>'.
-                        '<td style="">'.(!empty($record['raison']) && $record['action'] !== "at_creation" ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] === "at_manual" ? $reason[0] : $LANG[trim($reason[0])])) : '').'</td>'.
+                        '<td style="">'.(empty($record['raison']) === false && $record['action'] !== "at_creation" ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.handleBackslash($reason[1]) : ($record['action'] === "at_manual" ? $reason[0] : $LANG[trim($reason[0])])) : '').'</td>'.
                         '</tr>'.
                         '<tr></tr>';
                 }

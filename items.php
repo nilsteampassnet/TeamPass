@@ -226,11 +226,11 @@ echo'
                         <i class="fa fa-warning"></i>&nbsp;<b>'.$LANG['pw_is_expired_-_update_it'].'</b>
                     </div>
                 </div>
-                <table width="100%" id="item_details_table">';
+                <table width="100%" class="no-border" id="item_details_table">';
 // Line for LABEL
 echo '
                 <tr>
-                    <td valign="top" class="td_title" colspan="2">
+                    <td valign="top" class="td_title" width="120px" style="background-color:rgba(178, 178, 178, 0.13);">
                         <div class="quick_menu2" style="float:left; margin-right: 5px;">
                             <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
@@ -252,7 +252,11 @@ echo '
                                 </li>
                             </ul>
                         </div>
-                        <div id="id_label" style="display:inline; margin:4px 0px 0px 120px; "></div>
+                    </td>
+                    <td valign="middle" style="background-color:rgba(178, 178, 178, 0.13);">
+                        <span id="id_label" style="font-weight:bold;"></span>
+                    </td>
+                    <td style="background-color:rgba(178, 178, 178, 0.13);">
                         <input type="hidden" id="hid_label" value="', isset($dataItem) ? htmlspecialchars($dataItem['label']) : '', '" />
                         <div style="float:right; font-family:arial; margin-right:5px;" id="item_viewed_x_times"></div>
 
@@ -266,7 +270,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title" width="180px">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['description'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? htmlspecialchars($dataItem['description']) : '', '" />
                     </td>
                 </tr>';
@@ -274,7 +278,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
-                    <td>
+                    <td colspan="2">
                         &nbsp;
                         <div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>
                         <input type="hidden" id="hid_pw" value="" />
@@ -285,7 +289,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
                     </td>
@@ -294,7 +298,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['email'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_email" style="display:inline;"></div><input type="hidden" id="hid_email" value="" />
                     </td>
                 </tr>';
@@ -302,7 +306,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['url'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_url" style="display:inline;"></div><input type="hidden" id="hid_url" value="" />
                     </td>
                 </tr>';
@@ -310,7 +314,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['files_&_images'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_files" style="display:inline;font-size:11px;"></div><input type="hidden" id="hid_files" />
                         <div id="dialog_files" style="display: none;">
 
@@ -321,7 +325,7 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['restricted_to'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
                     </td>
                 </tr>';
@@ -329,34 +333,34 @@ echo '
 echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['tags'].' :</td>
-                    <td>
+                    <td colspan="2">
                         <div id="id_tags" style="display:inline;"></div><input type="hidden" id="hid_tags" />
                     </td>
                 </tr>';
 // Line for KBs
 if (isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] == 1) {
     echo '
-                    <tr>
-                        <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['kbs'].' :</td>
-                        <td>
-                            <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
-                        </td>
-                    </tr>';
+                <tr>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['kbs'].' :</td>
+                    <td colspan="2">
+                        <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
+                    </td>
+                </tr>';
 }
 // lines for FIELDS
 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1) {
     foreach ($_SESSION['item_fields'] as $elem) {
         $itemCatName = $elem[0];
         echo '
-                    <tr class="tr_fields hidden" id="tr_catfield_'.$elem[0].'">
-                        <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
-                        <td></td>
-                    </tr>';
+                <tr class="tr_fields hidden" id="tr_catfield_'.$elem[0].'">
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
+                    <td colspan="2"></td>
+                </tr>';
         foreach ($elem[2] as $field) {
             echo '
                     <tr class="tr_cf tr_fields hidden" id="cf_tr_'.$field[0].'">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
-                        <td>';
+                        <td colspan="2">';
             if ($field[3] === "masked") {
                 echo '
                             <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="float:left; cursor:pointer; width:300px;" class="fields_div unhide_masked_data pointer"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
@@ -462,8 +466,8 @@ echo'
             </div>';
 // Line for PW
 echo '
-            <label class="label_cpm">'.$LANG['used_pw'].' :<span id="prout"></span>
-                <span id="visible_pw" style="display:none;margin-left:10px;font-weight:bold;"></span>
+            <label class="label_cpm">'.$LANG['used_pw'].' :
+                <span id="visible_pw" class="hidden" style="margin-left:10px;font-weight:bold;"></span>
                 <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
@@ -549,7 +553,7 @@ echo '
         <div id="tabs-03">
             <div id="item_upload">
                 <div id="item_upload_list"></div><br />
-                <div id="item_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
+                <div id="item_upload_wait" class="ui-state-focus ui-corner-all hidden" style="padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
                 <a id="item_attach_uploadfiles" href="#" class="button">'.$LANG['start_upload'].'</a>
                 <input type="hidden" id="files_number" value="0" />
@@ -647,7 +651,7 @@ echo'
 echo '
             <div style="line-height:20px;">
                 <label for="" class="label_cpm">'.$LANG['used_pw'].' :
-                    <span id="edit_visible_pw" style="display:none;margin-left:10px;font-weight:bold; padding:2px;" class="ui-corner-all ui-state-default"></span>
+                    <span id="edit_visible_pw" style="margin-left:10px;font-weight:bold; padding:2px;" class="ui-corner-all ui-state-default hidden"></span>
                     <span id="edit_pw_wait" style="margin-left:10px;" class="hidden"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                 </label>
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
@@ -743,7 +747,7 @@ echo '
             </div>
             <div id="item_edit_upload">
                 <div id="item_edit_upload_list"></div><br />
-                <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
+                <div id="item_edit_upload_wait" class="ui-state-focus ui-corner-all hidden" style="padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
                 <a id="item_edit_attach_pickfiles" href="#" class="button">'.$LANG['select'].'</a>
                 <a id="item_edit_attach_uploadfiles" href="#sd" class="button">'.$LANG['start_upload'].'</a>
                 <input type="hidden" id="edit_files_number" value="0" />
@@ -778,7 +782,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
     </div>';
 }
 echo '
-    <div style="display:none; padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all"></div>
+    <div style="padding:5px;" id="div_formulaire_edition_item_info" class="ui-state-default ui-corner-all hidden"></div>
     </div>
     </form>
 </div>';
@@ -958,7 +962,7 @@ echo '
 echo '
 <div id="div_item_updated" style="display:none;">
     <div style="">'.$LANG['item_updated_text'].'</div>
-</div><br />';
+</div>';
 
 // DIALOG FOR SUGGESTING PWD CHANGE
 echo '
@@ -966,7 +970,7 @@ echo '
     <div style="padding:5px; text-align:center;" class="ui-corner-all ui-state-default"><i class="fa fa-info-circle fa-lg"></i>&nbsp;'.$LANG['suggest_password_change_intro'].'</div>
     <div style=" margin-top:10px;" id="div_suggest_change_html"></div>
     <div id="div_suggest_change_wait" style="margin-top:10; padding:5px; display:none;" class="ui-state-focus ui-corner-all"></div>
-</div><br />';
+</div>';
 
 // Off line mode
 if (isset($SETTINGS['settings_offline_mode']) && $SETTINGS['settings_offline_mode'] == 1) {
