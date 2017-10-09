@@ -15,12 +15,7 @@
 
 require_once('sources/SecureHandler.php');
 session_start();
-?>
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><title>API Settings</title></head><body>
-
-<?php
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -100,6 +95,8 @@ $options_field_types = '<option value="text">'.$LANG['text'].'</option>'.
                 '<option value="masked">'.$LANG['masked'].'</option>';
 
 echo '
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>API Settings</title></head><body>
 <div id="tabs-8">
     <!-- Enable CUSTOM FOLDERS (toggle) -->
     <div style="width:100%; height:30px;">
