@@ -15,50 +15,6 @@
 
 require_once 'sources/SecureHandler.php';
 session_start();
-?>
-
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><title>API Settings</title>
-<style type="text/css">
-table {
-  width: 100%;
-}
-td {
-vertical-align: top;
-}
-th:nth-child(1) {
-  width: 25%;
-}
-th:nth-child(2) {
-  width: 60%;
-}
-th:nth-child(3) {
-  width: 10%;
-  display: hidden;
-}
-.maintable-left {
-  width: 40%;
-}
-.maintable-right {
-  width: 60%;
-}
-.fa-chevron-right {
-margin-right: .8em;
-}
-.tip {
-cursor:pointer;
-}
-.keytable tr {
-background-color: white;
-padding: 0 5px 0 5px;
-}
-.keytable td:nth-child(3) {
- text-align: center;
-}
-
-</style>
-</head><body>
-<?php
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
@@ -105,6 +61,47 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 echo '
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><title>API Settings</title>
+<style type="text/css">
+table {
+  width: 100%;
+}
+td {
+vertical-align: top;
+}
+th:nth-child(1) {
+  width: 25%;
+}
+th:nth-child(2) {
+  width: 60%;
+}
+th:nth-child(3) {
+  width: 10%;
+  display: hidden;
+}
+.maintable-left {
+  width: 40%;
+}
+.maintable-right {
+  width: 60%;
+}
+.fa-chevron-right {
+margin-right: .8em;
+}
+.tip {
+cursor:pointer;
+}
+.keytable tr {
+background-color: white;
+padding: 0 5px 0 5px;
+}
+.keytable td:nth-child(3) {
+ text-align: center;
+}
+
+</style>
+</head><body>
 <div id="tabs-9">
   <table>
     <tbody>
