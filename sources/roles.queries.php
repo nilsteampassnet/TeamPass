@@ -310,7 +310,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             //count nb of roles
             $arrUserRoles = array_filter($_SESSION['user_roles']);
             if (count($arrUserRoles) >= 0 && $_SESSION['is_admin'] !== "1") {
-                if (empty($where) === false) {
+                if (empty($where) === true) {
                     $where = " WHERE id IN (".implode(',', $arrUserRoles).")";
                 } else {
                     $where .= " AND id IN (".implode(',', $arrUserRoles).")";

@@ -89,6 +89,13 @@ function checkUser($userId, $userKey, $pageVisited)
         $pageVisited = array($pageVisited);
     }
 
+    // Securize language
+    if (null === $superGlobal->get("user_language", "SESSION")
+        || empty($superGlobal->get("user_language", "SESSION")) === true
+    ) {
+        $superGlobal->put("user_language", "english", "SESSION");
+    }
+
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get("user_language", "SESSION").'.php';
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     require_once 'main.functions.php';
