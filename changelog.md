@@ -9,8 +9,10 @@
  Fixed some other security failures (credit to ​security at Amossys)
  Improved security regarding uploading files
  Fixed issue while restoring DB from administration page
+ Fixed "PW copy to clipboard" log unconsistency in specific case
  Improved / Fixed administration task for encrypting/decrypting files
  Improved security regarding item history display
+ Improved the possibility to define the access level on Roles when creating new folder
  Added filter in Roles
  New: confirm deletion of attachment
  #1956 Warning appears on Category and API pages in admin mode

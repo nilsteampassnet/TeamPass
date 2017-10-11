@@ -92,6 +92,16 @@ foreach ($rows as $record) {
     $arraFlags[$record['label']] = $record['label'];
 }
 
+// Prepare Headers
+header('Access-Control-Allow-Origin: *');
+echo '
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+    <head>
+        <title>User Profile</title>
+    </head>
+<body>';
+
 echo '
 <input type="hidden" id="profile_user_token" value="" />
 <table style="margin-left:7px;">
@@ -717,3 +727,5 @@ function changePersonalSaltKey(credentials, ids, nb_total)
     );
 }
 </script>
+</body>
+</html>
