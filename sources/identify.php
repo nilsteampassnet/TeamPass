@@ -621,7 +621,7 @@ function identifyUser($sentData)
             array(
                 'login' => $username,
                 'pw' => $data['pw'],
-                'email' => @$user_info_from_ad[0]['mail'][0],
+                'email' => (!@$user_info_from_ad[0]['mail'][0]) ? '' : @$user_info_from_ad[0]['mail'][0],
                 'name' => $user_info_from_ad[0]['givenname'][0],
                 'lastname' => $user_info_from_ad[0]['sn'][0],
                 'admin' => '0',
