@@ -510,6 +510,9 @@ function defuse_return_decrypted($value)
 function trimElement($chaine, $element)
 {
     if (!empty($chaine)) {
+        if (is_array($chaine) === true) {
+            $chaine = implode(";", $chaine);
+        }
         $chaine = trim($chaine);
         if (substr($chaine, 0, 1) == $element) {
             $chaine = substr($chaine, 1);
@@ -658,7 +661,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['read_only_folders'] = array();
         $_SESSION['fonction_id'] = $idFonctions;
         $groupesInterdits = array();
-        if (!is_array($groupesInterditsUser)) {
+        if (is_array($groupesInterditsUser) === false) {
             $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
         }
         if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {

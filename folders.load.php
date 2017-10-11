@@ -20,6 +20,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 <script type="text/javascript">
 //<![CDATA[
 $(function() {
+    $("#span_new_rep_roles").hide();
 
     //Launch the datatables pluggin
     var tableFolders = $("#t_folders").dataTable({
@@ -61,7 +62,7 @@ $(function() {
             $("#new_folder_wait").hide();
 
             //empty dialogbox
-            $("#div_add_group input, #div_add_group select").val("");
+            $("#div_add_group input, #div_add_group select, #new_rep_roles").val("");
             $("#add_node_renewal_period").val("0");
             $("#folder_block_modif, #folder_block_creation").val("0");
             $("#parent_id").val("na");
@@ -89,7 +90,8 @@ $(function() {
                             "parent_id": $('#parent_id').val().replace(/"/g,'&quot;') ,
                             "renewal_period": $('#add_node_renewal_period').val().replace(/"/g,'&quot;') ,
                             "block_creation": $("#folder_block_creation").val() ,
-                            "block_modif": $("#folder_block_modif").val()
+                            "block_modif": $("#folder_block_modif").val(),
+                            "access_level": $("#new_rep_roles").val()
                         };
 
                         //send query
@@ -334,6 +336,14 @@ $(function() {
     $("#click_refresh_folders_list").click(function() {
         tableFolders.api().ajax.reload();
     });
+
+    $("#parent_id").change(function() {
+        if ($(this).val() === "0") {
+            $("#span_new_rep_roles").show();
+        } else {
+            $("#span_new_rep_roles").hide();
+        }
+    })
 });
 
 

@@ -3932,15 +3932,17 @@ var showPwd = function(){
 /*
 * permits to save
 */
-function itemLog(log_case)
+function itemLog(log_case, item_id)
 {
+    console.log("> "+item_id);
+    item_id = item_id || $('#id_item').val();
     $.post(
         "sources/items.logs.php",
         {
             type        : log_case,
-            id_item     : $('#id_item').val(),
+            id_item     : item_id,
             folder_id   : $('#hid_cat').val(),
-        hid_label   : $('#hid_label').val(),
+            hid_label   : $('#hid_label').val(),
             key         : "<?php echo $_SESSION['key']; ?>"
         }
     );
@@ -4025,7 +4027,7 @@ function proceed_list_update(stop_proceeding)
         var clipboard = new Clipboard('.mini_pw');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']); ?>").show().fadeOut(1000);
-            itemLog("item_password_copied");
+            itemLog("item_password_copied", e.trigger.dataset.clipboardId);
             e.clearSelection();
         });
 

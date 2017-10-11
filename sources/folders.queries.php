@@ -438,6 +438,19 @@ if (null !== $post_newtitle) {
             $complexity = htmlspecialchars_decode($dataReceived['complexity']);
             $parentId = htmlspecialchars_decode($dataReceived['parent_id']);
             $renewalPeriod = htmlspecialchars_decode($dataReceived['renewal_period']);
+            if ($parentId === "0") {
+                if (isset($dataReceived['access_level']) === true) {
+                    $access_level_by_role = filter_var(htmlspecialchars_decode($dataReceived['access_level']), FILTER_SANITIZE_STRING);
+                } else {
+                    if ($_SESSION['user_manager'] === "1") {
+                        $access_level_by_role = "W";
+                    } else {
+                        $access_level_by_role = "";
+                    }
+                }
+            } else {
+                $access_level_by_role = "";
+            }
 
             //Check if title doesn't contains html codes
             if (preg_match_all("|<[^>]+>(.*)</[^>]+>|U", $title, $out)) {
@@ -544,46 +557,52 @@ if (null !== $post_newtitle) {
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                     $tree->rebuild();
 
-                    if ($isPersonal !== 1
-                        && isset($SETTINGS['subfolder_rights_as_parent'])
-                        && $SETTINGS['subfolder_rights_as_parent'] === 1
-                        || ($isPersonal !== 1 && $parentId === "0")
-                    ) {
+                    // Add right to see this folder
+                    if ($_SESSION['is_admin'] === "1" || $_SESSION['user_manager'] === "1") {
                         //Get user's rights
                         identifyUserRights(
-                            array_push($_SESSION['groupes_visibles'], $newId),
+                            $_SESSION['groupes_visibles'],
                             implode(";", $_SESSION['groupes_interdits']),
                             $_SESSION['is_admin'],
-                            $_SESSION['fonction_id']
+                            is_array($_SESSION['fonction_id']) === true ? implode(";", $_SESSION['fonction_id']) : $_SESSION['fonction_id']
                         );
+                    }
 
+                    if ($isPersonal !== 1
+                        && $parentId === "0"
+                    ) {
                         //add access to this new folder
                         foreach (explode(';', $_SESSION['fonction_id']) as $role) {
-                            if (!empty($role)) {
+                            if (empty($role) === false && empty($access_level_by_role) === false) {
                                 DB::insert(
                                     prefix_table("roles_values"),
                                     array(
                                         'role_id' => $role,
                                         'folder_id' => $newId,
-                                        'type' => "W"
+                                        'type' => $access_level_by_role
                                     )
                                 );
                             }
                         }
                     }
 
-                    //If it is a subfolder, then give access to it for all roles that allows the parent folder
-                    $rows = DB::query("SELECT role_id, type FROM ".prefix_table("roles_values")." WHERE folder_id = %i", $parentId);
-                    foreach ($rows as $record) {
-                        //add access to this subfolder
-                        DB::insert(
-                            prefix_table("roles_values"),
-                            array(
-                                'role_id' => $record['role_id'],
-                                'folder_id' => $newId,
-                                'type' => $record['type']
-                            )
-                        );
+
+                    if (isset($SETTINGS['subfolder_rights_as_parent']) === true
+                        && $SETTINGS['subfolder_rights_as_parent'] === "1"
+                    ) {
+                        //If it is a subfolder, then give access to it for all roles that allows the parent folder
+                        $rows = DB::query("SELECT role_id, type FROM ".prefix_table("roles_values")." WHERE folder_id = %i", $parentId);
+                        foreach ($rows as $record) {
+                            //add access to this subfolder
+                            DB::insert(
+                                prefix_table("roles_values"),
+                                array(
+                                    'role_id' => $record['role_id'],
+                                    'folder_id' => $newId,
+                                    'type' => $record['type']
+                                )
+                            );
+                        }
                     }
 
                     // if parent folder has Custom Fields Categories then add to this child one too

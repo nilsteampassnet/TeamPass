@@ -2695,7 +2695,7 @@ if (null !== $post_type) {
                                     $new_line .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
                                 }
                                 if (empty($pw) === false) {
-                                    $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+                                    $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'" data-clipboard-id="'.$record['id'].'"></i>&nbsp;';
                                 }
                             }
                         }
