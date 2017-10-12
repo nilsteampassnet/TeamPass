@@ -51,7 +51,7 @@ define('ITCOUNT', '2072');
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
 $post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_STRING);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
@@ -835,13 +835,13 @@ if (file_exists(\"".$skFile."\")) {
                     echo 'document.getElementById("step5_skFile").innerHTML = '.
                         '"<img src=\"images/tick.png\">";';
                 }
-                
+
                 // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
                 mysqli_query(
                     $db_link,
                     "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('install', 'clear_install_folder', 'true')"
                 );
-            
+
 
                 //Finished
                 if ($result1 !== false

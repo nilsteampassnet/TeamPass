@@ -48,7 +48,7 @@ $link->set_charset($encoding);
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 $post_freq = filter_input(INPUT_POST, 'freq', FILTER_SANITIZE_NUMBER_INT);
@@ -413,7 +413,7 @@ if (null !== $post_type) {
                 WHERE id=%i",
                 $dataReceived['currentId']
             );
-            
+
             // encrypt new password
             $encrypt = cryption(
                 $dataReceived['new_pwd'],

@@ -89,7 +89,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
 
@@ -772,7 +772,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "migrate_admin_pf":
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
             // Prepare variables
@@ -1122,7 +1122,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
 

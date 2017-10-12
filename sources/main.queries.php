@@ -47,7 +47,7 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
     exit();
 } elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($post_type) && $post_type === "change_user_language"
-        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING))
+        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
     mainQuery();
@@ -93,7 +93,7 @@ function mainQuery()
         case "change_pw":
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
 
@@ -319,7 +319,7 @@ function mainQuery()
             ) {
                 // decrypt and retreive data in JSON format
                 $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                     "decode"
                 );
                 // Prepare variables
@@ -482,7 +482,7 @@ function mainQuery()
         case "generate_new_password":
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
 
@@ -555,7 +555,7 @@ function mainQuery()
         case "store_personal_saltkey":
             $err = "";
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
 
@@ -760,7 +760,7 @@ function mainQuery()
             if (!empty($_SESSION['user_id'])) {
                 // decrypt and retreive data in JSON format
                 $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                     "decode"
                 );
                 // Prepare variables
@@ -1187,7 +1187,7 @@ function mainQuery()
                 //permits to test only once by session
                 $_SESSION['temporary']['send_stats_done'] = true;
                 $SETTINGS['send_stats_time'] = time();
-        
+
                 // save change in config file
                 handleConfigFile("update", 'send_stats_time', $SETTINGS['send_stats_time']);
 

@@ -264,7 +264,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     case "import_items":
         //decrypt and retreive data in JSON format
         $dataReceived = (Encryption\Crypt\aesctr::decrypt(
-            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING),
+            filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
             $_SESSION['key'],
             256
         ));

@@ -342,7 +342,7 @@ if (null !== $post_newtitle) {
                 break;
             }
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), "decode");
             $error = "";
             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
             $folderForDel = array();
@@ -431,7 +431,7 @@ if (null !== $post_newtitle) {
             $error = $newId = $droplist = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), "decode");
 
             //Prepare variables
             $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
@@ -659,7 +659,7 @@ if (null !== $post_newtitle) {
             $error = $droplist = "";
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), "decode");
 
             //Prepare variables
             $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
@@ -958,7 +958,7 @@ if (null !== $post_newtitle) {
             }
 
             //decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING), "decode");
+            $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), "decode");
 
             //Prepare variables
             $source_folder_id = htmlspecialchars_decode($dataReceived['source_folder_id']);

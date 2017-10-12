@@ -67,7 +67,7 @@ $post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
 $post_field_title = filter_input(INPUT_POST, 'field_title', FILTER_SANITIZE_STRING);
 $post_field_type = filter_input(INPUT_POST, 'field_type', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 

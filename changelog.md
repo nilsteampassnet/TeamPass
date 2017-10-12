@@ -15,7 +15,9 @@
  Improved the possibility to define the access level on Roles when creating new folder
  Added filter in Roles
  New: confirm deletion of attachment
+ #1965 Login credentials do not correspond (json_decode issue)
  #1964 Make email field in new LDAP user insertion null safe
+ #1961 After fresh installation the index.php shows random string
  #1956 Warning appears on Category and API pages in admin mode
  #1947 Dependency & array update in install checks
  #1945 Cannot delete items

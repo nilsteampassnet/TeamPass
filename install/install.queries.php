@@ -114,7 +114,7 @@ function encryptFollowingDefuse($message, $ascii_key)
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_activity = filter_input(INPUT_POST, 'activity', FILTER_SANITIZE_STRING);
 $post_task = filter_input(INPUT_POST, 'task', FILTER_SANITIZE_STRING);
 $post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
@@ -368,7 +368,7 @@ if (null !== $post_type) {
                             `type` varchar(50) NOT NULL,
                             `intitule` varchar(100) NOT NULL,
                             `valeur` varchar(500) NOT NULL,
-                            PRIMARY KEY (`id`)
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
 
