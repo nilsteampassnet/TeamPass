@@ -78,7 +78,7 @@ $antiXss = new protect\AntiXSS\AntiXSS();
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_session_key = filter_input(INPUT_POST, 'session_key', FILTER_SANITIZE_STRING);
 $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);

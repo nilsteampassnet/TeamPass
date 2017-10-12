@@ -47,7 +47,7 @@ $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
@@ -621,13 +621,13 @@ function identifyUser($sentData)
             array(
                 'login' => $username,
                 'pw' => $data['pw'],
-                'email' => @$user_info_from_ad[0]['mail'][0],
+                'email' => (isset($user_info_from_ad[0]['mail'][0]) === false) ? '' : $user_info_from_ad[0]['mail'][0],
                 'name' => $user_info_from_ad[0]['givenname'][0],
                 'lastname' => $user_info_from_ad[0]['sn'][0],
                 'admin' => '0',
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
-                'personal_folder' => $SETTINGS['enable_pf_feature'] == "1" ? '1' : '0',
+                'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
                 'fonction_id' => '',
                 'groupes_interdits' => '',
                 'groupes_visibles' => '',

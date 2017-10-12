@@ -74,7 +74,7 @@ function utf8Urldecode($value)
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 // Construction de la requéte en fonction du type de valeur

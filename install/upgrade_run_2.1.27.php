@@ -198,7 +198,7 @@ if (mysqli_num_rows($result) !== 0) {
     $res = addColumnIfNotExist(
         $pre."misc",
         "increment_id",
-        "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`)"
+        "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
     );
 }
 

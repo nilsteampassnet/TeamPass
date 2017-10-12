@@ -93,7 +93,7 @@ use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 // Prepare POST variables
 $post_page = filter_input(INPUT_POST, 'page', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_STRING);
 $post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_STRING);
