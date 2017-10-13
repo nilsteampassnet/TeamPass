@@ -1527,7 +1527,7 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === '1') {
                     // Add restriction if item is restricted to roles
                     $rows = DB::query(
-                        "SELECT t.title
+                        "SELECT t.title, t.id
                         FROM ".prefix_table("roles")."_title as t
                         INNER JOIN ".prefix_table("restriction_to_roles")." as r ON (t.id=r.role_id)
                         WHERE r.item_id = %i
@@ -1536,7 +1536,27 @@ if (null !== $post_type) {
                     );
                     foreach ($rows as $record) {
                         if (!in_array($record['title'], $listRestrictionRoles)) {
-                            array_push($listRestrictionRoles, $record['title']);
+                            
+                        	$roleUsers = "";
+                        	$firstUser = true;
+                        	// Get all users
+                        	$data_user = DB::query("SELECT fonction_id, login FROM ".$pre."users");
+                        	// Test if user have the role
+                        	foreach ($data_user as $user) {
+                        		$users_functions = explode(';', $user['fonction_id']);
+                        		if (in_array($record['id'], $users_functions)) {
+                        			// If it is not the first, we put a comma before the user
+                        			if(!$firstUser) {
+                        				$roleUsers .= ", ";
+                        			} else {
+                        				$firstUser = false;
+                        			}
+                        			// Add the user
+                        			$roleUsers .= $user['login'];
+                        		}
+                        	}
+                        	
+                        	array_push($listRestrictionRoles, $record['title']." <em class=\"role-members\">(".$roleUsers.")</em>");
                         }
                     }
                 }

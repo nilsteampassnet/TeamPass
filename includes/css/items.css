@@ -150,6 +150,10 @@ button{
     background-color: #C7D6E5;
 }
 
+.role-members {
+    font-size: 0.7em;
+}
+
 .grippy{
     cursor:move;
 }
