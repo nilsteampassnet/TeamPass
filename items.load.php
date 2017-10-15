@@ -34,6 +34,7 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
 <script type="text/javascript">
 //<![CDATA[
     var query_in_progress = 0;
+    var clipboard;
 
     $(document).on('focusin', function(e) {e.stopImmediatePropagation();});
 
@@ -159,6 +160,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 {
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || "0";
+
+    if (clipboard) clipboard.destroy();
 
     // case where we should stop listing the items
     if ($("#items_listing_should_stop").val() === "1") {
@@ -345,6 +348,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     // show items
                     $("#full_items_list").append(data.items_html);
+
                     if (data.list_to_be_continued === "yes") {
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
@@ -375,8 +379,84 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
                     // show items
-                    $("#full_items_list").append(data.items_html);
+                    $.each((data.html_json), function(i, value) {
+                        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = '';
 
+                        // Prepare item icon
+                        if (value.canMove === 1 && value.accessLevel === 0) {
+                            item_class = "item_draggable";
+                            item_span = '<span style="cursor:hand;" class="grippy"><span class="fa fa-sm fa-arrows mi-grey-1"></span>&nbsp;</span>';
+                        } else {
+                            item_class = "item";
+                            item_span = '<span style="margin-left:11px;"></span>';
+                        }
+
+                        // Prepare error message
+                        if (value.pw_status === "encryption_error") {
+                            pwd_error = '<span class="fa fa-warning fa-sm mi-red tip" title="<?php echo addslashes($LANG['pw_encryption_error']);?>"></span>&nbsp;';
+                        }
+
+                        // Prepare anyone can modify icon
+                        if (value.anyone_can_modify === "1") {
+                            icon_all_can_modify = '<span class="fa fa-pencil fa-sm mi-grey-1 tip" title="<?php echo addslashes($LANG['item_menu_collab_enable']);?>"></span>&nbsp;&nbsp;';
+                        }
+
+                        // Prepare mini icons
+                        if (value.copy_to_clipboard_small_icons === "1") {
+                            // Login icon
+                            if (value.login !== "") {
+                                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+                            }
+                            // Pwd icon
+                            if (value.pw !== "") {
+                                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
+                            }
+
+                            // Now check if pwd is empty. If it is then warn user
+                            if (value.pw === "") {
+                                pwd_error = '&nbsp;<span class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['password_is_empty']);?>"></span>&nbsp;';
+                            }
+                        }
+
+                        // Prepare Favorite icon
+                        if (value.display_item === 1 && value.enable_favourites === 1) {
+                            if (value.in_favorite === "1") {
+                                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
+                                    '<span class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip"></span>' +
+                                    '</span>';
+                            } else {
+                                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
+                                    '<span class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip"></span>' +
+                                    '</span>';
+                            }
+                        }
+
+                        // Prepare Description
+                        if (value.desc !== "") {
+                            value.desc = '[' + value.desc + ']';
+                        }
+
+                        // Appenditem row
+                        $("#full_items_list").append(
+                            '<li name="' + value.label + '" ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
+                            '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;' +
+                           '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
+                            '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
+                            value.desc +
+                            '</div></font></a>' +
+                            '<span style="float:right;margin-top:2px;">' +
+                            pwd_error +
+                            icon_all_can_modify +
+                            icon_login +
+                            icon_pwd +
+                            icon_favorite +
+                            '</span>' +
+                            '</li>'
+                        );
+                    });
+
+
+                    // Prepare next iteration if needed
                     if (data.list_to_be_continued === "yes") {
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
@@ -1271,7 +1351,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         return false;
     } else if ($('#recherche_group_pf').val() === "0" || ($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "1")) {
         // Double click
-        if (open_edit == 1 && $("#item_editable").val() == 1 && reload != 1) {
+        if (open_edit === "1" && $("#item_editable").val() === "1" && reload !== "1") {
             $("#request_ongoing").val("");
             open_edit_item_div(
                 <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
@@ -1736,28 +1816,34 @@ function showDetailsStep2(id, param)
    * $action = 0 => Make not favorite
    * $action = 1 => Make favorite
 */
+var quick_icon_query_status = true;
 function ActionOnQuickIcon(id, action)
 {
-    //change quick icon
-    if (action == 1) {
-        $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star mi-yellow' onclick='ActionOnQuickIcon("+id+",0)'></i>");
-    } else if (action == 0) {
-        $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star-o' onclick='ActionOnQuickIcon("+id+",1)'></i>");
-    }
-
-    //Send query
-    LoadingPage();
-    $.post("sources/items.queries.php",
-        {
-            type    : 'action_on_quick_icon',
-            id      : id,
-            action  : action
-        },
-        function(data) {
-            LoadingPage();
-            displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
+    if (quick_icon_query_status === true) {
+        quick_icon_query_status = false;
+        //change quick icon
+        if (action == 1) {
+            $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star mi-yellow' onclick='ActionOnQuickIcon("+id+",0)'></i>");
+        } else if (action == 0) {
+            $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star-o' onclick='ActionOnQuickIcon("+id+",1)'></i>");
         }
-   );
+
+
+        //Send query
+        LoadingPage();
+        $.post("sources/items.queries.php",
+            {
+                type    : 'action_on_quick_icon',
+                id      : id,
+                action  : action
+            },
+            function(data) {
+                LoadingPage();
+                displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
+                quick_icon_query_status = true;
+            }
+       );
+    }
 }
 
 //###########
@@ -4018,13 +4104,13 @@ function proceed_list_update(stop_proceeding)
         $("#items_list_loader").addClass("hidden");
 
         // prepare clipboard items
-        var clipboard = new Clipboard('.mini_login');
+        clipboard = new Clipboard('.mini_login');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']); ?>").show().fadeOut(1000);
             e.clearSelection();
         });
 
-        var clipboard = new Clipboard('.mini_pw');
+        clipboard = new Clipboard('.mini_pw');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']); ?>").show().fadeOut(1000);
             itemLog("item_password_copied", e.trigger.dataset.clipboardId);

@@ -2223,7 +2223,7 @@ if (null !== $post_type) {
             $arboHtml = $html = "";
             $folderIsPf = false;
             $showError = 0;
-            $itemsIDList = $rights = $returnedData = $uniqueLoadData = array();
+            $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
             // Build query limits
             if (empty($post_start) === true) {
                 $start = 0;
@@ -2415,7 +2415,7 @@ if (null !== $post_type) {
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
@@ -2433,7 +2433,7 @@ if (null !== $post_type) {
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
@@ -2453,8 +2453,6 @@ if (null !== $post_type) {
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
                     if (empty($idManaged) === true || $idManaged !== $record['id']) {
-                        $new_line = '';
-
                         // Get Expiration date
                         $expirationFlag = '';
                         $expired_item = 0;
@@ -2463,11 +2461,20 @@ if (null !== $post_type) {
                                 ($record['date'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
                             ) {
                                 $expirationFlag = '<i class="fa fa-flag mi-red fa-sm"></i>&nbsp;';
+                                $html_json[$record['id']]['expiration_flag'] = "mi-red";
                                 $expired_item = 1;
                             } else {
                                 $expirationFlag = '<i class="fa fa-flag mi-green fa-sm"></i>&nbsp;';
+                                $html_json[$record['id']]['expiration_flag'] = "mi-green";
                             }
                         }
+                        // Init
+                        $html_json[$record['id']]['expired'] = $expired_item;
+                        $html_json[$record['id']]['item_id'] = $record['id'];
+                        $html_json[$record['id']]['tree_id'] = $record['tree_id'];
+                        $html_json[$record['id']]['label'] = strip_tags(htmlentities(cleanString($record['label'])));
+                        $html_json[$record['id']]['desc'] = strip_tags(htmlentities(cleanString(explode("<br>", $record['description'])[0])));
+
                         // list of restricted users
                         $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
 
@@ -2476,6 +2483,7 @@ if (null !== $post_type) {
                         $need_sk = false;
                         $canMove = false;
                         $item_is_restricted_to_role = false;
+
                         // TODO: Element is restricted to a group. Check if element can be seen by user
                         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
                         $user_is_included_in_role = false;
@@ -2483,7 +2491,6 @@ if (null !== $post_type) {
                             "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id=%i",
                             $record['id']
                         );
-
                         if (DB::count() > 0) {
                             $item_is_restricted_to_role = true;
                             foreach ($roles as $val) {
@@ -2493,6 +2500,7 @@ if (null !== $post_type) {
                                 }
                             }
                         }
+
                         // Manage the restricted_to variable
                         if (null !== $post_restricted) {
                             $restrictedTo = $post_restricted;
@@ -2507,6 +2515,7 @@ if (null !== $post_type) {
                                 $restrictedTo .= ','.$_SESSION['user_id'];
                             }
                         }
+                        $html_json[$record['id']]['restricted'] = $restrictedTo;
 
                         // Can user modify it?
                         if ($record['anyone_can_modify'] === '1'
@@ -2539,10 +2548,12 @@ if (null !== $post_type) {
                             && (int) $is_user_in_restricted_list !== 1
                             && (int) $folder_is_personal !== 1
                         ) {
-                            $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
+                            $html_json[$record['id']]['perso'] = "fa-tag mi-red";
+                            $html_json[$record['id']]['sk'] = 0;
+                            $html_json[$record['id']]['display'] = "no_display";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                             $findPfGroup = 0;
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
                             $displayItem = false;
                             $need_sk = false;
                             $canMove = false;
@@ -2550,24 +2561,29 @@ if (null !== $post_type) {
                         } elseif ((int) $folder_is_in_personal === 1
                             && (int) $record['perso'] === 1
                         ) {
-                            $perso = '<i class="fa fa-user-secret mi-grey-1 fa-sm"></i>&nbsp';
+                            $html_json[$record['id']]['perso'] = "fa-user-secret mi-grey";
                             $findPfGroup = 1;
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = true;
                             $need_sk = true;
                             $canMove = true;
+
+                            $html_json[$record['id']]['sk'] = 1;
+                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                         // CAse where item is restricted to a group of users included user
                         } elseif (empty($record['restricted_to']) === false
                             || (int) $list_folders_editable_by_role === 1
                             && (int) $is_user_in_restricted_list === 1
                         ) {
-                            $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
+                            $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                             $findPfGroup = 0;
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = true;
                             $canMove = true;
+                            $html_json[$record['id']]['sk'] = 0;
+                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                         // CAse where item is restricted to a group of users not including user
                         } elseif ((int) $record['perso'] === 1
                             ||
@@ -2588,17 +2604,17 @@ if (null !== $post_type) {
                                 && $user_is_included_in_role === false
                                 && $item_is_restricted_to_role === true
                             ) {
-                                $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
-                                $findPfGroup = 0;
-                                $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\')';
-                                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
+                                $html_json[$record['id']]['perso'] = "fa-tag mi-red";
                                 $displayItem = false;
                                 $need_sk = true;
                                 $canMove = false;
+
+                                $html_json[$record['id']]['sk'] = 0;
+                                $html_json[$record['id']]['display'] = "no_display";
+                                $html_json[$record['id']]['open_edit'] = 0;
+                                $html_json[$record['id']]['reload'] = "";
                             } else {
-                                $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
-                                $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
-                                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+                                $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                                 // reinit in case of not personal group
                                 if ($init_personal_folder === false) {
                                     $findPfGroup = "";
@@ -2608,50 +2624,30 @@ if (null !== $post_type) {
                                 if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === '1') {
                                     $displayItem = true;
                                 }
+
+                                $html_json[$record['id']]['sk'] = 0;
+                                $html_json[$record['id']]['display'] = "";
+                                $html_json[$record['id']]['open_edit'] = 1;
+                                $html_json[$record['id']]['reload'] = "";
                             }
                         } else {
-                            $perso = '<i class="fa fa-tag mi-green fa-sm"></i>&nbsp';
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+                            $html_json[$record['id']]['perso'] = "fa-tag mi-green";
                             $displayItem = true;
                             // reinit in case of not personal group
                             if ($init_personal_folder === false) {
                                 $findPfGroup = "";
                                 $init_personal_folder = true;
                             }
-                        }
-                        // Prepare full line
-                        $new_line .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
-                        if ($canMove === true && $accessLevel == 0) {
-                            $new_line .= 'item_draggable';
-                        } else {
-                            $new_line .= 'item';
+
+                            $html_json[$record['id']]['sk'] = 0;
+                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                         }
 
-                        $new_line .= ' trunc_line" id="'.$record['id'].'" style="">';
-
-                        if ($canMove === true && $accessLevel == 0) {
-                            $new_line .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
-                        } else {
-                            $new_line .= '<span style="margin-left:11px;"></span>';
-                        }
-
-
-                        $label = stripslashes(handleBackslash($record['label']));
-                        $new_line .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
-
-                        // manage desc to show
-                        if (empty($record['description']) === false && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1') {
-                            $desc = explode("<br>", $record['description']);
-                            $new_line .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
-                        }
-
-                        $new_line .= '</div></font>';
-
-                        $new_line .= '</a>';
-
-                        //
-                        $new_line .= '<span style="float:right;margin-top:2px;">';
+                        $html_json[$record['id']]['canMove'] = 1;
+                        $html_json[$record['id']]['accessLevel'] = 0;
+                        $html_json[$record['id']]['pw_status'] = "";
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
@@ -2673,46 +2669,27 @@ if (null !== $post_type) {
                             $pw = $pw['string'];
                             if (!isUTF8($pw)) {
                                 $pw = "";
-                                $new_line .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
-                            } elseif (empty($pw) === true) {
-                                $new_line .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
+                                $html_json[$record['id']]['pw_status'] = "encryption_error";
                             }
                         } else {
                             $pw = "";
                         }
+                        $html_json[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
+                        $html_json[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
+                        $html_json[$record['id']]['anyone_can_modify'] = $SETTINGS['anyone_can_modify'];
+                        $html_json[$record['id']]['copy_to_clipboard_small_icons'] = $SETTINGS['copy_to_clipboard_small_icons'];
+                        $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
+                        $html_json[$record['id']]['enable_favourites'] = $SETTINGS['enable_favourites'];
 
-                        // mini icon for collab
-                        if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
-                            if ($record['anyone_can_modify'] === '1') {
-                                $new_line .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
-                            }
-                        }
-
-                        // display quick icon shortcuts ?
-                        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
-                            if ($displayItem === true) {
-                                if (empty($record['login']) === false) {
-                                    $new_line .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
-                                }
-                                if (empty($pw) === false) {
-                                    $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'" data-clipboard-id="'.$record['id'].'"></i>&nbsp;';
-                                }
-                            }
-                        }
                         // Prepare make Favorite small icon
-                        $new_line .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $new_line .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $html_json[$record['id']]['in_favorite'] = 1;
                         } else {
-                            $new_line .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $html_json[$record['id']]['in_favorite'] = 0;
                         }
 
-                        $new_line .= '</span></li>';
                         // Build array with items
                         array_push($itemsIDList, array($record['id'], $pw, $record['login'], $displayItem));
-
-                        // build full html
-                        $html .= $new_line;
 
                         $i++;
                     }
@@ -2745,24 +2722,13 @@ if (null !== $post_type) {
                 $listToBeContinued = "end";
             }
 
-            //  Fixing items not being displayed
-            $html = iconv(
-                'UTF-8',
-                'UTF-8//IGNORE',
-                mb_convert_encoding(
-                    $html,
-                    "UTF-8",
-                    "UTF-8"
-                )
-            );
-
-
             // Prepare returned values
             $returnValues = array(
+                "html_json" => $html_json,
                 "recherche_group_pf" => $findPfGroup,
                 "arborescence" => $arboHtml,
                 "array_items" => $itemsIDList,
-                "items_html" => $html,
+                //"items_html" => $html,
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,

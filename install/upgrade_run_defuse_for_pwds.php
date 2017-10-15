@@ -55,11 +55,11 @@ $db_sk = mysqli_fetch_array(
         WHERE type='admin' AND intitule = 'saltkey_ante_2127'"
     )
 );
-if (isset($db_sk['valeur']) && empty($db_sk['valeur']) === false) {
-    $old_saltkey = $db_sk['valeur'];
-} else {
+if (count($db_sk['valeur']) === 0 || empty($db_sk['valeur']) === true) {
     echo '[{"finish":"1" , "error":"Previous Saltkey not in database."}]';
     exit();
+} else {
+    $old_saltkey = $db_sk['valeur'];
 }
 
 // Read saltkey
