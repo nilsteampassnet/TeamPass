@@ -2124,6 +2124,13 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
  */
 function accessToItemIsGranted($item_id)
 {
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Prepare superGlobal variables
+    $session_groupes_visibles = $superGlobal->get("groupes_visibles", "SESSION");
+    $session_list_restricted_folders_for_items = $superGlobal->get("list_restricted_folders_for_items", "SESSION");
+
     // Load item data
     $data = DB::queryFirstRow(
         "SELECT id_tree
@@ -2133,10 +2140,10 @@ function accessToItemIsGranted($item_id)
     );
 
     // Check if user can access this folder
-    if (!in_array($data['id_tree'], $_SESSION['groupes_visibles'])) {
+    if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
-        if (isset($_SESSION['list_restricted_folders_for_items'][$data['id_tree']])
-            && !in_array($item_id, $_SESSION['list_restricted_folders_for_items'][$data['id_tree']])
+        if (isset($session_list_restricted_folders_for_items[$data['id_tree']])
+            && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
         ) {
             return "ERR_FOLDER_NOT_ALLOWED";
         } else {

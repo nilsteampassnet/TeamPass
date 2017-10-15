@@ -33,6 +33,7 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
 
 <script type="text/javascript">
 //<![CDATA[
+    // Some global declaration
     var query_in_progress = 0;
     var clipboard;
 
@@ -161,7 +162,10 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || "0";
 
-    if (clipboard) clipboard.destroy();
+    // Delete existing clipboard
+    if (clipboard) {
+        clipboard.destroy();
+    }
 
     // case where we should stop listing the items
     if ($("#items_listing_should_stop").val() === "1") {

@@ -43,13 +43,13 @@ function IncreaseSessionTime(messageEnd, messageWait, duration){
         function(data){
             if (data[0].new_value !== "expired") {
                 $("#main_info_box_text").html(messageEnd);
-                $("#main_info_box").show(1).delay(3000).fadeOut(1000)
+                $("#main_info_box").show(1).delay(3000).fadeOut(1000);
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
                 $("#countdown").css("color","white");
                 $("#div_increase_session_time").dialog("close");
             } else {
-                $(location).attr('href',"index.php?session=expired");
+                $(location).attr('href','index.php?session=expired');
             }
         },
         "json"
@@ -170,7 +170,7 @@ function CreateRandomString(size,type){
 *
 **/
 function unsanitizeString(string){
-    if(string !== "" && string !== null && string !== undefined){
+    if(string !== "" && string !== null){
         string = string.replace(/\\/g,"").replace(/&#92;/g,"\\");
     }
     return string;
