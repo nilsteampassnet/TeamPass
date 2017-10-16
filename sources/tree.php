@@ -130,7 +130,6 @@ function buildNodeTree($nodeId)
     $session_list_restricted_folders_for_items =    $superGlobal->get("list_restricted_folders_for_items", "SESSION");
     $session_user_id =                              $superGlobal->get("user_id", "SESSION");
     $session_login =                                $superGlobal->get("login", "SESSION");
-    $session_user_read_only =                       $superGlobal->get("user_read_only", "SESSION");
     $session_no_access_folders =                    $superGlobal->get("no_access_folders", "SESSION");
     $session_list_folders_limited =                 $superGlobal->get("list_folders_limited", "SESSION");
     $session_read_only_folders =                    $superGlobal->get("read_only_folders", "SESSION");

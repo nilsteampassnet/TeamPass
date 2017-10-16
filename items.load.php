@@ -249,15 +249,24 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#pf_selected").val(data.IsPersonalFolder);
 
                     // display path of folders
-                    if (data.arborescence != undefined) {
+                    if ((data.arborescence !== undefined && data.arborescence !== "") || $("#tmp_arbo").length > 0) {
                         var path_maxlength = 420;
+                        var arbo = '';
+
+                        // check arbo and rebuild it
+                        if ($("#tmp_arbo").length > 0) {
+                            arbo = $("#tmp_arbo").html();
+                        } else {
+                            arbo = rebuildPath(data.arborescence);
+                        }
+
                         if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
                         if (data.IsPersonalFolder === 0) {
-                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + data.arborescence);
+                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + arbo);
                         } else {
-                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['personal_folder']); ?>&nbsp;:&nbsp;' + data.arborescence);
+                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['personal_folder']); ?>&nbsp;:&nbsp;' + arbo);
                         }
-                        var path_levels = data.arborescence.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
+                        var path_levels = arbo.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
                         if ($("#items_path_var").width() > path_maxlength) {
                             $("#path_fontsize").val($("#items_path_var").css('font-size'));
                             // start reducing size of font
@@ -296,6 +305,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $("#items_path_var").html('');
                     }
 
+                    // Remove span with arbo
+                    $("#tmp_arbo").remove();
+
                     // store the categories to be displayed
                     if (data.displayCategories !== undefined) {
                         $("#display_categories").val(data.displayCategories);
@@ -320,6 +332,14 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $("#items_list_loader").after('<span id="items_loading_progress">' + Math.round(data.next_start*100/data.counter_full, 0) + '%</span>');
                     } else {
                         $("#items_loading_progress").html(Math.round(data.next_start*100/data.counter_full, 0) + '%');
+                    }
+                    // Store arbo
+                    if (data.arborescence !== undefined && data.arborescence !== "" && $("#tmp_arbo").length === 0) {
+                        // Rebuild path
+                        new_path = rebuildPath(data.arborescence);
+
+                        // Store path in tempo element
+                        $("body").append('<span class="hidden" id="tmp_arbo">'+new_path+'</span>');
                     }
                 }
 
@@ -351,7 +371,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#more_items").remove();
 
                     // show items
-                    $("#full_items_list").append(data.items_html);
+                    showItemsList(data.html_json);
 
                     if (data.list_to_be_continued === "yes") {
                         //set next start for query
@@ -383,82 +403,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
                     // show items
-                    $.each((data.html_json), function(i, value) {
-                        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = '';
-
-                        // Prepare item icon
-                        if (value.canMove === 1 && value.accessLevel === 0) {
-                            item_class = "item_draggable";
-                            item_span = '<span style="cursor:hand;" class="grippy"><span class="fa fa-sm fa-arrows mi-grey-1"></span>&nbsp;</span>';
-                        } else {
-                            item_class = "item";
-                            item_span = '<span style="margin-left:11px;"></span>';
-                        }
-
-                        // Prepare error message
-                        if (value.pw_status === "encryption_error") {
-                            pwd_error = '<span class="fa fa-warning fa-sm mi-red tip" title="<?php echo addslashes($LANG['pw_encryption_error']);?>"></span>&nbsp;';
-                        }
-
-                        // Prepare anyone can modify icon
-                        if (value.anyone_can_modify === "1") {
-                            icon_all_can_modify = '<span class="fa fa-pencil fa-sm mi-grey-1 tip" title="<?php echo addslashes($LANG['item_menu_collab_enable']);?>"></span>&nbsp;&nbsp;';
-                        }
-
-                        // Prepare mini icons
-                        if (value.copy_to_clipboard_small_icons === "1") {
-                            // Login icon
-                            if (value.login !== "") {
-                                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
-                            }
-                            // Pwd icon
-                            if (value.pw !== "") {
-                                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
-                            }
-
-                            // Now check if pwd is empty. If it is then warn user
-                            if (value.pw === "") {
-                                pwd_error = '&nbsp;<span class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['password_is_empty']);?>"></span>&nbsp;';
-                            }
-                        }
-
-                        // Prepare Favorite icon
-                        if (value.display_item === 1 && value.enable_favourites === 1) {
-                            if (value.in_favorite === "1") {
-                                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
-                                    '<span class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip"></span>' +
-                                    '</span>';
-                            } else {
-                                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
-                                    '<span class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip"></span>' +
-                                    '</span>';
-                            }
-                        }
-
-                        // Prepare Description
-                        if (value.desc !== "") {
-                            value.desc = '[' + value.desc + ']';
-                        }
-
-                        // Appenditem row
-                        $("#full_items_list").append(
-                            '<li name="' + value.label + '" ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
-                            '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;' +
-                           '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
-                            '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
-                            value.desc +
-                            '</div></font></a>' +
-                            '<span style="float:right;margin-top:2px;">' +
-                            pwd_error +
-                            icon_all_can_modify +
-                            icon_login +
-                            icon_pwd +
-                            icon_favorite +
-                            '</span>' +
-                            '</li>'
-                        );
-                    });
-
+                    showItemsList(data.html_json);
 
                     // Prepare next iteration if needed
                     if (data.list_to_be_continued === "yes") {
@@ -530,6 +475,114 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
             }
         );
     }
+}
+
+/**
+ * Builds the HTML list of Items
+ * @param  {[type]} data [description]
+ * @return {[type]}      [description]
+ */
+function showItemsList(data)
+{
+    $.each((data), function(i, value) {
+        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = '';
+
+        // Prepare item icon
+        if (value.canMove === 1 && value.accessLevel === 0) {
+            item_class = "item_draggable";
+            item_span = '<span style="cursor:hand;" class="grippy"><span class="fa fa-sm fa-arrows mi-grey-1"></span>&nbsp;</span>';
+        } else {
+            item_class = "item";
+            item_span = '<span style="margin-left:11px;"></span>';
+        }
+
+        // Prepare error message
+        if (value.pw_status === "encryption_error") {
+            pwd_error = '<span class="fa fa-warning fa-sm mi-red tip" title="<?php echo addslashes($LANG['pw_encryption_error']);?>"></span>&nbsp;';
+        }
+
+        // Prepare anyone can modify icon
+        if (value.anyone_can_modify === "1") {
+            icon_all_can_modify = '<span class="fa fa-pencil fa-sm mi-grey-1 tip" title="<?php echo addslashes($LANG['item_menu_collab_enable']);?>"></span>&nbsp;&nbsp;';
+        }
+
+        // Prepare mini icons
+        if (value.copy_to_clipboard_small_icons === "1") {
+            // Login icon
+            if (value.login !== "") {
+                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+            }
+            // Pwd icon
+            if (value.pw !== "") {
+                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
+            }
+
+            // Now check if pwd is empty. If it is then warn user
+            if (value.pw === "") {
+                pwd_error = '&nbsp;<span class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['password_is_empty']);?>"></span>&nbsp;';
+            }
+        }
+
+        // Prepare Favorite icon
+        if (value.display_item === 1 && value.enable_favourites === 1) {
+            if (value.in_favorite === "1") {
+                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
+                    '<span class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip"></span>' +
+                    '</span>';
+            } else {
+                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
+                    '<span class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip"></span>' +
+                    '</span>';
+            }
+        }
+
+        // Prepare Description
+        if (value.desc !== "") {
+            value.desc = '[' + value.desc + ']';
+        }
+
+        // Appenditem row
+        $("#full_items_list").append(
+            '<li name="' + value.label + '" ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
+            '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;' +
+           '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
+            '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
+            value.desc +
+            '</div></font></a>' +
+            '<span style="float:right;margin-top:2px;">' +
+            pwd_error +
+            icon_all_can_modify +
+            icon_login +
+            icon_pwd +
+            icon_favorite +
+            '</span>' +
+            '</li>'
+        );
+    });
+}
+
+/**
+ * Builds the HTML path
+ * @param  {[type]} data [description]
+ * @return {[type]}      [description]
+ */
+function rebuildPath(data)
+{
+    var new_path = new_path_elem = '';
+    $.each((data), function(i, value) {
+        new_path_elem = '';
+        if (value['visible'] === 1) {
+            new_path_elem = ' style="cursor:pointer;" onclick="ListerItems('+value['id']+', \'\', 0)"';
+        }
+
+        if (new_path === "") {
+            new_path = '<a class="path_element" id="path_elem_'+value['id']+'"'+new_path_elem+'>'+value['title']+'</a>';
+        } else {
+            new_path += '&nbsp;<span class="fa fa-caret-right"></span>&nbsp;<a class="path_element" id="path_elem_'+value['id']+'"'+new_path_elem+'>'+value['title']+'</a>'
+        }
+    });
+
+    return new_path;
 }
 
 function pwGenerate(elem)

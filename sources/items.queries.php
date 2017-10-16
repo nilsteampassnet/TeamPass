@@ -2221,6 +2221,7 @@ if (null !== $post_type) {
             $post_nb_items_to_display_once = filter_input(INPUT_POST, 'nb_items_to_display_once', FILTER_SANITIZE_NUMBER_INT);
 
             $arboHtml = $html = "";
+            $arr_arbo = [];
             $folderIsPf = false;
             $showError = 0;
             $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
@@ -2240,18 +2241,16 @@ if (null !== $post_type) {
                         $elem->title = $_SESSION['login'];
                         $folderIsPf = true;
                     }
-                    $arboHtml_tmp = '<a class="path_element" id="path_elem_'.$elem->id.'"';
-                    if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
-                        $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
-                    }
-                    $arboHtml_tmp .= '>'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES).'</a>';
-                    if (empty($arboHtml)) {
-                        $arboHtml = $arboHtml_tmp;
-                    } else {
-                        $arboHtml .= '&nbsp;<i class="fa fa-caret-right"></i>&nbsp;'.$arboHtml_tmp;
-                    }
+                    // Store path elements
+                    array_push(
+                        $arr_arbo,
+                        array(
+                            "id" => $elem->id,
+                            "title" => htmlspecialchars(stripslashes($elem->title), ENT_QUOTES),
+                            "visible" => in_array($elem->id, $_SESSION['groupes_visibles']) ? 1 : 0
+                        )
+                    );
                 }
-                $uniqueLoadData['arboHtml'] = $arboHtml;
 
                 // store last folder accessed in cookie
                 setcookie(
@@ -2379,7 +2378,7 @@ if (null !== $post_type) {
                 $counter_full = $uniqueLoadData['counter_full'];
                 $displayCategories = $uniqueLoadData['displayCategories'];
                 $folderComplexity = $uniqueLoadData['folderComplexity'];
-                $arboHtml = $uniqueLoadData['arboHtml'];
+                //$arboHtml = $uniqueLoadData['arboHtml'];
                 $folder_is_personal = $uniqueLoadData['folder_is_personal'];
                 $folder_is_in_personal = $uniqueLoadData['folder_is_in_personal'];
                 $list_folders_editable_by_role = $uniqueLoadData['list_folders_editable_by_role'];
@@ -2561,7 +2560,7 @@ if (null !== $post_type) {
                         } elseif ((int) $folder_is_in_personal === 1
                             && (int) $record['perso'] === 1
                         ) {
-                            $html_json[$record['id']]['perso'] = "fa-user-secret mi-grey";
+                            $html_json[$record['id']]['perso'] = "fa-user-secret mi-grey-1";
                             $findPfGroup = 1;
                             $displayItem = true;
                             $need_sk = true;
@@ -2726,9 +2725,8 @@ if (null !== $post_type) {
             $returnValues = array(
                 "html_json" => $html_json,
                 "recherche_group_pf" => $findPfGroup,
-                "arborescence" => $arboHtml,
+                "arborescence" => $arr_arbo,
                 "array_items" => $itemsIDList,
-                //"items_html" => $html,
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
