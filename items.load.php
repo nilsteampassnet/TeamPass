@@ -2537,7 +2537,10 @@ function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
     }
 
     if (refresh_visible_folders === 1) {
-        refreshVisibleFolders();
+        $(this).delay(500).queue(function() {
+            refreshVisibleFolders();
+            $(this).dequeue();
+        });
     }
 }
 
@@ -2555,11 +2558,52 @@ function refreshVisibleFolders()
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             //check if format error
-            if (data.error == "") {
+            if (data.error === "") {
+                // Build html lists
+                var html_visible = '',
+                    html_full_visible = '',
+                    html_active_visible = '',
+                    indentation = '',
+                    disabled = '';
+
+                // Shall we show the root folder
+                if (data.html_json.can_create_root_folder === 1) {
+                    html_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                    html_full_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                    html_active_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                }
+
+                //
+                $.each(data.html_json.folders, function(i, value) {
+                    // Build identation
+                    indentation = '';
+                    for (x = 1; x <= value.level; x += 1) {
+                        indentation += "&nbsp;&nbsp;";
+                    }
+
+                    // Is it disabled?
+                    if (value.disabled === 1) {
+                        disabled = ' disabled="disabled"';
+                    } else {
+                        disabled = '';
+                    }
+
+                    if (value.is_visible_active === 1) {
+                        disabled_active_visible = '';
+                    } else {
+                        disabled_active_visible = ' disabled="disabled"';
+                    }
+
+                    // Prepare options lists
+                    html_visible += '<option value="'+value.id+'"'+disabled+'>'+indentation+value.title+'</option>';
+                    html_full_visible += '<option value="'+value.id+'">'+indentation+value.title+'</option>';
+                    html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
+                });
+
                 // append new list
-                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
-                $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
-                $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
+                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(html_visible);
+                $("#move_folder_id").find('option').remove().end().append(html_full_visible);
+                $("#copy_in_folder").find('option').remove().end().append(html_active_visible);
 
                 // remove ROOT option if exists
                 $('#edit_folder_folder option[value="0"]').remove();
@@ -2688,9 +2732,34 @@ $(function() {
     $("#custom_pw, #edit_custom_pw").buttonset();
     $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
 
-    //Build multiselect box
+    // Launch items loading
+    if ($("#jstree_group_selected").val() == "") {
+        var first_group = 1;
+    } else {
+        var first_group = $("#jstree_group_selected").val();
+    }
 
-    //Build tree
+    if ($("#hid_cat").val() != "") {
+        first_group = $("#hid_cat").val();
+    }
+
+    //load items
+    if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
+    else start = 0;
+
+    // load list of items
+    if (first_group !== "") {
+        ListerItems(first_group,'', start);
+    }
+
+    //Load item if needed and display items list
+    if ($("#open_id").val() !== "") {
+        AfficherDetailsItem($("#open_id").val());
+        //refreshTree($("#hid_cat").val(), "0");
+        $("#open_item_by_get").val("");
+    }
+
+    // Build tree
     $('#jstree').jstree({
         "core" : {
             "animation" : 0,
@@ -2723,7 +2792,10 @@ $(function() {
     });
 
     // load list of visible folders for current user
-    refreshVisibleFolders();
+    $(this).delay(500).queue(function() {
+        refreshVisibleFolders();
+        $(this).dequeue();
+    });
 
     $("#add_folder").click(function() {
         var posit = $('#item_selected').val();
@@ -3726,33 +3798,6 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         });
         up.refresh(); // Reposition Flash/Silverlight
     });
-
-    //Launch items loading
-    if ($("#jstree_group_selected").val() == "") {
-        var first_group = 1;
-    } else {
-        var first_group = $("#jstree_group_selected").val();
-    }
-
-    if ($("#hid_cat").val() != "") {
-        first_group = $("#hid_cat").val();
-    }
-
-    //load items
-    if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
-    else start = 0;
-
-    // load list of items
-    if (first_group !== "") {
-        ListerItems(first_group,'', start);
-    }
-
-    //Load item if needed and display items list
-    if ($("#open_id").val() !== "") {
-        AfficherDetailsItem($("#open_id").val());
-        //refreshTree($("#hid_cat").val(), "0");
-        $("#open_item_by_get").val("");
-    }
 
     //Password meter for item creation
     $("#pw1").simplePassMeter({

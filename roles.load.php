@@ -315,8 +315,6 @@ function refresh_roles_matrix(order)
                 //manage next & previous arrows
                 $('#next_role').val(data.next);
                 $('#previous_role').val(data.previous);
-
-                $("#filter_roles").val("");
             } else {
                 $("#matrice_droits").html(data.error);
             }

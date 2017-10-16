@@ -3846,6 +3846,11 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Init
+
+            // Will we show the root folder?
+            $arr_data['can_create_root_folder'] = isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1' ? 1 : 0;
+
             // Build list of visible folders
             $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
             if (isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1') {
@@ -3878,22 +3883,25 @@ if (null !== $post_type) {
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
             $tree->rebuild();
             $folders = $tree->getDescendants();
+            $inc = 0;
 
             foreach ($folders as $folder) {
                 // Be sure that user can only see folders he/she is allowed to
-                if (!in_array($folder->id, $_SESSION['forbiden_pfs'])
-                    || in_array($folder->id, $_SESSION['groupes_visibles'])
-                    || in_array($folder->id, $listFoldersLimitedKeys)
-                    || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
+                if (in_array($folder->id, $_SESSION['forbiden_pfs']) === false
+                    || in_array($folder->id, $_SESSION['groupes_visibles']) === true
+                    || in_array($folder->id, $listFoldersLimitedKeys) === true
+                    || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
                 ) {
+                    // Init
                     $displayThisNode = false;
                     $hide_node = false;
                     $nbChildrenItems = 0;
+
                     // Check if any allowed folder is part of the descendants of this node
                     $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
                     foreach ($nodeDescendants as $node) {
                         // manage tree counters
-                        if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
+                        /*if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
                             DB::query(
                                 "SELECT * FROM ".prefix_table("items")."
                                 WHERE inactif=%i AND id_tree = %i",
@@ -3901,8 +3909,8 @@ if (null !== $post_type) {
                                 $node
                             );
                             $nbChildrenItems += DB::count();
-                        }
-                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))
+                        }*/
+                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
                             || @in_array($node, $listFoldersLimitedKeys)
                             || @in_array($node, $listRestrictedFoldersForItemsKeys)
                         ) {
@@ -3912,11 +3920,6 @@ if (null !== $post_type) {
                     }
 
                     if ($displayThisNode === true) {
-                        $ident = "";
-                        for ($x = 1; $x < $folder->nlevel; $x++) {
-                            $ident .= "&nbsp;&nbsp;";
-                        }
-
                         // resize title if necessary
                         $fldTitle = str_replace("&", "&amp;", $folder->title);
 
@@ -3925,42 +3928,37 @@ if (null !== $post_type) {
                             $fldTitle = $_SESSION['login'];
                         }
 
-                        // build select for all visible folders
-                        if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-                            if ($_SESSION['user_read_only'] === '0' || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1')) { //
-                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" >'.$ident.$fldTitle.'</option>';
-                                } else {
-                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                                }
-                            } else {
-                                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-                            }
-                        } else {
-                            $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        // ALL FOLDERS
+                        // Is this folder disabled?
+                        $disabled = 0;
+                        if (in_array($folder->id, $_SESSION['groupes_visibles']) === false
+                            || in_array($folder->id, $_SESSION['read_only_folders']) === true
+                            || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
+                        ) {
+                            $disabled = 1;
                         }
-                        // build select for non personal visible folders
-                        if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
-                            $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                        } else {
-                            $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        // Build array
+                        $arr_data['folders'][$inc]['id'] = $folder->id;
+                        $arr_data['folders'][$inc]['level'] = $folder->nlevel;
+                        $arr_data['folders'][$inc]['title'] = $fldTitle;
+                        $arr_data['folders'][$inc]['disabled'] = $disabled;
+
+
+                        // Is this folder an active folders? (where user can do something)
+                        $is_visible_active = 0;
+                        if (isset($_SESSION['list_restricted_folders_for_items']) && in_array($inc, $_SESSION['read_only_folders']) === true) {
+                            $is_visible_active = 1;
                         }
-                        // build select for active folders (where user can do something)
-                        if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-                            $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                        } else {
-                            $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-                        }
+                        $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
+
+                        $inc++;
                     }
                 }
             }
 
             $data = array(
                 'error' => "",
-                'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),
-                'selectVisibleNonPersonalFoldersOptions' => ($selectVisibleNonPersonalFoldersOptions),
-                'selectVisibleActiveFoldersOptions' => ($selectVisibleActiveFoldersOptions),
-                'selectFullVisibleFoldersOptions' => str_replace('disabled="disabled"', "", $selectVisibleFoldersOptions)
+                'html_json' => $arr_data
             );
             // send data
             echo prepareExchangedData($data, "encode");
