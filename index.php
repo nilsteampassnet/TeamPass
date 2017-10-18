@@ -43,7 +43,6 @@ if (!file_exists('includes/config/settings.php')) {
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
-//session_destroy();
 session_id();
 
 // Load config

@@ -37,20 +37,34 @@ $_SESSION['settings']['loaded'] = "";
 $finish = false;
 $next = ($post_nb + $post_start);
 
-// Open DB connection
+// Test DB connexion
 $pass = defuse_return_decrypted($pass);
-$dbTmp = mysqli_connect(
+if (mysqli_connect(
     $server,
     $user,
     $pass,
     $database,
     $port
-);
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 // Get old saltkey from saltkey_ante_2127
 $db_sk = mysqli_fetch_array(
     mysqli_query(
-        $dbTmp,
+        $db_link,
         "SELECT valeur FROM ".$pre."misc
         WHERE type='admin' AND intitule = 'saltkey_ante_2127'"
     )
@@ -68,24 +82,24 @@ $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
 // Get total items
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT id, pw, pw_iv FROM ".$pre."items
     WHERE perso = '0'"
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 $total = mysqli_num_rows($rows);
 
 // Loop on items
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT id, pw, pw_iv, encryption_type FROM ".$pre."items
     WHERE perso = '0' LIMIT ".$post_start.", ".$post_nb
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 
@@ -108,14 +122,14 @@ while ($data = mysqli_fetch_array($rows)) {
 
         // store Password
         mysqli_query(
-            $dbTmp,
+            $db_link,
             "UPDATE ".$pre."items
             SET pw = '".$new_pw['string']."', pw_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']
         );
     } elseif ($data['encryption_type'] !== "defuse" && substr($data['pw'], 0, 3) === "def") {
         mysqli_query(
-            $dbTmp,
+            $db_link,
             "UPDATE ".$pre."items
             SET pw_iv = '', encryption_type = 'defuse'
             WHERE id = ".$data['id']

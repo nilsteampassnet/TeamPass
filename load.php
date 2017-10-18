@@ -395,14 +395,12 @@ $htmlHeaders .= '
         $("#dialog_user_profil").dialog({
             open: function(event, ui) {
                 $("#div_user_profil").load(
-                    "'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
+                    "'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'"
                 );
             },
             close: function() {
                 // in case of user changed language then reload the current page
                 if ($("#userlanguage_'.$_SESSION['user_id'].'").text() !== "'.$_SESSION['user_language'].'") {
-                    //location.reload();
-                    //document.location.href="index.php?language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();
                     var url = window.location.href;
                     if (url.indexOf("?") > -1) {
                         url += "&language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();

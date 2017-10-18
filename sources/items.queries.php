@@ -2666,7 +2666,7 @@ if (null !== $post_type) {
 
                             // test charset => may cause a json error if is not utf8
                             $pw = $pw['string'];
-                            if (!isUTF8($pw)) {
+                            if (isUTF8($pw) === false) {
                                 $pw = "";
                                 $html_json[$record['id']]['pw_status'] = "encryption_error";
                             }
@@ -2922,6 +2922,7 @@ if (null !== $post_type) {
             recupDroitCreationSansComplexite($post_groupe);
 
             $returnValues = array(
+                "error" => "",
                 "val" => $data['valeur'],
                 "visibility" => $visibilite,
                 "complexity" => $complexity,

@@ -453,25 +453,27 @@ if (isset($post_type)) {
                 }
             }
 
-            if (!isset($session_encrypt_key) || empty($session_encrypt_key)) {
-                // check if 2.1.27 already installed
-                $defuse_file = substr($session_sk_file, 0, strrpos($session_sk_file, "/"))."/teampass-seckey.txt";
-                if (file_exists($defuse_file)) {
-                    $okEncryptKey = true;
-                    $superGlobal->put("tp_defuse_installed", true, "SESSION");
-                    $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Defuse encryption key is defined&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
-                        '</span><br />';
-                } else {
-                    $okEncryptKey = false;
+            // check if 2.1.27 already installed
+            $okEncryptKey = false;
+            $defuse_file = substr($session_sk_file, 0, strrpos($session_sk_file, "/"))."/teampass-seckey.txt";
+            if (file_exists($defuse_file)) {
+                $okEncryptKey = true;
+                $superGlobal->put("tp_defuse_installed", true, "SESSION");
+                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Defuse encryption key is defined&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                    '</span><br />';
+            }
+
+            if ($okEncryptKey === false) {
+                if (!isset($session_encrypt_key) || empty($session_encrypt_key)) {
                     $superGlobal->put("tp_defuse_installed", false, "SESSION");
                     $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) '.
                         ' could not be recovered &nbsp;&nbsp;'.
                         '<img src=\"images/minus-circle.png\"></span><br />';
+                } else {
+                    $okEncryptKey = true;
+                    $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is available&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
+                        '</span><br />';
                 }
-            } else {
-                $okEncryptKey = true;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">Encryption Key (SALT) is available&nbsp;&nbsp;<img src=\"images/tick-circle.png\">'.
-                    '</span><br />';
             }
 
             if ($okWritable === true && $okExtensions === true && $okEncryptKey === true) {

@@ -49,27 +49,41 @@ $_SESSION['settings']['loaded'] = "";
 $dbgDuo = fopen("upgrade.log", "a");
 $finish = false;
 
-
+// Test DB connexion
 $pass = defuse_return_decrypted($pass);
-$dbTmp = mysqli_connect(
+if (mysqli_connect(
     $server,
     $user,
     $pass,
     $database,
     $port
-);
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 fputs($dbgDuo, (string) "\n\nSELECT id, pw, pw_iv FROM ".$pre."items
     WHERE perso = '0' LIMIT ".$post_start.", ".$post_nb."\n");
 
 // get total items
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT id, pw, pw_iv FROM ".$pre."items
     WHERE perso = '0'"
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 
@@ -77,12 +91,12 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT id, pw, pw_iv FROM ".$pre."items
     WHERE perso = '0' LIMIT ".$post_start.", ".$post_nb
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 
@@ -105,12 +119,12 @@ while ($data = mysqli_fetch_array($rows)) {
 
             // get key for this pw
             $resData = mysqli_query(
-                $dbTmp,
+                $db_link,
                 "SELECT rand_key FROM ".$pre."keys
                 WHERE `sql_table` = 'items' AND id = ".$data['id']
             );
             if (!$resData) {
-                echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+                echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
                 exit();
             }
 
@@ -126,7 +140,7 @@ while ($data = mysqli_fetch_array($rows)) {
 
             // store Password
             mysqli_query(
-                $dbTmp,
+                $db_link,
                 "UPDATE ".$pre."items
                 SET pw = '".$encrypt['string']."',pw_iv = '".$encrypt['iv']."'
                 WHERE id=".$data['id']
@@ -150,7 +164,7 @@ while ($data = mysqli_fetch_array($rows)) {
     // change log and category fields
     if ($table_keys_exists == 1) {
         $resData = mysqli_query(
-            $dbTmp,
+            $db_link,
             "SELECT l.id_item AS id_item, k.rand_key AS rndKey, l.raison AS raison, l.raison_iv AS raison_iv, l.date AS mDate, l.id_user AS id_user, l.action AS action
             FROM ".$pre."log_items AS l
             LEFT JOIN ".$pre."keys AS k ON (l.id_item = k.id)
@@ -177,12 +191,12 @@ while ($data = mysqli_fetch_array($rows)) {
 
                     // get key for this pw
                     $resData_tmp = mysqli_query(
-                        $dbTmp,
+                        $db_link,
                         "SELECT rand_key FROM ".$pre."keys
                         WHERE `sql_table` = 'items' AND id = ".$data['id']
                     );
                     if (!$resData_tmp) {
-                        echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+                        echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
                         exit();
                     }
 
@@ -198,7 +212,7 @@ while ($data = mysqli_fetch_array($rows)) {
                         $encrypt = cryption_phpCrypt($pw, SALT, "", "encrypt");
                         fputs($dbgDuo, (string) " / Final : ".$encrypt['string']);
                         mysqli_query(
-                            $dbTmp,
+                            $db_link,
                             "UPDATE ".$pre."log_items
                             SET raison = 'at_pw : ".$encrypt['string']."', raison_iv = '".$encrypt['iv']."'
                             WHERE id_item =".$data['id']." AND date='".$record['mDate']."'
@@ -216,14 +230,14 @@ while ($data = mysqli_fetch_array($rows)) {
 
         // change category fields encryption
         $resData = mysqli_query(
-            $dbTmp,
+            $db_link,
             "SELECT i.data AS data, k.rand_key AS rndKey
             FROM ".$pre."categories_items AS i
             LEFT JOIN ".$pre."keys AS k ON (k.id = i.item_id)
             WHERE i.item_id = ".$data['id']." AND k.sql_table='items'"
         );
         if (!$resData) {
-            echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+            echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
             exit();
         }
 
@@ -234,13 +248,13 @@ while ($data = mysqli_fetch_array($rows)) {
 
                 // store Password
                 $resData_tmp2 = mysqli_query(
-                    $dbTmp,
+                    $db_link,
                     "UPDATE ".$pre."categories_items
                         SET data = '".$encrypt['string']."', data_iv = '".$encrypt['iv']."'
                         WHERE item_id =".$data['id']
                 );
                 if (!$resData_tmp2) {
-                    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+                    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
                     exit();
                 }
             } else {

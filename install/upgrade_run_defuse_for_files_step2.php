@@ -42,20 +42,33 @@ $_SESSION['settings']['loaded'] = "";
 $finish = false;
 $next = ($post_nb + $post_start);
 
-// Open DB connection
+// Test DB connexion
 $pass = defuse_return_decrypted($pass);
-$dbTmp = mysqli_connect(
+if (mysqli_connect(
     $server,
     $user,
     $pass,
     $database,
     $port
-);
-
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 // if no encryption then stop
 if ($SETTINGS['enable_attachment_encryption'] === "0") {
-    mysqli_query($dbTmp, "update `".$pre."files` set status = 'clear' where 1 = 1");
+    mysqli_query($db_link, "update `".$pre."files` set status = 'clear' where 1 = 1");
     echo '[{"finish":"1" , "next":"", "error":""}]';
     exit();
 }
@@ -68,9 +81,9 @@ if ($SETTINGS['files_with_defuse'] === "done") {
 }
 
 // get total items
-$rows = mysqli_query($dbTmp, "SELECT id FROM ".$pre."files");
+$rows = mysqli_query($db_link, "SELECT id FROM ".$pre."files");
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 
@@ -78,12 +91,12 @@ $total = mysqli_num_rows($rows);
 
 // loop on files
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT * FROM ".$pre."files
     LIMIT ".$post_start.", ".$post_nb
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 

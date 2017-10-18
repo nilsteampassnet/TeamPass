@@ -524,8 +524,8 @@ function showItemsList(data)
         }
 
         // Prepare Favorite icon
-        if (value.display_item === 1 && value.enable_favourites === 1) {
-            if (value.in_favorite === "1") {
+        if (value.display_item === 1 && value.enable_favourites === "1") {
+            if (value.in_favorite === 1) {
                 icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
                     '<span class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip"></span>' +
                     '</span>';
@@ -640,7 +640,6 @@ function RecupComplexite(val, edit, context)
     context = context || "";    // make context optional
 
     var funcReturned = null;
-    $.ajaxSetup({async: false});
     $.post(
         "sources/items.queries.php",
         {
@@ -650,9 +649,21 @@ function RecupComplexite(val, edit, context)
             item_id : $("#selected_items").val()
         },
         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            } catch (e) {
+                // error
+                $("#div_loading").addClass("hidden");
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                return;
+            }
             funcReturned = 1;
-            if (data.error == undefined || data.error == 0) {
+            if (data.error == undefined
+                || data.error === ""
+            ) {
                 $("#complexite_groupe").val(data.val);
                 $("#selected_folder_is_personal").val(data.personal);
                 if (edit == 1) {
@@ -662,15 +673,18 @@ function RecupComplexite(val, edit, context)
                     $("#complex_attendue").html("<b>"+data.complexity+"</b>");
                     $("#afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
                 }
-            } else if (data.error == "no_edition_possible") {
+            } else if (data.error === "no_edition_possible") {
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
                 funcReturned = 0;
-            } else if (data.error == "user_is_readonly") {
+            } else if (data.error === "user_is_readonly") {
                 displayMessage(data.message);
                 funcReturned = 0;
-            } else if (data.error == "no_folder_creation_possible" || data.error == "no_folder_edition_possible"  || data.error == "delete_folder") {
-                displayMessage('<i class="fa fa-warning"></i>&nbsp;' + data.error_msg);
+            } else if (data.error === "no_folder_creation_possible"
+                || data.error === "no_folder_edition_possible"
+                || data.error === "delete_folder") {
+                displayMessage('<i class="fa fa-warning"></i>&nbsp;' + data.error_msg
+            );
                 $("#div_loading").addClass("hidden");
                 funcReturned = 0;
             } else {
@@ -681,7 +695,6 @@ function RecupComplexite(val, edit, context)
             $("#div_loading").addClass("hidden");
         }
    );
-    $.ajaxSetup({async: true});
     return funcReturned;
 }
 
@@ -2418,7 +2431,7 @@ PreviewImage = function(uri,title) {
             });
         }
     );
-}
+};
 
 function notify_click(status)
 {
@@ -4111,11 +4124,11 @@ var showPwdContinuous = function(elem_id){
         $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
         $('.tip').tooltipster({multiple: true});
     }
-}
+};
 
 var showPwd = function(){
     $("#visible_pw, #edit_visible_pw").toggle();
-}
+};
 
 /*
 * permits to save
@@ -4412,7 +4425,57 @@ function globalItemsSearch()
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['search_results']); ?>');
                 $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
-                $("#full_items_list").html(data.items_html);
+                //$("#full_items_list").html(data.items_html);
+
+                // Build HTML list
+                $.each(data.html_json, function(i, value) {
+                    // Prepare Description
+                    if (value.desc !== "") {
+                        value.desc = '&nbsp;<font size="1px">[' + value.desc + ']</font>';
+                    }
+
+                    if (value.copy_to_clipboard_small_icons === "1") {
+                        // Prepare Login
+                        if (value.login !== "") {
+                            value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+                        }
+
+                        // Prepare PWD
+                        if (value.pw !== "") {
+                            value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
+                        }
+
+                        // Prepare favorite
+                        if (value.enable_favourites === "1") {
+                            if (value.is_favorite === 1) {
+                                icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']);?>"></span>';
+                            } else {
+                                icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']);?>"></span>';
+                            }
+                        } else {
+                            icon_favorite = '';
+                        }
+                    } else {
+                        value.login = '';
+                        value.pw = '';
+                        icon_favorite = '';
+                    }
+
+                    // Append
+                    $("#full_items_list").append(
+                    '<li class="item trunc_line" id="'+value.item_id+'"><a id="fileclass'+value.item_id+'" class="file_search">' +
+                    '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']);?>"></span>&nbsp;' +
+                        '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')">'+value.label +
+                        value.desc +
+                        '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'</span>' +
+                        '</span><span style="float:right;margin:2px 10px 0px 0px;">' +
+                        value.login +
+                        value.pw +
+                        icon_favorite +
+                        '</span></li>'
+                    );
+                })
+
                 $("#items_list_loader").addClass("hidden");
             }
         );
@@ -4558,7 +4621,7 @@ $.fn.simulateClick = function() {
             this.click(); // IE Boss!
         }
     });
-}
+};
 
 
 // escape HTML characters
@@ -4568,6 +4631,6 @@ String.prototype.escapeHTML = function() {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-}
+};
 //]]>
 </script>
