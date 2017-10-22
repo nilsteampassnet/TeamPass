@@ -741,13 +741,7 @@ switch ($post_type) {
     case "admin_action_change_salt_key___encrypt":
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
-            break;
-        }
-
-        // Allowed values for $_POST['object'] : "items,logs,files,categories"
-        if (!in_array($post_object, explode("items,logs,files,categories", ","), true)) {
-            echo prepareExchangedData(array("error" => "This input is not allowed"), "encode");
+            echo '[{"nextAction":"" , "error":"Key is not correct" , "nbOfItems":""}]';
             break;
         }
 
@@ -768,6 +762,12 @@ switch ($post_type) {
         } else {
             // manage list of objects
             $objects = explode(",", $post_object);
+
+            // Allowed values for $_POST['object'] : "items,logs,files,categories"
+            if (in_array($objects[0], array("items","logs","files","categories")) === false) {
+                echo '[{"nextAction":"" , "error":"Input `'.$objects[0].'` is not allowed" , "nbOfItems":""}]';
+                break;
+            }
 
             if ($objects[0] === "items") {
                 //change all encrypted data in Items (passwords)

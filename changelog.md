@@ -15,6 +15,7 @@
  Improved the possibility to define the access level on Roles when creating new folder
  Added filter in Roles
  New: confirm deletion of attachment
+ #1974 Changing saltkey operation 
  #1960 Access Denied for personal folder
  #1965 Login credentials do not correspond (json_decode issue)
  #1964 Make email field in new LDAP user insertion null safe
