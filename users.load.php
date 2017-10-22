@@ -75,13 +75,13 @@ $(function() {
         "processing": true,
         "serverSide": true,
         "ajax": {
-            url: "sources/datatable/datatable.users.php",
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.users.php",
             data: function(d) {
                 d.letter = _alphabetSearch
             }
         },
         "language": {
-            "url": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+            "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "columns": [
             {"width": "13%", className: "dt-body-left"},

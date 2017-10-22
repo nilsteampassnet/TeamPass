@@ -31,10 +31,10 @@ $(function() {
         "processing": true,
         "serverSide": true,
         "ajax": {
-            url: "sources/datatable/datatable.folders.php"
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.folders.php"
         },
         "language": {
-            "url": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+            "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "columns": [
             {"width": "7%"},

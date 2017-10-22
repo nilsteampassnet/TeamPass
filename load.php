@@ -394,9 +394,7 @@ $htmlHeaders .= '
     {
         $("#dialog_user_profil").dialog({
             open: function(event, ui) {
-                $("#div_user_profil").load(
-                    "'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'"
-                );
+                loadHtml("'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", "div_user_profil");
             },
             close: function() {
                 // in case of user changed language then reload the current page
@@ -411,6 +409,22 @@ $htmlHeaders .= '
                 }
             }
         }).dialog("open");
+    }
+
+    /**
+     * Permits to load the content of a page inside a div
+     */
+    function loadHtml(url, div_id)
+    {
+        $("#" + div_id).load(
+            url,
+            null,
+            function(responseText, textStatus, xhr) {
+                if (textStatus === "error") {
+                    alert("Error while loading " + url + "\n\n"+responseText);
+                }
+            }
+        );
     }
 
     /*
@@ -484,8 +498,9 @@ $htmlHeaders .= '
             height: 500,
             title: "DUO Security",
             open: function(event, ui) {
-                $("#div_duo").load(
-                    "'.$SETTINGS['cpassman_url'].'/duo.load.php", function(){}
+                loadHtml(
+                    "'.$SETTINGS['cpassman_url'].'/duo.load.php",
+                    "div_duo"
                 );
             }
         }).dialog("open");

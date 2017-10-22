@@ -4522,8 +4522,9 @@ function loadOfflineDialog()
 {
     $("#dialog_offline_mode").dialog({
         open: function(event, ui) {
-            $("#div_offline_mode").load(
-                "<?php echo $SETTINGS['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+            loadHtml(
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>",
+                "div_offline_mode"
             );
         }
     }).dialog("open");
@@ -4533,8 +4534,9 @@ function loadExportDialog()
 {
     $("#dialog_export_file").dialog({
         open: function(event, ui) {
-            $("#div_export_file").load(
-                "<?php echo $SETTINGS['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+            loadHtml(
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>",
+                "div_export_file"
             );
         }
     }).dialog("open");
@@ -4544,8 +4546,9 @@ function loadImportDialog()
 {
     $("#dialog_import_file").dialog({
         open: function(event, ui) {
-            $("#div_import_file").load(
-                "<?php echo $SETTINGS['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(), function(){}
+            loadHtml(
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(),
+                "div_import_file"
             );
         }
     }).dialog("open");

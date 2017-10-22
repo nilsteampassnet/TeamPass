@@ -92,8 +92,7 @@ foreach ($rows as $record) {
     $arraFlags[$record['label']] = $record['label'];
 }
 
-// Prepare Headers
-header('Access-Control-Allow-Origin: *');
+header("access-control-allow-origin: *");
 echo '
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>

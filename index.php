@@ -14,7 +14,7 @@
  */
 
 header("X-XSS-Protection: 1; mode=block");
-header("X-Frame-Option: SameOrigin");
+header("X-Frame-Options: SameOrigin");
 
 // **PREVENTING SESSION HIJACKING**
 // Prevents javascript XSS attacks aimed to steal the session ID

@@ -2675,10 +2675,10 @@ if (null !== $post_type) {
                         }
                         $html_json[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
                         $html_json[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
-                        $html_json[$record['id']]['anyone_can_modify'] = $SETTINGS['anyone_can_modify'];
-                        $html_json[$record['id']]['copy_to_clipboard_small_icons'] = $SETTINGS['copy_to_clipboard_small_icons'];
+                        $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
+                        $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
-                        $html_json[$record['id']]['enable_favourites'] = $SETTINGS['enable_favourites'];
+                        $html_json[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) ? $SETTINGS['enable_favourites'] : '0';
 
                         // Prepare make Favorite small icon
                         if (in_array($record['id'], $_SESSION['favourites'])) {

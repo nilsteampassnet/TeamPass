@@ -45,7 +45,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
 //Columns name
-$aColumns = array('id', 'item_id', 'folder_id', 'label', 'timestamp', 'user_id', 'comment');
+$aColumns = array('id', 'item_id', 'timestamp', 'folder_id', 'label', 'user_id', 'comment');
 $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
@@ -59,8 +59,7 @@ if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
 }
 
 //Ordering
-
-if (isset($_GET['iSortCol_0']) && in_array($_GET['iSortCol_0'], $aSortTypes)) {
+if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
     $sOrder = "ORDER BY  ";
     for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
         if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&

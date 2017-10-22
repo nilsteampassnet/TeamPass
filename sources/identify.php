@@ -328,11 +328,6 @@ function identifyUser($sentData)
         );
     }
 
-    // GET SALT KEY LENGTH
-    if (strlen(SALT) > 32) {
-        $_SESSION['error']['salt'] = true;
-    }
-
     $ldapConnection = false;
 
     /* LDAP connection */
