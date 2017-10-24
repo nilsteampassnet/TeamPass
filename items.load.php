@@ -1193,14 +1193,14 @@ function EditerItem()
                         $(".round-grey").addClass("ui-state-highlight ui-corner-all");
 
                         //Prepare clipboard copies
-                        if ($('#edit_pw1').val() != "") {
+                        if ($('#edit_pw1').val() !== "") {
                             new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
                                 text: function() {
                                     return unsanitizeString($('#edit_pw1').val());
                                 }
                             });
 
-                            $("#button_quick_pw_copy").show();
+                            $("#button_quick_pw_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_pw_copy").addClass("hidden");
                         }
@@ -1210,7 +1210,7 @@ function EditerItem()
                                     return unsanitizeString($('#edit_item_login').val());
                                 }
                             });
-                            $("#button_quick_login_copy").show();
+                            $("#button_quick_login_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_login_copy").addClass("hidden");
                         }
@@ -1694,7 +1694,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 e.clearSelection();
                             });
 
-                            $("#button_quick_pw_copy").show();
+                            $("#button_quick_pw_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_pw_copy").addClass("hidden");
                         }
@@ -1709,7 +1709,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                                 e.clearSelection();
                             });
-                            $("#button_quick_login_copy").show();
+                            $("#button_quick_login_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_login_copy").addClass("hidden");
                         }
@@ -2610,13 +2610,13 @@ function refreshVisibleFolders()
                     // Prepare options lists
                     html_visible += '<option value="'+value.id+'"'+disabled+'>'+indentation+value.title+'</option>';
                     html_full_visible += '<option value="'+value.id+'">'+indentation+value.title+'</option>';
-                    html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
+                    //html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
                 });
 
                 // append new list
                 $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(html_visible);
-                $("#move_folder_id").find('option').remove().end().append(html_full_visible);
-                $("#copy_in_folder").find('option').remove().end().append(html_active_visible);
+                $("#move_folder_id, #copy_in_folder").find('option').remove().end().append(html_full_visible);
+                //$("#copy_in_folder").find('option').remove().end().append(html_active_visible);
 
                 // remove ROOT option if exists
                 $('#edit_folder_folder option[value="0"]').remove();
@@ -4113,7 +4113,7 @@ $('#item_details_ok').on('mousedown', '.unhide_masked_data', function(event) {
 });
 var showPwdContinuous = function(elem_id){
     if(mouseStillDown){
-        $('#'+elem_id).text($('#h'+elem_id).val());
+        $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).val() + '</span>');
         setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
         if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {

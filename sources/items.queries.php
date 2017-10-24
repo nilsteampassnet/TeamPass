@@ -1094,7 +1094,7 @@ if (null !== $post_type) {
                 );
 
                 // Check if the folder where this item is, is accessible to the user
-                if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles'])) {
+                if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
                     $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                     echo $returnValues;
                     break;
@@ -1236,26 +1236,29 @@ if (null !== $post_type) {
                 // Add attached itms
                 $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $post_item_id);
                 foreach ($rows as $record) {
-                    // duplicate file
-                    $fileRandomId = md5($record['name'].time());
-                    copy(
-                        $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'],
-                        $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$fileRandomId
-                    );
+                    // Check if file still exists
+                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'])) {
+                        // duplicate file
+                        $fileRandomId = md5($record['name'].time());
+                        copy(
+                            $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'],
+                            $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$fileRandomId
+                        );
 
-                    // store in DB
-                    DB::insert(
-                        prefix_table('files'),
-                        array(
-                            'id_item' => $newID,
-                            'name' => $record['name'],
-                            'size' => $record['size'],
-                            'extension' => $record['extension'],
-                            'type' => $record['type'],
-                            'file' => $fileRandomId,
-                            'status' => $record['status']
-                        )
-                    );
+                        // store in DB
+                        DB::insert(
+                            prefix_table('files'),
+                            array(
+                                'id_item' => $newID,
+                                'name' => $record['name'],
+                                'size' => $record['size'],
+                                'extension' => $record['extension'],
+                                'type' => $record['type'],
+                                'file' => $fileRandomId,
+                                'status' => $record['status']
+                            )
+                        );
+                    }
                 }
 
                 // Add specific restrictions
@@ -1485,13 +1488,12 @@ if (null !== $post_type) {
                 $item_is_expired = false;
             }
 
-
             // check user is admin
             if ($_SESSION['user_admin'] === '1' && $dataItem['perso'] != 1 && (isset($SETTINGS_EXT['admin_full_right']) && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -1767,9 +1769,10 @@ if (null !== $post_type) {
 
             // Load item data
             $dataItem = DB::queryFirstRow(
-                "SELECT *
-                FROM ".prefix_table("items")."
-                WHERE id = %i",
+                "SELECT i.*, n.title AS folder_title
+                FROM ".prefix_table("items")." AS i
+                INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
+                WHERE i.id = %i",
                 $post_id
             );
 
@@ -1801,7 +1804,7 @@ if (null !== $post_type) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] === $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -3947,7 +3950,8 @@ if (null !== $post_type) {
 
                         // Is this folder an active folders? (where user can do something)
                         $is_visible_active = 0;
-                        if (isset($_SESSION['list_restricted_folders_for_items']) && in_array($inc, $_SESSION['read_only_folders']) === true) {
+                        if (isset($_SESSION['list_restricted_folders_for_items']) === true
+                            && in_array($folder->id, $_SESSION['list_restricted_folders_for_items']) === true) {
                             $is_visible_active = 1;
                         }
                         $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;

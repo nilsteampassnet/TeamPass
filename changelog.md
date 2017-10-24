@@ -13,6 +13,10 @@
  Improved / Fixed administration task for encrypting/decrypting files
  Improved security regarding item history display
  Improved the possibility to define the access level on Roles when creating new folder
+ Copy password/login button are correctly hidden and shown
+ Cursor is hidden on password display to permit a better visualization
+ Fixed error while coping an item
+ Fixed last 10 items seen list not display on page load
  Added filter in Roles
  New: confirm deletion of attachment
  #1974 Changing saltkey operation 

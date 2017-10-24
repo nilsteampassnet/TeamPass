@@ -277,7 +277,7 @@ echo '
 // Line for PW
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td colspan="2">
                         &nbsp;
                         <div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>
@@ -288,7 +288,7 @@ echo '
 // Line for LOGIN
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
                     <td colspan="2">
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />

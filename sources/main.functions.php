@@ -754,7 +754,12 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
 
-        $persoFlds = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
+        $persoFlds = DB::query(
+            "SELECT id
+            FROM ".prefix_table("nested_tree")."
+            WHERE %l",
+            $where
+        );
         foreach ($persoFlds as $persoFldId) {
             array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
         }
@@ -764,8 +769,13 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $persoFld = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
-            if (!empty($persoFld['id'])) {
+            $persoFld = DB::queryfirstrow(
+                "SELECT id
+                FROM ".prefix_table("nested_tree")."
+                WHERE title = %s",
+                $_SESSION['user_id']
+            );
+            if (empty($persoFld['id']) === false) {
                 if (!in_array($persoFld['id'], $listAllowedFolders)) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
                     // get all descendants
@@ -778,9 +788,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
             // get list of readonly folders when pf is disabled.
+            $_SESSION['personal_folders'] = array_unique($_SESSION['personal_folders']);
             // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders'])))) {   //
+                if (in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))) === false) {
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
@@ -789,7 +800,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $fonctionsAssociees,
                         array("W", "ND", "NE", "NDNE")
                     );
-                    if (DB::count() == 0 && in_array($folderId, $groupesVisiblesUser) === false) {
+                    if (DB::count() === 0 && in_array($folderId, $groupesVisiblesUser) === false) {
                         array_push($listReadOnlyFolders, $folderId);
                     }
                 }
@@ -798,7 +809,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, $listReadOnlyFolders)) {
+                if (in_array($folderId, $listReadOnlyFolders) === false) {
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
@@ -815,7 +826,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
 
         // check if change proposals on User's items
-        if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1) {
+        if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] == 1) {
             DB::query(
                 "SELECT *
                 FROM ".prefix_table("items_change")." AS c

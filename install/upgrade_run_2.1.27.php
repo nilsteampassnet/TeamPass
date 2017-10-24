@@ -175,7 +175,7 @@ if (intval($tmp) === 0) {
 
 // check if library defuse already on-going here
 // if yes, then don't execute re-encryption
-if (isset($session_tp_defuse_installed) !== true) {
+if (isset($session_tp_defuse_installed) === false) {
     $superGlobal->put("tp_defuse_installed", false, "SESSION");
     $columns = mysqli_query($db_link, "show columns from ".$pre."items");
     while ($c = mysqli_fetch_assoc($columns)) {
@@ -366,7 +366,7 @@ if ($res === false) {
 }
 
 //-- generate new DEFUSE key
-if (!isset($session_tp_defuse_installed) || $session_tp_defuse_installed === false) {
+if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installed === false) {
     $filename = "../includes/config/settings.php";
     $settingsFile = file($filename);
     while (list($key, $val) = each($settingsFile)) {

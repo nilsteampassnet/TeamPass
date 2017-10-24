@@ -989,6 +989,7 @@ function mainQuery()
             $x_counter = 1;
             $return = "";
             $arrTmp = array();
+            $arr_html = array();
             $rows = DB::query(
                 "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
                 FROM ".prefix_table("log_items")." AS l
@@ -1002,7 +1003,14 @@ function mainQuery()
             if (DB::count() > 0) {
                 foreach ($rows as $record) {
                     if (!in_array($record['id'], $arrTmp)) {
-                        $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
+                        array_push(
+                            $arr_html,
+                            array(
+                                "id" => $record['id'],
+                                "label" => htmlspecialchars(stripslashes($record['label']), ENT_QUOTES),
+                                "tree_id" => $record['id_tree']
+                            )
+                        );
                         $x_counter++;
                         array_push($arrTmp, $record['id']);
                         if ($x_counter >= 10) {
@@ -1025,7 +1033,7 @@ function mainQuery()
                 array(
                     "error" => "",
                     "existing_suggestions" => $nb_suggestions_waiting,
-                    "text" => handleBackslash($return)
+                    "html_json" => $arr_html
                 ),
                 JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
             );

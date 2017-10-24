@@ -470,13 +470,20 @@ $htmlHeaders .= '
                 data = $.parseJSON(data);
                 //check if format error
                 if (data.error == "") {
-                    if (data.text == null) {
+                    if (data.html_json === null) {
                         $("#last_seen_items_list").html("<li>'.$LANG['none'].'</li>");
                     } else {
-                        $("#last_seen_items_list").html(data.text);
+                        // Prepare HTML
+                        var html_list = "";
+                        $.each(data.html_json, function(i, value) {
+                           html_list += "<li onclick=\'displayItemNumber("+value.id+", "+value.tree_id+")\'><i class=\'fa fa-hand-o-right\'></i>&nbsp;"+value.label+"</li>";
+                        });
+                        $("#last_seen_items_list").html(html_list);
                     }
+
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
+
                     // show notification
                     if (data.existing_suggestions != 0) {
                         blink("#menu_button_suggestion", -1, 500, "ui-state-error");
@@ -1133,7 +1140,7 @@ $htmlHeaders .= '
         });
 
         // get list of last items
-        if ($("#hid_cat").val() !== "" && $("#hid_cat").val() !== undefined) {
+        if ($("#temps_restant").val() !== "") {
             refreshListLastSeenItems();
         }
 
