@@ -3950,8 +3950,8 @@ if (null !== $post_type) {
 
                         // Is this folder an active folders? (where user can do something)
                         $is_visible_active = 0;
-                        if (isset($_SESSION['list_restricted_folders_for_items']) === true
-                            && in_array($folder->id, $_SESSION['list_restricted_folders_for_items']) === true) {
+                        if (isset($_SESSION['read_only_folders']) === true
+                            && in_array($folder->id, $_SESSION['read_only_folders']) === true) {
                             $is_visible_active = 1;
                         }
                         $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;

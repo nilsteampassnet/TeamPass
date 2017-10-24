@@ -2602,21 +2602,21 @@ function refreshVisibleFolders()
                     }
 
                     if (value.is_visible_active === 1) {
-                        disabled_active_visible = '';
-                    } else {
                         disabled_active_visible = ' disabled="disabled"';
+                    } else {
+                        disabled_active_visible = '';
                     }
 
                     // Prepare options lists
                     html_visible += '<option value="'+value.id+'"'+disabled+'>'+indentation+value.title+'</option>';
                     html_full_visible += '<option value="'+value.id+'">'+indentation+value.title+'</option>';
-                    //html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
+                    html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
                 });
 
                 // append new list
                 $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(html_visible);
-                $("#move_folder_id, #copy_in_folder").find('option').remove().end().append(html_full_visible);
-                //$("#copy_in_folder").find('option').remove().end().append(html_active_visible);
+                $("#move_folder_id").find('option').remove().end().append(html_full_visible);
+                $("#copy_in_folder").find('option').remove().end().append(html_active_visible);
 
                 // remove ROOT option if exists
                 $('#edit_folder_folder option[value="0"]').remove();

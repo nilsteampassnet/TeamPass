@@ -264,7 +264,8 @@ echo '
                 {
                     type    : "export_to_html_format_finalize",
                     file    : file,
-                    file_link : file_link
+                    file_link : file_link,
+                    pdf_password : pdf_password,
                 },
                 function(data) {
                     $("#offline_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);
