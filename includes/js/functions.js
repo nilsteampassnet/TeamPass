@@ -49,7 +49,7 @@ function IncreaseSessionTime(messageEnd, messageWait, duration){
                 $("#countdown").css("color","white");
                 $("#div_increase_session_time").dialog("close");
             } else {
-                $(location).attr('href','index.php?session=expired');
+                $(location).attr("href","index.php?session=expired");
             }
         },
         "json"
