@@ -1010,7 +1010,7 @@ function manageEncryptionOfAttachments(list, cpt) {
             cpt     : cpt,
             list    : list
         },
-        function(data) {console.log(">" + data[0].continu);
+        function(data) {
             if (data[0].continu === "1" ) {
                 manageEncryptionOfAttachments(data[0].list, data[0].cpt);
             } else {

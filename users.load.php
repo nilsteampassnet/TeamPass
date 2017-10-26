@@ -822,7 +822,6 @@ function confirmDeletion()
 
 function pwGenerate(elem)
 {
-    console.log(">> "+elem);
     $.post(
         "sources/main.queries.php",
         {
@@ -976,7 +975,7 @@ function displayLogs(page, scope)
             id                  : $("#selected_user").val(),
             scope               : scope
         },
-        function(data) {console.log(">>" + data[0].table_logs);
+        function(data) {
             if (data[0].error == "no") {
                 $("#tbody_logs").empty().append(data[0].table_logs);
                 $("#log_pages").empty().append(data[0].pages);

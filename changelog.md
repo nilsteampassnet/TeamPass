@@ -17,9 +17,12 @@
  Cursor is hidden on password display to permit a better visualization
  Fixed error while coping an item
  Fixed last 10 items seen list not display on page load
+ Improved offline file with full encryption
+ Improved session validity check
  Added filter in Roles
  New: confirm deletion of attachment
- #1974 Changing saltkey operation 
+ #1980 personal item is not deleted
+ #1974 Changing saltkey operation
  #1960 Access Denied for personal folder
  #1965 Login credentials do not correspond (json_decode issue)
  #1964 Make email field in new LDAP user insertion null safe

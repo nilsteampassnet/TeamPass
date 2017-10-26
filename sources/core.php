@@ -234,9 +234,9 @@ if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && is
     }
 
     // erase session table
+    session_unset();
     session_destroy();
     $_SESSION = array();
-    unset($_SESSION);
 
     //Redirection
     echo '

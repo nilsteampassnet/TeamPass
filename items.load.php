@@ -640,6 +640,7 @@ function RecupComplexite(val, edit, context)
     context = context || "";    // make context optional
 
     var funcReturned = null;
+    $.ajaxSetup({async: false});
     $.post(
         "sources/items.queries.php",
         {
@@ -660,6 +661,7 @@ function RecupComplexite(val, edit, context)
 
                 return;
             }
+
             funcReturned = 1;
             if (data.error == undefined
                 || data.error === ""
@@ -694,7 +696,8 @@ function RecupComplexite(val, edit, context)
             }
             $("#div_loading").addClass("hidden");
         }
-   );
+    );
+    $.ajaxSetup({async: true});
     return funcReturned;
 }
 
@@ -2052,7 +2055,7 @@ function open_add_item_div()
         var compReturn = RecupComplexite($('#hid_cat').val(), 0);
 
         // exclude because user is read only
-        if (compReturn == 0) {
+        if (compReturn === 0) {
             $("#div_loading").addClass("hidden");
             return false;
         }
@@ -2935,13 +2938,18 @@ $(function() {
                 language: "<?php echo $_SESSION['user_language_code']; ?>"
             });
             $(":button:contains('<?php echo addslashes($LANG['ok']); ?>')").prop("disabled", false);
-            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").addClass("hidden");
+            $("#copy_item_info")
+                .addClass("ui-state-highlight ui-corner-all")
+                .addClass("hidden");
             $(".ui-tooltip").siblings(".tooltip").remove();
             $("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
         },
         buttons: {
             "<?php echo addslashes($LANG['ok']); ?>": function() {
-                $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").show().html("<span><?php echo addslashes($LANG['please_wait'])." <i class=\'fa fa-cog fa-spin'></i>"; ?></span>");
+                $("#copy_item_info")
+                    .addClass("ui-state-highlight ui-corner-all")
+                    .removeClass("hidden")
+                    .html("<span><?php echo addslashes($LANG['please_wait'])." <i class=\'fa fa-cog fa-spin'></i>"; ?></span>");
                 $(":button:contains('<?php echo addslashes($LANG['ok']); ?>')").prop("disabled", true);
                 //Send query
                 $.post(
@@ -2967,7 +2975,7 @@ $(function() {
                             $("#copy_in_folder").val("");
                             $("#div_copy_item_to_folder").dialog('close');
                         }
-                        $("#copy_item_info").addClass("hidden");
+                        $("#copy_item_info").html('').addClass("hidden");
                     },
                     "json"
                );
@@ -4135,7 +4143,6 @@ var showPwd = function(){
 */
 function itemLog(log_case, item_id)
 {
-    console.log("> "+item_id);
     item_id = item_id || $('#id_item').val();
     $.post(
         "sources/items.logs.php",
@@ -4487,7 +4494,6 @@ function globalItemsSearch()
 */
 function searchItemsWithTags(tag)
 {
-    //console.log(">"+tag);
     if (tag == "") return false
 
     // wait

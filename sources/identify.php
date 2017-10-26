@@ -314,6 +314,7 @@ function identifyUser($sentData)
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
+
     // Prepare variables
     $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
     $pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
@@ -369,7 +370,6 @@ function identifyUser($sentData)
     $counter = DB::count();
     $user_initial_creation_through_ldap = false;
     $proceedIdentification = false;
-
 
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
@@ -648,7 +648,6 @@ function identifyUser($sentData)
         $proceedIdentification = true;
         $user_initial_creation_through_ldap = true;
     }
-
 
     // Check if user exists (and has been created in case of new LDAP user)
     $data = DB::queryFirstRow(

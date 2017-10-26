@@ -403,3 +403,10 @@ div.dataTables_processing { z-index: 1; }
   border: none;
   border-collapse: collapse;
 }
+
+.closeButton {
+  float:right;
+  display:inline-block;
+  padding:2px 2px;
+  cursor: pointer;
+}

@@ -133,7 +133,7 @@ $htmlHeaders .= isset($SETTINGS['favicon']) ? '
         <link rel="icon" href="'.$SETTINGS['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
 // get some init
-if (!isset($_SESSION["user_id"])) {
+if (isset($_SESSION["user_id"]) === false) {
     $_SESSION["key"] = mt_rand();
     $_SESSION["user_id"] = "0";
     $_SESSION['user_settings']['clear_psk'] = "";
@@ -222,77 +222,110 @@ $htmlHeaders .= '
     //Identify user
     function identifyUser(redirect, psk, data, randomstring)
     {
-        //send query
+        // Check if session is still existing
         $.post(
-            "sources/identify.php",
+            "sources/checks.php",
             {
-                type : "identify_user",
-                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
+                type : "checkSessionExists"
             },
-            function(data) {
-                if (data[0].value === randomstring) {
-                    $("#connection_error").hide();
-                    //redirection for admin is specific
-                    if (data[0].user_admin === "1") {
-                        window.location.href="index.php?page=manage_main";
-                    } else if (data[0].initial_url !== "") {
-                        window.location.href=data[0].initial_url;
-                    } else {
-                        window.location.href = "index.php?page=items";
-                    }
-                } else if (data[0].value === "user_is_locked") {
-                    $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
-                } else if (data[0].value === "bad_psk") {
-                    $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
-                } else if (data[0].value === "bad_psk_confirmation") {
-                    $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
-                } else if (data[0].value === "psk_required") {
-                    $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
-                    $("#connection_error, #connect_psk_confirm").show();
-                } else if (data[0].value === "user_not_exists") {
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
-                } else if (data[0].value === "error") {
-                    $("#mysql_error_warning").html(data[0].text).show();
-                    $("#div_mysql_error").show().dialog("open");
-                } else if (data[0].value === "new_ldap_account_created") {
-                    $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
-                    setTimeout(
-                        function (){
-                            window.location.href="index.php"
+            function(check_data) {
+                if (check_data === "1") {
+                    //send query
+                    $.post(
+                        "sources/identify.php",
+                        {
+                            type : "identify_user",
+                            data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
                         },
-                        2000
-                    );
-                } else if (data[0].value === "false_onetimepw") {
-                    $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
-                } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
-                    // now user needs to wait 10 secs before new passwd
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
-                } else if (data[0].error === "bad_credentials") {
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (data[0].error === "ga_code_wrong") {
-                    $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].value === "agses_error") {
-                    $("#connection_error").html(data[0].error).show();
-                } else if (data[0].error === "ga_temporary_code_wrong") {
-                    $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].error === "ga_temporary_code_correct") {
-                    $("#ga_code").val("").focus();
-                    $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
-                } else if (data[0].value === "install_error") {
-                    $("#connection_error").html(data[0].error).show();
-                } else {
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                }
+                        function(data) {
+                            if (data[0].value === randomstring) {
+                                $("#connection_error").hide();
+                                //redirection for admin is specific
+                                if (data[0].user_admin === "1") {
+                                    window.location.href="index.php?page=manage_main";
+                                } else if (data[0].initial_url !== "") {
+                                    window.location.href=data[0].initial_url;
+                                } else {
+                                    window.location.href = "index.php?page=items";
+                                }
+                            } else if (data[0].value === "user_is_locked") {
+                                $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
+                            } else if (data[0].value === "bad_psk") {
+                                $("#ajax_loader_connexion").hide();
+                                $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
+                            } else if (data[0].value === "bad_psk_confirmation") {
+                                $("#ajax_loader_connexion").hide();
+                                $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
+                            } else if (data[0].value === "psk_required") {
+                                $("#ajax_loader_connexion").hide();
+                                $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
+                                $("#connection_error, #connect_psk_confirm").show();
+                            } else if (data[0].value === "user_not_exists") {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
+                                $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
+                            } else if (data[0].value === "error") {
+                                $("#mysql_error_warning").html(data[0].text).show();
+                                $("#div_mysql_error").show().dialog("open");
+                            } else if (data[0].value === "new_ldap_account_created") {
+                                $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
+                                setTimeout(
+                                    function (){
+                                        window.location.href="index.php"
+                                    },
+                                    2000
+                                );
+                            } else if (data[0].value === "false_onetimepw") {
+                                $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
+                            } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
+                                // now user needs to wait 10 secs before new passwd
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
+                            } else if (data[0].error === "bad_credentials") {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            } else if (data[0].error === "ga_code_wrong") {
+                                $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
+                            } else if (data[0].value === "agses_error") {
+                                $("#connection_error").html(data[0].error).show();
+                            } else if (data[0].error === "ga_temporary_code_wrong") {
+                                $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
+                            } else if (data[0].error === "ga_temporary_code_correct") {
+                                $("#ga_code").val("").focus();
+                                $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
+                            } else if (data[0].value === "install_error") {
+                                $("#connection_error").html(data[0].error).show();
+                            } else {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            }
 
-                $("#ajax_loader_connexion").hide();
-            },
-            "json"
-       );
+                            $("#ajax_loader_connexion").hide();
+                        },
+                        "json"
+                   );
+                } else {
+                    // No session was found, warn user
+                    // Attach the CSRFP tokenn to the form to prevent against error 403
+                    var csrfp = check_data.split(";");
+                    $("#form_identify").append(
+                        "<input type=\'hidden\' name=\'"+csrfp[0]+"\' value=\'"+csrfp[1]+"\' />" +
+                        "<input type=\'hidden\' name=\'auto_log\' value=\'1\' />"
+                    );
+
+                    // Warn user
+                    $("#main_info_box_text").html("<span =\'fa fa-warning fa-lg\'></span>&nbsp;Browser session is now expired. The page will be automatically reloaded in 2 seconds.");
+                    $("#main_info_box").show().position({
+                        my: "center",
+                        at: "center top+75",
+                        of: "#top"
+                    });
+
+                    // Delay page submit
+                    $(this).delay(2000).queue(function() {
+                        $("#form_identify").submit();
+                        $(this).dequeue();
+                    });
+                }
+            }
+        );
     }
 
     function getGASynchronization()
@@ -592,12 +625,12 @@ $htmlHeaders .= '
         $.post(
             "sources/main.queries.php",
             {
-                type    : "generate_a_password",
-                size      : size,
-                numerals      : numerals,
-                capitalize      : capitalize,
-                symbols      : symbols,
-                secure  : secure
+                type        : "generate_a_password",
+                size        : size,
+                numerals    : numerals,
+                capitalize  : capitalize,
+                symbols     : symbols,
+                secure      : secure
             },
             function(data) {
                 data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
@@ -611,6 +644,12 @@ $htmlHeaders .= '
     }
 
     $(function() {
+        // In case that session was expired and login form was reloaded
+        // Force the launchIdentify as if the user has clicked the button
+        if ($("#auto_log").length > 0) {
+            $("#but_identify_user").click();
+        }
+
         // AGSES authentication
         if ($("#axs_canvas").length > 0) {
             // show the agsesflicker

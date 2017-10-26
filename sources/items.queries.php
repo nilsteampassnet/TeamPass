@@ -153,11 +153,15 @@ if (null !== $post_type) {
 
             // perform a check in case of Read-Only user creating an item in his PF
             if ($_SESSION['user_read_only'] === true &&
-                !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])
+                in_array($dataReceived['categorie'], $_SESSION['personal_folders']) === false
             ) {
                 echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                 break;
             }
+
+
+
+
 
             // is pwd empty?
             if (empty($pw) &&

@@ -116,7 +116,7 @@ $session_autoriser =            $superGlobal->get("autoriser", "SESSION");
 $session_hide_maintenance =     $superGlobal->get("hide_maintenance", "SESSION");
 $session_initial_url =          $superGlobal->get("initial_url", "SESSION");
 $server_request_uri =           $superGlobal->get("REQUEST_URI", "SERVER");
-$session_nb_users_online =        $superGlobal->get("nb_users_online", "SESSION");
+$session_nb_users_online =      $superGlobal->get("nb_users_online", "SESSION");
 
 
 /* DEFINE WHAT LANGUAGE TO USE */
@@ -384,6 +384,7 @@ if (isset($_SESSION['CPM'])) {
 
     echo '
 <div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
+    <span class="closeButton" onclick="$(\'#main_info_box\').hide()">&#10006</span>
     <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
 </div>';
 
@@ -692,7 +693,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
-                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', isset($_POST['login']) ? $_POST['login'] : '', '" />
                             <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
 
@@ -711,7 +712,7 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', isset($_POST['pw']) ? $_POST['pw'] : '', '" />
                         </div>';
 
         // Personal salt key

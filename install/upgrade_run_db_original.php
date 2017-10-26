@@ -1223,10 +1223,10 @@ while ($cleanData = mysqli_fetch_array($cleanRes)) {
 // 2.1.23 - check if personal need to be upgraded
 $tmpResult = mysqli_query(
     $db_link,
-    "SELECT `pw_iv` FROM ".$pre."items WHERE perso='1'"
+    "SELECT `pw`, `pw_iv` FROM ".$pre."items WHERE perso='1'"
 );
 $tmp = mysqli_fetch_row($tmpResult);
-if ($tmp[0] == "") {
+if ($tmp[1] === "" && substr($tmp[0], 0, 3) !== "def") {
     mysqli_query($db_link, "UPDATE ".$pre."users SET upgrade_needed = true WHERE 1 = 1");
 }
 

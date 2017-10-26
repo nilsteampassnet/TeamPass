@@ -2135,6 +2135,8 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
  */
 function accessToItemIsGranted($item_id)
 {
+    global $SETTINGS;
+
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
