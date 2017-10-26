@@ -193,6 +193,9 @@ function buildNodeTree($nodeId)
                     $node->title = $session_login;
                 }
 
+                // Decode if needed
+                $node->title = htmlspecialchars_decode($node->title, ENT_QUOTES);
+
                 // prepare json return for current node
                 if ($node->parent_id == 0) {
                     $parent = "#";
@@ -367,8 +370,11 @@ function recursiveTree($nodeId)
                 $completTree[$nodeId]->title = $session_login;
             }
 
+            // Decode if needed
+            $completTree[$nodeId]->title = htmlspecialchars_decode($completTree[$nodeId]->title, ENT_QUOTES);
+
             // special case for READ-ONLY folder
-            if ($session_user_read_only === true 
+            if ($session_user_read_only === true
                 && in_array($completTree[$nodeId]->id, $session_user_read_only) === false
             ) {
                 $title = $LANG['read_only_account'];

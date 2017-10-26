@@ -19,9 +19,9 @@
  Fixed last 10 items seen list not display on page load
  Improved offline file with full encryption
  Improved session validity check
+ Fixed display strings with quotes issue
  Added filter in Roles
  New: confirm deletion of attachment
- #1980 personal item is not deleted
  #1974 Changing saltkey operation
  #1960 Access Denied for personal folder
  #1965 Login credentials do not correspond (json_decode issue)

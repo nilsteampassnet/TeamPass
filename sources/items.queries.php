@@ -1575,7 +1575,7 @@ if (null !== $post_type) {
                     $arrData['show_detail_option'] = 2;
                 }
 
-                $arrData['label'] = htmlspecialchars_decode($dataItem['label']);
+                $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
                 $arrData['pw'] = $pw;
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = htmlspecialchars_decode($dataItem['url']);
@@ -1585,7 +1585,7 @@ if (null !== $post_type) {
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $SETTINGS_EXT['allowedTags']));
-                $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']));
+                $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']), ENT_QUOTES);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = $tags;
@@ -2030,7 +2030,7 @@ if (null !== $post_type) {
             $dataReceived = prepareExchangedData($post_data, "decode");
 
             // Prepare variables
-            $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title'], ENT_QUOTES), FILTER_SANITIZE_STRING);
             $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check if user is allowed to access this folder
@@ -2478,8 +2478,8 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['label'] = strip_tags(htmlentities(cleanString($record['label'])));
-                        $html_json[$record['id']]['desc'] = strip_tags(htmlentities(cleanString(explode("<br>", $record['description'])[0])));
+                        $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
+                        $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
 
                         // list of restricted users
                         $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
@@ -3521,7 +3521,7 @@ if (null !== $post_type) {
                 ) {
                     $error = "";
                     // Query
-                    logItems($dataReceived['item_id'], $dataItem['label'], $_SESSION['user_id'], 'at_manual', $_SESSION['login'], htmlspecialchars_decode($dataReceived['label']));
+                    logItems($dataReceived['item_id'], $dataItem['label'], $_SESSION['user_id'], 'at_manual', $_SESSION['login'], htmlspecialchars_decode($dataReceived['label']), ENT_QUOTES);
                     // Prepare new line
                     $data = DB::queryfirstrow(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i ORDER BY date DESC",
@@ -3948,7 +3948,7 @@ if (null !== $post_type) {
                         // Build array
                         $arr_data['folders'][$inc]['id'] = $folder->id;
                         $arr_data['folders'][$inc]['level'] = $folder->nlevel;
-                        $arr_data['folders'][$inc]['title'] = $fldTitle;
+                        $arr_data['folders'][$inc]['title'] = htmlspecialchars_decode($fldTitle, ENT_QUOTES);
                         $arr_data['folders'][$inc]['disabled'] = $disabled;
 
 
@@ -4088,9 +4088,9 @@ if (null !== $post_type) {
             $data_received = prepareExchangedData($post_data, "decode");
 
             // prepare variables
-            $label = htmlspecialchars_decode($data_received['label']);
+            $label = htmlspecialchars_decode($data_received['label'], ENT_QUOTES);
             $pwd = htmlspecialchars_decode($data_received['pwd']);
-            $login = htmlspecialchars_decode($data_received['login']);
+            $login = htmlspecialchars_decode($data_received['login'], ENT_QUOTES);
             $email = htmlspecialchars_decode($data_received['email']);
             $url = htmlspecialchars_decode($data_received['url']);
             $folder = htmlspecialchars_decode($data_received['folder']);

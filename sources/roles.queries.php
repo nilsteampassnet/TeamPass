@@ -346,7 +346,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     } else {
                         $allow_pw_change = '&nbsp;<span class=\'fa fa-magic fa-2x mi-green tip\'  id=\'img_apcfr_'.$record['id'].'\' onclick=\'allow_pw_change_for_role('.$record['id'].', 1)\' style=\'cursor:pointer;\' title=\''.$LANG['role_can_modify_all_seen_items'].'\'></span>';
                     }
-                    $title = mysqli_real_escape_string($link, filter_var($record['title'], FILTER_SANITIZE_STRING));
+                    $title = filter_var(htmlspecialchars_decode($record['title'], ENT_QUOTES), FILTER_SANITIZE_STRING);
 
                     $texte .= '<th style=\'font-size:10px;min-width:60px;\' class=\'edit_role\'>'.
                         $title.
