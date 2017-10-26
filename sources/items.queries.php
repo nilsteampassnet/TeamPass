@@ -2253,7 +2253,7 @@ if (null !== $post_type) {
                         $arr_arbo,
                         array(
                             "id" => $elem->id,
-                            "title" => htmlspecialchars(stripslashes($elem->title), ENT_QUOTES),
+                            "title" => htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES),
                             "visible" => in_array($elem->id, $_SESSION['groupes_visibles']) ? 1 : 0
                         )
                     );

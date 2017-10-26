@@ -1007,7 +1007,7 @@ function mainQuery()
                             $arr_html,
                             array(
                                 "id" => $record['id'],
-                                "label" => htmlspecialchars(stripslashes($record['label']), ENT_QUOTES),
+                                "label" => htmlspecialchars(stripslashes(htmlspecialchars_decode($record['label'], ENT_QUOTES)), ENT_QUOTES),
                                 "tree_id" => $record['id_tree']
                             )
                         );
