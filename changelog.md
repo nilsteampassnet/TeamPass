@@ -19,6 +19,7 @@
  Fixed last 10 items seen list not display on page load
  Improved offline file with full encryption
  Improved session validity check
+ Ensure session extension is always positive
  Fixed display strings with quotes issue
  Added filter in Roles
  New: confirm deletion of attachment

@@ -1060,9 +1060,18 @@ $htmlHeaders .= '
             title: "'.$LANG['index_add_one_hour'].'",
             buttons: {
                 "'.$LANG['confirm'].'": function() {
-                    if (isInteger($("#input_session_duration").val())) {
+                    if (isInteger($("#input_session_duration").val()) && parseInt($("#input_session_duration").val()) > 0) {
                         IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'", $("#input_session_duration").val());
                         $("#div_increase_session_time").dialog("close");
+                    } else {
+                        $("#input_session_duration").addClass("ui-state-error");
+                        setTimeout(
+                            function() {
+                                $("#input_session_duration").removeClass("ui-state-error");
+                            },
+                            3000
+                        );
+
                     }
                 },
                 "'.$LANG['cancel_button'].'": function() {

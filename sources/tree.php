@@ -241,7 +241,7 @@ function buildNodeTree($nodeId)
                 } else {
                     $restricted = "1";
                     $folderClass = "folder_not_droppable";
-                    if (isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] == 1) {
+                    if (isset($SETTINGS['show_only_accessible_folders']) && $SETTINGS['show_only_accessible_folders'] === "1") {
                         // folder is not visible
                             $nodeDirectDescendants = $tree->getDescendants($nodeId, false, true, true);
                         if (count($nodeDirectDescendants) > 0) {
