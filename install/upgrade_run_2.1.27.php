@@ -268,6 +268,9 @@ mysqli_query($db_link, "ALTER TABLE `".$pre."kb_items` CHANGE `kb_id` `kb_id` IN
 mysqli_query($db_link, "ALTER TABLE `".$pre."kb_items` CHANGE `item_id` `item_id` INT(12) NOT NULL");
 
 
+// Alter table EXPORT - adapt field Label
+mysqli_query($db_link, "ALTER TABLE `".$pre."export` CHANGE `label` `label` VARCHAR(500) NOT NULL");
+
 // add field encrypted_data to CATEGORIES table
 $res = addColumnIfNotExist(
     $pre."categories",

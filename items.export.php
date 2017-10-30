@@ -124,6 +124,7 @@ echo '
         //$(".radio_buttonset").buttonset();
 
         $(".export_radio_buttonset").click(function(){
+            $("#export_information").html('');
             if ($("input[name='export_format']:checked").val() == "pdf"){
                 $("#div_export_pdf_password").show();
             } else {

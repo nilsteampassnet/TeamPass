@@ -251,7 +251,7 @@ if (null !== $post_type) {
                     if ($prev_path != $record['path']) {
                         $pdf->SetFont('helvetica', '', 10);
                         $pdf->SetFillColor(192, 192, 192);
-                        error_log('key: '.$key.' - paths: '.$record['path']);
+                        //error_log('key: '.$key.' - paths: '.$record['path']);
                         $pdf->cell(0, 6, utf8_decode($record['path']), 1, 1, "L", true);
                         $pdf->SetFillColor(222, 222, 222);
                         $pdf->cell($table_col_width[0], 6, $LANG['label'], 1, 0, "C", true);

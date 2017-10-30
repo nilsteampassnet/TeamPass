@@ -921,7 +921,7 @@ global \$SETTINGS;
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."export` (
                             `id` int(12) NOT NULL,
-                            `label` varchar(255) NOT NULL,
+                            `label` varchar(500) NOT NULL,
                             `login` varchar(100) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,
