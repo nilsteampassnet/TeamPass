@@ -23,6 +23,7 @@
  Fixed display strings with quotes issue
  Added filter in Roles
  New: confirm deletion of attachment
+ #1970 ip-api.com use is not compatible with https
  #1974 Changing saltkey operation
  #1960 Access Denied for personal folder
  #1965 Login credentials do not correspond (json_decode issue)
