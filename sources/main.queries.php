@@ -68,7 +68,6 @@ function mainQuery()
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
-    header("Pragma: no-cache");
     error_reporting(E_ERROR);
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';

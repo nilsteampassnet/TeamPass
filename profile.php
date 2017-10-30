@@ -45,7 +45,6 @@ include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
 // reload user avatar
 $userData = DB::queryFirstRow(

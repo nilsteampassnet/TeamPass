@@ -44,7 +44,6 @@ use \Defuse\Crypto\Exception as Ex;
 
 header('Content-disposition: attachment; filename='.rawurldecode(basename($get_filename)));
 header('Content-Type: application/octet-stream');
-header('Pragma: no-cache');
 header('Cache-Control: must-revalidate, no-cache, no-store');
 header('Expires: 0');
 if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
