@@ -531,24 +531,36 @@ function identifyUser($sentData)
 
             // Authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
-                $ldapConnection = true;
+                // Is user in allowed group
+                if (isset($SETTINGS['ldap_usergroup']) === true) {
+                    if (inGroup($auth_username, $SETTINGS['ldap_usergroup']) === true) {
+                        $ldapConnection = true;
+                    } else {
+                        $ldapConnection = false;
+                    }
+                } else {
+                    $ldapConnection = true;
+                }
+
                 // Update user's password
-                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                if ($ldapConnection === true) {
+                    $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
 
-                // Do things if user exists in TP
-                if ($counter > 0) {
-                    // Update pwd in TP database
-                    DB::update(
-                        prefix_table('users'),
-                        array(
-                            'pw' => $data['pw']
-                        ),
-                        "login=%s",
-                        $username
-                    );
+                    // Do things if user exists in TP
+                    if ($counter > 0) {
+                        // Update pwd in TP database
+                        DB::update(
+                            prefix_table('users'),
+                            array(
+                                'pw' => $data['pw']
+                            ),
+                            "login=%s",
+                            $username
+                        );
 
-                    // No user creation is requested
-                    $proceedIdentification = true;
+                        // No user creation is requested
+                        $proceedIdentification = true;
+                    }
                 }
             } else {
                 $ldapConnection = false;

@@ -22,6 +22,7 @@
  Ensure session extension is always positive
  Fixed display strings with quotes issue
  Added filter in Roles
+ Added user group allowed for LDAP Windows AD
  New: confirm deletion of attachment
  #1970 ip-api.com use is not compatible with https
  #1974 Changing saltkey operation

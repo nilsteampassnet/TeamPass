@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_ldap_allowed_usergroup' => 'LDAP groupe autorisé',
+    'settings_ldap_allowed_usergroup_tip' => 'Indiquer le nom du groupe autorisé à se connecter à Teampass. Laisser vide si aucune restriction n\'est requise.',
     'access_level_for_roles' => 'Droit associé des Roles',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',

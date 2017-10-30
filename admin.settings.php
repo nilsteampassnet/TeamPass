@@ -1104,6 +1104,13 @@ echo '
                     <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="ou=people,dc=octopoos,dc=local" value="', isset($SETTINGS['ldap_search_base']) ? $SETTINGS['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
 
+// AD allowed UserGroup
+                echo '
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'windows') ? '' : 'none', '" class="tr-windows tr-ldap">
+                    <td><label for="ldap_allowed_usergroup">'.$LANG['settings_ldap_allowed_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_allowed_usergroup_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_allowed_usergroup" name="ldap_allowed_usergroup" class="text ui-widget-content" title="" value="', isset($SETTINGS['ldap_allowed_usergroup']) ? $SETTINGS['ldap_allowed_usergroup'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                </tr>';
+
 // Domain controler
 echo '
                 <tr>
