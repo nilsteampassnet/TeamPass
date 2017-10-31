@@ -951,11 +951,13 @@ echo '
 // DIALOG FOR ITEM SHARE
 echo '
 <div id="div_item_share" style="display:none;">
-    <div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="">'.$LANG['item_share_text'].'</div>
-    <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
-    <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none; padding:5px;" class="ui-corner-all">
-        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    <div id="div_item_share_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all hidden"></div>
+    <div id="div_item_share_init">
+        <div style="margin:3px 0 5px 0;">'.$LANG['item_share_text'].'</div>
+        <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
+        <div id="div_item_share_status" style="text-align:center;margin-top:15px; padding:5px;" class="ui-corner-all hidden">
+            <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+        </div>
     </div>
 </div>';
 // DIALOG FOR ITEM IS UPDATED

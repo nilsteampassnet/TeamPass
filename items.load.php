@@ -3470,12 +3470,17 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 500,
-        height: 200,
+        height: 240,
         title: "<?php echo addslashes($LANG['share']); ?>",
         buttons: {
             "<?php echo addslashes($LANG['send']); ?>": function() {
-                $("#div_item_share_error").addClass("hidden");
-                if (IsValidEmail($("#item_share_email").val())) {    //check if email format is ok
+                $("#div_item_share_error")
+                    .addClass("hidden")
+                    .html('');
+                $("#div_item_share_status").removeClass("hidden");
+
+                // Check if email format is ok
+                if (IsValidEmail($("#item_share_email").val())) {
                     $("#div_item_share_status").show();
                     $.post(
                         "sources/items.queries.php",
@@ -3487,17 +3492,28 @@ $(function() {
                             key        : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
-                            $("#div_item_share_status").html("").addClass("hidden");
-                            if (data[0].error == "") {
+                            $("#div_item_share_status").addClass("hidden");
+                            if (data[0].error === "") {
+                                $("#div_item_share_init").addClass("hidden");
+                                $("#div_item_share_error").removeClass("ui-state-error").addClass("ui-state-highlight");
                                 $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']); ?>").show();
+
+                                // close dialog
+                                $(this).delay(1500).queue(function() {
+                                    $("#div_item_share").dialog('close');
+                                    $(this).dequeue();
+                                });
                             } else {
+                                $("#div_item_share_error").removeClass("ui-state-highlight").addClass("ui-state-error");
                                 $("#div_item_share_error").html(data[0].message).show();
                             }
                         },
                         "json"
                    );
                 } else {
-                    $("#div_item_share_error").html("<?php echo addslashes($LANG['bad_email_format']); ?>").show();
+                    $("#div_item_share_error")
+                        .html("<?php echo addslashes($LANG['bad_email_format']); ?>")
+                        .removeClass("hidden");
                 }
             },
             "<?php echo addslashes($LANG['close']); ?>": function() {
@@ -3506,6 +3522,9 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+            $("#div_item_share_error").addClass("ui-state-error hidden").html('');
+            $("#div_item_share_init").removeClass("hidden");
+            $("#item_share_email").val('');
         }
     });
     //<=

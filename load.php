@@ -207,7 +207,6 @@ $htmlHeaders .= '
             if (answered_data.ip !== "") {
                 client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
             }
-            alert(client_info);
             data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'"}\';
 
             // Handle if DUOSecurity is enabled
