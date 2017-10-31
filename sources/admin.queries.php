@@ -95,7 +95,6 @@ $post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
 
 switch ($post_type) {
     #CASE for getting informations about the tool
-    # connection to author's cpassman website
     case "cpm_status":
         $text = "<ul>";
         $error = "";
@@ -105,12 +104,12 @@ switch ($post_type) {
                 if (isset($SETTINGS['proxy_ip']) && !empty($SETTINGS['proxy_ip'])) {
                     $fp = fsockopen($SETTINGS['proxy_ip'], $SETTINGS['proxy_port']);
                 } else {
-                    $fp = @fsockopen("www.teampass.net", 80);
+                    $fp = @fsockopen("www.teampass.net", 443);
                 }
                 if (!$fp) {
                     $error = "connection";
                 } else {
-                    $out = "GET http://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
+                    $out = "GET https://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
                     $out .= "Host: teampass.net\r\n";
                     $out .= "Connection: Close\r\n\r\n";
                     fwrite($fp, $out);
