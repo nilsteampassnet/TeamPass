@@ -100,45 +100,23 @@ switch ($post_type) {
         $error = "";
         if (!isset($SETTINGS_EXT['admin_no_info']) || (isset($SETTINGS_EXT['admin_no_info']) && $SETTINGS_EXT['admin_no_info'] == 0)) {
             if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
-                $handleDistant = array();
-                if (isset($SETTINGS['proxy_ip']) && !empty($SETTINGS['proxy_ip'])) {
-                    $fp = fsockopen($SETTINGS['proxy_ip'], $SETTINGS['proxy_port']);
-                } else {
-                    $fp = @fsockopen("www.teampass.net", 443);
-                }
-                if (!$fp) {
-                    $error = "connection";
-                } else {
-                    $out = "GET https://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
-                    $out .= "Host: teampass.net\r\n";
-                    $out .= "Connection: Close\r\n\r\n";
-                    fwrite($fp, $out);
+                // Get info about Teampass
+                $context = stream_context_create(array('http' => array('ignore_errors' => true)));
+                $json = file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
+                if ($json) {
+                    $json_array = json_decode($json, true);
 
-                    while (($line = fgets($fp, 4096)) !== false) {
-                        $handleDistant[] = $line;
+                    // About version
+                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$SETTINGS_EXT['version'];
+                    if (floatval($SETTINGS_EXT['version']) < floatval($json_array['info']['version'])) {
+                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
                     }
-                    if (!feof($fp)) {
-                        $error = "Error: unexpected fgets() fail\n";
-                    }
-                    fclose($fp);
-                }
+                    $text .= '</li>';
 
-                if (count($handleDistant) > 0) {
-                    while (list($cle, $val) = each($handleDistant)) {
-                        if (substr($val, 0, 3) == "nom") {
-                            $tab = explode('|', $val);
-                            foreach ($tab as $elem) {
-                                $tmp = explode('#', $elem);
-                                $text .= '<li><u>'.$LANG[$tmp[0]]."</u> : ".$tmp[1].'</li>';
-                                if ($tmp[0] == "version") {
-                                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$SETTINGS_EXT['version'];
-                                    if (floatval($SETTINGS_EXT['version']) < floatval($tmp[1])) {
-                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
-                                    }
-                                    $text .= '</li>';
-                                }
-                            }
-                        }
+                    // Libraries
+                    $text .= '<li><u>Libraries</u> :</li>';
+                    foreach ($json_array['libraries'] as $key => $val) {
+                        $text .= "<li>&nbsp;<span class='fa fa-caret-right'></span>&nbsp;".$key." (<a href='".$val."' target='_blank'>".$val."</a>)</li>";
                     }
                 }
             } else {
