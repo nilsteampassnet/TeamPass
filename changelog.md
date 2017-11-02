@@ -1,4 +1,21 @@
 2.1.27
+10/
+ Copy password/login button are correctly hidden and shown
+ Cursor is hidden on password display to permit a better visualization
+ Fixed error while coping an item
+ Fixed last 10 items seen list not display on page load
+ Fixed display strings with quotes issue
+ Fixed page About in Administration page
+ Improved offline file with full encryption
+ Improved session validity check
+ Ensure session extension is always positive
+ Added user group allowed for LDAP Windows AD
+ #1989 Authentication problem
+ #1980 personal item is not deleted
+ #1974 Changing saltkey operation
+ #1970 ip-api.com use is not compatible with https
+ #1960 Access Denied for personal folder 
+
  9/
  Fixed a possible XSS (credit to ADLab of Venustech)
  Improved security related to User Management
@@ -13,21 +30,8 @@
  Improved / Fixed administration task for encrypting/decrypting files
  Improved security regarding item history display
  Improved the possibility to define the access level on Roles when creating new folder
- Copy password/login button are correctly hidden and shown
- Cursor is hidden on password display to permit a better visualization
- Fixed error while coping an item
- Fixed last 10 items seen list not display on page load
- Improved offline file with full encryption
- Improved session validity check
- Fixed page About in Administration page
- Ensure session extension is always positive
- Fixed display strings with quotes issue
  Added filter in Roles
- Added user group allowed for LDAP Windows AD
  New: confirm deletion of attachment
- #1970 ip-api.com use is not compatible with https
- #1974 Changing saltkey operation
- #1960 Access Denied for personal folder
  #1965 Login credentials do not correspond (json_decode issue)
  #1964 Make email field in new LDAP user insertion null safe
  #1961 After fresh installation the index.php shows random string

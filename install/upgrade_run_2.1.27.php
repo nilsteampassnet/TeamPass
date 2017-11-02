@@ -541,7 +541,7 @@ mysqli_query(
     "ALTER TABLE `".$pre."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
 );
 // alter table USERS to add a new field "user_ip"
-$result = mysqli_query("SHOW COLUMNS FROM `users` LIKE 'user_ip'");
+$result = mysqli_query("SHOW COLUMNS FROM `".$pre."users` LIKE 'user_ip'");
 if (mysqli_num_rows($result) !== 0) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."users` CHANGE `user_ip` `user_ip` VARCHAR(400) NOT NULL DEFAULT 'none'");
