@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_disable_forgot_password_link' => 'Cacher le lien de récupération de mot de passe',
     'settings_ldap_allowed_usergroup' => 'LDAP groupe autorisé',
     'settings_ldap_allowed_usergroup_tip' => 'Indiquer le nom du groupe autorisé à se connecter à Teampass. Laisser vide si aucune restriction n\'est requise.',
     'access_level_for_roles' => 'Droit associé des Roles',

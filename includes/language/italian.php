@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
     'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
     'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
     'access_level_for_roles' => 'Associated access for Roles',

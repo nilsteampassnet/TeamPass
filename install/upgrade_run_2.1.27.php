@@ -189,7 +189,7 @@ if (isset($session_tp_defuse_installed) === false) {
 mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 // alter table MISC - rename ID is exists
-$result = mysqli_query("SHOW COLUMNS FROM `misc` LIKE 'id'");
+$result = mysqli_query("SHOW COLUMNS FROM `".$pre."misc` LIKE 'id'");
 if (mysqli_num_rows($result) !== 0) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");

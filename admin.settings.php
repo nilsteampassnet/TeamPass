@@ -1151,6 +1151,15 @@ echo '
                         <div class="toggle toggle-modern" id="ldap_elusers" data-toggle-on="', isset($SETTINGS['ldap_elusers']) && $SETTINGS['ldap_elusers'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_elusers_input" name="ldap_elusers_input" value="', isset($SETTINGS['ldap_elusers']) && $SETTINGS['ldap_elusers'] == 1 ? '1' : '0', '" />
                     </td>
                 </tr>';
+
+// Enable Forgot password link on login page
+echo '
+                <tr>
+                    <td><label>'.$LANG['settings_disable_forgot_password_link'].'</label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="disable_show_forgot_pwd_link" data-toggle-on="', isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="disable_show_forgot_pwd_link_input" name="disable_show_forgot_pwd_link_input" value="', isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] == 1 ? '1' : '0', '" />
+                    </td>
+                </tr>';
 echo '
                 </table>';
 

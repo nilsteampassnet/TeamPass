@@ -748,14 +748,26 @@ if (isset($_SESSION['CPM'])) {
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
                             <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
-                        </div>
+                        </div>';
 
+        if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
+            || (
+                (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1')
+                && (
+                    isset($SETTINGS['disable_show_forgot_pwd_link']) === false
+                    || (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['disable_show_forgot_pwd_link'] === "0")
+                )
+            )
+        ) {
+            echo '
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                         </div>
                         <div style="text-align:center;margin-top:15px;">
                             <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
-                        </div>
+                        </div>';
+        }
+        echo '
                     </div>
                 </form>
                 <script type="text/javascript">
