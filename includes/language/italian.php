@@ -14,7 +14,9 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'error_security_level_not_reached' => 'Expected level of security not reached!',
+    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
+    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
     'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
     'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
     'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',

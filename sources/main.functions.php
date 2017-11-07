@@ -1206,6 +1206,10 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->CharSet = "utf-8";
     if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
         $mail->SMTPSecure = $SETTINGS['email_security'];
+        $SMTPAutoTLS = true;
+    } else {
+        $SMTPAutoTLS = false;
+        $mail->SMTPSecure = "";
     }
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
@@ -1621,9 +1625,9 @@ function handleConfigFile($action, $field = null, $value = null)
         foreach ($rows as $record) {
             array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
         }
-        array_push($data, ");");
+        array_push($data, ");\n");
         $data = array_unique($data);
-    } elseif ($action == "update" && !empty($field)) {
+    } elseif ($action == "update" && empty($field) === false) {
         $data = file($tp_config_file);
         $inc = 0;
         $bFound = false;
@@ -1641,7 +1645,7 @@ function handleConfigFile($action, $field = null, $value = null)
             $inc++;
         }
         if ($bFound === false) {
-            $data[($inc - 1)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
+            $data[($inc)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n);\n";
         }
     }
 

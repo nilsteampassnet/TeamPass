@@ -19,6 +19,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 <script type="text/javascript">
 //<![CDATA[
+
+var requestRunning = false;
 /*
 * Add a new field to a category
 */
@@ -508,6 +510,12 @@ function updateSetting(field)
 {
     if (field == "") return false;
 
+    // prevent launch of similar query in case of doubleclick
+    if (requestRunning === true) {
+        return false;
+    }
+    requestRunning = true;
+
     // store in DB
     var data = {"field":field, "value":$("#"+field).val()};
     //console.log(data);
@@ -524,6 +532,10 @@ function updateSetting(field)
                 location.reload(true);
                 return false;
             }
+
+            // reset doubleclick prevention
+            requestRunning = false;
+
             //decrypt data
             try {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");

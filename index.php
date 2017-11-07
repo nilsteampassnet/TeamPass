@@ -13,9 +13,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-// do not expose php version
-header_remove('X-Powered-By');
-
 header("X-XSS-Protection: 1; mode=block");
 header("X-Frame-Options: SameOrigin");
 
@@ -99,8 +96,6 @@ $post_language =        filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STR
 $post_sig_response =    filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_duo_login =       filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
 $post_duo_data =        filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
-$post_login =           filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
-$post_pw =              filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
 
 // Prepare superGlobal variables
 $session_user_language =        $superGlobal->get("user_language", "SESSION");
@@ -206,7 +201,6 @@ if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === tru
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
@@ -699,7 +693,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
-                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="'.$post_login.'" />
+                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', isset($_POST['login']) ? $_POST['login'] : '', '" />
                             <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
 
@@ -718,7 +712,7 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="'.$post_pw.'" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', isset($_POST['pw']) ? $_POST['pw'] : '', '" />
                         </div>';
 
         // Personal salt key
@@ -748,26 +742,14 @@ if (isset($_SESSION['CPM'])) {
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
                             <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
-                        </div>';
+                        </div>
 
-        if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
-            || (
-                (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1')
-                && (
-                    isset($SETTINGS['disable_show_forgot_pwd_link']) === false
-                    || (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['disable_show_forgot_pwd_link'] === "0")
-                )
-            )
-        ) {
-            echo '
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                         </div>
                         <div style="text-align:center;margin-top:15px;">
                             <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
-                        </div>';
-        }
-        echo '
+                        </div>
                     </div>
                 </form>
                 <script type="text/javascript">
@@ -832,10 +814,26 @@ if (isset($_SESSION['CPM'])) {
     if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] === "1") {
         echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
-            <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
-            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
-            <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
-            <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
+            <div style="text-align:center;margin:5px;padding:3px;" id="expected_psk_complexPw" class="ui-widget ui-state-active ui-corner-all hidden">', isset($SETTINGS['personal_saltkey_security_level']) === true && empty($SETTINGS['personal_saltkey_security_level']) === false ? $LANG['complex_asked']." : ".$SETTINGS_EXT['pwComplexity'][$SETTINGS['personal_saltkey_security_level']][1] : '', '</div>
+            <table border="0">
+                <tr>
+                    <td>
+                        <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
+                    </td>
+                    <td>
+                        <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:10px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
+                        <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <div id="psk_strength" style="margin:3px 0 0 10px;"></div>
+                        <input type="hidden" id="psk_strength_value" />
+                    </td>
+                </tr>
+            </table>
+            <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-corner-all"></div>
         </div>';
     }
 

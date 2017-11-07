@@ -506,7 +506,8 @@ global \$SETTINGS;
                             array('admin', 'migration_to_2127', 'done'),
                             array('admin', 'files_with_defuse', 'done'),
                             array('admin', 'timezone', 'UTC'),
-                            array('admin', 'enable_attachment_encryption', '1')
+                            array('admin', 'enable_attachment_encryption', '1'),
+                            array('admin', 'personal_saltkey_security_level', '50')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

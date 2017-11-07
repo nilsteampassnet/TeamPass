@@ -553,21 +553,38 @@ function mainQuery()
          * Store the personal saltkey
          */
         case "store_personal_saltkey":
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" , "status" : "nok" } ]';
+                break;
+            }
+
             $err = "";
             $dataReceived = prepareExchangedData(
                 filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
+            $filter_score = filter_var($dataReceived['score'], FILTER_SANITIZE_NUMBER_INT);
+            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
 
             // manage store
-            if ($dataReceived['psk'] !== "") {
+            if ($filter_psk !== "") {
                 // store in session the cleartext for psk
-                $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
+                $_SESSION['user_settings']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
                 if (!isset($_SESSION['user_settings']['encrypted_psk']) || (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk']))) {
+                    // Check if security level is reach (if enabled)
+                    if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
+                        // Did we received the pass score
+                        if (empty($filter_score) === false) {
+                            if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
+                                echo '[ { "error" : "security_level_not_reached" , "status" : "" } ]';
+                                break;
+                            }
+                        }
+                    }
                     // generate it based upon clear psk
-                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($dataReceived['psk']);
+                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
 
                     // store it in DB
                     DB::update(
@@ -582,32 +599,39 @@ function mainQuery()
 
                 // check if psk is correct.
                 $user_key_encoded = defuse_validate_personal_key(
-                    $dataReceived['psk'],
+                    $filter_psk,
                     $_SESSION['user_settings']['encrypted_psk']
                 );
 
                 if (strpos($user_key_encoded, "Error ") !== false) {
-                    $err = $user_key_encoded;
+                    echo '[ { "error" : "psk_not_correct" , "status" : "" } ]';
+                    break;
                 } else {
+                    // Check if security level is reach (if enabled)
+                    if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
+                        // Did we received the pass score
+                        if (empty($filter_score) === false) {
+                            if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
+                                echo '[ { "error" : "" , "status" : "security_level_not_reached_but_psk_correct" } ]';
+                                break;
+                            }
+                        }
+                    }
                     // Store PSK
                     $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
                     setcookie(
                         "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                        encrypt($dataReceived['psk'], ""),
+                        encrypt($filter_psk, ""),
                         (!isset($SETTINGS['personal_saltkey_cookie_duration']) || $SETTINGS['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
                     );
                 }
             } else {
-                $err = "Personal Saltkey is empty!";
+                echo '[ { "error" : "psk_is_empty" , "status" : "" } ]';
+                break;
             }
 
-            echo prepareExchangedData(
-                array(
-                    "error" => $err
-                ),
-                "encode"
-            );
+            echo '[ { "error" : "" , "status" : "ok" } ]';
 
             break;
         /**

@@ -11,6 +11,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #1996 Some settings resets to defaults
  #1989 Authentication problem
  #1980 personal item is not deleted
  #1974 Changing saltkey operation

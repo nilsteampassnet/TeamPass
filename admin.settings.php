@@ -417,6 +417,23 @@ echo '
             </div>
             </td></tr>';
 
+// Personal SALTKEY level
+echo '
+            <tr><td>
+                <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                <label>'.$LANG['personal_saltkey_security_level'].'</label>
+            </td><td>
+            <div class="div_radio">
+                <select id="personal_saltkey_security_level" name="personal_saltkey_security_level" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">';
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
+    echo '<option value="'.$complex[0].'"', isset($SETTINGS['personal_saltkey_security_level']) && $SETTINGS['personal_saltkey_security_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
+}
+echo '
+                        </select>
+            </div>
+            </td></tr>';
+
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // Attachments encryption strategy
 
