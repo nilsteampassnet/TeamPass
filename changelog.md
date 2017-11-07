@@ -6,12 +6,14 @@
  Fixed last 10 items seen list not display on page load
  Fixed display strings with quotes issue
  Fixed page About in Administration page
+ Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
  #1996 Some settings resets to defaults
+ #1993 Policy for personal saltkey
  #1989 Authentication problem
  #1980 personal item is not deleted
  #1974 Changing saltkey operation

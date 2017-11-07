@@ -104,7 +104,7 @@ echo '
 echo '
 <input type="hidden" id="profile_user_token" value="" />';
 
-// Get echo $SETTINGS_EXT['pwComplexity'][$_SESSION['personal_saltkey_security_level']][1]
+// Get info about personal_saltkey_security_level
 if (isset($SETTINGS['personal_saltkey_security_level']) === true && empty($SETTINGS['personal_saltkey_security_level']) === false) {
     echo '
 <input type="hidden" id="input_personal_saltkey_security_level" value="'.$SETTINGS['personal_saltkey_security_level'].'" />';

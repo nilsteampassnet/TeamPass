@@ -558,7 +558,6 @@ function mainQuery()
                 break;
             }
 
-            $err = "";
             $dataReceived = prepareExchangedData(
                 filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"

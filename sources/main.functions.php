@@ -1211,6 +1211,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
         $SMTPAutoTLS = false;
         $mail->SMTPSecure = "";
     }
+    $mail->SMTPAutoTLS = $SMTPAutoTLS;
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
     $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication

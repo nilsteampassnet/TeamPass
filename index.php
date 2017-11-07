@@ -96,6 +96,8 @@ $post_language =        filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STR
 $post_sig_response =    filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_duo_login =       filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
 $post_duo_data =        filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
+$post_login =           filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
+$post_pw =              filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
 
 // Prepare superGlobal variables
 $session_user_language =        $superGlobal->get("user_language", "SESSION");
@@ -693,7 +695,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
-                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', isset($_POST['login']) ? $_POST['login'] : '', '" />
+                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
                             <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
 
@@ -712,7 +714,7 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', isset($_POST['pw']) ? $_POST['pw'] : '', '" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) == false ? $post_pw : '', '" />
                         </div>';
 
         // Personal salt key
