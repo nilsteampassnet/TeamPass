@@ -814,8 +814,7 @@ function mainQuery()
             }
 
             if (isset($SETTINGS['enable_send_email_on_user_login'])
-                && $SETTINGS['enable_send_email_on_user_login'] == 1
-                && isset($_SESSION['key'])
+                && $SETTINGS['enable_send_email_on_user_login'] === "1"
             ) {
                 $row = DB::queryFirstRow(
                     "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
@@ -823,37 +822,21 @@ function mainQuery()
                     "sending_emails"
                 );
                 if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
-                    //load library
-                    require $SETTINGS['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
-                    // load PHPMailer
-                    $mail = new PHPMailer();
-
-                    $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language");
-                    $mail->isSmtp(); // send via SMTP
-                    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-                    $mail->SMTPAuth = $SETTINGS['email_smtp_auth']; // turn on SMTP authentication
-                    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
-                    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
-                    $mail->From = $SETTINGS['email_from'];
-                    $mail->FromName = $SETTINGS['email_from_name'];
-                    $mail->WordWrap = 80; // set word wrap
-                    $mail->isHtml(true); // send as HTML
                     $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                     foreach ($rows as $record) {
-                        // send email
-                        $ret = json_decode(
-                            @sendEmail(
-                                $record['subject'],
-                                $record['body'],
-                                $record['receivers']
-                            )
+                        // Send email
+                        $ret = sendEmail(
+                            $record['subject'],
+                            $record['body'],
+                            $record['receivers']
                         );
 
-                        if (!empty($ret['error'])) {
+                        if (strpos($ret, "error_mail_not_send") !== false) {
                             $status = "not_sent";
                         } else {
                             $status = "sent";
                         }
+
                         // update item_id in files table
                         DB::update(
                             prefix_table("emails"),
@@ -863,9 +846,6 @@ function mainQuery()
                             "timestamp = %s",
                             $record['timestamp']
                         );
-                        if ($status == "not_sent") {
-                            break;
-                        }
                     }
                 }
                 // update cron time

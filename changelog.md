@@ -6,6 +6,7 @@
  Fixed last 10 items seen list not display on page load
  Fixed display strings with quotes issue
  Fixed page About in Administration page
+ Fixed issue when sending email on visualization
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check

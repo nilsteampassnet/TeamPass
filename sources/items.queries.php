@@ -1384,9 +1384,10 @@ if (null !== $post_type) {
             // Get all USERS infos
             $listNotif = array_filter(explode(";", $dataItem['notification']));
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
-            $listeRestriction = $listNotification = $listNotificationEmails = "";
+            $listeRestriction = $listNotification = $_SESSION['listNotificationEmails'] = "";
+
             $user_in_restricted_list_of_item = false;
-            $rows = DB::query("SELECT id, login, email FROM ".prefix_table("users"));
+            $rows = DB::query("SELECT id, login, email, admin FROM ".prefix_table("users"));
             foreach ($rows as $record) {
                 // Get auhtor
                 if ($record['id'] === $dataItem['id_user']) {
@@ -1410,7 +1411,15 @@ if (null !== $post_type) {
                 // Get notification list for users
                 if (in_array($record['id'], $listNotif)) {
                     $listNotification .= $record['login'].";";
-                    $listNotificationEmails .= $record['email'].",";
+                    $_SESSION['listNotificationEmails'] .= $record['email'].",";
+                }
+
+                // Add Admins to notification list if expected
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === "1"
+                    && $record['admin'] === "1"
+                ) {
+                    $listNotification .= $record['login'].";";
+                    $_SESSION['listNotificationEmails'] .= $record['email'].",";
                 }
             }
             // manage case of API user
@@ -1940,8 +1949,16 @@ if (null !== $post_type) {
                         array(
                             'timestamp' => time(),
                             'subject' => $LANG['email_on_open_notification_subject'],
-                            'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataItem['author']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_on_open_notification_mail']),
-                            'receivers' => $listNotificationEmails,
+                            'body' => str_replace(
+                                array('#tp_user#', '#tp_item#', '#tp_link#'),
+                                array(
+                                    addslashes($_SESSION['login']),
+                                    addslashes($dataItem['label']),
+                                    $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                                ),
+                                $LANG['email_on_open_notification_mail']
+                            ),
+                            'receivers' => $_SESSION['listNotificationEmails'],
                             'status' => ''
                         )
                     );

@@ -714,7 +714,7 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) == false ? $post_pw : '', '" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
 
         // Personal salt key

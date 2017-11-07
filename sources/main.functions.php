@@ -1201,7 +1201,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
-    $mail->SMTPDebug = 0; //value 1 can be used to debug
+    $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
     $mail->Port = $SETTINGS['email_port']; //COULD BE USED
     $mail->CharSet = "utf-8";
     if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
@@ -1219,7 +1219,13 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
     $mail->From = $SETTINGS['email_from'];
     $mail->FromName = $SETTINGS['email_from_name'];
-    $mail->addAddress($email); //Destinataire
+
+    // Prepare for each person
+    $dests = explode(",", $email);
+    foreach ($dests as $dest) {
+        $mail->addAddress($dest);
+    }
+    
     $mail->WordWrap = 80; // set word wrap
     $mail->isHtml(true); // send as HTML
     $mail->Subject = $subject;
