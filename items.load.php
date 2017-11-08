@@ -1275,6 +1275,8 @@ function AddNewFolder()
     } else if (/^\d+$/.test($("#new_rep_titre").val())) {
         // check if folder title contains only numbers
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").removeClass("hidden");
+    } else if ($("#new_rep_groupe option:selected").length === 0) {
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_fields_2']); ?>").removeClass("hidden");
     } else if ($("#user_ongoing_action").val() == "") {
         $("#add_folder_loader").removeClass("hidden");
         $("#user_ongoing_action").val("true");
