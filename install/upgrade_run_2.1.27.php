@@ -696,6 +696,10 @@ mysqli_query(
 );
 
 
+// Remove some indexes
+mysqli_query($db_link, "ALTER TABLE ".$pre."nested_tree` DROP INDEX `id`;");
+mysqli_query($db_link, "ALTER TABLE ".$pre."tags` DROP INDEX `id`;");
+
 
 /*
 * Introduce new CONFIG file

@@ -557,7 +557,6 @@ global \$SETTINGS;
                             `personal_folder` tinyint(1) NOT null DEFAULT '0',
                             `renewal_period` TINYINT(4) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
-                            UNIQUE KEY `id` (`id`),
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),
                             KEY `nested_tree_nright` (`nright`),
@@ -660,8 +659,7 @@ global \$SETTINGS;
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `tag` varchar(30) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            PRIMARY KEY (`id`),
-                            UNIQUE KEY `id` (`id`)
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "log_system") {

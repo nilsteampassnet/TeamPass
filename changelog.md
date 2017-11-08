@@ -16,6 +16,7 @@
  #1997 Error on folder creation of no Parent is selected
  #1996 Some settings resets to defaults
  #1993 Policy for personal saltkey
+ #1990 Improving mysql indexes
  #1989 Authentication problem
  #1980 personal item is not deleted
  #1974 Changing saltkey operation
