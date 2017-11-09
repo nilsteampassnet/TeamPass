@@ -146,10 +146,13 @@ function cleanFields($txt)
     return $tmp;
 }
 
+/*
+** Checks if the column exists in the table
+*/
 function columnExists($tablename, $column)
 {
     $checkcolumn = mysqli_query($db_link, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{$tablename}' AND COLUMN_NAME = '{$column}';");
-    if (mysql_num_rows($checkcolumn) > 0) {
+    if (mysqli_num_rows($checkcolumn) > 0) {
         return false;
     } else {
         return true;
