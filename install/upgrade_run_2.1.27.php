@@ -146,6 +146,16 @@ function cleanFields($txt)
     return $tmp;
 }
 
+function columnExists($tablename, $column)
+{
+    $checkcolumn = mysqli_query($db_link, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{$tablename}' AND COLUMN_NAME = '{$column}';");
+    if (mysql_num_rows($checkcolumn) > 0) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 // 2.1.27 introduce new encryption protocol with DEFUSE library.
 // Now evaluate if current instance has already this version
 $tmp = mysqli_fetch_row(mysqli_query($db_link, "SELECT valeur FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'teampass_version'"));
@@ -177,11 +187,8 @@ if (intval($tmp) === 0) {
 // if yes, then don't execute re-encryption
 if (isset($session_tp_defuse_installed) === false) {
     $superGlobal->put("tp_defuse_installed", false, "SESSION");
-    $columns = mysqli_query($db_link, "show columns from ".$pre."items");
-    while ($c = mysqli_fetch_assoc($columns)) {
-        if ($c['Field'] === "encryption_type") {
-            $superGlobal->put("tp_defuse_installed", true, "SESSION");
-        }
+    if (columnExists($pre."items", "encryption_type") === true) {
+        $superGlobal->put("tp_defuse_installed", true, "SESSION");
     }
 }
 
@@ -189,8 +196,7 @@ if (isset($session_tp_defuse_installed) === false) {
 mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 // alter table MISC - rename ID is exists
-$result = mysqli_query("SHOW COLUMNS FROM `".$pre."misc` LIKE 'id'");
-if (mysqli_num_rows($result) !== 0) {
+if (columnExists($pre."misc", "id") === true) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
 } else {
@@ -550,8 +556,7 @@ mysqli_query(
     "ALTER TABLE `".$pre."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
 );
 // alter table USERS to add a new field "user_ip"
-$result = mysqli_query("SHOW COLUMNS FROM `".$pre."users` LIKE 'user_ip'");
-if (mysqli_num_rows($result) !== 0) {
+if (columnExists($pre."users", "user_ip") === true) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."users` CHANGE `user_ip` `user_ip` VARCHAR(400) NOT NULL DEFAULT 'none'");
 } else {
@@ -562,6 +567,7 @@ if (mysqli_num_rows($result) !== 0) {
         "VARCHAR(400) NOT NULL DEFAULT 'none'"
     );
 }
+
 // alter table USERS to allow NULL on field "email"
 mysqli_query(
     $db_link,

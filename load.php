@@ -200,12 +200,12 @@ $htmlHeaders .= '
 
         // get some info
         var client_info = "";
-        $.getJSON("http://ip-api.com/json", function() {
+        $.getJSON("https://ipapi.co/json", function() {
             // nothing to do
         })
         .always(function(answered_data) {
-            if (answered_data.status === "success") {
-                client_info = answered_data.countryCode+"-"+answered_data.city+"-"+answered_data.timezone;
+            if (answered_data.ip !== "") {
+                client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
             }
             data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'"}\';
 
