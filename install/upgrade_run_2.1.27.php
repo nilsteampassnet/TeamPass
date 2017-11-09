@@ -540,6 +540,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// add new admin setting "item_extra_fields"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'item_extra_fields'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'item_extra_fields', '0')"
+    );
+}
+
 // add new language "portuges_br"
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'portuguese_br'"));
 if (intval($tmp) === 0) {
