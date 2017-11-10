@@ -471,7 +471,7 @@ echo '
                 <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
-            <input type="hidden" id="mypassword_complex" />
+            <input type="hidden" id="mypassword_complex" value="0" />
             <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
             <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
 
@@ -657,7 +657,7 @@ echo '
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-history tip" style="cursor:pointer;" id="edit_past_pwds" onclick="showPasswordsHistory()"></span>
                 <div style="display:none; padding:3px; width:390px; font-weight:normal; font-size:11px; font-family:italic;" id="edit_past_pwds_div" class="ui-corner-all ui-state-default"></div>
-                <input type="hidden" id="edit_mypassword_complex" />
+                <input type="hidden" id="edit_mypassword_complex" value="0" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>
                 <input type="password" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />

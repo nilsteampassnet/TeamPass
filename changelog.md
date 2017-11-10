@@ -7,9 +7,12 @@
  Fixed display strings with quotes issue
  Fixed page About in Administration page
  Fixed issue when sending email on visualization
+ Fixed issue while CSV import in personal sub-folder
+ Fixed potential error on item creation without password
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check
+ Improved items draggability sometime broken
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled

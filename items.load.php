@@ -424,52 +424,6 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         }
                     }
 
-                    //If no data then empty
-                    if (data.array_items != null) {
-                        $(".item_draggable").draggable({
-                            handle: '.grippy',
-                            cursor: "move",
-                            opacity: 0.4,
-                            appendTo: 'body',
-                            stop: function(event, ui) {
-                                $(this).removeClass("ui-state-highlight");
-                            },
-                            start: function(event, ui) {
-                                $(this).addClass("ui-state-highlight");
-                            },
-                            helper: function(event) {
-                                return $("<div class='ui-widget-header' id='drop_helper'>"+"<?php echo addslashes($LANG['drag_drop_helper']); ?>"+"</div>");
-                            }
-                        });
-                        $(".folder").droppable({
-                            hoverClass: "ui-state-error",
-                            tolerance: 'pointer',
-                            drop: function(event, ui) {
-                                ui.draggable.addClass("hidden");
-                                LoadingPage();
-                                //move item
-                                $.post(
-                                    "sources/items.queries.php",
-                                    {
-                                        type      : "move_item",
-                                        item_id   : ui.draggable.attr("id"),
-                                        folder_id : $(this).attr("id").substring(4),
-                                        key       : "<?php echo $_SESSION['key']; ?>"
-                                    },
-                                    function(data) {
-                                        //increment / decrement number of items in folders
-                                        $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
-                                        $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
-                                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
-                                        LoadingPage();
-                                        displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
-                                    },
-                                    "json"
-                               );
-                            }
-                        });
-                    }
-
                     proceed_list_update(stop_listing_current_folder);
                 }
             }
@@ -859,7 +813,7 @@ function AjouterItem()
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
                         $("#div_dialog_message").dialog("open");
 
-                        return;
+                        return false;
                     }
 
                     //Check errors
@@ -4262,6 +4216,50 @@ function proceed_list_update(stop_proceeding)
 
         $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
+
+        // Prepare items dragable on folders
+        $(".item_draggable").draggable({
+            handle: '.grippy',
+            cursor: "move",
+            opacity: 0.4,
+            appendTo: 'body',
+            stop: function(event, ui) {
+                $(this).removeClass("ui-state-highlight");
+            },
+            start: function(event, ui) {
+                $(this).addClass("ui-state-highlight");
+            },
+            helper: function(event) {
+                return $("<div class='ui-widget-header' id='drop_helper'>"+"<?php echo addslashes($LANG['drag_drop_helper']); ?>"+"</div>");
+            }
+        });
+        $(".folder").droppable({
+            hoverClass: "ui-state-error",
+            tolerance: 'pointer',
+            drop: function(event, ui) {
+                ui.draggable.addClass("hidden");
+                LoadingPage();
+                //move item
+                $.post(
+                    "sources/items.queries.php",
+                    {
+                        type      : "move_item",
+                        item_id   : ui.draggable.attr("id"),
+                        folder_id : $(this).attr("id").substring(4),
+                        key       : "<?php echo $_SESSION['key']; ?>"
+                    },
+                    function(data) {
+                        //increment / decrement number of items in folders
+                        $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
+                        $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
+                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
+                        LoadingPage();
+                        displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
+                    },
+                    "json"
+               );
+            }
+        });
 
         var restricted_to_roles = <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
     echo 1;
