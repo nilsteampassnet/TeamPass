@@ -4249,11 +4249,21 @@ function proceed_list_update(stop_proceeding)
                         key       : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
+                        LoadingPage();
+                        // check if errors
+                        if (data[0].error !== "") {
+                            if (data[0].error === "ERR_PSK_REQUIRED") {
+                                displayMessage("<?php echo addslashes($LANG['psk_required']); ?>");
+                            } else {
+                                displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+                            }
+                            ui.draggable.removeClass("hidden");
+                            return false;
+                        }
                         //increment / decrement number of items in folders
                         $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
                         $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
-                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
-                        LoadingPage();
+                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");                        
                         displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
                     },
                     "json"

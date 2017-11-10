@@ -3105,6 +3105,7 @@ if (null !== $post_type) {
                 // error
                 exit();
             }
+
             // get data about item
             $dataSource = DB::queryfirstrow(
                 "SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
@@ -3113,17 +3114,26 @@ if (null !== $post_type) {
                 WHERE i.id=%i",
                 $post_item_id
             );
+            
             // get data about new folder
             $dataDestination = DB::queryfirstrow(
                 "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $post_folder_id
             );
 
+            // Do quick check if psh is required
+            if ((isset($_SESSION['user_settings']['session_psk']) === false || empty($_SESSION['user_settings']['session_psk']) === true)
+                && ($dataSource['personal_folder'] === '1' || $dataDestination['personal_folder'] === '1')
+            ) {
+                 echo '[{"error" : "ERR_PSK_REQUIRED"}]';
+                break;
+            }
+
             // Check that user can access this folder
             if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
                 || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
             ) {
-                echo '[{"error" => "ERR_FOLDER_NOT_ALLOWED"}]';
+                echo '[{"error" : "ERR_FOLDER_NOT_ALLOWED"}]';
                 break;
             }
 
@@ -3208,7 +3218,7 @@ if (null !== $post_type) {
                 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
             );
 
-            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$post_folder_id.'"}]';
+            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$post_folder_id.'" , "error" : ""}]';
             break;
 
         /*
