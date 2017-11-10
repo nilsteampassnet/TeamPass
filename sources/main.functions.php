@@ -596,8 +596,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['list_folders_editable_by_role'] = array();
         $_SESSION['list_folders_limited'] = array();
+        $_SESSION['no_access_folders'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $_SESSION['list_folders_limited'] = "";
         $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
@@ -1225,7 +1225,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     foreach ($dests as $dest) {
         $mail->addAddress($dest);
     }
-    
+
     $mail->WordWrap = 80; // set word wrap
     $mail->isHtml(true); // send as HTML
     $mail->Subject = $subject;

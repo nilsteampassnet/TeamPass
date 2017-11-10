@@ -85,7 +85,6 @@ if (mysqli_connect(
         $port
     );
     $res = "Connection is successful";
-    echo 'document.getElementById("but_next").disabled = "";';
 } else {
     $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
     echo 'document.getElementById("but_next").disabled = "disabled";';
@@ -920,7 +919,8 @@ if (file_exists(\"".$skFile."\")) {
                             $row_content = str_replace("\n", "\\n", $mysqli->real_escape_string($row[$i]));
 
                             switch ($fields[$i]->type) {
-                                case 8: case 3:
+                                case 8:
+                                case 3:
                                     $contents .= $row_content;
                                     break;
                                 default:
@@ -949,7 +949,9 @@ if (file_exists(\"".$skFile."\")) {
                 echo '[{ "error" : "Backup fails - please do it manually."}]';
             }
             fclose($fp);
+            return false;
 
             break;
     }
 }
+echo 'document.getElementById("but_next").disabled = "";';

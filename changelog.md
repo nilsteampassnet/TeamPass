@@ -13,6 +13,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2004 Administrator has no access to Items
  #1997 Error on folder creation of no Parent is selected
  #1996 Some settings resets to defaults
  #1993 Policy for personal saltkey
@@ -21,7 +22,7 @@
  #1980 personal item is not deleted
  #1974 Changing saltkey operation
  #1970 ip-api.com use is not compatible with https
- #1960 Access Denied for personal folder 
+ #1960 Access Denied for personal folder
 
  9/
  Fixed a possible XSS (credit to ADLab of Venustech)

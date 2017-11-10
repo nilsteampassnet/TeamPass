@@ -290,22 +290,23 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
 
         }
 
-        function launch_database_dump() {
+        function launch_database_dump() {console.info("hello");
             $("#dump_result").html("<img src=\"images/76.gif\" />");
-            request = $.post("upgrade_ajax.php",
+            request = $.post(
+                "upgrade_ajax.php",
                 {
                     type      : "perform_database_dump"
                 },
                 function(data) {
-                    var obj = $.parseJSON(data);
-                    if (obj[0].error !== "") {
+                    if (data[0].error !== "") {
                         // ERROR
-                        $("#dump_result").html(obj[0].error);
+                        $("#dump_result").html(data[0].error);
                     } else {
                         // DONE
-                        $("#dump_result").html("Dump is successfull. File stored in folder " + obj[0].file);
+                        $("#dump_result").html("Dump is successfull. File stored in folder " + data[0].file);
                     }
-                }
+                },
+                "json"
             );
         }
         </script>
