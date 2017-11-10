@@ -151,6 +151,7 @@ function cleanFields($txt)
 */
 function columnExists($tablename, $column)
 {
+    global $db_link;
     $checkcolumn = mysqli_query($db_link, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{$tablename}' AND COLUMN_NAME = '{$column}';");
     if (mysqli_num_rows($checkcolumn) > 0) {
         return false;
