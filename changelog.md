@@ -9,6 +9,7 @@
  Fixed issue when sending email on visualization
  Fixed issue while CSV import in personal sub-folder
  Fixed potential error on item creation without password
+ Fixed "show description" option was not taken into consideration
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check

@@ -2496,7 +2496,11 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
                         $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
-                        $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
+                        if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
+                            $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
+                        } else {
+                            $html_json[$record['id']]['desc'] = "";
+                        }
 
                         // list of restricted users
                         $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
