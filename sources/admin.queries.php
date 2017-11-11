@@ -46,7 +46,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
 
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 

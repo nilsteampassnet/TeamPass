@@ -37,7 +37,6 @@ include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 // header
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
-header("Pragma: no-cache");
 
 // Define Timezone
 if (isset($SETTINGS['timezone'])) {
