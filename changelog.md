@@ -16,6 +16,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2010 Default Administrated by for user created via LDAP authentication
  #2004 Administrator has no access to Items
  #1997 Error on folder creation of no Parent is selected
  #1996 Some settings resets to defaults

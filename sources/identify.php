@@ -640,7 +640,8 @@ function identifyUser($sentData)
                 'groupes_visibles' => '',
                 'last_pw_change' => time(),
                 'user_language' => $SETTINGS['default_language'],
-                'encrypted_psk' => ''
+                'encrypted_psk' => '',
+                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0
             )
         );
         $newUserId = DB::insertId();

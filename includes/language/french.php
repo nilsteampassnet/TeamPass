@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
     'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',
     'error_psk_should_be_changed' => 'Il vous est demandé de changer votre clé de salage personnelle.',
     'personal_saltkey_security_level' => 'Niveau minimum de sécurité de la clé personnelle de salage',

@@ -1010,6 +1010,32 @@ $(function() {
     );
 
 
+    // Load list of groups
+    $("#ldap_new_user_is_administrated_by").empty();
+    $.post(
+        "sources/admin.queries.php",
+        {
+            type    : "get_list_of_roles",
+            key     : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            
+            var html = "",
+                selected = 0;
+
+            for (var i=0; i<data.length; i++) {
+                if (data[i].selected === 1) {
+                    selected = data[i].id;
+                }
+                html += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
+            }
+            $("#ldap_new_user_is_administrated_by").append(html);
+            $("#ldap_new_user_is_administrated_by").val(selected);
+        }
+   );
+
+
 });
 
 function manageEncryptionOfAttachments(list, cpt) {

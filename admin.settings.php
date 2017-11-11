@@ -1177,6 +1177,15 @@ echo '
                         <div class="toggle toggle-modern" id="disable_show_forgot_pwd_link" data-toggle-on="', isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="disable_show_forgot_pwd_link_input" name="disable_show_forgot_pwd_link_input" value="', isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] == 1 ? '1' : '0', '" />
                     </td>
                 </tr>';
+// Enable newly_created_user_is_administrated_by
+echo '
+                    <tr>
+                        <td><label for="ldap_type">'.$LANG['newly_created_user_is_administrated_by'].'</label></td>
+                        <td>
+                            <select id="ldap_new_user_is_administrated_by" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
+                            </select>
+                        </td>
+                    </tr>';
 echo '
                 </table>';
 

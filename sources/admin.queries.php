@@ -2186,6 +2186,7 @@ switch ($post_type) {
 
         break;
 
+
     case "is_backup_table_existing":
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
@@ -2202,6 +2203,44 @@ switch ($post_type) {
         } else {
             echo "0";
         }
+
+        break;
+
+
+    case "get_list_of_roles":
+        // Check KEY and rights
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        $json = array();
+        array_push(
+            $json,
+            array(
+                "id" => 0,
+                "title" => addslashes($LANG['god']),
+                "selected" => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === "0" ? 1 : 0
+            )
+        );
+
+        $rows = DB::query(
+            "SELECT id, title
+            FROM ".prefix_table("roles_title")."
+            ORDER BY title ASC"
+        );
+        foreach ($rows as $record) {
+            array_push(
+                $json,
+                array(
+                    "id" => $record['id'],
+                    "title" => addslashes($LANG['managers_of']." ".$record['title']),
+                    "selected" => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0
+                )
+            );
+        }
+
+        echo prepareExchangedData($json, "encode");
 
         break;
 }
