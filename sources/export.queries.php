@@ -807,9 +807,7 @@ if (null !== $post_type) {
 
             fclose($outstream);
 
-            echo '[{"text":"<a href=\''.
-                cleanText($post_file_link, "css").
-                '\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+            echo '[{"text":"<a href=\''.cleanText($post_file_link, "css").'\' download>'.$LANG['pdf_download'].'</a>"}]';
             break;
     }
 }
