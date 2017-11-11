@@ -597,7 +597,6 @@ $(function() {
 
         // store in DB
         var data = {"field": e.target.id , "value": $("#"+e.target.id+"_input").val()};
-        console.log(data);
         $.post(
             "sources/admin.queries.php",
             {
@@ -619,7 +618,6 @@ $(function() {
                     $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
                     return false;
                 }
-                console.log(data);
                 if (data.error == "") {
                     $("#"+e.target.id).after("<span class='fa fa-check fa-lg mi-green new_check' style='float:left;margin:-18px 0 0 56px;'></span>");
                     $(".new_check").fadeOut(2000);
