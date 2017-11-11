@@ -55,8 +55,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 350,
-        height: 450,
+        width: 450,
+        height: 460,
         title: "<?php echo $LANG['add_new_group']; ?>",
         open: function(event, ui) {
             $("#new_folder_wait").hide();
@@ -142,8 +142,8 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 350,
-        height: 450,
+        width: 450,
+        height: 460,
         title: "<?php echo $LANG['at_category']; ?>",
         open: function(event, ui) {
             var id = $("#folder_id_to_edit").val();
