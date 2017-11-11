@@ -360,17 +360,19 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                     <div>
                     <fieldset>
                         <legend>Teampass upgrade</legend>
-                        Before starting, be sure to:<ul>
-                        <li>upload the complete package on the server and overwrite existing files,</li>
-                        <li>have the database connection informations,</li>
-                        <li>get some CHMOD rights on the server,</li>
-                        <li>ensure that the path to file `sk.php` is still the correct one indicated in file `includes/config/settings.php`.</li>
+                        Before starting, take a couple of minutes to perform backup of current Teampass instance:
+                        <ul>
+                        <li>Create a dump of your database</li>
+                        <li>Perform a zip of the current Teampass folder</li>
+                        <li>Make a copy of teampass-seckey.txt (the upgrade process will perform one too)</li>
+                        <li>Refer to <a href="http://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank">upgrade documentation</a>.</li>
                         </ul>
 
                         <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
 
                         <div style="font-weight:bold; color:#C60000; margin-bottom:10px;">
-                        <img src="images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING.
+                        <img src="images/error.png" />&nbsp;ALWAYS BE SURE TO CREATE A DUMP OF YOUR DATABASE BEFORE UPGRADING<br>
+                        <img src="images/error.png" />&nbsp;ALWAYS KEEP A COPY OF TEAMPASS-KEY.TXT FILE
                         </div>
                     </fieldset>
 
