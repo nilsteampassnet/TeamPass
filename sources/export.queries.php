@@ -448,7 +448,7 @@ if (null !== $post_type) {
             // Close and display
             fclose($outstream);
 
-            echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' target=\'_blank\'>'.$LANG['pdf_download'].'</a>"}]';
+            echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
             break;
 
         //CASE export in HTML format

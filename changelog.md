@@ -28,6 +28,7 @@
  #1974 Changing saltkey operation
  #1970 ip-api.com use is not compatible with https
  #1960 Access Denied for personal folder
+ #1840 add "download" attribute to export file
 
  9/
  Fixed a possible XSS (credit to ADLab of Venustech)
