@@ -133,7 +133,7 @@ $htmlHeaders .= isset($SETTINGS['favicon']) ? '
         <link rel="icon" href="'.$SETTINGS['favicon'].'" type="image/vnd.microsoft.ico" />' : '';
 
 // get some init
-if (!isset($_SESSION["user_id"])) {
+if (isset($_SESSION["user_id"]) === false) {
     $_SESSION["key"] = mt_rand();
     $_SESSION["user_id"] = "0";
     $_SESSION['user_settings']['clear_psk'] = "";
@@ -200,12 +200,12 @@ $htmlHeaders .= '
 
         // get some info
         var client_info = "";
-        $.getJSON("http://ip-api.com/json", function() {
+        $.getJSON("https://ipapi.co/json", function() {
             // nothing to do
         })
         .always(function(answered_data) {
-            if (answered_data.status === "success") {
-                client_info = answered_data.countryCode+"-"+answered_data.city+"-"+answered_data.timezone;
+            if (answered_data.ip !== "") {
+                client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
             }
             data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'"}\';
 
@@ -222,77 +222,110 @@ $htmlHeaders .= '
     //Identify user
     function identifyUser(redirect, psk, data, randomstring)
     {
-        //send query
+        // Check if session is still existing
         $.post(
-            "sources/identify.php",
+            "sources/checks.php",
             {
-                type : "identify_user",
-                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
+                type : "checkSessionExists"
             },
-            function(data) {
-                if (data[0].value === randomstring) {
-                    $("#connection_error").hide();
-                    //redirection for admin is specific
-                    if (data[0].user_admin === "1") {
-                        window.location.href="index.php?page=manage_main";
-                    } else if (data[0].initial_url !== "") {
-                        window.location.href=data[0].initial_url;
-                    } else {
-                        window.location.href = "index.php?page=items";
-                    }
-                } else if (data[0].value === "user_is_locked") {
-                    $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
-                } else if (data[0].value === "bad_psk") {
-                    $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
-                } else if (data[0].value === "bad_psk_confirmation") {
-                    $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
-                } else if (data[0].value === "psk_required") {
-                    $("#ajax_loader_connexion").hide();
-                    $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
-                    $("#connection_error, #connect_psk_confirm").show();
-                } else if (data[0].value === "user_not_exists") {
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                    $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
-                } else if (data[0].value === "error") {
-                    $("#mysql_error_warning").html(data[0].text).show();
-                    $("#div_mysql_error").show().dialog("open");
-                } else if (data[0].value === "new_ldap_account_created") {
-                    $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
-                    setTimeout(
-                        function (){
-                            window.location.href="index.php"
+            function(check_data) {
+                if (check_data === "1") {
+                    //send query
+                    $.post(
+                        "sources/identify.php",
+                        {
+                            type : "identify_user",
+                            data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
                         },
-                        2000
-                    );
-                } else if (data[0].value === "false_onetimepw") {
-                    $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
-                } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
-                    // now user needs to wait 10 secs before new passwd
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
-                } else if (data[0].error === "bad_credentials") {
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                } else if (data[0].error === "ga_code_wrong") {
-                    $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].value === "agses_error") {
-                    $("#connection_error").html(data[0].error).show();
-                } else if (data[0].error === "ga_temporary_code_wrong") {
-                    $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
-                } else if (data[0].error === "ga_temporary_code_correct") {
-                    $("#ga_code").val("").focus();
-                    $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
-                } else if (data[0].value === "install_error") {
-                    $("#connection_error").html(data[0].error).show();
-                } else {
-                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
-                }
+                        function(data) {
+                            if (data[0].value === randomstring) {
+                                $("#connection_error").hide();
+                                //redirection for admin is specific
+                                if (data[0].user_admin === "1") {
+                                    window.location.href="index.php?page=manage_main";
+                                } else if (data[0].initial_url !== "") {
+                                    window.location.href=data[0].initial_url;
+                                } else {
+                                    window.location.href = "index.php?page=items";
+                                }
+                            } else if (data[0].value === "user_is_locked") {
+                                $("#connection_error").html("'.addslashes($LANG['account_is_locked']).'").show();
+                            } else if (data[0].value === "bad_psk") {
+                                $("#ajax_loader_connexion").hide();
+                                $("#connection_error").html("'.addslashes($LANG['bad_psk']).'").show();
+                            } else if (data[0].value === "bad_psk_confirmation") {
+                                $("#ajax_loader_connexion").hide();
+                                $("#connection_error").html("'.addslashes($LANG['bad_psk_confirmation']).'").show();
+                            } else if (data[0].value === "psk_required") {
+                                $("#ajax_loader_connexion").hide();
+                                $("#connection_error").html("' . addslashes($LANG['psk_required']).'");
+                                $("#connection_error, #connect_psk_confirm").show();
+                            } else if (data[0].value === "user_not_exists") {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
+                                $("#connection_error").html("'.addslashes($LANG['login_attempts_on'])."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1).'").show();
+                            } else if (data[0].value === "error") {
+                                $("#mysql_error_warning").html(data[0].text).show();
+                                $("#div_mysql_error").show().dialog("open");
+                            } else if (data[0].value === "new_ldap_account_created") {
+                                $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
+                                setTimeout(
+                                    function (){
+                                        window.location.href="index.php"
+                                    },
+                                    2000
+                                );
+                            } else if (data[0].value === "false_onetimepw") {
+                                $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
+                            } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
+                                // now user needs to wait 10 secs before new passwd
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials_more_than_3_times']).'").show();
+                            } else if (data[0].error === "bad_credentials") {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            } else if (data[0].error === "ga_code_wrong") {
+                                $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
+                            } else if (data[0].value === "agses_error") {
+                                $("#connection_error").html(data[0].error).show();
+                            } else if (data[0].error === "ga_temporary_code_wrong") {
+                                $("#connection_error").html("'.addslashes($LANG['ga_bad_code']).'").show();
+                            } else if (data[0].error === "ga_temporary_code_correct") {
+                                $("#ga_code").val("").focus();
+                                $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
+                            } else if (data[0].value === "install_error") {
+                                $("#connection_error").html(data[0].error).show();
+                            } else {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            }
 
-                $("#ajax_loader_connexion").hide();
-            },
-            "json"
-       );
+                            $("#ajax_loader_connexion").hide();
+                        },
+                        "json"
+                   );
+                } else {
+                    // No session was found, warn user
+                    // Attach the CSRFP tokenn to the form to prevent against error 403
+                    var csrfp = check_data.split(";");
+                    $("#form_identify").append(
+                        "<input type=\'hidden\' name=\'"+csrfp[0]+"\' value=\'"+csrfp[1]+"\' />" +
+                        "<input type=\'hidden\' name=\'auto_log\' value=\'1\' />"
+                    );
+
+                    // Warn user
+                    $("#main_info_box_text").html("<span =\'fa fa-warning fa-lg\'></span>&nbsp;Browser session is now expired. The page will be automatically reloaded in 2 seconds.");
+                    $("#main_info_box").show().position({
+                        my: "center",
+                        at: "center top+75",
+                        of: "#top"
+                    });
+
+                    // Delay page submit
+                    $(this).delay(2000).queue(function() {
+                        $("#form_identify").submit();
+                        $(this).dequeue();
+                    });
+                }
+            }
+        );
     }
 
     function getGASynchronization()
@@ -394,15 +427,11 @@ $htmlHeaders .= '
     {
         $("#dialog_user_profil").dialog({
             open: function(event, ui) {
-                $("#div_user_profil").load(
-                    "'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", function(){}
-                );
+                loadHtml("'.$SETTINGS['cpassman_url'].'/profile.php?key='.$_SESSION['key'].'", "div_user_profil");
             },
             close: function() {
                 // in case of user changed language then reload the current page
                 if ($("#userlanguage_'.$_SESSION['user_id'].'").text() !== "'.$_SESSION['user_language'].'") {
-                    //location.reload();
-                    //document.location.href="index.php?language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();
                     var url = window.location.href;
                     if (url.indexOf("?") > -1) {
                         url += "&language=" + $("#userlanguage_'.$_SESSION['user_id'].'").text();
@@ -413,6 +442,22 @@ $htmlHeaders .= '
                 }
             }
         }).dialog("open");
+    }
+
+    /**
+     * Permits to load the content of a page inside a div
+     */
+    function loadHtml(url, div_id)
+    {
+        $("#" + div_id).load(
+            url,
+            null,
+            function(responseText, textStatus, xhr) {
+                if (textStatus === "error") {
+                    alert("Error while loading " + url + "\n\n"+responseText);
+                }
+            }
+        );
     }
 
     /*
@@ -458,13 +503,20 @@ $htmlHeaders .= '
                 data = $.parseJSON(data);
                 //check if format error
                 if (data.error == "") {
-                    if (data.text == null) {
+                    if (data.html_json === null) {
                         $("#last_seen_items_list").html("<li>'.$LANG['none'].'</li>");
                     } else {
-                        $("#last_seen_items_list").html(data.text);
+                        // Prepare HTML
+                        var html_list = "";
+                        $.each(data.html_json, function(i, value) {
+                           html_list += "<li onclick=\'displayItemNumber("+value.id+", "+value.tree_id+")\'><i class=\'fa fa-hand-o-right\'></i>&nbsp;"+value.label+"</li>";
+                        });
+                        $("#last_seen_items_list").html(html_list);
                     }
+
                     // rebuild menu
                     $("#menu_last_seen_items").menu("refresh");
+
                     // show notification
                     if (data.existing_suggestions != 0) {
                         blink("#menu_button_suggestion", -1, 500, "ui-state-error");
@@ -486,8 +538,9 @@ $htmlHeaders .= '
             height: 500,
             title: "DUO Security",
             open: function(event, ui) {
-                $("#div_duo").load(
-                    "'.$SETTINGS['cpassman_url'].'/duo.load.php", function(){}
+                loadHtml(
+                    "'.$SETTINGS['cpassman_url'].'/duo.load.php",
+                    "div_duo"
                 );
             }
         }).dialog("open");
@@ -572,12 +625,12 @@ $htmlHeaders .= '
         $.post(
             "sources/main.queries.php",
             {
-                type    : "generate_a_password",
-                size      : size,
-                numerals      : numerals,
-                capitalize      : capitalize,
-                symbols      : symbols,
-                secure  : secure
+                type        : "generate_a_password",
+                size        : size,
+                numerals    : numerals,
+                capitalize  : capitalize,
+                symbols     : symbols,
+                secure      : secure
             },
             function(data) {
                 data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
@@ -591,6 +644,12 @@ $htmlHeaders .= '
     }
 
     $(function() {
+        // In case that session was expired and login form was reloaded
+        // Force the launchIdentify as if the user has clicked the button
+        if ($("#auto_log").length > 0) {
+            $("#but_identify_user").click();
+        }
+
         // AGSES authentication
         if ($("#axs_canvas").length > 0) {
             // show the agsesflicker
@@ -837,35 +896,68 @@ $htmlHeaders .= '
             modal: true,
             autoOpen: false,
             width: 500,
-            height: 190,
+            height: 290,
             title: "'.$LANG['home_personal_saltkey_label'].'",
             open: function( event, ui ) {
                 $("#input_personal_saltkey").val("'.
                     addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).
                 '");
+                $("#psk_strength_value").val("");
+                
+                // show expected security level
+                if ($("#expected_psk_complexPw").text() !== "") {
+                    $("#expected_psk_complexPw").removeClass("hidden");
+                } else {
+                    $("#expected_psk_complexPw").addClass("hidden");
+                }
+
+                $("#set_personal_saltkey_warning").html("").hide();
             },
             buttons: {
                 "'.$LANG['save_button'].'": function() {
-                    LoadingPage();
-                    var data = "{\"psk\":\""+sanitizeString($("#input_personal_saltkey").val())+"\"}";
-                    //Send query
+                    // Show spinner
+                    $("#set_personal_saltkey_warning")
+                        .html("<i class=\"fa fa-cog fa-spin fa-lg\"></i>&nbsp;'.$LANG['please_wait'].'")
+                        .removeClass("ui-state-error")
+                        .show();
+
+                    // Prepare data
+                    var data = "{\"psk\":\""+sanitizeString($("#input_personal_saltkey").val())+"\" , \"score\":\""+$("#psk_strength_value").val()+"\"}";
+
+                    //
                     $.post(
                         "sources/main.queries.php",
                         {
-                           type    : "store_personal_saltkey",
-                           data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'")
+                            type    : "store_personal_saltkey",
+                            data    : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'"),
+                            key     : "'.$_SESSION['key'].'"
                         },
                         function(data) {
-                            data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
-                            if (data.error !== "") {
+                            // Is there an error?
+                            if (data[0].error !== "") {
+                                var error = "";
+                                if (data[0].error === "key_not_conform") {
+                                    error = "'.addslashes($LANG['error_unknown']).'";
+                                } else if (data[0].error === "security_level_not_reached") {
+                                    error = "'.addslashes($LANG['error_security_level_not_reached']).'";
+                                } else if (data[0].error === "psk_is_empty") {
+                                    error = "'.addslashes($LANG['psk_required']).'";
+                                } else if (data[0].error === "psk_not_correct") {
+                                    error = "'.addslashes($LANG['bad_psk']).'";
+                                }
                                 // display error
-                                $("#main_info_box_text").html(data.error);
-                                $("#main_info_box").show().position({
-                                    my: "center",
-                                    at: "center top+75",
-                                    of: "#top"
-                                });
-                                setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 5000);
+                                $("#set_personal_saltkey_warning")
+                                    .html(error)
+                                    .stop(true,true)
+                                    .show()
+                                    .fadeOut(3000)
+                                    .addClass("ui-state-error");
+                            } else if (data[0].status === "security_level_not_reached_but_psk_correct") {
+                                $("#set_personal_saltkey_warning")
+                                    .html("'.addslashes($LANG['error_security_level_not_reached'].'<br>'.$LANG['error_psk_should_be_changed']).'<br>" +
+                                        "<span style=\"margin-top:10px; font-family:italic;\"><a href=\"#\" onclick=\"loadProfileDialog();$(\'#div_set_personal_saltkey\').dialog(\'close\');\">'.addslashes($LANG['click_to_change']).'</a></span>")
+                                    .stop(true,true)
+                                    .show();
                             } else {
                                 $("#main_info_box_text").html("'.$LANG['alert_message_done'].' '.$txt['alert_page_will_reload'].'");
                                 $("#main_info_box").show().position({
@@ -876,11 +968,9 @@ $htmlHeaders .= '
                                 setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                                 location.reload();
                             }
-                            LoadingPage();
-                            $("#input_personal_saltkey").val("");
-                        }
+                        },
+                        "json"
                     );
-                    $(this).dialog("close");
                 },
                 "'.$LANG['cancel_button'].'": function() {
                     $(this).dialog("close");
@@ -897,8 +987,9 @@ $htmlHeaders .= '
             height: 310,
             title: "'.$LANG['menu_title_new_personal_saltkey'].'",
             open: function() {
-                $("#new_personal_saltkey").val("");
-                $("#old_personal_saltkey").val("'.addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).'");
+                $("#new_personal_saltkey, #new_personal_saltkey_confirm").val("");
+                $("#old_personal_saltkey, #new_personal_saltkey_confirm")
+                    .val("'.addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).'");
             },
             buttons: {
                 "'.$LANG['ok'].'": function() {
@@ -1001,9 +1092,18 @@ $htmlHeaders .= '
             title: "'.$LANG['index_add_one_hour'].'",
             buttons: {
                 "'.$LANG['confirm'].'": function() {
-                    if (isInteger($("#input_session_duration").val())) {
+                    if (isInteger($("#input_session_duration").val()) && parseInt($("#input_session_duration").val()) > 0) {
                         IncreaseSessionTime("'.$LANG['alert_message_done'].'", "'.$LANG['please_wait'].'", $("#input_session_duration").val());
                         $("#div_increase_session_time").dialog("close");
+                    } else {
+                        $("#input_session_duration").addClass("ui-state-error");
+                        setTimeout(
+                            function() {
+                                $("#input_session_duration").removeClass("ui-state-error");
+                            },
+                            3000
+                        );
+
                     }
                 },
                 "'.$LANG['cancel_button'].'": function() {
@@ -1109,18 +1209,64 @@ $htmlHeaders .= '
                 }
             ]
         });
+        // For New Password
         $("#new_pw").bind({
             "score.simplePassMeter" : function(jQEvent, score) {
                 $("#pw_strength_value").val(score);
             }
         }).change({
             "score.simplePassMeter" : function(jQEvent, score) {
-        $("#pw_strength_value").val(score);
-    }
+                $("#pw_strength_value").val(score);
+            }
+        });
+        // For Personal Saltkey
+        $("#input_personal_saltkey").simplePassMeter({
+            "requirements": {},
+            "container": "#psk_strength",
+            "defaultText" : "'.$LANG['index_pw_level_txt'].'",
+            "ratings": [
+                {"minScore": 0,
+                    "className": "meterFail",
+                    "text": "'.$LANG['complex_level0'].'"
+                },
+                {"minScore": 25,
+                    "className": "meterWarn",
+                    "text": "'.$LANG['complex_level1'].'"
+                },
+                {"minScore": 50,
+                    "className": "meterWarn",
+                    "text": "'.$LANG['complex_level2'].'"
+                },
+                {"minScore": 60,
+                    "className": "meterGood",
+                    "text": "'.$LANG['complex_level3'].'"
+                },
+                {"minScore": 70,
+                    "className": "meterGood",
+                    "text": "'.$LANG['complex_level4'].'"
+                },
+                {"minScore": 80,
+                    "className": "meterExcel",
+                    "text": "'.$LANG['complex_level5'].'"
+                },
+                {"minScore": 90,
+                    "className": "meterExcel",
+                    "text": "'.$LANG['complex_level6'].'"
+                }
+            ]
+        });
+        $("#input_personal_saltkey").bind({
+            "score.simplePassMeter" : function(jQEvent, score) {
+                $("#psk_strength_value").val(score);
+            }
+        }).change({
+            "score.simplePassMeter" : function(jQEvent, score) {
+                $("#psk_strength_value").val(score);
+            }
         });
 
         // get list of last items
-        if ($("#hid_cat").val() !== "" && $("#hid_cat").val() !== undefined) {
+        if ($("#temps_restant").val() !== "") {
             refreshListLastSeenItems();
         }
 

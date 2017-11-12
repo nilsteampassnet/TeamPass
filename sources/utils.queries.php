@@ -198,12 +198,7 @@ if (null !== $post_type) {
                 break;
             }
 
-            if (empty($post_current_id) === true) {
-                echo '[{"error" : "No ID provided"}]';
-                break;
-            }
-
-            if (null !== $post_data_to_share) {
+            if (null !== $post_data_to_share && empty($post_current_id) === false) {
                 // ON DEMAND
 
                 //decrypt and retreive data in JSON format

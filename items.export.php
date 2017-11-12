@@ -45,7 +45,6 @@ include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
 // connect to the server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -124,6 +123,7 @@ echo '
         //$(".radio_buttonset").buttonset();
 
         $(".export_radio_buttonset").click(function(){
+            $("#export_information").html('');
             if ($("input[name='export_format']:checked").val() == "pdf"){
                 $("#div_export_pdf_password").show();
             } else {

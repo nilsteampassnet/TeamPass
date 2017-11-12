@@ -14,6 +14,13 @@
  */
 global $LANG;
 $LANG = array (
+    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
+    'error_security_level_not_reached' => 'Expected level of security not reached!',
+    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
+    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
+    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
     'access_level_for_roles' => 'Associated access for Roles',
     'admin_script_backup_secret' => 'Passkey for backup execution',
     'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',

@@ -149,10 +149,10 @@ if (!isset($SETTINGS['enable_suggestion']) || $SETTINGS['enable_suggestion'] != 
                     "bProcessing": true,
                     "bDestroy": true,
                     "bServerSide": true,
-                    "sAjaxSource": "sources/datatable/datatable.suggestion.php",
+                    "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.suggestion.php",
                     "bJQueryUI": true,
                     "oLanguage": {
-                        "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                        "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
                     },
                     "columns": [
                         {"width": "7%", className: "dt-body-left"},
@@ -170,15 +170,15 @@ if (!isset($SETTINGS['enable_suggestion']) || $SETTINGS['enable_suggestion'] != 
 
                 if (act === 0) {
                     oTable1 = $("#t_suggestion").dataTable({
-                        "aaSorting": [[ 1, "asc" ]],
+                        "aaSorting": [[ 0, "asc" ]],
                         "sPaginationType": "full_numbers",
                         "bProcessing": true,
                         "bDestroy": true,
                         "bServerSide": true,
-                        "sAjaxSource": "sources/datatable/datatable.suggestion.php",
+                        "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.suggestion.php",
                         "bJQueryUI": true,
                         "oLanguage": {
-                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                            "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
                         },
                         "columns": [
                             {"width": "7%", className: "dt-body-left"},
@@ -192,15 +192,15 @@ if (!isset($SETTINGS['enable_suggestion']) || $SETTINGS['enable_suggestion'] != 
                     oTable1.fnDraw(false);
                 } else if (act === 1) {
                     oTable2 = $("#t_change").dataTable({
-                        "aaSorting": [[ 1, "asc" ]],
+                        "aaSorting": [[ 2, "asc" ]],
                         "sPaginationType": "full_numbers",
                         "bProcessing": true,
                         "bDestroy": true,
                         "bServerSide": true,
-                        "sAjaxSource": "sources/datatable/datatable.items_change.php",
+                        "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.items_change.php",
                         "bJQueryUI": true,
                         "oLanguage": {
-                            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                            "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
                         },
                         "columns": [
                             {"width": "5%", className: "dt-body-left"},

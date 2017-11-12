@@ -75,13 +75,13 @@ $(function() {
         "processing": true,
         "serverSide": true,
         "ajax": {
-            url: "sources/datatable/datatable.users.php",
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.users.php",
             data: function(d) {
                 d.letter = _alphabetSearch
             }
         },
         "language": {
-            "url": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+            "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "columns": [
             {"width": "13%", className: "dt-body-left"},
@@ -822,7 +822,6 @@ function confirmDeletion()
 
 function pwGenerate(elem)
 {
-    console.log(">> "+elem);
     $.post(
         "sources/main.queries.php",
         {
@@ -976,7 +975,7 @@ function displayLogs(page, scope)
             id                  : $("#selected_user").val(),
             scope               : scope
         },
-        function(data) {console.log(">>" + data[0].table_logs);
+        function(data) {
             if (data[0].error == "no") {
                 $("#tbody_logs").empty().append(data[0].table_logs);
                 $("#log_pages").empty().append(data[0].pages);

@@ -505,7 +505,10 @@ global \$SETTINGS;
                             array('admin', 'saltkey_ante_2127', 'none'),
                             array('admin', 'migration_to_2127', 'done'),
                             array('admin', 'files_with_defuse', 'done'),
-                            array('admin', 'timezone', 'UTC')
+                            array('admin', 'timezone', 'UTC'),
+                            array('admin', 'enable_attachment_encryption', '1'),
+                            array('admin', 'personal_saltkey_security_level', '50'),
+                            array('admin', 'ldap_new_user_is_administrated_by', '0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -555,7 +558,6 @@ global \$SETTINGS;
                             `personal_folder` tinyint(1) NOT null DEFAULT '0',
                             `renewal_period` TINYINT(4) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
-                            UNIQUE KEY `id` (`id`),
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),
                             KEY `nested_tree_nright` (`nright`),
@@ -658,8 +660,7 @@ global \$SETTINGS;
                             `id` int(12) NOT null AUTO_INCREMENT,
                             `tag` varchar(30) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            PRIMARY KEY (`id`),
-                            UNIQUE KEY `id` (`id`)
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "log_system") {
@@ -921,7 +922,7 @@ global \$SETTINGS;
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."export` (
                             `id` int(12) NOT NULL,
-                            `label` varchar(255) NOT NULL,
+                            `label` varchar(500) NOT NULL,
                             `login` varchar(100) NOT NULL,
                             `description` text NOT NULL,
                             `pw` text NOT NULL,

@@ -329,18 +329,29 @@ if (!isset($_GET['type'])) {
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     $sOutput = "";
     $init_personal_folder = false;
+    $arr_data = [];
 
     foreach ($rows as $record) {
-        $expirationFlag = '';
-        $expired_item = 0;
-        if ($SETTINGS['activate_expiration'] == 1) {
-            $expirationFlag = '<i class="fa fa-flag mi-green"></i>&nbsp;';
+        $arr_data[$record['id']]['item_id'] = $record['id'];
+        $arr_data[$record['id']]['tree_id'] = $record['id_tree'];
+        $arr_data[$record['id']]['label'] = strip_tags(htmlentities(cleanString($record['label'])));
+        $arr_data[$record['id']]['desc'] = strip_tags(htmlentities(cleanString(explode("<br>", $record['description'])[0])));
+        $arr_data[$record['id']]['folder'] = strip_tags(stripslashes(mb_substr(cleanString($record['folder']), 0, 65)));
+        $arr_data[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
+
+        if ($SETTINGS['activate_expiration'] === "1") {
             if ($record['renewal_period'] > 0 &&
                 ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
             ) {
-                $expirationFlag = '<i class="fa fa-flag mi-red"></i>&nbsp;';
-                $expired_item = 1;
+                $arr_data[$record['id']]['expired'] = 1;
+                $arr_data[$record['id']]['expirationFlag'] = 'red';
+            } else {
+                $arr_data[$record['id']]['expired'] = 0;
+                $arr_data[$record['id']]['expirationFlag'] = 'green';
             }
+        } else {
+            $arr_data[$record['id']]['expired'] = 0;
+            $arr_data[$record['id']]['expirationFlag'] = '';
         }
         // list of restricted users
         $restricted_users_array = explode(';', $record['restricted_to']);
@@ -377,27 +388,32 @@ if (!isset($_GET['type'])) {
             }
         }
 
+        $arr_data[$record['id']]['restricted'] = $restrictedTo;
+
         // CASE where item is restricted to a role to which the user is not associated
-        if (isset($user_is_included_in_role)
+        if (isset($user_is_included_in_role) === true
             && $user_is_included_in_role == 0
-            && isset($item_is_restricted_to_role)
+            && isset($item_is_restricted_to_role) === true
             && $item_is_restricted_to_role == 1
-            && !in_array($_SESSION['user_id'], $restricted_users_array)
+            && in_array($_SESSION['user_id'], $restricted_users_array) === false
         ) {
-            $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
-            $findPfGroup = 0;
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\', \''.$record['id_tree'].'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
-            $displayItem = $need_sk = $canMove = 0;
+            // $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
+            $arr_data[$record['id']]['perso'] = "fa-tag mi-red";
+            $arr_data[$record['id']]['sk'] = 0;
+            $arr_data[$record['id']]['display'] = "no_display";
+            $arr_data[$record['id']]['open_edit'] = 1;
+            $arr_data[$record['id']]['reload'] = "";
+
         // Case where item is in own personal folder
         } elseif (in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
-            $perso = '<i class="fa fa-warning mi-red"></i>&nbsp;';
-            $findPfGroup = 1;
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
-            $displayItem = $need_sk = $canMove = 1;
+            $arr_data[$record['id']]['perso'] = "fa-warning mi-red";
+            $arr_data[$record['id']]['sk'] = 1;
+            $arr_data[$record['id']]['display'] = "";
+            $arr_data[$record['id']]['open_edit'] = 1;
+            $arr_data[$record['id']]['reload'] = "";
+
         // CAse where item is restricted to a group of users included user
         } elseif (!empty($record['restricted_to'])
             && in_array($_SESSION['user_id'], $restricted_users_array)
@@ -405,11 +421,12 @@ if (!isset($_GET['type'])) {
                 && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
             && in_array($_SESSION['user_id'], $restricted_users_array)
         ) {
-            $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
-            $findPfGroup = 0;
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\', \''.$record['id_tree'].'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
-            $displayItem = 1;
+            $arr_data[$record['id']]['perso'] = "fa-tag mi-yellow";
+            $arr_data[$record['id']]['sk'] = 0;
+            $arr_data[$record['id']]['display'] = "";
+            $arr_data[$record['id']]['open_edit'] = 1;
+            $arr_data[$record['id']]['reload'] = "";
+
         // CAse where item is restricted to a group of users not including user
         } elseif ($record['perso'] == 1
             ||
@@ -430,62 +447,29 @@ if (!isset($_GET['type'])) {
                 && $user_is_included_in_role == 0
                 && $item_is_restricted_to_role == 1
             ) {
-                $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
-                $findPfGroup = 0;
-                $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\', \''.$record['id_tree'].'\')';
-                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\', \''.$record['id_tree'].'\')';
-                $displayItem = $need_sk = $canMove = 0;
+                $arr_data[$record['id']]['perso'] = "fa-tag mi-red";
+                $arr_data[$record['id']]['sk'] = 0;
+                $arr_data[$record['id']]['display'] = "no_display";
+                $arr_data[$record['id']]['open_edit'] = 1;
+                $arr_data[$record['id']]['reload'] = "";
             } else {
-                $perso = '<i class="fa fa-tag mi-yellow"></i>&nbsp;';
-                $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
-                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
-                // reinit in case of not personal group
-                if ($init_personal_folder === false) {
-                    $findPfGroup = "";
-                    $init_personal_folder = true;
-                }
-
-                if (!empty($record['restricted_to']) && in_array($_SESSION['user_id'], $restricted_users_array)) {
-                    $displayItem = 1;
-                }
+                $arr_data[$record['id']]['perso'] = "fa-tag mi-yellow";
+                $arr_data[$record['id']]['sk'] = 0;
+                $arr_data[$record['id']]['display'] = "";
+                $arr_data[$record['id']]['open_edit'] = 1;
+                $arr_data[$record['id']]['reload'] = "";
             }
         } else {
-            $perso = '<i class="fa fa-tag mi-green"></i>&nbsp;';
-            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\', \''.$record['id_tree'].'\')';
-            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\', \''.$record['id_tree'].'\')';
-            $displayItem = 1;
-            // reinit in case of not personal group
-            if ($init_personal_folder === false) {
-                $findPfGroup = "";
-                $init_personal_folder = true;
-            }
-        }
-
-        // prepare new line
-        $sOutput .= '<li class="item trunc_line" id="'.$record['id'].'"><a id="fileclass'.$record['id'].'" class="file_search">'.
-            '<i class="fa fa-key mi-yellow tip" onclick="'.$action_dbl.'" title="'.$LANG['click_to_edit'].'"></i>&nbsp;'.
-            '<span onclick="'.$action.'">'.mb_substr(stripslashes(handleBackslash($record['label'])), 0, 65);
-        if (!empty($record['description']) && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] == 1) {
-            $tempo = explode("<br />", $record['description']);
-            if (count($tempo) == 1) {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($record['description']), 0, 30))).']</font>';
-            } else {
-                $sOutput .= '&nbsp;<font size="2px">['.strip_tags(stripslashes(mb_substr(cleanString($tempo[0]), 0, 30))).']</font>';
-            }
-        }
-
-        // set folder
-        $sOutput .= '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'.strip_tags(stripslashes(mb_substr(cleanString($record['folder']), 0, 65))).'</span>';
-
-        $sOutput .= '</span><span style="float:right;margin:2px 10px 0px 0px;">';
-
-        // prepare login mini icon
-        if (!empty($record['login'])) {
-            $sOutput .= '<i class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'.str_replace('"', "&quot;", $record['login']).'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
+            $arr_data[$record['id']]['perso'] = "fa-tag mi-green";
+            $arr_data[$record['id']]['sk'] = 0;
+            $arr_data[$record['id']]['display'] = "";
+            $arr_data[$record['id']]['open_edit'] = 1;
+            $arr_data[$record['id']]['reload'] = "";
         }
 
         // prepare pwd copy if enabled
-        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] == 1) {
+        $arr_data[$record['id']]['pw_status'] = '';
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === "1") {
             $data_item = DB::queryFirstRow(
                 "SELECT pw
                 from ".prefix_table("items")." WHERE id=%i",
@@ -508,24 +492,25 @@ if (!isset($_GET['type'])) {
 
             // test charset => may cause a json error if is not utf8
             $pw = $pw['string'];
-            if (isUTF8($pw)) {
-                $sOutput .= '<i class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'.str_replace('"', "&quot;", $pw).'" title="'.$LANG['item_menu_copy_pw'].'"></i>&nbsp;';
+            if (isUTF8($pw) === false) {
+                $pw = "";
+                $arr_data[$record['id']]['pw_status'] = "encryption_error";
             }
-        }
-
-
-        // Prepare make Favorite small icon
-        if (in_array($record['id'], $_SESSION['favourites'])) {
-            $sOutput .= '<i class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip" title="'.$LANG['item_menu_del_from_fav'].'"></i>';
         } else {
-            $sOutput .= '<i class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip" title="'.$LANG['item_menu_add_to_fav'].'"></i>';
+            $pw = "";
         }
-
-        $sOutput .= '</li>';
+        $arr_data[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
+        $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = $SETTINGS['copy_to_clipboard_small_icons'];
+        $arr_data[$record['id']]['enable_favourites'] = $SETTINGS['enable_favourites'];
+        if (in_array($record['id'], $_SESSION['favourites'])) {
+            $arr_data[$record['id']]['is_favorite'] = 1;
+        } else {
+            $arr_data[$record['id']]['is_favorite'] = 0;
+        }
     }
 
     $returnValues = array(
-        "items_html" => $sOutput,
+        "html_json" => $arr_data,
         "message" => str_replace("%X%", $iFilteredTotal, $LANG['find_message'])
     );
 

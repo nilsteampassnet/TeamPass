@@ -14,7 +14,7 @@
  */
 
 header("X-XSS-Protection: 1; mode=block");
-header("X-Frame-Option: SameOrigin");
+header("X-Frame-Options: SameOrigin");
 
 // **PREVENTING SESSION HIJACKING**
 // Prevents javascript XSS attacks aimed to steal the session ID
@@ -43,7 +43,6 @@ if (!file_exists('includes/config/settings.php')) {
 // initialise CSRFGuard library
 require_once('./includes/libraries/csrfp/libs/csrf/csrfprotector.php');
 csrfProtector::init();
-//session_destroy();
 session_id();
 
 // Load config
@@ -97,6 +96,8 @@ $post_language =        filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STR
 $post_sig_response =    filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_duo_login =       filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
 $post_duo_data =        filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
+$post_login =           filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
+$post_pw =              filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
 
 // Prepare superGlobal variables
 $session_user_language =        $superGlobal->get("user_language", "SESSION");
@@ -117,7 +118,7 @@ $session_autoriser =            $superGlobal->get("autoriser", "SESSION");
 $session_hide_maintenance =     $superGlobal->get("hide_maintenance", "SESSION");
 $session_initial_url =          $superGlobal->get("initial_url", "SESSION");
 $server_request_uri =           $superGlobal->get("REQUEST_URI", "SERVER");
-$session_nb_users_online =        $superGlobal->get("nb_users_online", "SESSION");
+$session_nb_users_online =      $superGlobal->get("nb_users_online", "SESSION");
 
 
 /* DEFINE WHAT LANGUAGE TO USE */
@@ -385,6 +386,7 @@ if (isset($_SESSION['CPM'])) {
 
     echo '
 <div id="main_info_box" style="display:none; z-index:99999; position:absolute; width:400px; height:40px;" class="ui-widget ui-state-active ui-color">
+    <span class="closeButton" onclick="$(\'#main_info_box\').hide()">&#10006</span>
     <div id="main_info_box_text" style="text-align:center;margin-top:10px;"></div>
 </div>';
 
@@ -693,7 +695,7 @@ if (isset($_SESSION['CPM'])) {
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
-                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
                             <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
 
@@ -712,7 +714,7 @@ if (isset($_SESSION['CPM'])) {
                         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
 
         // Personal salt key
@@ -814,10 +816,26 @@ if (isset($_SESSION['CPM'])) {
     if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] === "1") {
         echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
-            <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
-            <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:30px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
-            <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
-            <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-state-error ui-corner-all"></div>
+            <div style="text-align:center;margin:5px;padding:3px;" id="expected_psk_complexPw" class="ui-widget ui-state-active ui-corner-all hidden">', isset($SETTINGS['personal_saltkey_security_level']) === true && empty($SETTINGS['personal_saltkey_security_level']) === false ? $LANG['complex_asked']." : ".$SETTINGS_EXT['pwComplexity'][$SETTINGS['personal_saltkey_security_level']][1] : '', '</div>
+            <table border="0">
+                <tr>
+                    <td>
+                        <i class="fa fa-key"></i> <b>'.$LANG['home_personal_saltkey'].'</b>
+                    </td>
+                    <td>
+                        <input type="password" name="input_personal_saltkey" id="input_personal_saltkey" style="width:200px;padding:5px;margin-left:10px;" class="text ui-widget-content ui-corner-all text_without_symbols tip" value="', isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : '', '" title="<i class=\'fa fa-bullhorn\'></i>&nbsp;'.$LANG['text_without_symbols'].'" />
+                        <span id="set_personal_saltkey_last_letter" style="font-weight:bold;font-size:20px;"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>
+                        <div id="psk_strength" style="margin:3px 0 0 10px;"></div>
+                        <input type="hidden" id="psk_strength_value" />
+                    </td>
+                </tr>
+            </table>
+            <div style="display:none;margin-top:5px;text-align:center;padding:4px;" id="set_personal_saltkey_warning" class="ui-widget-content ui-corner-all"></div>
         </div>';
     }
 

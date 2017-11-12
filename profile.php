@@ -34,7 +34,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], "home") === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -45,7 +45,6 @@ include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
 // reload user avatar
 $userData = DB::queryFirstRow(
@@ -92,8 +91,7 @@ foreach ($rows as $record) {
     $arraFlags[$record['label']] = $record['label'];
 }
 
-// Prepare Headers
-header('Access-Control-Allow-Origin: *');
+header("access-control-allow-origin: *");
 echo '
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
@@ -103,7 +101,18 @@ echo '
 <body>';
 
 echo '
-<input type="hidden" id="profile_user_token" value="" />
+<input type="hidden" id="profile_user_token" value="" />';
+
+// Get info about personal_saltkey_security_level
+if (isset($SETTINGS['personal_saltkey_security_level']) === true && empty($SETTINGS['personal_saltkey_security_level']) === false) {
+    echo '
+<input type="hidden" id="input_personal_saltkey_security_level" value="'.$SETTINGS['personal_saltkey_security_level'].'" />';
+} else {
+    echo '
+<input type="hidden" id="input_personal_saltkey_security_level" value="" />';
+}
+
+echo '
 <table style="margin-left:7px;">
     <tr>
         <td rowspan="4" style="width:94px">
@@ -201,7 +210,7 @@ echo '
     <div id="filelist_photo" style="display:none;"></div>';
 
 // if DUOSecurity enabled then changing PWD is not allowed
-if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
+if (isset($SETTINGS['duo']) === false || $SETTINGS['duo'] == 0) {
     echo '
     <div id="div_change_password" style="display:none; padding:5px;" class="ui-widget ui-state-default">
         <div style="text-align:center;margin:5px;padding:3px;" id="change_pwd_complexPw" class="ui-widget ui-state-active ui-corner-all"></div>
@@ -210,8 +219,10 @@ if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
         <br />
         <label for="new_pw2" class="form_label">'.$LANG['index_change_pw_confirmation'].' :</label>
         <input type="password" size="15" name="new_pw2" id="new_pw2" />
+
         <div id="pw_strength" style="margin:10px 0 10px 120px;text-align:center;"></div>
         <input type="hidden" id="pw_strength_value" />
+
         <span class="button" id="button_change_pw">'.$LANG['index_change_pw_button'].'</span>&nbsp;
         <span id="password_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'</span>
     </div>';
@@ -220,19 +231,47 @@ if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
 //change the saltkey dialogbox
 echo '
     <div id="div_change_psk" style="display:none;padding:5px;" class="ui-widget ui-state-default">
-      <div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
-         <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning'].'
-      </div>
-        <label for="new_personal_saltkey" class="form_label">'.$LANG['new_saltkey'].' :</label>
-      <input type="text" size="30" name="new_personal_saltkey" id="new_personal_saltkey" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
-      <br />
-      <label for="old_personal_saltkey" class="form_label">'.$LANG['old_saltkey'].' :</label>
-      <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" class="text_without_symbols" />
-
-      <div style="margin-top:4px;">
-         <span class="button" id="button_change_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
-         <span id="psk_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_change_wait_info">'.$LANG['please_wait'].'</span></span>
-      </div>
+        <div style="text-align:center;margin:5px;padding:3px;" id="change_psk_complexPw" class="ui-widget ui-state-active ui-corner-all hidden"></div>
+        <div style="margin-bottom:4px; padding:6px;" class="ui-state-highlight">
+            <i class="fa fa-exclamation-triangle fa-fw mi-red"></i>&nbsp;'.$LANG['new_saltkey_warning'].'
+        </div>
+        <table border="0">
+            <tr>
+                <td>
+                    <label for="new_personal_saltkey" class="form_label">'.$LANG['new_saltkey'].' :</label>
+                </td>
+                <td>
+                    <input type="password" size="30" id="new_personal_saltkey" class="text_without_symbols tip" title="'.$LANG['text_without_symbols'].'" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_personal_saltkey_confirm" class="form_label">'.$LANG['confirm'].' :</label>
+                </td>
+                <td>
+                    <input type="password" size="30" id="new_personal_saltkey_confirm" value="" class="text_without_symbols" />
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <div id="new_psk_strength" style="margin:3px 0 3px"></div>
+                    <input type="hidden" id="new_psk_strength_value" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="old_personal_saltkey" class="form_label" style="margin-top:5px;">'.$LANG['old_saltkey'].' :</label>
+                </td>
+                <td>
+                    <input type="text" size="30" name="old_personal_saltkey" id="old_personal_saltkey" value="" class="text_without_symbols" />
+                </td>
+            </tr>
+        </table>
+        <div style="margin-top:4px;">
+            <span class="button" id="button_change_psk">'.$LANG['index_change_pw_button'].'</span>&nbsp;
+            <span id="psk_change_wait" style="display:none;"><i class="fa fa-cog fa-spin"></i>&nbsp;<span id="psk_change_wait_info">'.$LANG['please_wait'].'</span></span>
+        </div>
    </div>';
 
 
@@ -286,46 +325,86 @@ $(function() {
     });
 
     //Password meter
-    if ($("#new_pw").length) {
-        $("#new_pw").simplePassMeter({
-            "requirements": {},
-            "container": "#pw_strength",
-            "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
-            "ratings": [
-                {"minScore": 0,
-                    "className": "meterFail",
-                    "text": "<?php echo $LANG['complex_level0']; ?>"
-                },
-                {"minScore": 25,
-                    "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level1']; ?>"
-                },
-                {"minScore": 50,
-                    "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level2']; ?>"
-                },
-                {"minScore": 60,
-                    "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level3']; ?>"
-                },
-                {"minScore": 70,
-                    "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level4']; ?>"
-                },
-                {"minScore": 80,
-                    "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level5']; ?>"
-                },
-                {"minScore": 90,
-                    "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level6']; ?>"
-                }
-            ]
-        });
-    }
+    $("#new_pw").simplePassMeter({
+        "requirements": {},
+        "container": "#pw_strength",
+        "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
+        "ratings": [
+            {"minScore": 0,
+                "className": "meterFail",
+                "text": "<?php echo $LANG['complex_level0']; ?>"
+            },
+            {"minScore": 25,
+                "className": "meterWarn",
+                "text": "<?php echo $LANG['complex_level1']; ?>"
+            },
+            {"minScore": 50,
+                "className": "meterWarn",
+                "text": "<?php echo $LANG['complex_level2']; ?>"
+            },
+            {"minScore": 60,
+                "className": "meterGood",
+                "text": "<?php echo $LANG['complex_level3']; ?>"
+            },
+            {"minScore": 70,
+                "className": "meterGood",
+                "text": "<?php echo $LANG['complex_level4']; ?>"
+            },
+            {"minScore": 80,
+                "className": "meterExcel",
+                "text": "<?php echo $LANG['complex_level5']; ?>"
+            },
+            {"minScore": 90,
+                "className": "meterExcel",
+                "text": "<?php echo $LANG['complex_level6']; ?>"
+            }
+        ]
+    });
     $("#new_pw").bind({
-        "score.simplePassMeter" : function(jQEvent, score) {
+        "score.simplePassMeter": function(jQEvent, score) {
             $("#pw_strength_value").val(score);
+        }
+    });
+
+    // For Personal Saltkey
+    $("#new_personal_saltkey").simplePassMeter({
+        "requirements": {},
+        "container": "#new_psk_strength",
+        "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
+        "ratings": [
+            {"minScore": 0,
+                "className": "meterFail",
+                "text": "<?php echo $LANG['complex_level0']; ?>"
+            },
+            {"minScore": 25,
+                "className": "meterWarn",
+                "text": "<?php echo $LANG['complex_level1']; ?>"
+            },
+            {"minScore": 50,
+                "className": "meterWarn",
+                "text": "<?php echo $LANG['complex_level2']; ?>"
+            },
+            {"minScore": 60,
+                "className": "meterGood",
+                "text": "<?php echo $LANG['complex_level3']; ?>"
+            },
+            {"minScore": 70,
+                "className": "meterGood",
+                "text": "<?php echo $LANG['complex_level4']; ?>"
+            },
+            {"minScore": 80,
+                "className": "meterExcel",
+                "text": "<?php echo $LANG['complex_level5']; ?>"
+            },
+            {"minScore": 90,
+                "className": "meterExcel",
+                "text": "<?php echo $LANG['complex_level6']; ?>"
+            }
+        ]
+    });
+    $("#new_personal_saltkey").bind({
+        "score.simplePassMeter": function(jQEvent, score) {
+            $("#new_psk_strength_value").val(score);
         }
     });
 
@@ -542,15 +621,23 @@ $(function() {
       $("#new_personal_saltkey").val("");
       $("#old_personal_saltkey").val("<?php echo addslashes(str_replace("&quot;", '"', @$_SESSION['user_settings']['clear_psk'])); ?>");
 
+      // Get personal_saltkey_security_level
+      if ($("#input_personal_saltkey_security_level").val() !== "") {
+        $("#change_psk_complexPw")
+            .html("<?php echo $LANG['complex_asked']; ?> : <?php echo $SETTINGS_EXT['pwComplexity'][$SETTINGS['personal_saltkey_security_level']][1]; ?>")
+            .removeClass("hidden");
+      } else {
+        $("#change_psk_complexPw").addClass("hidden");
+      }
+
       $("#div_change_psk").show();
-      $("#dialog_user_profil").dialog("option", "height", 600);
+      $("#dialog_user_profil").dialog("option", "height", 690);
     });
 
     // manage CHANGE OF PERSONAL SALTKEY
     $("#button_change_psk").click(function() {
-        $("#psk_change_wait").show();
-
-        if ($("#new_personal_saltkey").val() === "" || $("#old_personal_saltkey").val() === "") {
+        // Check if all fields are filled in
+        if ($("#new_personal_saltkey").val() === "" || $("#new_personal_saltkey_confirm").val() === "" || $("#old_personal_saltkey").val() === "") {
             $("#psk_change_wait").hide();
             $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['home_personal_saltkey_label']); ?></div>');
 
@@ -561,6 +648,34 @@ $(function() {
             });
             return false;
         }
+
+        // Check if psk are similar
+        if ($("#new_personal_saltkey").val() !== $("#new_personal_saltkey_confirm").val()) {
+            $("#psk_change_wait").hide();
+            $("#div_change_psk").before('<div id="tmp_msg" class="ui-widget ui-state-error ui-corner-all" style="margin-bottom:3px; padding:3px;"><?php echo addslashes($LANG['bad_psk_confirmation']); ?></div>');
+
+            $(this).delay(1000).queue(function() {
+                $("#tmp_msg").effect( "fade", "slow" );
+                $("#tmp_msg").remove();
+                $(this).dequeue();
+            });
+            return false;
+        }
+
+        // Check if minimum security level is reched
+        if ($("#input_personal_saltkey_security_level").val() !== "") {
+            if (parseInt($("#new_psk_strength_value").val()) < parseInt($("#input_personal_saltkey_security_level").val())) {
+                $("#change_pwd_error").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
+                $(this).delay(1000).queue(function() {
+                    $("#change_pwd_error").effect( "fade", "slow" );
+                    $(this).dequeue();
+                });
+                return false;
+            }
+        }
+
+        // Show pspinner to user
+        $("#psk_change_wait").show();
 
         var data_to_share = "{\"sk\":\"" + sanitizeString($("#new_personal_saltkey").val()) + "\", \"old_sk\":\"" + sanitizeString($("#old_personal_saltkey").val()) + "\"}";
 
@@ -576,7 +691,7 @@ $(function() {
             },
             function(data) {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-                if (data.error == "no") {
+                if (data.error === "no") {
                     changePersonalSaltKey(data_to_share, data.list, data.nb_total);
                 } else {
                     $("#psk_change_wait").hide();
@@ -685,16 +800,15 @@ function changePersonalSaltKey(credentials, ids, nb_total)
     $.post(
       "sources/main.queries.php",
         {
-           type    : "store_personal_saltkey",
-           data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-           debug   : true
+            type    : "store_personal_saltkey",
+            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+            debug   : true,
+            key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data){
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            console.log(data);
-            if (data.error !== "") {
+            if (data[0].error !== "") {
                 // display error
-                $("#psk_change_wait_info").html(data.error);
+                $("#psk_change_wait_info").html(data[0].error);
                 $(this).delay(4000).queue(function() {
                     $("#main_info_box").effect( "fade", "slow" );
                     $(this).dequeue();
@@ -723,7 +837,8 @@ function changePersonalSaltKey(credentials, ids, nb_total)
                     "json"
                 );
             }
-        }
+        },
+        "json"
     );
 }
 </script>

@@ -57,15 +57,15 @@ function loadTable(table_id)
     if (table_id == "t_connections") {
         $("#type_log_displayed").val("connections_logs");
         oTable0 = $("#t_connections").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=connections",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=connections",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_connections_page input").focus();
@@ -74,15 +74,15 @@ function loadTable(table_id)
     } else if (table_id == "t_errors") {
         $("#type_log_displayed").val("errors_logs");
         oTable1 = $("#t_errors").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=errors",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=errors",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_errors_page input").focus();
@@ -91,15 +91,15 @@ function loadTable(table_id)
     } else if (table_id == "t_access") {
         $("#type_log_displayed").val("access_logs");
         oTable2 = $("#t_access").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=access",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=access",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_access_page input").focus();
@@ -108,15 +108,15 @@ function loadTable(table_id)
     } else if (table_id == "t_copy") {
         $("#type_log_displayed").val("copy_logs");
         oTable3 = $("#t_copy").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=copy",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=copy",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_copy_page input").focus();
@@ -125,15 +125,15 @@ function loadTable(table_id)
     } else if (table_id == "t_admin") {
         $("#type_log_displayed").val("admin_logs");
         oTable4 = $("#t_admin").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=admin",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=admin",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_admin_page input").focus();
@@ -142,15 +142,15 @@ function loadTable(table_id)
     } else if (table_id == "t_items") {
         $("#type_log_displayed").val("items_logs");
         oTable5 = $("#t_items").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=items",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=items",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_items_page input").focus();
@@ -159,15 +159,15 @@ function loadTable(table_id)
     } else if (table_id == "t_failed_auth") {
         $("#type_log_displayed").val("failed_auth_logs");
         oTable6 = $("#t_failed_auth").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=failed_auth",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=failed_auth",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_items_page input").focus();
@@ -244,11 +244,11 @@ $(function() {
                     // refresh table
                     if ($("#type_log_displayed").val() == "connections_logs") oTable0.api().ajax.reload();
                     else if ($("#type_log_displayed").val() == "errors_logs") oTable1.api().ajax.reload();
-                    else if ($("#type_log_displayed").val() == "access_logs") oTable2.api().ajax.reload();  
-                    else if ($("#type_log_displayed").val() == "copy_logs") oTable3.api().ajax.reload(); 
-                    else if ($("#type_log_displayed").val() == "admin_logs") oTable4.api().ajax.reload(); 
-                    else if ($("#type_log_displayed").val() == "items_logs") oTable5.api().ajax.reload(); 
-                    else if ($("#type_log_displayed").val() == "failed_auth_logs") oTable6.api().ajax.reload();                 
+                    else if ($("#type_log_displayed").val() == "access_logs") oTable2.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "copy_logs") oTable3.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "admin_logs") oTable4.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "items_logs") oTable5.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "failed_auth_logs") oTable6.api().ajax.reload();
                 }
                 $("#purgeTo, #purgeFrom").val("");
             },

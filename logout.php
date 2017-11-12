@@ -18,15 +18,15 @@ require_once 'sources/SecureHandler.php';
 session_start();
 
 // Update table by deleting ID
-if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])) {
+if (isset($_SESSION['user_id']) && empty($_SESSION['user_id']) === false) {
     $user_id = $_SESSION['user_id'];
-} else if (isset($_GET['user_id']) && !empty($_GET['user_id'])) {
+} elseif (isset($_GET['user_id']) && empty($_GET['user_id']) === false) {
     $user_id = $_GET['user_id'];
 } else {
     $user_id = "";
 }
 
-if (!empty($user_id) && isset($_SESSION['CPM'])) {
+if (empty($user_id) === false && isset($_SESSION['CPM']) === true) {
     // connect to the server
     require_once './sources/main.functions.php';
     require_once './includes/config/settings.php';
@@ -61,9 +61,9 @@ if (!empty($user_id) && isset($_SESSION['CPM'])) {
 }
 
 // erase session table
+session_unset();
 session_destroy();
 $_SESSION = array();
-unset($_SESSION);
 
 echo '
     <script language="javascript" type="text/javascript">

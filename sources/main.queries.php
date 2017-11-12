@@ -68,7 +68,6 @@ function mainQuery()
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
-    header("Pragma: no-cache");
     error_reporting(E_ERROR);
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -553,21 +552,37 @@ function mainQuery()
          * Store the personal saltkey
          */
         case "store_personal_saltkey":
-            $err = "";
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" , "status" : "nok" } ]';
+                break;
+            }
+
             $dataReceived = prepareExchangedData(
                 filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 "decode"
             );
+            $filter_score = filter_var($dataReceived['score'], FILTER_SANITIZE_NUMBER_INT);
+            $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
 
             // manage store
-            if ($dataReceived['psk'] !== "") {
+            if ($filter_psk !== "") {
                 // store in session the cleartext for psk
-                $_SESSION['user_settings']['clear_psk'] = $dataReceived['psk'];
+                $_SESSION['user_settings']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
                 if (!isset($_SESSION['user_settings']['encrypted_psk']) || (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk']))) {
+                    // Check if security level is reach (if enabled)
+                    if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
+                        // Did we received the pass score
+                        if (empty($filter_score) === false) {
+                            if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
+                                echo '[ { "error" : "security_level_not_reached" , "status" : "" } ]';
+                                break;
+                            }
+                        }
+                    }
                     // generate it based upon clear psk
-                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($dataReceived['psk']);
+                    $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($filter_psk);
 
                     // store it in DB
                     DB::update(
@@ -582,32 +597,39 @@ function mainQuery()
 
                 // check if psk is correct.
                 $user_key_encoded = defuse_validate_personal_key(
-                    $dataReceived['psk'],
+                    $filter_psk,
                     $_SESSION['user_settings']['encrypted_psk']
                 );
 
                 if (strpos($user_key_encoded, "Error ") !== false) {
-                    $err = $user_key_encoded;
+                    echo '[ { "error" : "psk_not_correct" , "status" : "" } ]';
+                    break;
                 } else {
+                    // Check if security level is reach (if enabled)
+                    if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
+                        // Did we received the pass score
+                        if (empty($filter_score) === false) {
+                            if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
+                                echo '[ { "error" : "" , "status" : "security_level_not_reached_but_psk_correct" } ]';
+                                break;
+                            }
+                        }
+                    }
                     // Store PSK
                     $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
                     setcookie(
                         "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                        encrypt($dataReceived['psk'], ""),
+                        encrypt($filter_psk, ""),
                         (!isset($SETTINGS['personal_saltkey_cookie_duration']) || $SETTINGS['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
                     );
                 }
             } else {
-                $err = "Personal Saltkey is empty!";
+                echo '[ { "error" : "psk_is_empty" , "status" : "" } ]';
+                break;
             }
 
-            echo prepareExchangedData(
-                array(
-                    "error" => $err
-                ),
-                "encode"
-            );
+            echo '[ { "error" : "" , "status" : "ok" } ]';
 
             break;
         /**
@@ -791,8 +813,7 @@ function mainQuery()
             }
 
             if (isset($SETTINGS['enable_send_email_on_user_login'])
-                && $SETTINGS['enable_send_email_on_user_login'] == 1
-                && isset($_SESSION['key'])
+                && $SETTINGS['enable_send_email_on_user_login'] === "1"
             ) {
                 $row = DB::queryFirstRow(
                     "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
@@ -800,37 +821,21 @@ function mainQuery()
                     "sending_emails"
                 );
                 if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
-                    //load library
-                    require $SETTINGS['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
-                    // load PHPMailer
-                    $mail = new PHPMailer();
-
-                    $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language");
-                    $mail->isSmtp(); // send via SMTP
-                    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-                    $mail->SMTPAuth = $SETTINGS['email_smtp_auth']; // turn on SMTP authentication
-                    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
-                    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
-                    $mail->From = $SETTINGS['email_from'];
-                    $mail->FromName = $SETTINGS['email_from_name'];
-                    $mail->WordWrap = 80; // set word wrap
-                    $mail->isHtml(true); // send as HTML
                     $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                     foreach ($rows as $record) {
-                        // send email
-                        $ret = json_decode(
-                            @sendEmail(
-                                $record['subject'],
-                                $record['body'],
-                                $record['receivers']
-                            )
+                        // Send email
+                        $ret = sendEmail(
+                            $record['subject'],
+                            $record['body'],
+                            $record['receivers']
                         );
 
-                        if (!empty($ret['error'])) {
+                        if (strpos($ret, "error_mail_not_send") !== false) {
                             $status = "not_sent";
                         } else {
                             $status = "sent";
                         }
+
                         // update item_id in files table
                         DB::update(
                             prefix_table("emails"),
@@ -840,9 +845,6 @@ function mainQuery()
                             "timestamp = %s",
                             $record['timestamp']
                         );
-                        if ($status == "not_sent") {
-                            break;
-                        }
                     }
                 }
                 // update cron time
@@ -989,6 +991,7 @@ function mainQuery()
             $x_counter = 1;
             $return = "";
             $arrTmp = array();
+            $arr_html = array();
             $rows = DB::query(
                 "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
                 FROM ".prefix_table("log_items")." AS l
@@ -1002,7 +1005,14 @@ function mainQuery()
             if (DB::count() > 0) {
                 foreach ($rows as $record) {
                     if (!in_array($record['id'], $arrTmp)) {
-                        $return .= '<li onclick="displayItemNumber('.$record['id'].', '.$record['id_tree'].')"><i class="fa fa-hand-o-right"></i>&nbsp;'.($record['label']).'</li>';
+                        array_push(
+                            $arr_html,
+                            array(
+                                "id" => $record['id'],
+                                "label" => htmlspecialchars(stripslashes(htmlspecialchars_decode($record['label'], ENT_QUOTES)), ENT_QUOTES),
+                                "tree_id" => $record['id_tree']
+                            )
+                        );
                         $x_counter++;
                         array_push($arrTmp, $record['id']);
                         if ($x_counter >= 10) {
@@ -1025,7 +1035,7 @@ function mainQuery()
                 array(
                     "error" => "",
                     "existing_suggestions" => $nb_suggestions_waiting,
-                    "text" => handleBackslash($return)
+                    "html_json" => $arr_html
                 ),
                 JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP
             );

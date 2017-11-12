@@ -269,18 +269,22 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             256
         ));
 
-        //Get some info about personal folder
-        if (filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT) === $_SESSION['user_id']) {
-            $personalFolder = 1;
-        } else {
-            $personalFolder = 0;
-        }
+        $post_folder = filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT);
+
+        // Get title for this folder
         $data_fld = DB::queryFirstRow(
             "SELECT title
             FROM ".prefix_table("nested_tree")."
             WHERE id = %i",
-            filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT)
+            $post_folder
         );
+
+        //Get some info about personal folder
+        if (in_array($post_folder, $_SESSION['personal_folders']) === true) {
+            $personalFolder = 1;
+        } else {
+            $personalFolder = 0;
+        }
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);

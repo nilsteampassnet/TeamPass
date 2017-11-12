@@ -46,7 +46,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
 
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -95,51 +94,28 @@ $post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
 
 switch ($post_type) {
     #CASE for getting informations about the tool
-    # connection to author's cpassman website
     case "cpm_status":
         $text = "<ul>";
         $error = "";
         if (!isset($SETTINGS_EXT['admin_no_info']) || (isset($SETTINGS_EXT['admin_no_info']) && $SETTINGS_EXT['admin_no_info'] == 0)) {
             if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
-                $handleDistant = array();
-                if (isset($SETTINGS['proxy_ip']) && !empty($SETTINGS['proxy_ip'])) {
-                    $fp = fsockopen($SETTINGS['proxy_ip'], $SETTINGS['proxy_port']);
-                } else {
-                    $fp = @fsockopen("www.teampass.net", 80);
-                }
-                if (!$fp) {
-                    $error = "connection";
-                } else {
-                    $out = "GET http://teampass.net/teampass_ext_lib.txt HTTP/1.0\r\n";
-                    $out .= "Host: teampass.net\r\n";
-                    $out .= "Connection: Close\r\n\r\n";
-                    fwrite($fp, $out);
+                // Get info about Teampass
+                $context = stream_context_create(array('http' => array('ignore_errors' => true)));
+                $json = file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
+                if ($json) {
+                    $json_array = json_decode($json, true);
 
-                    while (($line = fgets($fp, 4096)) !== false) {
-                        $handleDistant[] = $line;
+                    // About version
+                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$SETTINGS_EXT['version'];
+                    if (floatval($SETTINGS_EXT['version']) < floatval($json_array['info']['version'])) {
+                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
                     }
-                    if (!feof($fp)) {
-                        $error = "Error: unexpected fgets() fail\n";
-                    }
-                    fclose($fp);
-                }
+                    $text .= '</li>';
 
-                if (count($handleDistant) > 0) {
-                    while (list($cle, $val) = each($handleDistant)) {
-                        if (substr($val, 0, 3) == "nom") {
-                            $tab = explode('|', $val);
-                            foreach ($tab as $elem) {
-                                $tmp = explode('#', $elem);
-                                $text .= '<li><u>'.$LANG[$tmp[0]]."</u> : ".$tmp[1].'</li>';
-                                if ($tmp[0] == "version") {
-                                    $text .= '<li><u>'.$LANG['your_version']."</u> : ".$SETTINGS_EXT['version'];
-                                    if (floatval($SETTINGS_EXT['version']) < floatval($tmp[1])) {
-                                        $text .= '&nbsp;&nbsp;<b>'.$LANG['please_update'].'</b>';
-                                    }
-                                    $text .= '</li>';
-                                }
-                            }
-                        }
+                    // Libraries
+                    $text .= '<li><u>Libraries</u> :</li>';
+                    foreach ($json_array['libraries'] as $key => $val) {
+                        $text .= "<li>&nbsp;<span class='fa fa-caret-right'></span>&nbsp;".$key." (<a href='".$val."' target='_blank'>".$val."</a>)</li>";
                     }
                 }
             } else {
@@ -741,13 +717,7 @@ switch ($post_type) {
     case "admin_action_change_salt_key___encrypt":
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
-            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
-            break;
-        }
-
-        // Allowed values for $_POST['object'] : "items,logs,files,categories"
-        if (!in_array($post_object, explode("items,logs,files,categories", ","), true)) {
-            echo prepareExchangedData(array("error" => "This input is not allowed"), "encode");
+            echo '[{"nextAction":"" , "error":"Key is not correct" , "nbOfItems":""}]';
             break;
         }
 
@@ -768,6 +738,12 @@ switch ($post_type) {
         } else {
             // manage list of objects
             $objects = explode(",", $post_object);
+
+            // Allowed values for $_POST['object'] : "items,logs,files,categories"
+            if (in_array($objects[0], array("items","logs","files","categories")) === false) {
+                echo '[{"nextAction":"" , "error":"Input `'.$objects[0].'` is not allowed" , "nbOfItems":""}]';
+                break;
+            }
 
             if ($objects[0] === "items") {
                 //change all encrypted data in Items (passwords)
@@ -2209,6 +2185,7 @@ switch ($post_type) {
 
         break;
 
+
     case "is_backup_table_existing":
         // Check KEY and rights
         if ($post_key !== $_SESSION['key']) {
@@ -2225,6 +2202,44 @@ switch ($post_type) {
         } else {
             echo "0";
         }
+
+        break;
+
+
+    case "get_list_of_roles":
+        // Check KEY and rights
+        if ($post_key !== $_SESSION['key']) {
+            echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+            break;
+        }
+
+        $json = array();
+        array_push(
+            $json,
+            array(
+                "id" => 0,
+                "title" => addslashes($LANG['god']),
+                "selected" => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === "0" ? 1 : 0
+            )
+        );
+
+        $rows = DB::query(
+            "SELECT id, title
+            FROM ".prefix_table("roles_title")."
+            ORDER BY title ASC"
+        );
+        foreach ($rows as $record) {
+            array_push(
+                $json,
+                array(
+                    "id" => $record['id'],
+                    "title" => addslashes($LANG['managers_of']." ".$record['title']),
+                    "selected" => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0
+                )
+            );
+        }
+
+        echo prepareExchangedData($json, "encode");
 
         break;
 }

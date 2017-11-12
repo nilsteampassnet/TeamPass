@@ -1,4 +1,35 @@
 2.1.27
+10/
+ Copy password/login button are correctly hidden and shown
+ Cursor is hidden on password display to permit a better visualization
+ Fixed error while coping an item
+ Fixed last 10 items seen list not display on page load
+ Fixed display strings with quotes issue
+ Fixed page About in Administration page
+ Fixed issue when sending email on visualization
+ Fixed issue while CSV import in personal sub-folder
+ Fixed potential error on item creation without password
+ Fixed "show description" option was not taken into consideration
+ Added SMTPAutoTLS for sendMail
+ Improved offline file with full encryption
+ Improved session validity check
+ Improved items draggability sometime broken
+ Ensure session extension is always positive
+ Added user group allowed for LDAP Windows AD
+ Added option to remove the forgot password link on home page if LDAP enabled
+ #2010 Default Administrated by for user created via LDAP authentication
+ #2004 Administrator has no access to Items
+ #1997 Error on folder creation of no Parent is selected
+ #1996 Some settings resets to defaults
+ #1993 Policy for personal saltkey
+ #1990 Improving mysql indexes
+ #1989 Authentication problem
+ #1980 personal item is not deleted
+ #1974 Changing saltkey operation
+ #1970 ip-api.com use is not compatible with https
+ #1960 Access Denied for personal folder
+ #1840 add "download" attribute to export file
+
  9/
  Fixed a possible XSS (credit to ADLab of Venustech)
  Improved security related to User Management

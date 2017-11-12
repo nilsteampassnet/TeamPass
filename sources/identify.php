@@ -314,6 +314,7 @@ function identifyUser($sentData)
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
+
     // Prepare variables
     $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
     $pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
@@ -326,11 +327,6 @@ function identifyUser($sentData)
             $dbgDuo,
             "Starting authentication of '".$username."'\n"
         );
-    }
-
-    // GET SALT KEY LENGTH
-    if (strlen(SALT) > 32) {
-        $_SESSION['error']['salt'] = true;
     }
 
     $ldapConnection = false;
@@ -374,7 +370,6 @@ function identifyUser($sentData)
     $counter = DB::count();
     $user_initial_creation_through_ldap = false;
     $proceedIdentification = false;
-
 
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
@@ -536,24 +531,36 @@ function identifyUser($sentData)
 
             // Authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
-                $ldapConnection = true;
+                // Is user in allowed group
+                if (isset($SETTINGS['ldap_usergroup']) === true) {
+                    if (inGroup($auth_username, $SETTINGS['ldap_usergroup']) === true) {
+                        $ldapConnection = true;
+                    } else {
+                        $ldapConnection = false;
+                    }
+                } else {
+                    $ldapConnection = true;
+                }
+
                 // Update user's password
-                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                if ($ldapConnection === true) {
+                    $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
 
-                // Do things if user exists in TP
-                if ($counter > 0) {
-                    // Update pwd in TP database
-                    DB::update(
-                        prefix_table('users'),
-                        array(
-                            'pw' => $data['pw']
-                        ),
-                        "login=%s",
-                        $username
-                    );
+                    // Do things if user exists in TP
+                    if ($counter > 0) {
+                        // Update pwd in TP database
+                        DB::update(
+                            prefix_table('users'),
+                            array(
+                                'pw' => $data['pw']
+                            ),
+                            "login=%s",
+                            $username
+                        );
 
-                    // No user creation is requested
-                    $proceedIdentification = true;
+                        // No user creation is requested
+                        $proceedIdentification = true;
+                    }
                 }
             } else {
                 $ldapConnection = false;
@@ -633,7 +640,8 @@ function identifyUser($sentData)
                 'groupes_visibles' => '',
                 'last_pw_change' => time(),
                 'user_language' => $SETTINGS['default_language'],
-                'encrypted_psk' => ''
+                'encrypted_psk' => '',
+                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0
             )
         );
         $newUserId = DB::insertId();
@@ -653,7 +661,6 @@ function identifyUser($sentData)
         $proceedIdentification = true;
         $user_initial_creation_through_ldap = true;
     }
-
 
     // Check if user exists (and has been created in case of new LDAP user)
     $data = DB::queryFirstRow(

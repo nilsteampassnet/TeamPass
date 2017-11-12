@@ -417,6 +417,23 @@ echo '
             </div>
             </td></tr>';
 
+// Personal SALTKEY level
+echo '
+            <tr><td>
+                <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                <label>'.$LANG['personal_saltkey_security_level'].'</label>
+            </td><td>
+            <div class="div_radio">
+                <select id="personal_saltkey_security_level" name="personal_saltkey_security_level" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">';
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
+    echo '<option value="'.$complex[0].'"', isset($SETTINGS['personal_saltkey_security_level']) && $SETTINGS['personal_saltkey_security_level'] == $complex[0] ? ' selected="selected"' : '', '>'.$complex[1].'</option>';
+}
+echo '
+                        </select>
+            </div>
+            </td></tr>';
+
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // Attachments encryption strategy
 
@@ -1104,6 +1121,13 @@ echo '
                     <td><input type="text" size="50" id="ldap_search_base" name="ldap_search_base" class="text ui-widget-content" title="ou=people,dc=octopoos,dc=local" value="', isset($SETTINGS['ldap_search_base']) ? $SETTINGS['ldap_search_base'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
 
+// AD allowed UserGroup
+                echo '
+                <tr style="display:', (isset($ldap_type) && $ldap_type === 'windows') ? '' : 'none', '" class="tr-windows tr-ldap">
+                    <td><label for="ldap_allowed_usergroup">'.$LANG['settings_ldap_allowed_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_allowed_usergroup_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td><input type="text" size="50" id="ldap_allowed_usergroup" name="ldap_allowed_usergroup" class="text ui-widget-content" value="', isset($SETTINGS['ldap_allowed_usergroup']) ? $SETTINGS['ldap_allowed_usergroup'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                </tr>';
+
 // Domain controler
 echo '
                 <tr>
@@ -1144,6 +1168,24 @@ echo '
                         <div class="toggle toggle-modern" id="ldap_elusers" data-toggle-on="', isset($SETTINGS['ldap_elusers']) && $SETTINGS['ldap_elusers'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="ldap_elusers_input" name="ldap_elusers_input" value="', isset($SETTINGS['ldap_elusers']) && $SETTINGS['ldap_elusers'] == 1 ? '1' : '0', '" />
                     </td>
                 </tr>';
+
+// Enable Forgot password link on login page
+echo '
+                <tr>
+                    <td><label>'.$LANG['settings_disable_forgot_password_link'].'</label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="disable_show_forgot_pwd_link" data-toggle-on="', isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="disable_show_forgot_pwd_link_input" name="disable_show_forgot_pwd_link_input" value="', isset($SETTINGS['disable_show_forgot_pwd_link']) && $SETTINGS['disable_show_forgot_pwd_link'] == 1 ? '1' : '0', '" />
+                    </td>
+                </tr>';
+// Enable newly_created_user_is_administrated_by
+echo '
+                    <tr>
+                        <td><label for="ldap_type">'.$LANG['newly_created_user_is_administrated_by'].'</label></td>
+                        <td>
+                            <select id="ldap_new_user_is_administrated_by" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
+                            </select>
+                        </td>
+                    </tr>';
 echo '
                 </table>';
 

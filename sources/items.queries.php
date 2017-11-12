@@ -49,7 +49,6 @@ require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_lan
 require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
-header('Pragma: no-cache');
 require_once 'main.functions.php';
 
 // Ensure Complexity levels are translated
@@ -153,11 +152,15 @@ if (null !== $post_type) {
 
             // perform a check in case of Read-Only user creating an item in his PF
             if ($_SESSION['user_read_only'] === true &&
-                !in_array($dataReceived['categorie'], $_SESSION['personal_folders'])
+                in_array($dataReceived['categorie'], $_SESSION['personal_folders']) === false
             ) {
                 echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                 break;
             }
+
+
+
+
 
             // is pwd empty?
             if (empty($pw) &&
@@ -1094,7 +1097,7 @@ if (null !== $post_type) {
                 );
 
                 // Check if the folder where this item is, is accessible to the user
-                if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles'])) {
+                if (in_array($originalRecord['id_tree'], $_SESSION['groupes_visibles']) === false) {
                     $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                     echo $returnValues;
                     break;
@@ -1236,26 +1239,29 @@ if (null !== $post_type) {
                 // Add attached itms
                 $rows = DB::query("SELECT * FROM ".prefix_table("files")." WHERE id_item=%i", $post_item_id);
                 foreach ($rows as $record) {
-                    // duplicate file
-                    $fileRandomId = md5($record['name'].time());
-                    copy(
-                        $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'],
-                        $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$fileRandomId
-                    );
+                    // Check if file still exists
+                    if (file_exists($SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'])) {
+                        // duplicate file
+                        $fileRandomId = md5($record['name'].time());
+                        copy(
+                            $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$record['file'],
+                            $SETTINGS['path_to_upload_folder'].DIRECTORY_SEPARATOR.$fileRandomId
+                        );
 
-                    // store in DB
-                    DB::insert(
-                        prefix_table('files'),
-                        array(
-                            'id_item' => $newID,
-                            'name' => $record['name'],
-                            'size' => $record['size'],
-                            'extension' => $record['extension'],
-                            'type' => $record['type'],
-                            'file' => $fileRandomId,
-                            'status' => $record['status']
-                        )
-                    );
+                        // store in DB
+                        DB::insert(
+                            prefix_table('files'),
+                            array(
+                                'id_item' => $newID,
+                                'name' => $record['name'],
+                                'size' => $record['size'],
+                                'extension' => $record['extension'],
+                                'type' => $record['type'],
+                                'file' => $fileRandomId,
+                                'status' => $record['status']
+                            )
+                        );
+                    }
                 }
 
                 // Add specific restrictions
@@ -1377,9 +1383,10 @@ if (null !== $post_type) {
             // Get all USERS infos
             $listNotif = array_filter(explode(";", $dataItem['notification']));
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
-            $listeRestriction = $listNotification = $listNotificationEmails = "";
+            $listeRestriction = $listNotification = $_SESSION['listNotificationEmails'] = "";
+
             $user_in_restricted_list_of_item = false;
-            $rows = DB::query("SELECT id, login, email FROM ".prefix_table("users"));
+            $rows = DB::query("SELECT id, login, email, admin FROM ".prefix_table("users"));
             foreach ($rows as $record) {
                 // Get auhtor
                 if ($record['id'] === $dataItem['id_user']) {
@@ -1403,7 +1410,15 @@ if (null !== $post_type) {
                 // Get notification list for users
                 if (in_array($record['id'], $listNotif)) {
                     $listNotification .= $record['login'].";";
-                    $listNotificationEmails .= $record['email'].",";
+                    $_SESSION['listNotificationEmails'] .= $record['email'].",";
+                }
+
+                // Add Admins to notification list if expected
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === "1"
+                    && $record['admin'] === "1"
+                ) {
+                    $listNotification .= $record['login'].";";
+                    $_SESSION['listNotificationEmails'] .= $record['email'].",";
                 }
             }
             // manage case of API user
@@ -1485,13 +1500,12 @@ if (null !== $post_type) {
                 $item_is_expired = false;
             }
 
-
             // check user is admin
             if ($_SESSION['user_admin'] === '1' && $dataItem['perso'] != 1 && (isset($SETTINGS_EXT['admin_full_right']) && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] == $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -1569,7 +1583,7 @@ if (null !== $post_type) {
                     $arrData['show_detail_option'] = 2;
                 }
 
-                $arrData['label'] = htmlspecialchars_decode($dataItem['label']);
+                $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
                 $arrData['pw'] = $pw;
                 $arrData['email'] = $dataItem['email'];
                 $arrData['url'] = htmlspecialchars_decode($dataItem['url']);
@@ -1579,7 +1593,7 @@ if (null !== $post_type) {
                 }
 
                 $arrData['description'] = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $SETTINGS_EXT['allowedTags']));
-                $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']));
+                $arrData['login'] = htmlspecialchars_decode(str_replace(array('"'), array('&quot;'), $dataItem['login']), ENT_QUOTES);
                 $arrData['id_restricted_to'] = $listeRestriction;
                 $arrData['id_restricted_to_roles'] = count($listRestrictionRoles) > 0 ? implode(";", $listRestrictionRoles).";" : "";
                 $arrData['tags'] = $tags;
@@ -1767,9 +1781,10 @@ if (null !== $post_type) {
 
             // Load item data
             $dataItem = DB::queryFirstRow(
-                "SELECT *
-                FROM ".prefix_table("items")."
-                WHERE id = %i",
+                "SELECT i.*, n.title AS folder_title
+                FROM ".prefix_table("items")." AS i
+                INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
+                WHERE i.id = %i",
                 $post_id
             );
 
@@ -1801,7 +1816,7 @@ if (null !== $post_type) {
                 $arrData['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
-                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_tree'] === $_SESSION['user_id'])) && $restrictionActive === false)
+                (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
                 ||
                 (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1' && $dataItem['anyone_can_modify'] === '1' && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && $restrictionActive === false)
                 ||
@@ -1933,8 +1948,16 @@ if (null !== $post_type) {
                         array(
                             'timestamp' => time(),
                             'subject' => $LANG['email_on_open_notification_subject'],
-                            'body' => str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataItem['author']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_on_open_notification_mail']),
-                            'receivers' => $listNotificationEmails,
+                            'body' => str_replace(
+                                array('#tp_user#', '#tp_item#', '#tp_link#'),
+                                array(
+                                    addslashes($_SESSION['login']),
+                                    addslashes($dataItem['label']),
+                                    $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                                ),
+                                $LANG['email_on_open_notification_mail']
+                            ),
+                            'receivers' => $_SESSION['listNotificationEmails'],
                             'status' => ''
                         )
                     );
@@ -2023,7 +2046,7 @@ if (null !== $post_type) {
             $dataReceived = prepareExchangedData($post_data, "decode");
 
             // Prepare variables
-            $title = filter_var(htmlspecialchars_decode($dataReceived['title']), FILTER_SANITIZE_STRING);
+            $title = filter_var(htmlspecialchars_decode($dataReceived['title'], ENT_QUOTES), FILTER_SANITIZE_STRING);
             $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check if user is allowed to access this folder
@@ -2221,9 +2244,10 @@ if (null !== $post_type) {
             $post_nb_items_to_display_once = filter_input(INPUT_POST, 'nb_items_to_display_once', FILTER_SANITIZE_NUMBER_INT);
 
             $arboHtml = $html = "";
+            $arr_arbo = [];
             $folderIsPf = false;
             $showError = 0;
-            $itemsIDList = $rights = $returnedData = $uniqueLoadData = array();
+            $itemsIDList = $rights = $returnedData = $uniqueLoadData = $html_json = array();
             // Build query limits
             if (empty($post_start) === true) {
                 $start = 0;
@@ -2240,18 +2264,16 @@ if (null !== $post_type) {
                         $elem->title = $_SESSION['login'];
                         $folderIsPf = true;
                     }
-                    $arboHtml_tmp = '<a class="path_element" id="path_elem_'.$elem->id.'"';
-                    if (in_array($elem->id, $_SESSION['groupes_visibles'])) {
-                        $arboHtml_tmp .= ' style="cursor:pointer;" onclick="ListerItems('.$elem->id.', \'\', 0)"';
-                    }
-                    $arboHtml_tmp .= '>'.htmlspecialchars(stripslashes($elem->title), ENT_QUOTES).'</a>';
-                    if (empty($arboHtml)) {
-                        $arboHtml = $arboHtml_tmp;
-                    } else {
-                        $arboHtml .= '&nbsp;<i class="fa fa-caret-right"></i>&nbsp;'.$arboHtml_tmp;
-                    }
+                    // Store path elements
+                    array_push(
+                        $arr_arbo,
+                        array(
+                            "id" => $elem->id,
+                            "title" => htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES),
+                            "visible" => in_array($elem->id, $_SESSION['groupes_visibles']) ? 1 : 0
+                        )
+                    );
                 }
-                $uniqueLoadData['arboHtml'] = $arboHtml;
 
                 // store last folder accessed in cookie
                 setcookie(
@@ -2379,7 +2401,7 @@ if (null !== $post_type) {
                 $counter_full = $uniqueLoadData['counter_full'];
                 $displayCategories = $uniqueLoadData['displayCategories'];
                 $folderComplexity = $uniqueLoadData['folderComplexity'];
-                $arboHtml = $uniqueLoadData['arboHtml'];
+                //$arboHtml = $uniqueLoadData['arboHtml'];
                 $folder_is_personal = $uniqueLoadData['folder_is_personal'];
                 $folder_is_in_personal = $uniqueLoadData['folder_is_in_personal'];
                 $list_folders_editable_by_role = $uniqueLoadData['list_folders_editable_by_role'];
@@ -2415,7 +2437,7 @@ if (null !== $post_type) {
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
@@ -2433,7 +2455,7 @@ if (null !== $post_type) {
                     $rows = DB::query(
                         "SELECT i.id AS id, MIN(i.restricted_to) AS restricted_to, MIN(i.perso) AS perso,
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
-                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date,
+                        MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
@@ -2453,8 +2475,6 @@ if (null !== $post_type) {
                 foreach ($rows as $record) {
                     // exclude all results except the first one returned by query
                     if (empty($idManaged) === true || $idManaged !== $record['id']) {
-                        $new_line = '';
-
                         // Get Expiration date
                         $expirationFlag = '';
                         $expired_item = 0;
@@ -2463,11 +2483,24 @@ if (null !== $post_type) {
                                 ($record['date'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
                             ) {
                                 $expirationFlag = '<i class="fa fa-flag mi-red fa-sm"></i>&nbsp;';
+                                $html_json[$record['id']]['expiration_flag'] = "mi-red";
                                 $expired_item = 1;
                             } else {
                                 $expirationFlag = '<i class="fa fa-flag mi-green fa-sm"></i>&nbsp;';
+                                $html_json[$record['id']]['expiration_flag'] = "mi-green";
                             }
                         }
+                        // Init
+                        $html_json[$record['id']]['expired'] = $expired_item;
+                        $html_json[$record['id']]['item_id'] = $record['id'];
+                        $html_json[$record['id']]['tree_id'] = $record['tree_id'];
+                        $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
+                        if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
+                            $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
+                        } else {
+                            $html_json[$record['id']]['desc'] = "";
+                        }
+
                         // list of restricted users
                         $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
 
@@ -2476,6 +2509,7 @@ if (null !== $post_type) {
                         $need_sk = false;
                         $canMove = false;
                         $item_is_restricted_to_role = false;
+
                         // TODO: Element is restricted to a group. Check if element can be seen by user
                         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
                         $user_is_included_in_role = false;
@@ -2483,7 +2517,6 @@ if (null !== $post_type) {
                             "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id=%i",
                             $record['id']
                         );
-
                         if (DB::count() > 0) {
                             $item_is_restricted_to_role = true;
                             foreach ($roles as $val) {
@@ -2493,6 +2526,7 @@ if (null !== $post_type) {
                                 }
                             }
                         }
+
                         // Manage the restricted_to variable
                         if (null !== $post_restricted) {
                             $restrictedTo = $post_restricted;
@@ -2507,6 +2541,7 @@ if (null !== $post_type) {
                                 $restrictedTo .= ','.$_SESSION['user_id'];
                             }
                         }
+                        $html_json[$record['id']]['restricted'] = $restrictedTo;
 
                         // Can user modify it?
                         if ($record['anyone_can_modify'] === '1'
@@ -2539,10 +2574,12 @@ if (null !== $post_type) {
                             && (int) $is_user_in_restricted_list !== 1
                             && (int) $folder_is_personal !== 1
                         ) {
-                            $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
+                            $html_json[$record['id']]['perso'] = "fa-tag mi-red";
+                            $html_json[$record['id']]['sk'] = 0;
+                            $html_json[$record['id']]['display'] = "no_display";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                             $findPfGroup = 0;
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', \'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
                             $displayItem = false;
                             $need_sk = false;
                             $canMove = false;
@@ -2550,24 +2587,29 @@ if (null !== $post_type) {
                         } elseif ((int) $folder_is_in_personal === 1
                             && (int) $record['perso'] === 1
                         ) {
-                            $perso = '<i class="fa fa-user-secret mi-grey-1 fa-sm"></i>&nbsp';
+                            $html_json[$record['id']]['perso'] = "fa-user-secret mi-grey-1";
                             $findPfGroup = 1;
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'1\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'1\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = true;
                             $need_sk = true;
                             $canMove = true;
+
+                            $html_json[$record['id']]['sk'] = 1;
+                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                         // CAse where item is restricted to a group of users included user
                         } elseif (empty($record['restricted_to']) === false
                             || (int) $list_folders_editable_by_role === 1
                             && (int) $is_user_in_restricted_list === 1
                         ) {
-                            $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
+                            $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                             $findPfGroup = 0;
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', \'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
                             $displayItem = true;
                             $canMove = true;
+                            $html_json[$record['id']]['sk'] = 0;
+                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                         // CAse where item is restricted to a group of users not including user
                         } elseif ((int) $record['perso'] === 1
                             ||
@@ -2588,17 +2630,17 @@ if (null !== $post_type) {
                                 && $user_is_included_in_role === false
                                 && $item_is_restricted_to_role === true
                             ) {
-                                $perso = '<i class="fa fa-tag mi-red fa-sm"></i>&nbsp';
-                                $findPfGroup = 0;
-                                $action = 'AfficherDetailsItem(\''.$record['id'].'\', \'0\', \''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\',\'\', \'\')';
-                                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'no_display\', true, \'\')';
+                                $html_json[$record['id']]['perso'] = "fa-tag mi-red";
                                 $displayItem = false;
                                 $need_sk = true;
                                 $canMove = false;
+
+                                $html_json[$record['id']]['sk'] = 0;
+                                $html_json[$record['id']]['display'] = "no_display";
+                                $html_json[$record['id']]['open_edit'] = 0;
+                                $html_json[$record['id']]['reload'] = "";
                             } else {
-                                $perso = '<i class="fa fa-tag mi-yellow fa-sm"></i>&nbsp';
-                                $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
-                                $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+                                $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                                 // reinit in case of not personal group
                                 if ($init_personal_folder === false) {
                                     $findPfGroup = "";
@@ -2608,50 +2650,30 @@ if (null !== $post_type) {
                                 if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === '1') {
                                     $displayItem = true;
                                 }
+
+                                $html_json[$record['id']]['sk'] = 0;
+                                $html_json[$record['id']]['display'] = "";
+                                $html_json[$record['id']]['open_edit'] = 1;
+                                $html_json[$record['id']]['reload'] = "";
                             }
                         } else {
-                            $perso = '<i class="fa fa-tag mi-green fa-sm"></i>&nbsp';
-                            $action = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\',\'\',\'\', \'\')';
-                            $action_dbl = 'AfficherDetailsItem(\''.$record['id'].'\',\'0\',\''.$expired_item.'\', \''.$restrictedTo.'\', \'\', true, \'\')';
+                            $html_json[$record['id']]['perso'] = "fa-tag mi-green";
                             $displayItem = true;
                             // reinit in case of not personal group
                             if ($init_personal_folder === false) {
                                 $findPfGroup = "";
                                 $init_personal_folder = true;
                             }
-                        }
-                        // Prepare full line
-                        $new_line .= '<li name="'.strip_tags(htmlentities(cleanString($record['label']))).'" ondblclick="'.$action_dbl.'" class="';
-                        if ($canMove === true && $accessLevel == 0) {
-                            $new_line .= 'item_draggable';
-                        } else {
-                            $new_line .= 'item';
+
+                            $html_json[$record['id']]['sk'] = 0;
+                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['reload'] = "";
                         }
 
-                        $new_line .= ' trunc_line" id="'.$record['id'].'" style="">';
-
-                        if ($canMove === true && $accessLevel == 0) {
-                            $new_line .= '<span style="cursor:hand;" class="grippy"><i class="fa fa-sm fa-arrows mi-grey-1"></i>&nbsp;</span>';
-                        } else {
-                            $new_line .= '<span style="margin-left:11px;"></span>';
-                        }
-
-
-                        $label = stripslashes(handleBackslash($record['label']));
-                        $new_line .= $expirationFlag.''.$perso.'&nbsp;<a id="fileclass'.$record['id'].'" class="file " onclick="'.$action.'"><div class="truncate">'.$label.'&nbsp;<font size="1px">';
-
-                        // manage desc to show
-                        if (empty($record['description']) === false && isset($SETTINGS['show_description']) && $SETTINGS['show_description'] === '1') {
-                            $desc = explode("<br>", $record['description']);
-                            $new_line .= '['.strip_tags(stripslashes(cleanString($desc[0]))).']';
-                        }
-
-                        $new_line .= '</div></font>';
-
-                        $new_line .= '</a>';
-
-                        //
-                        $new_line .= '<span style="float:right;margin-top:2px;">';
+                        $html_json[$record['id']]['canMove'] = 1;
+                        $html_json[$record['id']]['accessLevel'] = 0;
+                        $html_json[$record['id']]['pw_status'] = "";
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
                         if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
@@ -2671,48 +2693,29 @@ if (null !== $post_type) {
 
                             // test charset => may cause a json error if is not utf8
                             $pw = $pw['string'];
-                            if (!isUTF8($pw)) {
+                            if (isUTF8($pw) === false) {
                                 $pw = "";
-                                $new_line .= '<i class="fa fa-warning fa-sm mi-red tip" title="'.$LANG['pw_encryption_error'].'"></i>&nbsp;';
-                            } elseif (empty($pw) === true) {
-                                $new_line .= '&nbsp;<i class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="'.$LANG['password_is_empty'].'"></i>&nbsp;';
+                                $html_json[$record['id']]['pw_status'] = "encryption_error";
                             }
                         } else {
                             $pw = "";
                         }
+                        $html_json[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
+                        $html_json[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
+                        $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
+                        $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
+                        $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
+                        $html_json[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) ? $SETTINGS['enable_favourites'] : '0';
 
-                        // mini icon for collab
-                        if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
-                            if ($record['anyone_can_modify'] === '1') {
-                                $new_line .= '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
-                            }
-                        }
-
-                        // display quick icon shortcuts ?
-                        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
-                            if ($displayItem === true) {
-                                if (empty($record['login']) === false) {
-                                    $new_line .= '<i class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'.strtr($record['login'], '"', "&quot;").'" title="'.$LANG['item_menu_copy_login'].'"></i>&nbsp;';
-                                }
-                                if (empty($pw) === false) {
-                                    $new_line .= '<i class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'.strtr($pw, '"', "&quot;").'" title="'.$LANG['item_menu_copy_pw'].'" data-clipboard-id="'.$record['id'].'"></i>&nbsp;';
-                                }
-                            }
-                        }
                         // Prepare make Favorite small icon
-                        $new_line .= '<span id="quick_icon_fav_'.$record['id'].'" title="Manage Favorite" class="cursor tip">';
                         if (in_array($record['id'], $_SESSION['favourites'])) {
-                            $new_line .= '<i class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('.$record['id'].',0)" class="tip"></i>';
+                            $html_json[$record['id']]['in_favorite'] = 1;
                         } else {
-                            $new_line .= '<i class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('.$record['id'].',1)" class="tip"></i>';
+                            $html_json[$record['id']]['in_favorite'] = 0;
                         }
 
-                        $new_line .= '</span></li>';
                         // Build array with items
                         array_push($itemsIDList, array($record['id'], $pw, $record['login'], $displayItem));
-
-                        // build full html
-                        $html .= $new_line;
 
                         $i++;
                     }
@@ -2745,24 +2748,12 @@ if (null !== $post_type) {
                 $listToBeContinued = "end";
             }
 
-            //  Fixing items not being displayed
-            $html = iconv(
-                'UTF-8',
-                'UTF-8//IGNORE',
-                mb_convert_encoding(
-                    $html,
-                    "UTF-8",
-                    "UTF-8"
-                )
-            );
-
-
             // Prepare returned values
             $returnValues = array(
+                "html_json" => $html_json,
                 "recherche_group_pf" => $findPfGroup,
-                "arborescence" => $arboHtml,
+                "arborescence" => $arr_arbo,
                 "array_items" => $itemsIDList,
-                "items_html" => $html,
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
@@ -2958,6 +2949,7 @@ if (null !== $post_type) {
             recupDroitCreationSansComplexite($post_groupe);
 
             $returnValues = array(
+                "error" => "",
                 "val" => $data['valeur'],
                 "visibility" => $visibilite,
                 "complexity" => $complexity,
@@ -3116,6 +3108,7 @@ if (null !== $post_type) {
                 // error
                 exit();
             }
+
             // get data about item
             $dataSource = DB::queryfirstrow(
                 "SELECT i.pw, f.personal_folder,i.id_tree, f.title,i.label
@@ -3124,17 +3117,26 @@ if (null !== $post_type) {
                 WHERE i.id=%i",
                 $post_item_id
             );
+            
             // get data about new folder
             $dataDestination = DB::queryfirstrow(
                 "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",
                 $post_folder_id
             );
 
+            // Do quick check if psh is required
+            if ((isset($_SESSION['user_settings']['session_psk']) === false || empty($_SESSION['user_settings']['session_psk']) === true)
+                && ($dataSource['personal_folder'] === '1' || $dataDestination['personal_folder'] === '1')
+            ) {
+                 echo '[{"error" : "ERR_PSK_REQUIRED"}]';
+                break;
+            }
+
             // Check that user can access this folder
             if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
                 || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
             ) {
-                echo '[{"error" => "ERR_FOLDER_NOT_ALLOWED"}]';
+                echo '[{"error" : "ERR_FOLDER_NOT_ALLOWED"}]';
                 break;
             }
 
@@ -3219,7 +3221,7 @@ if (null !== $post_type) {
                 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
             );
 
-            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$post_folder_id.'"}]';
+            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$post_folder_id.'" , "error" : ""}]';
             break;
 
         /*
@@ -3549,7 +3551,7 @@ if (null !== $post_type) {
                 ) {
                     $error = "";
                     // Query
-                    logItems($dataReceived['item_id'], $dataItem['label'], $_SESSION['user_id'], 'at_manual', $_SESSION['login'], htmlspecialchars_decode($dataReceived['label']));
+                    logItems($dataReceived['item_id'], $dataItem['label'], $_SESSION['user_id'], 'at_manual', $_SESSION['login'], htmlspecialchars_decode($dataReceived['label']), ENT_QUOTES);
                     // Prepare new line
                     $data = DB::queryfirstrow(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i ORDER BY date DESC",
@@ -3882,6 +3884,11 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Init
+
+            // Will we show the root folder?
+            $arr_data['can_create_root_folder'] = isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1' ? 1 : 0;
+
             // Build list of visible folders
             $selectVisibleFoldersOptions = $selectVisibleNonPersonalFoldersOptions = $selectVisibleActiveFoldersOptions = "";
             if (isset($SETTINGS['can_create_root_folder']) && $SETTINGS['can_create_root_folder'] === '1') {
@@ -3914,22 +3921,25 @@ if (null !== $post_type) {
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
             $tree->rebuild();
             $folders = $tree->getDescendants();
+            $inc = 0;
 
             foreach ($folders as $folder) {
                 // Be sure that user can only see folders he/she is allowed to
-                if (!in_array($folder->id, $_SESSION['forbiden_pfs'])
-                    || in_array($folder->id, $_SESSION['groupes_visibles'])
-                    || in_array($folder->id, $listFoldersLimitedKeys)
-                    || in_array($folder->id, $listRestrictedFoldersForItemsKeys)
+                if (in_array($folder->id, $_SESSION['forbiden_pfs']) === false
+                    || in_array($folder->id, $_SESSION['groupes_visibles']) === true
+                    || in_array($folder->id, $listFoldersLimitedKeys) === true
+                    || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
                 ) {
+                    // Init
                     $displayThisNode = false;
                     $hide_node = false;
                     $nbChildrenItems = 0;
+
                     // Check if any allowed folder is part of the descendants of this node
                     $nodeDescendants = $tree->getDescendants($folder->id, true, false, true);
                     foreach ($nodeDescendants as $node) {
                         // manage tree counters
-                        if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
+                        /*if (isset($SETTINGS['tree_counters']) && $SETTINGS['tree_counters'] === '1') {
                             DB::query(
                                 "SELECT * FROM ".prefix_table("items")."
                                 WHERE inactif=%i AND id_tree = %i",
@@ -3937,8 +3947,8 @@ if (null !== $post_type) {
                                 $node
                             );
                             $nbChildrenItems += DB::count();
-                        }
-                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items']))
+                        }*/
+                        if (in_array($node, array_merge($_SESSION['groupes_visibles'], $_SESSION['list_restricted_folders_for_items'])) === true
                             || @in_array($node, $listFoldersLimitedKeys)
                             || @in_array($node, $listRestrictedFoldersForItemsKeys)
                         ) {
@@ -3948,11 +3958,6 @@ if (null !== $post_type) {
                     }
 
                     if ($displayThisNode === true) {
-                        $ident = "";
-                        for ($x = 1; $x < $folder->nlevel; $x++) {
-                            $ident .= "&nbsp;&nbsp;";
-                        }
-
                         // resize title if necessary
                         $fldTitle = str_replace("&", "&amp;", $folder->title);
 
@@ -3961,42 +3966,38 @@ if (null !== $post_type) {
                             $fldTitle = $_SESSION['login'];
                         }
 
-                        // build select for all visible folders
-                        if (in_array($folder->id, $_SESSION['groupes_visibles']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-                            if ($_SESSION['user_read_only'] === '0' || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']))) {
-                                if (($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1')) { //
-                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" >'.$ident.$fldTitle.'</option>';
-                                } else {
-                                    $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                                }
-                            } else {
-                                $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-                            }
-                        } else {
-                            $selectVisibleFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        // ALL FOLDERS
+                        // Is this folder disabled?
+                        $disabled = 0;
+                        if (in_array($folder->id, $_SESSION['groupes_visibles']) === false
+                            || in_array($folder->id, $_SESSION['read_only_folders']) === true
+                            || ($_SESSION['user_read_only'] === '1' && in_array($folder->id, $_SESSION['personal_visible_groups']) === false)
+                        ) {
+                            $disabled = 1;
                         }
-                        // build select for non personal visible folders
-                        if (isset($_SESSION['all_non_personal_folders']) && in_array($folder->id, $_SESSION['all_non_personal_folders'])) {
-                            $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                        } else {
-                            $selectVisibleNonPersonalFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
+                        // Build array
+                        $arr_data['folders'][$inc]['id'] = $folder->id;
+                        $arr_data['folders'][$inc]['level'] = $folder->nlevel;
+                        $arr_data['folders'][$inc]['title'] = htmlspecialchars_decode($fldTitle, ENT_QUOTES);
+                        $arr_data['folders'][$inc]['disabled'] = $disabled;
+
+
+                        // Is this folder an active folders? (where user can do something)
+                        $is_visible_active = 0;
+                        if (isset($_SESSION['read_only_folders']) === true
+                            && in_array($folder->id, $_SESSION['read_only_folders']) === true) {
+                            $is_visible_active = 1;
                         }
-                        // build select for active folders (where user can do something)
-                        if (isset($_SESSION['list_restricted_folders_for_items']) && !in_array($folder->id, $_SESSION['read_only_folders'])) {
-                            $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'">'.$ident.$fldTitle.'</option>';
-                        } else {
-                            $selectVisibleActiveFoldersOptions .= '<option value="'.$folder->id.'" disabled="disabled">'.$ident.$fldTitle.'</option>';
-                        }
+                        $arr_data['folders'][$inc]['is_visible_active'] = $is_visible_active;
+
+                        $inc++;
                     }
                 }
             }
 
             $data = array(
                 'error' => "",
-                'selectVisibleFoldersOptions' => ($selectVisibleFoldersOptions),
-                'selectVisibleNonPersonalFoldersOptions' => ($selectVisibleNonPersonalFoldersOptions),
-                'selectVisibleActiveFoldersOptions' => ($selectVisibleActiveFoldersOptions),
-                'selectFullVisibleFoldersOptions' => str_replace('disabled="disabled"', "", $selectVisibleFoldersOptions)
+                'html_json' => $arr_data
             );
             // send data
             echo prepareExchangedData($data, "encode");
@@ -4117,9 +4118,9 @@ if (null !== $post_type) {
             $data_received = prepareExchangedData($post_data, "decode");
 
             // prepare variables
-            $label = htmlspecialchars_decode($data_received['label']);
+            $label = htmlspecialchars_decode($data_received['label'], ENT_QUOTES);
             $pwd = htmlspecialchars_decode($data_received['pwd']);
-            $login = htmlspecialchars_decode($data_received['login']);
+            $login = htmlspecialchars_decode($data_received['login'], ENT_QUOTES);
             $email = htmlspecialchars_decode($data_received['email']);
             $url = htmlspecialchars_decode($data_received['url']);
             $folder = htmlspecialchars_decode($data_received['folder']);

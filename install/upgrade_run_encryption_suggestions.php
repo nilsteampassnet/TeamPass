@@ -49,24 +49,39 @@ $_SESSION['settings']['loaded'] = "";
 $dbgDuo = fopen("upgrade.log", "a");
 $finish = false;
 
+// Test DB connexion
 $pass = defuse_return_decrypted($pass);
-$dbTmp = mysqli_connect(
+if (mysqli_connect(
     $server,
     $user,
     $pass,
     $database,
     $port
-);
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 fputs($dbgDuo, (string) "\nStarting suggestion.\n\n");
 // decrypt passwords in suggestion table
 $resData = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT id, pw, pw_iv
     FROM ".$pre."suggestion"
 );
 if (!$resData) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 while ($record = mysqli_fetch_array($resData)) {
@@ -84,13 +99,13 @@ while ($record = mysqli_fetch_array($resData)) {
 
         // store Password
         mysqli_query(
-            $dbTmp,
+            $db_link,
             "UPDATE ".$pre."suggestion
             SET pw = '".$encrypt['string']."', pw_iv = '".$encrypt['iv']."'
             WHERE id =".$record['id']
         );
         if (!$resData) {
-            echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+            echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
             exit();
         }
     } else {

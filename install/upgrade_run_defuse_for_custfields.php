@@ -37,20 +37,33 @@ $_SESSION['settings']['loaded'] = "";
 $finish = false;
 $next = ($post_nb + $post_start);
 
-// Open DB connection
+// Test DB connexion
 $pass = defuse_return_decrypted($pass);
-$dbTmp = mysqli_connect(
+if (mysqli_connect(
     $server,
     $user,
     $pass,
     $database,
     $port
-);
-
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 // Get old saltkey from saltkey_ante_2127
 $db_sk = mysqli_fetch_array(
     mysqli_query(
-        $dbTmp,
+        $db_link,
         "SELECT valeur FROM ".$pre."misc
         WHERE type='admin' AND intitule = 'saltkey_ante_2127'"
     )
@@ -68,12 +81,12 @@ $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
 
 // get total items
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT * FROM ".$pre."log_items
     WHERE raison_iv IS NOT NULL"
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 
@@ -81,13 +94,13 @@ $total = mysqli_num_rows($rows);
 
 // loop on items
 $rows = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT increment_id, id_item, raison, raison_iv, encryption_type FROM ".$pre."log_items
     WHERE raison_iv IS NOT NULL
     LIMIT ".$post_start.", ".$post_nb
 );
 if (!$rows) {
-    echo '[{"finish":"1" , "error":"'.mysqli_error($dbTmp).'"}]';
+    echo '[{"finish":"1" , "error":"'.mysqli_error($db_link).'"}]';
     exit();
 }
 
@@ -112,14 +125,14 @@ while ($data = mysqli_fetch_array($rows)) {
 
             // store Password
             mysqli_query(
-                $dbTmp,
+                $db_link,
                 "UPDATE ".$pre."log_items
                 SET raison = 'at_pw :".$new_pw['string']."', raison_iv = '', encryption_type = 'defuse'
                 WHERE increment_id = ".$data['increment_id']
             );
         } else {
             mysqli_query(
-                $dbTmp,
+                $db_link,
                 "UPDATE ".$pre."log_items
                 SET raison_iv = '', encryption_type = 'defuse'
                 WHERE increment_id = ".$data['increment_id']

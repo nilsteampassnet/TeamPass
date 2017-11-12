@@ -277,7 +277,7 @@ echo '
 // Line for PW
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></i></td>
                     <td colspan="2">
                         &nbsp;
                         <div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>
@@ -288,7 +288,7 @@ echo '
 // Line for LOGIN
 echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;display:none;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
                     <td colspan="2">
                         <div id="id_login" style="float:left;"></div>
                         <input type="hidden" id="hid_login" value="" />
@@ -471,7 +471,7 @@ echo '
                 <span id="pw_wait" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
             </label>
             <input type="password" id="pw1" class="input_text text ui-widget-content ui-corner-all" />
-            <input type="hidden" id="mypassword_complex" />
+            <input type="hidden" id="mypassword_complex" value="0" />
             <label for="" class="label_cpm">'.$LANG['index_change_pw_confirmation'].' :</label>
             <input type="password" name="pw2" id="pw2" class="input_text text ui-widget-content ui-corner-all" />
 
@@ -657,7 +657,7 @@ echo '
                 <input type="password" id="edit_pw1" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
                 <span class="fa fa-history tip" style="cursor:pointer;" id="edit_past_pwds" onclick="showPasswordsHistory()"></span>
                 <div style="display:none; padding:3px; width:390px; font-weight:normal; font-size:11px; font-family:italic;" id="edit_past_pwds_div" class="ui-corner-all ui-state-default"></div>
-                <input type="hidden" id="edit_mypassword_complex" />
+                <input type="hidden" id="edit_mypassword_complex" value="0" />
 
                 <label for="" class="cpm_label">'.$LANG['confirm'].' : </label>
                 <input type="password" id="edit_pw2" class="input_text text ui-widget-content ui-corner-all" style="width:390px;" />
@@ -951,11 +951,13 @@ echo '
 // DIALOG FOR ITEM SHARE
 echo '
 <div id="div_item_share" style="display:none;">
-    <div id="div_item_share_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
-    <div style="">'.$LANG['item_share_text'].'</div>
-    <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
-    <div id="div_item_share_status" style="text-align:center;margin-top:15px;display:none; padding:5px;" class="ui-corner-all">
-        <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    <div id="div_item_share_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all hidden"></div>
+    <div id="div_item_share_init">
+        <div style="margin:3px 0 5px 0;">'.$LANG['item_share_text'].'</div>
+        <input type="text" id="item_share_email" class="ui-corner-all" style="width:100%;" />
+        <div id="div_item_share_status" style="text-align:center;margin-top:15px; padding:5px;" class="ui-corner-all hidden">
+            <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+        </div>
     </div>
 </div>';
 // DIALOG FOR ITEM IS UPDATED

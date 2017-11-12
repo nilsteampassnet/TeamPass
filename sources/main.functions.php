@@ -223,7 +223,7 @@ function decrypt($encrypted, $personalSalt = "")
     if (!empty($personalSalt)) {
         $staticSalt = $personalSalt;
     } else {
-        $staticSalt = SALT;
+        $staticSalt = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     }
     //base64 decode the entire payload
     $encrypted = base64_decode($encrypted);
@@ -596,8 +596,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         $_SESSION['list_restricted_folders_for_items'] = array();
         $_SESSION['list_folders_editable_by_role'] = array();
         $_SESSION['list_folders_limited'] = array();
+        $_SESSION['no_access_folders'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $_SESSION['list_folders_limited'] = "";
         $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
@@ -754,7 +754,12 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             $where->negateLast();
         }
 
-        $persoFlds = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE %l", $where);
+        $persoFlds = DB::query(
+            "SELECT id
+            FROM ".prefix_table("nested_tree")."
+            WHERE %l",
+            $where
+        );
         foreach ($persoFlds as $persoFldId) {
             array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
         }
@@ -764,8 +769,13 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             isset($_SESSION['personal_folder']) &&
             $_SESSION['personal_folder'] == 1
         ) {
-            $persoFld = DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s", $_SESSION['user_id']);
-            if (!empty($persoFld['id'])) {
+            $persoFld = DB::queryfirstrow(
+                "SELECT id
+                FROM ".prefix_table("nested_tree")."
+                WHERE title = %s",
+                $_SESSION['user_id']
+            );
+            if (empty($persoFld['id']) === false) {
                 if (!in_array($persoFld['id'], $listAllowedFolders)) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
                     // get all descendants
@@ -778,9 +788,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                 }
             }
             // get list of readonly folders when pf is disabled.
+            $_SESSION['personal_folders'] = array_unique($_SESSION['personal_folders']);
             // rule - if one folder is set as W or N in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders'])))) {   //
+                if (in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))) === false) {
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
@@ -789,7 +800,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
                         $fonctionsAssociees,
                         array("W", "ND", "NE", "NDNE")
                     );
-                    if (DB::count() == 0 && in_array($folderId, $groupesVisiblesUser) === false) {
+                    if (DB::count() === 0 && in_array($folderId, $groupesVisiblesUser) === false) {
                         array_push($listReadOnlyFolders, $folderId);
                     }
                 }
@@ -798,7 +809,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             // get list of readonly folders when pf is disabled.
             // rule - if one folder is set as W in one of the Role, then User has access as W
             foreach ($listAllowedFolders as $folderId) {
-                if (!in_array($folderId, $listReadOnlyFolders)) {
+                if (in_array($folderId, $listReadOnlyFolders) === false) {
                     DB::query(
                         "SELECT *
                         FROM ".prefix_table("roles_values")."
@@ -815,7 +826,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
 
         // check if change proposals on User's items
-        if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1) {
+        if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] == 1) {
             DB::query(
                 "SELECT *
                 FROM ".prefix_table("items_change")." AS c
@@ -1190,12 +1201,17 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 
     // send to user
     $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
-    $mail->SMTPDebug = 0; //value 1 can be used to debug
+    $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
     $mail->Port = $SETTINGS['email_port']; //COULD BE USED
     $mail->CharSet = "utf-8";
     if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
         $mail->SMTPSecure = $SETTINGS['email_security'];
+        $SMTPAutoTLS = true;
+    } else {
+        $SMTPAutoTLS = false;
+        $mail->SMTPSecure = "";
     }
+    $mail->SMTPAutoTLS = $SMTPAutoTLS;
     $mail->isSmtp(); // send via SMTP
     $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
     $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
@@ -1203,7 +1219,13 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
     $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
     $mail->From = $SETTINGS['email_from'];
     $mail->FromName = $SETTINGS['email_from_name'];
-    $mail->addAddress($email); //Destinataire
+
+    // Prepare for each person
+    $dests = explode(",", $email);
+    foreach ($dests as $dest) {
+        $mail->addAddress($dest);
+    }
+
     $mail->WordWrap = 80; // set word wrap
     $mail->isHtml(true); // send as HTML
     $mail->Subject = $subject;
@@ -1610,9 +1632,9 @@ function handleConfigFile($action, $field = null, $value = null)
         foreach ($rows as $record) {
             array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
         }
-        array_push($data, ");");
+        array_push($data, ");\n");
         $data = array_unique($data);
-    } elseif ($action == "update" && !empty($field)) {
+    } elseif ($action == "update" && empty($field) === false) {
         $data = file($tp_config_file);
         $inc = 0;
         $bFound = false;
@@ -1630,7 +1652,7 @@ function handleConfigFile($action, $field = null, $value = null)
             $inc++;
         }
         if ($bFound === false) {
-            $data[($inc - 1)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
+            $data[($inc)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n);\n";
         }
     }
 
@@ -2124,6 +2146,15 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
  */
 function accessToItemIsGranted($item_id)
 {
+    global $SETTINGS;
+
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Prepare superGlobal variables
+    $session_groupes_visibles = $superGlobal->get("groupes_visibles", "SESSION");
+    $session_list_restricted_folders_for_items = $superGlobal->get("list_restricted_folders_for_items", "SESSION");
+
     // Load item data
     $data = DB::queryFirstRow(
         "SELECT id_tree
@@ -2133,10 +2164,10 @@ function accessToItemIsGranted($item_id)
     );
 
     // Check if user can access this folder
-    if (!in_array($data['id_tree'], $_SESSION['groupes_visibles'])) {
+    if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
         // Now check if this folder is restricted to user
-        if (isset($_SESSION['list_restricted_folders_for_items'][$data['id_tree']])
-            && !in_array($item_id, $_SESSION['list_restricted_folders_for_items'][$data['id_tree']])
+        if (isset($session_list_restricted_folders_for_items[$data['id_tree']])
+            && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
         ) {
             return "ERR_FOLDER_NOT_ALLOWED";
         } else {

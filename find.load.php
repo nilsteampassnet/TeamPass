@@ -158,10 +158,10 @@ $(function() {
         "sPaginationType": "full_numbers",
         "bProcessing": true,
         "bServerSide": true,
-        "sAjaxSource": "sources/find.queries.php",
+        "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
         "bJQueryUI": true,
         "oLanguage": {
-            "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+            "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "fnInitComplete": function() {
             $("#find_page input").focus();

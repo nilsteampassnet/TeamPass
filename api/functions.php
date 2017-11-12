@@ -572,6 +572,70 @@ function rest_get()
 
                     $inc++;
                 }
+            } elseif ($GLOBALS['request'][1] == "folder_descendants") {
+                /*
+                * PRovide full list of folders
+                * <url to teampass>/api/index.php/read/folder_descendants/<id OR title>/<folder_id or folder_title>?apikey=<valid api key>
+                */
+
+                // get parameters
+                if (isset($GLOBALS['request'][2]) === true && isset($GLOBALS['request'][3]) === true) {
+                    // load library
+                    require_once '../sources/SplClassLoader.php';
+                    //Load Tree
+                    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                    $tree->register();
+                    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+                    // get parameters
+                    $parameter_by = $GLOBALS['request'][2];
+                    $parameter_criteria = $GLOBALS['request'][3];
+
+                    // Check data consistency
+                    if (preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $parameter_by, $result) === false) {
+                        rest_error('MALFORMED');
+                    }
+
+                    if (preg_match_all("/^([\w\:\'\-\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ]+)$/i", $parameter_criteria, $result) === false) {
+                        rest_error('MALFORMED');
+                    }
+
+                    // Is BY criteria correct
+                    if ($parameter_by !== "id" && $parameter_by !== "title") {
+                        rest_error('EXPECTED_PARAMETER_NOT_PROVIDED');
+                    }
+
+                    // If criteria is by Title
+                    // Then search its id first
+                    if ($parameter_by === "title") {
+                        $response = DB::queryFirstRow(
+                            "SELECT id
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE
+                            title LIKE %s",
+                            $parameter_criteria
+                        );
+                        $parameter_criteria = $response['id'];
+                    }
+
+                    // List folder descendants
+                    $folders = $tree->getDescendants(intval($parameter_criteria), true, false, false);
+                    if (count($folders) > 0) {
+                        $inc = 0;
+                        foreach ($folders as $folder) {
+                            // Prepare answer
+                            $json[$inc]['id'] = mb_convert_encoding($folder->id, mb_detect_encoding($folder->id), 'UTF-8');
+                            $json[$inc]['parent_id'] = mb_convert_encoding($folder->parent_id, mb_detect_encoding($folder->parent_id), 'UTF-8');
+                            $json[$inc]['title'] = mb_convert_encoding(htmlspecialchars_decode($folder->title, ENT_QUOTES), mb_detect_encoding($folder->title), 'UTF-8');
+                            $json[$inc]['nleft'] = mb_convert_encoding($folder->nleft, mb_detect_encoding($folder->nleft), 'UTF-8');
+                            $json[$inc]['nright'] = mb_convert_encoding($folder->nright, mb_detect_encoding($folder->nright), 'UTF-8');
+                            $json[$inc]['nlevel'] = mb_convert_encoding($folder->nlevel, mb_detect_encoding($folder->nlevel), 'UTF-8');
+                            $json[$inc]['personal'] = mb_convert_encoding($folder->personal_folder, mb_detect_encoding($folder->personal_folder), 'UTF-8');
+
+                            $inc ++;
+                        }
+                    }
+                }
             }
 
             if (isset($json) && $json) {
@@ -2209,6 +2273,9 @@ function rest_error($type, $detail = 'N/A')
             break;
         case 'NO_PSALTK_PROVIDED':
             $message = array('err' => 'No Personal saltkey provided');
+            break;
+        case 'EXPECTED_PARAMETER_NOT_PROVIDED':
+            $message = array('err' => 'Provided parameters are not correct');
             break;
         default:
             $message = array('err' => 'Something happen ... but what ?');

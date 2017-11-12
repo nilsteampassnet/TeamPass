@@ -19,6 +19,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 <script type="text/javascript">
 //<![CDATA[
+
+var requestRunning = false;
 /*
 * Add a new field to a category
 */
@@ -508,6 +510,12 @@ function updateSetting(field)
 {
     if (field == "") return false;
 
+    // prevent launch of similar query in case of doubleclick
+    if (requestRunning === true) {
+        return false;
+    }
+    requestRunning = true;
+
     // store in DB
     var data = {"field":field, "value":$("#"+field).val()};
     //console.log(data);
@@ -524,6 +532,10 @@ function updateSetting(field)
                 location.reload(true);
                 return false;
             }
+
+            // reset doubleclick prevention
+            requestRunning = false;
+
             //decrypt data
             try {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
@@ -585,7 +597,6 @@ $(function() {
 
         // store in DB
         var data = {"field": e.target.id , "value": $("#"+e.target.id+"_input").val()};
-        console.log(data);
         $.post(
             "sources/admin.queries.php",
             {
@@ -607,7 +618,6 @@ $(function() {
                     $("#message_box").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data).show().fadeOut(4000);
                     return false;
                 }
-                console.log(data);
                 if (data.error == "") {
                     $("#"+e.target.id).after("<span class='fa fa-check fa-lg mi-green new_check' style='float:left;margin:-18px 0 0 56px;'></span>");
                     $(".new_check").fadeOut(2000);
@@ -998,6 +1008,32 @@ $(function() {
     );
 
 
+    // Load list of groups
+    $("#ldap_new_user_is_administrated_by").empty();
+    $.post(
+        "sources/admin.queries.php",
+        {
+            type    : "get_list_of_roles",
+            key     : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            
+            var html = "",
+                selected = 0;
+
+            for (var i=0; i<data.length; i++) {
+                if (data[i].selected === 1) {
+                    selected = data[i].id;
+                }
+                html += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
+            }
+            $("#ldap_new_user_is_administrated_by").append(html);
+            $("#ldap_new_user_is_administrated_by").val(selected);
+        }
+   );
+
+
 });
 
 function manageEncryptionOfAttachments(list, cpt) {
@@ -1010,7 +1046,7 @@ function manageEncryptionOfAttachments(list, cpt) {
             cpt     : cpt,
             list    : list
         },
-        function(data) {console.log(">" + data[0].continu);
+        function(data) {
             if (data[0].continu === "1" ) {
                 manageEncryptionOfAttachments(data[0].list, data[0].cpt);
             } else {

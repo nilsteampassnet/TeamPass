@@ -40,9 +40,9 @@ $_SESSION['settings']['loaded'] = "";
 ################
 function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL")
 {
-    global $dbTmp;
+    global $db_link;
     $exists = false;
-    $columns = mysqli_query($dbTmp, "show columns from $dbname");
+    $columns = mysqli_query($db_link, "show columns from $dbname");
     while ($col = mysqli_fetch_assoc($columns)) {
         if ($col['Field'] == $column) {
             $exists = true;
@@ -50,7 +50,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
         }
     }
     if (!$exists) {
-        return mysqli_query($dbTmp, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
+        return mysqli_query($db_link, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
     }
 
     return false;
@@ -58,15 +58,15 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
 
 function addIndexIfNotExist($table, $index, $sql)
 {
-    global $dbTmp;
+    global $db_link;
 
-    $mysqli_result = mysqli_query($dbTmp, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
+    $mysqli_result = mysqli_query($db_link, "SHOW INDEX FROM $table WHERE key_name LIKE \"$index\"");
     $res = mysqli_fetch_row($mysqli_result);
 
     // if index does not exist, then add it
     if (!$res) {
         $res = mysqli_query(
-            $dbTmp,
+            $db_link,
             "ALTER TABLE `$table` ".$sql
         );
     }
@@ -76,10 +76,10 @@ function addIndexIfNotExist($table, $index, $sql)
 
 function tableExists($tablename)
 {
-    global $dbTmp, $database;
+    global $db_link, $database;
 
     $res = mysqli_query(
-        $dbTmp,
+        $db_link,
         "SELECT COUNT(*) as count
         FROM information_schema.tables
         WHERE table_schema = '".$database."'
@@ -114,14 +114,29 @@ $tree = new Tree\NestedTree\NestedTree(
 // dataBase
 $res = "";
 
-
-$dbTmp = mysqli_connect(
+// Test DB connexion
+$pass = defuse_return_decrypted($pass);
+if (mysqli_connect(
     $server,
     $user,
     $pass,
     $database,
     $port
-);
+)
+) {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+} else {
+    $res = "Impossible to get connected to server. Error is: ".addslashes(mysqli_connect_error());
+    echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: '.addslashes(mysqli_connect_error()).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 // 2.1.27 check with DEFUSE
 // check if library defuse already on-going here
@@ -129,7 +144,7 @@ $dbTmp = mysqli_connect(
 if (isset($_SESSION['tp_defuse_installed']) !== true) {
     $_SESSION['tp_defuse_installed'] = false;
     $columns = mysqli_query(
-        $dbTmp,
+        $db_link,
         "show columns from ".$pre."items"
     );
     while ($c = mysqli_fetch_assoc($columns)) {
@@ -305,11 +320,11 @@ $res1 = "na";
 foreach ($val as $elem) {
     //Check if exists before inserting
     $queryRes = mysqli_query(
-        $dbTmp,
+        $db_link,
         "SELECT COUNT(*) FROM ".$pre."misc
         WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
     );
-    if (mysqli_error($dbTmp)) {
+    if (mysqli_error($db_link)) {
         echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].' - '.
             addslashes($queryRes).'"}]';
         exit();
@@ -317,27 +332,27 @@ foreach ($val as $elem) {
         $resTmp = mysqli_fetch_row($queryRes);
         if ($resTmp[0] === 0) {
             $queryRes = mysqli_query(
-                $dbTmp,
+                $db_link,
                 "INSERT INTO `".$pre."misc`
                 (`type`, `intitule`, `valeur`) VALUES
                 ('".$elem[0]."', '".$elem[1]."', '".
                 str_replace("'", "", $elem[2])."');"
             );
-            if (mysqli_error($dbTmp)) {
-                echo '[{"finish":"1", "msg":"", "error":"MySQL Error1! '.addslashes(mysqli_error($dbTmp)).'"}]';
+            if (mysqli_error($db_link)) {
+                echo '[{"finish":"1", "msg":"", "error":"MySQL Error1! '.addslashes(mysqli_error($db_link)).'"}]';
                 exit();
             }
         } else {
             // Force update for some settings
             if ($elem[3] === 1) {
                 $queryRes = mysqli_query(
-                    $dbTmp,
+                    $db_link,
                     "UPDATE `".$pre."misc`
                     SET `valeur` = '".$elem[2]."'
                     WHERE `type` = '".$elem[0]."' AND `intitule` = '".$elem[1]."'"
                 );
-                if (mysqli_error($dbTmp)) {
-                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error2! '.addslashes(mysqli_error($dbTmp)).'"}]';
+                if (mysqli_error($db_link)) {
+                    echo '[{"finish":"1", "msg":"", "error":"MySQL Error2! '.addslashes(mysqli_error($db_link)).'"}]';
                     exit();
                 }
             }
@@ -387,115 +402,115 @@ $res2 = addIndexIfNotExist($pre.'items', 'restricted_inactif_idx', 'ADD INDEX `r
 
 # Alter tables
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."log_items MODIFY id_user INT(8)"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."restriction_to_roles MODIFY role_id INT(12)"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."restriction_to_roles MODIFY item_id INT(12)"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."items MODIFY pw TEXT"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users MODIFY pw VARCHAR(400)"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."cache CHANGE `login` `login` VARCHAR( 200 ) CHARACTER NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."log_system CHANGE `field_1` `field_1` VARCHAR( 250 ) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."keys CHANGE `table` `sql_table` VARCHAR( 25 ) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users MODIFY `key_tempo` varchar(100) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."categories CHANGE `type` `type` varchar(50) NULL default ''"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."categories CHANGE `order` `order` int(12) NOT NULL default '0'"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `derniers` `derniers` text NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `key_tempo` `key_tempo` varchar(100) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `last_pw_change` `last_pw_change` varchar(30) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `last_pw` `last_pw` text NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `fonction_id` `fonction_id` varchar(255) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `groupes_interdits` `groupes_interdits` varchar(255) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `last_connexion` `last_connexion` varchar(30) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `favourites` `favourites` varchar(300) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `latest_items` `latest_items` varchar(300) NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `avatar` `avatar` varchar(255) NOT null DEFAULT ''"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."users CHANGE `avatar_thumb` `avatar_thumb` varchar(255) NOT null DEFAULT ''"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."log_items CHANGE `raison` `raison` text NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."log_items CHANGE `raison_iv` `raison_iv` text NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."roles_values CHANGE `type` `type` VARCHAR( 5 ) NOT NULL DEFAULT 'R'"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."suggestion CHANGE `suggestion_key` `pw_iv` TEXT NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."suggestion CHANGE `key` `pw_iv` TEXT NULL"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE ".$pre."suggestion CHANGE `password` `pw` TEXT NULL"
 );
 
@@ -633,7 +648,7 @@ $res2 = addColumnIfNotExist(
 );
 
 // Clean timestamp for users table
-mysqli_query($dbTmp, "UPDATE ".$pre."users SET timestamp = ''");
+mysqli_query($db_link, "UPDATE ".$pre."users SET timestamp = ''");
 
 ## Alter nested_tree table
 $res2 = addColumnIfNotExist(
@@ -659,7 +674,7 @@ addIndexIfNotExist(
 
 ## TABLE TAGS
 $res8 = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."tags` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `tag` varchar(30) NOT NULL,
@@ -668,15 +683,15 @@ $res8 = mysqli_query(
     UNIQUE KEY `id` (`id`)
     );"
 );
-if (mysqli_error($dbTmp)) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (mysqli_error($db_link)) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table TAGS! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE LOG_SYSTEM
 $res8 = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."log_system` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `type` varchar(20) NOT NULL,
@@ -686,21 +701,21 @@ $res8 = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if (empty(mysqli_error($dbTmp)) === true) {
+if (empty(mysqli_error($db_link)) === true) {
     mysqli_query(
-        $dbTmp,
+        $db_link,
         "ALTER TABLE ".$pre."log_system
         ADD `field_1` VARCHAR(250) NOT NULL"
     );
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LOG_SYSTEM! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LOG_SYSTEM! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE 10 - FILES
 $res9 = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."files` (
     `id` int(11) NOT null AUTO_INCREMENT,
     `id_item` int(11) NOT NULL,
@@ -712,26 +727,26 @@ $res9 = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table FILES! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE `".$pre."files`
     CHANGE id id INT(11) AUTO_INCREMENT PRIMARY KEY;"
 );
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "ALTER TABLE `".$pre."files`
     CHANGE name name VARCHAR(100) NOT NULL;"
 );
 
 ## TABLE CACHE
-mysqli_query($dbTmp, "DROP TABLE IF EXISTS `".$pre."cache`");
+mysqli_query($db_link, "DROP TABLE IF EXISTS `".$pre."cache`");
 $res8 = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."cache` (
     `id` int(12) NOT NULL,
     `label` varchar(50) NOT NULL,
@@ -746,22 +761,22 @@ $res8 = mysqli_query(
     `renewal_period` TINYINT(4) NOT null DEFAULT '0'
     );"
 );
-if (empty(mysqli_error($dbTmp)) === true) {
+if (empty(mysqli_error($db_link)) === true) {
     //ADD VALUES
     $sql = "SELECT *
             FROM ".$pre."items as i
             INNER JOIN ".$pre."log_items as l ON (l.id_item = i.id)
             AND l.action = 'at_creation'
             WHERE i.inactif=0";
-    $rows = mysqli_query($dbTmp, $sql);
+    $rows = mysqli_query($db_link, $sql);
     while ($reccord = mysqli_fetch_array($rows)) {
         //Get all TAGS
         $tags = "";
         $itemsRes = mysqli_query(
-            $dbTmp,
+            $db_link,
             "SELECT tag FROM ".$pre."tags
             WHERE item_id=".$reccord['id']
-        ) or die(mysqli_error($dbTmp));
+        ) or die(mysqli_error($db_link));
         $itemTags = mysqli_fetch_array($itemsRes);
         if (!empty($itemTags)) {
             foreach ($itemTags as $itemTag) {
@@ -779,7 +794,7 @@ if (empty(mysqli_error($dbTmp)) === true) {
 
         //store data
         mysqli_query(
-            $dbTmp,
+            $db_link,
             "INSERT INTO ".$pre."cache
             VALUES (
             '".$reccord['id']."',
@@ -797,8 +812,8 @@ if (empty(mysqli_error($dbTmp)) === true) {
         );
     }
 } else {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CACHE! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CACHE! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
@@ -807,7 +822,7 @@ if (empty(mysqli_error($dbTmp)) === true) {
    *  By 2 tables ROLES
 */
 $res9 = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."roles_title` (
     `id` int(12) NOT NULL,
     `title` varchar(50) NOT NULL,
@@ -816,9 +831,9 @@ $res9 = mysqli_query(
     `creator_id` int(11) NOT null DEFAULT '0'
     );"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_title! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_title! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 addColumnIfNotExist(
@@ -838,15 +853,15 @@ addColumnIfNotExist(
 );
 
 $res10 = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."roles_values` (
     `role_id` int(12) NOT NULL,
     `folder_id` int(12) NOT NULL
     );"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_values! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table roles_values! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 if (tableExists($pre."functions")) {
@@ -857,13 +872,13 @@ if (tableExists($pre."functions")) {
 if ($tableFunctionExists === true) {
     //Get data from tables FUNCTIONS and populate new ROLES tables
     $rows = mysqli_query(
-        $dbTmp,
+        $db_link,
         "SELECT * FROM ".$pre."functions"
     );
     while ($reccord = mysqli_fetch_array($rows)) {
         //Add new role title
         mysqli_query(
-            $dbTmp,
+            $db_link,
             "INSERT INTO ".$pre."roles_title
             VALUES (
                 '".$reccord['id']."',
@@ -875,7 +890,7 @@ if ($tableFunctionExists === true) {
         foreach (explode(';', $reccord['groupes_visibles']) as $folderId) {
             if (!empty($folderId)) {
                 mysqli_query(
-                    $dbTmp,
+                    $db_link,
                     "INSERT INTO ".$pre."roles_values
                     VALUES (
                     '".$reccord['id']."',
@@ -888,12 +903,12 @@ if ($tableFunctionExists === true) {
 
     //Now alter table roles_title in order to create a primary index
     mysqli_query(
-        $dbTmp,
+        $db_link,
         "ALTER TABLE `".$pre."roles_title`
         ADD PRIMARY KEY(`id`)"
     );
     mysqli_query(
-        $dbTmp,
+        $db_link,
         "ALTER TABLE `".$pre."roles_title`
         CHANGE `id` `id` INT(12) NOT null AUTO_INCREMENT "
     );
@@ -904,12 +919,12 @@ if ($tableFunctionExists === true) {
     );
 
     //Drop old table
-    mysqli_query($dbTmp, "DROP TABLE ".$pre."functions");
+    mysqli_query($db_link, "DROP TABLE ".$pre."functions");
 }
 
 ## TABLE KB
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."kb` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `category_id` int(12) NOT NULL,
@@ -920,52 +935,52 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
     );"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE KB_CATEGORIES
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."kb_categories` (
     `id` int(12) NOT null AUTO_INCREMENT,
     `category` varchar(50) NOT NULL,
     PRIMARY KEY (`id`)
     );"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_CATEGORIES! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE KB_ITEMS
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."kb_items` (
     `kb_id` tinyint(12) NOT NULL,
     `item_id` tinyint(12) NOT NULL
      );"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table KB_ITEMS! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE restriction_to_roles
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."restriction_to_roles` (
     `role_id` tinyint(12) NOT NULL,
     `item_id` tinyint(12) NOT NULL
     ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table RESTRICTION_TO_ROLES! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 } else {
     $res = addIndexIfNotExist($pre.'restriction_to_roles', 'role_id_idx', 'ADD INDEX `role_id_idx` (`role_id`)');
@@ -973,7 +988,7 @@ if (empty(mysqli_error($dbTmp)) === false) {
 
 ## TABLE Languages
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."languages` (
     `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY ,
     `name` VARCHAR(50) NOT null ,
@@ -982,17 +997,17 @@ $res = mysqli_query(
     `flag` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table LANGUAGES! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 $resTmp = mysqli_fetch_row(
-    mysqli_query($dbTmp, "SELECT COUNT(*) FROM ".$pre."languages")
+    mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre."languages")
 );
-mysqli_query($dbTmp, "TRUNCATE TABLE ".$pre."languages");
+mysqli_query($db_link, "TRUNCATE TABLE ".$pre."languages");
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "INSERT IGNORE INTO `".$pre."languages`
     (`id`, `name`, `label`, `code`, `flag`) VALUES
     ('', 'french', 'French' , 'fr', 'fr.png'),
@@ -1016,7 +1031,7 @@ mysqli_query(
 
 ## TABLE EMAILS
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."emails` (
     `timestamp` INT(30) NOT null ,
     `subject` VARCHAR(255) NOT null ,
@@ -1025,15 +1040,15 @@ $res = mysqli_query(
     `status` VARCHAR(30) NOT NULL
     ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table EMAILS! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE AUTOMATIC DELETION
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."automatic_del` (
     `item_id` int(11) NOT NULL,
     `del_enabled` tinyint(1) NOT NULL,
@@ -1041,30 +1056,30 @@ $res = mysqli_query(
     `del_value` varchar(35) NOT NULL
     ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table AUTOMATIC_DEL! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE items_edition
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."items_edition` (
     `item_id` int(11) NOT NULL,
     `user_id` int(11) NOT NULL,
     `timestamp` varchar(50) NOT NULL
    ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table items_edition! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE categories
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."categories` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `parent_id` int(12) NOT NULL,
@@ -1076,15 +1091,15 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table CATEGORIES! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE categories_items
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."categories_items` (
     `id` int(12) NOT NULL AUTO_INCREMENT,
     `field_id` int(11) NOT NULL,
@@ -1093,29 +1108,29 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_items! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE categories_folders
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."categories_folders` (
     `id_category` int(12) NOT NULL,
     `id_folder` int(12) NOT NULL
    ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table categories_folders! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE api
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."api` (
     `id` int(20) NOT NULL AUTO_INCREMENT,
     `type` varchar(15) NOT NULL,
@@ -1125,15 +1140,15 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table API! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE otv
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."otv` (
     `id` int(10) NOT NULL AUTO_INCREMENT,
     `timestamp` text NOT NULL,
@@ -1143,15 +1158,15 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
    ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table OTV! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 ## TABLE suggestion
 $res = mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."suggestion` (
     `id` tinyint(12) NOT NULL AUTO_INCREMENT,
     `label` varchar(255) NOT NULL,
@@ -1165,15 +1180,15 @@ $res = mysqli_query(
     PRIMARY KEY (`id`)
     ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table SUGGESTIONS! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
 # TABLE EXPORT
 mysqli_query(
-    $dbTmp,
+    $db_link,
     "CREATE TABLE IF NOT EXISTS `".$pre."export` (
     `id` int(12) NOT NULL,
     `label` varchar(255) NOT NULL,
@@ -1183,9 +1198,9 @@ mysqli_query(
     `path` varchar(255) NOT NULL
     ) CHARSET=utf8;"
 );
-if (empty(mysqli_error($dbTmp)) === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears on table export! '.addslashes(mysqli_error($dbTmp)).'"}]';
-    mysqli_close($dbTmp);
+if (empty(mysqli_error($db_link)) === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears on table export! '.addslashes(mysqli_error($db_link)).'"}]';
+    mysqli_close($db_link);
     exit();
 }
 
@@ -1193,12 +1208,12 @@ if (empty(mysqli_error($dbTmp)) === false) {
 $allowedTags = '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul>'.
     '<blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>';
 $cleanRes = mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT id,description FROM `".$pre."items`"
 );
 while ($cleanData = mysqli_fetch_array($cleanRes)) {
     mysqli_query(
-        $dbTmp,
+        $db_link,
         "UPDATE `".$pre."items`
         SET description = '".strip_tags($cleanData['description'], $allowedTags).
         "' WHERE id = ".$cleanData['id']
@@ -1207,23 +1222,23 @@ while ($cleanData = mysqli_fetch_array($cleanRes)) {
 
 // 2.1.23 - check if personal need to be upgraded
 $tmpResult = mysqli_query(
-    $dbTmp,
-    "SELECT `pw_iv` FROM ".$pre."items WHERE perso='1'"
+    $db_link,
+    "SELECT `pw`, `pw_iv` FROM ".$pre."items WHERE perso='1'"
 );
 $tmp = mysqli_fetch_row($tmpResult);
-if ($tmp[0] == "") {
-    mysqli_query($dbTmp, "UPDATE ".$pre."users SET upgrade_needed = true WHERE 1 = 1");
+if ($tmp[1] === "" && substr($tmp[0], 0, 3) !== "def") {
+    mysqli_query($db_link, "UPDATE ".$pre."users SET upgrade_needed = true WHERE 1 = 1");
 }
 
 /*// Since 2.1.17, encrypt process is changed.
 // Previous PW need to be re-encrypted
 if (@mysqli_query(
-    $dbTmp,
+    $db_link,
     "SELECT valeur FROM ".$pre."misc
     WHERE type='admin' AND intitule = 'encryption_protocol'"
 )) {
     $tmpResult = mysqli_query(
-    $dbTmp,
+    $db_link,
         "SELECT valeur FROM ".$pre."misc
         WHERE type='admin' AND intitule = 'encryption_protocol'"
     );
@@ -1231,7 +1246,7 @@ if (@mysqli_query(
     if ($tmp[0] != "ctr") {
         //count elem
         $res = mysqli_query(
-    $dbTmp,
+    $db_link,
             "SELECT COUNT(*) FROM ".$pre."items
             WHERE perso = '0'"
         );
@@ -1247,6 +1262,6 @@ if (@mysqli_query(
     }
 }*/
 
-mysqli_close($dbTmp);
+mysqli_close($db_link);
 
 echo '[{"finish":"1", "msg":"Database has been populated with Original Data.", "error":""}]';

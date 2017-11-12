@@ -33,7 +33,9 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
 
 <script type="text/javascript">
 //<![CDATA[
+    // Some global declaration
     var query_in_progress = 0;
+    var clipboard;
 
     $(document).on('focusin', function(e) {e.stopImmediatePropagation();});
 
@@ -160,6 +162,11 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || "0";
 
+    // Delete existing clipboard
+    if (clipboard) {
+        clipboard.destroy();
+    }
+
     // case where we should stop listing the items
     if ($("#items_listing_should_stop").val() === "1") {
         requestRunning = false;
@@ -242,15 +249,24 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#pf_selected").val(data.IsPersonalFolder);
 
                     // display path of folders
-                    if (data.arborescence != undefined) {
+                    if ((data.arborescence !== undefined && data.arborescence !== "") || $("#tmp_arbo").length > 0) {
                         var path_maxlength = 420;
+                        var arbo = '';
+
+                        // check arbo and rebuild it
+                        if ($("#tmp_arbo").length > 0) {
+                            arbo = $("#tmp_arbo").html();
+                        } else {
+                            arbo = rebuildPath(data.arborescence);
+                        }
+
                         if ($("#path_fontsize").val() != "") $("#items_path_var").css('font-size', $("#path_fontsize").val());
                         if (data.IsPersonalFolder === 0) {
-                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + data.arborescence);
+                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;' + arbo);
                         } else {
-                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['personal_folder']); ?>&nbsp;:&nbsp;' + data.arborescence);
+                            $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;<?php echo addslashes($LANG['personal_folder']); ?>&nbsp;:&nbsp;' + arbo);
                         }
-                        var path_levels = data.arborescence.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
+                        var path_levels = arbo.split('&nbsp;<i class="fa fa-caret-right"></i>&nbsp;').length;
                         if ($("#items_path_var").width() > path_maxlength) {
                             $("#path_fontsize").val($("#items_path_var").css('font-size'));
                             // start reducing size of font
@@ -289,6 +305,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $("#items_path_var").html('');
                     }
 
+                    // Remove span with arbo
+                    $("#tmp_arbo").remove();
+
                     // store the categories to be displayed
                     if (data.displayCategories !== undefined) {
                         $("#display_categories").val(data.displayCategories);
@@ -313,6 +332,14 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $("#items_list_loader").after('<span id="items_loading_progress">' + Math.round(data.next_start*100/data.counter_full, 0) + '%</span>');
                     } else {
                         $("#items_loading_progress").html(Math.round(data.next_start*100/data.counter_full, 0) + '%');
+                    }
+                    // Store arbo
+                    if (data.arborescence !== undefined && data.arborescence !== "" && $("#tmp_arbo").length === 0) {
+                        // Rebuild path
+                        new_path = rebuildPath(data.arborescence);
+
+                        // Store path in tempo element
+                        $("body").append('<span class="hidden" id="tmp_arbo">'+new_path+'</span>');
                     }
                 }
 
@@ -344,7 +371,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#more_items").remove();
 
                     // show items
-                    $("#full_items_list").append(data.items_html);
+                    showItemsList(data.html_json);
+
                     if (data.list_to_be_continued === "yes") {
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
@@ -375,8 +403,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
 
                     // show items
-                    $("#full_items_list").append(data.items_html);
+                    showItemsList(data.html_json);
 
+                    // Prepare next iteration if needed
                     if (data.list_to_be_continued === "yes") {
                         //set next start for query
                         $("#query_next_start").val(data.next_start);
@@ -395,57 +424,119 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         }
                     }
 
-                    //If no data then empty
-                    if (data.array_items != null) {
-                        $(".item_draggable").draggable({
-                            handle: '.grippy',
-                            cursor: "move",
-                            opacity: 0.4,
-                            appendTo: 'body',
-                            stop: function(event, ui) {
-                                $(this).removeClass("ui-state-highlight");
-                            },
-                            start: function(event, ui) {
-                                $(this).addClass("ui-state-highlight");
-                            },
-                            helper: function(event) {
-                                return $("<div class='ui-widget-header' id='drop_helper'>"+"<?php echo addslashes($LANG['drag_drop_helper']); ?>"+"</div>");
-                            }
-                        });
-                        $(".folder").droppable({
-                            hoverClass: "ui-state-error",
-                            tolerance: 'pointer',
-                            drop: function(event, ui) {
-                                ui.draggable.addClass("hidden");
-                                LoadingPage();
-                                //move item
-                                $.post(
-                                    "sources/items.queries.php",
-                                    {
-                                        type      : "move_item",
-                                        item_id   : ui.draggable.attr("id"),
-                                        folder_id : $(this).attr("id").substring(4),
-                                        key       : "<?php echo $_SESSION['key']; ?>"
-                                    },
-                                    function(data) {
-                                        //increment / decrement number of items in folders
-                                        $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
-                                        $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
-                                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
-                                        LoadingPage();
-                                        displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
-                                    },
-                                    "json"
-                               );
-                            }
-                        });
-                    }
-
                     proceed_list_update(stop_listing_current_folder);
                 }
             }
         );
     }
+}
+
+/**
+ * Builds the HTML list of Items
+ * @param  {[type]} data [description]
+ * @return {[type]}      [description]
+ */
+function showItemsList(data)
+{
+    $.each((data), function(i, value) {
+        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = '';
+
+        // Prepare item icon
+        if (value.canMove === 1 && value.accessLevel === 0) {
+            item_class = "item_draggable";
+            item_span = '<span style="cursor:hand;" class="grippy"><span class="fa fa-sm fa-arrows mi-grey-1"></span>&nbsp;</span>';
+        } else {
+            item_class = "item";
+            item_span = '<span style="margin-left:11px;"></span>';
+        }
+
+        // Prepare error message
+        if (value.pw_status === "encryption_error") {
+            pwd_error = '<span class="fa fa-warning fa-sm mi-red tip" title="<?php echo addslashes($LANG['pw_encryption_error']);?>"></span>&nbsp;';
+        }
+
+        // Prepare anyone can modify icon
+        if (value.anyone_can_modify === "1") {
+            icon_all_can_modify = '<span class="fa fa-pencil fa-sm mi-grey-1 tip" title="<?php echo addslashes($LANG['item_menu_collab_enable']);?>"></span>&nbsp;&nbsp;';
+        }
+
+        // Prepare mini icons
+        if (value.copy_to_clipboard_small_icons === "1") {
+            // Login icon
+            if (value.login !== "") {
+                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+            }
+            // Pwd icon
+            if (value.pw !== "") {
+                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
+            }
+
+            // Now check if pwd is empty. If it is then warn user
+            if (value.pw === "") {
+                pwd_error = '&nbsp;<span class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['password_is_empty']);?>"></span>&nbsp;';
+            }
+        }
+
+        // Prepare Favorite icon
+        if (value.display_item === 1 && value.enable_favourites === "1") {
+            if (value.in_favorite === 1) {
+                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
+                    '<span class="fa fa-sm fa-star mi-yellow" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip"></span>' +
+                    '</span>';
+            } else {
+                icon_favorite = '<span id="quick_icon_fav_'+value.item_id+'" title="Manage Favorite" class="cursor tip">' +
+                    '<span class="fa fa-sm fa-star-o mi-black" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip"></span>' +
+                    '</span>';
+            }
+        }
+
+        // Prepare Description
+        if (value.desc !== "") {
+            value.desc = '[' + value.desc + ']';
+        }
+
+        // Appenditem row
+        $("#full_items_list").append(
+            '<li name="' + value.label + '" ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
+            '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;' +
+           '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
+            '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
+            value.desc +
+            '</div></font></a>' +
+            '<span style="float:right;margin-top:2px;">' +
+            pwd_error +
+            icon_all_can_modify +
+            icon_login +
+            icon_pwd +
+            icon_favorite +
+            '</span>' +
+            '</li>'
+        );
+    });
+}
+
+/**
+ * Builds the HTML path
+ * @param  {[type]} data [description]
+ * @return {[type]}      [description]
+ */
+function rebuildPath(data)
+{
+    var new_path = new_path_elem = '';
+    $.each((data), function(i, value) {
+        new_path_elem = '';
+        if (value['visible'] === 1) {
+            new_path_elem = ' style="cursor:pointer;" onclick="ListerItems('+value['id']+', \'\', 0)"';
+        }
+
+        if (new_path === "") {
+            new_path = '<a class="path_element" id="path_elem_'+value['id']+'"'+new_path_elem+'>'+value['title']+'</a>';
+        } else {
+            new_path += '&nbsp;<span class="fa fa-caret-right"></span>&nbsp;<a class="path_element" id="path_elem_'+value['id']+'"'+new_path_elem+'>'+value['title']+'</a>'
+        }
+    });
+
+    return new_path;
 }
 
 function pwGenerate(elem)
@@ -513,9 +604,22 @@ function RecupComplexite(val, edit, context)
             item_id : $("#selected_items").val()
         },
         function(data) {
-            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            } catch (e) {
+                // error
+                $("#div_loading").addClass("hidden");
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                return;
+            }
+
             funcReturned = 1;
-            if (data.error == undefined || data.error == 0) {
+            if (data.error == undefined
+                || data.error === ""
+            ) {
                 $("#complexite_groupe").val(data.val);
                 $("#selected_folder_is_personal").val(data.personal);
                 if (edit == 1) {
@@ -525,15 +629,18 @@ function RecupComplexite(val, edit, context)
                     $("#complex_attendue").html("<b>"+data.complexity+"</b>");
                     $("#afficher_visibilite").html("<span class='fa fa-users'></span>&nbsp;<b>"+data.visibility+"</b>");
                 }
-            } else if (data.error == "no_edition_possible") {
+            } else if (data.error === "no_edition_possible") {
                 $("#div_dialog_message_text").html(data.error_msg);
                 $("#div_dialog_message").dialog("open");
                 funcReturned = 0;
-            } else if (data.error == "user_is_readonly") {
+            } else if (data.error === "user_is_readonly") {
                 displayMessage(data.message);
                 funcReturned = 0;
-            } else if (data.error == "no_folder_creation_possible" || data.error == "no_folder_edition_possible"  || data.error == "delete_folder") {
-                displayMessage('<i class="fa fa-warning"></i>&nbsp;' + data.error_msg);
+            } else if (data.error === "no_folder_creation_possible"
+                || data.error === "no_folder_edition_possible"
+                || data.error === "delete_folder") {
+                displayMessage('<i class="fa fa-warning"></i>&nbsp;' + data.error_msg
+            );
                 $("#div_loading").addClass("hidden");
                 funcReturned = 0;
             } else {
@@ -543,7 +650,7 @@ function RecupComplexite(val, edit, context)
             }
             $("#div_loading").addClass("hidden");
         }
-   );
+    );
     $.ajaxSetup({async: true});
     return funcReturned;
 }
@@ -706,7 +813,7 @@ function AjouterItem()
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
                         $("#div_dialog_message").dialog("open");
 
-                        return;
+                        return false;
                     }
 
                     //Check errors
@@ -1043,14 +1150,14 @@ function EditerItem()
                         $(".round-grey").addClass("ui-state-highlight ui-corner-all");
 
                         //Prepare clipboard copies
-                        if ($('#edit_pw1').val() != "") {
+                        if ($('#edit_pw1').val() !== "") {
                             new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
                                 text: function() {
                                     return unsanitizeString($('#edit_pw1').val());
                                 }
                             });
 
-                            $("#button_quick_pw_copy").show();
+                            $("#button_quick_pw_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_pw_copy").addClass("hidden");
                         }
@@ -1060,7 +1167,7 @@ function EditerItem()
                                     return unsanitizeString($('#edit_item_login').val());
                                 }
                             });
-                            $("#button_quick_login_copy").show();
+                            $("#button_quick_login_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_login_copy").addClass("hidden");
                         }
@@ -1122,6 +1229,8 @@ function AddNewFolder()
     } else if (/^\d+$/.test($("#new_rep_titre").val())) {
         // check if folder title contains only numbers
         $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").removeClass("hidden");
+    } else if ($("#new_rep_groupe option:selected").length === 0) {
+        $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_fields_2']); ?>").removeClass("hidden");
     } else if ($("#user_ongoing_action").val() == "") {
         $("#add_folder_loader").removeClass("hidden");
         $("#user_ongoing_action").val("true");
@@ -1271,7 +1380,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         return false;
     } else if ($('#recherche_group_pf').val() === "0" || ($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "1")) {
         // Double click
-        if (open_edit == 1 && $("#item_editable").val() == 1 && reload != 1) {
+        if (open_edit === "1" && $("#item_editable").val() === "1" && reload !== "1") {
             $("#request_ongoing").val("");
             open_edit_item_div(
                 <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
@@ -1544,7 +1653,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 e.clearSelection();
                             });
 
-                            $("#button_quick_pw_copy").show();
+                            $("#button_quick_pw_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_pw_copy").addClass("hidden");
                         }
@@ -1559,7 +1668,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                                 e.clearSelection();
                             });
-                            $("#button_quick_login_copy").show();
+                            $("#button_quick_login_copy").removeClass("hidden");
                         } else {
                             $("#button_quick_login_copy").addClass("hidden");
                         }
@@ -1736,28 +1845,34 @@ function showDetailsStep2(id, param)
    * $action = 0 => Make not favorite
    * $action = 1 => Make favorite
 */
+var quick_icon_query_status = true;
 function ActionOnQuickIcon(id, action)
 {
-    //change quick icon
-    if (action == 1) {
-        $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star mi-yellow' onclick='ActionOnQuickIcon("+id+",0)'></i>");
-    } else if (action == 0) {
-        $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star-o' onclick='ActionOnQuickIcon("+id+",1)'></i>");
-    }
-
-    //Send query
-    LoadingPage();
-    $.post("sources/items.queries.php",
-        {
-            type    : 'action_on_quick_icon',
-            id      : id,
-            action  : action
-        },
-        function(data) {
-            LoadingPage();
-            displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
+    if (quick_icon_query_status === true) {
+        quick_icon_query_status = false;
+        //change quick icon
+        if (action == 1) {
+            $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star mi-yellow' onclick='ActionOnQuickIcon("+id+",0)'></i>");
+        } else if (action == 0) {
+            $("#quick_icon_fav_"+id).html("<i class='fa fa-sm fa-star-o' onclick='ActionOnQuickIcon("+id+",1)'></i>");
         }
-   );
+
+
+        //Send query
+        LoadingPage();
+        $.post("sources/items.queries.php",
+            {
+                type    : 'action_on_quick_icon',
+                id      : id,
+                action  : action
+            },
+            function(data) {
+                LoadingPage();
+                displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
+                quick_icon_query_status = true;
+            }
+       );
+    }
 }
 
 //###########
@@ -1896,7 +2011,7 @@ function open_add_item_div()
         var compReturn = RecupComplexite($('#hid_cat').val(), 0);
 
         // exclude because user is read only
-        if (compReturn == 0) {
+        if (compReturn === 0) {
             $("#div_loading").addClass("hidden");
             return false;
         }
@@ -2275,7 +2390,7 @@ PreviewImage = function(uri,title) {
             });
         }
     );
-}
+};
 
 function notify_click(status)
 {
@@ -2394,7 +2509,10 @@ function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
     }
 
     if (refresh_visible_folders === 1) {
-        refreshVisibleFolders();
+        $(this).delay(500).queue(function() {
+            refreshVisibleFolders();
+            $(this).dequeue();
+        });
     }
 }
 
@@ -2412,11 +2530,52 @@ function refreshVisibleFolders()
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             //check if format error
-            if (data.error == "") {
+            if (data.error === "") {
+                // Build html lists
+                var html_visible = '',
+                    html_full_visible = '',
+                    html_active_visible = '',
+                    indentation = '',
+                    disabled = '';
+
+                // Shall we show the root folder
+                if (data.html_json.can_create_root_folder === 1) {
+                    html_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                    html_full_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                    html_active_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                }
+
+                //
+                $.each(data.html_json.folders, function(i, value) {
+                    // Build identation
+                    indentation = '';
+                    for (x = 1; x <= value.level; x += 1) {
+                        indentation += "&nbsp;&nbsp;";
+                    }
+
+                    // Is it disabled?
+                    if (value.disabled === 1) {
+                        disabled = ' disabled="disabled"';
+                    } else {
+                        disabled = '';
+                    }
+
+                    if (value.is_visible_active === 1) {
+                        disabled_active_visible = ' disabled="disabled"';
+                    } else {
+                        disabled_active_visible = '';
+                    }
+
+                    // Prepare options lists
+                    html_visible += '<option value="'+value.id+'"'+disabled+'>'+indentation+value.title+'</option>';
+                    html_full_visible += '<option value="'+value.id+'">'+indentation+value.title+'</option>';
+                    html_active_visible += '<option value="'+value.id+'"'+disabled_active_visible+'>'+indentation+value.title+'</option>';
+                });
+
                 // append new list
-                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(data.selectVisibleFoldersOptions);
-                $("#move_folder_id").find('option').remove().end().append(data.selectFullVisibleFoldersOptions);
-                $("#copy_in_folder").find('option').remove().end().append(data.selectVisibleActiveFoldersOptions);
+                $("#categorie, #edit_categorie, #new_rep_groupe, #edit_folder_folder, #delete_rep_groupe").find('option').remove().end().append(html_visible);
+                $("#move_folder_id").find('option').remove().end().append(html_full_visible);
+                $("#copy_in_folder").find('option').remove().end().append(html_active_visible);
 
                 // remove ROOT option if exists
                 $('#edit_folder_folder option[value="0"]').remove();
@@ -2545,9 +2704,34 @@ $(function() {
     $("#custom_pw, #edit_custom_pw").buttonset();
     $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
 
-    //Build multiselect box
+    // Launch items loading
+    if ($("#jstree_group_selected").val() == "") {
+        var first_group = 1;
+    } else {
+        var first_group = $("#jstree_group_selected").val();
+    }
 
-    //Build tree
+    if ($("#hid_cat").val() != "") {
+        first_group = $("#hid_cat").val();
+    }
+
+    //load items
+    if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
+    else start = 0;
+
+    // load list of items
+    if (first_group !== "") {
+        ListerItems(first_group,'', start);
+    }
+
+    //Load item if needed and display items list
+    if ($("#open_id").val() !== "") {
+        AfficherDetailsItem($("#open_id").val());
+        //refreshTree($("#hid_cat").val(), "0");
+        $("#open_item_by_get").val("");
+    }
+
+    // Build tree
     $('#jstree').jstree({
         "core" : {
             "animation" : 0,
@@ -2580,7 +2764,10 @@ $(function() {
     });
 
     // load list of visible folders for current user
-    refreshVisibleFolders();
+    $(this).delay(500).queue(function() {
+        refreshVisibleFolders();
+        $(this).dequeue();
+    });
 
     $("#add_folder").click(function() {
         var posit = $('#item_selected').val();
@@ -2707,13 +2894,18 @@ $(function() {
                 language: "<?php echo $_SESSION['user_language_code']; ?>"
             });
             $(":button:contains('<?php echo addslashes($LANG['ok']); ?>')").prop("disabled", false);
-            $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").addClass("hidden");
+            $("#copy_item_info")
+                .addClass("ui-state-highlight ui-corner-all")
+                .addClass("hidden");
             $(".ui-tooltip").siblings(".tooltip").remove();
             $("#div_copy_item_to_folder_item").html("<center>"+$("#id_label").html()+"</center>");
         },
         buttons: {
             "<?php echo addslashes($LANG['ok']); ?>": function() {
-                $("#copy_item_info").addClass("ui-state-highlight ui-corner-all").show().html("<span><?php echo addslashes($LANG['please_wait'])." <i class=\'fa fa-cog fa-spin'></i>"; ?></span>");
+                $("#copy_item_info")
+                    .addClass("ui-state-highlight ui-corner-all")
+                    .removeClass("hidden")
+                    .html("<span><?php echo addslashes($LANG['please_wait'])." <i class=\'fa fa-cog fa-spin'></i>"; ?></span>");
                 $(":button:contains('<?php echo addslashes($LANG['ok']); ?>')").prop("disabled", true);
                 //Send query
                 $.post(
@@ -2739,7 +2931,7 @@ $(function() {
                             $("#copy_in_folder").val("");
                             $("#div_copy_item_to_folder").dialog('close');
                         }
-                        $("#copy_item_info").addClass("hidden");
+                        $("#copy_item_info").html('').addClass("hidden");
                     },
                     "json"
                );
@@ -3234,12 +3426,17 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 500,
-        height: 200,
+        height: 240,
         title: "<?php echo addslashes($LANG['share']); ?>",
         buttons: {
             "<?php echo addslashes($LANG['send']); ?>": function() {
-                $("#div_item_share_error").addClass("hidden");
-                if (IsValidEmail($("#item_share_email").val())) {    //check if email format is ok
+                $("#div_item_share_error")
+                    .addClass("hidden")
+                    .html('');
+                $("#div_item_share_status").removeClass("hidden");
+
+                // Check if email format is ok
+                if (IsValidEmail($("#item_share_email").val())) {
                     $("#div_item_share_status").show();
                     $.post(
                         "sources/items.queries.php",
@@ -3251,17 +3448,28 @@ $(function() {
                             key        : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
-                            $("#div_item_share_status").html("").addClass("hidden");
-                            if (data[0].error == "") {
+                            $("#div_item_share_status").addClass("hidden");
+                            if (data[0].error === "") {
+                                $("#div_item_share_init").addClass("hidden");
+                                $("#div_item_share_error").removeClass("ui-state-error").addClass("ui-state-highlight");
                                 $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']); ?>").show();
+
+                                // close dialog
+                                $(this).delay(1500).queue(function() {
+                                    $("#div_item_share").dialog('close');
+                                    $(this).dequeue();
+                                });
                             } else {
+                                $("#div_item_share_error").removeClass("ui-state-highlight").addClass("ui-state-error");
                                 $("#div_item_share_error").html(data[0].message).show();
                             }
                         },
                         "json"
                    );
                 } else {
-                    $("#div_item_share_error").html("<?php echo addslashes($LANG['bad_email_format']); ?>").show();
+                    $("#div_item_share_error")
+                        .html("<?php echo addslashes($LANG['bad_email_format']); ?>")
+                        .removeClass("hidden");
                 }
             },
             "<?php echo addslashes($LANG['close']); ?>": function() {
@@ -3270,6 +3478,9 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+            $("#div_item_share_error").addClass("ui-state-error hidden").html('');
+            $("#div_item_share_init").removeClass("hidden");
+            $("#item_share_email").val('');
         }
     });
     //<=
@@ -3584,33 +3795,6 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         up.refresh(); // Reposition Flash/Silverlight
     });
 
-    //Launch items loading
-    if ($("#jstree_group_selected").val() == "") {
-        var first_group = 1;
-    } else {
-        var first_group = $("#jstree_group_selected").val();
-    }
-
-    if ($("#hid_cat").val() != "") {
-        first_group = $("#hid_cat").val();
-    }
-
-    //load items
-    if (parseInt($("#query_next_start").val()) > 0) start = parseInt($("#query_next_start").val());
-    else start = 0;
-
-    // load list of items
-    if (first_group !== "") {
-        ListerItems(first_group,'', start);
-    }
-
-    //Load item if needed and display items list
-    if ($("#open_id").val() !== "") {
-        AfficherDetailsItem($("#open_id").val());
-        //refreshTree($("#hid_cat").val(), "0");
-        $("#open_item_by_get").val("");
-    }
-
     //Password meter for item creation
     $("#pw1").simplePassMeter({
         "requirements": {},
@@ -3912,7 +4096,7 @@ $('#item_details_ok').on('mousedown', '.unhide_masked_data', function(event) {
 });
 var showPwdContinuous = function(elem_id){
     if(mouseStillDown){
-        $('#'+elem_id).text($('#h'+elem_id).val());
+        $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).val() + '</span>');
         setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
         if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
@@ -3923,18 +4107,17 @@ var showPwdContinuous = function(elem_id){
         $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
         $('.tip').tooltipster({multiple: true});
     }
-}
+};
 
 var showPwd = function(){
     $("#visible_pw, #edit_visible_pw").toggle();
-}
+};
 
 /*
 * permits to save
 */
 function itemLog(log_case, item_id)
 {
-    console.log("> "+item_id);
     item_id = item_id || $('#id_item').val();
     $.post(
         "sources/items.logs.php",
@@ -4018,13 +4201,13 @@ function proceed_list_update(stop_proceeding)
         $("#items_list_loader").addClass("hidden");
 
         // prepare clipboard items
-        var clipboard = new Clipboard('.mini_login');
+        clipboard = new Clipboard('.mini_login');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['login_copied_clipboard']); ?>").show().fadeOut(1000);
             e.clearSelection();
         });
 
-        var clipboard = new Clipboard('.mini_pw');
+        clipboard = new Clipboard('.mini_pw');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']); ?>").show().fadeOut(1000);
             itemLog("item_password_copied", e.trigger.dataset.clipboardId);
@@ -4033,6 +4216,60 @@ function proceed_list_update(stop_proceeding)
 
         $(".tip").tooltipster({multiple: true});
         $(".mini_login, .mini_pw").css("cursor", "pointer");
+
+        // Prepare items dragable on folders
+        $(".item_draggable").draggable({
+            handle: '.grippy',
+            cursor: "move",
+            opacity: 0.4,
+            appendTo: 'body',
+            stop: function(event, ui) {
+                $(this).removeClass("ui-state-highlight");
+            },
+            start: function(event, ui) {
+                $(this).addClass("ui-state-highlight");
+            },
+            helper: function(event) {
+                return $("<div class='ui-widget-header' id='drop_helper'>"+"<?php echo addslashes($LANG['drag_drop_helper']); ?>"+"</div>");
+            }
+        });
+        $(".folder").droppable({
+            hoverClass: "ui-state-error",
+            tolerance: 'pointer',
+            drop: function(event, ui) {
+                ui.draggable.addClass("hidden");
+                LoadingPage();
+                //move item
+                $.post(
+                    "sources/items.queries.php",
+                    {
+                        type      : "move_item",
+                        item_id   : ui.draggable.attr("id"),
+                        folder_id : $(this).attr("id").substring(4),
+                        key       : "<?php echo $_SESSION['key']; ?>"
+                    },
+                    function(data) {
+                        LoadingPage();
+                        // check if errors
+                        if (data[0].error !== "") {
+                            if (data[0].error === "ERR_PSK_REQUIRED") {
+                                displayMessage("<?php echo addslashes($LANG['psk_required']); ?>");
+                            } else {
+                                displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+                            }
+                            ui.draggable.removeClass("hidden");
+                            return false;
+                        }
+                        //increment / decrement number of items in folders
+                        $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
+                        $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
+                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");                        
+                        displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
+                    },
+                    "json"
+               );
+            }
+        });
 
         var restricted_to_roles = <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
     echo 1;
@@ -4224,7 +4461,57 @@ function globalItemsSearch()
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['search_results']); ?>');
                 $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
-                $("#full_items_list").html(data.items_html);
+                //$("#full_items_list").html(data.items_html);
+
+                // Build HTML list
+                $.each(data.html_json, function(i, value) {
+                    // Prepare Description
+                    if (value.desc !== "") {
+                        value.desc = '&nbsp;<font size="1px">[' + value.desc + ']</font>';
+                    }
+
+                    if (value.copy_to_clipboard_small_icons === "1") {
+                        // Prepare Login
+                        if (value.login !== "") {
+                            value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+                        }
+
+                        // Prepare PWD
+                        if (value.pw !== "") {
+                            value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
+                        }
+
+                        // Prepare favorite
+                        if (value.enable_favourites === "1") {
+                            if (value.is_favorite === 1) {
+                                icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']);?>"></span>';
+                            } else {
+                                icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']);?>"></span>';
+                            }
+                        } else {
+                            icon_favorite = '';
+                        }
+                    } else {
+                        value.login = '';
+                        value.pw = '';
+                        icon_favorite = '';
+                    }
+
+                    // Append
+                    $("#full_items_list").append(
+                    '<li class="item trunc_line" id="'+value.item_id+'"><a id="fileclass'+value.item_id+'" class="file_search">' +
+                    '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']);?>"></span>&nbsp;' +
+                        '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')">'+value.label +
+                        value.desc +
+                        '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'</span>' +
+                        '</span><span style="float:right;margin:2px 10px 0px 0px;">' +
+                        value.login +
+                        value.pw +
+                        icon_favorite +
+                        '</span></li>'
+                    );
+                })
+
                 $("#items_list_loader").addClass("hidden");
             }
         );
@@ -4236,7 +4523,6 @@ function globalItemsSearch()
 */
 function searchItemsWithTags(tag)
 {
-    //console.log(">"+tag);
     if (tag == "") return false
 
     // wait
@@ -4271,8 +4557,9 @@ function loadOfflineDialog()
 {
     $("#dialog_offline_mode").dialog({
         open: function(event, ui) {
-            $("#div_offline_mode").load(
-                "<?php echo $SETTINGS['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+            loadHtml(
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.offline.php?key=<?php echo $_SESSION['key']; ?>",
+                "div_offline_mode"
             );
         }
     }).dialog("open");
@@ -4282,8 +4569,9 @@ function loadExportDialog()
 {
     $("#dialog_export_file").dialog({
         open: function(event, ui) {
-            $("#div_export_file").load(
-                "<?php echo $SETTINGS['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>", function(){}
+            loadHtml(
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.export.php?key=<?php echo $_SESSION['key']; ?>",
+                "div_export_file"
             );
         }
     }).dialog("open");
@@ -4293,8 +4581,9 @@ function loadImportDialog()
 {
     $("#dialog_import_file").dialog({
         open: function(event, ui) {
-            $("#div_import_file").load(
-                "<?php echo $SETTINGS['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(), function(){}
+            loadHtml(
+                "<?php echo $SETTINGS['cpassman_url']; ?>/items.import.php?key=<?php echo $_SESSION['key']; ?>&folder_id="+$("#hid_cat").val(),
+                "div_import_file"
             );
         }
     }).dialog("open");
@@ -4370,7 +4659,7 @@ $.fn.simulateClick = function() {
             this.click(); // IE Boss!
         }
     });
-}
+};
 
 
 // escape HTML characters
@@ -4380,6 +4669,6 @@ String.prototype.escapeHTML = function() {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-}
+};
 //]]>
 </script>
