@@ -1917,8 +1917,8 @@ switch ($post_type) {
             $posJsUrl = strpos($data, '"jsUrl" => "');
             $posEndLine = strpos($data, '",', $posJsUrl);
             $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
-            $newdata = str_replace($line, '"jsUrl" => "'.$jsUrl.'",', $data);
-            file_put_contents($csrfp_file, $antiXss->xss_clean($newdata));
+            $newdata = str_replace($line, '"jsUrl" => "'.filter_var($jsUrl, FILTER_SANITIZE_STRING).'",', $data);
+            file_put_contents($csrfp_file, $newdata);
         } elseif ($dataReceived['field'] == "restricted_to_input" && $dataReceived['value'] == "0") {
             DB::update(
                 prefix_table("misc"),
