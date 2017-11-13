@@ -492,6 +492,7 @@ if (null !== $post_type) {
                 $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
                 $email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
+                $post_category = filter_var(htmlspecialchars_decode($dataReceived['categorie']), FILTER_SANITIZE_NUMBER_INT);
 
                 // perform a check in case of Read-Only user creating an item in his PF
                 if ($_SESSION['user_read_only'] === true && (!in_array($dataReceived['categorie'], $_SESSION['personal_folders']) || $dataReceived['is_pf'] !== '1')) {
@@ -566,9 +567,12 @@ if (null !== $post_type) {
                         WHERE i.id=%i",
                         $dataReceived['id']
                     );
+
                     // encrypt PW
                     if ((isset($_SESSION['user_settings']['create_item_without_password']) && $_SESSION['user_settings']['create_item_without_password'] !== '1') || empty($pw) === false) {
-                        if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set']) && $dataReceived['is_pf'] === '1' && isset($dataReceived['is_pf'])) {
+                        if ($dataReceived['salt_key_set'] === '1' && isset($dataReceived['salt_key_set'])
+                            && in_array($post_category, $_SESSION['personal_folders']) === true
+                        ) {
                             $sentPw = $pw;
                             $passwd = cryption(
                                 $pw,
@@ -881,7 +885,10 @@ if (null !== $post_type) {
                     }
                     /*FOLDER */
                     if ($data['id_tree'] != $dataReceived['categorie']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_category : '.$data['id_tree'].' => '.$dataReceived['categorie']);
+                        // Get name of folders
+                        $dataTmp = DB::query("SELECT title FROM ".prefix_table("nested_tree")." WHERE id IN %li", array($data['id_tree'],$dataReceived['categorie']));
+
+                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_category : '.$dataTmp[0]['title'].' => '.$dataTmp[1]['title']);
                         // ask for page reloading
                         $reloadPage = true;
                     }
@@ -2476,18 +2483,19 @@ if (null !== $post_type) {
                     // exclude all results except the first one returned by query
                     if (empty($idManaged) === true || $idManaged !== $record['id']) {
                         // Get Expiration date
-                        $expirationFlag = '';
                         $expired_item = 0;
                         if ($SETTINGS['activate_expiration'] === '1') {
                             if ($record['renewal_period'] > 0 &&
                                 ($record['date'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
                             ) {
-                                $expirationFlag = '<i class="fa fa-flag mi-red fa-sm"></i>&nbsp;';
                                 $html_json[$record['id']]['expiration_flag'] = "mi-red";
                                 $expired_item = 1;
                             } else {
-                                $expirationFlag = '<i class="fa fa-flag mi-green fa-sm"></i>&nbsp;';
-                                $html_json[$record['id']]['expiration_flag'] = "mi-green";
+                                if ($record['perso'] !== '1') {
+                                    $html_json[$record['id']]['expiration_flag'] = "mi-green";
+                                } else {
+                                    $html_json[$record['id']]['expiration_flag'] = "";
+                                }
                             }
                         }
                         // Init
@@ -3117,7 +3125,7 @@ if (null !== $post_type) {
                 WHERE i.id=%i",
                 $post_item_id
             );
-            
+
             // get data about new folder
             $dataDestination = DB::queryfirstrow(
                 "SELECT personal_folder, title FROM ".prefix_table("nested_tree")." WHERE id = %i",

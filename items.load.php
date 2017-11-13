@@ -439,7 +439,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 function showItemsList(data)
 {
     $.each((data), function(i, value) {
-        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = '';
+        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = item_flag = '';
 
         // Prepare item icon
         if (value.canMove === 1 && value.accessLevel === 0) {
@@ -495,11 +495,16 @@ function showItemsList(data)
             value.desc = '[' + value.desc + ']';
         }
 
+        // Prepare flag
+        if (value.expiration_flag !== "") {
+            item_flag = '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;';
+        }
+
         // Appenditem row
         $("#full_items_list").append(
             '<li name="' + value.label + '" ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
-            '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;' +
-           '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
+            item_flag +
+            '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
             '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
             value.desc +
             '</div></font></a>' +
@@ -1003,15 +1008,28 @@ function EditerItem()
             });
 
               //prepare data
-            var data = {"pw": sanitizeString($('#edit_pw1').val()) , "label": sanitizeString($('#edit_label').val()) ,
-                "login": sanitizeString($('#edit_item_login').val()) , "is_pf": is_pf ,
-                "description": description , "email": $('#edit_email').val() , "url": url ,
-                "categorie": $("#edit_categorie option:selected").val() , "restricted_to": restriction ,
-                "restricted_to_roles": restriction_role , "salt_key_set": $('#personal_sk_set').val() ,
-                "is_pf": $('#recherche_group_pf').val() , "annonce": annonce , "diffusion": diffusion ,
-                "id": $('#id_item').val() , "anyone_can_modify": $('#edit_anyone_can_modify:checked').val() ,
-                "tags": sanitizeString($('#edit_tags').val()) , "to_be_deleted": to_be_deleted ,
-                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#edit_mypassword_complex").val())};
+            var data = {
+                "pw": sanitizeString($('#edit_pw1').val()),
+                "label": sanitizeString($('#edit_label').val()),
+                "login": sanitizeString($('#edit_item_login').val()),
+                "is_pf": is_pf ,
+                "description": description,
+                "email": $('#edit_email').val(),
+                "url": url ,
+                "categorie": $("#edit_categorie option:selected").val(),
+                "restricted_to": restriction,
+                "restricted_to_roles": restriction_role,
+                "salt_key_set": $('#personal_sk_set').val(),
+                "is_pf": $('#recherche_group_pf').val(),
+                "annonce": annonce ,
+                "diffusion": diffusion ,
+                "id": $('#id_item').val(),
+                "anyone_can_modify": $('#edit_anyone_can_modify:checked').val(),
+                "tags": sanitizeString($('#edit_tags').val()),
+                "to_be_deleted": to_be_deleted,
+                "fields": sanitizeString(fields),
+                "complexity_level": parseInt($("#edit_mypassword_complex").val())
+            };
 
             //send query
             $.post(
@@ -2211,7 +2229,7 @@ function open_edit_item_div(restricted_to_roles)
 
     // disable folder selection if PF
     if ($('#recherche_group_pf').val() == "1") {
-        $("#edit_categorie").prop("disabled", true);
+        //$("#edit_categorie").prop("disabled", true);
     } else {
         $("#edit_categorie").prop("disabled", false);
     }
@@ -4263,7 +4281,7 @@ function proceed_list_update(stop_proceeding)
                         //increment / decrement number of items in folders
                         $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
                         $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
-                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");                        
+                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
                         displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
                     },
                     "json"

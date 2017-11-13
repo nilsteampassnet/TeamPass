@@ -154,9 +154,9 @@ function columnExists($tablename, $column)
     global $db_link;
     $checkcolumn = mysqli_query($db_link, "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='{$tablename}' AND COLUMN_NAME = '{$column}';");
     if (mysqli_num_rows($checkcolumn) > 0) {
-        return false;
-    } else {
         return true;
+    } else {
+        return false;
     }
 }
 
@@ -616,11 +616,6 @@ mysqli_query(
     "ALTER TABLE `".$pre."export` ADD `tags` VARCHAR(500) NOT NULL DEFAULT 'none';"
 );
 
-// alter table MISC
-mysqli_query(
-    $db_link,
-    "ALTER TABLE `".$pre."misc` ADD `id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`);"
-);
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."misc` CHANGE valeur valeur VARCHAR(500) NOT NULL DEFAULT 'none'"
