@@ -1645,14 +1645,14 @@ function handleConfigFile($action, $field = null, $value = null)
 
             //
             if (stristr($line, "'".$field."' => '")) {
-                $data[$inc] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n";
+                $data[$inc] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
                 $bFound = true;
                 break;
             }
             $inc++;
         }
         if ($bFound === false) {
-            $data[($inc)] = "    '".$field."' => '".$antiXss->xss_clean($value)."',\n);\n";
+            $data[($inc)] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n);\n";
         }
     }
 

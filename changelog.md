@@ -11,6 +11,7 @@
  Fixed potential error on item creation without password
  Fixed "show description" option was not taken into consideration
  Fixed an issue in auto-generating csrfp.config file
+ Fixed a potential error while generating tp.config file
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check
