@@ -11,6 +11,7 @@
  Fixed potential error on item creation without password
  Fixed "show description" option was not taken into consideration
  Fixed an issue in auto-generating csrfp.config file
+ Fixed a potential error while generating tp.config file
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check
@@ -19,6 +20,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2016 Not all roles visible
  #2013 Bad condition in upgrade script
  #2010 Default Administrated by for user created via LDAP authentication
  #2004 Administrator has no access to Items

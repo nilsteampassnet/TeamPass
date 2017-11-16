@@ -306,10 +306,10 @@ function refresh_roles_matrix(order)
             $("#matrice_droits").html("");
             if (data.new_table !== "") {
                 $("#matrice_droits").html(data.new_table);
-                if (data.next < data.all && data.next >= 9) {
+                if (data.next <= data.all && data.next >= 8) {
                     $(".roles_next").show();
                 }
-                if (data.next >= 9 && data.previous >= 0) {
+                if (data.next >= 8 && start > 0) {
                     $(".roles_previous").show();
                 }
                 //manage next & previous arrows
