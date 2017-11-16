@@ -319,15 +319,19 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::query("SELECT * FROM ".prefix_table("roles_title").$where);
             $roles_count = DB::count();
             if ($roles_count > $display_nb) {
-                if (null === $post_start || $post_start === 0) {
+                if (null === $post_start || intval($post_start) === 0) {
                     $start = 0;
                     $previous = 0;
                 } else {
                     $start = $post_start;
-                    $previous = $start - $display_nb;
+                    if ($start - $display_nb >= 0) {
+                        $previous = $start - $display_nb;
+                    } else {
+                        $previous = 0;
+                    }
                 }
                 $sql_limit = " LIMIT ".mysqli_real_escape_string($link, filter_var($start, FILTER_SANITIZE_NUMBER_INT)).", ".mysqli_real_escape_string($link, filter_var($display_nb, FILTER_SANITIZE_NUMBER_INT));
-                $next = $start + $display_nb + 1;
+                $next = $start + $display_nb;
             }
 
             //Display table header
