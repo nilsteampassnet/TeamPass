@@ -12,6 +12,7 @@
  Fixed "show description" option was not taken into consideration
  Fixed an issue in auto-generating csrfp.config file
  Fixed a potential error while generating tp.config file
+ Fixed issue in Duo Security log
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check

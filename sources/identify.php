@@ -57,6 +57,7 @@ if ($post_type === "identify_duo_user") {
     // This step creates the DUO request encrypted key
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once SECUREPATH."/sk.php";
 
     // load library
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
@@ -83,8 +84,10 @@ if ($post_type === "identify_duo_user") {
 // DUO AUTHENTICATION
 // this step is verifying the response received from the server
 //--------
-
+ 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once SECUREPATH."/sk.php";
+    
     // load library
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
