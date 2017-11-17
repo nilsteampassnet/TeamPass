@@ -212,7 +212,8 @@ if (null !== $post_type) {
                     $dbTmp,
                     "CREATE TABLE IF NOT EXISTS `_install` (
                     `key` varchar(100) NOT NULL,
-                    `value` varchar(500) NOT NULL
+                    `value` varchar(500) NOT NULL,
+                    PRIMARY KEY (`key`)
                     ) CHARSET=utf8;"
                 );
                 // store values
@@ -347,6 +348,7 @@ if (null !== $post_type) {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."log_items` (
+                            `id` int(12) NOT null AUTO_INCREMENT PRIMARY KEY,
                             `id_item` int(8) NOT NULL,
                             `date` varchar(50) NOT NULL,
                             `id_user` int(8) NOT NULL,
@@ -710,7 +712,8 @@ global \$SETTINGS;
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
                             `url` varchar(500) NOT NULL DEFAULT '0',
-                            `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0'
+                            `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "roles_title") {
@@ -729,6 +732,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."roles_values` (
+                            `id` int(12) NOT null AUTO_INCREMENT PRIMARY KEY,
                             `role_id` int(12) NOT NULL,
                             `folder_id` int(12) NOT NULL,
                             `type` varchar(5) NOT NULL DEFAULT 'R',
@@ -762,7 +766,8 @@ global \$SETTINGS;
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."kb_items` (
                             `kb_id` int(12) NOT NULL,
-                            `item_id` int(12) NOT NULL
+                            `item_id` int(12) NOT NULL,
+                           PRIMARY KEY (`kb_id`)
                            ) CHARSET=utf8;"
                         );
                     } elseif ($task == "restriction_to_roles") {
@@ -820,7 +825,8 @@ global \$SETTINGS;
                             `subject` VARCHAR(255) NOT null ,
                             `body` TEXT NOT null ,
                             `receivers` VARCHAR(255) NOT null ,
-                            `status` VARCHAR(30) NOT NULL
+                            `status` VARCHAR(30) NOT NULL,
+                            PRIMARY KEY (`timestamp`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "automatic_del") {
@@ -830,7 +836,8 @@ global \$SETTINGS;
                             `item_id` int(11) NOT NULL,
                             `del_enabled` tinyint(1) NOT NULL,
                             `del_type` tinyint(1) NOT NULL,
-                            `del_value` varchar(35) NOT NULL
+                            `del_value` varchar(35) NOT NULL,
+                            PRIMARY KEY (`item_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "items_edition") {
@@ -839,7 +846,8 @@ global \$SETTINGS;
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_edition` (
                             `item_id` int(11) NOT NULL,
                             `user_id` int(12) NOT NULL,
-                            `timestamp` varchar(50) NOT NULL
+                            `timestamp` varchar(50) NOT NULL,
+                            PRIMARY KEY (`item_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "categories") {
@@ -875,7 +883,8 @@ global \$SETTINGS;
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."categories_folders` (
                             `id_category` int(12) NOT NULL,
-                            `id_folder` int(12) NOT NULL
+                            `id_folder` int(12) NOT NULL,
+                            PRIMARY KEY (`id_category`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "api") {
@@ -932,7 +941,8 @@ global \$SETTINGS;
                             `email` varchar(500) NOT NULL default 'none',
                             `url` varchar(500) NOT NULL default 'none',
                             `kbs` varchar(500) NOT NULL default 'none',
-                            `tags` varchar(500) NOT NULL default 'none'
+                            `tags` varchar(500) NOT NULL default 'none',
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "tokens") {
