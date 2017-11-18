@@ -58,6 +58,9 @@ echo '
 // Show the Items in a table view
 echo '<input type="hidden" id="id_selected_item" />
     <input type="hidden" id="personalItem" />
+    <input type="hidden" id="expired_item" />
+    <input type="hidden" id="restricted_item" />
+    <input type="hidden" id="folder_id_of_item" />
     <div class="title ui-widget-content ui-corner-all">
     '.$LANG['find'].'&nbsp;&nbsp;&nbsp;
     <button title="'.htmlentities(strip_tags($LANG['move_items']), ENT_QUOTES).'" onclick="$(\'#div_mass_op\').data(\'action\', \'move\').dialog(\'open\');" class="button" style="font-size:16px;">

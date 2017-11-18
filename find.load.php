@@ -87,10 +87,13 @@ $("#div_copy_item_to_folder").dialog({
 /*
 * Open a dialogbox with item data
 */
-function see_item(item_id, personalItem)
+function see_item(item_id, personalItem, folder_id, expired_item, restricted)
 {
     $('#id_selected_item').val(item_id);
     $("#personalItem").val(personalItem);
+    $("#expired_item").val(expired_item);
+    $("#restricted_item").val(restricted);
+    $("#folder_id_of_item").val(folder_id);
     $('#div_item_data').dialog('open');
 }
 
@@ -103,20 +106,29 @@ $("#div_item_data").dialog({
       title: "<?php echo $LANG['see_item_title']; ?>",
       open:
         function(event, ui) {
-              $("#div_item_data_show_error").html("<?php echo $LANG['admin_info_loading']; ?>").show();
+            $("#div_item_data_show_error").html("<?php echo $LANG['admin_info_loading']; ?>").show();
+
+            // prepare data
+            var data = {
+                "id" : $('#id_selected_item').val(),
+                "folder_id" : $('#folder_id_of_item').val(),
+                "salt_key_required" : $('#personalItem').val(),
+                "salt_key_set" : $('#personal_sk_set').val(),
+                "expired_item" : $("#expired_item").val(),
+                "restricted" : $("#restricted_item").val(),
+                "page" : "find"
+            };
+
             $.post(
                 "sources/items.queries.php",
                 {
-                    type    : "show_details_item",
-                    id         : $('#id_selected_item').val(),
-                    salt_key_required : $('#personalItem').val(),
-                    salt_key_set : $('#personal_sk_set').val(),
-                    page    : "find",
-                    key        : "<?php echo $_SESSION['key']; ?>"
+                    type :  "show_details_item",
+                    data :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key  :  "<?php echo $_SESSION['key']; ?>"
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");console.log(data);
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired
@@ -126,11 +138,11 @@ $("#div_item_data").dialog({
                         return_html = "<?php echo $LANG['not_allowed_to_see_pw']; ?>";
                     } else {
                         return_html = "<table>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['label']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['description']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['pw']; ?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['index_login']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='ui-icon ui-icon-carat-1-e' style='float: left; margin-right: .3em;'>&nbsp;</span><?php echo $LANG['url']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['label']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['description']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['pw']; ?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['index_login']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['url']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
                         "</table>";
                     }console.log(return_html);
                     $("#div_item_data_show_error").html("").hide();

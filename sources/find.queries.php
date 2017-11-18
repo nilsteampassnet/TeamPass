@@ -251,9 +251,37 @@ if (!isset($_GET['type'])) {
             }
         }
 
+        // Expiration
+        if ($SETTINGS['activate_expiration'] === "1") {
+            if ($record['renewal_period'] > 0 &&
+                ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
+            ) {
+                $expired = 1;
+            } else {
+                $expired = 0;
+            }
+        } else {
+            $expired = 0;
+        }
+
+        // Manage the restricted_to variable
+        if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
+            $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
+        } else {
+            $restrictedTo = "";
+        }
+
+        if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
+            if (empty($restrictedTo)) {
+                $restrictedTo = $_SESSION['user_id'];
+            } else {
+                $restrictedTo .= ','.$_SESSION['user_id'];
+            }
+        }
+
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"javascript:window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
-            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"javascript:see_item('.$record['id'].','.$record['perso'].');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
+        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
+            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"see_item('.$record['id'].','.$record['perso'].','.$record['id_tree'].','.$expired.','.$restrictedTo.');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
         $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'</span>", ';

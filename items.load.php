@@ -1419,7 +1419,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 "salt_key_required" : $('#recherche_group_pf').val(),
                 "salt_key_set" : $('#personal_sk_set').val(),
                 "expired_item" : expired_item === undefined ? "" : expired_item,
-                "restricted" : expired_item === undefined ? "" : expired_item,
+                "restricted" : restricted === undefined ? "" : restricted,
                 "page" : "items"
             };
 

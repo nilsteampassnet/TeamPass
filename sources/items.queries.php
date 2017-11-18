@@ -1385,6 +1385,7 @@ if (null !== $post_type) {
                 $post_id,
                 "at_creation"
             );
+
             // LEFT JOIN ".$pre."categories_items as c ON (c.id_item = i.id)
             // INNER JOIN ".$pre."automatic_del as d ON (d.item_id = i.id)
             // Get all USERS infos
