@@ -1019,7 +1019,7 @@ $(function() {
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             
-            var html = "",
+            var html = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
                 selected = 0;
 
             for (var i=0; i<data.length; i++) {
