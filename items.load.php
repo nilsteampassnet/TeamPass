@@ -1136,12 +1136,9 @@ function EditerItem()
                                     fieldValue = $(this).prop('checked').toString();
                                 }
                                 id = $(this).attr('id').split('_');
-                                console.log("ID-->");
-                                console.log(id);
-                                console.log('fieldValue:' + fieldValue);
+
                                 if (fieldValue !== "") {
                                     // copy data from form to Item Div
-                                    console.log("Set value to " + fieldValue);
                                     $('#id_field_' + id[2] + '_' + id[3]).html(fieldValue);
                                     $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).show()
                                 }
@@ -1582,9 +1579,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 if (field[3] == 'checkbox'){
                                     fieldValue = ((fieldValue == 'on') || (fieldValue == 'true') || fieldValue == true);
                                 }
-
-                                console.log('Field:' + liste[i]);
-                                console.log('fieldValue:' + fieldValue);
 
                                 $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).show();
                                 $('#hid_field_' + field[0] + '_' + field[2]).val(fieldValue);
@@ -2172,7 +2166,7 @@ function open_edit_item_div(restricted_to_roles)
     }
     // fields display
     if ($('.fields').val() != undefined && $("#display_categories").val() != "") {
-	    console.log($('.fields'));
+
         $('.fields').each(function(i){
             id = $(this).attr('id').split('_');
 	    var thisFieldName = 'edit_field_' + id[2] + '_' + id[3],
@@ -2180,7 +2174,7 @@ function open_edit_item_div(restricted_to_roles)
             fieldType = thisField.attr("type"),
             fieldRawValue = $('#hid_field_' + id[2] + '_' + id[3]).val(),
             fieldValue = htmlspecialchars_decode(fieldRawValue);
-	    console.log('Setting ' + thisFieldName + ' to a value of ' + fieldRawValue);
+
 	    if (fieldType == 'checkbox') {
 		    thisField.prop('checked', (fieldRawValue == 'true'));
 	    } else {
