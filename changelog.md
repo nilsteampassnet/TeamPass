@@ -22,6 +22,9 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2029 Fix on install step3
+ #2028 Fix on install step3
+ #2025 LDAP allowed user group doesn't work
  #2016 Not all roles visible
  #2013 Bad condition in upgrade script
  #2010 Default Administrated by for user created via LDAP authentication
