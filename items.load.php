@@ -1003,8 +1003,11 @@ function EditerItem()
             var fields = "";
             $('.edit_item_field').each(function(i){
                 id = $(this).attr('id').split('_');
-                if (fields == "") fields = id[2] + '~~' + $(this).val();
-                else fields += '_|_' + id[2] + '~~' + $(this).val();
+                var fieldValue = $(this).val(),
+                    fieldType = $(this).attr('type');
+                if (fieldType == 'checkbox') fieldValue = $(this).prop('checked');
+                if (fields == "") fields = id[2] + '~~' + fieldValue;
+                else fields += '_|_' + id[2] + '~~' + fieldValue;
             });
 
               //prepare data
@@ -1126,15 +1129,21 @@ function EditerItem()
                         if ($('.edit_item_field').val() != undefined) {
                             $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
-                                id = $(this).attr('id').split('_');
-                                if ($(this).val() !== "") {
-                                    // copy data from form to Item Div
-                                    $('#id_field_' + id[2]).html($(this).val());
-                                    $('#hid_field_' + id[2] + '_' + id[3]).val($(this).val());
-                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).show()
-                                } else {
-                                    $('#hid_field_' + id[2] + '_' + id[3]).val('');
+                                var fieldValue = $(this).val(),
+	            			    fieldType = $(this).attr("type");
+
+                                if (fieldType == 'checkbox'){
+                                    fieldValue = $(this).prop('checked').toString();
                                 }
+                                id = $(this).attr('id').split('_');
+
+                                if (fieldValue !== "") {
+                                    // copy data from form to Item Div
+                                    $('#id_field_' + id[2] + '_' + id[3]).html(fieldValue);
+                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).show()
+                                }
+                                $('#hid_field_' + id[2] + '_' + id[3]).val(fieldValue);
+
                                 // clear form
                                 $(this).val("");
                             });
@@ -1564,15 +1573,21 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             $(".tr_cf, .tr_fields").removeClass("hidden");
                             var liste = data.fields.split('_|_');
                             for (var i=0; i<liste.length; i++) {
-                                var field = liste[i].split('~~');
+                                var field = liste[i].split('~~'),
+				                fieldValue = field[1];
+
+                                if (field[3] == 'checkbox'){
+                                    fieldValue = ((fieldValue == 'on') || (fieldValue == 'true') || fieldValue == true);
+                                }
+
                                 $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).show();
-                                $('#hid_field_' + field[0] + '_' + field[2]).val(field[1]);
+                                $('#hid_field_' + field[0] + '_' + field[2]).val(fieldValue);
                                 if (field[3] === "masked") {
                                     $('#id_field_' + field[0] + '_' + field[2])
                                         .html('<?php echo $var['hidden_asterisk']; ?>');
                                 } else {
                                     $('#id_field_' + field[0] + '_' + field[2])
-                                        .html(field[1]);
+                                        .html(fieldValue);
                                 }
                             }
                         }
@@ -2151,9 +2166,20 @@ function open_edit_item_div(restricted_to_roles)
     }
     // fields display
     if ($('.fields').val() != undefined && $("#display_categories").val() != "") {
+
         $('.fields').each(function(i){
             id = $(this).attr('id').split('_');
-            $('#edit_field_' + id[2] + '_' + id[3]).val(htmlspecialchars_decode($('#hid_field_' + id[2] + '_' + id[3]).val()));
+	    var thisFieldName = 'edit_field_' + id[2] + '_' + id[3],
+            thisField = $('#' + thisFieldName),
+            fieldType = thisField.attr("type"),
+            fieldRawValue = $('#hid_field_' + id[2] + '_' + id[3]).val(),
+            fieldValue = htmlspecialchars_decode(fieldRawValue);
+
+	    if (fieldType == 'checkbox') {
+		    thisField.prop('checked', (fieldRawValue == 'true'));
+	    } else {
+		    thisField.val(fieldValue);
+        }
         });
     }
 
@@ -3308,7 +3334,7 @@ $(function() {
                         return;
                     }
 
-                    if (data.error === "") {
+                    if (data.error === "" && $('#edit_restricted_to').val() != undefined ) {
                         var list = data.list.split(';');
                         for (var i=0; i<list.length; i++) {
                             var elem = list[i].split('#');
