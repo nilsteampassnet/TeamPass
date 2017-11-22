@@ -185,6 +185,9 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                     } elseif ($field['type'] === "masked") {
                         echo '
                 <span style="margin-left:4px;"><i class="fa fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
+                    } elseif ($field['type'] === "checkbox") {
+                        echo '
+                <span style="margin-left:4px;"><i class="fa fa-square-o tip" title="'.$LANG['data_is_checkbox'].'"></i></span>';
                     }
                 }
                 echo '

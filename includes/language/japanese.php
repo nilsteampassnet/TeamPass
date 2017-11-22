@@ -15,6 +15,7 @@
 global $LANG;
 $LANG = array (
     'checkbox' => 'Checkbox',
+    'data_is_checkbox' => 'Data is Checkbox',
     'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
     'error_security_level_not_reached' => 'Expected level of security not reached!',
     'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
@@ -53,7 +54,7 @@ $LANG = array (
     'admin_action_pw_prefix_correct_tip' => 'Please backup the database before performing this task. This script will perform an update of password prefix in database. Only run this to fix incorrectly displayed passwords after upgrading from older versions.',
     'items_changed' => '変更しました。',
     'ga_not_yet_synchronized' => 'Get identified with Google Authenticator',
-    'ga_scan_url' => 'Google認証アプリなどでこのQRコードをスキャンしてください�',
+    'ga_scan_url' => 'Google隱崎ｨｼ繧｢繝励Μ縺ｪ縺ｩ縺ｧ縺薙�QR繧ｳ繝ｼ繝峨ｒ繧ｹ繧ｭ繝｣繝ｳ縺励※縺上□縺輔＞',
     'ga_identification_code' => '識別コード',
     'ga_enter_credentials' => 'ログイン資格情報を入力する必要があります',
     'ga_bad_code' => 'Google認証システムのコードが間違っています',
