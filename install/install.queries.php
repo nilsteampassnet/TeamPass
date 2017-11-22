@@ -229,7 +229,7 @@ if (null !== $post_type) {
                 if (intval($tmp) === 0) {
                     mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '". empty($session_url_path) ? $db['url_path'] : $session_url_path. "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_url_path) ? $db['url_path'] : $session_url_path. "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
