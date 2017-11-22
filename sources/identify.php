@@ -536,7 +536,7 @@ function identifyUser($sentData)
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 // Is user in allowed group
                 if (isset($SETTINGS['ldap_usergroup']) === true) {
-                    if (inGroup($auth_username, $SETTINGS['ldap_usergroup']) === true) {
+                    if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_usergroup']) === true) {
                         $ldapConnection = true;
                     } else {
                         $ldapConnection = false;
