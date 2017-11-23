@@ -227,15 +227,15 @@ if (null !== $post_type) {
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '". empty($session_url_path) ? $db['url_path'] : $session_url_path. "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '". empty($session_url_path) ? $data['url_path'] : $session_url_path. "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_url_path) ? $data['url_path'] : $session_url_path. "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '". empty($session_abspath) ? $db['abspath'] : $session_abspath. "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '". empty($session_abspath) ? $data['abspath'] : $session_abspath. "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_abspath) ? $db['abspath'] : $session_abspath. "' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_abspath) ? $data['abspath'] : $session_abspath. "' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
