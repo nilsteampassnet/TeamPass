@@ -43,7 +43,7 @@ $LANG = array (
     'email_ga_subject' => 'Ваш Google Authenticator флеш код для Teampass',
     'email_ga_text' => 'Вітаю, <a href=\'#link#\'>перейдіть за цим посиланням</a> і зіскануйте QR код за допомогою застосунка Google Authenticator. Це потрибно для налаштування вашого флеш-коду',
     'settings_attachments_encryption' => 'Ввімкнути шифрування для вкладень',
-    'settings_attachments_encryption_tip' => 'Ð¦Ð• ÐÐÐ›ÐÐ¨Ð¢Ð£Ð’ÐÐÐÐ¯ ÐœÐžÐ–Ð• ÐŸÐžÐ¨ÐšÐžÐ”Ð˜Ð¢Ð˜ Ð†Ð¡ÐÐ£Ð®Ð§Ð† Ð’ÐšÐ›ÐÐ”Ð•ÐÐÐ',
+    'settings_attachments_encryption_tip' => 'ЦЕ НАЛАШТУВАННЯ МОЖЕ ПОШКОДИТИ ІСНУЮЧІ ВКЛАДЕНН�',
     'admin_action_attachments_cryption' => 'Зашифрувати або розшифрувати вкладення',
     'admin_action_attachments_cryption_tip' => 'Увага: Лише зашифровані чи розшифровані файли після зміни до',
     'encrypt' => 'Зашифрувати',
