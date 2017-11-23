@@ -508,7 +508,8 @@ global \$SETTINGS;
                             array('admin', 'timezone', 'UTC'),
                             array('admin', 'enable_attachment_encryption', '1'),
                             array('admin', 'personal_saltkey_security_level', '50'),
-                            array('admin', 'ldap_new_user_is_administrated_by', '0')
+                            array('admin', 'ldap_new_user_is_administrated_by', '0'),
+                            array('admin', 'disable_show_forgot_pwd_link', '0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -538,7 +539,7 @@ global \$SETTINGS;
                         $result = fwrite(
                             $file_handler,
                             utf8_encode(
-                                substr_replace($config_text, "", -1)."
+                                $config_text."
 );"
                             )
                         );

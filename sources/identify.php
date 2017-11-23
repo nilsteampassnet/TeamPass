@@ -84,10 +84,10 @@ if ($post_type === "identify_duo_user") {
 // DUO AUTHENTICATION
 // this step is verifying the response received from the server
 //--------
- 
+
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     require_once SECUREPATH."/sk.php";
-    
+
     // load library
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
@@ -535,8 +535,8 @@ function identifyUser($sentData)
             // Authenticate the user
             if ($adldap->authenticate($auth_username, html_entity_decode($passwordClear))) {
                 // Is user in allowed group
-                if (isset($SETTINGS['ldap_usergroup']) === true) {
-                    if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_usergroup']) === true) {
+                if (isset($SETTINGS['ldap_allowed_usergroup']) === true) {
+                    if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
                         $ldapConnection = true;
                     } else {
                         $ldapConnection = false;
