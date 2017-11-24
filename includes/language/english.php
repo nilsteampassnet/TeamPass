@@ -14,6 +14,13 @@
  */
 global $LANG;
 $LANG = array (
+    'lockedby' => 'Locked By',
+    'islocked' => 'Account is locked',
+    'locked_by' => 'Lock Account',
+    'allow_password_locking' => 'Allow Users to Lock Password exclusively',
+    'lock_item' => 'Lock Password exclusively',
+    'unlock_item' => 'Unlock Password',
+    'settings_allow_password_locking_tip' => 'Uses the "Restricted To" field for locking/unlocking records.  This is useful for "checkout" of a password.',
     'checkbox' => 'Checkbox',
     'data_is_checkbox' => 'Data is Checkbox',
     'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',

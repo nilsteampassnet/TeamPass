@@ -241,6 +241,8 @@ echo '
                                         <li id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</li>
                                         <li id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</li>
                                         <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>',
+                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_lock_item" onclick="lockItem()"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['lock_item'].'</li>' : '',
+                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_unlock_item" onclick="unlockItem()"><i class="fa fa-unlock fa-fw"></i>&nbsp; '.$LANG['unlock_item'].'</li>' : '',
                                         (isset($SETTINGS['otv_is_enabled']) && $SETTINGS['otv_is_enabled'] == 1) ? '<li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>' : '', '
                                         ', isset($SETTINGS['enable_email_notification_on_item_shown']) && $SETTINGS['enable_email_notification_on_item_shown'] == 1 ? '
                                         <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</li>' : '', '
@@ -329,6 +331,16 @@ echo '
                         <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
                     </td>
                 </tr>';
+// Line for Lock Account
+if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
+    echo '
+                <tr>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['locked_by'].' :</td>
+                    <td colspan="2">
+                        <div id="id_locked_by" style="display:inline;"></div><input type="hidden" id="hid_locked_by" />
+                    </td>
+                </tr>';
+}
 // Line for TAGS
 echo '
                 <tr>
@@ -511,6 +523,16 @@ if (isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1) {
             <input type="hidden" size="50" name="restricted_to_roles" id="restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>';
 }
+
+// Line for LOCKED BY
+if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
+    echo '
+            <label for="" class="label_cpm">'.$LANG['lockedby'].' : </label>
+            <span name="locked_by_list" id="locked_by_list" style="width:100%"></span>
+            <input type="hidden" name="locked_by" id="locked_by" />
+            <div style="line-height:10px;">&nbsp;</div>';
+}
+
 // Line for TAGS
 echo '
             <label for="" class="label_cpm">'.$LANG['tags'].' : </label>
@@ -701,6 +723,16 @@ if (isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1) {
                 <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
                 <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
                 <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
+                <div style="line-height:10px;">&nbsp;</div>
+            </div>';
+}
+
+if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
+    echo '
+            <div id="div_editRestricted">
+                <label for="" class="label_cpm">'.$LANG['lockedby'].' : </label>
+                <span name="edit_locked_by_list" id="edit_locked_by_list" style="width:100%"></span>
+                <input type="hidden" size="50" name="edit_locked_by" id="edit_locked_by" />
                 <div style="line-height:10px;">&nbsp;</div>
             </div>';
 }

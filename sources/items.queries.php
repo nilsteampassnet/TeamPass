@@ -465,6 +465,97 @@ if (null !== $post_type) {
             break;
 
         /*
+          * CASE
+          * Set/unset Lock on item
+        */
+        case "set_lock_item":
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // init
+            $reloadPage = false;
+            $returnValues = array();
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                "decode"
+            );
+
+            if (count($dataReceived) > 0) {
+                // Prepare variables
+
+                // Get all informations for this item
+                $dataItem = DB::queryfirstrow(
+                    "SELECT *
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
+                    WHERE i.id=%i AND l.action = %s",
+                    $dataReceived['id_item'],
+                    "at_creation"
+                );
+                // check that actual user can access this item
+                $restrictionActive = true;
+                $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+                if (in_array($_SESSION['user_id'], $restrictedTo)) {
+                    $restrictionActive = false;
+                }
+                if (empty($dataItem['restricted_to'])) {
+                    $restrictionActive = false;
+                }
+
+                if ((
+                        in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])
+                        && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id']))
+                        && $restrictionActive === false
+                    )
+                    ||
+                    (
+                        isset($SETTINGS['anyone_can_modify'])
+                        && $SETTINGS['anyone_can_modify'] === '1'
+                        && $dataItem['anyone_can_modify'] === '1'
+                        && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1')
+                        && $restrictionActive === false
+                    )
+                    ||
+                    (null !== $post_folder_id
+                    && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
+                    && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id])
+                    && $post_restricted === '1'
+                    && $restrictionActive === false)
+                ) {
+                    DB::insert(
+                        prefix_table("log_items"),
+                        array(
+                            'id_item' => $post_id_item,
+                            'date' => time(),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_lock_item',
+                            'raison' => $dataReceived['lock_value']
+                        )
+                    );
+
+                    // update item
+                    DB::update(
+                        prefix_table("items"),
+                        array(
+                            'locked_by' => isset($dataReceived['lock_value']) ? $_SESSION['user_id'] : '0'
+                            ),
+                        "id=%i",
+                        $dataReceived['id']
+                    );
+                    $returnValues = '[{"status" : "ok"}]';
+                } else {
+                    $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "1'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                }
+            }
+            // return data
+            echo $returnValues;
+            break;
+
+    /*
         * CASE
         * update an ITEM
         */

@@ -942,7 +942,15 @@ $(function() {
             $("#tr_option_restricted_to_roles").show();
         } else {
             $("#tr_option_restricted_to_roles").hide();
-            $("#tr_option_restricted_to_roles_input").val("0");
+            $("#restricted_to_roles_input").val("0");
+        }
+    });
+    $("#restricted_to").bind("click", function() {
+        if ($("#restricted_to_input").val()== 1) {
+            $("#tr_option_allow_password_locking").show();
+        } else {
+            $("#tr_option_allow_password_locking").hide();
+            $("#allow_password_locking_input").val("0");
         }
     });
     $("#anyone_can_modify").bind("click", function() {

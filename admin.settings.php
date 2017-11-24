@@ -861,6 +861,18 @@ echo '
                         <div class="toggle toggle-modern" id="restricted_to_roles" data-toggle-on="', isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_roles_input" name="restricted_to_roles_input" value="', isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
+// enable allow_password_locking
+echo '
+                <tr id="tr_option_allow_password_locking" style="display:', isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1 ? 'inline' : 'none', ';"><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>
+                        '.$LANG['allow_password_locking'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_allow_password_locking_tip']), ENT_QUOTES).'"></i></span>                        
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="allow_password_locking" data-toggle-on="', isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="allow_password_locking_input" name="allow_password_locking_input" value="', isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // enable show copy to clipboard small icons
 echo '

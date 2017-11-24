@@ -200,7 +200,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         $("#items_list_loader").removeClass("hidden");
         if (start == 0) {
             //clean form
-            $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
+            $('#id_label, #id_pw, #id_email, #id_url, #id_desc, #id_login, #id_info, #id_restricted_to, #id_locked_by, #id_files, #id_tags, #id_kbs, #item_extra_info, #item_viewed_x_times').html("");
             $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
         }
         $("#items_list").css("display", "");
@@ -439,7 +439,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 function showItemsList(data)
 {
     $.each((data), function(i, value) {
-        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = item_flag = '';
+        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = item_flag = item_locked_by = '';
 
         // Prepare item icon
         if (value.canMove === 1 && value.accessLevel === 0) {
@@ -496,14 +496,21 @@ function showItemsList(data)
         }
 
         // Prepare flag
-        if (value.expiration_flag !== "") {
+        // 20171124 - Missing check if expiration flag exists.  The only way it would fail before was if expiration flag was a empty string
+        if (value.expiration_flag && value.expiration_flag !== "") {
             item_flag = '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;';
+        }
+
+        // Show lock icon
+        if (value.locked_by && value.locked_by > 0) {
+            icon_locked_by = '<i class="fa fa-lock fa-sm"></i>&nbsp;';
         }
 
         // Appenditem row
         $("#full_items_list").append(
             '<li name="' + value.label + '" ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
             item_flag +
+            icon_locked_by +
             '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
             '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
             value.desc +
@@ -794,6 +801,7 @@ function AjouterItem()
                 "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf.toString() ,
                 "description": (description) , "email": $('#email').val() , "url": url , "categorie": selected_folder ,
                 "restricted_to": restriction , "restricted_to_roles": restriction_role ,
+                "locked_by": sanitizeString($('#locked_by').val())
                 "salt_key_set": $('#personal_sk_set').val() , "diffusion": diffusion , "id": $('#id_item').val() ,
                 "anyone_can_modify": $('#anyone_can_modify:checked').val() , "tags": sanitizeString($('#item_tags').val()) ,
                 "random_id_from_files": $('#random_id').val() , "to_be_deleted": to_be_deleted ,
@@ -875,7 +883,7 @@ function AjouterItem()
                         refreshTree($('#categorie').val());
 
                         //empty form
-                        $("#label, #item_login, #email, #url, #pw1, #visible_pw, #pw2, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
+                        $("#label, #item_login, #email, #url, #pw1, #visible_pw, #pw2, #locked_by, #item_tags, #deletion_after_date, #times_before_deletion, #mypassword_complex").val("");
                         CKEDITOR.instances["desc"].setData("");
 
                         $("#item_tabs").tabs({selected: 0});
@@ -1022,6 +1030,7 @@ function EditerItem()
                 "categorie": $("#edit_categorie option:selected").val(),
                 "restricted_to": restriction,
                 "restricted_to_roles": restriction_role,
+                "locked_by": sanitizeString($('#edit_locked_by').val()),
                 "salt_key_set": $('#personal_sk_set').val(),
                 "is_pf": $('#recherche_group_pf').val(),
                 "annonce": annonce ,
@@ -1105,6 +1114,7 @@ function EditerItem()
                         $("#id_desc").html(description);
                         $("#id_login").html($('#edit_item_login').val());
                         $("#id_restricted_to").html(data.list_of_restricted);
+                        $("#id_locked_by").html(data.locked_by);                        
                         $("#id_tags").html(data.tags);
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
@@ -1120,6 +1130,7 @@ function EditerItem()
                         $("#hid_login").val($('#edit_item_login').val());
                         $("#hid_restricted_to").val(restriction);
                         $("#hid_restricted_to_roles").val(restriction_role);
+                        $("#hid_locked_by").html(data.locked_by);  
                         $("#hid_tags").val($('#edit_tags').val());
                         $("#hid_files").val(data.files);
                         /*$("#id_categorie").html(data.id_tree);
@@ -1544,6 +1555,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         );
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
+                        $("#hid_locked_by").val(data.locked_by);                        
                         $("#id_tags").html(data.tags);
                         // extract real tags list
                         var item_tag = "";
@@ -1852,6 +1864,7 @@ function showDetailsStep2(id, param)
                 $("#menu_button_add_fav").prop("disabled", false);
                 $("#menu_button_del_fav").attr("disabled","disabled");
             }
+            console.log(data);
 
             // set indicator if item has change proposal
             if (parseInt(data.has_change_proposal) > 0) {
@@ -2155,6 +2168,9 @@ function open_edit_item_div(restricted_to_roles)
     }
     if ($('#edit_restricted_to_roles').val() != undefined) {
         $('#edit_restricted_to_roles').val($('#hid_restricted_to_roles').val());
+    }
+    if ($('#edit_locked_by').val() != undefined) {
+        $('#edit_locked_by').val($('#hid_locked_by').val());
     }
     $('#edit_tags').val($('#hid_tags').val());
     if ($('#hid_anyone_can_modify').val() == "1") {
@@ -3382,7 +3398,7 @@ $(function() {
                         refreshTree($('#hid_cat').val());
 
                         // clean fields
-                        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+                        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_locked_by, #id_tags, #id_kbs").html("");
                         $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
                         $("#selected_items").val("");
 
@@ -4307,7 +4323,7 @@ function proceed_list_update(stop_proceeding)
                         //increment / decrement number of items in folders
                         $("#itcount_"+data[0].from_folder).text(Math.floor($("#itcount_"+data[0].from_folder).text())-1);
                         $("#itcount_"+data[0].to_folder).text(Math.floor($("#itcount_"+data[0].to_folder).text())+1);
-                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs").html("");
+                        $("#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_locked_by, #id_tags, #id_kbs").html("");
                         displayMessage("<?php echo addslashes($LANG['alert_message_done']); ?>");
                     },
                     "json"
@@ -4428,6 +4444,73 @@ function manage_history_entry(type, id)
    );
 }
 
+/*
+*  Item Locking functions
+*/
+function lockItem(){
+    var data = {"item_id": $("#id_item").val(), "lock_value": true};
+    
+    //Send query
+    $.post(
+        "sources/items.queries.php",
+        {
+            type      : "set_lock_item",
+            data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key       : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            //check if format error
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            if (data.error == "") {
+                $("#item_history_log_error").html("").addClass("hidden");
+                $("#add_history_entry_label").val("");
+                $("#item_history_log").append(htmlspecialchars_decode(data.new_line));
+            } else {
+                $("#item_history_log_error").html(data.error).show();
+            }
+            $("#div_item_history").dialog("open");
+        }
+    );
+    
+    // View record
+
+    // Hide Lock and unhide unlock
+    $('#menu_button_lock_item').addClass("hidden");
+    $('#menu_button_unlock_item').removeClass("hidden");
+}
+
+function unlockItem(){
+    var data = {"item_id": $("#id_item").val(), "lock_value": false};
+    
+    //Send query
+    $.post(
+        "sources/items.queries.php",
+        {
+            type      : "set_lock_item",
+            data      : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key       : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            //check if format error
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            if (data.error == "") {
+                $("#item_history_log_error").html("").addClass("hidden");
+                $("#add_history_entry_label").val("");
+                $("#item_history_log").append(htmlspecialchars_decode(data.new_line));
+            } else {
+                $("#item_history_log_error").html(data.error).show();
+            }
+            $("#div_item_history").dialog("open");
+        }
+    );
+    
+    // View record
+
+    // Hide Lock and unhide unlock
+    $('#menu_button_lock_item').addClass("hidden");
+    $('#menu_button_unlock_item').removeClass("hidden");
+}
+
 
 /*
 * Launch the redirection to OTV page
@@ -4487,7 +4570,7 @@ function globalItemsSearch()
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching']); ?>');
 
         // clean
-        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_locked_by, #id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
         $("#full_items_list").html("");
         $("#selected_items").val("");
@@ -4522,7 +4605,11 @@ function globalItemsSearch()
 
                         // Prepare PWD
                         if (value.pw !== "") {
-                            value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
+                            if (value.locked_by > 0){
+                                value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" title="<?php echo addslashes($LANG['islocked']);?>"></span>&nbsp;'
+                            } else {
+                                value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
+                            }
                         }
 
                         // Prepare favorite
@@ -4574,7 +4661,7 @@ function searchItemsWithTags(tag)
     $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching_tag']); ?>&nbsp;<b>' + tag + '</b> ...');
 
     // clean
-    $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs").html("");
+    $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_locked_by, #id_tags, #id_kbs").html("");
     $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
     $("#full_items_list").html("");
     $("#selected_items").val("");
