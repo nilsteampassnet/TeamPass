@@ -218,24 +218,24 @@ if (null !== $post_type) {
                 // store values
                 foreach ($data as $key => $value) {
                     $superGlobal->put($key, $value, "SESSION");
-                    $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
+                    $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
                     if (intval($tmp) === 0) {
                         mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
                     } else {
                         mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".$value."' WHERE `key` = '".$key."';");
                     }
                 }
-                $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
+                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '". empty($session_url_path) ? $data['url_path'] : $session_url_path. "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $data['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
                 }
-                $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
+                $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '", empty($session_abspath) ? $db['abspath'] : $session_abspath, "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '". empty($session_abspath) ? $data['abspath'] : $session_abspath. "');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_abspath) ? $db['abspath'] : $session_abspath, "' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_abspath) ? $data['abspath'] : $session_abspath. "' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -274,7 +274,7 @@ if (null !== $post_type) {
                     // store all variables in SESSION
                     foreach ($data as $key => $value) {
                         $superGlobal->put($key, $value, "SESSION");
-                        $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
+                        $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = '".$key."'"));
                         if (intval($tmp) === 0) {
                             mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('".$key."', '".$value."');");
                         } else {
@@ -508,7 +508,8 @@ global \$SETTINGS;
                             array('admin', 'timezone', 'UTC'),
                             array('admin', 'enable_attachment_encryption', '1'),
                             array('admin', 'personal_saltkey_security_level', '50'),
-                            array('admin', 'ldap_new_user_is_administrated_by', '0')
+                            array('admin', 'ldap_new_user_is_administrated_by', '0'),
+                            array('admin', 'disable_show_forgot_pwd_link', '0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -538,7 +539,7 @@ global \$SETTINGS;
                         $result = fwrite(
                             $file_handler,
                             utf8_encode(
-                                substr_replace($config_text, "", -1)."
+                                $config_text."
 );"
                             )
                         );

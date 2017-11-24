@@ -224,6 +224,8 @@ function loadFieldsList() {
                             newList += '<i class="fa fa-paragraph tip" title="<?php echo $LANG['data_is_text'];?>"></i>';
                         } else if (val[6] === "masked") {
                             newList += '<i class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked'];?>"></i>';
+                        } else if (val[6] === "checkbox") {
+                            newList += '<i class="fa fa-square-o tip" title="<?php echo $LANG['data_is_checkbox'];?>"></i>';
                         }
                         newList += '</span>'
                     }
@@ -1019,7 +1021,7 @@ $(function() {
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             
-            var html = "",
+            var html = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
                 selected = 0;
 
             for (var i=0; i<data.length; i++) {

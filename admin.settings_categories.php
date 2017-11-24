@@ -93,7 +93,8 @@ foreach ($rows as $record) {
 
 // Build list of Field Types
 $options_field_types = '<option value="text">'.$LANG['text'].'</option>'.
-                '<option value="masked">'.$LANG['masked'].'</option>';
+                '<option value="masked">'.$LANG['masked'].'</option>'.
+                '<option value="checkbox">'.$LANG['checkbox'].'</option>';
 
 echo '
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -184,6 +185,9 @@ if (isset($arrCategories) && count($arrCategories) > 0) {
                     } elseif ($field['type'] === "masked") {
                         echo '
                 <span style="margin-left:4px;"><i class="fa fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
+                    } elseif ($field['type'] === "checkbox") {
+                        echo '
+                <span style="margin-left:4px;"><i class="fa fa-square-o tip" title="'.$LANG['data_is_checkbox'].'"></i></span>';
                     }
                 }
                 echo '

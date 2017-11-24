@@ -760,7 +760,7 @@ if ($any_settings === true) {
             "<?php
 global \$SETTINGS;
 \$SETTINGS = array (" . $config_text . "
-    );"
+);"
         )
     );
 }
