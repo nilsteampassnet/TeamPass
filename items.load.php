@@ -439,7 +439,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 function showItemsList(data)
 {
     $.each((data), function(i, value) {
-        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = item_flag = item_locked_by = '';
+        var new_line = pwd_error = icon_all_can_modify = icon_login = icon_pwd = icon_favorite = item_flag = icon_locked_by = '';
 
         // Prepare item icon
         if (value.canMove === 1 && value.accessLevel === 0) {
