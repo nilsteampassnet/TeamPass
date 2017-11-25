@@ -14,6 +14,9 @@
  Fixed a potential error while generating tp.config file
  Fixed issue in Duo Security log
  Fixed no item details shown on Find page
+ Fixed issue related to item edition on doubleclick
+ Fixed issue no items shown on tag search
+ Fixed issue special characters bad display in search results
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check
