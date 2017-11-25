@@ -1679,7 +1679,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         switch (locked_status) {
                             case 0:
                                 $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
-                                $('#menu_button_unlock_item).attr('disabled', 'disabled');
+                                $('#menu_button_unlock_item').attr('disabled', 'disabled');
                                 break;
                             case 1:
                                 $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
@@ -1691,7 +1691,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 $('#menu_button_unlock_item').attr('disabled', false);
                                 break;
                             default:
-                                $(#menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
+                                $('#menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
                                 $('#menu_button_lock_item, #menu_button_unlock_item').attr('disabled', 'disabled');
                         }
 
