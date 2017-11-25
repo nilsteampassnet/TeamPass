@@ -1485,6 +1485,19 @@ if (null !== $post_type) {
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
             $listeRestriction = $listNotification = $_SESSION['listNotificationEmails'] = "";
 
+            // Get Locked By
+            if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] === '1') {
+                $arrData['locked_by_id'] = 0;
+                if ($dataItem['locked_by']) {
+                    $arrData['locked_by_id'] = $dataItem['locked_by'];
+                    if ($dataItem['locked_by'] === $_SESSION['user_id']) {
+                        $arrData['my_lock'] = true;
+                    }
+                    $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$dataItem['locked_by']);
+                    $arrData['locked_by_id'] = $dataTmp['login'];
+                }
+            }
+
             $user_in_restricted_list_of_item = false;
             $rows = DB::query("SELECT id, login, email, admin FROM ".prefix_table("users"));
             foreach ($rows as $record) {
@@ -1497,19 +1510,6 @@ if (null !== $post_type) {
                         $arrData['notification_status'] = true;
                     } else {
                         $arrData['notification_status'] = false;
-                    }
-                }
-
-                // Get Locked By
-                if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] === '1') {
-                    $arrData['locked_by_id'] = 0;
-                    if ($record['locked_by']) {
-                        $arrData['locked_by_id'] = $record['locked_by'];
-                        if ($record['locked_by'] === $dataItem['id_user']) {
-                            $arrData['my_lock'] = true;
-                        }
-                        $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$record['locked_by']);
-                        $arrData['locked_by_id'] = $dataTmp['login'];
                     }
                 }
 
@@ -2552,6 +2552,7 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
+                        MIN(i.locked_by) AS locked_by,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
@@ -2570,6 +2571,7 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
+                        MIN(i.locked_by) AS locked_by,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
@@ -2608,6 +2610,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
+                        $html_json[$record['id']]['locked_by'] = $record['locked_by'];
                         $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
