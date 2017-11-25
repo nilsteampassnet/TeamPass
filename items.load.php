@@ -1574,6 +1574,25 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             multiple: true
                         });
 
+                        /* Locked record changes
+                        * locked status = -1 = unknown/inactive
+                        *               = 0  = no lock
+                        *               = 1  = locked
+                        *               = 2  = this user locked
+                        */
+                        var locked_status = -1;
+                        if (data.locked_by_id > 0) {
+                            // Record is locked
+                            if ($('#form_user_id').val() == data.locked_by_id) {
+                                locked_status = 2;
+                            } else {
+                                locked_status = 1;
+                            }
+                        } else {
+                            // Record is not locked
+                            locked_status = 0;
+                        }
+
                         // ---
                         // Show Field values
                         $(".fields").val("");
@@ -1654,6 +1673,26 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             $("#menu_button_share, #menu_button_otv").attr('disabled', 'disabled');
                         } else {
                             $("#menu_button_share, #menu_button_otv").prop("disabled", false);
+                        }
+
+                        // disable buttons
+                        switch (locked_status) {
+                            case 0:
+                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
+                                $('#menu_button_unlock_item).attr('disabled', 'disabled');
+                                break;
+                            case 1:
+                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
+                                $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', 'disabled');
+                                break;
+                            case 2:
+                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
+                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', 'disabled');
+                                $('#menu_button_unlock_item').attr('disabled', false);
+                                break;
+                            default:
+                                $(#menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
+                                $('#menu_button_lock_item, #menu_button_unlock_item').attr('disabled', 'disabled');
                         }
 
                         //Manage to deleted information

@@ -234,15 +234,15 @@ echo '
                         <div class="quick_menu2" style="float:left; margin-right: 5px;">
                             <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
-                                    <ul class="menu_250">
+                                    <ul class="menu_250">',
+                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_lock_item" onclick="lockItem()"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['lock_item'].'</li>' : '',
+                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_unlock_item" onclick="unlockItem()"><i class="fa fa-unlock fa-fw"></i>&nbsp; '.$LANG['unlock_item'].'</li>' : '','
                                         <li id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</li>
                                         <li id="menu_button_copy_login" class="copy_clipboard"><i class="fa fa-user fa-fw"></i>&nbsp; '.$LANG['login_copy'].'</li>
                                         <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
                                         <li id="menu_button_copy_link" class="copy_clipboard"><i class="fa fa-link fa-fw"></i>&nbsp; '.$LANG['url_copy'].'</li>
                                         <li id="menu_button_history" onclick="OpenDialog(\'div_item_history\', \'false\')"><i class="fa fa-history fa-fw"></i>&nbsp; '.$LANG['history'].'</li>
                                         <li id="menu_button_share" onclick="OpenDialog(\'div_item_share\', \'false\')"><i class="fa fa-share fa-fw"></i>&nbsp; '.$LANG['share'].'</li>',
-                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_lock_item" onclick="lockItem()"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['lock_item'].'</li>' : '',
-                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_unlock_item" onclick="unlockItem()"><i class="fa fa-unlock fa-fw"></i>&nbsp; '.$LANG['unlock_item'].'</li>' : '',
                                         (isset($SETTINGS['otv_is_enabled']) && $SETTINGS['otv_is_enabled'] == 1) ? '<li id="menu_button_otv" onclick="prepareOneTimeView()"><i class="fa fa-users fa-fw"></i>&nbsp; '.$LANG['one_time_item_view'].'</li>' : '', '
                                         ', isset($SETTINGS['enable_email_notification_on_item_shown']) && $SETTINGS['enable_email_notification_on_item_shown'] == 1 ? '
                                         <li id="menu_button_notify"><i class="fa fa-volume-up fa-fw"></i>&nbsp; '.$LANG['notify_me_on_change'].'</li>' : '', '

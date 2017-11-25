@@ -1491,10 +1491,10 @@ if (null !== $post_type) {
                 if ($dataItem['locked_by']) {
                     $arrData['locked_by_id'] = $dataItem['locked_by'];
                     if ($dataItem['locked_by'] === $_SESSION['user_id']) {
-                        $arrData['my_lock'] = true;
+                        $arrData['locked_by_me'] = true;
                     }
                     $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$dataItem['locked_by']);
-                    $arrData['locked_by_id'] = $dataTmp['login'];
+                    $arrData['locked_by'] = $dataTmp['login'];
                 }
             }
 
