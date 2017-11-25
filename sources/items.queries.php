@@ -483,6 +483,7 @@ if (null !== $post_type) {
                 $post_data,
                 "decode"
             );
+            $item_id = $dataReceived['item_id'];
 
             if (count($dataReceived) > 0) {
                 // Prepare variables
@@ -493,7 +494,7 @@ if (null !== $post_type) {
                     FROM ".prefix_table("items")." as i
                     INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
                     WHERE i.id=%i AND l.action = %s",
-                    $dataReceived['id_item'],
+                    $item_id,
                     "at_creation"
                 );
                 // check that actual user can access this item
@@ -529,7 +530,7 @@ if (null !== $post_type) {
                     DB::insert(
                         prefix_table("log_items"),
                         array(
-                            'id_item' => $post_id_item,
+                            'id_item' => $item_id,
                             'date' => time(),
                             'id_user' => $_SESSION['user_id'],
                             'action' => 'at_lock_item',
@@ -544,7 +545,7 @@ if (null !== $post_type) {
                             'locked_by' => isset($dataReceived['lock_value']) ? $_SESSION['user_id'] : '0'
                             ),
                         "id=%i",
-                        $dataReceived['id']
+                        $item_id
                     );
                     $returnValues = '[{"status" : "ok"}]';
                 } else {
@@ -1487,7 +1488,7 @@ if (null !== $post_type) {
             $user_in_restricted_list_of_item = false;
             $rows = DB::query("SELECT id, login, email, admin FROM ".prefix_table("users"));
             foreach ($rows as $record) {
-                // Get auhtor
+                // Get author
                 if ($record['id'] === $dataItem['id_user']) {
                     $arrData['author'] = $record['login'];
                     $arrData['author_email'] = $record['email'];
@@ -1496,6 +1497,19 @@ if (null !== $post_type) {
                         $arrData['notification_status'] = true;
                     } else {
                         $arrData['notification_status'] = false;
+                    }
+                }
+
+                // Get Locked By
+                if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] === '1') {
+                    $arrData['locked_by_id'] = 0;
+                    if ($record['locked_by']) {
+                        $arrData['locked_by_id'] = $record['locked_by'];
+                        if ($record['locked_by'] === $dataItem['id_user']) {
+                            $arrData['my_lock'] = true;
+                        }
+                        $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$record['locked_by']);
+                        $arrData['locked_by_id'] = $dataTmp['login'];
                     }
                 }
 
