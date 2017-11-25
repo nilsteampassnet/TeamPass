@@ -1030,7 +1030,6 @@ function EditerItem()
                 "categorie": $("#edit_categorie option:selected").val(),
                 "restricted_to": restriction,
                 "restricted_to_roles": restriction_role,
-                "locked_by": sanitizeString($('#edit_locked_by').val()),
                 "salt_key_set": $('#personal_sk_set').val(),
                 "is_pf": $('#recherche_group_pf').val(),
                 "annonce": annonce ,
@@ -1130,7 +1129,7 @@ function EditerItem()
                         $("#hid_login").val($('#edit_item_login').val());
                         $("#hid_restricted_to").val(restriction);
                         $("#hid_restricted_to_roles").val(restriction_role);
-                        $("#hid_locked_by").html(data.locked_by);  
+                        $("#hid_locked_by").val(data.locked_by);  
                         $("#hid_tags").val($('#edit_tags').val());
                         $("#hid_files").val(data.files);
                         /*$("#id_categorie").html(data.id_tree);
@@ -1393,7 +1392,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#item_details_ok").addClass("hidden");
         $("#item_details_expired").addClass("hidden");
         $("#item_details_expired_full").addClass("hidden");
-        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_url, #menu_button_copy_link").attr("disabled","disabled");
+        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_url, #menu_button_copy_link, #menu_button_unlock_item, #menu_button_lock_item").attr("disabled","disabled");
         $("#request_ongoing").val("");
         return false;
     }
@@ -1555,7 +1554,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         );
                         $("#hid_restricted_to").val(data.id_restricted_to);
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
-                        $("#hid_locked_by").val(data.locked_by);                        
+                        $("#id_locked_by").html(data.locked_by);
+                        $("#hid_locked_by").val(data.locked_by);
                         $("#id_tags").html(data.tags);
                         // extract real tags list
                         var item_tag = "";
@@ -1678,21 +1678,24 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         // disable buttons
                         switch (locked_status) {
                             case 0:
+                                // No lock
                                 $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
-                                $('#menu_button_unlock_item').attr('disabled', 'disabled');
+                                $('#menu_button_unlock_item').attr('disabled', true);
                                 break;
                             case 1:
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
-                                $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', 'disabled');
+                                // Locked by another user
+                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', true);
+                                $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', true);
                                 break;
                             case 2:
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
-                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', 'disabled');
-                                $('#menu_button_unlock_item').attr('disabled', false);
+                                // Locked by this user
+                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', false);
+                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled',false);
+                                $('#menu_button_lock_item').attr('disabled', true);
                                 break;
                             default:
                                 $('#menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
-                                $('#menu_button_lock_item, #menu_button_unlock_item').attr('disabled', 'disabled');
+                                $('#menu_button_lock_item, #menu_button_unlock_item').attr('disabled', true);
                         }
 
                         //Manage to deleted information
@@ -2208,8 +2211,8 @@ function open_edit_item_div(restricted_to_roles)
     if ($('#edit_restricted_to_roles').val() != undefined) {
         $('#edit_restricted_to_roles').val($('#hid_restricted_to_roles').val());
     }
-    if ($('#edit_locked_by').val() != undefined) {
-        $('#edit_locked_by').val($('#hid_locked_by').val());
+    if ($('#edit_locked_by').html() != undefined) {
+        $('#edit_locked_by').html($('#hid_locked_by').val());
     }
     $('#edit_tags').val($('#hid_tags').val());
     if ($('#hid_anyone_can_modify').val() == "1") {
@@ -4609,7 +4612,7 @@ function globalItemsSearch()
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching']); ?>');
 
         // clean
-        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_locked_by, #id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_locked_by, #id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
         $("#full_items_list").html("");
         $("#selected_items").val("");
