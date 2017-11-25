@@ -1488,6 +1488,9 @@ if (null !== $post_type) {
             // Get Locked By
             if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] === '1') {
                 $arrData['locked_by_id'] = 0;
+                $arrData['locked_by'] = '';
+                $arrData['locked_by_me'] = false;
+                
                 if ($dataItem['locked_by']) {
                     $arrData['locked_by_id'] = $dataItem['locked_by'];
                     if ($dataItem['locked_by'] === $_SESSION['user_id']) {

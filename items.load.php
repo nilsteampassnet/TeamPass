@@ -502,7 +502,7 @@ function showItemsList(data)
         }
 
         // Show lock icon
-        if (value.locked_by && value.locked_by > 0) {
+        if (value.locked_by_id && value.locked_by_id > 0) {
             icon_locked_by = '<i class="fa fa-lock fa-sm"></i>&nbsp;';
         }
 
@@ -1114,6 +1114,8 @@ function EditerItem()
                         $("#id_login").html($('#edit_item_login').val());
                         $("#id_restricted_to").html(data.list_of_restricted);
                         $("#id_locked_by").html(data.locked_by);                        
+                        $("#id_locked_by_id").html(data.locked_by_id);                        
+                        $("#id_locked_by_me").html(data.locked_by_me);                        
                         $("#id_tags").html(data.tags);
                         $("#id_files").html(unsanitizeString(data.files));
                         $("#item_edit_list_files").html(data.files_edit);
@@ -1130,6 +1132,8 @@ function EditerItem()
                         $("#hid_restricted_to").val(restriction);
                         $("#hid_restricted_to_roles").val(restriction_role);
                         $("#hid_locked_by").val(data.locked_by);  
+                        $("#hid_locked_by_id").val(data.locked_by_id);                        
+                        $("#hid_locked_by_me").val(data.locked_by_me);                        
                         $("#hid_tags").val($('#edit_tags').val());
                         $("#hid_files").val(data.files);
                         /*$("#id_categorie").html(data.id_tree);
@@ -1374,8 +1378,10 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     }
     id_tree = id_tree || "";
     salt_key_required = salt_key_required || 0;
+    /* Unknown duplication, removed
     id_tree = id_tree || "";
     id_tree = id_tree || "";
+    */
 
     // Store status query running
     $("#request_ongoing").val("1");
@@ -1463,7 +1469,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         return;
                     }
 
-                    if (data.error != "") {
+                    // 20171125 - Handle undefined value always triggering errror.
+                    if (data.error && data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
                     }
@@ -1499,7 +1506,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     if (data.show_detail_option == "0") {
                         $("#item_details_ok").removeClass("hidden");
                         $("#item_details_expired, #item_details_expired_full").addClass("hidden");
-                    }if (data.show_detail_option == "1") {
+                    } else if (data.show_detail_option == "1") {
                         $("#item_details_ok, #item_details_expired").removeClass("hidden");
                         $("#item_details_expired_full").addClass("hidden");
                     } else if (data.show_detail_option == "2") {
@@ -1556,6 +1563,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#hid_restricted_to_roles").val(data.id_restricted_to_roles);
                         $("#id_locked_by").html(data.locked_by);
                         $("#hid_locked_by").val(data.locked_by);
+                        $("#hid_locked_by_id").val(data.locked_by_id);
+                        $("#hid_locked_by_me").val(data.locked_by_me);
                         $("#id_tags").html(data.tags);
                         // extract real tags list
                         var item_tag = "";
@@ -4648,7 +4657,7 @@ function globalItemsSearch()
 
                         // Prepare PWD
                         if (value.pw !== "") {
-                            if (value.locked_by > 0){
+                            if (value.locked_by_id > 0){
                                 value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" title="<?php echo addslashes($LANG['islocked']);?>"></span>&nbsp;'
                             } else {
                                 value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
