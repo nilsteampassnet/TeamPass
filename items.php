@@ -335,7 +335,7 @@ echo '
 if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
     echo '
                 <tr>
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['locked_by'].' :</td>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['lockedby'].' :</td>
                     <td colspan="2">
                         <div id="id_locked_by" style="display:inline;"></div><input type="hidden" id="hid_locked_by" />
                     </td>

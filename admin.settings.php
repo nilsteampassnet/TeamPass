@@ -854,7 +854,7 @@ echo '
                 </td></tr>';
 // enable restricted_to_roles
 echo '
-                <tr id="tr_option_restricted_to_roles" style="display:', isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1 ? 'inline' : 'none', ';"><td>
+                <tr id="tr_option_restricted_to_roles" style="display:', isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1 ? 'contents' : 'none', ';"><td>
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>'.$LANG['restricted_to_roles'].'</label>
                     </td><td>
@@ -863,7 +863,7 @@ echo '
 
 // enable allow_password_locking
 echo '
-                <tr id="tr_option_allow_password_locking" style="display:', isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1 ? 'inline' : 'none', ';"><td>
+                <tr id="tr_option_allow_password_locking" style="display:', isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1 ? 'contents' : 'none', ';"><td>
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
                         '.$LANG['allow_password_locking'].'

@@ -4584,6 +4584,7 @@ function globalItemsSearch()
                 key         : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
+                debugger;
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['search_results']); ?>');
