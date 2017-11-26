@@ -2555,7 +2555,7 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
-                        MIN(i.locked_by) AS locked_by,
+                        MIN(i.locked_by) AS locked_by_id,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
@@ -2574,7 +2574,7 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
-                        MIN(i.locked_by) AS locked_by,
+                        MIN(i.locked_by) AS locked_by_id,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)

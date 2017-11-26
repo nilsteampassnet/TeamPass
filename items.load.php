@@ -353,12 +353,12 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $("#item_details_no_personal_saltkey").show();
                     $("#item_details_ok, #item_details_nok").addClass("hidden");
 
-                    $('#menu_button_add_item').prop('disabled', 'true');
+                    $('#menu_button_add_item').addClass('disabled');
                     $("#items_list_loader, #div_loading").addClass("hidden");
                 } else if (data.error == "not_authorized" || data.access_level === "") {
                     //warn user
                     $("#hid_cat").val("");
-                    //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").prop('disabled', 'true');
+                    //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").addClass('disabled');
                     $("#item_details_nok").removeClass("hidden");
                     $("#item_details_ok, #item_details_no_personal_saltkey").addClass("hidden");
                     $("#items_list_loader").addClass("hidden");
@@ -1398,13 +1398,13 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#item_details_ok").addClass("hidden");
         $("#item_details_expired").addClass("hidden");
         $("#item_details_expired_full").addClass("hidden");
-        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_url, #menu_button_copy_link, #menu_button_unlock_item, #menu_button_lock_item").attr("disabled","disabled");
+        $("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_url, #menu_button_copy_link, #menu_button_unlock_item, #menu_button_lock_item").addClass("disabled");
         $("#request_ongoing").val("");
         return false;
     }
     $("#div_loading").removeClass("hidden");
     if ($("#is_admin").val() == "1") {
-        $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').attr('disabled', 'disabled');
+        $('#menu_button_edit_item,#menu_button_del_item,#menu_button_copy_item').addClass('disabled');
     }
 
     if ($("#edit_restricted_to") != undefined) {
@@ -1663,11 +1663,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         //manage buttons
                         if ($("#user_is_read_only").val() == 1) {
-                            $('#menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
+                            $('#menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').addClass('disabled');
                         } else if (data.user_can_modify == 0) {
-                            $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
+                            $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').addClass('disabled');
                         } else if (data.restricted == "1" || data.user_can_modify == "1") {
-                            //$("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").prop("disabled", false);
+                            //$("#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item").removeClass("disabled");
                             var param = "#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item";
                             $("#new_history_entry_form").show();
                         } else {
@@ -1679,32 +1679,32 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
 
                         // disable share button for personal folder
                         if ($("#recherche_group_pf").val() == 1) {
-                            $("#menu_button_share, #menu_button_otv").attr('disabled', 'disabled');
+                            $("#menu_button_share, #menu_button_otv").addClass('disabled');
                         } else {
-                            $("#menu_button_share, #menu_button_otv").prop("disabled", false);
+                            $("#menu_button_share, #menu_button_otv").removeClass("disabled");
                         }
 
                         // disable buttons
                         switch (locked_status) {
                             case 0:
                                 // No lock
-                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
-                                $('#menu_button_unlock_item').attr('disabled', true);
+                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
+                                $('#menu_button_unlock_item').addClass('disabled');
                                 break;
                             case 1:
                                 // Locked by another user
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', true);
-                                $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled', true);
+                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').addClass('disabled');
+                                $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
                                 break;
                             case 2:
                                 // Locked by this user
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', false);
-                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').attr('disabled',false);
-                                $('#menu_button_lock_item').attr('disabled', true);
+                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
+                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
+                                $('#menu_button_lock_item').addClass('disabled');
                                 break;
                             default:
-                                $('#menu_button_copy_pw, #menu_button_show_pw').attr('disabled', false);
-                                $('#menu_button_lock_item, #menu_button_unlock_item').attr('disabled', true);
+                                $('#menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
+                                $('#menu_button_lock_item, #menu_button_unlock_item').addClass('disabled');
                         }
 
                         //Manage to deleted information
