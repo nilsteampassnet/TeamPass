@@ -234,7 +234,9 @@ echo '
                         <div class="quick_menu2" style="float:left; margin-right: 5px;">
                             <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
-                                    <ul class="menu_250">
+                                    <ul class="menu_250">',
+                                        (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) ? '<li id="menu_button_lock_item" onclick="lockItem()"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['lock_item'].'</li>' : '',
+                                        (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) ? '<li id="menu_button_unlock_item" onclick="unlockItem()"><i class="fa fa-unlock fa-fw"></i>&nbsp; '.$LANG['unlock_item'].'</li>' : '','
                                         <li id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</li>
                                         <li id="menu_button_copy_login" class="copy_clipboard"><i class="fa fa-user fa-fw"></i>&nbsp; '.$LANG['login_copy'].'</li>
                                         <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
@@ -329,6 +331,16 @@ echo '
                         <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
                     </td>
                 </tr>';
+// Line for Lock Account
+if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) {
+    echo '
+                <tr>
+                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['lockedby'].' :</td>
+                    <td colspan="2">
+                        <div id="id_locked_by" style="display:inline;"></div><input type="hidden" id="hid_locked_by" />
+                    </td>
+                </tr>';
+}
 // Line for TAGS
 echo '
                 <tr>
@@ -511,6 +523,16 @@ if (isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1) {
             <input type="hidden" size="50" name="restricted_to_roles" id="restricted_to_roles" />
             <div style="line-height:10px;">&nbsp;</div>';
 }
+
+// Line for LOCKED BY
+if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) {
+    echo '
+            <label for="" class="label_cpm">'.$LANG['lockedby'].' : </label>
+            <span name="locked_by_list" id="locked_by_list" style="width:100%"></span>
+            <input type="hidden" name="locked_by" id="locked_by" />
+            <div style="line-height:10px;">&nbsp;</div>';
+}
+
 // Line for TAGS
 echo '
             <label for="" class="label_cpm">'.$LANG['tags'].' : </label>
@@ -701,6 +723,16 @@ if (isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1) {
                 <select name="edit_restricted_to_list" id="edit_restricted_to_list" multiple="multiple" style="width:100%"></select>
                 <input type="hidden" size="50" name="edit_restricted_to" id="edit_restricted_to" />
                 <input type="hidden" size="50" name="edit_restricted_to_roles" id="edit_restricted_to_roles" />
+                <div style="line-height:10px;">&nbsp;</div>
+            </div>';
+}
+
+if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) {
+    echo '
+            <div id="div_editRestricted">
+                <label for="" class="label_cpm">'.$LANG['lockedby'].' : </label>
+                <span name="edit_locked_by_list" id="edit_locked_by_list" style="width:100%"></span>
+                <input type="hidden" size="50" name="edit_locked_by" id="edit_locked_by" />
                 <div style="line-height:10px;">&nbsp;</div>
             </div>';
 }

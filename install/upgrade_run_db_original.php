@@ -194,6 +194,8 @@ $val = array(
     array('admin', 'nb_bad_authentication', 0, 0),
     array('admin', 'restricted_to', 0, 0),
     array('admin', 'restricted_to_roles', 0, 0),
+    array('admin', 'allow_item_locking', 0, 0),
+    array('admin', 'require_item_locking', 0, 0),
     array('admin', 'utf8_enabled', 1, 0),
     array('admin', 'custom_logo', '', 0),
     array('admin', 'custom_login_text', '', 0),
@@ -366,6 +368,11 @@ $res2 = addColumnIfNotExist(
     $pre."items",
     "anyone_can_modify",
     "TINYINT(1) NOT null DEFAULT '0'"
+);
+$res2 = addColumnIfNotExist(
+    $pre."items",
+    "locked_by",
+    "INT(12) DEFAULT NULL"
 );
 $res2 = addColumnIfNotExist(
     $pre."items",

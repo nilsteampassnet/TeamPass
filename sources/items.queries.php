@@ -465,6 +465,98 @@ if (null !== $post_type) {
             break;
 
         /*
+          * CASE
+          * Set/unset Lock on item
+        */
+        case "set_lock_item":
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // init
+            $reloadPage = false;
+            $returnValues = array();
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                "decode"
+            );
+            $item_id = $dataReceived['item_id'];
+
+            if (count($dataReceived) > 0) {
+                // Prepare variables
+
+                // Get all informations for this item
+                $dataItem = DB::queryfirstrow(
+                    "SELECT *
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("log_items")." as l ON (l.id_item = i.id)
+                    WHERE i.id=%i AND l.action = %s",
+                    $item_id,
+                    "at_creation"
+                );
+                // check that actual user can access this item
+                $restrictionActive = true;
+                $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
+                if (in_array($_SESSION['user_id'], $restrictedTo)) {
+                    $restrictionActive = false;
+                }
+                if (empty($dataItem['restricted_to'])) {
+                    $restrictionActive = false;
+                }
+
+                if ((
+                        in_array($dataItem['id_tree'], $_SESSION['groupes_visibles'])
+                        && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && $dataItem['id_user'] == $_SESSION['user_id']))
+                        && $restrictionActive === false
+                    )
+                    ||
+                    (
+                        isset($SETTINGS['anyone_can_modify'])
+                        && $SETTINGS['anyone_can_modify'] === '1'
+                        && $dataItem['anyone_can_modify'] === '1'
+                        && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1')
+                        && $restrictionActive === false
+                    )
+                    ||
+                    (null !== $post_folder_id
+                    && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id])
+                    && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id])
+                    && $post_restricted === '1'
+                    && $restrictionActive === false)
+                ) {
+                    DB::insert(
+                        prefix_table("log_items"),
+                        array(
+                            'id_item' => $item_id,
+                            'date' => time(),
+                            'id_user' => $_SESSION['user_id'],
+                            'action' => 'at_lock_item',
+                            'raison' => $dataReceived['lock_value']
+                        )
+                    );
+
+                    // update item
+                    DB::update(
+                        prefix_table("items"),
+                        array(
+                            'locked_by' => isset($dataReceived['lock_value']) ? $_SESSION['user_id'] : '0'
+                            ),
+                        "id=%i",
+                        $item_id
+                    );
+                    $returnValues = '[{"status" : "ok"}]';
+                } else {
+                    $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "1'.addslashes($LANG['error_not_allowed_to']).'"}]';
+                }
+            }
+            // return data
+            echo $returnValues;
+            break;
+
+    /*
         * CASE
         * update an ITEM
         */
@@ -1344,6 +1436,8 @@ if (null !== $post_type) {
             $arrData['id'] = $post_id;
             $arrData['id_user'] = API_USER_ID;
             $arrData['author'] = "API";
+            $arrData['allow_item_locking'] = isset($SETTINGS['allow_item_locking']) ? $SETTINGS['allow_item_locking'] : 0;
+            $arrData['require_item_locking'] = isset($SETTINGS['require_item_locking']) ? $SETTINGS['require_item_locking'] : 0;
 
             // Check if item is deleted
             // taking into account that item can be restored.
@@ -1393,10 +1487,26 @@ if (null !== $post_type) {
             $listRest = array_filter(explode(";", $dataItem['restricted_to']));
             $listeRestriction = $listNotification = $_SESSION['listNotificationEmails'] = "";
 
+            // Get Locked By
+            if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] === '1') {
+                $arrData['locked_by_id'] = 0;
+                $arrData['locked_by'] = '';
+                $arrData['locked_by_me'] = false;
+                
+                if ($dataItem['locked_by']) {
+                    $arrData['locked_by_id'] = $dataItem['locked_by'];
+                    if ($dataItem['locked_by'] === $_SESSION['user_id']) {
+                        $arrData['locked_by_me'] = true;
+                    }
+                    $dataTmp = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id= ".$dataItem['locked_by']);
+                    $arrData['locked_by'] = $dataTmp['login'];
+                }
+            }
+
             $user_in_restricted_list_of_item = false;
             $rows = DB::query("SELECT id, login, email, admin FROM ".prefix_table("users"));
             foreach ($rows as $record) {
-                // Get auhtor
+                // Get author
                 if ($record['id'] === $dataItem['id_user']) {
                     $arrData['author'] = $record['login'];
                     $arrData['author_email'] = $record['email'];
@@ -2453,6 +2563,7 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify, l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
+                        MIN(i.locked_by) AS locked_by_id,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
@@ -2471,6 +2582,7 @@ if (null !== $post_type) {
                         MIN(i.label) AS label, MIN(i.description) AS description, MIN(i.pw) AS pw, MIN(i.login) AS login,
                         MIN(i.anyone_can_modify) AS anyone_can_modify,l.date AS date, i.id_tree AS tree_id,
                         MIN(n.renewal_period) AS renewal_period,
+                        MIN(i.locked_by) AS locked_by_id,
                         MIN(l.action) AS log_action, l.id_user AS log_user
                         FROM ".prefix_table("items")." AS i
                         INNER JOIN ".prefix_table("nested_tree")." AS n ON (i.id_tree = n.id)
@@ -2509,6 +2621,9 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
+                        if (isset($SETTINGS['allow_item_locking']) === true && $SETTINGS['allow_item_locking'] === '1') {
+                            $html_json[$record['id']]['locked_by_id'] = $record['locked_by_id'];
+                        }
                         $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
