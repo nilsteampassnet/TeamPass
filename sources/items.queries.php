@@ -2615,7 +2615,9 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['locked_by_id'] = $record['locked_by_id'];
+                        if (isset($SETTINGS['allow_item_locking']) === true && $SETTINGS['allow_item_locking'] === '1') {
+                            $html_json[$record['id']]['locked_by_id'] = $record['locked_by_id'];
+                        }
                         $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));

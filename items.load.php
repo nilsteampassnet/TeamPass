@@ -1685,42 +1685,44 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         }
 
                         // disable buttons
-                        switch (locked_status) {
-                            case 0:
-                                // No lock
-                                if (data.require_item_locking == 1) {
-                                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
-                                    $('#menu_button_lock_item').removeClass('disabled');
-                                    $('#menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
-                                    $('#menu_button_unlock_item').addClass('disabled');
+                        if (data.allow_item_locking == 1) {
+                            switch (locked_status) {
+                                case 0:
+                                    // No lock
+                                    if (data.require_item_locking == 1) {
+                                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
+                                        $('#menu_button_lock_item').removeClass('disabled');
+                                        $('#menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
+                                        $('#menu_button_unlock_item').addClass('disabled');
+                                        $('#id_pw, #button_quick_pw_copy').addClass('disabled');
+                                    } else {
+                                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
+                                        $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
+                                        $('#menu_button_unlock_item').addClass('disabled');
+                                        $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
+                                    }
+                                    break;
+                                case 1:
+                                    // Locked by another user
+                                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').addClass('disabled');
+                                    $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
                                     $('#id_pw, #button_quick_pw_copy').addClass('disabled');
-                                } else {
+                                    break;
+                                case 2:
+                                    // Locked by this user
                                     $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
                                     $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
-                                    $('#menu_button_unlock_item').addClass('disabled');
+                                    $('#menu_button_lock_item').addClass('disabled');
                                     $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
-                                }
-                                break;
-                            case 1:
-                                // Locked by another user
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').addClass('disabled');
-                                $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
-                                $('#id_pw, #button_quick_pw_copy').addClass('disabled');
-                                break;
-                            case 2:
-                                // Locked by this user
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
-                                $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
-                                $('#menu_button_lock_item').addClass('disabled');
-                                $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
-                                break;
-                            default:
-                                $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
-                                $('#menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
-                                $('#menu_button_lock_item, #menu_button_unlock_item').addClass('disabled');
-                                $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
+                                    break;
+                                default:
+                                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
+                                    $('#menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
+                                    $('#menu_button_lock_item, #menu_button_unlock_item').addClass('disabled');
+                                    $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
+                            }
                         }
-
+                        
                         //Manage to deleted information
                         if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != "not_enabled") {
                             $('#item_extra_info')
