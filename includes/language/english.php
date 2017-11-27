@@ -14,13 +14,14 @@
  */
 global $LANG;
 $LANG = array (
+    'require_item_locking' => 'Require Users to Lock items before using them.',
     'lockedby' => 'Locked By',
     'islocked' => 'Account is locked',
     'locked_by' => 'Lock Account',
-    'allow_password_locking' => 'Allow Users to Lock Password exclusively',
-    'lock_item' => 'Lock Password exclusively',
-    'unlock_item' => 'Unlock Password',
-    'settings_allow_password_locking_tip' => 'Uses the "Restricted To" field for locking/unlocking records.  This is useful for "checkout" of a password.',
+    'allow_item_locking' => 'Allow Users to Lock items exclusively',
+    'lock_item' => 'Lock item exclusively',
+    'unlock_item' => 'Unlock Item',
+    'settings_allow_item_locking_tip' => 'Allows users to Lock items for exclusive access.',
     'checkbox' => 'Checkbox',
     'data_is_checkbox' => 'Data is Checkbox',
     'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',

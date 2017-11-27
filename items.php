@@ -235,8 +235,8 @@ echo '
                             <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
                                     <ul class="menu_250">',
-                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_lock_item" onclick="lockItem()"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['lock_item'].'</li>' : '',
-                                        (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) ? '<li id="menu_button_unlock_item" onclick="unlockItem()"><i class="fa fa-unlock fa-fw"></i>&nbsp; '.$LANG['unlock_item'].'</li>' : '','
+                                        (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) ? '<li id="menu_button_lock_item" onclick="lockItem()"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['lock_item'].'</li>' : '',
+                                        (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) ? '<li id="menu_button_unlock_item" onclick="unlockItem()"><i class="fa fa-unlock fa-fw"></i>&nbsp; '.$LANG['unlock_item'].'</li>' : '','
                                         <li id="menu_button_copy_pw" class="copy_clipboard"><i class="fa fa-lock fa-fw"></i>&nbsp; '.$LANG['pw_copy_clipboard'].'</li>
                                         <li id="menu_button_copy_login" class="copy_clipboard"><i class="fa fa-user fa-fw"></i>&nbsp; '.$LANG['login_copy'].'</li>
                                         <li id="menu_button_show_pw" onclick="ShowPassword()"><i class="fa fa-eye fa-fw"></i>&nbsp; '.$LANG['mask_pw'].'</li>
@@ -332,7 +332,7 @@ echo '
                     </td>
                 </tr>';
 // Line for Lock Account
-if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
+if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) {
     echo '
                 <tr>
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['lockedby'].' :</td>
@@ -525,7 +525,7 @@ if (isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1) {
 }
 
 // Line for LOCKED BY
-if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
+if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) {
     echo '
             <label for="" class="label_cpm">'.$LANG['lockedby'].' : </label>
             <span name="locked_by_list" id="locked_by_list" style="width:100%"></span>
@@ -727,7 +727,7 @@ if (isset($SETTINGS['restricted_to']) && $SETTINGS['restricted_to'] == 1) {
             </div>';
 }
 
-if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1) {
+if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1) {
     echo '
             <div id="div_editRestricted">
                 <label for="" class="label_cpm">'.$LANG['lockedby'].' : </label>

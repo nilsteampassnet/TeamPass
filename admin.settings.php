@@ -861,16 +861,28 @@ echo '
                         <div class="toggle toggle-modern" id="restricted_to_roles" data-toggle-on="', isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_roles_input" name="restricted_to_roles_input" value="', isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
-// enable allow_password_locking
+// enable allow_item_locking
 echo '
-                <tr id="tr_option_allow_password_locking" style="display:', isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1 ? 'contents' : 'none', ';"><td>
+                <tr id="tr_option_allow_item_locking" style="display:', isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1 ? 'contents' : 'none', ';"><td>
                     <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
                     <label>
-                        '.$LANG['allow_password_locking'].'
-                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_allow_password_locking_tip']), ENT_QUOTES).'"></i></span>                        
+                        '.$LANG['allow_item_locking'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_allow_item_locking_tip']), ENT_QUOTES).'"></i></span>                        
                     </label>
                     </td><td>
-                        <div class="toggle toggle-modern" id="allow_password_locking" data-toggle-on="', isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="allow_password_locking_input" name="allow_password_locking_input" value="', isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] == 1 ? '1' : '0', '" />
+                        <div class="toggle toggle-modern" id="allow_item_locking" data-toggle-on="', isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="allow_item_locking_input" name="allow_item_locking_input" value="', isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1 ? '1' : '0', '" />
+                </td></tr>';
+
+// enable require_item_locking
+echo '
+                <tr id="tr_option_require_item_locking" style="display:', isset($SETTINGS['require_item_locking']) && $SETTINGS['require_item_locking'] == 1 ? 'contents' : 'none', ';"><td>
+                    <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                    <label>
+                        '.$LANG['require_item_locking'].'
+                        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_require_item_locking_tip']), ENT_QUOTES).'"></i></span>                        
+                    </label>
+                    </td><td>
+                        <div class="toggle toggle-modern" id="require_item_locking" data-toggle-on="', isset($SETTINGS['require_item_locking']) && $SETTINGS['require_item_locking'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="require_item_locking_input" name="require_item_locking_input" value="', isset($SETTINGS['require_item_locking']) && $SETTINGS['require_item_locking'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
 echo '<tr><td colspan="3"><hr /></td></tr>';

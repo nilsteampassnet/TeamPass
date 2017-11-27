@@ -1486,7 +1486,7 @@ if (null !== $post_type) {
             $listeRestriction = $listNotification = $_SESSION['listNotificationEmails'] = "";
 
             // Get Locked By
-            if (isset($SETTINGS['allow_password_locking']) && $SETTINGS['allow_password_locking'] === '1') {
+            if (isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] === '1') {
                 $arrData['locked_by_id'] = 0;
                 $arrData['locked_by'] = '';
                 $arrData['locked_by_me'] = false;
@@ -2613,7 +2613,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['locked_by'] = $record['locked_by'];
+                        $html_json[$record['id']]['locked_by_id'] = $record['locked_by_id'];
                         $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
@@ -2877,6 +2877,8 @@ if (null !== $post_type) {
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
+                "allow_item_locking" => isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] === '1' ? 1 : 0,
+                "require_item_locking" => isset($SETTINGS['require_item_locking']) && $SETTINGS['require_item_locking'] === '1' ? 1 : 0,
                 "next_start" => intval($post_nb_items_to_display_once) + intval($start),
                 "list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
