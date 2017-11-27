@@ -1691,7 +1691,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 if (data.require_item_locking == 1) {
                                     $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
                                     $('#menu_button_lock_item').removeClass('disabled');
-                                    $('#menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');)
+                                    $('#menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
                                     $('#menu_button_unlock_item').addClass('disabled');
                                     $('unhide_masked_data, button_quick_pw_copy').addClass('disabled');
                                 } else {
