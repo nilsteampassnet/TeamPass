@@ -188,7 +188,7 @@ function buildNodeTree($nodeId)
                 $childrenNb = DB::count();
 
                 // If personal Folder, convert id into user name
-                if ($node->title == $session_user_id && $node->nlevel == 1) {
+                if ($node->title === $session_user_id && $node->nlevel == 1) {
                     $node->title = $session_login;
                 }
 

@@ -412,7 +412,7 @@ if (null !== $post_type) {
                 // mini icon for collab
                 if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
                     if ($dataReceived['anyone_can_modify'] === '1') {
-                        $itemCollab = '<i class="fa fa-pencil fa-sm mi-grey-1 tip" title="'.$LANG['item_menu_collab_enable'].'"></i>&nbsp;&nbsp;';
+                        $itemCollab = '<i class="fa fa-pencil fa-sm mi-grey-1 pointer tip" title="'.$LANG['item_menu_collab_enable'].'" ondblclick="AfficherDetailsItem(\''.$newID.'\', \'0\', \'\', \'\', \'\', true, \'\')"></i>&nbsp;&nbsp;';
                     }
                 }
                 // display quick icon shortcuts ?
@@ -2443,7 +2443,13 @@ if (null !== $post_type) {
                         @array_keys($_SESSION['list_folders_limited'])
                     )
                 )) {
-                    echo prepareExchangedData(array("error" => "not_authorized"), "encode");
+                    echo prepareExchangedData(
+                        array(
+                            "error" => "not_authorized",
+                            "arborescence" => $arr_arbo
+                        ),
+                        "encode"
+                    );
                     break;
                 } else {
                     DB::query("SELECT * FROM ".prefix_table("items")." WHERE inactif = %i", 0);
