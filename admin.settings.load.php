@@ -942,15 +942,7 @@ $(function() {
             $("#tr_option_restricted_to_roles").show();
         } else {
             $("#tr_option_restricted_to_roles").hide();
-            $("#restricted_to_roles_input").val("0");
-        }
-    });
-    $("#allow_item_locking").bind("click", function() {
-        if ($("#allow_item_locking_input").val()== 1) {
-            $("#tr_option_require_item_locking").show();
-        } else {
-            $("#tr_option_require_item_locking").hide();
-            $("#require_item_locking_input").val("0");
+            $("#tr_option_restricted_to_roles_input").val("0");
         }
     });
     $("#anyone_can_modify").bind("click", function() {

@@ -362,9 +362,8 @@ if (!isset($_GET['type'])) {
     foreach ($rows as $record) {
         $arr_data[$record['id']]['item_id'] = $record['id'];
         $arr_data[$record['id']]['tree_id'] = $record['id_tree'];
-        $arr_data[$record['id']]['locked_by_id'] = $record['locked_by'];
-        $arr_data[$record['id']]['label'] = strip_tags(htmlentities(cleanString($record['label'])));
-        $arr_data[$record['id']]['desc'] = strip_tags(htmlentities(cleanString(explode("<br>", $record['description'])[0])));
+        $arr_data[$record['id']]['label'] = strip_tags((cleanString($record['label'])));
+        $arr_data[$record['id']]['desc'] = strip_tags((cleanString(explode("<br>", $record['description'])[0])));
         $arr_data[$record['id']]['folder'] = strip_tags(stripslashes(mb_substr(cleanString($record['folder']), 0, 65)));
         $arr_data[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
 

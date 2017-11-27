@@ -338,7 +338,6 @@ if (null !== $post_type) {
                             `auto_update_pwd_frequency` tinyint(2) NOT null DEFAULT '0',
                             `auto_update_pwd_next_date` varchar(100) NOT null DEFAULT '0',
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
-                            `locked_by` INT(12) DEFAULT NULL,
                             PRIMARY KEY (`id`),
                             KEY    `restricted_inactif_idx` (`restricted_to`,`inactif`)
                             ) CHARSET=utf8;"
@@ -439,8 +438,6 @@ global \$SETTINGS;
                             array('admin', 'utf8_enabled', '1'),
                             array('admin', 'restricted_to', '0'),
                             array('admin', 'restricted_to_roles', '0'),
-                            array('admin', 'allow_item_locking', '0'),
-                            array('admin', 'require_item_locking', '0'),
                             array('admin', 'enable_send_email_on_user_login', '0'),
                             array('admin', 'enable_user_can_create_folders', '0'),
                             array('admin', 'insert_manual_entry_item_history', '0'),
