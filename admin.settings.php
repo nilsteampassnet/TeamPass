@@ -861,6 +861,7 @@ echo '
                         <div class="toggle toggle-modern" id="restricted_to_roles" data-toggle-on="', isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="restricted_to_roles_input" name="restricted_to_roles_input" value="', isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1 ? '1' : '0', '" />
                 </td></tr>';
 
+echo '<tr><td colspan="3"><hr /></td></tr>';
 // enable allow_item_locking
 echo '
                 <tr id="tr_option_allow_item_locking" style="display:', isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] == 1 ? 'contents' : 'none', ';"><td>
