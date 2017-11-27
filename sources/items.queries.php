@@ -2823,6 +2823,8 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
                         $html_json[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
                         $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
+                        $html_json[$record['id']]['allow_item_locking'] = isset($SETTINGS['allow_item_locking']) ? $SETTINGS['allow_item_locking'] : 0;
+                        $html_json[$record['id']]['require_item_locking'] = isset($SETTINGS['require_item_locking']) ? $SETTINGS['require_item_locking'] : 0;
                         $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
                         $html_json[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) ? $SETTINGS['enable_favourites'] : '0';
@@ -2877,8 +2879,6 @@ if (null !== $post_type) {
                 "error" => $showError,
                 "saltkey_is_required" => $folderIsPf === true ? 1 : 0,
                 "show_clipboard_small_icons" => isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1' ? 1 : 0,
-                "allow_item_locking" => isset($SETTINGS['allow_item_locking']) && $SETTINGS['allow_item_locking'] === '1' ? 1 : 0,
-                "require_item_locking" => isset($SETTINGS['require_item_locking']) && $SETTINGS['require_item_locking'] === '1' ? 1 : 0,
                 "next_start" => intval($post_nb_items_to_display_once) + intval($start),
                 "list_to_be_continued" => $listToBeContinued,
                 "items_count" => $counter,
