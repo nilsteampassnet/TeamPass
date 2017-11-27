@@ -1693,32 +1693,32 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                     $('#menu_button_lock_item').removeClass('disabled');
                                     $('#menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
                                     $('#menu_button_unlock_item').addClass('disabled');
-                                    $('#unhide_masked_data, #button_quick_pw_copy').addClass('disabled');
+                                    $('#id_pw, #button_quick_pw_copy').addClass('disabled');
                                 } else {
                                     $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
                                     $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
                                     $('#menu_button_unlock_item').addClass('disabled');
-                                    $('#unhide_masked_data, #button_quick_pw_copy').removeClass('disabled');
+                                    $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
                                 }
                                 break;
                             case 1:
                                 // Locked by another user
                                 $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').addClass('disabled');
                                 $('#menu_button_lock_item, #menu_button_unlock_item, #menu_button_copy_pw, #menu_button_show_pw').addClass('disabled');
-                                $('#unhide_masked_data, #button_quick_pw_copy').addClass('disabled');
+                                $('#id_pw, #button_quick_pw_copy').addClass('disabled');
                                 break;
                             case 2:
                                 // Locked by this user
                                 $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
                                 $('#menu_button_lock_item, #menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
                                 $('#menu_button_lock_item').addClass('disabled');
-                                $('#unhide_masked_data, #button_quick_pw_copy').removeClass('disabled');
+                                $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
                                 break;
                             default:
                                 $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').removeClass('disabled');
                                 $('#menu_button_copy_pw, #menu_button_show_pw').removeClass('disabled');
                                 $('#menu_button_lock_item, #menu_button_unlock_item').addClass('disabled');
-                                $('#unhide_masked_data, #button_quick_pw_copy').removeClass('disabled');
+                                $('#id_pw, #button_quick_pw_copy').removeClass('disabled');
                         }
 
                         //Manage to deleted information
