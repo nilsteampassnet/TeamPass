@@ -1436,6 +1436,8 @@ if (null !== $post_type) {
             $arrData['id'] = $post_id;
             $arrData['id_user'] = API_USER_ID;
             $arrData['author'] = "API";
+            $arrData['allow_item_locking'] = isset($SETTINGS['allow_item_locking']) ? $SETTINGS['allow_item_locking'] : 0;
+            $arrData['require_item_locking'] = isset($SETTINGS['require_item_locking']) ? $SETTINGS['require_item_locking'] : 0;
 
             // Check if item is deleted
             // taking into account that item can be restored.
@@ -2823,8 +2825,6 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
                         $html_json[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
                         $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
-                        $html_json[$record['id']]['allow_item_locking'] = isset($SETTINGS['allow_item_locking']) ? $SETTINGS['allow_item_locking'] : 0;
-                        $html_json[$record['id']]['require_item_locking'] = isset($SETTINGS['require_item_locking']) ? $SETTINGS['require_item_locking'] : 0;
                         $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
                         $html_json[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) ? $SETTINGS['enable_favourites'] : '0';
