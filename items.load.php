@@ -471,7 +471,7 @@ function showItemsList(data)
             }
             // Pwd icon
             if (value.pw !== "") {
-                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
+                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+unsanitizeString(value.pw)+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
             }
 
             // Now check if pwd is empty. If it is then warn user
