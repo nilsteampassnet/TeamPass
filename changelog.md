@@ -17,6 +17,7 @@
  Fixed issue related to item edition on doubleclick
  Fixed issue no items shown on tag search
  Fixed issue special characters bad display in search results
+ Fixed issue in password clipboard copy with double-quote character
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check

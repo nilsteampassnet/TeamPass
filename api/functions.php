@@ -1476,13 +1476,15 @@ function rest_get()
                     );
 
                     // check if psk is correct.
-                    $user_saltkey = defuse_validate_personal_key(
-                        $user_saltkey,
-                        $userData['encrypted_psk']
-                    );
-                    if (strpos($user_saltkey, "Error ") !== false) {
-                        // error
-                        rest_error('AUTH_NO_DATA');
+                    if (empty($user_saltkey) === false) {
+                        $user_saltkey = defuse_validate_personal_key(
+                            $user_saltkey,
+                            $userData['encrypted_psk']
+                        );
+                        if (strpos($user_saltkey, "Error ") !== false) {
+                            // error
+                            rest_error('AUTH_PSK_ERROR');
+                        }
                     }
 
                     // load passwordLib library
@@ -1541,7 +1543,7 @@ function rest_get()
                         $counter = DB::count();
 
                         if ($counter > 0) {
-                            $json = "";
+                            $json = [];
                             foreach ($response as $data) {
                                 // check if item visible
                                 if (empty($data['restricted_to']) ||
@@ -2183,7 +2185,7 @@ function rest_error($type, $detail = 'N/A')
 {
     switch ($type) {
         case 'APIKEY':
-            $message = array('err' => 'This api_key '.$GLOBALS['apikey'].' doesn\'t exist');
+            $message = array('err' => 'This api_key '.$GLOBALS['apikey'].' doesn\'t exist', 'code' => 'API_KEY_NOT_FOUND');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'NO_CATEGORY':
@@ -2237,13 +2239,16 @@ function rest_error($type, $detail = 'N/A')
             $message = array('err' => 'URL needed to grant access');
             break;
         case 'AUTH_NO_IDENTIFIER':
-            $message = array('err' => 'Credentials needed to grant access');
+            $message = array('err' => 'Credentials needed to grant access', 'code' => 'AUTH_NO_IDENTIFIER');
             break;
         case 'AUTH_NO_DATA':
-            $message = array('err' => 'Data not allowed for the user');
+            $message = array('err' => 'Data not allowed for the user', 'code' => 'AUTH_NO_DATA');
+            break;
+        case 'AUTH_PSK_ERROR':
+            $message = array('err' => 'Personal Saltkey is wrong', 'code' => 'AUTH_PSK_ERROR');
             break;
         case 'NO_DATA_EXIST':
-            $message = array('err' => 'No data exists');
+            $message = array('err' => 'No data exists', 'code' => 'NO_DATA_EXIST');
             break;
         case 'NO_DESTINATION_FOLDER':
             $message = array('err' => 'No destination folder provided');

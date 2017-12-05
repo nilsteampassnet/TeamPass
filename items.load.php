@@ -467,11 +467,11 @@ function showItemsList(data)
         if (value.copy_to_clipboard_small_icons === "1") {
             // Login icon
             if (value.login !== "") {
-                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+sanitizeString(value.login)+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>" id="minilogin_'+value.item_id+'"></span>&nbsp;';
             }
             // Pwd icon
             if (value.pw !== "") {
-                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+unsanitizeString(value.pw)+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'"></span>&nbsp;';
+                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+sanitizeString(value.pw)+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'" id="minipwd_'+value.item_id+'"></span>&nbsp;';
             }
 
             // Now check if pwd is empty. If it is then warn user
@@ -1124,6 +1124,16 @@ function EditerItem()
                         $("#hid_files").val(data.files);
                         /*$("#id_categorie").html(data.id_tree);
                         $("#id_item").html(data.id);*/
+
+                        // Refresh mini-icons if needed
+                        if ($("#minipwd_" + data.id).length > 0) {
+                          $("#minipwd_" + data.id).attr('data-clipboard-text', $('#edit_pw1').val());
+                        }
+                        if ($("#minilogin_" + data.id).length > 0) {
+                          $("#minilogin_" + data.id).attr('data-clipboard-text', $('#edit_item_login').val());
+                        } else {
+
+                        }
 
                         // refresh fields
                         if ($('.edit_item_field').val() != undefined) {
@@ -2111,11 +2121,13 @@ function open_edit_item_div(restricted_to_roles)
     // Check if Item has changed since loaded
     if (CheckIfItemChanged() == 1) {
         var tmp = $("#"+$("#selected_items").val()).attr("ondblclick");
-        tmp = tmp.substring(20,tmp.indexOf(")"));
-        tmp = tmp.replace(/'/g, "").split(',');
-        AfficherDetailsItem(tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], 1, 1);
-        $("#div_loading").addClass("hidden");
-        return;
+        if (tmp !== undefined) {
+          tmp = tmp.substring(20,tmp.indexOf(")"));
+          tmp = tmp.replace(/'/g, "").split(',');
+          AfficherDetailsItem(tmp[0], tmp[1], tmp[2], tmp[3], tmp[4], 1, 1);
+          $("#div_loading").addClass("hidden");
+          return;
+        }
     }
 
     // Show WYGIWYG editor
@@ -2134,7 +2146,7 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_desc').html($('#hid_desc').val());
     $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
     $("#edit_visible_pw").text($('#hid_pw').val());
-    $('#edit_item_login').val($('#hid_login').val());
+    $('#edit_item_login').val(unsanitizeString($('#hid_login').val()));
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
     $('#edit_categorie').val($('#id_categorie').val());
