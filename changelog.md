@@ -17,6 +17,7 @@
  Fixed issue related to item edition on doubleclick
  Fixed issue no items shown on tag search
  Fixed issue special characters bad display in search results
+ Fixed issue in password clipboard copy with double-quote character
  Added SMTPAutoTLS for sendMail
  Improved offline file with full encryption
  Improved session validity check
@@ -25,6 +26,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2043 LDAP Authentication is not working
  #2029 Fix on install step3
  #2028 Fix on install step3
  #2027, #2023 Fatal Error after installation and setting change

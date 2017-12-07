@@ -171,7 +171,7 @@ function CreateRandomString(size,type){
 **/
 function unsanitizeString(string){
     if(string !== "" && string !== null){
-        string = string.replace(/\\/g,"").replace(/&#92;/g,"\\");
+        string = string.replace(/\\/g,"").replace(/&#92;/g,"\\").replace(/&quot;/g, '"');
     }
     return string;
 }

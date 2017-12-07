@@ -2715,8 +2715,8 @@ if (null !== $post_type) {
                         } else {
                             $pw = "";
                         }
-                        $html_json[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
-                        $html_json[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
+                        $html_json[$record['id']]['pw'] = $pw;
+                        $html_json[$record['id']]['login'] = $record['login'];
                         $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
                         $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;

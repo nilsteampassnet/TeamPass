@@ -288,6 +288,7 @@ function rest_get()
     }
 
     if (apikey_checker($GLOBALS['apikey'])) {
+
         teampass_connect();
 
         // define the API user through the LABEL of apikey
@@ -1372,7 +1373,7 @@ function rest_get()
                     // is user granted?
                     $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
-                        FROM ".$pre."users
+                        FROM ".prefix_table("users")."
                         WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
@@ -1455,31 +1456,35 @@ function rest_get()
             **
             */
             // get user credentials
-            if (isset($GLOBALS['request'][2]) && isset($GLOBALS['request'][3]) && isset($GLOBALS['request'][4])) {
-                // get url
-                if (isset($GLOBALS['request'][1])) {
-                    // decode base64 criterium
-                    $tpc_url = base64_decode($GLOBALS['request'][1]);
-                    $user_pwd = base64_decode($GLOBALS['request'][3]);
-                    $user_saltkey = base64_decode($GLOBALS['request'][4]);
+            if (isset($GLOBALS['request'][1])) {
+                // Get passed variables
+                $passedData = explode(';', base64_decode($GLOBALS['request'][1]));
+                $tpc_url = $passedData[0];
+                $user_login = $passedData[1];
+                $user_pwd = $passedData[2];
+                $user_saltkey = $passedData[3];
 
+                // get url
+                if (isset($tpc_url)) {
                     // is user granted?
                     //db::debugMode(true);
                     $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
-                        FROM ".$pre."users
+                        FROM ".prefix_table("users")."
                         WHERE login = %s",
-                        $GLOBALS['request'][2]
+                        $user_login
                     );
 
                     // check if psk is correct.
-                    $user_saltkey = defuse_validate_personal_key(
-                        $user_saltkey,
-                        $userData['encrypted_psk']
-                    );
-                    if (strpos($user_saltkey, "Error ") !== false) {
-                        // error
-                        rest_error('AUTH_NO_DATA');
+                    if (empty($user_saltkey) === false) {
+                        $user_saltkey = defuse_validate_personal_key(
+                            $user_saltkey,
+                            $userData['encrypted_psk']
+                        );
+                        if (strpos($user_saltkey, "Error ") !== false) {
+                            // error
+                            rest_error('AUTH_PSK_ERROR');
+                        }
                     }
 
                     // load passwordLib library
@@ -1489,6 +1494,12 @@ function rest_get()
                     $pwdlib = new PasswordLib\PasswordLib();
 
                     if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
+                        // Manage the case TPC asks for user identification
+                        if ($tpc_url === 'identify_user') {
+                            echo json_encode(array('err' => '', 'status' => 'USER_GRANTED'));
+                            return false;
+                        }
+
                         // define the restriction of "id_tree" of this user
                         //db::debugMode(true);
                         $userDef = DB::queryOneColumn(
@@ -1508,12 +1519,17 @@ function rest_get()
 
                         // add PF
                         $userpf = DB::queryFirstRow(
-                            "SELECT `id` FROM ".$pre."nested_tree WHERE title = %s",
+                            "SELECT `id` FROM ".prefix_table("nested_tree")." WHERE title = %s",
                             $userData['id']
                         );
                         array_push($userDef, $userpf['id']);
 
+                        // Parse provided URL
+                        $url_scheme = parse_url($tpc_url, PHP_URL_SCHEME);
+                        $url_post = parse_url($tpc_url, PHP_URL_HOST);
+
                         // find the item associated to the url
+                        //db::debugmode(true);
                         $response = DB::query(
                             "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
                             FROM ".prefix_table("items")."
@@ -1521,13 +1537,13 @@ function rest_get()
                             AND id_tree IN (".implode(",", array_filter($userDef)).")
                             AND inactif = %i
                             ORDER BY id DESC",
-                            $tpc_url.'%',
+                            $url_scheme.'://'.$url_post.'%',
                             0
                         );
                         $counter = DB::count();
 
                         if ($counter > 0) {
-                            $json = "";
+                            $json = [];
                             foreach ($response as $data) {
                                 // check if item visible
                                 if (empty($data['restricted_to']) ||
@@ -1553,6 +1569,8 @@ function rest_get()
                                     }
                                     $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
                                     $json[$data['id']]['perso'] = $data['perso'];
+                                    $json[$data['id']]['domain'] = $url_scheme.'://'.$url_post;
+                                    $json[$data['id']]['id'] = $data['id'];
                                 }
                             }
                             // prepare answer. If no access then inform
@@ -1587,7 +1605,7 @@ function rest_get()
                     // is user granted?
                     $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
-                        FROM ".$pre."users
+                        FROM ".prefix_table("users")."
                         WHERE login = %s",
                         $GLOBALS['request'][4]
                     );
@@ -1606,7 +1624,7 @@ function rest_get()
                         // does the personal folder of this user exists?
                         DB::queryFirstRow(
                             "SELECT `id`
-                            FROM " . $pre."nested_tree
+                            FROM ".prefix_table("nested_tree")."
                             WHERE title = %s AND personal_folder = 1",
                             $userData['id']
                         );
@@ -2167,7 +2185,7 @@ function rest_error($type, $detail = 'N/A')
 {
     switch ($type) {
         case 'APIKEY':
-            $message = array('err' => 'This api_key '.$GLOBALS['apikey'].' doesn\'t exist');
+            $message = array('err' => 'This api_key '.$GLOBALS['apikey'].' doesn\'t exist', 'code' => 'API_KEY_NOT_FOUND');
             header('HTTP/1.1 405 Method Not Allowed');
             break;
         case 'NO_CATEGORY':
@@ -2221,13 +2239,16 @@ function rest_error($type, $detail = 'N/A')
             $message = array('err' => 'URL needed to grant access');
             break;
         case 'AUTH_NO_IDENTIFIER':
-            $message = array('err' => 'Credentials needed to grant access');
+            $message = array('err' => 'Credentials needed to grant access', 'code' => 'AUTH_NO_IDENTIFIER');
             break;
         case 'AUTH_NO_DATA':
-            $message = array('err' => 'Data not allowed for the user');
+            $message = array('err' => 'Data not allowed for the user', 'code' => 'AUTH_NO_DATA');
+            break;
+        case 'AUTH_PSK_ERROR':
+            $message = array('err' => 'Personal Saltkey is wrong', 'code' => 'AUTH_PSK_ERROR');
             break;
         case 'NO_DATA_EXIST':
-            $message = array('err' => 'No data exists');
+            $message = array('err' => 'No data exists', 'code' => 'NO_DATA_EXIST');
             break;
         case 'NO_DESTINATION_FOLDER':
             $message = array('err' => 'No destination folder provided');
