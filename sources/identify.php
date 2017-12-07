@@ -31,7 +31,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (!isset($SETTINGS['cpassman_dir']) || $SETTINGS['cpassman_dir'] === "" || $SETTINGS['cpassman_dir'] === ".") {
+if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === true || $SETTINGS['cpassman_dir'] === ".") {
     $SETTINGS['cpassman_dir'] = "..";
 }
 
@@ -179,7 +179,9 @@ if ($post_type === "identify_duo_user") {
 
     // if we have a card id and all agses credentials
     // then we try to generate the message for agsesflicker
-    if (isset($row['agses-usercardid']) && !empty($ret_agses_url['valeur']) && !empty($ret_agses_id['valeur']) && !empty($ret_agses_apikey['valeur'])) {
+    if (isset($row['agses-usercardid']) && empty($ret_agses_url['valeur']) === false
+        && empty($ret_agses_id['valeur']) === false && empty($ret_agses_apikey['valeur']) === false
+    ) {
         // check that card id is not empty or equal to 0
         if ($row['agses-usercardid'] !== "0" && !empty($row['agses-usercardid'])) {
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
@@ -190,7 +192,7 @@ if ($post_type === "identify_duo_user") {
             $agses->setApiKey($ret_agses_apikey['valeur']);
             $agses->create();
             //create random salt and store it into session
-            if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+            if (!isset($_SESSION['hedgeId']) || empty($_SESSION['hedgeId']) === true) {
                 $_SESSION['hedgeId'] = md5(time());
             }
             $_SESSION['user_settings']['agses-usercardid'] = $row['agses-usercardid'];
@@ -420,7 +422,7 @@ function identifyUser($sentData)
                     $result = ldap_search($ldapconn, $SETTINGS['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
 
                     // Should we restrain the search in specified user groups
-                    if (isset($SETTINGS['ldap_usergroup'])) {
+                    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
                         $filter_group = "memberUid=".$username;
                         $result_group = ldap_search($ldapconn, $SETTINGS['ldap_usergroup'], $filter_group, array('dn'));
                         if ($debugLdap == 1) {
@@ -431,10 +433,10 @@ function identifyUser($sentData)
                                 );
                         }
                         // Is user in the specified user groups?
-                        if (ldap_count_entries($ldapconn, $result_group) === false) {
-                            $ldapConnection = false;
-                        } else {
+                        if (ldap_count_entries($ldapconn, $result_group) > 0) {
                             $ldapConnection = true;
+                        } else {
+                            $ldapConnection = false;
                         }
                     }
                     if ($debugLdap == 1) {
@@ -446,7 +448,7 @@ function identifyUser($sentData)
                     }
 
                     // Is user in the LDAP?
-                    if (ldap_count_entries($ldapconn, $result) !== false) {
+                    if (ldap_count_entries($ldapconn, $result) > 0) {
                         // Try to auth inside LDAP
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
@@ -683,7 +685,7 @@ function identifyUser($sentData)
 
     // check GA code
     if (isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 && $username !== "admin") {
-        if (isset($dataReceived['GACode']) && !empty($dataReceived['GACode'])) {
+        if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
             // load library
             include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
 
