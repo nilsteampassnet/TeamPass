@@ -26,6 +26,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2043 LDAP Authentication is not working
  #2029 Fix on install step3
  #2028 Fix on install step3
  #2027, #2023 Fatal Error after installation and setting change
