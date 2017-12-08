@@ -26,6 +26,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2051 2FA Google Name Displayed field not saving to configuration
  #2043 LDAP Authentication is not working
  #2029 Fix on install step3
  #2028 Fix on install step3
