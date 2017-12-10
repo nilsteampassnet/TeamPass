@@ -34,12 +34,6 @@ function fieldAdd(id) {
 function catInFolders(id) {
     $("#post_id").val(id);
     $("#catInFolder_title").html($("#item_"+id).html());    // display title
-    // pre-select folders
-    $("#cat_folders_selection > option").prop("selected", false);
-    var folder = $("#catFoldersList_"+id).val().split(";");
-    for (var i=0; i<folder.length; i++) {
-        $("#cat_folders_selection option[value="+folder[i]+"]").attr('selected', 'selected');
-    };
     // open
     $("#category_in_folder").dialog("open");
 }
@@ -774,22 +768,31 @@ $(function() {
         }
     });
 
-    $("#cat_folders_selection").multiselect({
-        selectedList: 7,
-        multiple:true,
-        checkAllText: "<?php echo $LANG['check_all_text']; ?>",
-        uncheckAllText: "<?php echo $LANG['uncheck_all_text']; ?>"
+    // Add multselect buttons
+    $('#but_select_all').click(function(){
+        $('#cat_folders_selection').multiSelect('select_all');
+        return false;
     });
+    $('#but_deselect_all-all').click(function(){
+        $('#cat_folders_selection').multiSelect('deselect_all');
+        return false;
+    });
+
 
     $("#category_in_folder").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
         width: 600,
-        height: 350,
+        height: 470,
         title: "<?php echo $LANG['category_in_folders']; ?>",
-        open: function() {
-            $("#cat_folders_selection").multiselect('refresh');
+        open: function() {            
+            // pre-select folders
+            var id = $("#post_id").val();
+            var folder = $("#catFoldersList_"+id).val().split(";");            
+            $("#cat_folders_selection")
+                .val(folder)
+                .multiSelect('refresh');
         },
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
@@ -826,6 +829,12 @@ $(function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
+        },
+        close: function() {
+            // Clear multiselect
+            $("#cat_folders_selection")
+                .val([])
+                .multiSelect('refresh');
         }
     });
 

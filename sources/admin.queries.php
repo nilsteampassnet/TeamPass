@@ -1678,7 +1678,7 @@ switch ($post_type) {
         $SETTINGS['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
 
         // ga_website_name
-        if (!is_null($dataReceived['ga_website_name'])) {
+        if (is_null($dataReceived['ga_website_name']) === false) {
             DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
             $counter = DB::count();
             if ($counter == 0) {
@@ -1702,6 +1702,10 @@ switch ($post_type) {
                 );
             }
             $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+
+                
+            // save change in config file
+            handleConfigFile("update", 'ga_website_name', $SETTINGS['ga_website_name']);
         } else {
             $SETTINGS['ga_website_name'] = "";
         }

@@ -312,9 +312,10 @@ if (null !== $post_type) {
                 }
 
                 if ($activity === "table") {
-                    //FORCE UTF8 DATABASE
-                    mysqli_query($dbTmp, "ALTER DATABASE `".$dbBdd."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
-                    if ($task === "items") {
+                    if ($task === "utf8") {
+                        //FORCE UTF8 DATABASE
+                        mysqli_query($dbTmp, "ALTER DATABASE `".$dbBdd."` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci");
+                    } elseif ($task === "items") {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items` (
