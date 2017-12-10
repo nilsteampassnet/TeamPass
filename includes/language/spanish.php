@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'deselect_all' => 'Deselect all',
     'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
     'error_security_level_not_reached' => 'Expected level of security not reached!',
     'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',

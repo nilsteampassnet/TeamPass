@@ -211,30 +211,30 @@ echo '
         <div>
             '.$LANG['new_category_label'].':
             <input type="text" id="new_category_label" class="ui-content" style="margin-left:5px; width: 200px;" />
-            <input type="button" value="'.$LANG['add_category'].'" onclick="categoryAdd()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['add_category'].'" onclick="categoryAdd()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
         </div>
         <div style="margin-top:5px;">
             '.$LANG['for_selected_items'].':<br />
             <input type="text" id="new_item_title" class="ui-content" style="margin-left:30px; width: 200px;" />
-            <input type="button" value="'.$LANG['rename'].'" onclick="renameItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['rename'].'" onclick="renameItem()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
             &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
             &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
             <select id="moveItemTo" style="margin-left:10px;">
                 <option style="display: none ! important;" value="HTML validation placeholder"></option>
                 '.$categoriesSelect.'
             </select>
             &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['type'].'" onclick="changeFieldTypeNow()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['type'].'" onclick="changeFieldTypeNow()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
             <select id="changeFieldType" style="margin-left:10px;">
                 <option style="display: none ! important;" value="HTML validation placeholder"></option>
                 '.$options_field_types.'
             </select>
         </div>
         <div style="margin-top:5px;">
-            <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" />
-            <input type="button" value="'.$LANG['reload_table'].'" onclick="loadFieldsList()" style="margin-left:5px;" />
+            <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
+            <input type="button" value="'.$LANG['reload_table'].'" onclick="loadFieldsList()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
         </div>
     </div>';
 
@@ -273,29 +273,34 @@ echo '
         '.$LANG['select_folders_for_category'].'
         &nbsp;&quot;<span style="font-weight:bold;" id="catInFolder_title"></span>&quot;&nbsp;:
         <br />
-        <div style="text-align:center; margin-top:10px;">
-        <select id="cat_folders_selection" multiple="multiple" size="12">';
-$folders = $tree->getDescendants();
-foreach ($folders as $folder) {
-    DB::query(
-        "SELECT * FROM ".prefix_table("nested_tree")."
-        WHERE personal_folder = %i AND id = %i",
-        '0',
-        $folder->id
-    );
-    $counter = DB::count();
-    if ($counter > 0) {
-        $ident = "";
-        for ($x = 1; $x < $folder->nlevel; $x++) {
-            $ident .= "-";
-        }
-        echo '
-        <option value="'.$folder->id.'">'.$ident.'&nbsp;'.str_replace("&", "&amp;", $folder->title).'</option>';
-    }
-}
-echo '
-        </select>
+        <div style="margin-top:10px;">
+            <input type="button" id="but_select_all" value="'.$LANG['select_all'].'" class="ui-state-default ui-corner-all pointer" />
+            &nbsp;<input type="button" id="but_deselect_all" value="'.$LANG['deselect_all'].'" class="ui-state-default ui-corner-all pointer" />
         </div>
+        <div style="margin-top:5px;">
+            <select id="cat_folders_selection" multiple="multiple" size="15" class="ui-widget-content ui-corner-all" style="margin-top:5px;">';
+    $folders = $tree->getDescendants();
+    foreach ($folders as $folder) {
+        DB::query(
+            "SELECT * FROM ".prefix_table("nested_tree")."
+            WHERE personal_folder = %i AND id = %i",
+            '0',
+            $folder->id
+        );
+        $counter = DB::count();
+        if ($counter > 0) {
+            $ident = "";
+            for ($x = 1; $x < $folder->nlevel; $x++) {
+                $ident .= "-";
+            }
+            echo '
+            <option value="'.$folder->id.'">'.$ident.'&nbsp;'.str_replace("&", "&amp;", $folder->title).'</option>';
+        }
+    }
+    echo '
+            </select>
+        </div>
+
         <div id="catInFolder_wait" class="ui-state-focus ui-corner-all" style="display:none;padding:2px;margin:5px 0 5px 0;">'.$LANG['please_wait'].'...</div>
     </div>';
 

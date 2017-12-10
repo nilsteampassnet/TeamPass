@@ -77,10 +77,8 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" href="includes/js/toggles/css/toggles-modern.css" />
         <script src="includes/js/toggles/toggles.min.js" type="text/javascript"></script>
         <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.css" />
-        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.min.js"></script>
-        <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
-        <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>';
+        <link rel="stylesheet" type="text/css" href="includes/js/lou-multi-select/multi-select.dist.css" />
+        <script type="text/javascript" src="includes/js/lou-multi-select/jquery.multi-select.min.js"></script>';
 } elseif (isset($_GET['page']) && $_GET['page'] == "manage_main") {
     $htmlHeaders .= '
         <link rel="stylesheet" href="includes/js/toggles/css/toggles.css" />
