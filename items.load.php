@@ -206,7 +206,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         $("#items_list").css("display", "");
 
         $("#hid_cat").val(groupe_id);
-        if ($(".tr_fields") != undefined) $(".tr_fields, .newItemCat, .editItemCat").addClass("hidden");
+        if ($(".tr_fields") !== undefined) {
+            $(".tr_fields, .newItemCat, .editItemCat").addClass("hidden");
+        }
 
         //Disable menu buttons
         $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
@@ -386,7 +388,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         if ($(".tr_fields") !== undefined && data.displayCategories !== undefined && data.displayCategories !== "") {
                             var liste = data.displayCategories.split(';');
                             for (var i=0; i<liste.length; i++) {
-                                $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).show();
+                                $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).removeClass('hidden');
                             }
                         }
                         if (data.saltkey_is_required == 1) {
@@ -419,7 +421,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         if ($(".tr_fields") != undefined && data.displayCategories !== undefined && data.displayCategories != "") {
                             var liste = data.displayCategories.split(';');
                             for (var i=0; i<liste.length; i++) {
-                                $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).show();
+                                $(".itemCatName_"+liste[i]+", #newItemCatName_"+liste[i]+", #editItemCatName_"+liste[i]).removeClass("hidden");
                             }
                         }
                         if (data.saltkey_is_required == 1) {

@@ -26,6 +26,7 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ #2056 Custom Fields - displayed in unassigned folders
  #2054 Alter table statement is run only once
  #2053 Custom Fields - folders unchecked at second call up
  #2051 2FA Google Name Displayed field not saving to configuration
