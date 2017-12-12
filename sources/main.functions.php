@@ -1051,7 +1051,7 @@ function updateCacheTable($action, $ident = "")
                 'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
                 'id_tree' => $data['id_tree'],
                 'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== "None") ? $data['perso'] : "0",
-                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : "None",
+                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : "0",
                 'login' => isset($data['login']) ? $data['login'] : "",
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
