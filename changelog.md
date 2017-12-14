@@ -23,9 +23,11 @@
  Improved session validity check
  Improved items draggability sometime broken
  Improved personal item edition by enabling the folder edition
+ Improved security of password generator with php7
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ Added option lowercase letters for password generator
  #2056 Custom Fields - displayed in unassigned folders
  #2055 restricted_to of cache table has 2 different values
  #2054 Alter table statement is run only once

@@ -477,6 +477,7 @@ echo '
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
+                    <input type="checkbox" id="pw_lowercase" /><label for="pw_lowercase">abc</label>
                     <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
                     <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
                     <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
@@ -664,10 +665,11 @@ echo '
             </div>
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="edit_custom_pw">
-                    <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
-                    <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
-                    <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="edit_pw_secure" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
+                    <input type="checkbox" id="edit_pw_lowercase" class="pw_definition" /><label for="edit_pw_lowercase">abc</label>
+                    <input type="checkbox" id="edit_pw_numerics" class="pw_definition" /><label for="edit_pw_numerics">123</label>
+                    <input type="checkbox" id="edit_pw_maj" class="pw_definition" /><label for="edit_pw_maj">ABC</label>
+                    <input type="checkbox" id="edit_pw_symbols" class="pw_definition" /><label for="edit_pw_symbols">@#&amp;</label>
+                    <input type="checkbox" id="edit_pw_secure" class="pw_definition" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>

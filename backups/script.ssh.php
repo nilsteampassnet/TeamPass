@@ -35,11 +35,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 // ssh libraries
 stream_resolve_include_path('../includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
 include('../includes/libraries/Authentication/phpseclib/Net/SSH2.php');
-
-// load passwordLib library
-$pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-$pwgen->register();
-$pwgen = new Encryption\PwGen\pwgen();
+require_once '../sources/main.functions.php';
 
 //get settings infos
 $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");
@@ -65,11 +61,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
         $oldPwClear = cryption($record['pw'], "", "decrypt");
 
         // generate password
-        $pwgen->setLength(10);
-        $pwgen->setSecure(true);
-        $pwgen->setCapitalize(true);
-        $pwgen->setNumerals(true);
-        $new_pwd = $pwgen->generate();
+        $new_pwd = GenerateCryptKey(10, true);
 
         // encrypt new password
         $encrypt = cryption(

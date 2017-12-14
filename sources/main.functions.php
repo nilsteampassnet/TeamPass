@@ -1395,38 +1395,44 @@ function prefix_table($table)
 /*
  * Creates a KEY using PasswordLib
  */
-function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capitalize = false, $ambiguous = false, $symbols = false)
+function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capitalize = false, $symbols = false)
 {
     global $SETTINGS;
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
-    // load library
-    $pwgen = new SplClassLoader('Encryption\PwGen', $SETTINGS['cpassman_dir'].'/includes/libraries');
-    $pwgen->register();
-    $pwgen = new Encryption\PwGen\pwgen();
+    if ($secure === true) {
+        $numerals = true;
+        $capitalize = true;
+        $symbols = true;
+    }
+
+    // Load libraries
+    $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
+    $generator->register();
+    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
+
+    // Can we use PHP7 random_int function?
+    if (version_compare(phpversion(), '7.0', '>=')) {
+        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/PasswordGenerator/RandomGenerator/Php7RandomGenerator.php';
+         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
+    }
 
     // init
     if (!empty($size)) {
-        $pwgen->setLength($size);
-    }
-    if (!empty($secure)) {
-        $pwgen->setSecure($secure);
+        $generator->setLength(intval($size));
     }
     if (!empty($numerals)) {
-        $pwgen->setNumerals($numerals);
+        $generator->setNumbers($numerals);
     }
     if (!empty($capitalize)) {
-        $pwgen->setCapitalize($capitalize);
-    }
-    if (!empty($ambiguous)) {
-        $pwgen->setAmbiguous($ambiguous);
+        $generator->setUppercase($capitalize);
     }
     if (!empty($symbols)) {
-        $pwgen->setSymbols($symbols);
+        $generator->setSymbols($symbols);
     }
 
     // generate and send back
-    return $pwgen->generate();
+    return $generator->generatePassword();
 }
 
 /*

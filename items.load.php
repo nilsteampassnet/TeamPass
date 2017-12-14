@@ -557,15 +557,22 @@ function pwGenerate(elem)
     //show ajax image
     $("#"+elem+"pw_wait").removeClass("hidden");
 
+    // If no criteria is set then do secure
+    var secure = false;
+    if ($('.pw_definition').prop("checked") === false || $("#"+elem + 'pw_secure').prop("checked") === true) {
+        secure = true;
+    }
+
     $.post(
         "sources/main.queries.php",
         {
             type    : "generate_a_password",
             size      : $("#"+elem + 'pw_size').val(),
+            lowercase : $("#"+elem + 'pw_lowercase').prop("checked"),
             numerals      : $("#"+elem + 'pw_numerics').prop("checked"),
             capitalize      : $("#"+elem + 'pw_maj').prop("checked"),
             symbols      : $("#"+elem + 'pw_symbols').prop("checked"),
-            secure  : $("#"+elem + 'pw_secure').prop("checked"),
+            secure  : secure,
             elem      : elem,
             force      : "false"
         },

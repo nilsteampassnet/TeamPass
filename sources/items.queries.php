@@ -3641,7 +3641,7 @@ if (null !== $post_type) {
             }
 
             // generate session
-            $otv_code = GenerateCryptKey(32, false, true, true, true, false);
+            $otv_code = GenerateCryptKey(32, false, true, true, false);
 
             DB::insert(
                 prefix_table("otv"),
