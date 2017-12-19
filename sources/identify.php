@@ -352,7 +352,7 @@ function identifyUser($sentData)
             'user_attribute : '.$SETTINGS['ldap_user_attribute']."\n".
             'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
             'domain_controllers : '.$SETTINGS['ldap_domain_controler']."\n".
-            'port : '.$SETTINGS['ldap_port']."\n".
+            'ad_port : '.$SETTINGS['ldap_port']."\n".
             'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
             'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
         );
@@ -492,7 +492,7 @@ function identifyUser($sentData)
                     'base_dn : '.$SETTINGS['ldap_domain_dn']."\n".
                     'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
                     'domain_controllers : '.$SETTINGS['ldap_domain_controler']."\n".
-                    'port : '.$SETTINGS['ldap_port']."\n".
+                    'ad_port : '.$SETTINGS['ldap_port']."\n".
                     'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
                     'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
                 );
@@ -517,7 +517,7 @@ function identifyUser($sentData)
                     'base_dn' => $SETTINGS['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
-                    'port' => $SETTINGS['ldap_port'],
+                    'ad_port' => $SETTINGS['ldap_port'],
                     'use_ssl' => $SETTINGS['ldap_ssl'],
                     'use_tls' => $SETTINGS['ldap_tls']
                 )
@@ -1044,7 +1044,7 @@ function identifyUser($sentData)
             }
 
             // Get user's rights
-            if ($user_initial_creation_through_ldap !== true) {
+            if ($user_initial_creation_through_ldap === false) {
                 identifyUserRights(
                     $data['groupes_visibles'],
                     $_SESSION['groupes_interdits'],

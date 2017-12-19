@@ -477,10 +477,10 @@ echo '
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
-                    <input type="checkbox" id="pw_lowercase" /><label for="pw_lowercase">abc</label>
-                    <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
-                    <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
-                    <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
+                    <input type="checkbox" id="pw_lowercase" class="pw_definition" /><label for="pw_lowercase">abc</label>
+                    <input type="checkbox" id="pw_numerics" class="pw_definition" /><label for="pw_numerics">123</label>
+                    <input type="checkbox" id="pw_maj" class="pw_definition" /><label for="pw_maj">ABC</label>
+                    <input type="checkbox" id="pw_symbols" class="pw_definition" /><label for="pw_symbols">@#&amp;</label>
                     <input type="checkbox" id="pw_secure" checked="checked" /><label for="pw_secure">'.$LANG['secure'].'</label>
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />

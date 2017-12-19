@@ -466,7 +466,7 @@ function showItemsList(data)
         }
 
         // Prepare mini icons
-        if (value.copy_to_clipboard_small_icons === "1") {
+        if (value.copy_to_clipboard_small_icons === "1" && value.display_item === 1) {
             // Login icon
             if (value.login !== "") {
                 icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+sanitizeString(value.login)+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>" id="minilogin_'+value.item_id+'"></span>&nbsp;';
@@ -507,7 +507,7 @@ function showItemsList(data)
 
         // Appenditem row
         $("#full_items_list").append(
-            '<li name="' + value.label + '" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" style="">' + item_span +
+            '<li name="' + value.label + '" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" data-edition="'+value.open_edit+'">' + item_span +
             item_flag +
             '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
             '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"  ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
@@ -1375,19 +1375,26 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         request.abort();
         return;
     }
-    id_tree = id_tree || "";
-    salt_key_required = salt_key_required || 0;
-    id_tree = id_tree || "";
-    id_tree = id_tree || "";
+    id_tree = parseInt(id_tree) || "";
+    salt_key_required = parseInt(salt_key_required) || 0;
+    expired_item = parseInt(expired_item) || "";
+    id = parseInt(id) || "";
+    restricted = parseInt(restricted) || "";
+    display = display || 0;
+    open_edit = parseInt(open_edit) || 0;
+    reload = parseInt(reload) || 0;
+
+    //console.log(" > "+id+" - "+salt_key_required+" - "+expired_item+" - "+restricted+" - "+display+" - "+open_edit+" - "+reload+" - "+id_tree);
 
     // Store status query running
     $("#request_ongoing").val("1");
 
     // If opening new item, reinit hidden fields
-    if ($("#request_lastItem").val() != id) {
+    if (parseInt($("#request_lastItem").val()) !== id) {
         $("#request_lastItem").val("");
         $("#item_editable").val("");
     }
+
 
     // Don't show details
     if (display === "no_display") {
@@ -1409,18 +1416,17 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     }
 
     // Check if personal SK is needed and set
-    if (($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "0") && salt_key_required === "1") {
+    if (($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "0") && salt_key_required === 1) {
         $("#set_personal_saltkey_warning").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg'></span>&nbsp;</span><?php echo addslashes($LANG['alert_message_personal_sk_missing']); ?></div>").show(1).delay(2500).fadeOut(1000);
         $('#div_set_personal_saltkey').dialog('open');
 
-        //$("#div_dialog_message_text").html("<div style='font-size:16px;'><span class='fa fa-warning fa-lg mi-red'></span>&nbsp;<\/span><?php echo addslashes($LANG['alert_message_personal_sk_missing']); ?><\/div>");
         $("#div_loading").addClass("hidden");
-        //$("#div_dialog_message").dialog("open");
+
         $("#request_ongoing").val("");
         return false;
     } else if ($('#recherche_group_pf').val() === "0" || ($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "1")) {
         // Double click
-        if (open_edit === "1" && $("#item_editable").val() === "1" && reload !== "1") {
+        if (open_edit === 1 && $("#item_editable").val() === '1') {
             $("#request_ongoing").val("");
             open_edit_item_div(
                 <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
@@ -1429,7 +1435,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     echo 0;
 }?>
             );
-        } else if ($("#request_lastItem").val() == id && reload != 1) {
+        } else if (parseInt($("#request_lastItem").val()) === id && reload !== 1) {
             $("#request_ongoing").val("");
             LoadingPage();
             return;
@@ -1778,7 +1784,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     }
                     $("#request_ongoing").val("");
                 }
-           );
+            );
 
             if (id_tree != "" && id_tree != $("#hid_cat").val()) {
                 refreshTree(id_tree, "0");
@@ -1797,8 +1803,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 }
             );*/
        }
-    //Store Item id shown
-    $("#request_lastItem").val(id);
+        //Store Item id shown
+        $("#request_lastItem").val(id);
     }
 }
 
@@ -2101,13 +2107,22 @@ function open_edit_item_div(restricted_to_roles)
             // do nothing
         } else {
             displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+            $("#div_loading").addClass("hidden");
             return false;
         }
     }
 
+    // Edition is not possible
+    if ($("#"+$("#selected_items").val()).attr('data-edition') === '0') {
+        displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+        $("#div_loading").addClass("hidden");
+        return false;
+    }
+
     // If no Item selected, no edition possible
-    if ($("#selected_items").val() == "") {
+    if ($("#selected_items").val() === "") {
         displayMessage("<?php echo addslashes($LANG['none_selected_text']); ?>");
+        $("#div_loading").addClass("hidden");
         return false;
     }
     $("#div_loading").removeClass("hidden");
@@ -4503,7 +4518,6 @@ function globalItemsSearch()
                 displayMessage(data.message);
                 $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['search_results']); ?>');
                 $("#items_list").html("<ul class='liste_items 'id='full_items_list'></ul>");
-                //$("#full_items_list").html(data.items_html);
 
                 // Build HTML list
                 $.each(data.html_json, function(i, value) {
@@ -4512,7 +4526,7 @@ function globalItemsSearch()
                         value.desc = '&nbsp;<font size="1px">[' + value.desc + ']</font>';
                     }
 
-                    if (value.copy_to_clipboard_small_icons === "1") {
+                    if (value.copy_to_clipboard_small_icons === 1) {
                         // Prepare Login
                         if (value.login !== "") {
                             value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
@@ -4524,7 +4538,7 @@ function globalItemsSearch()
                         }
 
                         // Prepare favorite
-                        if (value.enable_favourites === "1") {
+                        if (value.enable_favourites === 1) {
                             if (value.is_favorite === 1) {
                                 icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']);?>"></span>';
                             } else {

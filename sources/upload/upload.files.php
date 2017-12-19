@@ -95,7 +95,7 @@ if (null === $post_user_token) {
 
         if (time() > $data['end_timestamp']) {
             // too old
-            handleAttachmentError('User token expired.', 110);
+            handleUploadError('User token expired.', 110);
             die();
         }
     }

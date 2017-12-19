@@ -47,6 +47,7 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
+        <script type="text/javascript" src="includes/js/platform/platform.js"></script>
 
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
@@ -266,9 +267,12 @@ $htmlHeaders .= '
                                 $("#mysql_error_warning").html(data[0].text).show();
                                 $("#div_mysql_error").show().dialog("open");
                             } else if (data[0].value === "new_ldap_account_created") {
-                                $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
+                                $("#connection_error")
+                                    .html("'.addslashes($LANG['reload_page_after_user_account_creation']).'")
+                                    .show()
+                                    .switchClass("ui-state-error", "ui-state-default");
                                 setTimeout(
-                                    function (){
+                                    function() {
                                         window.location.href="index.php"
                                     },
                                     2000
@@ -613,6 +617,9 @@ $htmlHeaders .= '
         return html;
     }
 
+    /**
+     *
+     */
     function generateRandomKey(elem, size, numerals, capitalize, symbols, secure) {
         size = size || 20;
         numerals = numerals || true;
@@ -637,6 +644,31 @@ $htmlHeaders .= '
                 } else {
                     return data.key;
                 }
+            }
+        );
+    }
+
+    /**
+     * [generateBugReport description]
+     * @return [type] [description]
+     */
+    function generateBugReport() {
+        $.post(
+            "sources/main.queries.php",
+            {
+                type :    "generate_bug_report",
+                browser_name: platform.name,
+                browser_version: platform.version,
+                os: platform.os.family,
+                os_archi: platform.os.architecture,
+                key:      "'.$_SESSION['key'].'"
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                console.log(data);
+                // init
+                $("#mysql_error_warning").html(data.html);
+                $("#div_mysql_error").dialog("open");
             }
         );
     }
@@ -901,7 +933,7 @@ $htmlHeaders .= '
                     addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).
                 '");
                 $("#psk_strength_value").val("");
-                
+
                 // show expected security level
                 if ($("#expected_psk_complexPw").text() !== "") {
                     $("#expected_psk_complexPw").removeClass("hidden");

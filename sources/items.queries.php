@@ -1536,6 +1536,7 @@ if (null !== $post_type) {
                     || $dataItem['anyone_can_modify'] === '1'
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role'])
                     || in_array($_SESSION['user_id'], $restrictedTo)
+                    || count($restrictedTo) === 0
                 ) {
                     $arrData['user_can_modify'] = 1;
                     $user_is_allowed_to_modify = true;
@@ -2549,7 +2550,7 @@ if (null !== $post_type) {
                             $restrictedTo = "";
                         }
 
-                        if ($list_folders_editable_by_role === '1') {
+                        if ($list_folders_editable_by_role === true) {
                             if (empty($restrictedTo)) {
                                 $restrictedTo = $_SESSION['user_id'];
                             } else {
@@ -2586,14 +2587,16 @@ if (null !== $post_type) {
                             && $user_is_included_in_role === false
                             && isset($item_is_restricted_to_role)
                             && $item_is_restricted_to_role === true
-                            && (int) $is_user_in_restricted_list !== 1
+                            && $is_user_in_restricted_list === false
                             && (int) $folder_is_personal !== 1
                         ) {
                             $html_json[$record['id']]['perso'] = "fa-tag mi-red";
                             $html_json[$record['id']]['sk'] = 0;
                             $html_json[$record['id']]['display'] = "no_display";
-                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['open_edit'] = 0;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = 3;
+                            $html_json[$record['id']]['canMove'] = 0;
                             $findPfGroup = 0;
                             $displayItem = false;
                             $need_sk = false;
@@ -2612,10 +2615,12 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['display'] = "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = 0;
+                            $html_json[$record['id']]['canMove'] = 1;
                         // CAse where item is restricted to a group of users included user
-                        } elseif (empty($record['restricted_to']) === false
-                            || (int) $list_folders_editable_by_role === 1
-                            && (int) $is_user_in_restricted_list === 1
+                        } elseif ((empty($record['restricted_to']) === false
+                            || $list_folders_editable_by_role === true)
+                            && $is_user_in_restricted_list === true
                         ) {
                             $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                             $findPfGroup = 0;
@@ -2625,23 +2630,25 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['display'] = "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = 0;
+                            $html_json[$record['id']]['canMove'] = 1;
                         // CAse where item is restricted to a group of users not including user
                         } elseif ((int) $record['perso'] === 1
                             ||
                             (
                                 empty($record['restricted_to']) === false
-                                && (int) $is_user_in_restricted_list !== 1
+                                && $is_user_in_restricted_list === false
                             )
                             ||
                             (
-                                isset($user_is_included_in_role)
-                                && isset($item_is_restricted_to_role)
+                                isset($user_is_included_in_role) === true
+                                && isset($item_is_restricted_to_role) === true
                                 && $user_is_included_in_role === false
                                 && $item_is_restricted_to_role === true
                             )
                         ) {
-                            if (isset($user_is_included_in_role)
-                                && isset($item_is_restricted_to_role)
+                            if (isset($user_is_included_in_role) === true
+                                && isset($item_is_restricted_to_role) === true
                                 && $user_is_included_in_role === false
                                 && $item_is_restricted_to_role === true
                             ) {
@@ -2654,6 +2661,8 @@ if (null !== $post_type) {
                                 $html_json[$record['id']]['display'] = "no_display";
                                 $html_json[$record['id']]['open_edit'] = 0;
                                 $html_json[$record['id']]['reload'] = "";
+                                $html_json[$record['id']]['accessLevel'] = 3;
+                                $html_json[$record['id']]['canMove'] = 0;
                             } else {
                                 $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                                 // reinit in case of not personal group
@@ -2662,14 +2671,16 @@ if (null !== $post_type) {
                                     $init_personal_folder = true;
                                 }
 
-                                if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === '1') {
+                                if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === true) {
                                     $displayItem = true;
                                 }
 
                                 $html_json[$record['id']]['sk'] = 0;
                                 $html_json[$record['id']]['display'] = "";
-                                $html_json[$record['id']]['open_edit'] = 1;
+                                $html_json[$record['id']]['open_edit'] = 0;
                                 $html_json[$record['id']]['reload'] = "";
+                                $html_json[$record['id']]['accessLevel'] = 0;
+                                $html_json[$record['id']]['canMove'] = 0;
                             }
                         } else {
                             $html_json[$record['id']]['perso'] = "fa-tag mi-green";
@@ -2684,10 +2695,10 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['display'] = "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = $accessLevel;
+                            $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? 1 : $canMove;
                         }
 
-                        $html_json[$record['id']]['canMove'] = 1;
-                        $html_json[$record['id']]['accessLevel'] = 0;
                         $html_json[$record['id']]['pw_status'] = "";
 
                         // increment array for icons shortcuts (don't do if option is not enabled)

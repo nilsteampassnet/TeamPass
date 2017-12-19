@@ -783,6 +783,8 @@ if (isset($_SESSION['CPM'])) {
             <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
             &nbsp;
             <a href="https://www.reddit.com/r/TeamPass/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['admin_help']).'"><i class="fa fa-reddit-alien"></i></a>
+            &nbsp;
+            <a href="#" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['bugs_page']).'" onclick="generateBugReport()"><i class="fa fa-bug"></i></a>
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', ($session_user_id !== null && empty($session_user_id) === false) ? '<i class="fa fa-users"></i>&nbsp;'.$session_nb_users_online.'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '

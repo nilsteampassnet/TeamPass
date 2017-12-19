@@ -674,18 +674,24 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 
         // rechercher tous les groupes visibles en fonction des roles de l'utilisateur
         foreach ($fonctionsAssociees as $roleId) {
-            if (!empty($roleId)) {
+            if (empty($roleId) === false) {
                 // Get allowed folders for each Role
-                $rows = DB::query("SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id=%i", $roleId);
+                $rows = DB::query(
+                    "SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id=%i",
+                    $roleId
+                );
 
                 if (DB::count() > 0) {
-                    $tmp = DB::queryfirstrow("SELECT allow_pw_change FROM ".prefix_table("roles_title")." WHERE id = %i", $roleId);
+                    $tmp = DB::queryfirstrow(
+                        "SELECT allow_pw_change FROM ".prefix_table("roles_title")." WHERE id = %i",
+                        $roleId
+                    );
                     foreach ($rows as $record) {
-                        if (isset($record['folder_id']) && !in_array($record['folder_id'], $listAllowedFolders)) {
+                        if (isset($record['folder_id']) && in_array($record['folder_id'], $listAllowedFolders) === false) {
                             array_push($listAllowedFolders, $record['folder_id']);
                         }
                         // Check if this group is allowed to modify any pw in allowed folders
-                        if ($tmp['allow_pw_change'] == 1 && !in_array($record['folder_id'], $listFoldersEditableByRole)) {
+                        if ($tmp['allow_pw_change'] == 1 && in_array($record['folder_id'], $listFoldersEditableByRole) === false) {
                             array_push($listFoldersEditableByRole, $record['folder_id']);
                         }
                     }
@@ -745,10 +751,8 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
 
         $where = new WhereClause('and');
         $where->add('personal_folder=%i', 1);
-        if (isset($SETTINGS['enable_pf_feature']) &&
-            $SETTINGS['enable_pf_feature'] == 1 &&
-            isset($_SESSION['personal_folder']) &&
-            $_SESSION['personal_folder'] == 1
+        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
+            && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
         ) {
             $where->add('title=%s', $_SESSION['user_id']);
             $where->negateLast();
@@ -764,19 +768,18 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             array_push($_SESSION['forbiden_pfs'], $persoFldId['id']);
         }
         // Get IDs of personal folders
-        if (isset($SETTINGS['enable_pf_feature']) &&
-            $SETTINGS['enable_pf_feature'] == 1 &&
-            isset($_SESSION['personal_folder']) &&
-            $_SESSION['personal_folder'] == 1
+        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
+            && isset($_SESSION['personal_folder']) === true &&  $_SESSION['personal_folder'] === '1'
         ) {
             $persoFld = DB::queryfirstrow(
                 "SELECT id
                 FROM ".prefix_table("nested_tree")."
-                WHERE title = %s",
-                $_SESSION['user_id']
+                WHERE title = %s AND personal_folder = %i",
+                $_SESSION['user_id'],
+                1
             );
             if (empty($persoFld['id']) === false) {
-                if (!in_array($persoFld['id'], $listAllowedFolders)) {
+                if (in_array($persoFld['id'], $listAllowedFolders) === false) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
                     // get all descendants
                     $ids = $tree->getDescendants($persoFld['id'], true, false);
@@ -826,7 +829,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
         }
 
         // check if change proposals on User's items
-        if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] == 1) {
+        if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] === '1') {
             DB::query(
                 "SELECT *
                 FROM ".prefix_table("items_change")." AS c

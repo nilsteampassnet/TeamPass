@@ -1025,9 +1025,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             unlink($SETTINGS['path_to_files_folder']."/".$file);
 
             //Display all messages to user
-            echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
+            echo '[{"error":"" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
         } else {
-            echo '[{"error":"yes" , "message":""}]';
+            echo '[{"error":"yes" , "message":"Error - No item found!"}]';
         }
         break;
 }

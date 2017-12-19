@@ -53,7 +53,7 @@ echo '
         <span class="fa fa-plus"></span>
     </button>
     &nbsp;
-    <span class="normal"><input id="filter_roles" class="ui-widget ui-corner-all" type="text" value="" placeholder="No filter" /></span>
+    <span class="normal"><input id="filter_roles" type="text" class="ui-widget ui-corner-all" value="" placeholder="No filter" /></span>
     <button title="'.htmlentities(strip_tags($LANG['refresh_matrix']), ENT_QUOTES).'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
         <span class="fa fa-refresh"></span>
     </button>

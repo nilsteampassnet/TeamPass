@@ -65,24 +65,30 @@ $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 't
 $folders = $tree->getDescendants();
 
 // define temporary sessions
-if ($_SESSION['user_admin'] == 1 && (isset($SETTINGS_EXT['admin_full_right'])
-    && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
+if ($_SESSION['user_admin'] == 1
+    && (isset($SETTINGS_EXT['admin_full_right']) === true && $SETTINGS_EXT['admin_full_right'] === '1')
+    || isset($SETTINGS_EXT['admin_full_right']) === false
+) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }
 // prepare some variables
-if (isset($_COOKIE['jstree_select']) && !empty($_COOKIE['jstree_select'])) {
+if (isset($_COOKIE['jstree_select']) === true
+    && empty($_COOKIE['jstree_select']) === false
+) {
     $firstGroup = str_replace("#li_", "", $_COOKIE['jstree_select']);
 } else {
     $firstGroup = "";
 }
-if (isset($_SESSION['list_folders_limited']) && count($_SESSION['list_folders_limited']) > 0) {
+if (isset($_SESSION['list_folders_limited']) === true
+    && count($_SESSION['list_folders_limited']) > 0
+) {
     $listFoldersLimitedKeys = @array_keys($_SESSION['list_folders_limited']);
 } else {
     $listFoldersLimitedKeys = array();
 }
 // list of items accessible but not in an allowed folder
-if (isset($_SESSION['list_restricted_folders_for_items'])
+if (isset($_SESSION['list_restricted_folders_for_items']) === true
     && count($_SESSION['list_restricted_folders_for_items']) > 0) {
     $listRestrictedFoldersForItemsKeys = @array_keys($_SESSION['list_restricted_folders_for_items']);
 } else {
@@ -94,14 +100,14 @@ $parent = "#";
 $last_visible_parent_level = 1;
 
 // build the tree to be displayed
-if (isset($_GET['id'])
-    && is_numeric(intval($_GET['id']))
-    && isset($_SESSION['user_settings']['treeloadstrategy'])
-    && $_SESSION['user_settings']['treeloadstrategy'] == "sequential"
+if (isset($_GET['id']) === true
+    && is_numeric(intval($_GET['id'])) === true
+    && isset($_SESSION['user_settings']['treeloadstrategy']) === true
+    && $_SESSION['user_settings']['treeloadstrategy'] === "sequential"
 ) {
     buildNodeTree($_GET['id']);
-} elseif (isset($_SESSION['user_settings']['treeloadstrategy'])
-    && $_SESSION['user_settings']['treeloadstrategy'] == "sequential"
+} elseif (isset($_SESSION['user_settings']['treeloadstrategy']) === true
+    && $_SESSION['user_settings']['treeloadstrategy'] === "sequential"
 ) {
     buildNodeTree(0);
 } else {
@@ -136,10 +142,10 @@ function buildNodeTree($nodeId)
     $session_personal_visible_groups =                    $superGlobal->get("personal_visible_groups", "SESSION");
 
     // Be sure that user can only see folders he/she is allowed to
-    if (!in_array($nodeId, $session_forbiden_pfs)
-        || in_array($nodeId, $session_groupes_visibles)
-        || in_array($nodeId, $listFoldersLimitedKeys)
-        || in_array($nodeId, $listRestrictedFoldersForItemsKeys)
+    if (in_array($nodeId, $session_forbiden_pfs) === false
+        || in_array($nodeId, $session_groupes_visibles) === true
+        || in_array($nodeId, $listFoldersLimitedKeys) === true
+        || in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true
     ) {
         $displayThisNode = false;
         $hide_node = false;
@@ -149,17 +155,17 @@ function buildNodeTree($nodeId)
         $nodeDescendants = $tree->getDescendants($nodeId, false, true, false);
         foreach ($nodeDescendants as $node) {
             $displayThisNode = false;
-            if ((!in_array($node->id, $session_forbiden_pfs)
-                || in_array($node->id, $session_groupes_visibles)
-                || in_array($node->id, $listFoldersLimitedKeys)
-                || in_array($node->id, $listRestrictedFoldersForItemsKeys)) && (
+            if ((in_array($node->id, $session_forbiden_pfs) === false
+                || in_array($node->id, $session_groupes_visibles) === true
+                || in_array($node->id, $listFoldersLimitedKeys) === true
+                || in_array($node->id, $listRestrictedFoldersForItemsKeys)) === true && (
                 in_array(
                     $node->id,
                     array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
-                )
-                || @in_array($node->id, $listFoldersLimitedKeys)
-                || @in_array($node->id, $listRestrictedFoldersForItemsKeys)
-                || in_array($node->id, $session_no_access_folders)
+                ) === true
+                || @in_array($node->id, $listFoldersLimitedKeys) === true
+                || @in_array($node->id, $listRestrictedFoldersForItemsKeys) === true
+                || in_array($node->id, $session_no_access_folders) === true
                 )
             ) {
                 $displayThisNode = true;
@@ -322,8 +328,7 @@ function recursiveTree($nodeId)
         $nodeDescendants = $tree->getDescendants($completTree[$nodeId]->id, true, false, true);
         foreach ($nodeDescendants as $node) {
             // manage tree counters
-            if (isset($SETTINGS['tree_counters'])
-                && $SETTINGS['tree_counters'] === "1"
+            if (isset($SETTINGS['tree_counters']) === true && $SETTINGS['tree_counters'] === "1"
                 && in_array(
                     $node,
                     array_merge($session_groupes_visibles, $session_list_restricted_folders_for_items)
@@ -345,8 +350,8 @@ function recursiveTree($nodeId)
                     $session_no_access_folders
                 )
             ) === true
-                || @in_array($node, $listFoldersLimitedKeys)
-                || @in_array($node, $listRestrictedFoldersForItemsKeys)
+                || @in_array($node, $listFoldersLimitedKeys) === true
+                || @in_array($node, $listRestrictedFoldersForItemsKeys) === true
             ) {
                 $displayThisNode = true;
                 $hide_node = $show_but_block = false;

@@ -63,7 +63,7 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
 function mainQuery()
 {
     global $server, $user, $pass, $database, $port, $encoding, $pre, $LANG;
-    global $SETTINGS;
+    global $SETTINGS, $SETTINGS_EXT;
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
@@ -890,29 +890,36 @@ function mainQuery()
                 break;
             }
 
-            //Load PWGEN
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
+            $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
+            $generator->register();
+            $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
 
-            $pwgen->setLength(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+            // Is PHP7 being used?
+            if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
+                $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', '../includes/libraries');
+                $php7generator->register();
+                $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
+            }
+
+            $generator->setLength((int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+
             if (null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) === "true"
             ) {
-                $pwgen->setSecure(true);
-                $pwgen->setSymbols(true);
-                $pwgen->setCapitalize(true);
-                $pwgen->setNumerals(true);
+                $generator->setSymbols(true);
+                $generator->setLowercase(true);
+                $generator->setUppercase(true);
+                $generator->setNumbers(true);
             } else {
-                $pwgen->setSecure((filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) === "true") ? true : false);
-                $pwgen->setNumerals((filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING) === "true") ? true : false);
-                $pwgen->setCapitalize((filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING) === "true") ? true : false);
-                $pwgen->setSymbols((filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setLowercase((filter_input(INPUT_POST, 'lowercase', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setUppercase((filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setNumbers((filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setSymbols((filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) === "true") ? true : false);
             }
 
             echo prepareExchangedData(
                 array(
-                    "key" => $pwgen->generate(),
+                    "key" => $generator->generatePasswords(),
                     "error" => ""
                 ),
                 "encode"
@@ -1060,11 +1067,10 @@ function mainQuery()
         case "save_token":
             $token = GenerateCryptKey(
                 null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
-                null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'ambiguous', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'ambiguous', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) : false
+                null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_BOOLEAN) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_BOOLEAN) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_BOOLEAN) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_BOOLEAN) : false
             );
 
             // store in DB
@@ -1218,6 +1224,86 @@ function mainQuery()
             }
 
             fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING));
+
+            break;
+
+        /**
+         * Generate BUG report
+         */
+        case "generate_bug_report":
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // Read config file
+            $tmp = '';
+            $tp_config_file = "../includes/config/tp.config.php";
+            $data = file($tp_config_file);
+            $inc = 0;
+            $bFound = false;
+            foreach ($data as $line) {
+                if (substr($line, 0, 4) === '    ') {
+                    $tmp .= $line.'<br>';
+                }
+            }
+
+            // Get error
+            $err = error_get_last();
+
+            $txt = "### Steps to reproduce<br>" .
+"1.<br>" .
+"2.<br>" .
+"3.<br>" .
+"<br>" .
+"### Expected behaviour<br>" .
+"Tell us what should happen<br>" .
+"<br>" .
+"### Actual behaviour<br>" .
+"Tell us what happens instead<br>" .
+"<br>" .
+"### Server configuration<br>" .
+"**Operating system**: ".php_uname()."<br>" .
+"<br>" .
+"**Web server:** ".$_SERVER['SERVER_SOFTWARE']."<br>" .
+"<br>" .
+"**Database:** ".mysqli_get_server_info($link)."<br>" .
+"<br>" .
+"**PHP version:** ".PHP_VERSION."<br>" .
+"<br>" .
+"**Teampass version:** ".$SETTINGS_EXT['version_full']."<br>" .
+"<br>" .
+"**Teampass configuration file:**<br>" .
+"```<br>" .
+$tmp .
+"```<br>" .
+"<br>" .
+"**Updated from an older Teampass or fresh install:**<br>" .
+"<br>" .
+"### Client configuration<br>" .
+"**Browser:** ".filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING)."<br>" .
+"<br>" .
+"**Operating system:** ".filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING)."bits<br>" .
+"<br>" .
+"### Logs<br>" .
+"#### Web server error log<br>" .
+"```<br>" .
+$err['message']." - ".$err['file']." (".$err['line'] .')<br>' .
+"```<br>" .
+"<br>" .
+"#### Log from the web-browser developer console (CTRL . SHIFT . i)<br>" .
+"```<br>" .
+"Insert the log here and especially the answer of the query that failed.<br>" .
+"```<br>" .
+"<br>";
+
+            echo prepareExchangedData(
+                array(
+                    "html" => $txt,
+                    "error" => ""
+                ),
+                "encode"
+            );
 
             break;
     }

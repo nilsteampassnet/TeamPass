@@ -1703,7 +1703,7 @@ switch ($post_type) {
             }
             $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
 
-                
+
             // save change in config file
             handleConfigFile("update", 'ga_website_name', $SETTINGS['ga_website_name']);
         } else {
@@ -2141,7 +2141,7 @@ switch ($post_type) {
                 '  - base_dn : '.$dataReceived[0]['ldap_domain_dn']."<br/>".
                 '  - account_suffix : '.$dataReceived[0]['ldap_suffix']."<br/>".
                 '  - domain_controllers : '.$dataReceived[0]['ldap_domain_controler']."<br/>".
-                '  - port : '.$dataReceived[0]['ldap_port']."<br/>".
+                '  - ad_port : '.$dataReceived[0]['ldap_port']."<br/>".
                 '  - use_ssl : '.$dataReceived[0]['ldap_ssl_input']."<br/>".
                 '  - use_tls : '.$dataReceived[0]['ldap_tls_input']."<br/>*********<br/>";
 
@@ -2159,7 +2159,7 @@ switch ($post_type) {
                     'base_dn' => $dataReceived[0]['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $dataReceived[0]['ldap_domain_controler']),
-                    'port' => $dataReceived[0]['ldap_port'],
+                    'ad_port' => $dataReceived[0]['ldap_port'],
                     'use_ssl' => $dataReceived[0]['ldap_ssl_input'],
                     'use_tls' => $dataReceived[0]['ldap_tls_input']
                 )
