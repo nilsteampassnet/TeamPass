@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'copy_and_create_github_bug_report' => 'Copy to clipboard and open Github page',
+    'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
     'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
     'error_security_level_not_reached' => 'Expected level of security not reached!',

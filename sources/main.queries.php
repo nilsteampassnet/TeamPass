@@ -1244,58 +1244,61 @@ function mainQuery()
             $bFound = false;
             foreach ($data as $line) {
                 if (substr($line, 0, 4) === '    ') {
-                    $tmp .= $line.'<br>';
+                    $tmp .= $line;
                 }
             }
 
             // Get error
             $err = error_get_last();
 
-            $txt = "### Steps to reproduce<br>" .
-"1.<br>" .
-"2.<br>" .
-"3.<br>" .
-"<br>" .
-"### Expected behaviour<br>" .
-"Tell us what should happen<br>" .
-"<br>" .
-"### Actual behaviour<br>" .
-"Tell us what happens instead<br>" .
-"<br>" .
-"### Server configuration<br>" .
-"**Operating system**: ".php_uname()."<br>" .
-"<br>" .
-"**Web server:** ".$_SERVER['SERVER_SOFTWARE']."<br>" .
-"<br>" .
-"**Database:** ".mysqli_get_server_info($link)."<br>" .
-"<br>" .
-"**PHP version:** ".PHP_VERSION."<br>" .
-"<br>" .
-"**Teampass version:** ".$SETTINGS_EXT['version_full']."<br>" .
-"<br>" .
-"**Teampass configuration file:**<br>" .
-"```<br>" .
-$tmp .
-"```<br>" .
-"<br>" .
-"**Updated from an older Teampass or fresh install:**<br>" .
-"<br>" .
-"### Client configuration<br>" .
-"**Browser:** ".filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING)."<br>" .
-"<br>" .
-"**Operating system:** ".filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING)."bits<br>" .
-"<br>" .
-"### Logs<br>" .
-"#### Web server error log<br>" .
-"```<br>" .
-$err['message']." - ".$err['file']." (".$err['line'] .')<br>' .
-"```<br>" .
-"<br>" .
-"#### Log from the web-browser developer console (CTRL . SHIFT . i)<br>" .
-"```<br>" .
-"Insert the log here and especially the answer of the query that failed.<br>" .
-"```<br>" .
-"<br>";
+            $txt = "### Steps to reproduce
+1.
+2.
+3.
+
+### Expected behaviour
+Tell us what should happen
+
+
+### Actual behaviour
+Tell us what happens instead
+
+### Server configuration
+**Operating system**: ".php_uname()."
+
+**Web server:** ".$_SERVER['SERVER_SOFTWARE']."
+
+**Database:** ".mysqli_get_server_info($link)."
+
+**PHP version:** ".PHP_VERSION."
+
+**Teampass version:** ".$SETTINGS_EXT['version_full']."
+
+**Teampass configuration file:**
+```
+" . $tmp . "
+```
+
+**Updated from an older Teampass or fresh install:**
+
+### Client configuration
+
+**Browser:** ".filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING)."
+
+**Operating system:** ".filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING)."bits
+
+### Logs
+
+#### Web server error log
+```
+" . $err['message']." - ".$err['file']." (".$err['line'] .")
+```
+
+#### Log from the web-browser developer console (CTRL . SHIFT . i)
+```
+Insert the log here and especially the answer of the query that failed.
+```
+";
 
             echo prepareExchangedData(
                 array(

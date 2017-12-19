@@ -48,6 +48,7 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
         <script type="text/javascript" src="includes/js/platform/platform.js"></script>
+        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
 
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
@@ -66,7 +67,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
         <!--
         <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
@@ -664,11 +664,35 @@ $htmlHeaders .= '
                 key:      "'.$_SESSION['key'].'"
             },
             function(data) {
-                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
-                console.log(data);
+                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");console.log(data);
+
                 // init
-                $("#mysql_error_warning").html(data.html);
-                $("#div_mysql_error").dialog("open");
+                $("#mysql_error_warning").html("<button id=\"btn_copy_to_clipb\" data-clipboard-action=\"copy\">'.addslashes($LANG['copy_and_create_github_bug_report']).'</button>");
+
+                // Create clipboard object
+                var clipboard = new Clipboard("#btn_copy_to_clipb", {
+                    text: function() {
+                        return data.html;
+                    }
+                });
+
+                // On click, open
+                clipboard.on("success", function(e) {
+                    // CLose dialog
+                    $("#div_mysql_error").dialog("close");
+
+                    // Open Github
+                    window.open("https://github.com/nilsteampassnet/TeamPass/issues/new", "_blank");
+
+                    e.clearSelection();
+                });
+
+                // Prepare dialog
+                $("#div_mysql_error")
+                    .dialog({
+                        title: "'.addslashes($LANG['create_github_bug_report']).'"
+                    })
+                    .dialog("open");
             }
         );
     }
