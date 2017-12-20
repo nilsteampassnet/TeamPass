@@ -48,7 +48,6 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
         <script type="text/javascript" src="includes/js/platform/platform.js"></script>
-        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
 
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
@@ -67,6 +66,7 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
+        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
         <!--
         <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />
         <script src="includes/bootstrap/js/bootstrap.min.js"></script>
@@ -664,33 +664,44 @@ $htmlHeaders .= '
                 key:      "'.$_SESSION['key'].'"
             },
             function(data) {
-                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");console.log(data);
+                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                //console.log(data);
 
-                // init
-                $("#mysql_error_warning").html("<button id=\"btn_copy_to_clipb\" data-clipboard-action=\"copy\">'.addslashes($LANG['copy_and_create_github_bug_report']).'</button>");
+                // Prepare dialog content
+                $("#mysql_error_warning")
+                    .html(
+                        "<textarea rows=\"45\" cols=\"100\" style=\"max-height:300px; min-height:300px; resize:none;\" id=\"bug_text\">" + data.html + "</textarea>" +
+                        "<div class=\"ui-widget-content ui-state-focus\" style=\"margin-top:10px; padding:6px;\">'.addslashes($LANG['bug_report_to_github']).'" +
+                        "<div style=\"margin-top:5px;\">" +
 
-                // Create clipboard object
-                var clipboard = new Clipboard("#btn_copy_to_clipb", {
-                    text: function() {
-                        return data.html;
-                    }
+                        "<span class=\"fa-stack fa-lg tip\" id=\"select_bug_text\" title=\"'.addslashes($LANG['select_all']).'\" style=\"cursor:pointer;\">" +
+                            "<span class=\"fa fa-square fa-stack-2x\"></span><span class=\"fa fa-paint-brush fa-stack-1x fa-inverse\"></span>" +
+                        "</span>" +
+                        "&nbsp;&nbsp;&nbsp;&nbsp;" +
+
+                        "<a href=\"https://github.com/nilsteampassnet/TeamPass/issues/new\" target=\"_blank\">" +
+                        "<span class=\"fa-stack fa-lg tip\" id=\"select_bug_text\" title=\"'.addslashes($LANG['open_bug_report_in_github']).'\">" +
+                            "<span class=\"fa fa-square fa-stack-2x\"></span><span class=\"fa fa-github fa-stack-1x fa-inverse\"></span>" +
+                        "</span></a>" +
+
+                        "</div></div>"
+                    );
+
+                // Prepare selectall
+                $("#select_bug_text").click(function() {
+                    $("#bug_text").select();
                 });
 
-                // On click, open
-                clipboard.on("success", function(e) {
-                    // CLose dialog
-                    $("#div_mysql_error").dialog("close");
-
-                    // Open Github
-                    window.open("https://github.com/nilsteampassnet/TeamPass/issues/new", "_blank");
-
-                    e.clearSelection();
-                });
+                // Add tooltips
+                $(".tip").tooltipster({multiple: true});
 
                 // Prepare dialog
                 $("#div_mysql_error")
                     .dialog({
-                        title: "'.addslashes($LANG['create_github_bug_report']).'"
+                        title: "'.addslashes($LANG['create_github_bug_report']).'",
+                        buttons: [ {text: "'.addslashes($LANG['close']).'", click: function() {$(this).dialog("close");}} ],
+                        width: 800,
+                        height: 530,
                     })
                     .dialog("open");
             }

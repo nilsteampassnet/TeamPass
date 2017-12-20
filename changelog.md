@@ -1,6 +1,7 @@
 2.1.27
 11/
  Improved security of password generator with php7
+ #2063 Setting "Hide forgot password link on Home page" not correctly displayed
  #2059 Fix for Custom LDAP port and adLDAP
  #2015 Double click to edit not working for items created by a different user
 

@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'open_bug_report_in_github' => 'Ouvrir un défaut dans Github',
+    'bug_report_to_github' => 'Compléter le contenu du rapport, le copier dans le presse-papier puis le coller dans une nouvelle page de défaut dans Github',
+    'create_github_bug_report' => 'Créer un rapport de défaut',
     'deselect_all' => 'Désélectionner',
     'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
     'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',

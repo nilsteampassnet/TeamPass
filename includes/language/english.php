@@ -14,7 +14,8 @@
  */
 global $LANG;
 $LANG = array (
-    'copy_and_create_github_bug_report' => 'Copy to clipboard and open Github page',
+    'open_bug_report_in_github' => 'Open issue report in Github',
+    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
     'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',

@@ -1244,7 +1244,7 @@ function mainQuery()
             $bFound = false;
             foreach ($data as $line) {
                 if (substr($line, 0, 4) === '    ') {
-                    $tmp .= $line;
+                    $tmp .= str_replace('    ', '', $line);
                 }
             }
 
@@ -1294,7 +1294,7 @@ Tell us what happens instead
 " . $err['message']." - ".$err['file']." (".$err['line'] .")
 ```
 
-#### Log from the web-browser developer console (CTRL . SHIFT . i)
+#### Log from the web-browser developer console (CTRL + SHIFT + i)
 ```
 Insert the log here and especially the answer of the query that failed.
 ```
