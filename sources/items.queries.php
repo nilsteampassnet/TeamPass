@@ -2560,7 +2560,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['restricted'] = $restrictedTo;
 
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] === '1'
+                        if (($record['anyone_can_modify'] === '1' && $_SESSION['user_read_only'] !== '1')
                             || $_SESSION['user_id'] === $record['log_user']
                             || ($_SESSION['user_read_only'] === '1' && $folderIsPf === false)
                             || (isset($SETTINGS['manager_edit']) && $SETTINGS['manager_edit'] === '1') // force draggable if user is manager
@@ -2631,7 +2631,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
                             $html_json[$record['id']]['accessLevel'] = 0;
-                            $html_json[$record['id']]['canMove'] = 1;
+                            $html_json[$record['id']]['canMove'] = ($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1;
                         // CAse where item is restricted to a group of users not including user
                         } elseif ((int) $record['perso'] === 1
                             ||
@@ -2696,7 +2696,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
                             $html_json[$record['id']]['accessLevel'] = $accessLevel;
-                            $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? 1 : $canMove;
+                            $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
                         }
 
                         $html_json[$record['id']]['pw_status'] = "";
