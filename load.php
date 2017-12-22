@@ -156,6 +156,9 @@ $htmlHeaders .= '
         }
     }
 
+    /**
+     *
+     */
     function launchIdentify(isDuo, redirect, psk)
     {
         $("#connection_error").hide();
@@ -848,12 +851,22 @@ $htmlHeaders .= '
                             function(data) {
                                 $("#connection_error").hide();
                                 //redirection for admin is specific
-                                setTimeout(
-                                    function(){
-                                        window.location.href="index.php?page=items";
-                                    },
-                                    1
-                                );
+                                if (data[0].user_admin !== "1") {
+                                    setTimeout(
+                                        function(){
+                                            window.location.href="index.php?page=items";
+                                        },
+                                        1
+                                    );
+                                } else {
+                                    setTimeout(
+                                        function(){
+                                            window.location.href="index.php?page=manage_main";
+                                        },
+                                        1
+                                    );
+                                }
+
                             },
                             "json"
                         );
