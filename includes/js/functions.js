@@ -213,7 +213,7 @@ function SendMail(category, contentEmail, keySent, message){
 /**
 *   Checks if email has expected format (xxx@yyy.zzz)
 **/
-function IsValidEmail(email){
+function IsValidEmail(email) {
     var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
     return filter.test(email);
 }

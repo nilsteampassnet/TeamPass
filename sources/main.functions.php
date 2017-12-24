@@ -1193,9 +1193,18 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
         return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
     }
 
+    // Load settings
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    //load library
-    $user_language = isset($_SESSION['user_language']) ? $_SESSION['user_language'] : "english";
+    
+    // Load superglobal
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Get user language
+    $session_user_language = $superGlobal->get("user_language", "SESSION");
+
+    // Load library
+    $user_language = isset($session_user_language) ? $session_user_language : "english";
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
 
@@ -1603,10 +1612,6 @@ function handleConfigFile($action, $field = null, $value = null)
     global $SETTINGS;
 
     $tp_config_file = "../includes/config/tp.config.php";
-
-    // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
-    $antiXss = new protect\AntiXSS\AntiXSS();
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';

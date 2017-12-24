@@ -996,7 +996,6 @@ function mainQuery()
 
             // get list of last items seen
             $x_counter = 1;
-            $return = "";
             $arrTmp = array();
             $arr_html = array();
             $rows = DB::query(
@@ -1238,13 +1237,31 @@ function mainQuery()
 
             // Read config file
             $tmp = '';
+            $list_of_options = '';
+            $url_found = '';
+            $anonym_url = '';
             $tp_config_file = "../includes/config/tp.config.php";
             $data = file($tp_config_file);
-            $inc = 0;
-            $bFound = false;
             foreach ($data as $line) {
                 if (substr($line, 0, 4) === '    ') {
-                    $tmp .= str_replace('    ', '', $line);
+                    // Remove extra spaces
+                    $line = str_replace('    ', '', $line);
+
+                    // Identify url to anonymize it
+                    if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
+                        $url_found = substr($line, 19, strlen($line) - 22);//echo $url_found." ; ";
+                        $tmp = parse_url($url_found);
+                        $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
+                        $line = "'cpassman_url' => '" . $anonym_url . "\n";
+                    }
+
+                    // Anonymize all urls
+                    if (empty($anonym_url) === false) {
+                        $line = str_replace($url_found, $anonym_url, $line);
+                    }
+
+                    // Complete line to display
+                    $list_of_options .= $line;
                 }
             }
 
@@ -1276,7 +1293,7 @@ Tell us what happens instead
 
 **Teampass configuration file:**
 ```
-" . $tmp . "
+" . $list_of_options . "
 ```
 
 **Updated from an older Teampass or fresh install:**

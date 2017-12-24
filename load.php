@@ -356,7 +356,10 @@ $htmlHeaders .= '
                         $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
                         $("#div_ga_url").hide();
                     } else if (data[0].error === "no_user") {
-                        $("#connection_error").html("'.addslashes($LANG['error_no_user']).'").show();
+                        $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                        $("#div_ga_url").hide();
+                    } else if (data[0].error === "no_email") {
+                        $("#connection_error").html("'.addslashes($LANG['error_no_email']).'").show();
                         $("#div_ga_url").hide();
                     } else {
                         $("#connection_error").html("'.addslashes($LANG['index_bas_pw']).'").show();
@@ -388,11 +391,14 @@ $htmlHeaders .= '
                 if (data[0].error === "0") {
                     $("#div_dialog_message").html(data[0].msg).dialog("open");
                 } else if (data[0].error === "no_user") {
-                    $("#connection_error").html("'.addslashes($LANG['error_no_user']).'")
+                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'")
                         .show().delay(3000).fadeOut(500);
                 } else if (data[0].error === "not_allowed") {
                     $("#connection_error").html("'.addslashes($LANG['setting_disabled_by_admin']).'")
                         .show().delay(3000).fadeOut(500);
+                } else if (data[0].error === "no_email") {
+                    $("#connection_error").html("'.addslashes($LANG['error_no_email']).'").show();
+                    $("#div_ga_url").hide();
                 } else {
 
                 }

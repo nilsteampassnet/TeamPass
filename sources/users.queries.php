@@ -1130,12 +1130,21 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $account_status_action = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
             $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
+            $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
+            $post_lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
+            $post_name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
 
             // Empty user
             if (empty($post_login) === true) {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }
+
+            // User has email?
+            if (empty($post_email) === true) {
+                echo '[ { "error" : "'.addslashes($LANG['error_no_email']).'" } ]';
+                break;
+            }            
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
@@ -1212,10 +1221,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     DB::update(
                         prefix_table("users"),
                         array(
-                            'login' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])),
-                            'name' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name'])),
-                            'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname'])),
-                            'email' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email'])),
+                            'login' => $post_login,
+                            'name' => $post_name,
+                            'lastname' => $post_lastname,
+                            'email' => $post_email,
                             'disabled' => $accountDisabled,
                             'isAdministratedByRole' => $dataReceived['managedby'],
                             'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
@@ -1228,13 +1237,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                     // update SESSION
                     if ($_SESSION['user_id'] === $post_id) {
-                        $_SESSION['user_email'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']));
-                        $_SESSION['name'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name']));
-                        $_SESSION['lastname'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname']));
+                        $_SESSION['user_email'] = $post_email;
+                        $_SESSION['name'] = $post_name;
+                        $_SESSION['lastname'] = $post_lastname;
                     }
 
                     // update LOG
-                    if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
+                    if ($oldData['email'] !== $post_email) {
                         logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
                     }
 
