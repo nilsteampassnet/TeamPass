@@ -918,49 +918,51 @@ function updateCacheTable($action, $ident = "")
             0
         );
         foreach ($rows as $record) {
-            // Get all TAGS
-            $tags = "";
-            $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $record['id']);
-            foreach ($itemTags as $itemTag) {
-                if (!empty($itemTag['tag'])) {
-                    $tags .= $itemTag['tag']." ";
+            if (empty($record['id_tree']) === false) {
+                // Get all TAGS
+                $tags = "";
+                $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $record['id']);
+                foreach ($itemTags as $itemTag) {
+                    if (!empty($itemTag['tag'])) {
+                        $tags .= $itemTag['tag']." ";
+                    }
                 }
-            }
-            // Get renewal period
-            $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".prefix_table('nested_tree')." WHERE id=%i", $record['id_tree']);
+                // Get renewal period
+                $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".prefix_table('nested_tree')." WHERE id=%i", $record['id_tree']);
 
-            // form id_tree to full foldername
-            $folder = "";
-            $arbo = $tree->getPath($record['id_tree'], true);
-            foreach ($arbo as $elem) {
-                if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
-                    $elem->title = $_SESSION['login'];
+                // form id_tree to full foldername
+                $folder = "";
+                $arbo = $tree->getPath($record['id_tree'], true);
+                foreach ($arbo as $elem) {
+                    if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+                        $elem->title = $_SESSION['login'];
+                    }
+                    if (empty($folder)) {
+                        $folder = stripslashes($elem->title);
+                    } else {
+                        $folder .= " » ".stripslashes($elem->title);
+                    }
                 }
-                if (empty($folder)) {
-                    $folder = stripslashes($elem->title);
-                } else {
-                    $folder .= " » ".stripslashes($elem->title);
-                }
+                // store data
+                DB::insert(
+                    prefix_table('cache'),
+                    array(
+                        'id' => $record['id'],
+                        'label' => $record['label'],
+                        'description' => isset($record['description']) ? $record['description'] : "",
+                        'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : "0",
+                        'tags' => $tags,
+                        'id_tree' => $record['id_tree'],
+                        'perso' => $record['perso'],
+                        'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : "0",
+                        'login' => isset($record['login']) ? $record['login'] : "",
+                        'folder' => $folder,
+                        'author' => $record['id_user'],
+                        'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
+                        'timestamp' => $record['date']
+                        )
+                );
             }
-            // store data
-            DB::insert(
-                prefix_table('cache'),
-                array(
-                    'id' => $record['id'],
-                    'label' => $record['label'],
-                    'description' => isset($record['description']) ? $record['description'] : "",
-                    'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : "0",
-                    'tags' => $tags,
-                    'id_tree' => $record['id_tree'],
-                    'perso' => $record['perso'],
-                    'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : "0",
-                    'login' => isset($record['login']) ? $record['login'] : "",
-                    'folder' => $folder,
-                    'author' => $record['id_user'],
-                    'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
-                    'timestamp' => $record['date']
-                    )
-            );
         }
         // UPDATE an item
     } elseif ($action === "update_value") {

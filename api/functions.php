@@ -1532,8 +1532,7 @@ function rest_get()
                         //db::debugmode(true);
                         $response = DB::query(
                             "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
-                            FROM ".prefix_table("items")." AS i
-                            INNER JOIN ".prefix_table("cache")." AS c
+                            FROM ".prefix_table("items")."
                             WHERE url LIKE %s
                             AND id_tree IN (".implode(",", array_filter($userDef)).")
                             AND inactif = %i
@@ -1994,7 +1993,7 @@ function rest_get()
                 $user_login = $passedData[0];
                 $user_pwd = $passedData[1];
                 $user_saltkey = $passedData[2];
-                
+
                 // is user granted?
                 $userData = DB::queryFirstRow(
                     "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
@@ -2015,7 +2014,7 @@ function rest_get()
                 // is user identified?
                 if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
                     // It is a new ITEM
-                    if ($GLOBALS['request'][1] === "add") {                        
+                    if ($GLOBALS['request'][1] === "add") {
                         // encrypt PW
                         if ($item_definition['personal'] === '1') {
                             $passwd = cryption(
@@ -2067,8 +2066,8 @@ function rest_get()
                         $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                         $tree->rebuild();
                         
-                        echo json_encode(array('new_id' => $newID)); 
-                    } else if ($GLOBALS['request'][1] === "edit") {
+                        echo json_encode(array('err' => $newID));
+                    } elseif ($GLOBALS['request'][1] === "edit") {
                         // Is this folder a personal one?
                         $fldData = DB::queryFirstRow(
                             "SELECT `personal_folder`
@@ -2133,6 +2132,8 @@ function rest_get()
                             "id = %i",
                             $item_definition['item_id']
                         );
+
+                        echo json_encode(array('err' => ''));
                     }
                 } else {
                     rest_error('AUTH_NOT_GRANTED');

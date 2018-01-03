@@ -3274,11 +3274,11 @@ if (null !== $post_type) {
                     );
 
                     // Check that user can access this folder
-                    if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
-                        || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
+                    if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                        || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                     ) {
                         echo '[{"error":"not_allowed" , "status":"ok"}]';
-                        break;
+                        exit();
                     }
 
                     // get data about new folder
@@ -3296,7 +3296,7 @@ if (null !== $post_type) {
                                 'id_tree' => $post_folder_id
                                 ),
                             "id=%i",
-                            $post_item_id
+                            $item_id
                         );
                     } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
                         $decrypt = cryption(
@@ -3388,7 +3388,7 @@ if (null !== $post_type) {
                 echo $returnValues;
                 break;
             }
-
+            
             // loop on items to move
             foreach (explode(";", filter_input(INPUT_POST, 'item_ids', FILTER_SANITIZE_STRING)) as $item_id) {
                 if (empty($item_id) === false) {
@@ -3401,17 +3401,16 @@ if (null !== $post_type) {
                     );
 
                     // Check that user can access this folder
-                    if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
-                        || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
+                    if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                     ) {
-                        echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
-                        break;
+                        echo '[{"error":"'.addslashes($LANG['error_not_allowed_to']).'" , "status":"nok"}]';
+                        exit();
                     }
 
                     // perform a check in case of Read-Only user creating an item in his PF
                     if ($_SESSION['user_read_only'] === true) {
-                        echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
-                        break;
+                        echo '[{"error":"'.addslashes($LANG['error_not_allowed_to']).'" , "status":"nok"}]';
+                        exit();
                     }
 
                     // delete item consists in disabling it
