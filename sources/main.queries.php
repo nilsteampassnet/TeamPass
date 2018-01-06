@@ -1260,6 +1260,11 @@ function mainQuery()
                         $line = str_replace($url_found, $anonym_url, $line);
                     }
 
+                    // Clear bck_script_passkey
+                    if (strpos($line, 'bck_script_passkey') > 0) {
+                        $line = "'bck_script_passkey' => '<removed>'\n";
+                    }
+
                     // Complete line to display
                     $list_of_options .= $line;
                 }
@@ -1268,6 +1273,27 @@ function mainQuery()
             // Get error
             $err = error_get_last();
 
+            // Get 10 latest errors in Teampass
+            $teampass_errors = '';
+            $rows = DB::query(
+                "SELECT label, date AS error_date
+                FROM ".prefix_table("log_system")."
+                WHERE `type` LIKE 'error'
+                ORDER BY `date` DESC
+                LIMIT 0, 10"
+            );
+            if (DB::count() > 0) {
+                foreach ($rows as $record) {
+                    if (empty($teampass_errors) === true) {
+                        $teampass_errors = ' * '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['error_date']).' - '.$record['label'];
+                    } else {
+                        $teampass_errors .= '
+ * '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['error_date']).' - '.$record['label'];
+                    }
+                }
+            }
+
+            // Now prepare text
             $txt = "### Steps to reproduce
 1.
 2.
@@ -1309,6 +1335,11 @@ Tell us what happens instead
 #### Web server error log
 ```
 " . $err['message']." - ".$err['file']." (".$err['line'] .")
+```
+
+#### Teampass 10 last system errors
+```
+" . $teampass_errors ."
 ```
 
 #### Log from the web-browser developer console (CTRL + SHIFT + i)

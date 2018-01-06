@@ -2,11 +2,15 @@
 11/
  Improved security of password generator with php7
  Improved cannot edit user without email
+ Improved read-only user limitation to copy folder and import action
+ Improved tree rebuild with API on folders change
  Fix for API keys truncated
+ #2078 Purge Logs not selection not working properly
+ #2077 API: Deleting non existing folder deletes all folders
  #2075 Button "delete selected Items" doesn't work
  #2073 Move selected Items button
  #2066 Read Only Users can Drag and drop items to there personal folder
- #2065 send GAUTH-code on login form doesn't warn user if no email is set 
+ #2065 send GAUTH-code on login form doesn't warn user if no email is set
  #2064 LDAP and DUO users with administrator role taken to items page then logged out
  #2063 Setting "Hide forgot password link on Home page" not correctly displayed
  #2059 Fix for Custom LDAP port and adLDAP

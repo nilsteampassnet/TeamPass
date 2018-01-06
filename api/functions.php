@@ -305,7 +305,7 @@ function rest_get()
         } else {
             throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
         }
-        
+
         if ($GLOBALS['request'][0] == "read") {
             if ($GLOBALS['request'][1] == "folder") {
                 /*
@@ -1011,7 +1011,7 @@ function rest_get()
                     // get sent parameters
                     $params = explode(';', base64_decode($GLOBALS['request'][2]));
 
-                    if (empty($params[0]) === false && (intval($params[1]) >= 0 && intval($params[1]) <= 100)) {
+                    if (empty($params[0]) === false && (intval($params[1]) >= 0 && intval($params[1]) <= 1000)) {
                         if (empty($params[3])) {
                             $params[3] = 0;
                         }
@@ -1110,6 +1110,13 @@ function rest_get()
                                     'valeur' => $params[1]
                                 )
                             );
+
+                            // Run nested tree update
+                            require_once '../sources/SplClassLoader.php';
+                            $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                            $tree->register();
+                            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                            $tree->rebuild();
 
                             echo '{"status":"folder created" , "new_folder_id":"'.$newId.'"}';
                         } catch (PDOException $ex) {
@@ -1336,6 +1343,13 @@ function rest_get()
                                 $GLOBALS['request'][2],
                                 "complex"
                             );
+
+                            // Run nested tree update
+                            require_once '../sources/SplClassLoader.php';
+                            $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                            $tree->register();
+                            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                            $tree->rebuild();
 
                             echo '{"status":"folder updated"}';
                         } catch (PDOException $ex) {
@@ -1707,7 +1721,7 @@ function rest_get()
                                     $json[$i]['perso'] = $data['perso'];
                                     $json[$i]['domain'] = $data['url'];
                                     $json[$i]['id'] = $data['id'];
-                                    
+
                                     $i++;
                                 }
                             }
@@ -1741,7 +1755,7 @@ function rest_get()
                 $user_login = $passedData[0];
                 $user_pwd = $passedData[1];
                 $user_saltkey = $passedData[2];
-                
+
                 $json = [];
                 $inc = 0;
                 if (strcmp($user_login, "admin") == 0) {
@@ -1760,7 +1774,7 @@ function rest_get()
                     $role_str = $data['fonction_id'];
                     $user_id = $data['user_id'];
                 }
-                
+
                 // If personal exists then get list of PF
                 $persoFld = DB::queryfirstrow(
                     "SELECT id, title, nlevel
@@ -1775,14 +1789,14 @@ function rest_get()
                     $json[$inc]['level'] = $persoFld['nlevel'];
                     $json[$inc]['access_type'] = "W";
                     $inc++;
-                    
+
                     // Build tree
                     require_once '../sources/SplClassLoader.php';
                     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                     $tree->register();
                     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                     $tree->rebuild();
-                    
+
                     // get all descendants
                     $ids = $tree->getDescendants($persoFld['id'], false, false);
                     foreach ($ids as $ident) {
@@ -1793,7 +1807,7 @@ function rest_get()
                             WHERE id = %i",
                             $ident->id
                         );
-                        
+
                         // Store info
                         $json[$inc]['id'] = $ident->id;
                         $json[$inc]['title'] = $fldInfo['title'];
@@ -2004,7 +2018,7 @@ function rest_get()
                 if (DB::count() == 0) {
                     rest_error('AUTH_NO_IDENTIFIER');
                 }
-                
+
                 // load passwordLib library
                 require_once '../sources/SplClassLoader.php';
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -2029,7 +2043,7 @@ function rest_get()
                                 "encrypt"
                             );
                         }
-                        
+
                         // add new item
                         DB::insert(
                             prefix_table("items"),
@@ -2059,13 +2073,13 @@ function rest_get()
                             'at_creation',
                             $GLOBALS['request'][1]
                         );
-                        
+
                         // rebuild tree
                         $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                         $tree->register();
                         $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                         $tree->rebuild();
-                        
+
                         echo json_encode(array('err' => $newID));
                     } elseif ($GLOBALS['request'][1] === "edit") {
                         // Is this folder a personal one?
@@ -2075,7 +2089,7 @@ function rest_get()
                             WHERE id = %i",
                             $item_definition['item_id']
                         );
-                        
+
                         // encrypt PW
                         if ($fldData['personal_folder'] === '1') {
                             $passwd = cryption(
@@ -2090,7 +2104,7 @@ function rest_get()
                                 "encrypt"
                             );
                         }
-                        
+
                         // UPDATE item
                         DB::update(
                             prefix_table("items"),
@@ -2117,7 +2131,7 @@ function rest_get()
                                 "action" => "at_modification"
                             )
                         );
-                        
+
                         // Update CACHE table
                         DB::update(
                             prefix_table("cache"),
@@ -2153,7 +2167,7 @@ function rest_get()
                 $user_login = $passedData[1];
                 $user_pwd = $passedData[2];
                 $user_saltkey = $passedData[3];
-                
+
                 // is user granted?
                 $userData = DB::queryFirstRow(
                     "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
@@ -2164,7 +2178,7 @@ function rest_get()
                 if (DB::count() == 0) {
                     rest_error('AUTH_NO_IDENTIFIER');
                 }
-                
+
                 // load passwordLib library
                 require_once '../sources/SplClassLoader.php';
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
@@ -2194,22 +2208,22 @@ function rest_get()
 
                     //Update CACHE table
                     updateCacheTable("delete_value", $item_id);
-                    
-                    echo json_encode(array('code' => 'done')); 
+
+                    echo json_encode(array('code' => 'done'));
                 } else {
                     rest_error('AUTH_NOT_GRANTED');
                 }
             } else {
                 rest_error('AUTH_NO_IDENTIFIER');
             }
-        } elseif ($GLOBALS['request'][0] == "delete") {
+        } elseif ($GLOBALS['request'][0] === "delete") {
         /*
         * DELETE
         *
         * Expected call format: .../api/index.php/delete/folder/<folder_id1;folder_id2;folder_id3>?apikey=<VALID API KEY>
         * Expected call format: .../api/index.php/delete/item>/<item_id1;item_id2;item_id3>?apikey=<VALID API KEY>
         */
-            if ($GLOBALS['request'][1] == "folder") {
+            if ($GLOBALS['request'][1] === "folder") {
                 $array_category = explode(';', $GLOBALS['request'][2]);
 
                 // get user info
@@ -2238,55 +2252,66 @@ function rest_get()
 
                     // this will delete all sub folders and items associated
                     for ($i = 0; $i < count($array_category); $i++) {
-                        // Get through each subfolder
-                        $folders = $tree->getDescendants($array_category[$i], true);
-                        if (count($folders) > 0) {
-                            foreach ($folders as $folder) {
-                                if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {
-                                    //Store the deleted folder (recycled bin)
-                                    DB::insert(
-                                        prefix_table("misc"),
-                                        array(
-                                            'type' => 'folder_deleted',
-                                            'intitule' => "f".$array_category[$i],
-                                            'valeur' => $folder->id.', '.$folder->parent_id.', '.
-                                                $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.$folder->nlevel.', 0, 0, 0, 0'
-                                        )
-                                    );
-                                    //delete folder
-                                    DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
-
-                                    //delete items & logs
-                                    $items = DB::query(
-                                        "SELECT id
-                                        FROM ".prefix_table("items")."
-                                        WHERE id_tree=%i",
-                                        $folder->id
-                                    );
-                                    foreach ($items as $item) {
-                                        DB::update(
-                                            prefix_table("items"),
-                                            array(
-                                                'inactif' => '1',
-                                            ),
-                                            "id = %i",
-                                            $item['id']
-                                        );
-                                        //log
+                        // Does this folder exist?
+                        DB::queryFirstRow(
+                            "SELECT id
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %i",
+                            $array_category[$i]
+                        );
+                        if (DB::count() > 0) {
+                            // Get through each subfolder
+                            $folders = $tree->getDescendants($array_category[$i], true);
+                            if (count($folders) > 0) {
+                                foreach ($folders as $folder) {
+                                    if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->personal_folder != 1) {
+                                        //Store the deleted folder (recycled bin)
                                         DB::insert(
-                                            prefix_table("log_items"),
+                                            prefix_table("misc"),
                                             array(
-                                                'id_item' => $item['id'],
-                                                'date' => time(),
-                                                'id_user' => $user_id,
-                                                'action' => 'at_delete'
+                                                'type' => 'folder_deleted',
+                                                'intitule' => "f".$array_category[$i],
+                                                'valeur' => $folder->id.', '.$folder->parent_id.', '.
+                                                    $folder->title.', '.$folder->nleft.', '.$folder->nright.', '.$folder->nlevel.', 0, 0, 0, 0'
                                             )
                                         );
+                                        //delete folder
+                                        DB::delete(prefix_table("nested_tree"), "id = %i", $folder->id);
+
+                                        //delete items & logs
+                                        $items = DB::query(
+                                            "SELECT id
+                                            FROM ".prefix_table("items")."
+                                            WHERE id_tree=%i",
+                                            $folder->id
+                                        );
+                                        foreach ($items as $item) {
+                                            DB::update(
+                                                prefix_table("items"),
+                                                array(
+                                                    'inactif' => '1',
+                                                ),
+                                                "id = %i",
+                                                $item['id']
+                                            );
+                                            //log
+                                            DB::insert(
+                                                prefix_table("log_items"),
+                                                array(
+                                                    'id_item' => $item['id'],
+                                                    'date' => time(),
+                                                    'id_user' => $user_id,
+                                                    'action' => 'at_delete'
+                                                )
+                                            );
+                                        }
+                                        //Update CACHE table
+                                        updateCacheTable("delete_value", $array_category[$i]);
                                     }
-                                    //Update CACHE table
-                                    updateCacheTable("delete_value", $array_category[$i]);
                                 }
                             }
+                        } else {
+                            // Folder doesn't exist
                         }
                     }
                 } else {

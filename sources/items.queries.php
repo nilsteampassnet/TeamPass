@@ -2903,7 +2903,9 @@ if (null !== $post_type) {
 
             // check if user can perform this action
             if (null !== $post_context && empty($post_context) === false) {
-                if ($post_context === "create_folder" || $post_context === "edit_folder" || $post_context === "delete_folder") {
+                if ($post_context === "create_folder" || $post_context === "edit_folder"
+                    || $post_context === "delete_folder" || $post_context === "copy_folder"
+                ) {
                     if ($_SESSION['is_admin'] !== '1'
                         && ($_SESSION['user_manager'] !== '1')
                         && (
@@ -3388,7 +3390,7 @@ if (null !== $post_type) {
                 echo $returnValues;
                 break;
             }
-            
+
             // loop on items to move
             foreach (explode(";", filter_input(INPUT_POST, 'item_ids', FILTER_SANITIZE_STRING)) as $item_id) {
                 if (empty($item_id) === false) {

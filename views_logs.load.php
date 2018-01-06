@@ -260,6 +260,7 @@ $(function() {
         defaultDate: "today",
         changeMonth: true,
         changeYear: true,
+        dateFormat: "<?php echo str_replace('Y', 'yy', $SETTINGS['date_format']); ?>",
         numberOfMonths: 1,
         onClose: function( selectedDate ) {
             var minDate = new Date(Date.parse(selectedDate));
@@ -271,6 +272,7 @@ $(function() {
         defaultDate: "+1w",
         changeMonth: true,
         changeYear: true,
+        dateFormat: "<?php echo str_replace('Y', 'yy', $SETTINGS['date_format']); ?>",
         numberOfMonths: 1,
         onClose: function( selectedDate ) {
             var maxDate = new Date(Date.parse(selectedDate));

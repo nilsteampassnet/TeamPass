@@ -1312,7 +1312,7 @@ echo '
                         </td>
                     </tr>';
 // Backup key
-if (isset($SETTINGS['bck_script_passkey'])) {
+if (isset($SETTINGS['bck_script_passkey']) === true) {
     require_once './sources/main.functions.php';
     $currentKey = cryption(
         $SETTINGS['bck_script_passkey'],

@@ -2027,6 +2027,28 @@ function open_del_group_div()
     }
 }
 
+/**
+ * openCopyFolderDialog
+ * @return {[type]} [description]
+ */
+function openCopyFolderDialog()
+{
+    if ($("#user_is_read_only").length && $("#user_is_read_only").val() == 1) {
+        displayMessage("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
+        return false;
+    }
+    $("#div_loading").removeClass("hidden");
+
+
+    // check if read only or forbidden
+    if (RecupComplexite($('#hid_cat').val(), 0, "copy_folder") == 0) {
+        return false;
+    } else {
+        $('#div_copy_folder').dialog('open');
+        $("#div_loading").addClass("hidden");
+    }
+}
+
 //###########
 //## FUNCTION : prepare new item dialogbox
 //###########
