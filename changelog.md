@@ -5,6 +5,7 @@
  Improved read-only user limitation to copy folder and import action
  Improved tree rebuild with API on folders change
  Fix for API keys truncated
+ #2080 Email sent on password copy in the clipboard
  #2078 Purge Logs not selection not working properly
  #2077 API: Deleting non existing folder deletes all folders
  #2075 Button "delete selected Items" doesn't work
