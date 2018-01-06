@@ -953,7 +953,7 @@ if (null !== $post_newtitle) {
         case "copy_folder":
             // Check KEY and rights
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                echo prepareExchangedData(array("error" => addslashes($LANG['error_not_allowed_to'])), "encode");
                 break;
             }
 
@@ -969,8 +969,12 @@ if (null !== $post_newtitle) {
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-            // get info about target folder
-            $nodeTarget = $tree->getNode($target_folder_id);
+            // Test if target folder is Read-only
+            // If it is then stop
+            if (in_array($target_folder_id, $_SESSION['read_only_folders']) === true) {
+                echo prepareExchangedData(array("error" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
+            }
 
             // get list of all folders
             $nodeDescendants = $tree->getDescendants($source_folder_id, true, false, false);

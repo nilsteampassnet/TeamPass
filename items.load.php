@@ -3166,16 +3166,26 @@ $(function() {
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
+                        //decrypt data
+                        try {
+                            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                        } catch (e) {
+                            // error
+                            $("#div_loading").addClass("hidden");
+                            $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data);
+                            $("#div_dialog_message").show();
+                            return;
+                        }
+
                         //check if format error
-                        if (data[0].error == "") {
+                        if (data.error == "") {
                             $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                             refreshTree();
                             $("#div_copy_folder").dialog("close");
                         } else {
-                            $("#div_copy_folder_msg").html(data[0].error).show().delay(2000).fadeOut(1000);
+                            $("#div_copy_folder_msg").html(data.error).show().delay(2000).fadeOut(1000);
                         }
-                    },
-                    "json"
+                    }
                 );
             },
             "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
