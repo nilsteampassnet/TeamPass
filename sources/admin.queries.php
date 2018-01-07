@@ -2043,7 +2043,7 @@ switch ($post_type) {
 
     case "admin_ldap_test_configuration":
         // Check
-        if (null !== $post_option || empty($post_option) === true) {
+        if (null === $post_option || empty($post_option) === true) {
             echo '[{ "option" : "admin_ldap_test_configuration", "error" : "No options" }]';
             break;
         }
