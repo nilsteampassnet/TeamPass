@@ -2247,17 +2247,6 @@ function open_edit_item_div(restricted_to_roles)
                 optgroup.attr('label', "<?php echo addslashes($LANG['users']); ?>");
                 $("#edit_restricted_to_list option:last").wrapAll(optgroup);
             }
-            /*var liste = $('#input_liste_utilisateurs').val().split(';');
-            for (var i=0; i<liste.length; i++) {
-                var elem = liste[i].split('#');
-                if (elem[0] != "") {
-                    $("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
-                    var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
-                    if (index != -1) {
-                        $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
-                    }
-                }
-            }*/
         }
 
         //Add list of roles if option is set
@@ -2271,15 +2260,15 @@ function open_edit_item_div(restricted_to_roles)
             for (var i=0; i<liste.length; i++) {
                 var elem = liste[i].split('#');
                 if (elem[0] != "") {
-                    $("#edit_restricted_to_list").append("<option value='role_"+elem[0]+"'>"+elem[1]+"</option>");
+                    $("#edit_restricted_to_list").append("<option value='role_"+elem[0]+"' class='select_roles'>"+elem[1]+"</option>");
                     var index = $('#edit_restricted_to_roles').val().lastIndexOf(elem[1]+";");
                     if (index != -1) {
                         $("#edit_restricted_to_list option[value='role_"+elem[0]+"']").attr('selected', true);
                     }
-                    if (i==0) $("#edit_restricted_to_list option:last").wrapAll(optgroup);
                 }
                 j++;
             }
+            $(".select_roles").wrapAll(optgroup);
         }
     }
 
@@ -3384,12 +3373,24 @@ $(function() {
                         for (var i=0; i<list.length; i++) {
                             var elem = list[i].split('#');
                             if (elem[0] != "") {
-                                $("#edit_restricted_to_list").append("<option value='"+elem[0]+"'>"+elem[1]+"</option>");
+                                $("#edit_restricted_to_list").append("<option value='"+elem[0]+"' class='select_users'>"+elem[1]+"</option>");
                                 var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
                                 if (index != -1) {
                                     $("#edit_restricted_to_list option[value="+elem[0]+"]").attr('selected', true);
                                 }
                             }
+                        }
+                        var restricted_to_roles = <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] == 1) {
+    echo 1;
+} else {
+    echo 0;
+}
+?>;
+                        if (restricted_to_roles == 1) {
+                            //add optgroup
+                            var optgroup = $('<optgroup>');
+                            optgroup.attr('label', "<?php echo addslashes($LANG['users']); ?>");
+                            $(".select_users").wrapAll(optgroup);
                         }
                     }
                 }

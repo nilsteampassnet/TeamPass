@@ -132,7 +132,7 @@ if (isset($_GET['iSortCol_0'])) {
  * word by word on any field. It's possible to do here, but concerned about efficiency
  * on very large tables, and MySQL's regex functionality is very limited
  */
-if (isset($_GET['sSearch']) && $_GET['sSearch'] != "") {
+if (isset($_GET['sSearch']) === true && empty($_GET['sSearch']) === false) {
     $sWhere .= " AND (";
     for ($i = 0; $i < count($aColumns); $i++) {
         $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
@@ -214,8 +214,6 @@ if (!isset($_GET['type'])) {
     if (isset($_GET['sEcho'])) {
         $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
     }
-    $sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     $sOutputConst = "";
 
@@ -247,7 +245,7 @@ if (!isset($_GET['type'])) {
             }
             $accessLevel = min($arrTmp);
             if ($accessLevel === 0) {
-                            $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
+                $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
             }
         }
 
@@ -292,24 +290,22 @@ if (!isset($_GET['type'])) {
         //col4
         //get restriction from ROles
         $restrictedToRole = false;
-        $rTmp = DB::query(
+        $rTmp = DB::queryFirstColumn(
             "SELECT role_id FROM ".prefix_table("restriction_to_roles")." WHERE item_id = %i",
             $record['id']
         );
-        foreach ($rTmp as $aTmp) {
-            if ($aTmp['role_id'] != "") {
-                if (!in_array($aTmp['role_id'], $_SESSION['user_roles'])) {
-                    $restrictedToRole = true;
-                }
-            }
+        // We considere here that if user has at least one group similar to the object ones
+        // then user can see item
+        if (count(array_intersect($rTmp, $_SESSION['user_roles'])) === 0 && count($rTmp) > 0) {
+            $restrictedToRole = true;
         }
-
+        
         if ((
             $record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
             ||
             (
-                !empty($record['restricted_to'])
-                && !in_array($_SESSION['user_id'], explode(';', $record['restricted_to']))
+                empty($record['restricted_to']) === false
+                && in_array($_SESSION['user_id'], explode(';', $record['restricted_to'])) === false
             )
             ||
             (
@@ -344,12 +340,19 @@ if (!isset($_GET['type'])) {
 
         if ($getItemInList === true) {
             $sOutputConst .= $sOutputItem;
+        } else {
+            $iFilteredTotal --;
+            $iTotal --;
         }
     }
     if (!empty($sOutputConst)) {
         $sOutput .= substr_replace($sOutputConst, "", -2);
     }
-    $sOutput .= '] }';
+    $sOutput .= '], ';
+
+
+    $sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
+    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.' }';
 
     echo $sOutput;
 } elseif (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {

@@ -10,6 +10,7 @@
  #2077 API: Deleting non existing folder deletes all folders
  #2075 Button "delete selected Items" doesn't work
  #2073 Move selected Items button
+ #2071 Search not working for items with multiple "Restricted to:" roles selected
  #2069 Copy a read-only folder to a read-only folder
  #2066 Read Only Users can Drag and drop items to there personal folder
  #2065 send GAUTH-code on login form doesn't warn user if no email is set
