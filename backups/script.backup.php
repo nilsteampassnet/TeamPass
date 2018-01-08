@@ -46,7 +46,7 @@ foreach ($rows as $record) {
 }
 
 // Check if key is conform
-if (!empty($settings['bck_script_passkey']) && !empty($settings['bck_script_passkey'])) {
+if (empty($settings['bck_script_passkey']) === false) {
     $currentKey = cryption(
         $settings['bck_script_passkey'],
         "",

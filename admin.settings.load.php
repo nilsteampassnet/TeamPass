@@ -786,10 +786,10 @@ $(function() {
         width: 600,
         height: 470,
         title: "<?php echo $LANG['category_in_folders']; ?>",
-        open: function() {            
+        open: function() {
             // pre-select folders
             var id = $("#post_id").val();
-            var folder = $("#catFoldersList_"+id).val().split(";");            
+            var folder = $("#catFoldersList_"+id).val().split(";");
             $("#cat_folders_selection")
                 .val(folder)
                 .multiSelect('refresh');
@@ -1027,7 +1027,7 @@ $(function() {
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            
+
             var html = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
                 selected = 0;
 
@@ -1110,7 +1110,7 @@ function changeEncrypMode(id, encrypted_data) {
 */
 function generateAndStoreBackupPass() {
     $.when(
-        generateRandomKey('bck_script_passkey', '40', 'true', 'true', 'false', 'false')
+        generateRandomKey('bck_script_passkey', '40', 'true', 'true', 'true', 'false', 'false')
     ).then(function(x) {
         updateSetting('bck_script_passkey');
     });

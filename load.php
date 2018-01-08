@@ -629,20 +629,22 @@ $htmlHeaders .= '
     /**
      *
      */
-    function generateRandomKey(elem, size, numerals, capitalize, symbols, secure) {
+    function generateRandomKey(elem, size, numerals, lowercase, capitalize, symbols, secure) {
         size = size || 20;
         numerals = numerals || true;
         capitalize = capitalize || true;
         symbols = symbols || true;
         secure = secure || true;
+        lowercase = lowercase || true;
 
-        $.post(
+        return $.post(
             "sources/main.queries.php",
             {
                 type        : "generate_a_password",
                 size        : size,
                 numerals    : numerals,
                 capitalize  : capitalize,
+                lowercase  : lowercase,
                 symbols     : symbols,
                 secure      : secure
             },
