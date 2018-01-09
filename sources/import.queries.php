@@ -989,7 +989,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 'id' => $newId,
                                 'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-                                'url' => (isset($item[KP_NOTES]) && !empty($item[KP_NOTES])) ? $item[KP_NOTES] : "0",
+                                'url' => ubstr(stripslashes($item[KP_URL]), 0, 500),
                                 'tags' => "",
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
