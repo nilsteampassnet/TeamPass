@@ -1044,7 +1044,7 @@ function rest_get()
                             "duplicate_folder"
                         );
                         // if valeur = 0 then duplicate folders not allowed
-                        if ($data === 0) {
+                        if ($data['valeur'] === '0') {
                             DB::query(
                                 "SELECT *
                                 FROM ".prefix_table("nested_tree")."
@@ -1117,6 +1117,25 @@ function rest_get()
                             $tree->register();
                             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                             $tree->rebuild();
+
+                            // We need to allocate the same access rights as the parent
+                            // We will considere that if created as root then its rights must be set through the GUI
+                            $ret = DB::query(
+                                "SELECT role_id, type
+                                FROM ".prefix_table("roles_values")."
+                                WHERE folder_id = %i",
+                                $params[2]
+                            );
+                            foreach ($ret as $entry) {
+                                DB::insert(
+                                    prefix_table("roles_values"),
+                                    array(
+                                        'role_id' => $entry['role_id'],
+                                        'folder_id' => $newId,
+                                        'type' => $entry['type']
+                                    )
+                                );
+                            }
 
                             echo '{"status":"folder created" , "new_folder_id":"'.$newId.'"}';
                         } catch (PDOException $ex) {

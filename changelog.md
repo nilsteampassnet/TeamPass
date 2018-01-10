@@ -5,6 +5,8 @@
  Improved read-only user limitation to copy folder and import action
  Improved tree rebuild with API on folders change
  Fix for API keys truncated
+ #2085 CSV import error if URL too long
+ #2082 API: new folder is allocated to same roles as its parent
  #2081 LDAP bug, can't check connection
  #2080 Email sent on password copy in the clipboard
  #2078 Purge Logs not selection not working properly

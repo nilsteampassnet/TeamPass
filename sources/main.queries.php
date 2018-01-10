@@ -324,6 +324,7 @@ function mainQuery()
                 // Prepare variables
                 $login = htmlspecialchars_decode($dataReceived['login']);
 
+                // Get data about user
                 $data = DB::queryfirstrow(
                     "SELECT id, email
                     FROM ".prefix_table("users")."
