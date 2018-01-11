@@ -578,7 +578,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                         <label class="cpm_label">'.$field[1].'</span>
-                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">
                     </div>';
         }
         echo '
@@ -772,7 +772,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                         <label class="cpm_label">'.$field[1].'</label>
-                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">
                     </div>';
         }
         echo '

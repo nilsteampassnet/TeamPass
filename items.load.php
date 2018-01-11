@@ -1148,12 +1148,20 @@ function EditerItem()
                         if ($('.edit_item_field').val() != undefined) {
                             $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
-                                id = $(this).attr('id').split('_');
-                                if ($(this).val() !== "") {
+                                var input_id = $(this).attr('id');
+                                var id = $(this).attr('id').split('_');
+                                if ($('#'+input_id).val() !== "") {
                                     // copy data from form to Item Div
-                                    $('#id_field_' + id[2]).html($(this).val());
-                                    $('#hid_field_' + id[2] + '_' + id[3]).val($(this).val());
-                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).show()
+                                    $('#hid_field_' + id[2] + '_' + id[3]).val($('#'+input_id).val());
+
+                                    // Mange type of field
+                                    if ($('#'+input_id).attr('data-field-type') === 'masked') {
+                                        $('#id_field_' + id[2] + '_' + id[3]).html('<?php echo $var['hidden_asterisk']; ?>');
+                                    } else if ($('#'+input_id).attr('data-field-type') === 'text') {
+                                        $('#id_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val());
+                                    }
+
+                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
                                 } else {
                                     $('#hid_field_' + id[2] + '_' + id[3]).val('');
                                 }
@@ -1589,11 +1597,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.fields === "") {
                             $(".tr_fields").addClass("hidden");
                         } else {
-                            $(".tr_cf, .tr_fields").removeClass("hidden");
+                            $(".tr_cf, .tr_fields").addClass("hidden");
                             var liste = data.fields.split('_|_');
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');
-                                $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).show();
+                                $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
                                 $('#hid_field_' + field[0] + '_' + field[2]).val(field[1]);
                                 if (field[3] === "masked") {
                                     $('#id_field_' + field[0] + '_' + field[2])
