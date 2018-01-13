@@ -202,6 +202,7 @@ if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === tru
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
@@ -752,7 +753,7 @@ if (isset($_SESSION['CPM'])) {
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                         </div>';
         }
-        echo '  
+        echo '
                         <div style="text-align:center;margin-top:15px;">
                             <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
                         </div>

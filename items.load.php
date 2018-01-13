@@ -558,9 +558,13 @@ function pwGenerate(elem)
     $("#"+elem+"pw_wait").removeClass("hidden");
 
     // If no criteria is set then do secure
-    var secure = false;
-    if ($('.pw_definition').prop("checked") === false || $("#"+elem + 'pw_secure').prop("checked") === true) {
-        secure = true;
+    var secure_pwd = false;
+    var anyBoxesChecked = false;
+    if ($('.pw_definition:checked').length > 0) {
+        anyBoxesChecked = true;
+    }
+    if (anyBoxesChecked === false || $('#'+elem + 'pw_secure').prop('checked') === true) {
+        secure_pwd = true;
     }
 
     $.post(
@@ -572,7 +576,7 @@ function pwGenerate(elem)
             numerals      : $("#"+elem + 'pw_numerics').prop("checked"),
             capitalize      : $("#"+elem + 'pw_maj').prop("checked"),
             symbols      : $("#"+elem + 'pw_symbols').prop("checked"),
-            secure  : secure,
+            secure_pwd  : secure_pwd,
             elem      : elem,
             force      : "false"
         },
@@ -946,7 +950,7 @@ function EditerItem()
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
             ||
-            $("#create_item_without_password").val() === "1"
+            ($("#create_item_without_password").val() === "1" && $("#pw1").val === "")
       ) {
             LoadingPage();  //afficher image de chargement
             var annonce = 0;
@@ -3175,7 +3179,7 @@ $(function() {
                         }
 
                         //check if format error
-                        if (data.error == "") {
+                        if (data.error === "") {
                             $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                             refreshTree();
                             $("#div_copy_folder").dialog("close");

@@ -1213,7 +1213,12 @@ if (null !== $post_newtitle) {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             updateCacheTable("reload", "");
 
-            echo '[ { "error" : "" } ]';
+            $data = array(
+                'error' => ""
+            );
+
+            // send data
+            echo prepareExchangedData($data, "encode");
 
             break;
     }

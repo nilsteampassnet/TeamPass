@@ -5,6 +5,7 @@
  Improved read-only user limitation to copy folder and import action
  Improved tree rebuild with API on folders change
  Fix for API keys truncated
+ #2090 On folder copy, an empty message box is shown
  #2087 Custom fields displayed if empty
  #2085 CSV import error if URL too long
  #2082 API: new folder is allocated to same roles as its parent
