@@ -4,7 +4,7 @@
  * @file          french.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,18 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'open_bug_report_in_github' => 'Ouvrir un défaut dans Github',
-    'bug_report_to_github' => 'Compléter le contenu du rapport, le copier dans le presse-papier puis le coller dans une nouvelle page de défaut dans Github',
-    'create_github_bug_report' => 'Créer un rapport de défaut',
-    'deselect_all' => 'Désélectionner',
-    'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
-    'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',
-    'error_psk_should_be_changed' => 'Il vous est demandé de changer votre clé de salage personnelle.',
-    'personal_saltkey_security_level' => 'Niveau minimum de sécurité de la clé personnelle de salage',
-    'settings_disable_forgot_password_link' => 'Cacher le lien de récupération de mot de passe',
-    'settings_ldap_allowed_usergroup' => 'LDAP groupe autorisé',
-    'settings_ldap_allowed_usergroup_tip' => 'Indiquer le nom du groupe autorisé à se connecter à Teampass. Laisser vide si aucune restriction n\'est requise.',
-    'access_level_for_roles' => 'Droit associé des Roles',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',
@@ -1077,5 +1065,19 @@ $LANG = array (
     'at_export' => 'Export',
     'setting_disabled_by_admin' => 'Cette option a été désactivée',
     'confirm_change_field_type' => 'Confirmer le changement de type pour ce champ',
+    'admin_script_backup_secret' => 'Clé de Backup',
+    'admin_script_backup_secret_tip' => 'La clé de Backup est nécessaire pour lancer la sauvegarde. Elle doit être ajoutée comme paramètre à script.backup.php. Exemple : scripts.backup.php?key=votre_clé_de_backup',
+    'access_level_for_roles' => 'Droit associé des Roles',
+    'settings_ldap_allowed_usergroup' => 'LDAP groupe autorisé',
+    'settings_ldap_allowed_usergroup_tip' => 'Indiquer le nom du groupe autorisé à se connecter à Teampass. Laisser vide si aucune restriction n\'est requise.',
+    'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',
+    'error_psk_should_be_changed' => 'Il vous est demandé de changer votre clé de salage personnelle.',
+    'personal_saltkey_security_level' => 'Niveau minimum de sécurité de la clé personnelle de salage',
+    'settings_disable_forgot_password_link' => 'Cacher le lien de récupération de mot de passe',
+    'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
+    'open_bug_report_in_github' => 'Ouvrir un défaut dans Github',
+    'bug_report_to_github' => 'Compléter le contenu du rapport, le copier dans le presse-papier puis le coller dans une nouvelle page de défaut dans Github',
+    'create_github_bug_report' => 'Créer un rapport de défaut',
+    'deselect_all' => 'Désélectionner',
     '' => ''
 );

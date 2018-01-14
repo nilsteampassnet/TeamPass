@@ -4,7 +4,7 @@
  * @file          spanish.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,30 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'open_bug_report_in_github' => 'Open issue report in Github',
-    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
-    'create_github_bug_report' => 'Create new bug report',
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
-    'text' => 'Text',
-    'masked' => 'Masked',
-    'type' => 'Type',
-    'select_type_of_field' => 'Select type of field',
-    'define_new_field' => 'Define new field',
-    'data_is_text' => 'Data is Text',
-    'data_is_masked' => 'Data is Hidden',
-    'at_export' => 'Export',
-    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
-    'confirm_change_field_type' => 'Confirm changing the field type',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',
@@ -61,14 +37,14 @@ $LANG = array (
     'ga_enter_credentials' => 'Debe introducir las crendenciales de usuario',
     'ga_bad_code' => 'El código de autentificación de Google es incorrecto',
     'settings_get_tp_info' => 'Cargar automáticamente la información de Teampass',
-    'settings_get_tp_info_tip' => 'Esta opción permite a la pagina administración cargar información de versiones y librerías usadas en el servidor de Teampass.',
+    'settings_get_tp_info_tip' => 'Cuando esta habilitada, la información tal como las versiones actuales de software, parches de bugs y noticias sobre lanzamientos, son mostrados en la página de administrador desde los servicios remotos.',
     'at_field' => 'Campo',
     'category_in_folders_title' => 'Carpetas asociadas',
     'category_in_folders' => 'Editar carpeta para esta Categoría',
     'select_folders_for_category' => 'Seleccione la Carpeta para asociar con esta Categoría de campos',
     'offline_mode_warning' => 'El modo Fuera de linea, permite exportar los items a un archivo HTML para acceder cuando no se dispone de una conexión al servidor de Teampass. Las contraseñas son cifradas por una clave.',
     'offline_menu_title' => 'Exportar Items para el modo Off-line',
-    'settings_offline_mode' => 'Activar modo Off-line',
+    'settings_offline_mode' => 'Exportación de modo HTML Offline activado',
     'settings_offline_mode_tip' => 'El modo Fuera de linea consiste en exportar los items en un archivo HTML. Los items son cifrados con una clave dada por el usuario.',
     'offline_mode_key_level' => 'Calidad mínima para la clave de cifrado Fuera de linea.',
     'categories' => 'Categorías',
@@ -1078,5 +1054,29 @@ $LANG = array (
     'continue' => 'Continue',
     'please_confirm_operation' => 'Confirme la operación por favor',
     'setting_disabled_by_admin' => 'Este ajuste está deshabilitado por el Administrador',
+    'text' => 'Texto',
+    'masked' => 'Enmascarado',
+    'type' => 'Tipo',
+    'select_type_of_field' => 'Seleeciona tipo de campo',
+    'define_new_field' => 'Define nuevo campo',
+    'data_is_text' => 'Los datos son Texto',
+    'data_is_masked' => 'Los datos están Ocultos',
+    'at_export' => 'Exportar',
+    'setting_disabled_by_admin' => 'La característica está deshabilitada por el Administrador',
+    'confirm_change_field_type' => 'Confirmar el cambio del tipo de campo',
+    'admin_script_backup_secret' => 'Clave de acceso para la ejecución de copia de seguridad',
+    'admin_script_backup_secret_tip' => 'La clave de seguridad debe proporcionarse para iniciar la copia de seguridad. Tiene que ser agregado como parámetro clave a script.backup.php. Ejemplo:scripts.backup.php?key=tu_clave',
+    'access_level_for_roles' => 'Acceso asociado para Roles',
+    'settings_ldap_allowed_usergroup' => 'Grupo de usuarios permitido por LDAP',
+    'settings_ldap_allowed_usergroup_tip' => 'Indica el grupo permitido para conectarse a Teampass. Déjalo vacío si no se espera ninguna restricción con respecto a la pertenencia al grupo.',
+    'error_security_level_not_reached' => '¡Nivel de seguridad esperado no alcanzado!',
+    'error_psk_should_be_changed' => 'Debido a cambio de política, puede que necesites cambiar tu saltkey personal.',
+    'personal_saltkey_security_level' => 'Nivel mínimo personal de seguridad Saltkey',
+    'settings_disable_forgot_password_link' => 'Ocultar enlace de contraseña olvidada en la Página de inicio',
+    'newly_created_user_is_administrated_by' => 'El usuario creado reacientemente es administrado por',
+    'open_bug_report_in_github' => 'Open issue report in Github',
+    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
+    'create_github_bug_report' => 'Create new bug report',
+    'deselect_all' => 'Deselect all',
     '' => ''
 );

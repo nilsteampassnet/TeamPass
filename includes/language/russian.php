@@ -4,7 +4,7 @@
  * @file          russian.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
+ * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
@@ -14,35 +14,11 @@
  */
 global $LANG;
 $LANG = array (
-    'open_bug_report_in_github' => 'Open issue report in Github',
-    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
-    'create_github_bug_report' => 'Create new bug report',
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
-    'text' => 'Text',
-    'masked' => 'Masked',
-    'type' => 'Type',
-    'select_type_of_field' => 'Select type of field',
-    'define_new_field' => 'Define new field',
-    'data_is_text' => 'Data is Text',
-    'data_is_masked' => 'Data is Hidden',
-    'at_export' => 'Export',
-    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
-    'confirm_change_field_type' => 'Confirm changing the field type',
     'user_ga_code' => 'Отправить приложение Google Authenticator на email пользователю',
     'send_ga_code' => 'Код Google Authenticator для пользователя',
     'error_no_email' => 'У пользователя не задан email!',
     'error_no_user' => 'Пользователь не найден!',
-    'email_ga_subject' => 'Ваш код Google Authenticator для TeamPass',
+    'email_ga_subject' => 'Ваш одноразовый код Google Authenticator для TeamPass',
     'email_ga_text' => 'Здравствуйте,<br /><br />Это письмо от менеджера паролей Teampass.<br /> <br/>Администратор полагает что вы используете двухфакторную аутентификацию для подключения к Teampass.<br />Для первого подключения с двухфакторной аутентификацией, пожалуйста, используйте код, который вы найдете ниже:<br /><br />----------------------<br />#2FACode#<br />----------------------<br /><br />Затем у вас будет возможность настроить доступ с одноразовыми учетными данными для доступа к Teampass.<br /><br />Удачного дня!',
     'settings_attachments_encryption' => 'Включить шифрование файловых вложений в элементах',
     'settings_attachments_encryption_tip' => 'ЭТА НАСТРОЙКА МОЖЕТ ПОВРЕДИТЬ СУЩЕСТВУЮЩИЕ ВЛОЖЕНИЯ. Если включено, приложения к элементам хранятся на сервере зашифрованными с использованием соли заданной в TeamPass. Шифрование требует больше ресурсов сервера. ВНИМАНИЕ: после изменения настройки необходимо запустить скрипт конвертирования для уже созданных вложений. См. вкладку \'Скрипты\'.',
@@ -123,7 +99,7 @@ $LANG = array (
     'purge_now' => 'Очистить!',
     'purge_done' => 'Очистка закончена! Число удаленных записей: ',
     'settings_upload_maxfilesize_tip' => 'Максимальный разрешенный размер файла (по умолчанию 10 МБайт). Должен выбираться с учетом настроек сервера (в php.ini опции upload_max_filesize и post_max_size, значение по умолчанию зависит от версии PHP).',
-    'settings_upload_docext_tip' => 'Типы документов. Перечислите допустимые файловые расширения через запятую (,)',
+    'settings_upload_docext_tip' => 'Типы документов, разрешенных для вложения. Перечислите допустимые файловые расширения через запятую (,)',
     'settings_upload_imagesext_tip' => 'Типы изображений. Перечислите допустимые файловые расширения через запятую (,)',
     'settings_upload_pkgext_tip' => 'Типы архивов. Перечислите допустимые файловые расширения через запятую (,)',
     'settings_upload_otherext_tip' => 'Другие типы. Перечислите допустимые файловые расширения через запятую (,)',
@@ -1079,5 +1055,29 @@ $LANG = array (
     'continue' => 'Продолжить',
     'please_confirm_operation' => 'Пожалуйста, подтвердите операцию',
     'setting_disabled_by_admin' => 'Эта опция отключена администратором',
+    'text' => 'Текст',
+    'masked' => 'Скрытые',
+    'type' => 'Тип',
+    'select_type_of_field' => 'Выберите тип поля',
+    'define_new_field' => 'Определить новое поле',
+    'data_is_text' => 'Данные являются текстом',
+    'data_is_masked' => 'Данные скрыты',
+    'at_export' => 'Экспорт',
+    'setting_disabled_by_admin' => 'Эта опция отключена администратором',
+    'confirm_change_field_type' => 'Подтвердить изменение типа поля',
+    'admin_script_backup_secret' => 'Пароль для выполнения резервного копирования',
+    'admin_script_backup_secret_tip' => 'Для запуска резервного копирования нужен отдельный пароль. Он должен быть добавлен в список параметров в script.backup.p',
+    'access_level_for_roles' => 'Связанные с ролями доступы',
+    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
+    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
+    'error_security_level_not_reached' => 'Expected level of security not reached!',
+    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
+    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
+    'open_bug_report_in_github' => 'Open issue report in Github',
+    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
+    'create_github_bug_report' => 'Create new bug report',
+    'deselect_all' => 'Deselect all',
     '' => ''
 );
