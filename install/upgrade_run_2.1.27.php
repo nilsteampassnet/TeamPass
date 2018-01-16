@@ -378,6 +378,32 @@ if ($res === false) {
     exit();
 }
 
+
+// alter table CACHE to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."cache` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
+
+
+// alter table ROLES_VALUES to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."roles_values` ADD KEY `role_id_idx` (`role_id`)"
+);
+
+// alter table EXPORT to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."export` ADD INDEX `id_idx` (`id`)"
+);
+
+// alter table ITEMS_EDITION to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."items_edition` ADD INDEX `item_id_idx` (`item_id`)"
+);
+
 //-- generate new DEFUSE key
 if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installed === false) {
     $filename = "../includes/config/settings.php";
@@ -569,6 +595,66 @@ if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
         "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('portuguese_br', 'Portuguese_br', 'pr-bt', 'pr-bt.png')"
+    );
+}
+
+
+// add new language "Ukrainian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'ukrainian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('ukrainian', 'Ukrainian', 'ua', 'ua.png')"
+    );
+}
+
+
+// add new language "Romanian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'romanian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('romanian', 'Romanian', 'ro', 'ro.png')"
+    );
+}
+
+
+// add new language "Polish"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'polish'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('polish', 'Polish', 'po', 'po.png')"
+    );
+}
+
+
+// add new language "Hungarian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'hungarian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('hungarian', 'Hungarian', 'hu', 'hu.png')"
+    );
+}
+
+
+// add new language "Greek"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'greek'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('greek', 'Greek', 'gr', 'gr.png')"
+    );
+}
+
+
+// add new language "Bulgarian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'bulgarian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('bulgarian', 'Bulgarian', 'bg', 'bg.png')"
     );
 }
 

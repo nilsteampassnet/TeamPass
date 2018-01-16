@@ -4,6 +4,7 @@
  Improved cannot edit user without email
  Improved read-only user limitation to copy folder and import action
  Improved tree rebuild with API on folders change
+ Improved tables primary and index usage
  Fix for API keys truncated
  #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
  #2093 role human resources doesn't access expected pages

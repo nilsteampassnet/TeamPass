@@ -2026,7 +2026,7 @@ function rest_get()
                 $user_login = $passedData[0];
                 $user_pwd = $passedData[1];
                 $user_saltkey = $passedData[2];
-
+print_r($item_definition);
                 // is user granted?
                 $userData = DB::queryFirstRow(
                     "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`

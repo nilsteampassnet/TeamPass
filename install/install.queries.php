@@ -212,7 +212,8 @@ if (null !== $post_type) {
                     $dbTmp,
                     "CREATE TABLE IF NOT EXISTS `_install` (
                     `key` varchar(100) NOT NULL,
-                    `value` varchar(500) NOT NULL
+                    `value` varchar(500) NOT NULL,
+                    PRIMARY KEY (`key`)
                     ) CHARSET=utf8;"
                 );
                 // store values
@@ -347,6 +348,7 @@ if (null !== $post_type) {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."log_items` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id_item` int(8) NOT NULL,
                             `date` varchar(50) NOT NULL,
                             `id_user` int(8) NOT NULL,
@@ -808,6 +810,12 @@ global \$SETTINGS;
                                 ('swedish', 'Swedish' , 'se', 'se.png'),
                                 ('dutch', 'Dutch' , 'nl', 'nl.png'),
                                 ('catalan', 'Catalan' , 'ct', 'ct.png'),
+                                ('bulgarian', 'Bulgarian' , 'bg', 'bg.png'),
+                                ('greek', 'Greek' , 'gr', 'gr.png'),
+                                ('hungarian', 'Hungarian' , 'hu', 'hu.png'),
+                                ('polish', 'Polish' , 'pl', 'pl.png'),
+                                ('romanian', 'Romanian' , 'ro', 'ro.png'),
+                                ('ukrainian', 'Ukrainian' , 'ua', 'ua.png'),
                                 ('vietnamese', 'Vietnamese' , 'vi', 'vi.png'),
                                 ('estonian', 'Estonian' , 'ee', 'ee.png');"
                             );
@@ -816,11 +824,13 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."emails` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `timestamp` INT(30) NOT null ,
                             `subject` VARCHAR(255) NOT null ,
                             `body` TEXT NOT null ,
                             `receivers` VARCHAR(255) NOT null ,
-                            `status` VARCHAR(30) NOT NULL
+                            `status` VARCHAR(30) NOT NULL,
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "automatic_del") {
@@ -839,7 +849,8 @@ global \$SETTINGS;
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_edition` (
                             `item_id` int(11) NOT NULL,
                             `user_id` int(12) NOT NULL,
-                            `timestamp` varchar(50) NOT NULL
+                            `timestamp` varchar(50) NOT NULL,
+                            KEY `item_id_idx` (`item_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "categories") {
@@ -932,7 +943,8 @@ global \$SETTINGS;
                             `email` varchar(500) NOT NULL default 'none',
                             `url` varchar(500) NOT NULL default 'none',
                             `kbs` varchar(500) NOT NULL default 'none',
-                            `tags` varchar(500) NOT NULL default 'none'
+                            `tags` varchar(500) NOT NULL default 'none',
+                            KEY `id_idx` (`id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "tokens") {
