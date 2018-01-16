@@ -431,6 +431,7 @@ global \$SETTINGS;
                             array('admin', 'ldap_tls', '0'),
                             array('admin', 'ldap_elusers', '0'),
                             array('admin', 'ldap_search_base', '0'),
+                            array('admin', 'ldap_port', '389'),
                             array('admin', 'richtext', '0'),
                             array('admin', 'allow_print', '0'),
                             array('admin', 'roles_allowed_to_print', '0'),
