@@ -322,7 +322,6 @@ function identifyUser($sentData)
 
     // Prepare variables
     $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-    $pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
     $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
     $logError = "";
     $userPasswordVerified = false;
@@ -418,7 +417,7 @@ function identifyUser($sentData)
                     }
                 }
                 if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
-                    $filter = "(&(".$SETTINGS['ldap_user_attribute']."=$username)(objectClass=".$SETTINGS['ldap_object_class']."))";
+                    $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
                     $result = ldap_search($ldapconn, $SETTINGS['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
 
                     // Should we restrain the search in specified user groups
@@ -828,21 +827,6 @@ function identifyUser($sentData)
 
     if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
         // User exists in the DB
-        //v2.1.17 -> change encryption for users password
-        if ($pwdOldEncryption === $data['pw'] &&
-            !empty($data['pw'])
-        ) {
-            //update user's password
-            $data['pw'] = bCrypt($passwordClear, COST);
-            DB::update(
-                prefix_table('users'),
-                array(
-                    'pw' => $data['pw']
-                ),
-                "id=%i",
-                $data['id']
-            );
-        }
         if (crypt($passwordClear, $data['pw']) == $data['pw'] && !empty($data['pw'])) {
             //update user's password
             $data['pw'] = $pwdlib->createPasswordHash($passwordClear);

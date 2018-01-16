@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Send GoogleAuthenticator til brukeren på epost',
     'send_ga_code' => 'Goggle Authenticator for brukeren',
     'error_no_email' => 'Denne brukeren har ikke definert epost',

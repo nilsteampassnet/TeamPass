@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Trimite cod Google Authenticator catre user prin email',
     'send_ga_code' => 'Seteaza si trimite cod Google Authenticator',
     'error_no_email' => 'Utilizatorul nu are configurata adresa de email!',

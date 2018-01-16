@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Αποστολή GoogleAuthenticator στο χρήστη με ηλεκτρονικό μήνυμα',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'Αυτός ο χρήστης δεν έχει ορίσει διεύθυνση ηλεκτρονικού ταχυδρομίου!',

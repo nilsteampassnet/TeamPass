@@ -103,6 +103,7 @@ $session_user_language =        $superGlobal->get("user_language", "SESSION");
 $session_user_id =              $superGlobal->get("user_id", "SESSION");
 $session_user_flag =            $superGlobal->get("user_language_flag", "SESSION");
 $session_user_admin =           $superGlobal->get("user_admin", "SESSION");
+$session_user_human_resources = $superGlobal->get("user_can_manage_all_users", "SESSION");
 $session_user_avatar_thumb =    $superGlobal->get("user_avatar_thumb", "SESSION");
 $session_name =                 $superGlobal->get("name", "SESSION");
 $session_lastname =             $superGlobal->get("lastname", "SESSION");
@@ -240,7 +241,9 @@ if (isset($_SESSION['CPM'])) {
             .'&nbsp;['.$session_login.']</b>&nbsp;-&nbsp;'
             , $session_user_admin === '1' ? $LANG['god'] :
                 ($session_user_manager === '1' ? $LANG['gestionnaire'] :
-                    ($session_user_read_only === '1' ? $LANG['read_only_account'] : $LANG['user'])
+                    ($session_user_read_only === '1' ? $LANG['read_only_account'] :
+                        ($session_user_human_resources === '1' ? $LANG['human_resources'] :$LANG['user'])
+                    )
                 ), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
 
         echo '
@@ -306,7 +309,7 @@ if (isset($_SESSION['CPM'])) {
                     </a>';
         }
 
-        if ($session_user_admin === '1' || $session_user_manager === '1') {
+        if ($session_user_admin === '1' || $session_user_manager === '1' || $session_user_human_resources === '1') {
             echo '
                 &nbsp;
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_folders\')">
@@ -595,7 +598,7 @@ if (isset($_SESSION['CPM'])) {
             // Define if user is allowed to see management pages
             if ($session_user_admin === '1') {
                 include($mngPages[$_GET['page']]);
-            } elseif ($session_user_manager === '1') {
+            } elseif ($session_user_manager === '1' || $session_user_human_resources == '1') {
                 if (($_GET['page'] != "manage_main" && $_GET['page'] != "manage_settings")) {
                     include($mngPages[$_GET['page']]);
                 } else {

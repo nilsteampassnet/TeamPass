@@ -36,6 +36,10 @@ $pagesRights = array(
         "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users"
     ),
+    "human_resources" => array(
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "manage_views", "manage_users"
+    ),
     "admin" => array(
         "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users", "manage_settings", "manage_main"
@@ -138,7 +142,7 @@ function checkUser($userId, $userKey, $pageVisited)
 
     // load user's data
     $data = DB::queryfirstrow(
-        "SELECT login, key_tempo, admin, gestionnaire FROM ".prefix_table("users")." WHERE id = %i",
+        "SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ".prefix_table("users")." WHERE id = %i",
         $userId
     );
 
@@ -150,11 +154,12 @@ function checkUser($userId, $userKey, $pageVisited)
     // check if user is allowed to see this page
     if ($data['admin'] !== '1'
         && $data['gestionnaire'] !== '1'
+        && $data['can_manage_all_users'] !== '1'
         && IsInArray($pageVisited, $pagesRights['user']) === true
     ) {
         return true;
     } elseif ($data['admin'] !== '1'
-        && $data['gestionnaire'] === '1'
+        && ($data['gestionnaire'] === '1' || $data['can_manage_all_users'] === '1')
         && IsInArray($pageVisited, $pagesRights['manager']) === true
     ) {
         return true;

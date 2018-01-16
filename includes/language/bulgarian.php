@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Изптати Google Authenticator на потребителя по имейл',
     'send_ga_code' => 'Google Authenticator за потребител',
     'error_no_email' => 'Този потребител няма настроен имейл!',

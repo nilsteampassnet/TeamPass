@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'ユーザーにメールアドレスが設定されていません。',

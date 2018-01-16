@@ -341,8 +341,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 ORDER BY title ASC".$sql_limit
             );
             foreach ($rows as $record) {
-                if ($_SESSION['is_admin'] == 1
-                    || ($_SESSION['user_manager'] == 1
+                if ($_SESSION['is_admin'] === '1'
+                    || (($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === '1')
                         && (in_array($record['id'], $arrUserRoles) == true
                             || $record['creator_id'] == $_SESSION['user_id']
                         )

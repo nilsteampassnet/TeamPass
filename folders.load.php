@@ -203,23 +203,23 @@ $(function() {
                         key        : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
+                        $("#edit_folder_wait").hide();
                         //Check errors
-                        if (data[0].error == "error_group_exist") {
-                            $("#edit_folder_show_error").html("<?php echo $LANG['error_group_exist']; ?>").show();
-                            LoadingPage();
-                        } else if (data[0].error == "error_html_codes") {
-                            $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes']; ?>").show();
-                            LoadingPage();
-                        } else if (data[0].error == "error_title_only_with_numbers") {
+                        if (data[0].error === "error_title_only_with_numbers") {
                             $("#edit_folder_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name']; ?>").show();
-                            $("#edit_folder_wait").hide();
+                        } else if (data[0].error === "error_group_exist") {
+                            $("#edit_folder_show_error").html("<?php echo $LANG['error_group_exist']; ?>").show();
+                        } else if (data[0].error === "error_html_codes") {
+                            $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes']; ?>").show();
+                        } else if (data[0].error === "error_folder_complexity_lower_than_top_folder") {
+                            $("#edit_folder_show_error").html(data[0].error_msg).show();
                         } else {
                             $("#folder_id_to_edit").val("");    //clear id
                             tableFolders.api().ajax.reload();
-                            $("#parent_id, #edit_parent_id").empty().append(data[0].droplist);
+                            $("#parent_id, #edit_parent_id").remove();
+                            $("#parent_id, #edit_parent_id").append(data[0].droplist);
                             $("#div_edit_folder").dialog("close");
                         }
-                        $("#edit_folder_wait").hide();
                     },
                     "json"
                );

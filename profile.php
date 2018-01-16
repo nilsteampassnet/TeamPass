@@ -75,6 +75,8 @@ if (isset($LANG) === true) {
         $_SESSION['user_privilege'] = $LANG['gestionnaire'];
     } elseif ($_SESSION['user_read_only'] === '1') {
         $_SESSION['user_privilege'] = $LANG['read_only_account'];
+    } elseif ($_SESSION['user_can_manage_all_users'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['human_resources'];
     } else {
         $_SESSION['user_privilege'] = $LANG['user'];
     }

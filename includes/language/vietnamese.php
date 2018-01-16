@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Gửi mã xác thực GoogleAuthenticator tới người sử dụng qua Email!',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'Người sử dụng này chưa khai báo địa chỉ email!',

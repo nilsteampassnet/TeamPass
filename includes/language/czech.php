@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',
     'send_ga_code' => 'Google Authenticator pro uživatele',
     'error_no_email' => 'Tento uživatel nemá nastavenou emailovou adresu!',
