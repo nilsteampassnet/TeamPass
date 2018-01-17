@@ -302,6 +302,7 @@ function generateApiKey()
         {
             type    : "generate_a_password",
             size    : "39",
+            lowercase    : "true",
             numerals    : "true",
             capitalize  : "true",
             symbols    : "false",

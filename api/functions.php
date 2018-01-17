@@ -2644,6 +2644,13 @@ function apikey_checker($apikey_used)
 {
     teampass_connect();
     $apikey_pool = teampass_get_keys();
+
+    // if needed extract key from credentials
+    if (strlen($apikey_used) > 40) {
+        $userCredentials = base64_decode(substr($apikey_used, 40));
+        $apikey_used = substr($apikey_used, 0, 39);
+    }
+
     if (in_array($apikey_used, $apikey_pool)) {
         return(1);
     } else {

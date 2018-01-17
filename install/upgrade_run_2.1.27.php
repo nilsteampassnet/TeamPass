@@ -863,6 +863,18 @@ global \$SETTINGS;
 fclose($file_handler);
 
 
+// Generate API key by user
+$result = mysqli_query($db_link, "SELECT id FROM `".$pre."users` WHERE login NOT IN ('admin', 'API', 'OTV')");
+while ($row = mysqli_fetch_assoc($result)) {
+    // Check if key already exists
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."api` WHERE label = '".$row['id']."'"));
+    if (intval($tmp) === 0) {
+        mysqli_query(
+            $db_link,
+            "INSERT INTO `".$pre."api` (`type`, `label`, `value`, `timestamp`) VALUES ('user', '".$row['id']."', '".uniqidReal(39)."', '".time()."')"
+        );
+    }
+}
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

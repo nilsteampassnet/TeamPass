@@ -2296,6 +2296,9 @@ function open_edit_item_div(restricted_to_roles)
         $("#edit_categorie").prop("disabled", false);
     }
 
+    // Set password length in size spinner
+    $('#edit_pw_size').val($('#edit_pw1').val().length);
+
     //open dialog
     $("#div_formulaire_edition_item_info").addClass("hidden").html("");
     $("#div_formulaire_edition_item").dialog("open");

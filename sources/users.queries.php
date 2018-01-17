@@ -206,6 +206,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     // rebuild tree
                     $tree->rebuild();
                 }
+
+                // Create the API key
+                DB::insert(
+                    prefix_table("api"),
+                    array(
+                        'type' => 'user',
+                        'label' => $new_user_id,
+                        'value' => uniqidReal(39),
+                        'timestamp' => time()
+                        )
+                );
+
                 // get links url
                 if (empty($SETTINGS['email_server_url'])) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
@@ -1144,7 +1156,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             if (empty($post_email) === true) {
                 echo '[ { "error" : "'.addslashes($LANG['error_no_email']).'" } ]';
                 break;
-            }            
+            }
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(

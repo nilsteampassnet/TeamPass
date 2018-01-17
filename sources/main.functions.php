@@ -1197,7 +1197,7 @@ function sendEmail($subject, $textMail, $email, $textMailAlt = "")
 
     // Load settings
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    
+
     // Load superglobal
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -2192,4 +2192,21 @@ function accessToItemIsGranted($item_id)
     }
 
     return true;
+}
+
+/**
+ * Creates a unique key
+ * @param  integer $lenght key lenght
+ * @return string          key
+ */
+function uniqidReal($lenght = 13) {
+    // uniqid gives 13 chars, but you could adjust it to your needs.
+    if (function_exists("random_bytes")) {
+        $bytes = random_bytes(ceil($lenght / 2));
+    } elseif (function_exists("openssl_random_pseudo_bytes")) {
+        $bytes = openssl_random_pseudo_bytes(ceil($lenght / 2));
+    } else {
+        throw new Exception("no cryptographically secure random function available");
+    }
+    return substr(bin2hex($bytes), 0, $lenght);
 }
