@@ -7,6 +7,7 @@
  Improved tables primary and index usage
  Introduced an API key by user
  Fix for API keys truncated
+ #2095 Can't upload files on items - Plupload update
  #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
  #2093 role human resources doesn't access expected pages
  #2090 On folder copy, an empty message box is shown
