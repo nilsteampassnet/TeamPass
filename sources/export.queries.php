@@ -735,7 +735,7 @@ if (null !== $post_type) {
                 );
             }
             catch(e) {
-                console.info("Key not corrected");
+                console.info("Key not correct");
                 document.getElementById("itemsTable_tbody").innerHTML = "";
                 document.getElementById("itemsTable").style.display  = "none";
                 document.getElementById("info_page").innerHTML = "ERROR - " + e;
@@ -755,7 +755,7 @@ if (null !== $post_type) {
                     );
                 }
                 catch(e) {
-                    console.info("Key not corrected");
+                    console.info("Key not correct");
                     document.getElementById("itemsTable_tbody").innerHTML = "";
                     document.getElementById("itemsTable").style.display  = "none";
                     document.getElementById("info_page").innerHTML = "ERROR - " + e;

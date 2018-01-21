@@ -2425,7 +2425,7 @@ print_r($item_definition);
                 if ($params[6] === "1") {
                     echo '{"password" : "'.base64_encode($pwd).'"}';
                 } else {
-                    echo '{"password" : "'.($pwgen->generate()).'"}';
+                    echo '{"password" : "'.$pwd.'"}';
                 }
             } else {
                 rest_error('NO_PARAMETERS');

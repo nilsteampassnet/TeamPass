@@ -217,6 +217,11 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
 );
+// create index
+mysqli_query(
+    $db_link,
+    "CREATE INDEX teampass_log_items_id_item_IDX ON ".$pre."log_items (id_item, date);"
+);
 
 // add field agses-usercardid to Users table
 $res = addColumnIfNotExist(
@@ -386,12 +391,6 @@ mysqli_query(
 );
 
 
-// alter table ROLES_VALUES to add an index
-mysqli_query(
-    $db_link,
-    "ALTER TABLE `".$pre."roles_values` ADD KEY `role_id_idx` (`role_id`)"
-);
-
 // alter table EXPORT to add an index
 mysqli_query(
     $db_link,
@@ -403,6 +402,75 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."items_edition` ADD INDEX `item_id_idx` (`item_id`)"
 );
+
+
+// alter table NESTEED_TREE to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_parent_id` (`parent_id`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_nleft` (`nleft`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_nright` (`nright`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_nlevel` (`nlevel`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `personal_folder_idx` (`personal_folder`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `id` (`id`)"
+);
+
+
+
+// alter table ROLES_VALUES to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."roles_values` ADD KEY `role_id_idx` (`role_id`)"
+);
+// alter table ROLES_VALUES to add a primary key
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."roles_values` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT PRIMARY KEY"
+);
+
+
+// alter table KB_ITEMS to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."kb_items` ADD PRIMARY KEY (`kb_id`)"
+);
+
+
+// alter table EMAILS to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."emails` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
+);
+
+
+// alter table AUTOMATIC_DEL to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."automatic_del` ADD PRIMARY KEY (`item_id`)"
+);
+
+
+// alter table CATEGORY_FOLDERS to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."categories_folders` ADD PRIMARY KEY (`id_category`)"
+);
+
 
 //-- generate new DEFUSE key
 if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installed === false) {
