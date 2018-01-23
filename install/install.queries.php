@@ -562,7 +562,7 @@ global \$SETTINGS;
                             `bloquer_creation` tinyint(1) NOT null DEFAULT '0',
                             `bloquer_modification` tinyint(1) NOT null DEFAULT '0',
                             `personal_folder` tinyint(1) NOT null DEFAULT '0',
-                            `renewal_period` TINYINT(4) NOT null DEFAULT '0',
+                            `renewal_period` int(5) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
                             KEY `nested_tree_parent_id` (`parent_id`),
                             KEY `nested_tree_nleft` (`nleft`),

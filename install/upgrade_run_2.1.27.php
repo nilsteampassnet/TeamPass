@@ -808,6 +808,15 @@ if (intval($tmp) === 0) {
 }
 
 
+
+// alter table NESTEED_TREE to INT(5) on field "renewal_period"
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` CHANGE `renewal_period` `renewal_period` INT(5) NOT null DEFAULT '0';"
+);
+
+
+
 // add new field for items_change
 mysqli_query(
     $db_link,
