@@ -783,8 +783,9 @@ if (null !== $post_type) {
                     return decryptedPw;
                 }
 
-                document.getElementById("span_"+id).innerHTML = decryptedPw +
+                document.getElementById("span_"+id).innerHTML = "<input type=\"text\" value=\"" +  decryptedPw + "\" id=\"pass_input_" + id + "\">" +
                     "&nbsp;<a href=\"#\" onclick=\"encryptme("+id+")\"><span style=\"font-size:7px;\">[Hide]</span></a>";
+                document.getElementById("pass_input_"+id).select();
             } else {
                 alert("Decryption Key is empty!");
             }
