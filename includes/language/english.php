@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          english.php
@@ -1080,5 +1080,7 @@ $LANG = array (
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
     '' => ''
 );
