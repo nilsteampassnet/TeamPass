@@ -16,15 +16,17 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
-} elseif (file_exists('../../includes/config/tp.config.php')) {
-    require_once '../../includes/config/tp.config.php';
-} else {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+// Load config if $SETTINGS not defined
+if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+  if (file_exists('../includes/config/tp.config.php')) {
+      require_once '../includes/config/tp.config.php';
+  } elseif (file_exists('./includes/config/tp.config.php')) {
+      require_once './includes/config/tp.config.php';
+  } elseif (file_exists('../../includes/config/tp.config.php')) {
+      require_once '../../includes/config/tp.config.php';
+  } else {
+      throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+  }
 }
 
 // load phpCrypt

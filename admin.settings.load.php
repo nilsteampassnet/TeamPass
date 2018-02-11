@@ -1018,7 +1018,7 @@ $(function() {
 
 
     // Load list of groups
-    $("#ldap_new_user_is_administrated_by").empty();
+    $("#ldap_new_user_is_administrated_by, #ldap_new_user_role").empty();
     $.post(
         "sources/admin.queries.php",
         {
@@ -1028,21 +1028,27 @@ $(function() {
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
 
-            var html = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
-                selected = 0;
+            var html_admin_by = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
+                html_roles = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
+                selected_admin_by = 0,
+                selected_role = 0;
 
             for (var i=0; i<data.length; i++) {
-                if (data[i].selected === 1) {
-                    selected = data[i].id;
+                if (data[i].selected_administrated_by === 1) {
+                    selected_admin_by = data[i].id;
                 }
-                html += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
+                if (data[i].selected_role === 1) {
+                    selected_role = data[i].id;
+                }
+                html_admin_by += '<option value="'+data[i].id+'"><?php echo addslashes($LANG['managers_of']." ");?>'+data[i].title+'</option>';
+                html_roles += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
             }
-            $("#ldap_new_user_is_administrated_by").append(html);
-            $("#ldap_new_user_is_administrated_by").val(selected);
+            $("#ldap_new_user_is_administrated_by").append(html_admin_by);
+            $("#ldap_new_user_is_administrated_by").val(selected_admin_by);
+            $("#ldap_new_user_role").append(html_roles);
+            $("#ldap_new_user_role").val(selected_role);
         }
    );
-
-
 });
 
 function manageEncryptionOfAttachments(list, cpt) {

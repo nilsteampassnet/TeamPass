@@ -419,25 +419,6 @@ function identifyUser($sentData)
                 if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
                     $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
                     $result = ldap_search($ldapconn, $SETTINGS['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
-
-                    // Should we restrain the search in specified user groups
-                    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
-                        $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $SETTINGS['ldap_usergroup'], $filter_group, array('dn'));
-                        if ($debugLdap == 1) {
-                                fputs(
-                                    $dbgLdap,
-                                    'Search filter (group): '.$filter_group."\n".
-                                    'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
-                                );
-                        }
-                        // Is user in the specified user groups?
-                        if (ldap_count_entries($ldapconn, $result_group) > 0) {
-                            $ldapConnection = true;
-                        } else {
-                            $ldapConnection = false;
-                        }
-                    }
                     if ($debugLdap == 1) {
                         fputs(
                             $dbgLdap,
@@ -446,36 +427,70 @@ function identifyUser($sentData)
                         );
                     }
 
-                    // Is user in the LDAP?
+                    // Check if user was found in AD
                     if (ldap_count_entries($ldapconn, $result) > 0) {
-                        // Try to auth inside LDAP
+                        // Get user's info and especially the DN
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
-                        $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
-                        if ($ldapbind === true) {
-                            $ldapConnection = true;
 
-                            // Update user's password
-                            $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
 
-                            // Do things if user exists in TP
-                            if ($counter > 0) {
-                                // Update pwd in TP database
-                                DB::update(
-                                    prefix_table('users'),
-                                    array(
-                                        'pw' => $data['pw']
-                                    ),
-                                    "login=%s",
-                                    $username
-                                );
+                        // Should we restrain the search in specified user groups
+                        $GroupRestrictionEnabled = false;
+                        if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+                            // New way to check User's group membership
+                            $result_group = ldap_read(
+                                $ldapconn,
+                                $user_dn,
+                                "(memberof={".$SETTINGS['ldap_usergroup']."})",
+                                array('members')
+                            );
+                            if ($result_group) {
+                                $entries = ldap_get_entries($ldapconn, $result_group);
 
-                                // No user creation is requested
-                                $proceedIdentification = true;
+                                if ($entries['count'] > 0) {
+                                    $GroupRestrictionEnabled = true;
+                                }
                             }
-                        } else {
-                            $ldapConnection = false;
                         }
+
+                        // Is user in the LDAP?
+                        if ($GroupRestrictionEnabled === true
+                            || (
+                                $GroupRestrictionEnabled === false
+                                && (isset($SETTINGS['ldap_usergroup']) === false
+                                    || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
+                                )
+                            )
+                        ) {
+                            // Try to auth inside LDAP
+                            $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
+                            if ($ldapbind === true) {
+                                $ldapConnection = true;
+
+                                // Update user's password
+                                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+
+                                // Do things if user exists in TP
+                                if ($counter > 0) {
+                                    // Update pwd in TP database
+                                    DB::update(
+                                        prefix_table('users'),
+                                        array(
+                                            'pw' => $data['pw']
+                                        ),
+                                        "login=%s",
+                                        $username
+                                    );
+
+                                    // No user creation is requested
+                                    $proceedIdentification = true;
+                                }
+                            } else {
+                                $ldapConnection = false;
+                            }
+                        }
+                    } else {
+                        $ldapConnection = false;
                     }
                 } else {
                     $ldapConnection = false;
@@ -641,7 +656,7 @@ function identifyUser($sentData)
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
                 'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
-                'fonction_id' => '',
+                'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
                 'groupes_interdits' => '',
                 'groupes_visibles' => '',
                 'last_pw_change' => time(),
@@ -666,6 +681,10 @@ function identifyUser($sentData)
         }
         $proceedIdentification = true;
         $user_initial_creation_through_ldap = true;
+
+        // Reload page
+        echo '[{"value" : "new_ldap_account_created", "user_admin":"", "initial_url" : "", "error" : "", "pwd_attempts" : "0"}]';
+        exit();
     }
 
     // Check if user exists (and has been created in case of new LDAP user)

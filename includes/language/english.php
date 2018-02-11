@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          english.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'newly_created_user_role' => 'Newly created user has role',
     'human_resources' => 'Human Resources',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',

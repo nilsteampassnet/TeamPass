@@ -556,10 +556,7 @@ if (isset($_SESSION['CPM'])) {
         && empty($_GET['page']) === false
         && empty($session_user_id) === false
     ) {
-        if (!extension_loaded('mcrypt')) {
-            $_SESSION['error']['code'] = ERR_NO_MCRYPT;
-            include $SETTINGS['cpassman_dir'].'/error.php';
-        } elseif ($session_initial_url !== null && empty($session_initial_url) === false) {
+        if ($session_initial_url !== null && empty($session_initial_url) === false) {
             include $session_initial_url;
         } elseif ($_GET['page'] == "items") {
             // SHow page with Items
@@ -714,7 +711,7 @@ if (isset($_SESSION['CPM'])) {
                         </div>';
         }
 
-                        echo '
+        echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
                             <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />

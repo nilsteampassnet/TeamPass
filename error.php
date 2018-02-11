@@ -89,8 +89,6 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
         echo $LANG['error_not_exists'];
     } elseif (@$_SESSION['error']['code'] === ERR_SESS_EXPIRED) {
         echo $LANG['index_session_expired'];
-    } elseif (@$_SESSION['error']['code'] === ERR_NO_MCRYPT) {
-        echo $LANG['error_mcrypt_not_loaded'];
     } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
         echo $LANG['error_not_authorized'];
     }

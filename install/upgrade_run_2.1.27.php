@@ -666,6 +666,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// add new admin setting "offline_key_level"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'offline_key_level'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'offline_key_level', '0')"
+    );
+}
+
 
 // add new language "portuges_br"
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'portuguese_br'"));

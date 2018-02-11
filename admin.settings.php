@@ -1186,6 +1186,15 @@ echo '
                             </select>
                         </td>
                     </tr>';
+    // Enable newly_created_user_role
+    echo '
+                        <tr>
+                            <td><label for="ldap_type">'.$LANG['newly_created_user_role'].'</label></td>
+                            <td>
+                                <select id="ldap_new_user_role" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
+                                </select>
+                            </td>
+                        </tr>';
 echo '
                 </table>';
 

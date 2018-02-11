@@ -5,9 +5,11 @@
  Improved read-only user limitation to copy folder and import action
  Improved tree rebuild with API on folders change
  Improved tables primary and index usage
+ Improved LDAP new user by default role
  Introduced an API key by user
  Fix for API keys truncated
  Fix offline password dispay in case of html tags similar in password
+ #2115 Fix script backup issue with encryption key
  #2102 Changed field renewal_period size
  #2095 Can't upload files on items - Plupload update
  #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()

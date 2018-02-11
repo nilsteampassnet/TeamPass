@@ -514,7 +514,8 @@ global \$SETTINGS;
                             array('admin', 'enable_attachment_encryption', '1'),
                             array('admin', 'personal_saltkey_security_level', '50'),
                             array('admin', 'ldap_new_user_is_administrated_by', '0'),
-                            array('admin', 'disable_show_forgot_pwd_link', '0')
+                            array('admin', 'disable_show_forgot_pwd_link', '0'),
+                            array('admin', 'offline_key_level', '0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

@@ -1934,7 +1934,7 @@ switch ($post_type) {
                 'restricted_to_roles'
             );
         }
-        
+
         // store in SESSION
         $SETTINGS[$dataReceived['field']] = $dataReceived['value'];
 
@@ -2223,7 +2223,8 @@ switch ($post_type) {
             array(
                 "id" => 0,
                 "title" => addslashes($LANG['god']),
-                "selected" => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === "0" ? 1 : 0
+                "selected_administrated_by" => isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === "0" ? 1 : 0,
+                "selected_role" => isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === "0" ? 1 : 0
             )
         );
 
@@ -2237,8 +2238,9 @@ switch ($post_type) {
                 $json,
                 array(
                     "id" => $record['id'],
-                    "title" => addslashes($LANG['managers_of']." ".$record['title']),
-                    "selected" => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0
+                    "title" => addslashes($record['title']),
+                    "selected_administrated_by" => isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0,
+                    "selected_role" => isset($SETTINGS['ldap_new_user_role']) === true && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0,
                 )
             );
         }
