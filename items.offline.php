@@ -191,7 +191,7 @@ echo '
             return;
         }
 
-        if ($("#offline_pw_strength_value").val() < $("#min_offline_pw_strength_value").val()) {
+        if (parseInt($("#offline_pw_strength_value").val()) < parseInt($("#min_offline_pw_strength_value").val())) {
             $("#offline_information").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;

@@ -9,6 +9,7 @@
  Introduced an API key by user
  Fix for API keys truncated
  Fix offline password dispay in case of html tags similar in password
+ #2116 Insufficient password strength when creating Offline Mode
  #2115 Fix script backup issue with encryption key
  #2102 Changed field renewal_period size
  #2095 Can't upload files on items - Plupload update
