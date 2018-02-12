@@ -692,12 +692,34 @@ if (isset($_SESSION['CPM'])) {
                             <span id="ajax_loader_connexion" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                         </div>
                         <div id="connection_error" style="display:none;text-align:center;margin:5px; padding:3px;" class="ui-state-error ui-corner-all">&nbsp;<i class="fa fa-warning"></i>&nbsp;'.$LANG['index_bas_pw'].'</div>';
-        echo '
-                        <div style="margin-bottom:3px;">
-                            <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
-                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
-                            <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
+
+        if (isset($SETTINGS['enable_http_request_login']) === true
+            && $SETTINGS['enable_http_request_login'] === '1'
+            && isset($_SERVER['PHP_AUTH_USER']) === true
+            && !(isset($SETTINGS['maintenance_mode']) === true
+            && $SETTINGS['maintenance_mode'] === '1')
+        ) {
+            if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
+				$username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+			} elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+				$username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+			} else {
+				$username = $_SERVER['PHP_AUTH_USER'];
+			}
+			echo '
+        				<div style="margin-bottom:3px;">
+        			        <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
+        		            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="' , $username , '" readonly />
+        		            <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
+		} else {
+        	echo '
+                    	    <div style="margin-bottom:3px;">
+                    	        <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
+                                <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
+                                <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
+                           </div>';
+        }
 
         // AGSES
         if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1) {
@@ -711,11 +733,13 @@ if (isset($_SESSION['CPM'])) {
                         </div>';
         }
 
-        echo '
+        if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true   && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1')) ) {
+            echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
                             <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
+        }
 
         // Personal salt key
         if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1") {
@@ -753,6 +777,33 @@ if (isset($_SESSION['CPM'])) {
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
                         </div>';
         }
+
+        if (isset($SETTINGS['enable_http_request_login']) === true
+            && $SETTINGS['enable_http_request_login'] === '1'
+            && isset($_SERVER['PHP_AUTH_USER']) === true
+            && !(isset($SETTINGS['maintenance_mode']) === true
+            && $SETTINGS['maintenance_mode'] === '1')
+        ) {
+        echo	'
+        	<script>
+        		var seconds = 3;
+        		function updateLogonButton(timeToGo){
+				    document.getElementById("but_identify_user").value = "' . $LANG['duration_login_attempt'] . ' " + timeToGo;
+				}
+				$( window ).on( "load", function() {
+				    updateLogonButton(seconds);
+				    setInterval(function(){
+						if(seconds > 0){
+							seconds--;
+						}else if(seconds == 0){
+							launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\');
+						}
+						updateLogonButton(seconds);
+					}, 1000);
+				});
+    		</script>';
+        }
+
         echo '
                         <div style="text-align:center;margin-top:15px;">
                             <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />

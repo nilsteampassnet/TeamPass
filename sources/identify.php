@@ -320,9 +320,27 @@ function identifyUser($sentData)
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
 
-    // Prepare variables
-    $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-    $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+    // prepare variables
+	if (isset($SETTINGS['enable_http_request_login']) === true
+        && $SETTINGS['enable_http_request_login'] === '1'
+        && isset($_SERVER['PHP_AUTH_USER']) === true
+        && !(isset($SETTINGS['maintenance_mode']) === true
+        && $SETTINGS['maintenance_mode'] === '1')
+    ) {
+        if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
+			$username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+		} elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+			$username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+		} else {
+			$username = $_SERVER['PHP_AUTH_USER'];
+		}
+		$passwordClear = $_SERVER['PHP_AUTH_PW'];
+		$pwdOldEncryption = encryptOld($_SERVER['PHP_AUTH_PW']);
+	}else{
+		$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
+		$pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
+		$username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+	}
     $logError = "";
     $userPasswordVerified = false;
 

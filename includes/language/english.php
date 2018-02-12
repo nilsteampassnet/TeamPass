@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
     'human_resources' => 'Human Resources',
     'user_ga_code' => 'Email Google Authentication to user',

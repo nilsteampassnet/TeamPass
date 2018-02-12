@@ -11,6 +11,7 @@
  Fix offline password dispay in case of html tags similar in password
  #2116 Insufficient password strength when creating Offline Mode
  #2115 Fix script backup issue with encryption key
+ #2111 Add support for login through http header
  #2102 Changed field renewal_period size
  #2095 Can't upload files on items - Plupload update
  #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
