@@ -235,6 +235,18 @@ if ($res === false) {
     exit();
 }
 
+// add field agses-usercardid to Users table
+$res = addColumnIfNotExist(
+    $pre."users",
+    "force-relog",
+    "tinyint(1) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field force-relog to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 // add field encrypted_data to Categories table
 $res = addColumnIfNotExist(
@@ -672,6 +684,15 @@ if (intval($tmp) === 0) {
     mysqli_query(
         $db_link,
         "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'offline_key_level', '0')"
+    );
+}
+
+// add new admin setting "enable_http_request_login"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'enable_http_request_login'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_http_request_login', '0')"
     );
 }
 

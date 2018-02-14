@@ -515,7 +515,8 @@ global \$SETTINGS;
                             array('admin', 'personal_saltkey_security_level', '50'),
                             array('admin', 'ldap_new_user_is_administrated_by', '0'),
                             array('admin', 'disable_show_forgot_pwd_link', '0'),
-                            array('admin', 'offline_key_level', '0')
+                            array('admin', 'offline_key_level', '0'),
+                            array('admin', 'enable_http_request_login', '0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -626,6 +627,7 @@ global \$SETTINGS;
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
                             `encrypted_psk` text NULL,
                             `user_ip` varchar(400) NOT null DEFAULT 'none',
+                            `force-relog` tinyint(1) NOT null DEFAULT '0',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

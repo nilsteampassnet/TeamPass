@@ -680,7 +680,8 @@ function identifyUser($sentData)
                 'last_pw_change' => time(),
                 'user_language' => $SETTINGS['default_language'],
                 'encrypted_psk' => '',
-                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0
+                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                'force-relog' => '1'
             )
         );
         $newUserId = DB::insertId();
@@ -701,8 +702,8 @@ function identifyUser($sentData)
         $user_initial_creation_through_ldap = true;
 
         // Reload page
-        echo '[{"value" : "new_ldap_account_created", "user_admin":"", "initial_url" : "", "error" : "", "pwd_attempts" : "0"}]';
-        exit();
+        //echo '[{"value" : "new_ldap_account_created", "user_admin":"", "initial_url" : "", "error" : "", "pwd_attempts" : "0"}]';
+        //exit();
     }
 
     // Check if user exists (and has been created in case of new LDAP user)
@@ -956,6 +957,7 @@ function identifyUser($sentData)
             $_SESSION['user_avatar'] = $data['avatar'];
             $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
             $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
+            $_SESSION['user_force_relog'] = $data['force-relog'];
             // get personal settings
             if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) {
                 $data['treeloadstrategy'] = "full";

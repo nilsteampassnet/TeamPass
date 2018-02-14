@@ -4186,6 +4186,23 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         8000
     );
 
+    if (1 === parseInt(<?php echo $_SESSION['user_force_relog']; ?>)) {
+        //
+        $.post(
+            "sources/users.queries.php",
+            {
+                type      : "update_user_field",
+                field     : "force-relog",
+                new_value : "0",
+                user_id   : "<?php echo $_SESSION['user_id']; ?>",
+                key       : "<?php echo $_SESSION['key']; ?>"
+            },
+            function(data) {
+                window.location.href = "logout.php?user_id=<?php echo $_SESSION['user_id']; ?>"
+            }
+        );
+    }
+
     NProgress.done();
 });
 

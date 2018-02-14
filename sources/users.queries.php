@@ -1613,6 +1613,28 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
             }
             break;
+
+            case "update_user_field":
+                // Check KEY
+                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                    echo '[ { "error" : "key_not_conform" } ]';
+                    break;
+                }
+
+                $post_field = filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING);
+                $post_new_value = filter_input(INPUT_POST, 'new_value', FILTER_SANITIZE_NUMBER_INT);
+                $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        $$post_field => $post_new_value
+                        ),
+                    "id = %i",
+                    $post_user_id
+                );
+
+            break;
     }
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
 } elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING))) {
