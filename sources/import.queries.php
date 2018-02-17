@@ -436,7 +436,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         /**
-        Recursive function that will permit to read each level of XML nodes
+        ** Recursive function that will permit to read each level of XML nodes
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
@@ -565,6 +565,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     if ($nom == "Entry" && ($xmlLevel < $historyLevel || empty($historyLevel))) {
                         $entry = true;
                         $group = false;
+                        $history = false;
 
                         // recap previous info
                         if (!empty($temparray[KP_TITLE])) {
@@ -584,7 +585,12 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $xmlChildren = $elem->children();
 
                     //recursive call
-                    recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
+                    if ($history !== true) {
+                      recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
+                    }
+
+                    // Force History to false
+                    $history = false;
 
                     //IMPORTING KEEPASS 2 XML FILE
                 } elseif ($keepassVersion != 1) {

@@ -1316,7 +1316,7 @@ function AddNewFolder()
                 } else if (data[0].error == "error_title_only_with_numbers") {
                     $("#new_rep_show_error").html("<?php echo addslashes($LANG['error_only_numbers_in_folder_name']); ?>").removeClass("hidden");
                 } else if (data[0].error != "") {
-                    $("#new_rep_show_error").html(data[0].error).removeClass("hidden");
+                    $("#new_rep_show_error").html(data[0].msg).removeClass("hidden");
                 } else {
                     $("#new_rep_titre").val("");
                     refreshTree(data[0].newid);

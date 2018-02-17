@@ -510,7 +510,7 @@ if (null !== $post_newtitle) {
                             "complex"
                         );
                         if (intval($complexity) < intval($data['valeur'])) {
-                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                            echo '[ { "error" : "error_pwd_compexity_not_reached" , "msg" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                             break;
                         }
                     }

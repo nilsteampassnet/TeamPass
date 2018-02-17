@@ -116,6 +116,10 @@ $(function() {
                                     $("#div_add_group").dialog("open");
                                     $("#addgroup_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name']; ?>");
                                     $("#addgroup_show_error").show();
+                                } else if (data[0].error == "error_pwd_compexity_not_reached") {
+                                    $("#div_add_group").dialog("open");
+                                    $("#addgroup_show_error").html(data[0].msg);
+                                    $("#addgroup_show_error").show();
                                 } else {
                                     tableFolders.api().ajax.reload();
                                     $("#parent_id, #edit_parent_id").empty().append(data[0].droplist);

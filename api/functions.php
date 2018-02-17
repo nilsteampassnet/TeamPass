@@ -2026,7 +2026,7 @@ function rest_get()
                 $user_login = $passedData[0];
                 $user_pwd = $passedData[1];
                 $user_saltkey = $passedData[2];
-print_r($item_definition);
+
                 // is user granted?
                 $userData = DB::queryFirstRow(
                     "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`
@@ -2099,7 +2099,7 @@ print_r($item_definition);
                         $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                         $tree->rebuild();
 
-                        echo json_encode(array('err' => $newID));
+                        echo json_encode(array('new_id' => $newID , 'err' => ''));
                     } elseif ($GLOBALS['request'][1] === "edit") {
                         // Is this folder a personal one?
                         $fldData = DB::queryFirstRow(
@@ -2166,7 +2166,7 @@ print_r($item_definition);
                             $item_definition['item_id']
                         );
 
-                        echo json_encode(array('err' => ''));
+                        echo json_encode(array('new_id' => '' , 'err' => ''));
                     }
                 } else {
                     rest_error('AUTH_NOT_GRANTED');
