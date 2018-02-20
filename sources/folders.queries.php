@@ -976,12 +976,25 @@ if (null !== $post_newtitle) {
                 break;
             }
 
+            // Get all allowed folders
+            $array_all_visible_folders = array_merge(
+              $_SESSION['groupes_visibles'],
+              $_SESSION['read_only_folders'],
+              $_SESSION['personal_visible_groups']
+            );
+
             // get list of all folders
             $nodeDescendants = $tree->getDescendants($source_folder_id, true, false, false);
             $parentId = "";
             $tabNodes = [];
             foreach ($nodeDescendants as $node) {
                 // step1 - copy folder
+                //
+                // Can user access this subfolder?
+
+                if (in_array($node->id, $array_all_visible_folders) === false) {
+                  continue;
+                }
 
                 // get info about current node
                 $nodeInfo = $tree->getNode($node->id);
