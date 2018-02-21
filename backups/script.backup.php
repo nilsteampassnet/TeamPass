@@ -19,11 +19,11 @@ header("Content-type: text/html; charset=utf-8");
 $_SESSION['CPM'] = 1;
 
 // connect to DB
-require_once $SETTINGS['cpassman_dir'] .'../sources/SplClassLoader.php';
-require_once $SETTINGS['cpassman_dir'] .'../includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] .'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] .'/includes/libraries/Database/Meekrodb/db.class.php';
 
 // Load libraries
-require_once $SETTINGS['cpassman_dir'].'../sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 $pass = defuse_return_decrypted($pass);
 DB::$host = $server;

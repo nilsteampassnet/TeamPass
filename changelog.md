@@ -10,6 +10,7 @@
  Fix for API keys truncated
  Fix offline password dispay in case of html tags similar in password
  Fix failed folder creation in case of password complexity not reached
+ #2127 Grant access with simple folder copy
  #2118 Empty user at Keepass file is not empty after import
  #2116 Insufficient password strength when creating Offline Mode
  #2115 Fix script backup issue with encryption key
