@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -231,18 +231,6 @@ $res = addColumnIfNotExist(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field agses-usercardid to table Users! '.mysqli_error($db_link).'!"}]';
-    mysqli_close($db_link);
-    exit();
-}
-
-// add field agses-usercardid to Users table
-$res = addColumnIfNotExist(
-    $pre."users",
-    "force-relog",
-    "tinyint(1) NOT NULL DEFAULT '0'"
-);
-if ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field force-relog to table Users! '.mysqli_error($db_link).'!"}]';
     mysqli_close($db_link);
     exit();
 }

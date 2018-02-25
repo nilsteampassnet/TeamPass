@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -1787,7 +1787,13 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                     } else {
                         //Dont show details
                         $("#item_details_nok").removeClass("hidden");
-                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo addslashes($LANG['author']); ?>: </b>' + data.author + '<br /><b><?php echo addslashes($LANG['restricted_to']); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="SendMail(\'request_access_to_author\',\'' + data.id + ',' + data.id_user + '\',\'<?php echo $_SESSION['key']; ?>\',\'<?php echo addslashes($LANG['forgot_my_pw_email_sent']); ?>\')"><?php echo addslashes($LANG['request_access_ot_item']); ?></a></u></div>');
+                        $("#item_details_nok_restriction_list").html('<div style="margin:10px 0 0 20px;"><b><?php echo addslashes($LANG['author']); ?>: </b>' + data.author + '<br /><b><?php echo addslashes($LANG['restricted_to']); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo addslashes($LANG['request_access_ot_item']); ?></a></u></div>');
+
+                        $("#reason_to_access").remove();
+                        $("#item_details_nok")
+                          .append('<input type="hidden" id="reason_to_access" value="'+data.id + ',' + data.id_user+'">');
+
+                        // Protect
                         $("#item_details_ok").addClass("hidden");
                         $("#item_details_expired").addClass("hidden");
                         $("#item_details_expired_full").addClass("hidden");
@@ -2666,6 +2672,14 @@ function refreshVisibleFolders()
             }
         }
    );
+}
+
+/**
+ * [openReasonToAccess description]
+ * @return [type] [description]
+ */
+function openReasonToAccess() {
+    $("#dialog_reason_to_access").dialog("open");
 }
 
 
@@ -3684,6 +3698,77 @@ $(function() {
     });
     //<=
 
+    //=> REASON TO ACCESS ITEM
+    $("#dialog_reason_to_access").dialog({
+        bgiframe: true,
+        modal: true,
+        autoOpen: false,
+        width: 600,
+        height: 220,
+        title: "<?php echo addslashes($LANG['request_access_to_item']); ?>",
+        buttons: {
+            "<?php echo addslashes($LANG['send_request']); ?>": function() {
+                // Conditions are met?
+                if ($("#reason_to_access_text").val() === '') {
+                    $("#reason_to_access_info")
+                        .html('<i class="fa fa-info-circle fa-lg"></i>&nbsp;<?php echo addslashes($LANG['error_no_reason_of_access']); ?>')
+                        .addClass('ui-corner-all ui-state-error')
+                        .show(1).delay(2000).fadeOut(1000);
+                    $("#reason_to_access_text").focus();
+                    return false;
+                }
+
+                $("#reason_to_access_info")
+                    .html('<i class="fa fa-info-circle fa-lg"></i>&nbsp;<?php echo addslashes($LANG['please_wait']); ?>')
+                    .addClass('ui-corner-all ui-state-default')
+                    .show(1);
+
+                // Prepare data
+                var dataTmp = $("#reason_to_access").val().split(',');
+                var data = {
+                    "text": $("#reason_to_access_text").val(),
+                    "item_id": dataTmp[0],
+                    "user_id": dataTmp[1]
+                };
+
+                // Send query
+                $.post(
+                    "sources/items.queries.php",
+                    {
+                        type : "send_request_access",
+                        data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key     : "<?php echo $_SESSION['key']; ?>"
+                    },
+                    function(data) {
+                        console.log(data);
+                        if (data[0].error === "") {
+                          $("#reason_to_access_info")
+                              .html('<i class="fa fa-info-circle fa-lg"></i>&nbsp;<?php echo addslashes($LANG['done']); ?>');
+
+                          $(this).delay(1000).queue(function() {
+                              $("#dialog_reason_to_access").dialog('close');
+                              $(this).dequeue();
+                          });
+                        }
+                    },
+                    "json"
+                );
+
+            },
+            "<?php echo addslashes($LANG['cancel_button']); ?>": function() {
+                $(this).dialog('close');
+            }
+        },
+        open: function(event,ui) {
+            $("#reason_to_access_info").removeClass().html('');
+        },
+        close: function() {
+            $("#reason_to_access_info").html('');
+            $("#dialog_reason_to_access").dialog('close');
+        }
+    });
+    //<=
+
     // => ATTACHMENTS INIT
     var uploader_attachments = new plupload.Uploader({
         runtimes : "html5,flash,silverlight,html4",
@@ -4186,22 +4271,12 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         8000
     );
 
-    if (1 === parseInt(<?php echo $_SESSION['user_force_relog']; ?>)) {
-        //
-        $.post(
-            "sources/users.queries.php",
-            {
-                type      : "update_user_field",
-                field     : "force-relog",
-                new_value : "0",
-                user_id   : "<?php echo $_SESSION['user_id']; ?>",
-                key       : "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                window.location.href = "logout.php?user_id=<?php echo $_SESSION['user_id']; ?>"
-            }
-        );
-    }
+    // Permits to
+    $.valHooks.textarea = {
+        get: function( elem ) {
+          return elem.value.replace( /\r?\n/g, "\r\n" );
+        }
+    };
 
     NProgress.done();
 });

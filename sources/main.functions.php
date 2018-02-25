@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link
  */
 
@@ -588,7 +588,7 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
     $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
-    if ($isAdmin == 1) {
+    if ($isAdmin === '1') {
         $groupesVisibles = array();
         $_SESSION['personal_folders'] = array();
         $_SESSION['groupes_visibles'] = array();
@@ -783,8 +783,10 @@ function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmi
             if (empty($persoFld['id']) === false) {
                 if (in_array($persoFld['id'], $listAllowedFolders) === false) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
+                    array_push($listAllowedFolders, $persoFld['id']);
+                    array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
                     // get all descendants
-                    $ids = $tree->getDescendants($persoFld['id'], true, false);
+                    $ids = $tree->getChildren($persoFld['id']);
                     foreach ($ids as $ident) {
                         array_push($listAllowedFolders, $ident->id);
                         array_push($_SESSION['personal_visible_groups'], $ident->id);

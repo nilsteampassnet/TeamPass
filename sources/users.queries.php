@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link        http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -35,13 +35,12 @@ if (file_exists('../includes/config/tp.config.php')) {
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users") === false) {
     if (null === $filtered_newvalue) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
         include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     } else {
-        $filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
         // Do special check to allow user to change attributes of his profile
         if (empty($filtered_newvalue) || !checkUser($_SESSION['user_id'], $_SESSION['key'], "profile")) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page

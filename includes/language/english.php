@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array (
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
     'enable_http_request_login' => 'Automatic login using http header credentials',
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
@@ -244,7 +248,7 @@ $LANG = array (
     'no_previous_pw' => 'No previous password',
     'request_access_ot_item' => 'Request access to modify',
     'email_request_access_subject' => 'You have a request to enable access to your password item',
-    'email_request_access_mail' => 'Hello #tp_item_author#,<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>Please review this request in the password manager and confirm that you will authorize access.',
+    'email_request_access_mail' => 'Hello #tp_item_author#,<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>The request comes with the next justification:<br><i>\'#tp_reason#\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
     'admin_action_change_salt_key' => 'Change the main salt key used for encryption',
     'admin_action_change_salt_key_tip' => 'Before changing the salt key, please enable maintenance mode and perform a full backup of both the database and attachments in the upload folder.',
     'block_admin_info' => 'Administrator\'s Info',

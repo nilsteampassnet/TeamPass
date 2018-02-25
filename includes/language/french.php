@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          french.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array (
+    'request_access_to_item' => 'Demander un accès à cet objet',
+    'request_access_to_item_info' => 'Fournir la raison pour laquelle vous souhaitez accèder à cet objet',
+    'send_request' => 'Envoyer la requête',
+    'error_no_reason_of_access' => 'Merci de fournir la raison de votre requête.',
     'human_resources' => 'Ressources Humaines',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
@@ -241,7 +245,7 @@ $LANG = array (
     'no_previous_pw' => 'Aucun ancien mot de passe',
     'request_access_ot_item' => 'Demander un accès au créateur',
     'email_request_access_subject' => '[TeamPass] Demande d\'accès à un élément',
-    'email_request_access_mail' => 'Bonjour #tp_item_author#,<br><br>L\'utilisateur #tp_user# a demandé un accès à \'#tp_item#\'.<br><br>Avant d\'autoriser l\'accès, soyez sûr de ce que vous faites.<br><br>Cordialement.',
+    'email_request_access_mail' => 'Bonjour #tp_item_author#,<br><br>L\'utilisateur #tp_user# a demandé un accès à \'#tp_item#\'.<br>Cette demande est accompagnée du justificatif suivant:<br><br><i>\'#tp_reason#\'</i><br><br>Merci de revoir et confirmer ou pas l\'accès.<br><br>Cordialement.',
     'admin_action_change_salt_key' => 'Changer la clé de salage principale',
     'admin_action_change_salt_key_tip' => 'Avant de changer votre clé de salage principale, merci de vous assurer d\'avoir réalisé une sauvegarde complète de la base de données, et de mettre TeamPass en mode maintenance',
     'block_admin_info' => 'Infos Administrateur',

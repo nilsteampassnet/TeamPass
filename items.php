@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -1024,6 +1024,15 @@ echo '
 <div id="dialog_ssh" style="display:none;padding:4px;">
     <div id="div_ssh">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    </div>
+</div>';
+
+// Reason for item access dialogbox
+echo '
+<div id="dialog_reason_to_access" style="display:none;padding:4px;">
+    <div style="text-align:center;">
+        <textarea id="reason_to_access_text" rows="3" cols="75" placeholder="'.addslashes($LANG['request_access_to_item_info']).'" style="ui-widget ui-state-default ui-corner-all"></textarea>
+        <div id="reason_to_access_info" style="margin-top:5px; padding:4px;"></div>
     </div>
 </div>';
 

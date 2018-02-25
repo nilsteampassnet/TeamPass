@@ -1,5 +1,7 @@
 2.1.27
 11/
+ Changed licensing to GNU GPL-3.0
+ New - User must provide a reason to access a restricted item
  Improved security of password generator with php7
  Improved cannot edit user without email
  Improved read-only user limitation to copy folder and import action
@@ -15,6 +17,7 @@
  #2116 Insufficient password strength when creating Offline Mode
  #2115 Fix script backup issue with encryption key
  #2111 Add support for login through http header
+ #2109 restrict login to Group Ldap don't work
  #2102 Changed field renewal_period size
  #2095 Can't upload files on items - Plupload update
  #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
@@ -37,6 +40,7 @@
  #2064 LDAP and DUO users with administrator role taken to items page then logged out
  #2063 Setting "Hide forgot password link on Home page" not correctly displayed
  #2059 Fix for Custom LDAP port and adLDAP
+ #2035 After first time login as user Personal Folder is not correctly shown (100000)
  #2015 Double click to edit not working for items created by a different user
 
 10/

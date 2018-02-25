@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          ukrainian.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array (
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
     'human_resources' => 'Human Resources',
     'user_ga_code' => 'Відправити Google Authenticator користувачу на електронну пошту',
     'send_ga_code' => 'Код Google Authenticator для користувача',
@@ -22,7 +26,7 @@ $LANG = array (
     'email_ga_subject' => 'Ваш Google Authenticator флеш код для Teampass',
     'email_ga_text' => 'Вітаю, <a href=\'#link#\'>перейдіть за цим посиланням</a> і зіскануйте QR код за допомогою застосунка Google Authenticator. Це потрибно для налаштування вашого флеш-коду',
     'settings_attachments_encryption' => 'Ввімкнути шифрування для вкладень',
-    'settings_attachments_encryption_tip' => 'ЦЕ НАЛАШТУВАННЯ МОЖЕ ПОШКОДИТИ ІСНУЮЧІ ВКЛАДЕНН�',
+    'settings_attachments_encryption_tip' => 'ЦЕ НАЛАШТУВАННЯ МОЖЕ ПОШКОДИТИ ІСНУЮЧІ ВКЛАДЕНН�',
     'admin_action_attachments_cryption' => 'Зашифрувати або розшифрувати вкладення',
     'admin_action_attachments_cryption_tip' => 'Увага: Лише зашифровані чи розшифровані файли після зміни до',
     'encrypt' => 'Зашифрувати',

@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -2076,7 +2076,6 @@ switch ($post_type) {
             }
 
             $debug_ldap .= "LDAP URIs : ".$ldapURIs."<br/>";
-
             $ldapconn = ldap_connect($ldapURIs);
 
             if ($dataReceived[0]['ldap_tls_input']) {
@@ -2085,56 +2084,74 @@ switch ($post_type) {
 
             $debug_ldap .= "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."<br/>";
 
-            ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             if ($ldapconn) {
-                $ldapbind = @ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
+              $debug_ldap .= "DN : ".$dataReceived[0]['ldap_bind_dn']." -- ".$dataReceived[0]['ldap_bind_passwd']."<br/>";
+                ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+                ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+                $ldapbind = ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
 
                 $debug_ldap .= "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."<br/>";
 
                 if ($ldapbind) {
-                    $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=$username)(objectClass=".$dataReceived[0]['ldap_object_class']."))";
+                    $filter = "(&(".$dataReceived[0]['ldap_user_attribute']."=".$dataReceived[0]['username'].")(objectClass=".$dataReceived[0]['ldap_object_class']."))";
+                    //echo $filter;
                     $result = ldap_search(
                         $ldapconn,
                         $dataReceived[0]['ldap_search_base'],
                         $filter,
-                        array('dn', 'mail', 'givenname', 'sn')
+                        array('dn', 'mail', 'givenname', 'sn', 'uid')
                     );
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
-                        $filter_group = "memberUid=".$username;
+                        $GroupRestrictionEnabled = false;
+                        $filter_group = "memberUid=".$dataReceived[0]['username'];
                         $result_group = ldap_search(
                             $ldapconn,
-                            $dataReceived[0]['ldap_usergroup'],
+                            $dataReceived[0]['ldap_search_base'],
                             $filter_group,
                             array('dn')
                         );
 
                         $debug_ldap .= 'Search filter (group): '.$filter_group."<br/>".
-                                    'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."<br/>";
+                          'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
 
-                        if (!ldap_count_entries($ldapconn, $result_group)) {
-                                $ldapConnection = "Error - No entries found";
+                        if ($result_group) {
+                            $entries = ldap_get_entries($ldapconn, $result_group);
+
+                            if ($entries['count'] > 0) {
+                                // Now check if group fits
+                                for ($i=0; $i<$entries['count']; $i++) {
+                                  $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
+                                  if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                    $GroupRestrictionEnabled = true;
+                                    break;
+                                  }
+                                }
+
+                            }
                         }
+
+                        $debug_ldap .= 'Find user in Group: '.$GroupRestrictionEnabled."<br/>";
                     }
 
                     $debug_ldap .= 'Search filter : '.$filter."<br/>".
-                            'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."<br/>";
+                            'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result), true))."<br/>";
 
                     if (ldap_count_entries($ldapconn, $result)) {
                         // try auth
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
-                        $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
+                        $ldapbind = ldap_bind($ldapconn, $user_dn, $dataReceived[0]['username_pwd']);
                         if ($ldapbind) {
-                            $ldapConnection = "Successfully connected";
+                            $debug_ldap .= "Successfully connected";
                         } else {
-                            $ldapConnection = "Error - Cannot connect user!";
+                            $debug_ldap .= "Error - Cannot connect user!";
                         }
                     }
                 } else {
-                    $ldapConnection = "Error - Could not bind server!";
+                    $debug_ldap .= "Error - Could not bind server!";
                 }
             } else {
-                $ldapConnection = "Error - Could not connect to server!";
+                $debug_ldap .= "Error - Could not connect to server!";
             }
         } else {
             $debug_ldap .= "Get all ldap params: <br/>".

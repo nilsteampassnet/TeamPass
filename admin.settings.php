@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -1076,7 +1076,7 @@ echo '
 echo '
                     <tr style="display:', (isset($ldap_type)) ? '' : 'none', '" class="tr-windows tr-ldap tr-posix tr-posix-search">
                         <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
-                        <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($SETTINGS['ldap_suffix']) ? $SETTINGS['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                        <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($SETTINGS['ldap_suffix']) ? $SETTINGS['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
 
 // Domain DN
@@ -1111,7 +1111,7 @@ echo '
                 echo '
                 <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_usergroup_tip']), ENT_QUOTES).'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
+                    <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="usergroupname" value="',
                         isset($SETTINGS['ldap_usergroup']) ? $SETTINGS['ldap_usergroup'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND DN for search

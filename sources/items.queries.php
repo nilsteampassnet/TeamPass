@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -4234,6 +4234,58 @@ if (null !== $post_type) {
 
             // send data
             echo prepareExchangedData($data, "encode");
+            break;
+
+        case "send_request_access":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $data_received = prepareExchangedData($post_data, "decode");
+
+            // prepare variables
+            $emailText = htmlspecialchars_decode($data_received['text'], ENT_QUOTES);
+            $item_id = htmlspecialchars_decode($data_received['item_id']);
+            $user_id = htmlspecialchars_decode($data_received['user_id']);
+
+            // Send email
+            $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".prefix_table("users")." WHERE id= ".$user_id);
+            $dataItem = DB::queryfirstrow("SELECT label FROM ".prefix_table("items")." WHERE id= ".$item_id);
+            $ret = sendEmail(
+                $LANG['email_request_access_subject'],
+                str_replace(
+                  array(
+                      '#tp_item_author#',
+                      '#tp_user#',
+                      '#tp_item#',
+                      '#tp_reason#'
+                  ),
+                  array(
+                      " ".addslashes($dataAuthor['login']),
+                      addslashes($_SESSION['login']),
+                      addslashes($dataItem['label']),
+                      nl2br(addslashes($emailText))
+                  ),
+                  $LANG['email_request_access_mail']
+                ),
+                $dataAuthor['email']
+            );
+
+            // Do log
+            logItems(
+              $item_id,
+              $dataItem['label'],
+              $_SESSION['user_id'],
+              'at_access',
+              $_SESSION['login']
+            );
+
+            // Return
+            echo '[ { "error" : "" } ]';
+
             break;
     }
 }

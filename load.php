@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -269,17 +269,6 @@ $htmlHeaders .= '
                             } else if (data[0].value === "error") {
                                 $("#mysql_error_warning").html(data[0].text).show();
                                 $("#div_mysql_error").show().dialog("open");
-                            } else if (data[0].value === "new_ldap_account_created") {
-                                $("#connection_error")
-                                    .html("'.addslashes($LANG['reload_page_after_user_account_creation']).'")
-                                    .show()
-                                    .switchClass("ui-state-error", "ui-state-default");
-                                setTimeout(
-                                    function() {
-                                        window.location.href="index.php"
-                                    },
-                                    2000
-                                );
                             } else if (data[0].value === "false_onetimepw") {
                                 $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
                             } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
