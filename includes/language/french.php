@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array (
+    'settings_ldap_and_local_authentication' => 'Utilisateurs locaux et LDAP',
+    'settings_ldap_and_local_authentication_tip' => 'En activant cette option, l\identification sera acceptée pour les utilisateurs locaux et dans un annuaire LDAP.',
     'request_access_to_item' => 'Demander un accès à cet objet',
     'request_access_to_item_info' => 'Fournir la raison pour laquelle vous souhaitez accèder à cet objet',
     'send_request' => 'Envoyer la requête',

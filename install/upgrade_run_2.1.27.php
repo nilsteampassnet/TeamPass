@@ -826,6 +826,16 @@ if (intval($tmp) === 0) {
 }
 
 
+// add new admin setting "ldap_and_local_authentication"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_and_local_authentication'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_and_local_authentication', '0')"
+    );
+}
+
+
 
 // alter table NESTEED_TREE to INT(5) on field "renewal_period"
 mysqli_query(

@@ -2,6 +2,7 @@
 11/
  Changed licensing to GNU GPL-3.0
  New - User must provide a reason to access a restricted item
+ New - Add option to have local and remote accounts when LDAP is enabled
  Improved security of password generator with php7
  Improved cannot edit user without email
  Improved read-only user limitation to copy folder and import action

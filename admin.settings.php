@@ -1181,6 +1181,15 @@ echo '
                     </td>
                 </tr>';
 
+// Enable local and LDAP users
+echo '
+                <tr>
+                    <td><label>'.$LANG['settings_ldap_and_local_authentication'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_and_local_authentication_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="ldap_and_local_authentication" data-toggle-on="', isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1' ? 'true' : 'false', '"></div><input type="hidden" id="ldap_and_local_authentication_input" name="ldap_and_local_authentication_input" value="', isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1' ? '1' : '0', '" />
+                    </td>
+                </tr>';
+
 // Enable Forgot password link on login page
 echo '
                 <tr>

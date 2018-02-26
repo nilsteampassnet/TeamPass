@@ -924,7 +924,7 @@ function identifyUser($sentData)
                 "User's password verified: ".$userPasswordVerified."\n"
             );
         }
-
+        
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -948,6 +948,12 @@ function identifyUser($sentData)
             (
                 isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1'
                 && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
+            )
+            ||
+            (
+                isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1'
+                && isset($SETTINGS['ldap_mode']) && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
+                && $userPasswordVerified === true && $data['disabled'] == 0
             )
         ) {
             $_SESSION['autoriser'] = true;
