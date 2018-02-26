@@ -1,11 +1,11 @@
-<?php
+<?php 
 /**
  *
  * @file          spanish.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @licensing     GNU AFFERO GPL 3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,13 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',
@@ -1081,9 +1074,15 @@ $LANG = array (
     'personal_saltkey_security_level' => 'Nivel mínimo personal de seguridad Saltkey',
     'settings_disable_forgot_password_link' => 'Ocultar enlace de contraseña olvidada en la Página de inicio',
     'newly_created_user_is_administrated_by' => 'El usuario creado reacientemente es administrado por',
-    'open_bug_report_in_github' => 'Open issue report in Github',
-    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
-    'create_github_bug_report' => 'Create new bug report',
-    'deselect_all' => 'Deselect all',
+    'open_bug_report_in_github' => 'Abrir informe de problema en Github',
+    'bug_report_to_github' => 'Completa el contenido del informe, cópialo en el portapapeles y pégualo en la página de nueva incidencia en Github',
+    'create_github_bug_report' => 'Crear un nuevo informe de errores',
+    'deselect_all' => 'Deseleccionar todo',
+    'request_access_to_item' => 'Solicitar acceso para este elemento',
+    'request_access_to_item_info' => 'Proporcione el motivo por el que desea acceder a este elemento',
+    'send_request' => 'Enviar petición',
+    'error_no_reason_of_access' => 'Proporcione una razón para acceder a este elemento por favor.',
+    'settings_ldap_and_local_authentication' => 'Usuarios locales y LDAP',
+    'settings_ldap_and_local_authentication_tip' => 'Habilite esta opción para permitir que los usuarios se autentiquen en la biblioteca LDAP o en la lista local de usuarios de Teampass.',
     '' => ''
 );
