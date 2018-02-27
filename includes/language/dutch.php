@@ -1,4 +1,4 @@
-<?php
+<?php 
 /**
  *
  * @file          dutch.php
@@ -14,13 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'E-mail Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google Authenticatie in en stuur e-mail',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',
@@ -1082,9 +1075,15 @@ $LANG = array (
     'personal_saltkey_security_level' => 'Minimum beveiligingsniveau persoonlijke sleutel',
     'settings_disable_forgot_password_link' => 'Verberg wachtwoord vergeten link op Home pagina',
     'newly_created_user_is_administrated_by' => 'Nieuw aangemaakte gebruiker wordt beheerd door',
-    'open_bug_report_in_github' => 'Open issue report in Github',
-    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
-    'create_github_bug_report' => 'Create new bug report',
-    'deselect_all' => 'Deselect all',
+    'open_bug_report_in_github' => 'Open issue rapportage in Github',
+    'bug_report_to_github' => 'Vul de inhoud aan van de rapportage, kopieer het naar het klembord en plak het in de nieuwe issue pagina van Github',
+    'create_github_bug_report' => 'Maak een nieuwe bug rapportage',
+    'deselect_all' => 'Deselecteer alles',
+    'request_access_to_item' => 'Vraag toegang aan voor dit item',
+    'request_access_to_item_info' => 'Geef de reden waarom u toegang wil tot dit item',
+    'send_request' => 'Verstuur veroek',
+    'error_no_reason_of_access' => 'Geef de reden waarom u dit item wilde benaderen',
+    'settings_ldap_and_local_authentication' => 'Lokale en LDAP gebruikers',
+    'settings_ldap_and_local_authentication_tip' => 'Activeer deze optie om zowel gebruikers geautenticeerd met LDAP en lokale gebruikers toe te staan.  ',
     '' => ''
 );
