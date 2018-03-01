@@ -3,8 +3,8 @@
  *
  * @file          (api)functions.php
  * @author        Nils Laumaillé
- * @version       2.0
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @version       2.1.0
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
@@ -1500,13 +1500,17 @@ function rest_get()
                 // get url
                 if (isset($tpc_url)) {
                     // is user granted?
-                    //db::debugMode(true);
                     $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
                         FROM ".prefix_table("users")."
                         WHERE login = %s",
                         $user_login
                     );
+
+                    // Check if user exists
+                    if (empty($userData['id']) === true) {
+                        rest_error('AUTH_NOT_GRANTED');
+                    }
 
                     // check if psk is correct.
                     if (empty($user_saltkey) === false) {
@@ -1794,6 +1798,13 @@ function rest_get()
                     $user_id = $data['user_id'];
                 }
 
+                // Build tree
+                require_once '../sources/SplClassLoader.php';
+                $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+                $tree->register();
+                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                $tree->rebuild();
+
                 // If personal exists then get list of PF
                 $persoFld = DB::queryfirstrow(
                     "SELECT id, title, nlevel
@@ -1808,13 +1819,6 @@ function rest_get()
                     $json[$inc]['level'] = $persoFld['nlevel'];
                     $json[$inc]['access_type'] = "W";
                     $inc++;
-
-                    // Build tree
-                    require_once '../sources/SplClassLoader.php';
-                    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
-                    $tree->register();
-                    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
-                    $tree->rebuild();
 
                     // get all descendants
                     $ids = $tree->getDescendants($persoFld['id'], false, false);
@@ -1848,7 +1852,7 @@ function rest_get()
                     );
                     foreach ($response as $data) {
                         $folder_id = $data['folder_id'];
-                        if (!array_key_exists($folder_id, $folder_arr)) {
+                        if (array_key_exists($folder_id, $folder_arr) === false) {
                             array_push($folder_arr, $folder_id);
 
                             $response2 = DB::queryFirstRow(
@@ -1858,13 +1862,35 @@ function rest_get()
                                 $folder_id
                             );
 
-                            if (!empty($response2['title'])) {
-                                $json[$inc]['id'] = $folder_id;
+                            if (empty($response2['title']) === false) {
+                                // get all descendants
+                                $ids = $tree->getDescendants($folder_id, true, false);
+                                foreach ($ids as $ident) {
+                                    if (array_key_exists($ident->id, $folder_arr) === false) {
+                                        array_push($folder_arr, $ident->id);
+                                        // Do query to get folder info
+                                        $fldInfo = DB::queryfirstrow(
+                                            "SELECT title, nlevel
+                                            FROM ".prefix_table("nested_tree")."
+                                            WHERE id = %i",
+                                            $ident->id
+                                        );
+
+                                        // Store info
+                                        $json[$inc]['id'] = $ident->id;
+                                        $json[$inc]['title'] = $fldInfo['title'];
+                                        $json[$inc]['level'] = $fldInfo['nlevel'];
+                                        $json[$inc]['personal'] = "0";
+                                        $json[$inc]['access_type'] = "W";
+                                        $inc++;
+                                    }
+                                }
+                                /*$json[$inc]['id'] = $folder_id;
                                 $json[$inc]['title'] = $response2['title'];
                                 $json[$inc]['level'] = $response2['nlevel'];
                                 $json[$inc]['access_type'] = $data['type'];
                                 $json[$inc]['personal'] = "0";
-                                $inc++;
+                                $inc++;*/
                             }
                         }
                     }
@@ -2034,7 +2060,7 @@ function rest_get()
                     WHERE login = %s",
                     $user_login
                 );
-                if (DB::count() == 0) {
+                if (DB::count() === 0) {
                     rest_error('AUTH_NO_IDENTIFIER');
                 }
 
@@ -2566,6 +2592,7 @@ function rest_error($type, $detail = 'N/A')
             break;
         case 'AUTH_NOT_GRANTED':
             $message = array('err' => 'Bad credentials for user', 'code' => 'AUTH_NOT_GRANTED');
+            header('HTTP/1.1 404 Error');
             break;
         case 'AUTH_NO_URL':
             $message = array('err' => 'URL needed to grant access');
@@ -2578,6 +2605,7 @@ function rest_error($type, $detail = 'N/A')
             break;
         case 'AUTH_PSK_ERROR':
             $message = array('err' => 'Personal Saltkey is wrong', 'code' => 'AUTH_PSK_ERROR');
+            header('HTTP/1.1 404 Error');
             break;
         case 'NO_DATA_EXIST':
             $message = array('err' => 'No data exists', 'code' => 'NO_DATA_EXIST');
