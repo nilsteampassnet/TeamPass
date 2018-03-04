@@ -39,163 +39,163 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Cipher_ARC4 extends Cipher
 {
-	/** @type string $_s The S List */
-	private $_s = "";
+    /** @type string $_s The S List */
+    private $_s = "";
 
-	/** @type string $_key_stream The Key Stream */
-	private $_key_stream = "";
-
-
-	/**
-	 * Constructor
-	 *
-	 * @param string $key The key used for Encryption/Decryption
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// set the ARC4 key
-		parent::__construct(PHP_Crypt::CIPHER_ARC4, $key);
-	}
+    /** @type string $_key_stream The Key Stream */
+    private $_key_stream = "";
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Constructor
+     *
+     * @param string $key The key used for Encryption/Decryption
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // set the ARC4 key
+        parent::__construct(PHP_Crypt::CIPHER_ARC4, $key);
+    }
 
 
-	/**
-	 * Encrypt plain text data using ARC4
-	 *
-	 * @param string $data A plain text string, 8 bytes long
-	 * @return boolean Returns true
-	 */
-	public function encrypt(&$text)
-	{
-		$this->operation(parent::ENCRYPT);
-		return $this->arc4($text);
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypt a ARC4 encrypted string
-	 *
-	 * @param string $encrypted A ARC4 encrypted string, 8 bytes long
-	 * @return boolean Returns true
-	 */
-	public function decrypt(&$text)
-	{
-		$this->operation(parent::DECRYPT);
-		return $this->arc4($text);
-	}
+    /**
+     * Encrypt plain text data using ARC4
+     *
+     * @return boolean Returns true
+     */
+    public function encrypt(&$text)
+    {
+        $this->operation(parent::ENCRYPT);
+        return $this->arc4($text);
+    }
 
 
-	/**
-	 * Performs the ARC4 algorithm, since encryption and decryption
-	 * are the same, all the work is done here
-	 *
-	 * @param string $text The string to encrypt/decrypt
-	 * @return boolean Returns true
-	 */
-	private function arc4(&$text)
-	{
-		$len = strlen($text);
-		$this->prga($len);
-
-		for($i = 0; $i < $len; ++$i)
-			$text[$i] = $text[$i] ^ $this->_key_stream[$i];
-
-		return true;
-	}
+    /**
+     * Decrypt a ARC4 encrypted string
+     *
+     * @return boolean Returns true
+     */
+    public function decrypt(&$text)
+    {
+        $this->operation(parent::DECRYPT);
+        return $this->arc4($text);
+    }
 
 
-	/**
-	 * The key scheduling algorithm (KSA)
-	 *
-	 * @return void
-	 */
-	private function ksa()
-	{
-		$j = 0;
-		$this->_s = array();
-		$keylen = $this->keySize();
-		$key = $this->key();
+    /**
+     * Performs the ARC4 algorithm, since encryption and decryption
+     * are the same, all the work is done here
+     *
+     * @param string $text The string to encrypt/decrypt
+     * @return boolean Returns true
+     */
+    private function arc4(&$text)
+    {
+        $len = strlen($text);
+        $this->prga($len);
 
-		// fill $this->_s with all the values from 0-255
-		for($i = 0; $i < 256; ++$i)
-			$this->_s[$i] = $i;
+        for ($i = 0; $i < $len; ++$i) {
+                    $text[$i] = $text[$i] ^ $this->_key_stream[$i];
+        }
 
-		// the changing S List
-		for($i = 0; $i < 256; ++$i)
-		{
-			$k = $key[$i % $keylen];
-			$j = ($j + $this->_s[$i] + ord($k)) % 256;
-
-			// swap bytes
-			self::swapBytes($this->_s[$i], $this->_s[$j]);
-		}
-	}
+        return true;
+    }
 
 
-	/**
-	 * The Pseudo-Random Generation Algorithm (PGRA)
-	 * Creates the key stream used for encryption / decryption
-	 *
-	 * @param integer $data_len The length of the data we are encrypting/decrypting
-	 * @return void
-	 */
-	private function prga($data_len)
-	{
-		$i = 0;
-		$j = 0;
-		$this->_key_stream = "";
+    /**
+     * The key scheduling algorithm (KSA)
+     *
+     * @return void
+     */
+    private function ksa()
+    {
+        $j = 0;
+        $this->_s = array();
+        $keylen = $this->keySize();
+        $key = $this->key();
 
-		// set up the key schedule
-		$this->ksa();
+        // fill $this->_s with all the values from 0-255
+        for ($i = 0; $i < 256; ++$i) {
+                    $this->_s[$i] = $i;
+        }
 
-		for($c = 0; $c < $data_len; ++$c)
-		{
-			$i = ($i + 1) % 256;
-			$j = ($j + $this->_s[$i]) % 256;
+        // the changing S List
+        for ($i = 0; $i < 256; ++$i)
+        {
+            $k = $key[$i % $keylen];
+            $j = ($j + $this->_s[$i] + ord($k)) % 256;
 
-			// swap bytes
-			self::swapBytes($this->_s[$i], $this->_s[$j]);
-
-			$pos = ($this->_s[$i] + $this->_s[$j]) % 256;
-			$this->_key_stream .= chr($this->_s[$pos]);
-		}
-	}
-
-
-	/**
-	 * Swap two individual bytes
-	 *
-	 * @param string $a A single byte
-	 * @param string $b A single byte
-	 * @return void
-	 */
-	private static function swapBytes(&$a, &$b)
-	{
-		$tmp = $a;
-		$a = $b;
-		$b = $tmp;
-	}
+            // swap bytes
+            self::swapBytes($this->_s[$i], $this->_s[$j]);
+        }
+    }
 
 
-	/**
-	 * Indicates that this is a stream cipher
-	 *
-	 * @return integer Returns Cipher::STREAM
-	 */
-	public function type()
-	{
-		return parent::STREAM;
-	}
+    /**
+     * The Pseudo-Random Generation Algorithm (PGRA)
+     * Creates the key stream used for encryption / decryption
+     *
+     * @param integer $data_len The length of the data we are encrypting/decrypting
+     * @return void
+     */
+    private function prga($data_len)
+    {
+        $i = 0;
+        $j = 0;
+        $this->_key_stream = "";
+
+        // set up the key schedule
+        $this->ksa();
+
+        for ($c = 0; $c < $data_len; ++$c)
+        {
+            $i = ($i + 1) % 256;
+            $j = ($j + $this->_s[$i]) % 256;
+
+            // swap bytes
+            self::swapBytes($this->_s[$i], $this->_s[$j]);
+
+            $pos = ($this->_s[$i] + $this->_s[$j]) % 256;
+            $this->_key_stream .= chr($this->_s[$pos]);
+        }
+    }
+
+
+    /**
+     * Swap two individual bytes
+     *
+     * @param string $a A single byte
+     * @param string $b A single byte
+     * @return void
+     */
+    private static function swapBytes(&$a, &$b)
+    {
+        $tmp = $a;
+        $a = $b;
+        $b = $tmp;
+    }
+
+
+    /**
+     * Indicates that this is a stream cipher
+     *
+     * @return integer Returns Cipher::STREAM
+     */
+    public function type()
+    {
+        return parent::STREAM;
+    }
 }
 ?>

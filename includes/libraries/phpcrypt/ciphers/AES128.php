@@ -38,34 +38,34 @@ require_once(dirname(__FILE__)."/Rijndael128.php");
  */
 class Cipher_AES_128 extends Cipher_Rijndael_128
 {
-	/** @type integer BYTES_BLOCK The size of the block, in bytes */
-	const BYTES_BLOCK = 16; //128 bits;
+    /** @type integer BYTES_BLOCK The size of the block, in bytes */
+    const BYTES_BLOCK = 16; //128 bits;
 
-	/** @type integer BYTES_KEY The size of the key, in bytes */
-	const BYTES_KEY = 16; // 128 bits;
+    /** @type integer BYTES_KEY The size of the key, in bytes */
+    const BYTES_KEY = 16; // 128 bits;
 
-	/**
-	 * Constructor, Sets the key used for encryption.
-	 *
-	 * @param string $key string containing the user supplied encryption key
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// Setup AES by calling the second constructor in Rijndael_128
-		// The block size is set here too, since all AES implementations use 128 bit blocks
-		parent::__construct1(PHP_Crypt::CIPHER_AES_128, $key, self::BYTES_KEY);
-	}
+    /**
+     * Constructor, Sets the key used for encryption.
+     *
+     * @param string $key string containing the user supplied encryption key
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // Setup AES by calling the second constructor in Rijndael_128
+        // The block size is set here too, since all AES implementations use 128 bit blocks
+        parent::__construct1(PHP_Crypt::CIPHER_AES_128, $key, self::BYTES_KEY);
+    }
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 }
 ?>

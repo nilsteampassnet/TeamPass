@@ -1,10 +1,10 @@
 <?php
 /**
- * @file          views.queries.php
+ * @file          script.backup.php
  * @author        Nils Laumaillé
- * @version       2.1.21
- * @copyright     (c) 2009-2014 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,34 +12,58 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include '../includes/settings.php';
+include dirname(__FILE__) .'/../includes/config/settings.php';
+require_once dirname(__FILE__) .'/../includes/config/tp.config.php';
 header("Content-type: text/html; charset=utf-8");
 
-// connect to DB
-require_once '../sources/SplClassLoader.php';
+$_SESSION['CPM'] = 1;
 
-require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+// connect to DB
+require_once $SETTINGS['cpassman_dir'] .'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] .'/includes/libraries/Database/Meekrodb/db.class.php';
+
+// Load libraries
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
-DB::$error_handler = 'db_error_handler';
-$link= mysqli_connect($server, $user, $pass, $database, $port);
+DB::$error_handler = true;
+$link = mysqli_connect($server, $user, $pass, $database, $port);
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
+// Check provided key
+if (isset($_GET['key']) === false || empty($_GET['key']) === true) {
+    echo '[{"error":"no_key_provided"}]';
+    return false;
+}
 
 //get backups infos
 $rows = DB::query("SELECT * FROM ".$pre."misc WHERE type = 'admin'");
 foreach ($rows as $record) {
     $settings[$record['intitule']] = $record['valeur'];
 }
+
+// Check if key is conform
+if (empty($settings['bck_script_passkey']) === false) {
+    $currentKey = cryption(
+        $settings['bck_script_passkey'],
+        "",
+        "decrypt"
+    )['string'];
+    if ($currentKey !== $_GET['key']) {
+        echo '[{"error":"not_allowed"}]';
+        return false;
+    }
+}
+
+// Now can we start backup?
 if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_path'])) {
     //get all of the tables
     $tables = array();
-    $result = mysqli_query($link,'SHOW TABLES');
+    $result = mysqli_query($link, 'SHOW TABLES');
     while ($row = mysqli_fetch_row($result)) {
         $tables[] = $row[0];
     }
@@ -47,40 +71,71 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
 
     //cycle through each table and format the data
     foreach ($tables as $table) {
-        $result = mysqli_query($link,'SELECT * FROM '.$table);
+        $result = mysqli_query($link, 'SELECT * FROM '.$table);
         $num_fields = mysqli_num_fields($result);
 
-        $return.= 'DROP TABLE '.$table.';';
-        $row2 = mysqli_fetch_row(mysqli_query($link,'SHOW CREATE TABLE '.$table));
-        $return.= "\n\n".$row2[1].";\n\n";
+        $return .= 'DROP TABLE '.$table.';';
+        $row2 = mysqli_fetch_row(mysqli_query($link, 'SHOW CREATE TABLE '.$table));
+        $return .= "\n\n".$row2[1].";\n\n";
 
         for ($i = 0; $i < $num_fields; $i++) {
             while ($row = mysqli_fetch_row($result)) {
-                $return.= 'INSERT INTO '.$table.' VALUES(';
-                for ($j=0; $j<$num_fields; $j++) {
+                $return .= 'INSERT INTO '.$table.' VALUES(';
+                for ($j = 0; $j < $num_fields; $j++) {
                     $row[$j] = addslashes($row[$j]);
                     $row[$j] = preg_replace('/\n/', '/\\n/', $row[$j]);
                     if (isset($row[$j])) {
-                        $return.= '"'.$row[$j].'"' ;
+                        $return .= '"'.$row[$j].'"';
                     } else {
-                        $return.= '""';
+                        $return .= '""';
                     }
-                    if ($j<($num_fields-1)) {
-                        $return.= ',';
+                    if ($j < ($num_fields - 1)) {
+                        $return .= ',';
                     }
                 }
-                $return.= ");\n";
+                $return .= ");\n";
             }
         }
-        $return.="\n\n\n";
-    }
-
-    if (!empty($settings['bck_script_key'])) {
-        $return = Encryption\Crypt\aesctr::encrypt($return, $settings['bck_script_key'], 256);
+        $return .= "\n\n\n";
     }
 
     //save the file
-    $handle = fopen($settings['bck_script_path'].'/'.$settings['bck_script_filename'].'-'.time().'.sql', 'w+');
+    $bck_filename = $settings['bck_script_filename'].'-'.time();
+    $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
     fwrite($handle, $return);
     fclose($handle);
+
+    // Encrypt file is required
+    if (empty($settings['bck_script_key']) === false) {
+        // Encrypt the file
+        prepareFileWithDefuse(
+            'encrypt',
+            $settings['bck_script_path'].'/'.$bck_filename.'.sql',
+            $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
+            $settings['bck_script_key']
+        );
+
+        // Do clean
+        unlink($settings['bck_script_path'].'/'.$bck_filename.'.sql');
+        rename(
+            $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
+            $settings['bck_script_path'].'/'.$bck_filename.'.sql'
+        );
+    }
+
+    // store this file in DB
+    $tmp = mysqli_num_rows(mysqli_query($link, "SELECT * FROM `".$pre."misc` WHERE type = 'backup' AND intitule = 'filename'"));
+    if ($tmp === 0) {
+        $mysqli_result = mysqli_query(
+            $link,
+            "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('backup', 'filename', '".$bck_filename."')"
+        );
+    } else {
+        $mysqli_result = mysqli_query(
+            $link,
+            "UPDATE `".$pre."misc` SET `valeur` = '".$bck_filename."' WHERE type = 'backup' AND intitule = 'filename'"
+        );
+    }
+
+    echo '[{"error":"" , "status":"success"}]';
 }

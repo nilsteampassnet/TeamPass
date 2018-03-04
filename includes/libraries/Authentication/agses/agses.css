@@ -1,0 +1,25 @@
+.agses_canvas,.agses_controls {				
+	background: #efefef;	
+}
+
+.agses_canvas {
+	padding: 10px;
+	padding-bottom: 0;
+}
+
+.agses_controls {
+	margin-bottom:10px;
+	padding: 5px 10px;
+}
+
+.agses_controls a {
+	cursor: pointer;
+}
+
+.agses_controls > a:first-child {
+	margin-left:5px;
+}
+
+.agses_controls > a:last-child {
+	margin-right:5px;
+}

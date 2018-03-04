@@ -1,10 +1,10 @@
 <?php
 /**
- * @file        favorites.php
- * @author      Nils Laumaillé
- * @version       2.1.25
- * @copyright   (c) 2009-2015 Nils Laumaillé
- * @licensing   GNU AFFERO GPL 3.0
+ * @file          favorites.php
+ * @author        Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,15 @@
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 echo '
@@ -35,7 +44,7 @@ if (empty($_SESSION['favourites'])) {
         </tr></thead>
         <tbody>';
     //Get favourites
-    $cpt= 0 ;
+    $cpt = 0;
     foreach ($_SESSION['favourites'] as $fav) {
         if (!empty($fav)) {
             $data = DB::queryFirstRow(
@@ -47,15 +56,15 @@ if (empty($_SESSION['favourites'])) {
             );
             if (!empty($data['label'])) {
                 echo '
-                    <tr class="ligne'.($cpt%2).'">
+                    <tr class="ligne'.($cpt % 2).'" id="row-'.$data['id'].'">
                         <td>
-                            <img src="includes/images/key__arrow.png" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer;" />
+                            <i class="fa fa-external-link" onClick="javascript:window.location.href = \'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$data['id'].'\';" style="cursor:pointer; font-size:18px;"></i>
                             &nbsp;
-                            <img src="includes/images/favourite_delete.png" onClick="prepare_delete_fav(\''.$data['id'].'\');" style="cursor:pointer;" title="'.$LANG['item_menu_del_from_fav'].'" />
+                            <i class="fa fa-trash mi-red tip" onClick="prepare_delete_fav(\''.$data['id'].'\');" style="cursor:pointer; font-size:18px;" title="'.$LANG['item_menu_del_from_fav'].'"></i>
                         </td>
                         <td align="left">'.stripslashes($data['label']).'</td>
                         <td align="center">'.stripslashes($data['description']).'</td>
-                        <td align="center">',$data['title'] == $_SESSION['user_id']?$_SESSION['login']:$data['title'],'</td>
+                        <td align="center">',$data['title'] == $_SESSION['user_id'] ? $_SESSION['login'] : $data['title'], '</td>
                     </tr>';
                 $cpt++;
             }

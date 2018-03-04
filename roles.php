@@ -2,9 +2,9 @@
 /**
  * @file          roles.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,25 +12,31 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-    !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || 
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) || 
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])
-){
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-//load help
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_admin_help.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 //Get full list of groups
 $arr_groups = array();
@@ -43,18 +49,31 @@ foreach ($rows as $reccord) {
 echo '
 <div class="title ui-widget-content ui-corner-all">
     '.$LANG['admin_functions'].'&nbsp;&nbsp;
-    <button title="'.$LANG['add_role_tip'].'" onclick="OpenDialog(\'add_new_role\')" class="button">
-        <img src="includes/images/user--plus.png" alt="" />
+    <button title="'.htmlentities(strip_tags($LANG['add_role_tip']), ENT_QUOTES).'" onclick="OpenDialog(\'add_new_role\')" class="button" style="font-size:16px;">
+        <span class="fa fa-plus"></span>
     </button>
-    <button title="'.$LANG['refresh_matrix'].'" onclick="refresh_roles_matrix()" class="button">
-        <img src="includes/images/arrow_refresh.png" alt="" />
+    &nbsp;
+    <span class="normal"><input id="filter_roles" type="text" class="ui-widget ui-corner-all" value="" placeholder="No filter" /></span>
+    <button title="'.htmlentities(strip_tags($LANG['refresh_matrix']), ENT_QUOTES).'" onclick="refresh_roles_matrix()" class="button" style="font-size:16px;">
+        <span class="fa fa-refresh"></span>
+    </button>
+    &nbsp;
+    <button onclick="refresh_roles_matrix(\'previous\')" class="button roles_previous" style="font-size:16px;">
+        <span class="fa fa-arrow-left"></span>
+    </button>
+    <button onclick="refresh_roles_matrix(\'next\')" class="button roles_next" style="font-size:16px;">
+        <span class="fa fa-arrow-right"></span>
     </button>
 </div>
 <div style="line-height:20px;" align="center">
     <div id="matrice_droits"></div>
     <div style="">
-        <img src="includes/images/arrow-180.png" style="display:none;cursor:pointer" id="roles_previous" onclick="refresh_roles_matrix(\'previous\')">
-        <img src="includes/images/arrow-0.png" style="display:none;cursor:pointer" id="roles_next" onclick="refresh_roles_matrix(\'next\')">
+        <button onclick="refresh_roles_matrix(\'previous\')" class="button roles_previous" style="font-size:16px;">
+            <span class="fa fa-arrow-left"></span>
+        </button>
+        <button onclick="refresh_roles_matrix(\'next\')" class="button roles_next" style="font-size:16px;">
+            <span class="fa fa-arrow-right"></span>
+        </button>
     </div>
 </div>
 <input type="hidden" id="selected_function" />
@@ -76,13 +95,13 @@ echo '
     <label for="new_role_complexity" class="form_label">'.$LANG['complex_asked'].' :</label>
     <select id="new_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
     </select>
     </p>
-	<div id="add_role_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="add_role_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -93,7 +112,7 @@ echo '
     <div>'.$LANG['confirm_del_role'].'</div>
     <div style="font-weight:bold;text-align:center;color:#FF8000;text-align:center;font-size:13pt;" id="delete_role_show"></div>
     <input type="hidden" id="delete_role_id" />
-	<div id="delete_role_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="delete_role_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -110,13 +129,13 @@ echo '
     <label for="edit_role_complexity" class="form_label">'.$LANG['complex_asked'].' :</label>
     <select id="edit_role_complexity" class="input_text text ui-widget-content ui-corner-all">
         <option value="">---</option>';
-foreach ($_SESSION['settings']['pwComplexity'] as $complex) {
+foreach ($SETTINGS_EXT['pwComplexity'] as $complex) {
     echo '<option value="'.$complex[0].'">'.$complex[1].'</option>';
 }
 echo '
     </select>
     </p>
-	<div id="edit_role_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="edit_role_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -130,11 +149,11 @@ echo '
         <input type="radio" name="right_types_radio" id="right_read" /><label for="right_read">'.$LANG['read'].'</label>&nbsp;
         <input type="radio" name="right_types_radio" id="right_noaccess" /><label for="right_noaccess">'.$LANG['no_access'].'</label>
     </div>
-	<div style="margin:10px 0 0 30px; display:none;" id="div_delete_option">
-		<input type="checkbox" id="right_nodelete" />&nbsp;'.$LANG['role_cannot_delete_item'].'<br />
-		<input type="checkbox" id="right_noedit" />&nbsp;'.$LANG['role_cannot_edit_item'].'
-	</div>
-	<div id="role_rights_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div style="margin:10px 0 0 30px; display:none;" id="div_delete_option">
+        <input type="checkbox" id="right_nodelete" />&nbsp;'.$LANG['role_cannot_delete_item'].'<br />
+        <input type="checkbox" id="right_noedit" />&nbsp;'.$LANG['role_cannot_edit_item'].'
+    </div>
+    <div id="role_rights_loader" style="display:none;text-align:center;margin-top:20px;">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';

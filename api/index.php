@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          indexapi.php
+ * @file          (api)index.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.0
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link		  http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -25,27 +25,32 @@ if (teampass_api_enabled() != "1") {
 
 teampass_whitelist();
 
-parse_str($_SERVER['QUERY_STRING']);
+if (!isset($_GET['apikey'])) {
+    rest_error('UNKNOWN');
+} else {
+    $GLOBALS['apikey'] = $_GET['apikey'];
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 $request = explode("/", substr(@$_SERVER['PATH_INFO'], 1));
 
 switch ($method) {
-  case 'GET':
+    case 'GET':
     rest_get();
     break;
-  case 'PUT':
+    case 'PUT':
     rest_put();
     break;
-  case 'DELETE':
+    case 'DELETE':
     rest_delete();
     break;
-  case 'HEAD':
+    case 'HEAD':
     rest_head();
     break;
-  case 'NEWUSER':
+    case 'NEWUSER':
     rest_newuser();
     break;
-  default:
+    default:
     rest_error('UNKNOWN');
     break;
 }

@@ -3,9 +3,9 @@
 /**
  * @file          views_logs.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -18,8 +18,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 ?>
-
 <script type="text/javascript">
+//<![CDATA[
 var oTable0;
 var oTable1;
 var oTable2;
@@ -57,15 +57,15 @@ function loadTable(table_id)
     if (table_id == "t_connections") {
         $("#type_log_displayed").val("connections_logs");
         oTable0 = $("#t_connections").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=connections",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=connections",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_connections_page input").focus();
@@ -74,15 +74,15 @@ function loadTable(table_id)
     } else if (table_id == "t_errors") {
         $("#type_log_displayed").val("errors_logs");
         oTable1 = $("#t_errors").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=errors",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=errors",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_errors_page input").focus();
@@ -91,15 +91,15 @@ function loadTable(table_id)
     } else if (table_id == "t_access") {
         $("#type_log_displayed").val("access_logs");
         oTable2 = $("#t_access").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=access",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=access",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_access_page input").focus();
@@ -108,32 +108,32 @@ function loadTable(table_id)
     } else if (table_id == "t_copy") {
         $("#type_log_displayed").val("copy_logs");
         oTable3 = $("#t_copy").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=copy",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=copy",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_copy_page input").focus();
             }
         });
     } else if (table_id == "t_admin") {
-        $("#type_log_displayed").val("items_logs");
+        $("#type_log_displayed").val("admin_logs");
         oTable4 = $("#t_admin").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=admin",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=admin",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_admin_page input").focus();
@@ -142,15 +142,15 @@ function loadTable(table_id)
     } else if (table_id == "t_items") {
         $("#type_log_displayed").val("items_logs");
         oTable5 = $("#t_items").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=items",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=items",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_items_page input").focus();
@@ -159,15 +159,15 @@ function loadTable(table_id)
     } else if (table_id == "t_failed_auth") {
         $("#type_log_displayed").val("failed_auth_logs");
         oTable6 = $("#t_failed_auth").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
+            "aaSorting": [[ 0, "desc" ]],
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.logs.php?action=failed_auth",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=failed_auth",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_items_page input").focus();
@@ -194,14 +194,14 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
+            "<?php echo $LANG["ok"]; ?>": function() {
                 $.post(
                     "sources/users.queries.php",
                     {
                         type   : "disconnect_all_users",
-                        key    : "<?php echo $_SESSION["key"];?>"
+                        key    : "<?php echo $_SESSION["key"]; ?>"
                     },
                     function(data) {
                         oTable2.fnDraw(false);
@@ -209,7 +209,7 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -220,9 +220,9 @@ $(function() {
     */
     $("#butPurge").button().click(function(e) {
         // prepare dialogbox
-        $("#div_dialog_message").dialog("option", "title", "<?php echo $LANG['admin_main'];?>");
+        $("#div_dialog_message").dialog("option", "title", "<?php echo $LANG['admin_main']; ?>");
         $("#div_dialog_message").dialog("option", "buttons", {
-            "<?php echo $LANG['ok'];?>": function() {
+            "<?php echo $LANG['ok']; ?>": function() {
                 $(this).dialog("close");
             }
         });
@@ -234,12 +234,21 @@ $(function() {
                 type       : "purgeLogs",
                 purgeTo    : $("#purgeTo").val(),
                 purgeFrom  : $("#purgeFrom").val(),
-                logType    : $("#type_log_displayed").val()
+                logType    : $("#type_log_displayed").val(),
+                key        : "<?php echo $_SESSION["key"]; ?>"
             },
             function(data) {
                 if (data[0].status == "ok") {
-                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
+                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done']; ?> "+data[0].nb);
                     $("#div_dialog_message").dialog("open");
+                    // refresh table
+                    if ($("#type_log_displayed").val() == "connections_logs") oTable0.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "errors_logs") oTable1.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "access_logs") oTable2.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "copy_logs") oTable3.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "admin_logs") oTable4.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "items_logs") oTable5.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "failed_auth_logs") oTable6.api().ajax.reload();
                 }
                 $("#purgeTo, #purgeFrom").val("");
             },
@@ -251,6 +260,7 @@ $(function() {
         defaultDate: "today",
         changeMonth: true,
         changeYear: true,
+        dateFormat: "<?php echo str_replace('Y', 'yy', $SETTINGS['date_format']); ?>",
         numberOfMonths: 1,
         onClose: function( selectedDate ) {
             var minDate = new Date(Date.parse(selectedDate));
@@ -262,6 +272,7 @@ $(function() {
         defaultDate: "+1w",
         changeMonth: true,
         changeYear: true,
+        dateFormat: "<?php echo str_replace('Y', 'yy', $SETTINGS['date_format']); ?>",
         numberOfMonths: 1,
         onClose: function( selectedDate ) {
             var maxDate = new Date(Date.parse(selectedDate));
@@ -270,4 +281,5 @@ $(function() {
         }
     });
 });
+//]]>
 </script>

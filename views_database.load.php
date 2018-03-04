@@ -3,9 +3,9 @@
 /**
  * @file          views_database.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -18,8 +18,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 ?>
-
 <script type="text/javascript">
+//<![CDATA[
 var oTable1;
 var oTable2;
 
@@ -34,19 +34,19 @@ function killEntry(type, id)
             {
                 type    : "free_item_for_edition",
                 id      : id,
-                key     : "<?php echo $_SESSION["key"];?>"
+                key     : "<?php echo $_SESSION["key"]; ?>"
             },
             function(data) {
                 oTable1.fnDraw(false);
             }
         );
     } else if (type == "disconnect_user") {
-    	$.post(
+        $.post(
                 "sources/users.queries.php",
                 {
                     type    : "disconnect_user",
                     user_id : id,
-                    key     : "<?php echo $_SESSION["key"];?>"
+                    key     : "<?php echo $_SESSION["key"]; ?>"
                 },
                 function(data) {
                     oTable2.fnDraw(false);
@@ -59,16 +59,16 @@ function killEntry(type, id)
  * Manage display of divs
  */
 function manage_div_display(show_id){
-	var all_divs = new Array();
-	all_divs[0] = "tab5_1";
-	all_divs[1] = "tab5_2";
-	for (i=0;i<all_divs.length;i++) {
-	    if (all_divs[i] == show_id) {
-	        $("#"+all_divs[i]).show();
-	    } else {
-	    	$("#"+all_divs[i]).hide();
-	    }
-	}
+    var all_divs = new Array();
+    all_divs[0] = "tab5_1";
+    all_divs[1] = "tab5_2";
+    for (i=0;i<all_divs.length;i++) {
+        if (all_divs[i] == show_id) {
+            $("#"+all_divs[i]).show();
+        } else {
+            $("#"+all_divs[i]).hide();
+        }
+    }
 }
 
 /**
@@ -83,10 +83,10 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.item_edition.php",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.item_edition.php",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#items_edited_page input").focus();
@@ -99,10 +99,10 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.users_logged.php",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.users_logged.php",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             },
             "fnInitComplete": function() {
                 $("#t_users_logged_page input").focus();
@@ -121,14 +121,14 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
-            	$.post(
+            "<?php echo $LANG["ok"]; ?>": function() {
+                $.post(
                     "sources/users.queries.php",
                     {
                         type   : "disconnect_all_users",
-                        key    : "<?php echo $_SESSION["key"];?>"
+                        key    : "<?php echo $_SESSION["key"]; ?>"
                     },
                     function(data) {
                         oTable2.fnDraw(false);
@@ -136,15 +136,16 @@ $(function() {
                     }
                 );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
     });
 
     $("#but_disconnect_all_users").click(function() {
-    	$("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"];?>");
-    	$("#div_dialog_message").dialog("open");
+        $("#div_dialog_message_text").html("<?php echo $LANG["disconnect_all_users_sure"]; ?>");
+        $("#div_dialog_message").dialog("open");
     });
 });
+//]]>
 </script>

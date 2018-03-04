@@ -4,9 +4,9 @@ namespace Tree\NestedTree;
 /**
  * @file          NestedTree.class.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -34,9 +34,10 @@ class NestedTree
     {
         $this->table = $table;
 
-        $this->fields = array('id'     => $idField,
-                              'parent' => $parentField,
-                              'sort'   => $sortField
+        $this->fields = array(
+            'id'     => $idField,
+            'parent' => $parentField,
+            'sort'   => $sortField
         );
     }
 
@@ -49,17 +50,17 @@ class NestedTree
     public function getFields()
     {
         return array($this->fields['id'], $this->fields['parent'], $this->fields['sort'],
-                     'nleft', 'nright', 'nlevel', 'personal_folder');
+                        'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation');
     }
 
     /**
-     * Fetch the node data for the node identified by $id
+     * Fetch the node data for the node identified by $folder_id
      *
-     * @param  int    $id The ID of the node to fetch
+     * @param  int    $folder_id The ID of the node to fetch
      * @return object An object containing the node's
      *                          data, or null if node not found
      */
-    public function getNode($id)
+    public function getNode($folder_id)
     {
         global $link;
         $query = sprintf(
@@ -67,7 +68,7 @@ class NestedTree
             join(',', $this->getFields()),
             $this->table,
             $this->fields['id'],
-            $id
+            mysqli_real_escape_string($link, $folder_id)
         );
 
         $result = mysqli_query($link, $query);
@@ -83,7 +84,7 @@ class NestedTree
      * entire tree. Optionally, only return child data instead of all descendant
      * data.
      *
-     * @param int $id The ID of the node to fetch descendant data for.
+     * @param int $folder_id The ID of the node to fetch descendant data for.
      *                                  Specify an invalid ID (e.g. 0) to retrieve all data.
      * @param bool $includeSelf Whether or not to include the passed node in the
      *                                  the results. This has no meaning if fetching entire tree.
@@ -91,12 +92,12 @@ class NestedTree
      *                                  returning all descendant data
      * @return array The descendants of the passed now
      */
-    public function getDescendants($id = 0, $includeSelf = false, $childrenOnly = false, $unique_id_list = false)
+    public function getDescendants($folder_id = 0, $includeSelf = false, $childrenOnly = false, $unique_id_list = false)
     {
         global $link;
         $idField = $this->fields['id'];
 
-        $node = $this->getNode($id);
+        $node = $this->getNode(filter_var($folder_id, FILTER_SANITIZE_NUMBER_INT));
         if (is_null($node)) {
             $nleft = 0;
             $nright = 0;
@@ -159,7 +160,7 @@ class NestedTree
 
         $arr = array();
         while ($row = mysqli_fetch_object($result)) {
-            if ($unique_id_list == false) {
+            if ($unique_id_list === false) {
                 $arr[$row->$idField] = $row;
             } else {
                 array_push($arr, $row->$idField);
@@ -178,9 +179,9 @@ class NestedTree
      *                                  the results.
      * @return array The children of the passed node
      */
-    public function getChildren($id = 0, $includeSelf = false)
+    public function getChildren($folder_id = 0, $includeSelf = false)
     {
-        return $this->getDescendants($id, $includeSelf, true);
+        return $this->getDescendants($folder_id, $includeSelf, true);
     }
 
     /**
@@ -188,15 +189,15 @@ class NestedTree
      * If a top level node is passed, an array containing on that node is included (if
      * 'includeSelf' is set to true, otherwise an empty array)
      *
-     * @param int  $id          The ID of the node to fetch child data for.
+     * @param int  $folder_id          The ID of the node to fetch child data for.
      * @param bool $includeSelf Whether or not to include the passed node in the
      *                                  the results.
      * @return array An array of each node to passed node
      */
-    public function getPath($id = 0, $includeSelf = false)
+    public function getPath($folder_id = 0, $includeSelf = false)
     {
         global $link;
-        $node = $this->getNode($id);
+        $node = $this->getNode($folder_id);
         if (is_null($node)) {
             return array();
         }
@@ -254,7 +255,7 @@ class NestedTree
             and nright < %d',
             $this->table,
             $this->fields['id'],
-            $descendant_id,
+            mysqli_real_escape_string($link, $descendant_id),
             $node->nleft,
             $node->nright
         );
@@ -283,9 +284,9 @@ class NestedTree
             'select count(*) as is_child from %s where %s = %d and %s = %d',
             $this->table,
             $this->fields['id'],
-            $child_id,
+            mysqli_real_escape_string($link, $child_id),
             $this->fields['parent'],
-            $parent_id
+            mysqli_real_escape_string($link, $parent_id)
         );
 
         $result = mysqli_query($link, $query);
@@ -300,20 +301,20 @@ class NestedTree
     /**
      * Find the number of descendants a node has
      *
-     * @param  int $id The ID of the node to search for. Pass 0 to count all nodes in the tree.
+     * @param  int $folder_id The ID of the node to search for. Pass 0 to count all nodes in the tree.
      * @return int The number of descendants the node has, or -1 if the node isn't found.
      */
-    public function numDescendants($id)
+    public function numDescendants($folder_id)
     {
         global $link;
-        if ($id == 0) {
+        if ($folder_id == 0) {
             $query = sprintf('select count(*) as num_descendants from %s', $this->table);
             $result = mysqli_query($link, $query);
             if ($row = mysqli_fetch_object($result)) {
                 return (int) $row->num_descendants;
             }
         } else {
-            $node = $this->getNode($id);
+            $node = $this->getNode($folder_id);
             if (!is_null($node)) {
                 return ($node->nright - $node->nleft - 1) / 2;
             }
@@ -325,17 +326,17 @@ class NestedTree
     /**
      * Find the number of children a node has
      *
-     * @param  int $id The ID of the node to search for. Pass 0 to count the first level items
+     * @param  int $folder_id The ID of the node to search for. Pass 0 to count the first level items
      * @return int The number of descendants the node has, or -1 if the node isn't found.
      */
-    public function numChildren($id)
+    public function numChildren($folder_id)
     {
         global $link;
         $query = sprintf(
             'select count(*) as num_children from %s where %s = %d',
             $this->table,
             $this->fields['parent'],
-            $id
+            mysqli_real_escape_string($link, $folder_id)
         );
         $result = mysqli_query($link, $query);
         if ($row = mysqli_fetch_object($result)) {
@@ -356,12 +357,12 @@ class NestedTree
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
 
-		$query = sprintf(
-			'select %s from %s order by %s',
-			join(',', $this->getFields()),
-			$this->table,
-			$this->fields['sort']
-		);
+        $query = sprintf(
+            'select %s from %s order by %s',
+            join(',', $this->getFields()),
+            $this->table,
+            $this->fields['sort']
+        );
 
         $result = mysqli_query($link, $query);
 
@@ -379,9 +380,9 @@ class NestedTree
         }
 
         // now process the array and build the child data
-        foreach ($arr as $id => $row) {
+        foreach ($arr as $folder_id => $row) {
             if (isset($row->$parentField)) {
-                $arr[$row->$parentField]->children[$id] = $id;
+                $arr[$row->$parentField]->children[$folder_id] = $folder_id;
             }
         }
 
@@ -396,22 +397,20 @@ class NestedTree
         global $link;
         $data = $this->getTreeWithChildren();
 
-        $n = 0; // need a variable to hold the running n tally
-        $level = 0; // need a variable to hold the running level tally
+        $n_tally = 0; // need a variable to hold the running n tally
 
         // invoke the recursive function. Start it processing
         // on the fake "root node" generated in getTreeWithChildren().
         // because this node doesn't really exist in the database, we
         // give it an initial nleft value of 0 and an nlevel of 0.
-        $this->generateTreeData($data, 0, 0, $n);
+        $this->generateTreeData($data, 0, 0, $n_tally);
 
         // at this point the the root node will have nleft of 0, nlevel of 0
         // and nright of (tree size * 2 + 1)
 
-        foreach ($data as $id => $row) {
-
+        foreach ($data as $folder_id => $row) {
             // skip the root node
-            if ($id == 0) {
+            if ($folder_id == 0) {
                 continue;
             }
 
@@ -422,7 +421,7 @@ class NestedTree
                 $row->nleft,
                 $row->nright,
                 $this->fields['id'],
-                $id
+                $folder_id
             );
             mysqli_query($link, $query);
         }
@@ -438,23 +437,24 @@ class NestedTree
      * in subrequests are held over to when control is returned so the nright
      * can be assigned.
      *
-     * @param   array   &$arr   A reference to the data array, since we need to
-     *                          be able to update the data in it
-     * @param int $id    The ID of the current node to process
-     * @param int $level The nlevel to assign to the current node
-     * @param   int     &$n     A reference to the running tally for the n-value
+     * @param   array   &$arr       A reference to the data array, since we need to
+     *                              be able to update the data in it
+     * @param int     $folder_id    The ID of the current node to process
+     * @param int     $fld_level    The nlevel to assign to the current node
+     * @param int     $n_tally      A reference to the running tally for the n-value
+     * @param integer $n
      */
-    public function generateTreeData(&$arr, $id, $level, &$n)
+    public function generateTreeData(&$arr, $folder_id, $fld_level, &$n_tally)
     {
-        $arr[$id]->nlevel = $level;
-        $arr[$id]->nleft = $n++;
+        $arr[$folder_id]->nlevel = $fld_level;
+        $arr[$folder_id]->nleft = $n_tally++;
 
         // loop over the node's children and process their data
         // before assigning the nright value
-        foreach ($arr[$id]->children as $child_id) {
-            $this->generateTreeData($arr, $child_id, $level + 1, $n);
+        foreach ($arr[$folder_id]->children as $child_id) {
+            $this->generateTreeData($arr, $child_id, $fld_level + 1, $n_tally);
         }
-        $arr[$id]->nright = $n++;
+        $arr[$folder_id]->nright = $n_tally++;
     }
 
     /**
@@ -462,13 +462,13 @@ class NestedTree
      * parent, siblings and children. If the node isn't valid, fetch the first
      * level of nodes from the tree.
      *
-     * @param  int   $id The ID of the node to fetch child data for.
+     * @param  int   $folder_id The ID of the node to fetch child data for.
      * @return array An array of each node in the family
      */
-    public function getImmediateFamily($id)
+    public function getImmediateFamily($folder_id)
     {
         global $link;
-        $node = $this->getNode($id);
+        $node = $this->getNode($folder_id);
         $idField = $this->fields['id'];
         $parentField = $this->fields['parent'];
 
@@ -505,5 +505,4 @@ class NestedTree
 
         return $arr;
     }
-
 }

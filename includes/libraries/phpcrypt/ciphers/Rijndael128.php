@@ -38,61 +38,61 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Cipher_Rijndael_128 extends Cipher_Rijndael
 {
-	/** @type integer BITS_BLOCK The size of the block, in bits */
-	const BYTES_BLOCK = 16;
+    /** @type integer BITS_BLOCK The size of the block, in bits */
+    const BYTES_BLOCK = 16;
 
-	//const BITS_KEY = 0;
-
-
-	/**
-	 * Constructor
-	 * Sets the key used for encryption. Also sets the requied block size
-	 * This should only be used when calling this class directly, for classes
-	 * that extend this class, they should call __construct1()
-	 *
-	 * @param string $key string containing the user supplied encryption key
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// Set up the key
-		parent::__construct(PHP_Crypt::CIPHER_RIJNDAEL_128, $key);
-
-		// required block size in bits
-		$this->blockSize(self::BYTES_BLOCK);
-
-		// expand the key
-		$this->expandKey();
-	}
+    //const BITS_KEY = 0;
 
 
-	/**
-	 * Constructor, used only by classes that extend this class
-	 *
-	 * @param string $cipher_name The pre-defined cipher name of the child class
-	 * @param string $key The key used for encryption/decryption
-	 * @param integer $req_key_len The required key length, in bits
-	 * @return void
-	 */
-	protected function __construct1($cipher_name, $key, $req_key_len)
-	{
-		parent::__construct($cipher_name, $key, $req_key_len);
+    /**
+     * Constructor
+     * Sets the key used for encryption. Also sets the requied block size
+     * This should only be used when calling this class directly, for classes
+     * that extend this class, they should call __construct1()
+     *
+     * @param string $key string containing the user supplied encryption key
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // Set up the key
+        parent::__construct(PHP_Crypt::CIPHER_RIJNDAEL_128, $key);
 
-		// required block size in bits
-		$this->blockSize(self::BYTES_BLOCK);
+        // required block size in bits
+        $this->blockSize(self::BYTES_BLOCK);
 
-		// expand the key
-		$this->expandKey();
-	}
+        // expand the key
+        $this->expandKey();
+    }
 
 
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+    /**
+     * Constructor, used only by classes that extend this class
+     *
+     * @param string $cipher_name The pre-defined cipher name of the child class
+     * @param string $key The key used for encryption/decryption
+     * @param integer $req_key_len The required key length, in bits
+     * @return void
+     */
+    protected function __construct1($cipher_name, $key, $req_key_len)
+    {
+        parent::__construct($cipher_name, $key, $req_key_len);
+
+        // required block size in bits
+        $this->blockSize(self::BYTES_BLOCK);
+
+        // expand the key
+        $this->expandKey();
+    }
+
+
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 }

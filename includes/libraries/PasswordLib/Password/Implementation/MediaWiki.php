@@ -54,7 +54,7 @@ class MediaWiki extends Crypt {
                 'The hash was not created here, we cannot verify it'
             );
         }
-        preg_match('/^' . $prefix . '(.+)\./', $hash, $match);
+        preg_match('/^'.$prefix.'(.+)\./', $hash, $match);
         $salt = null;
         if (isset($match[1])) {
             $salt = $match[1];

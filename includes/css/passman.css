@@ -22,10 +22,10 @@ background-image: url(../images/canevas/menu_top_bckg.png);
 }
 
 #logo{
-    float:left;
-    margin-right: 5px;
-    margin-top: -5px;
-	margin-left: -5px;
+float:left;
+margin-right: 5px;
+margin-top: -5px;
+margin-left: -5px;
 }
 
 #menu_top{
@@ -45,17 +45,17 @@ color: #F0F0F0;
 }
 
 #div_right_menu{
-	position:absolute;
-	margin:54px -32px 0 1000px;
-	background-image: url(../images/canevas/menu_top_bckg.png);
-	padding:5px;
+  position:absolute;
+  margin:54px -32px 0 1000px;
+  background-image: url(../images/canevas/menu_top_bckg.png);
+  padding:5px;
 }
 
 #div_last_items{
-    background-color: #FFF0A4;
-    padding: 5px;
-    margin-top: 5px;
-    font-size: 12px;
+  background-color: #FFF0A4;
+  padding: 5px;
+  margin-top: 5px;
+  font-size: 12px;
 }
 
 #main{
@@ -135,6 +135,18 @@ width:95%;
 padding: 4px;
 }
 
+.input_text_60 {
+margin-bottom:10px;
+width:60%;
+padding: 4px;
+}
+
+.input_text_80 {
+margin-bottom:10px;
+width:80%;
+padding: 4px;
+}
+
 .label_cpm{
 display:block;
 }
@@ -153,39 +165,14 @@ float:left;
 
 .td_title{
 font-weight:bold;
-font-family: serif;
-min-width: 150px;
+min-width: 120px;
 }
 
 ul{
 list-style-type:none;
 }
-/*
-li{
-cursor: pointer;
-}*/
-
-.error{
-    margin-top: 50px;
-    margin-bottom: 50px;
-    padding: 10px;
-    font-weight: bold;
-    background: url(../images/error.png) no-repeat 0 0;
-}
 
 .button_menu { outline: 0; margin:0; padding: 1px; text-decoration:none; cursor:pointer; position: relative; text-align: center; }
-
-.dropdown dd, .dropdown dt, .dropdown ul { margin:0px; padding:0px; }
-.dropdown dd { position:relative; z-index:1000;}
-.dropdown a, .dropdown a:visited { text-decoration:none; outline:none;}
-.dropdown dt {background: url(../images/arrow.png) no-repeat scroll right center; display:block; padding-right:20px; cursor:pointer;}
-.dropdown dd ul { background:#e4dfcb none repeat scroll 0 0; border:1px solid #d4ca9a; color:#C5C0B0; display:none;
-                  left:0px; padding:5px 0px; position:absolute; top:2px; width:auto; min-width:45px; list-style:none;}
-.dropdown span.value { display:none;}
-.dropdown dd ul li a { padding:5px; display:block;}
-.dropdown dd ul li a:hover { background-color:#d0c9af;}
-
-.dropdown img.flag { border:none; vertical-align:middle; margin-left:10px; }
 
 .title {
   font: bold 160%/100% "Lucida Grande";
@@ -194,46 +181,51 @@ cursor: pointer;
   padding: 10px;
 }
 
+.normal {
+  font: normal;
+  color: #464646;
+}
+
 .readme{
-    font-family: sans-serif;
-    font-size: 9px;
-    line-height:15px;
-    margin-top: 20px;
-    height: 150px;
-    width:600px;
-    float:left;
+  font-family: sans-serif;
+  font-size: 9px;
+  line-height:15px;
+  margin-top: 20px;
+  height: 150px;
+  width:600px;
+  float:left;
 }
 
 .last_seen_item{
-	cursor:pointer;
-    font-family: sans-serif;
-    font-size: 11px;
-	margin-left: 8px;
+  cursor:pointer;
+  font-family: sans-serif;
+  font-size: 11px;
+  margin-left: 8px;
 }
 
 .last_seen_item:hover{
-	color:red;
+  color:red;
 }
 
 .pointer{
-	cursor:pointer;
+  cursor:pointer;
 }
 
 .setting_flag{
-	margin-left:10px;
+  margin-left:10px;
 }
 
 
 /*SIMPLEPASSMETER*/
 
 .simplePassMeter {
-	border: 1px solid #aaa;
-	background-color: #f3f3f3;
-	color: #666;
-	font-size: 0.8em;
-	padding: 1px 5px 0 5px;
-	margin: 0;
-	width: 19em;
+  border: 1px solid #aaa;
+  background-color: #f3f3f3;
+  color: #666;
+  font-size: 0.8em;
+  padding: 1px 5px 0 5px;
+  margin: 0;
+  width: 19em;
 }
 
 .meterFail { border: 1px solid #daa; background-color: #fdd; }
@@ -250,11 +242,11 @@ cursor: pointer;
 .simplePassMeter p { margin: 0; }
 .simplePassMeterIcon { height: 16px; width: 16px; float: left; }
 .meterFail .simplePassMeterIcon,
-	.meterWarn .simplePassMeterIcon,
-	.meterGood .simplePassMeterIcon,
+.meterWarn .simplePassMeterIcon,
+.meterGood .simplePassMeterIcon,
 .meterExcel .simplePassMeterIcon {
-	background-image: url('../images/simplePassMeterSprite.png');
-	background-repeat: no-repeat;
+  background-image: url('../images/simplePassMeterSprite.png');
+  background-repeat: no-repeat;
 }
 .meterExcel .simplePassMeterIcon { background-position: 0 0; }
 .meterFail .simplePassMeterIcon { background-position: 0 -17px; }
@@ -264,82 +256,157 @@ cursor: pointer;
 .simplePassMeterText { margin-left: 2px; }
 
 #div_ga_url {
-    text-align:center;
-    margin:0 0 10px 0;
-    font-size:9pt;
-    display:none;
-    padding:5px;
+  text-align:center;
+  margin:0 0 10px 0;
+  font-size:9pt;
+  display:none;
+  padding:5px;
 }
 
 input.watermark {
-	color: #999;
+  color: #999;
 }
 
 /* Allow Font Awesome Icons in lieu of jQuery UI and only apply when using a FA icon */
 .ui-icon[class*=" icon-"] {
-    /* Remove the jQuery UI Icon */
-    background: none repeat scroll 0 0 transparent;
-    /* Remove the jQuery UI Text Indent */
-    text-indent: 0;
-    /* Bump it up - jQuery UI is -8px */
-    margin-top: -0.5em;
+  /* Remove the jQuery UI Icon */
+  background: none repeat scroll 0 0 transparent;
+  /* Remove the jQuery UI Text Indent */
+  text-indent: 0;
+  /* Bump it up - jQuery UI is -8px */
+  margin-top: -0.5em;
 }
 
 /* Allow use of icon-large to be properly aligned */
 .ui-icon.icon-large {
-    margin-top: -0.75em;
+  margin-top: -0.75em;
 }
 
 .ui-button-icon-only .ui-icon[class*=" icon-"] {
-    /* Bump it - jQuery UI is -8px */
-    margin-left: -7px;
+  /* Bump it - jQuery UI is -8px */
+  margin-left: -7px;
 }
 
 .menu_150 {
-    width:150px;
+  width:150px;
 }
 
 .menu_200 {
-    width:200px;
+  width:200px;
 }
 
 .menu_250 {
-    width:250px;
+  width:250px;
 }
 
-.no-icon { display:none !important;}
+.no-icon {
+  display:none !important;
+}
 
-.ui-menu li {font-size:10pt !important;}
+.ui-menu li {
+  font-size:10pt !important;
+}
 
 
 .mi-green {
-	color: #388952;
+  color: #388952;
 }
 .mi-yellow {
-	color: #FC9300;
+  color: #FC9300;
 }
 .mi-red {
-	color: #CC0000;
+  color: #CC0000;
 }
 .mi-black {
-	color: #222222;
+  color: #222222;
 }
 .mi-grey-1 {
-	color: #9B9B9B;
+  color: #9B9B9B;
 }
 
 .form_text {
-    padding:2px;
-    margin-bottom:5px;
+  padding:2px;
+  margin-bottom:5px;
 }
 
 .ui-button.redButton {
-    background-color: red;
+  background-color: red;
 }
 .ui-button.greenButton {
-    background-color: green;
+  background-color: green;
 }
 
 div.dataTables_processing { z-index: 1; }
 
-.ui-color {background:#F59829 !important}​
+.ui-color {background:#F59829 !important;}
+
+.round-grey {
+  padding:2px 6px 2px 6px;
+  font-size:9pt;
+  border: 1px #f3f3f3;
+}
+
+#main_menu .btn-default {
+  width: 32px; height: 26px;
+  font-size: 10px;
+  padding: 2px 0 2px 0;
+  margin: 0px;
+  top: -5px;
+  background: rgba(240,240,240,1);
+  background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(240,240,240,1)), color-stop(60%, rgba(246,246,246,1)), color-stop(100%, rgba(199,199,199,1)));
+  background: -webkit-linear-gradient(top, rgba(240,240,240,1) 0%, rgba(246,246,246,1) 60%, rgba(199,199,199,1) 100%);
+  background: linear-gradient(to bottom, rgba(240,240,240,1) 0%, rgba(236,236,236,1) 60%, rgba(199,199,199,1) 100%);
+}
+
+#main_menu > div > ul > li > i {
+  font-size: 15px ! important;
+}
+
+#main_menu > div > ul  {
+  border-radius: 4px;
+  height: 26px;
+}
+
+.ui-button-text-only .ui-button-text {
+  padding: 4px;
+}
+.ui-menu-item > i {
+  font-size: 1.0em;
+  line-height: .70em;
+  vertical-align: -20%;
+  padding: 2px 0 0 0 ;
+}
+.title .ui-button-text > i {
+  width: 1.0em;
+}
+
+.quick_menu {
+  border-radius: 4px;
+}
+.ui-menu  .ui-menu-item  {
+  padding: 1px 3px 4px 3px ;
+}
+
+.fa-bars:before {
+  display:block;
+  content:url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAANCAMAAABBwMRzAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRFAAAAAAAApWe5zwAAAAJ0Uk5T/wDltzBKAAAAGUlEQVR42mJgZEAGjAwE+agAkz+w5gEEGAAggABP5U/AbAAAAABJRU5ErkJggg==');
+  margin: 1px 1px 0px 1px;
+  width: 15px;
+  height: 15px;
+  }
+
+.hidden {
+  display: none;
+}
+
+.no-border {
+  border: none;
+  border-collapse: collapse;
+}
+
+.closeButton {
+  float:right;
+  display:inline-block;
+  padding:2px 2px;
+  cursor: pointer;
+}

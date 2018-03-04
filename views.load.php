@@ -2,9 +2,9 @@
 /**
  * @file          views.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -17,12 +17,12 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 
 ?>
-
 <script type="text/javascript">
+//<![CDATA[
 function GenererLog()
 {
     if ($("#log_jours").val() == "") return false;
-    
+
     LoadingPage();
     $.post(
         "sources/views.queries.php",
@@ -167,7 +167,7 @@ function generate_renewal_pdf()
 $(function() {
     $("#tabs").tabs({
         beforeLoad: function( event, ui ) {
-            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading'];?>...</div>')
+            ui.panel.html('<div id="loader_tab"><i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['loading']; ?>...</div>')
         },
         load: function( event, ui ) {
             $("#loader_tab").remove();
@@ -175,7 +175,7 @@ $(function() {
     });
 
     ListerElemDel();
-    
+
     $("#log_jours").datepicker({
         regional: 'fr',
         dateFormat : 'dd/mm/yy'
@@ -185,44 +185,7 @@ $(function() {
     $("#radio_logs").click(function(e) {
         $("#div_log_purge").show();
     });
-    $("#butPurge").button().click(function(e) {
-        $.post(
-            "sources/views.queries.php",
-            {
-                type       : "purgeLogs",
-                purgeTo    : $("#purgeTo").val(),
-                purgeFrom  : $("#purgeFrom").val(),
-                logType    : $("#type_log_displayed").val()
-            },
-            function(data) {
-                if (data[0].status == "ok") {
-                    $("#div_dialog_message_text").html("<?php echo $LANG['purge_done'];?> "+data[0].nb);
-                    $("#div_dialog_message").dialog("open");
-                }
-                $("#purgeTo, #purgeFrom").val("");
-            },
-            "json"
-       );
-    });
 
-    $( "#purgeFrom" ).datepicker({
-        defaultDate: "today",
-        changeMonth: true,
-        changeYear: true,
-        numberOfMonths: 1,
-        onClose: function( selectedDate ) {
-            $( "#to" ).datepicker( "option", "minDate", selectedDate );
-        }
-    });
-    $( "#purgeTo" ).datepicker({
-        defaultDate: "+1w",
-        changeMonth: true,
-        changeYear: true,
-        numberOfMonths: 1,
-        onClose: function( selectedDate ) {
-            $( "#from" ).datepicker( "option", "maxDate", selectedDate );
-        }
-    });
 
     $("#tab2_dialog").dialog({
         bgiframe: true,
@@ -230,7 +193,7 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 150,
-        title: "<?php echo $LANG['please_confirm'];?>",
+        title: "<?php echo $LANG['please_confirm']; ?>",
         open : function() {
             // check if one is ticked
             var list_i = "";
@@ -250,13 +213,13 @@ $(function() {
 
             // confirm?
             if ($("#tab2_action").val() == "restoration") {
-                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration'];?>");
+                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_restoration']; ?>");
             } else if ($("#tab2_action").val() == "deletion") {
-                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion'];?>");
+                $("#tab2_dialog_html").html("<?php echo $LANG['views_confirm_items_deletion']; ?>");
             }
         },
         buttons: {
-            "<?php echo $LANG['confirm'];?>": function() {
+            "<?php echo $LANG['confirm']; ?>": function() {
                 LoadingPage();
                 var list_i = "";
                 $(".cb_deleted_item:checked").each(function() {
@@ -299,11 +262,11 @@ $(function() {
                     );
                 }
             },
-            "<?php echo $LANG['cancel_button'];?>": function() {
+            "<?php echo $LANG['cancel_button']; ?>": function() {
                 $(this).dialog("close");
             }
         }
     });
 });
-
+//]]>
 </script>

@@ -3,9 +3,9 @@
  *
  * @file          index.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,44 +13,52 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('./sources/sessions.php');
+require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+if ((!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
     !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
     !isset($_SESSION['key']) || empty($_SESSION['key'])) &&
-    $_GET['key'] != $_SESSION['key'])
-{
+    $_GET['key'] != $_SESSION['key']
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -82,7 +90,7 @@ foreach ($folders as $f) {
             }
         }
 
-        if ($displayThisNode == true) {
+        if ($displayThisNode === true) {
             if ($f->title == $_SESSION['user_id'] && $f->nlevel == 1) {
                 $f->title = $_SESSION['login'];
             }
@@ -100,7 +108,7 @@ echo '
     <input type="password" id="offline_password" name="offline_password" />
     <div id="offline_pw_strength" style="margin:10px 0 0 130px;"></div>
     <input type="hidden" id="offline_pw_strength_value" />
-    <input type="hidden" id="min_offline_pw_strength_value" value="'.$_SESSION['settings']['offline_key_level'].'" />
+    <input type="hidden" id="min_offline_pw_strength_value" value="'.$SETTINGS['offline_key_level'].'" />
 </div>
 
 <div style="text-align:center;margin-top:8px; display:none;" id="offline_information"></div>
@@ -116,35 +124,35 @@ echo '
         $("#offline_password").simplePassMeter({
             "requirements": {},
             "container": "#offline_pw_strength",
-            "defaultText" : "<?php echo $LANG['index_pw_level_txt'];?>",
+            "defaultText" : "<?php echo $LANG['index_pw_level_txt']; ?>",
             "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "<?php echo $LANG['complex_level0'];?>"
+                    "text": "<?php echo $LANG['complex_level0']; ?>"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level1'];?>"
+                    "text": "<?php echo $LANG['complex_level1']; ?>"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "<?php echo $LANG['complex_level2'];?>"
+                    "text": "<?php echo $LANG['complex_level2']; ?>"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level3'];?>"
+                    "text": "<?php echo $LANG['complex_level3']; ?>"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "<?php echo $LANG['complex_level4'];?>"
+                    "text": "<?php echo $LANG['complex_level4']; ?>"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level5'];?>"
+                    "text": "<?php echo $LANG['complex_level5']; ?>"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "<?php echo $LANG['complex_level6'];?>"
+                    "text": "<?php echo $LANG['complex_level6']; ?>"
                 }
             ]
         });
@@ -162,7 +170,7 @@ echo '
      */
     function generateOfflineFile()
     {
-        $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>').attr("class","").show();
+        $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>').attr("class","").show();
 
         //Get list of selected folders
         var ids = "";
@@ -172,19 +180,19 @@ echo '
         });
 
         if (ids == "") {
-            $("#offline_information").show().html("<?php echo $LANG['error_no_selected_folder'];?>").attr("class","ui-state-error");
+            $("#offline_information").show().html("<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         if ($("#offline_password").val() == "") {
-            $("#offline_information").show().html("<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
+            $("#offline_information").show().html("<?php echo $LANG['pdf_password_warning']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
-        if ($("#offline_pw_strength_value").val() < $("#min_offline_pw_strength_value").val()) {
-            $("#offline_information").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought'];?>");
+        if (parseInt($("#offline_pw_strength_value").val()) < parseInt($("#min_offline_pw_strength_value").val())) {
+            $("#offline_information").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;
         }
@@ -216,7 +224,7 @@ echo '
     {
         // prpare list of ids to treat during this run
         if (idsList != "") {
-            $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
+            $("#offline_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
 
             tab = idsList.split(';');
             idTree = tab[0];
@@ -227,9 +235,9 @@ echo '
             $.post(
                 "sources/export.queries.php",
                 {
-                    type 	: "export_to_html_format_loop",
-                    idsList	: idsList,
-                    idTree 	: idTree,
+                    type    : "export_to_html_format_loop",
+                    idsList : idsList,
+                    idTree  : idTree,
                     file    : file,
                     cpt     : cpt,
                     number  : number,
@@ -253,9 +261,10 @@ echo '
             $.post(
                 "sources/export.queries.php",
                 {
-                    type 	: "export_to_html_format_finalize",
+                    type    : "export_to_html_format_finalize",
                     file    : file,
-                    file_link : file_link
+                    file_link : file_link,
+                    pdf_password : pdf_password,
                 },
                 function(data) {
                     $("#offline_information").html('<i class="fa fa-download"></i>&nbsp;'+data[0].text);

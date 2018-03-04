@@ -3,9 +3,9 @@
  *
  * @file          items.export.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,41 +13,49 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('./sources/sessions.php');
+require_once('./sources/SecureHandler.php');
 session_start();
-if (
-    (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])) &&
-    $_GET['key'] != $_SESSION['key'])
-{
+if ((!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])) &&
+    $_GET['key'] != $_SESSION['key']
+) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-include $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
+include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, no-store, must-revalidate");
-header("Pragma: no-cache");
 
 // connect to the server
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
@@ -81,7 +89,7 @@ foreach ($folders as $f) {
             }
         }
 
-        if ($displayThisNode == true) {
+        if ($displayThisNode === true) {
             if ($f->title == $_SESSION['user_id'] && $f->nlevel == 1) {
                 $f->title = $_SESSION['login'];
             }
@@ -104,7 +112,7 @@ echo '
 
 <div style="margin-top:5px; display:none;" id="div_export_pdf_password">
     <label for="export_pdf_password" class="form_label">'.$LANG['file_protection_password'].':</label>
-    <input type="text" id="export_pdf_password" />
+    <input type="password" id="export_pdf_password" />
 </div>
 
 <div style="text-align:center;margin-top:10px; display:none;" id="export_information"></div>';
@@ -115,6 +123,7 @@ echo '
         //$(".radio_buttonset").buttonset();
 
         $(".export_radio_buttonset").click(function(){
+            $("#export_information").html('');
             if ($("input[name='export_format']:checked").val() == "pdf"){
                 $("#div_export_pdf_password").show();
             } else {
@@ -142,7 +151,7 @@ echo '
                 var nb2 = aIds.length;
                 aIds = aIds.toString();
                 $("#export_progress").html(Math.floor(((nb-nb2) / nb) * 100)+"%");
-				console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
+                //console.log(remainingIds+" ; "+currentID+" ; "+aIds+" ; "+nb+" ; "+nb2);
                 if (currentID != "") {
                     pollExport(export_format, aIds, currentID, nb);
                 } else {
@@ -165,7 +174,7 @@ echo '
 
     function exportItemsToFile()
     {
-        $("#export_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait'];?>&nbsp;...&nbsp;<span id="export_progress">0%</span>').attr("class","").show();
+        $("#export_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>&nbsp;...&nbsp;<span id="export_progress">0%</span>').attr("class","").show();
 
         //Get list of selected folders
         var ids = "";
@@ -175,20 +184,20 @@ echo '
         });
 
         if (ids == "") {
-            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder'];?>").attr("class","ui-state-error");
+            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#export_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         if ($("input[name='export_format']:checked").length == 0) {
-            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_export_format_not_selected'];?>").attr("class","ui-state-error");
+            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_export_format_not_selected']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#export_information").effect( "fade", "slow" );}, 1000);
             return;
         }
 
         // Get PDF encryption password and make sure it is set
         if (($("#export_pdf_password").val() == "") && ($("input[name='export_format']:checked").val() == "pdf")) {
-            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['pdf_password_warning'];?>").attr("class","ui-state-error");
+            $("#export_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['pdf_password_warning']; ?>").attr("class","ui-state-error");
             setTimeout(function(){$("#export_information").effect( "fade", "slow" );}, 1000);
             return;
         }

@@ -76,8 +76,8 @@ class Joomla extends \PasswordLib\Password\AbstractPassword {
         $chars    = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
             . '0123456789';
         $salt     = $this->generator->generateString(32, $chars);
-        $hash     = md5($password . $salt);
-        return $hash . ':' . $salt;
+        $hash     = md5($password.$salt);
+        return $hash.':'.$salt;
     }
 
     /**
@@ -96,7 +96,7 @@ class Joomla extends \PasswordLib\Password\AbstractPassword {
             );
         }
         list ($hash, $salt) = explode(':', $hash, 2);
-        $test               = md5($password . $salt);
+        $test               = md5($password.$salt);
         return $this->compareStrings($test, $hash);
     }
 

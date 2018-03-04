@@ -2,9 +2,9 @@
 /**
  * @file          roles.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -17,29 +17,30 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 }
 ?>
 <script type="text/javascript">
+//<![CDATA[
 $(function() {
-	// manage delete
-	$("input[name=right_types_radio]").click(function(event) {
-		if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-			$("#div_delete_option").show();
-		} else {
-			$("#div_delete_option").hide();
-		}
-	});
-	
-	
-	$("#add_new_role").dialog({
+    // manage delete
+    $("input[name=right_types_radio]").click(function(event) {
+        if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
+            $("#div_delete_option").show();
+        } else {
+            $("#div_delete_option").hide();
+        }
+    });
+
+
+    $("#add_new_role").dialog({
         bgiframe: true,
         modal: true,
         autoOpen: false,
         width: 400,
         height: 280,
-        title: "<?php echo $LANG["give_function_title"];?>",
+        title: "<?php echo $LANG["give_function_title"]; ?>",
         buttons: {
-            "<?php echo $LANG["save_button"];?>": function() {
-            	$("#new_role_error").hide().html("");
-            	if ($("#new_role_complexity").val() != "") {
-					$("#add_role_loader").show();
+            "<?php echo $LANG["save_button"]; ?>": function() {
+                $("#new_role_error").hide().html("");
+                if ($("#new_role_complexity").val() != "") {
+                    $("#add_role_loader").show();
                     $.post(
                         "sources/roles.queries.php",
                         {
@@ -53,17 +54,17 @@ $(function() {
                                 $("#add_new_role").dialog("close");
                                 refresh_roles_matrix("reload");
                             } else {
-                            	$("#new_role_error").show().html(data[0].message);
+                                $("#new_role_error").show().html(data[0].message);
                             }
-							$("#add_role_loader").hide();
+                            $("#add_role_loader").hide();
                         },
                         "json"
                    );
-            	} else {
-            		$("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']);?>");
-            	}
+                } else {
+                    $("#new_role_error").show().html("<?php echo addslashes($LANG['error_role_complex_not_set']); ?>");
+                }
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -75,10 +76,10 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 190,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
-				$("#delete_role_loader").show();
+            "<?php echo $LANG["ok"]; ?>": function() {
+                $("#delete_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -90,12 +91,12 @@ $(function() {
                             $("#delete_role").dialog("close");
                             refresh_roles_matrix("reload");
                         }
-						$("#delete_role_loader").hide();
+                        $("#delete_role_loader").hide();
                     },
                     "json"
                );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $(this).dialog("close");
             }
         }
@@ -107,11 +108,11 @@ $(function() {
         autoOpen: false,
         width: 400,
         height: 300,
-        title: "<?php echo $LANG["admin_action"];?>",
+        title: "<?php echo $LANG["admin_action"]; ?>",
         buttons: {
-            "<?php echo $LANG["ok"];?>": function() {
-            	$("#edit_role_error").hide().html("");
-				$("#edit_role_loader").show();
+            "<?php echo $LANG["ok"]; ?>": function() {
+                $("#edit_role_error").hide().html("");
+                $("#edit_role_loader").show();
                 $.post(
                     "sources/roles.queries.php",
                     {
@@ -130,12 +131,12 @@ $(function() {
                             $("#div_loading").show();
                             refresh_roles_matrix("reload");
                         }
-						$("#edit_role_loader").hide();
+                        $("#edit_role_loader").hide();
                     },
                     "json"
                );
             },
-            "<?php echo $LANG["cancel_button"];?>": function() {
+            "<?php echo $LANG["cancel_button"]; ?>": function() {
                 $("#edit_role_error").html("").hide();
                 $(this).dialog("close");
             }
@@ -148,44 +149,54 @@ $(function() {
         autoOpen: false,
         width: 300,
         height: 270,
-        title: "<?php echo $LANG["change_right_access"];?>",
+        title: "<?php echo $LANG["change_right_access"]; ?>",
         buttons: {
-            "<?php echo $LANG["save_button"];?>": function() {
-            	$("#edit_role_error").hide().html("");
-				$("#role_rights_loader").show();
-				
-				// get write option
-				var accessoption = "";
-				if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
-					if ($("#right_nodelete").prop("checked") == true && $("#right_noedit").prop("checked") == true) {
-						accessoption = "nodelete_noedit";
-					} else if ($("#right_nodelete").prop("checked") == true) {
-						accessoption = "nodelete";
-					} else if ($("#right_noedit").prop("checked") == true) {
-						accessoption = "noedit";
-					}
-				}
-				
+            "<?php echo $LANG["save_button"]; ?>": function() {
+                $("#edit_role_error").hide().html("");
+                $("#role_rights_loader").show();
+
+                // get write option
+                var accessoption = "";
+                if ($("input[name=right_types_radio]:checked").attr("id").substring(6) == "write") {
+                    if ($("#right_nodelete").prop("checked") === true && $("#right_noedit").prop("checked") === true) {
+                        accessoption = "nodelete_noedit";
+                    } else if ($("#right_nodelete").prop("checked") === true) {
+                        accessoption = "nodelete";
+                    } else if ($("#right_noedit").prop("checked") === true) {
+                        accessoption = "noedit";
+                    }
+                }
+
+                // is several folders selected?
+                var multiselection = '',
+                    tmp;
+                $(".multi_folders:checkbox:checked").each(function(){
+                    tmp = $(this).attr('id').substring(9).split('_');
+                    multiselection += tmp[0] + "-" + tmp[1] + ",";   //folder_id-role_id
+                });
+                multiselection += $("#change_folder").val() + "-" + $('#change_role').val();
+
                 $.post(
                     "sources/roles.queries.php",
                     {
                         type    : "change_role_via_tm",
                         access  : $("input[name=right_types_radio]:checked").attr("id").substring(6),
-						accessoption : accessoption,
-                        folder  : $("#change_folder").val(),
-                        role    : $('#change_role').val(),
-                        line    : $("#change_line").val()
+                        accessoption : accessoption,
+                        //folder  : $("#change_folder").val(),
+                        //role    : $('#change_role').val(),
+                        line    : $("#change_line").val(),
+                        multiselection: multiselection
                     },
                     function(data) {
                         $("#div_loading").show();
                         refresh_roles_matrix("reload");
                         $("#type_of_rights").dialog("close");
-						$("#role_rights_loader").hide();
+                        $("#role_rights_loader").hide();
                     },
                     "json"
                );
             },
-            "<?php echo $LANG["close"];?>": function() {
+            "<?php echo $LANG["close"]; ?>": function() {
                 $(this).dialog("close");
             }
         },
@@ -193,8 +204,6 @@ $(function() {
             $("#accordion").accordion({ autoHeight: false, navigation: true, collapsible: true, active: false });
         }
     });
-    
-    
 
     refresh_roles_matrix();
 });
@@ -250,10 +259,11 @@ function allow_pw_change_for_role(id, value)
         },
         function(data) {
             if (value == 0)
-                $("#img_apcfr_"+id).attr("src","includes/images/ui-text-field-password-red.png");
+                $("#img_apcfr_"+id).attr("class","fa mi-red fa-2x fa-magic tip");
             else
-                $("#img_apcfr_"+id).attr("src","includes/images/ui-text-field-password-green.png");
+                $("#img_apcfr_"+id).attr("class","fa mi-green fa-2x fa-magic tip");
             $("#div_loading").hide();
+            refresh_roles_matrix("reload");
         }
    );
 }
@@ -265,10 +275,10 @@ function allow_pw_change_for_role(id, value)
  **/
 function refresh_roles_matrix(order)
 {
-	$("#div_loading").show();
+    $("#div_loading").show();
 
     //clean up
-    $("#roles_next, #roles_previous").hide();
+    $(".roles_next, .roles_previous").hide();
 
     //manage start query
     if (order == "next") {
@@ -287,19 +297,20 @@ function refresh_roles_matrix(order)
         "sources/roles.queries.php",
         {
             type    : "refresh_roles_matrix",
-            start    : start
+            start   : start,
+            filter  : $("#filter_roles").val()
         },
         function(data) {
             //decrypt data
             data = $.parseJSON(data);
             $("#matrice_droits").html("");
-            if (data.new_table != "") {
+            if (data.new_table !== "") {
                 $("#matrice_droits").html(data.new_table);
-                if (data.next < data.all) {
-                    $("#roles_next").show();
+                if (data.next <= data.all && data.next >= 8) {
+                    $(".roles_next").show();
                 }
-                if (data.next >= 9 && data.previous >= 0) {
-                    $("#roles_previous").show();
+                if (data.next >= 8 && start > 0) {
+                    $(".roles_previous").show();
                 }
                 //manage next & previous arrows
                 $('#next_role').val(data.next);
@@ -307,6 +318,19 @@ function refresh_roles_matrix(order)
             } else {
                 $("#matrice_droits").html(data.error);
             }
+
+            // Prepare autocomplete for filterbox
+            //Prepare autocomplete for filter
+            $("#filter_roles")
+                .autocomplete({
+                    source: data.list_of_roles,
+                    focus: function() {
+                        // prevent value inserted on focus
+                        return false;
+                    }
+                }
+            );
+
             $("#div_loading").hide();
         }
    );
@@ -317,31 +341,32 @@ function openRightsDialog(role, folder, line, right)
     if (right == "W") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete, #right_noedit").prop("checked", false);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "ND") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete").prop("checked", true);
         $("#right_noedit").prop("checked", false);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "NE") {
         $("#right_write").prop("checked", true);
         $("#right_nodelete").prop("checked", false);
         $("#right_noedit").prop("checked", true);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "NDNE") {
         $("#right_write").prop("checked", true);
         $("#right_noedit, #right_nodelete").prop("checked", true);
-		$("#div_delete_option").show();
+        $("#div_delete_option").show();
     } else if (right == "R") {
         $("#right_read").prop("checked", true);
-		$("#div_delete_option").hide();
+        $("#div_delete_option").hide();
     } else {
         $("#right_noaccess").prop("checked", true);
-		$("#div_delete_option").hide();
+        $("#div_delete_option").hide();
     }
     $("#change_role").val(role);
     $("#change_folder").val(folder);
     $("#change_line").val(line);
     $("#type_of_rights").dialog("open");
 }
+//]]>
 </script>

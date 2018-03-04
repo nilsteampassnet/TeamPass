@@ -36,95 +36,96 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Mode_CFB extends Mode
 {
-	/**
-	 * Constructor
-	 * Sets the cipher object that will be used for encryption
-	 *
-	 * @param object $cipher one of the phpCrypt encryption cipher objects
-	 * @return void
-	 */
-	public function __construct($cipher)
-	{
-		parent::__construct(PHP_Crypt::MODE_CFB, $cipher);
+    /**
+     * Constructor
+     * Sets the cipher object that will be used for encryption
+     *
+     * @param object $cipher one of the phpCrypt encryption cipher objects
+     * @return void
+     */
+    public function __construct($cipher)
+    {
+        parent::__construct(PHP_Crypt::MODE_CFB, $cipher);
 
-		// this works with only block Ciphers
-		if($cipher->type() != Cipher::BLOCK)
-			trigger_error("CFB mode requires a block cipher", E_USER_WARNING);
-	}
-
-
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        // this works with only block Ciphers
+        if ($cipher->type() != Cipher::BLOCK) {
+                    trigger_error("CFB mode requires a block cipher", E_USER_WARNING);
+        }
+    }
 
 
-	/**
-	 * Encrypts an the entire string $plain_text using the cipher passed
-	 *
-	 * @param string $text The string to be encrypted in CFB mode
-	 * @return boolean Returns true
-	 */
-	public function encrypt(&$text)
-	{
-		$max = strlen($text);
-		for($i = 0; $i < $max; ++$i)
-		{
-			// copy the register, and then encrypt it
-			$this->enc_register = $this->register;
-			$this->cipher->encrypt($this->enc_register);
-
-			// encrypt the byte
-			$text[$i] = $text[$i] ^ $this->enc_register[0];
-
-			// left shift the register and push the encrypted byte onto register
-			$this->register = substr($this->register, 1);
-			$this->register .= $text[$i];
-		}
-
-		return true;
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypts an the entire string $plain_text using the cipher passed
-	 *
-	 * @param string $text the string to be decrypted in CFB mode
-	 * @return boolean Returns true
-	 */
-	public function decrypt(&$text)
-	{
-		$max = strlen($text);
-		for($i = 0; $i < $max; ++$i)
-		{
-			$this->enc_register = $this->register;
-			$this->cipher->encrypt($this->enc_register);
+    /**
+     * Encrypts an the entire string $plain_text using the cipher passed
+     *
+     * @param string $text The string to be encrypted in CFB mode
+     * @return boolean Returns true
+     */
+    public function encrypt(&$text)
+    {
+        $max = strlen($text);
+        for ($i = 0; $i < $max; ++$i)
+        {
+            // copy the register, and then encrypt it
+            $this->enc_register = $this->register;
+            $this->cipher->encrypt($this->enc_register);
 
-			// left shift the register and push the encrypted byte onto register
-			$this->register = substr($this->register, 1);
-			$this->register .= $text[$i];
+            // encrypt the byte
+            $text[$i] = $text[$i] ^ $this->enc_register[0];
 
-			// decrypt the byte
-			$text[$i] = $text[$i] ^ $this->enc_register[0];
-		}
+            // left shift the register and push the encrypted byte onto register
+            $this->register = substr($this->register, 1);
+            $this->register .= $text[$i];
+        }
 
-		return true;
-	}
+        return true;
+    }
 
 
-	/**
-	 * This mode requires an IV
-	 *
-	 * @return boolean True
-	 */
-	public function requiresIV()
-	{
-		return true;
-	}
+    /**
+     * Decrypts an the entire string $plain_text using the cipher passed
+     *
+     * @param string $text the string to be decrypted in CFB mode
+     * @return boolean Returns true
+     */
+    public function decrypt(&$text)
+    {
+        $max = strlen($text);
+        for ($i = 0; $i < $max; ++$i)
+        {
+            $this->enc_register = $this->register;
+            $this->cipher->encrypt($this->enc_register);
+
+            // left shift the register and push the encrypted byte onto register
+            $this->register = substr($this->register, 1);
+            $this->register .= $text[$i];
+
+            // decrypt the byte
+            $text[$i] = $text[$i] ^ $this->enc_register[0];
+        }
+
+        return true;
+    }
+
+
+    /**
+     * This mode requires an IV
+     *
+     * @return boolean True
+     */
+    public function requiresIV()
+    {
+        return true;
+    }
 }
 ?>

@@ -2,9 +2,9 @@
 /**
  * @file          datatable.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,33 +12,54 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('../sessions.php');
+require_once('../SecureHandler.php');
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../../includes/config/tp.config.php')) {
+    require_once '../../includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 global $k, $settings;
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 header("Content-type: text/html; charset=utf-8");
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
+// Ensure Complexity levels are translated
+if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+    $SETTINGS_EXT['pwComplexity'] = array(
+        0=>array(0, $LANG['complex_level0']),
+        25=>array(25, $LANG['complex_level1']),
+        50=>array(50, $LANG['complex_level2']),
+        60=>array(60, $LANG['complex_level3']),
+        70=>array(70, $LANG['complex_level4']),
+        80=>array(80, $LANG['complex_level5']),
+        90=>array(90, $LANG['complex_level6'])
+    );
+}
 
 //Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $_SESSION['settings']['cpassman_dir'].'/includes/libraries');
+$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree($pre."nested_tree", 'id', 'parent_id', 'title');
 
@@ -63,14 +84,14 @@ foreach ($treeDesc as $t) {
         if ($t->nlevel == 1) {
             $data['title'] = $LANG['root'];
         }
-        
+
         // get rights on this folder
         $tab_droits = array();
         $rows = DB::query("SELECT fonction_id  FROM ".$pre."rights WHERE authorized=%i AND tree_id = %i", 1, $t->id);
         foreach ($rows as $record) {
             array_push($tab_droits, $record['fonction_id']);
         }
-        
+
         // identation to simulate depth
         $ident = "";
         for ($l = 1; $l < $t->nlevel; $l++) {
@@ -86,14 +107,13 @@ foreach ($treeDesc as $t) {
             "complex",
             $t->id
         );
-        
+
         // start the line
         $sOutput .= "[";
-        
+
         //col1
-        if (
-            ($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
-            || 
+        if (($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
+            ||
             $t->parent_id != 0
         ) {
             $sOutput .= '"<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"open_edit_folder_dialog(\''.$t->id.'\')\" title=\"'.$LANG['edit'].' ['.$t->id.']'.'\"></i>&nbsp;<input type=\"checkbox\" class=\"cb_selected_folder\" id=\"cb_selected-'.$t->id.'\" />"';
@@ -101,52 +121,64 @@ foreach ($treeDesc as $t) {
             $sOutput .= '""';
         }
         $sOutput .= ',';
-        
+
         //col5
         $sOutput .= '"'.$t->id.'"';
         $sOutput .= ',';
-        
+
         //col2
         $sOutput .= '"'.$ident.'<span id=\"title_'.$t->id.'\">'.addslashes(str_replace("'", "&lsquo;", $t->title)).'</span>"';
         $sOutput .= ',';
-        
-        //col3
-        $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.@$_SESSION['settings']['pwComplexity'][$node_data['valeur']][1].'</span>"';
+
+        // col3 - get number of items in folder
+        $data_items = DB::query(
+            "SELECT id
+            FROM ".$pre."items
+            WHERE id_tree = %i",
+            $t->id
+        );
+        $sOutput .= '"'.DB::count().'"';
         $sOutput .= ',';
-        
+
+        //col3
+        $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.$SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1].'</span>"';
+        $sOutput .= ',';
+
         //col4
         $sOutput .= '"<span id=\"parent_'.$t->id.'\">'.$t->parent_id.'</span>"';
         $sOutput .= ',';
-        
+
         //col5
         $sOutput .= '"'.$t->nlevel.'"';
         $sOutput .= ',';
-        
+
         //col6
         $sOutput .= '"<span id=\"renewal_'.$t->id.'\">'.$node_data['renewal_period'].'</span>"';
         $sOutput .= ',';
-        
+
         $data3 = DB::queryFirstRow(
-            "SELECT bloquer_creation,bloquer_modification 
+            "SELECT bloquer_creation,bloquer_modification
             FROM ".$pre."nested_tree
-            WHERE id = %i", 
+            WHERE id = %i",
             intval($t->id)
         );
-        
+
         //col7
-        if (isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1)
-            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-0\"></i>"';
-        else
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-1\"></i>"';
+        if (isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1) {
+                    $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-0\"></i>"';
+        } else {
+                    $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-1\"></i>"';
+        }
         $sOutput .= ',';
-        
+
         //col8
-        if (isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1)
-            $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
-        else
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
+        if (isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1) {
+                    $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
+        } else {
+                    $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
+        }
         $sOutput .= '<input type=\"hidden\" id=\"parent_id_'.$t->id.'\" value=\"'.$t->parent_id.'\" /><input type=\"hidden\"  id=\"renewal_id_'.$t->id.'\" value=\"'.$node_data['valeur'].'\" /><input type=\"hidden\"  id=\"block_creation_'.$t->id.'\" value=\"'.$node_data['bloquer_creation'].'\" /><input type=\"hidden\"  id=\"block_modif_'.$t->id.'\" value=\"'.$node_data['bloquer_modification'].'\" />"';
-        
+
         //Finish the line
         $sOutput .= '],';
 
@@ -156,11 +188,13 @@ foreach ($treeDesc as $t) {
 }
 
 if (count($treeDesc) > 0) {
-    if (strrchr($sOutput, "[") != '[') $sOutput = substr_replace($sOutput, "", -1);
+    if (strrchr($sOutput, "[") != '[') {
+        $sOutput = substr_replace($sOutput, "", -1);
+    }
     $sOutput .= ']}';
 } else {
     $sOutput .= '[] }';
 }
 
 // finalize output
-echo '{"recordsTotal": '.count($treeDesc).', "recordsFiltered": '.$x.', "data": '.$sOutput;
+echo '{"recordsTotal": '.$x.', "recordsFiltered": '.$x.', "data": '.$sOutput;

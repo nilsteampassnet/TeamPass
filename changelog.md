@@ -1,4 +1,427 @@
-Last changes
+2.1.27
+11/
+ Changed licensing to GNU GPL-3.0
+ New - User must provide a reason to access a restricted item
+ New - Add option to have local and remote accounts when LDAP is enabled
+ Improved security of password generator with php7
+ Improved cannot edit user without email
+ Improved read-only user limitation to copy folder and import action
+ Improved tree rebuild with API on folders change
+ Improved tables primary and index usage
+ Improved LDAP new user by default role
+ Introduced an API key by user
+ Fix for API keys truncated
+ Fix offline password dispay in case of html tags similar in password
+ Fix failed folder creation in case of password complexity not reached
+ #2127 Grant access with simple folder copy
+ #2118 Empty user at Keepass file is not empty after import
+ #2116 Insufficient password strength when creating Offline Mode
+ #2115 Fix script backup issue with encryption key
+ #2111 Add support for login through http header
+ #2109 restrict login to Group Ldap don't work
+ #2102 Changed field renewal_period size
+ #2095 Can't upload files on items - Plupload update
+ #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
+ #2093 role human resources doesn't access expected pages
+ #2090 On folder copy, an empty message box is shown
+ #2087 Custom fields displayed if empty
+ #2085 CSV import error if URL too long
+ #2082 API: new folder is allocated to same roles as its parent
+ #2081 LDAP bug, can't check connection
+ #2080 Email sent on password copy in the clipboard
+ #2078 Purge Logs not selection not working properly
+ #2077 API: Deleting non existing folder deletes all folders
+ #2075 Button "delete selected Items" doesn't work
+ #2074 Backup by script not working
+ #2073 Move selected Items button
+ #2071 Search not working for items with multiple "Restricted to:" roles selected
+ #2069 Copy a read-only folder to a read-only folder
+ #2066 Read Only Users can Drag and drop items to there personal folder
+ #2065 send GAUTH-code on login form doesn't warn user if no email is set
+ #2064 LDAP and DUO users with administrator role taken to items page then logged out
+ #2063 Setting "Hide forgot password link on Home page" not correctly displayed
+ #2059 Fix for Custom LDAP port and adLDAP
+ #2035 After first time login as user Personal Folder is not correctly shown (100000)
+ #2015 Double click to edit not working for items created by a different user
+
+10/
+ Copy password/login button are correctly hidden and shown
+ Cursor is hidden on password display to permit a better visualization
+ Fixed error while coping an item
+ Fixed last 10 items seen list not display on page load
+ Fixed display strings with quotes issue
+ Fixed page About in Administration page
+ Fixed issue when sending email on visualization
+ Fixed issue while CSV import in personal sub-folder
+ Fixed potential error on item creation without password
+ Fixed "show description" option was not taken into consideration
+ Fixed an issue in auto-generating csrfp.config file
+ Fixed a potential error while generating tp.config file
+ Fixed issue in Duo Security log
+ Fixed no item details shown on Find page
+ Fixed issue related to item edition on doubleclick
+ Fixed issue no items shown on tag search
+ Fixed issue special characters bad display in search results
+ Fixed issue in password clipboard copy with double-quote character
+ Added SMTPAutoTLS for sendMail
+ Improved offline file with full encryption
+ Improved session validity check
+ Improved items draggability sometime broken
+ Improved personal item edition by enabling the folder edition
+ Ensure session extension is always positive
+ Added user group allowed for LDAP Windows AD
+ Added option to remove the forgot password link on home page if LDAP enabled
+ Added option lowercase letters for password generator
+ #2058 Importing KeyPass items into private personal folders
+ #2056 Custom Fields - displayed in unassigned folders
+ #2055 restricted_to of cache table has 2 different values
+ #2054 Alter table statement is run only once
+ #2053 Custom Fields - folders unchecked at second call up
+ #2051 2FA Google Name Displayed field not saving to configuration
+ #2043 LDAP Authentication is not working
+ #2029 Fix on install step3
+ #2028 Fix on install step3
+ #2027, #2023 Fatal Error after installation and setting change
+ #2025 LDAP allowed user group doesn't work
+ #2016 Not all roles visible
+ #2013 Bad condition in upgrade script
+ #2010 Default Administrated by for user created via LDAP authentication
+ #2004 Administrator has no access to Items
+ #1997 Error on folder creation of no Parent is selected
+ #1996 Some settings resets to defaults
+ #1993 Policy for personal saltkey
+ #1990 Improving mysql indexes
+ #1989 Authentication problem
+ #1980 personal item is not deleted
+ #1974 Changing saltkey operation
+ #1970 ip-api.com use is not compatible with https
+ #1960 Access Denied for personal folder
+ #1840 add "download" attribute to export file
+
+ 9/
+ Fixed a possible XSS (credit to ADLab of Venustech)
+ Improved security related to User Management
+ 	> a manager could potentially act on users not related to him
+ Improved security related to Items Management
+ 	> a user could potentially act on Items he should not have access to
+ Securized script.backup.php by adding a security key
+ Fixed some other security failures (credit to ​security at Amossys)
+ Improved security regarding uploading files
+ Fixed issue while restoring DB from administration page
+ Fixed "PW copy to clipboard" log unconsistency in specific case
+ Improved / Fixed administration task for encrypting/decrypting files
+ Improved security regarding item history display
+ Improved the possibility to define the access level on Roles when creating new folder
+ Added filter in Roles
+ New: confirm deletion of attachment
+ #1965 Login credentials do not correspond (json_decode issue)
+ #1964 Make email field in new LDAP user insertion null safe
+ #1961 After fresh installation the index.php shows random string
+ #1956 Warning appears on Category and API pages in admin mode
+ #1947 Dependency & array update in install checks
+ #1945 Cannot delete items
+ #1944 File upload results in error
+ #1941 Visualisation problems
+
+ 8/
+ Delete install folders and files during installation process
+ Custom Field value can be masked
+ Database password is encrypted in settings.php file
+ PHPMailer library updated to 5.2.23
+ TwoFactorAuth library was updated
+ Configuration variables are not set in SESSION anymore. Now read from tp.config.php file.
+ Fix: issue on offline export
+ Fix: error on deleting a folder at root
+ #1939 Unable to change page (role management)
+ #1937 Error while using script.backup.php in standalone
+ #1935 Add folder results in Requested JSON parse failed
+ #1933 Trying to move folder results in error message
+ #1932 Keepass upload fails
+ #1927 Changing language is not possible for users
+ #1924 Moving items give error: Requested JSON parse failed
+ #1923 Red wheel keeps turning, blocks display of new items
+ #1919 Upgrade to release 2.1.27.8 converts encrypted database password back to clear-text
+ #1915 Cannot Edit or Delete items in the Personal folder
+ #1909 Roles Management - Problem with acess rights "Edit" "Delete"
+ #1903 SSH Password Change does not work
+ #1900 Forgot your password --> Page reload automatic
+ #1891 Install error - Uncaught Defuse\\Crypto\\Exception\\BadFormatException: Encoded data is shorter than expected
+ #1899 Active Directory authentication not working on fresh installed Cent OS 7
+ #1890 access rights in manage roles
+ #1888 Export to CVS --> empty file (0 kb)
+ #1886 JSON Error when importing with an apostrophe (‘)
+ #1885 Undefined index: SSL_SERVER_CERT
+ #1884 Cannot delete custom fields - hangs indefinitely after confirm with spinning gear
+ #1882 Can't see any entry on any folder, using any account
+ #1881 Doesn't auto-delete install/ folder after installation completed
+ #1880 Custom Fields, Not encrypted/decrypted when toggled in Custom-Field Settings Screen
+ #1872 New Admin User login not working -JSON Parse file failure
+ #1870 Logic issue in headers sending
+ #1866 CSV import with empty url leads to value 0
+ #1862 Import from Keepass.xml to Personalfolder no access to Item
+ #1857 API: Folders created at level 0 instead of correct level
+ #1856 Robustified tp.config.php creation in case of upgrade
+ #1851 Fix ldap suffix
+ #1850 Missing iconv in Docker
+ #1840 Added the "download" attribute
+ #1837 JSON error in Find page when user has no folders to browse
+ #1834 Typo in sources/main.functions.php
+ #1833 Opening a one time view page give a notice: A session had already been started...
+ #1830 Salt key field has already a character filled in.
+ #1829 Attachments is broken after upgrade from 2.1.27.0. Fix in progress
+ #1828 No error message when duplicate item names at personal keys
+ #1826 New dockerfile and docker-compose.yml
+ #1820 group vertical scroll bar not work correctly
+ #1819 Fix for QR sending from login page
+
+ 6-7/
+ Fix: upgrade process with encrypted attachments
+ Fix for #1806
+
+ 5/
+ New: Custom Fields are only visible if defined
+ Fix issue in tree if subfolder is visible while parent is not
+ Fix issues regarding DUOSecurity
+ Fix upgrade doesn't start in case that sk.php file has moved
+ Fix for Custom Fields not displayed as defined by `order` field
+ #1796 Can't add folder from API
+ #1787 email notifications are not sent if there are any admins with empty email address
+ #1776 Allow restricting items to users and roles - Wrong Item Owner
+ #1775 Can not decrypt a created crypted Backup - Improved encryption with Defuse
+ #1774 Announce this Item by email
+ #1769 Installation issue - no admin account is created
+ #1762 Share user rights works backwards
+ #1761 Reset of my Personal Saltkey
+ #1743 Enable anonymous LDAP queries
+ #1690 Unable to set/save personal salt key with LDAP user
+
+ 3-4/
+ New: Multiselection in Roles vs Folders matrix
+ New: LDAP configuration test mode (in progress)
+ Fix: Prevent moving a folder to one of its child folder
+ Fix: Global saltkey change
+ Fix: Copy folder does'nt copy included items
+ Fix: Encrypt/Decrypt attachments feature from admin page
+ Fix: SQL injection corrected in users.queries.php (author: Pang@ADLab of Venustech)
+ #1742 Fix for issue #1539 verifying LDAP groups properly
+ #1740 Missing buttons on Users page
+ #1737 Cannot import files
+ #1735 Dockerfile - PHP extension "curl" is loaded Extension curl is not loaded
+ #1733 Copy Item doesn't work if copy from public to public folders
+ #1731 Cannot login in after fresh install
+ #1729 Protection against bigger data than database field size
+ #1727 Cannot edit or delete entry in the Personal folder
+
+ 2/
+ Secure fixes
+ Session increase time feature is now increasing with the expected user session duration
+ Default language cannot be changed fix
+ Fix for "hide not accessible folders" option
+ #1725 Some fixes
+ #1723 Fix spin not removed while reseting user saltkey
+ #1722 SELinux issue leads to upload impossible
+ #1718 Moving a folder to itself
+ #1717 After deleting a folder, items are still visible in search page
+ #1713 Doubleclick on directory shows items twice
+ #1710 Error on psk change
+ #1709 Missing field in table on fresh install
+ #1707 "Restricted To" not working correctly when creating new items
+ #1706 User can edit & delete items without rights
+ #1696 Fix for no log for OTV
+ #1695 Manager can create folder at root from Items pas
+ #1686 Fix for item History dialogbox
+ #1685 Fix in Portuguese file
+ #1684 Estonian language still missing
+ #1679 Sort by don't work in Utilities/logs
+ #1676 Pre-auth XSS in index.php
+ #1674 name and lastname are changed on other user edit
+ #1672 Anonymous settings not stored
+ #1670 Incremental upgrade not active
+ #1669 Logout - Errors
+ #1668 File encryption is not correct in case of upgrade
+ #1666 Can`t set avatar
+ #1662 Can not delete folders
+ #1659 Third level of sub folders in the Personal folder are not seen
+ #1654 User management page - no "next" button
+
+ 2/
+ New   Defuse Encryption implemented in place of phpCrypt
+ NEW   AGSES authentication implemented
+ NEW   Custom Fields data can be encrytped or not in database
+ NEW   Folder copy feature
+ NEW   Mass move or delete operation on Items
+ NEW   Item change proposal
+ IMP   Implemented new session encryption library SecureHandler (getting rid of mcrypt extension)
+ IMP   Language selection is now in User Profile (Default language is used on authentication page)
+ IMP   User creation dialogbox improved with all user properties
+ IMP   New user login availability is checked "live"
+ IMP   Filtering counters in datatables
+ IMP   Users Management dialogbox improved
+ IMP   2FA authentication change to improve security (no call to external QR generator)
+ UPD   AES library updated
+ FIX   "Find" feature:
+       - copy from public to personal folder
+       - list of folders is refreshed when copying an Item
+ #     Copy folders
+ #1635 New folder inheritance of parent specific settings
+ #1631 Error could be appear on upgrade when checking folders and files
+ #1628 URL link to specific item does not work
+ #1627 Improved label preview length
+ #1625 Request to add/change password
+ #1624 Error 500 while importing item with API (with PHP < 7)
+ #1621 New option: OTV can be disabled
+ #     New option: create Item without password
+ #1620 Direct copy password from seach results and large folders
+ #1616 Cannot show password with IE11
+ #1614 Generate personal folders sets regular root folders also as personal
+ #1608 All folders are deleted
+ #1603 Attached files disappears
+ #1601 Time zone can't be saved in My Profile
+ #1593 Insert duplicate label with API
+ #1592 Show Client IP in mail to admin about logged on users
+ #1588 Fix for OTV links
+ #1587 fix for e-mail to administrator on logon does not work
+ #1581 Fix for new folder Custom Fields inheritance
+ #1579 Fix for preventing a php fatal error
+ #1575 Fix for tree not loaded when user has no access to a folder with children
+ #1571 Drag and drop from PF to public folder makes item password corrupted
+ #1571 Create an item inside another folder than the one selected
+ #1561 Personal folder deletion deletes all
+ #1559 API IP Whitelist check does not consider XFF
+ #1556 Fix bug for upgrading old passwords
+ #1553 LDAP support - Add LDAP port - Add support multi LDAP server
+ #1551 Authentication through LDAP posix-search
+ #1550 2 Factor enabled but can still log in without code
+ #1549 Read Only users can use Personal Folders
+ #1543 Wrong Saltkey message after setting
+ #1533 The change of the main SALT Key doesn't work
+ #1532 Added error message in install.js if db-pw contains double quotes
+ #1531 Database otv table originator field should be int instead of tinyint
+ #1514 User language selection is done in Profile dialogbox
+ #1474 New option: create an item without password
+ #1472 "folder access" and "role" settings when adding new user + propage rights from one user
+ #1464 CSV files broken, html entities not decoded, newlines not stripped
+ #1422 Folders deletion protocol has been securized to prevent unconsistencies in folders tree
+ #1412 New option: Manager can move items they can view
+ #1408 Display folders visible by a user
+ #1299 Export to pdf or csv shows htmlencoded
+
+2.1.26
+ #1537 Homepage not loading in French
+ #1527 Error Field 'timestamp' doesn't have a default value
+ #1526 New .htaccess file in ./includes/config
+ #1525 Bad encoding in previous used passwords list
+ #1515 Cannot add new users if similar user name exists
+ #1512 Long folder names break UI
+ #1511 Fix on LDAP due to library upgrade
+ #1510 During upgrade, clean personal_folder field in DB
+ #1504 Error while creating a new user with API
+ #1494 csrfp.config.php not updated on URL change
+ #1491 Added check against only numeric folder name
+ #1489 JSON error on quick search if no folder access
+ #1497 Nothing happens when clicking "Remove orphan items from database"
+ #1375 Symbol < breaks password in One Time View page
+ #1481 Query error
+ #1476 Fix personal folder update script for
+ #1463 PDF Export still broken
+ #1454 API outputs deleted passwords
+ #1453 API should have function "userpw"
+ #1452 API should also output the url to each password
+ #1457 New email address not used until logoff & logon
+ #1450 Purge log feature - purges nothing
+ #1449 Delete category hangs UI and crashes PHP
+ #1448 admin delete removed password multiple select not working
+ #1445 Password label doesn't preserve '\' character
+ #1439 Fix for large files upload
+ #1438 Sanitize ampersand to URL encoding in csrfp.config
+ #1426 Fixes for many critical issues with OTV
+ #1421 Item will not be automatically deleted when accessed through otv option enabled
+ #1415 Installation Issue and PDF export password field mask
+       Fixed problem for user to change self password
+       Fixed problem for deleting all directories
+ #1414 Subfolders created into personal folders are presented in Folders and Roles management
+ #1409 Updated PDF library to fit 7.x PHP
+ #1407 Remove Save button in 2FA settings tab
+ #1402 User can define his timezone
+ #1395 Error with Chrome while upgrading
+ #1394 Replace ascii characters in cpliboard copy
+ #1392 Corrected sql error while restoring database
+ #1389 Requested JSON parse failed when copying item
+ #1386 JSON parse failed (history item view)
+ #1384 SyntaxError: Invalid Character if Syslog enabled
+ #1383 Export to PDF - Incorrect formatting
+ #1381 LDAP user have unlimited access on first logon
+ #1380 CSV or KeePass Import - Title as "0"
+ #1378 JSON parse error when changing user password (with several roles)
+ #1369 Cannot save some settings
+ #1361 Duo prevents the ability to add/edit items
+ #1353 Add ldap_start_tls if set
+ #1346 On upgrade settings.php not found
+ #1345 Admin, password change and logoff not working
+ #1344 Wrap all non-GROUP BY columns in an aggregate function (MIN)
+ #1342 Change my password screen loop
+ #1340 Upgrade process last step
+ #1335 This page doesn't exist
+ #1328 Minimum password complexity for folders and items
+ #1334 Fix "installation related pages" dead link
+ #1333 Fix LDAP search base input
+ #1332 API not allowing roles separation of pipe '|'
+ #1326 Fixed LDAP functionality
+ #1325 updated Dockerfile
+ #1310 Addes Estonian language
+ #1309 error while loading folders (if simplify tree option enabled)
+ #1308 Teampass hangs when a folder is create with option "New sub-folder inherits rights from parent folder" enabled
+ #1301 add ldap_search_base record for db init
+ #1300 After 3 bad login attempts, user needs to wait 10s before new try
+ #1299 Export to pdf or csv shows htmlencoded
+ #1298 Backup-filename on 2.1.27 contains /
+ #1292 SyntaxError: JSON.parse: unexpected character at line 1 column 1 of the JSON data
+ #1284 fix for can_manage_all_users update during upgrade
+ #1279 SyntaxError: Unexpected token î in JSON at position 0
+ #1278 CSRFProtector protection while restoring a backup file
+ #1276 MySQL 5.7 query error
+ #1269 Typo error
+ #1263 Error at line 75 in suggestion page
+ #1251 Improving CSRFP configuration
+ #1240 Security fixes on some missed queries and on non-protected text fields
+ #1241 OTV visible more than one time
+ #1238 Fix for upgrade.php where mysql_result() command were still not replaced
+ #1235 Import from Keepass: missing items with the same title
+ #1229 CSRFProtector message while DUO is enabled
+ #1225 Unable to Access OTV Link
+ #1224 Fixed errors in export_to_html_format
+ #1211 No FA code sent from home page
+ #1210 Fix for main.queries.php
+ #1206 Fix for importing files
+ #1203 Needed PHP extensions check during install & update process
+ #1197 Awesome Font 4.5.0
+ #1193 When I login with user admin " loading ... " and it does not finish
+ #1192 Cannot save "enable attachments encryption"
+ #1188 Implemented proposals for source code improvement
+ #1186 open/highlight folder tree of displayed item
+ #1183 Syntax Error on personal folders option
+ #1181 403 Access Forbidden by CSRFProtector! at config save
+ #1178 New user right added for managing all users (super Manager)
+ #1174 Adding LDAP groups support to 'posix-search' LDAP auth
+ #1172 Complete number of Items displayed in Tree
+ #1158 Admin password cannot be changed
+ #910  Backslashes in accounts are not copied to clipboard
+ #268  Password recovery "Forgot your password?" don't do anything
+ NEW: Server user password change through SSH connection
+ NEW: Upgrade database handler improved for better upgrades management
+ NEW: New user right added for managing all users (super Manager)
+ FIX: If expiration engaged and password is changed, the warning is still present.
+ FIX: New suggestion folder could remain empty in some specific cases.
+ FIX: By creating a role, this new one is directly visible by creator.
+ FIX: Security issue with downloadFile.php. Now protected by session and htaccess.
+ FIX: QRCode is not visible in Users list
+ FIX: Display inconsistancies in User log results
+ Fix: Inconsistency in Delete & Restore process
+ Fix: Errors in CSV import process
+ Fix: Impossible to proceed with 'password lost' process
+ Fix: OTV item not reachable
+ Analyzed with RIPS (https://www.ripstech.com/) against security bugs
+
 2.1.25
  #1169 sending Google Authenticator code through index page
  #1160 hiding user password change option if DUOSecurity
@@ -79,7 +502,7 @@ Last changes
  New: Vietnamese language added
  New: Tree structure is loaded dynamically
  New: Notification to Managers for awaiting suggestions
- 
+
  2.1.23
  #727 - #729 - Encoding problem
  #799 - Error: Field 'field_1' doesn't have a default value
@@ -133,8 +556,8 @@ Last changes
  #697 - Default language setting, not being applied to automatically created ldap users.
  #698 - Default language setting, not being applied to newly created users.
  #707 - httpRequest is missing in upgrade process
- #725 - Disable button after item creation or edition 
- #720 - cannot sign up to 2factor 
+ #725 - Disable button after item creation or edition
+ #720 - cannot sign up to 2factor
  #690 - limit password export via PDF/CSV to user/group
  #745 - Enable again save_button after error on Add/Edit Item
  #739 - OTV correction

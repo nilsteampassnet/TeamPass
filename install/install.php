@@ -1,34 +1,25 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
+        <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+        <meta content="utf-8" http-equiv="encoding">
         <title>TeamPass Installation</title>
         <link rel="stylesheet" href="css/install.css" type="text/css" />
         <link rel="stylesheet" href="css/overcast/jquery-ui-1.10.3.custom.min.css" type="text/css" />
         <script type="text/javascript" src="../includes/js/functions.js"></script>
-        <!--<script type="text/javascript" src="start.js"></script>-->
         <script type="text/javascript" src="js/jquery.min.js"></script>
         <script type="text/javascript" src="js/jquery-ui.min.js"></script>
         <script type="text/javascript" src="js/aes.min.js"></script>
-
         <script type="text/javascript" src="install.js"></script>
-
         <script type="text/javascript">
-
-
         </script>
     </head>
-    
+
     <body>
 <?php
 // define root path
-$abs_path = "";
-if (strrpos($_SERVER['DOCUMENT_ROOT'], "/") == 1) {
-    $abs_path = strlen($_SERVER['DOCUMENT_ROOT']) - 1;
-} else {
-    $abs_path = $_SERVER['DOCUMENT_ROOT'];
-}
-$abs_path .= substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
-if( isset($_SERVER['HTTPS'] ) ) {
+$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/').substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
+if (isset($_SERVER['HTTPS'])) {
     $protocol = 'https://';
 } else {
     $protocol = 'http://';
@@ -42,11 +33,12 @@ if( isset($_SERVER['HTTPS'] ) ) {
     <input type="hidden" id="hid_db_pwd" value="" />
     <input type="hidden" id="hid_db_port" value="" />
     <input type="hidden" id="hid_db_bdd" value="" />
+    <input type="hidden" id="hid_db_pre" value="" />
     <input type="hidden" id="hid_abspath" value="" />
     <input type="hidden" id="hid_url_path" value="" />';
     // # LOADER
     echo '
-    <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="../includes/images/76.gif" /></div>';
+    <div style="position:absolute;top:49%;left:49%;display:none;z-index:9999999;" id="loader"><img src="images/76.gif" /></div>';
     // # HEADER ##
     echo '
     <div id="top">
@@ -62,7 +54,6 @@ if( isset($_SERVER['HTTPS'] ) ) {
                 <li id="menu_step4"><span id="step_4">Preparation</span>&nbsp;<span id="res_4"></span></li>
                 <li id="menu_step5"><span id="step_5">Tables creation</span>&nbsp;<span id="res_5"></span></li>
                 <li id="menu_step6"><span id="step_6">Finalization</span>&nbsp;<span id="res_6"></span></li>
-        		<li id="menu_step7"><span id="step_7">Clean Up</span>&nbsp;<span id="res_7"></span></li>
                 <li id="menu_step8">Resume&nbsp;<span id="res_8"></span></li>
             </ul>
         </div>
@@ -90,7 +81,7 @@ if( isset($_SERVER['HTTPS'] ) ) {
     </div>
         <div id="action_buttons">
             <span id="step_result"></span>
-            <input type="button" id="but_launch" onclick="CheckPage()" class="button" value="LAUNCH" />
+            <input type="button" id="but_launch" onclick="checkPage()" class="button" value="LAUNCH" />
             <input type="button" id="but_next" onclick="GotoNextStep()" class="button" value="NEXT" />
             <input type="button" id="but_restart" onclick="document.location = \'install.php\'" class="button" value="RESTART" />
             <input type="button" id="but_start" onclick="document.location = \''.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'\'" class="button" style="display: none;" value="Start" />
@@ -103,116 +94,146 @@ if( isset($_SERVER['HTTPS'] ) ) {
 echo '
 <div id="text_step2" style="display:none;">
     <h5>Teampass instance information:</h5>
-    <div class="line_entry">
-        <label for="root_path" class="label_block_big">Absolute path to teampass folder :</label><input type="text" id="root_path" name="root_path" class="ui-widget" style="width:450px;" value="'.$abs_path.'" />
-    </div>
-    <div class="line_entry">
-        <label for="url_path" class="label_block_big">Full URL to teampass :</label><input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /><span style="padding-left:10px;" id="url_path_res"></span>
-    </div>
+    <table>
+        <tr>
+            <td style="width:150px;">
+                <label for="root_path" class="label_block_big">Absolute path to teampass folder :</label>
+            </td>
+            <td>
+                <input type="text" id="root_path" name="root_path" class="ui-widget" style="width:450px;" value="'.$abs_path.'" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="url_path" class="label_block_big">Full URL to teampass :</label>
+            </td>
+            <td>
+                <input type="text" id="url_path" name="url_path" class="ui-widget" style="width:450px;" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" /
+            </td>
+        </tr>
+    </table>
 
     <h5>Following elements will be checked:</h5>
     <ul>
     <li>Directory "/install/" is writable&nbsp;<span id="res2_check0"></span></li>
     <li>Directory "/includes/" is writable&nbsp;<span id="res2_check1"></span></li>
-    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check12"></span></li>
-    <li>Directory "/files/" is writable&nbsp;<span id="res2_check2"></span></li>
-    <li>Directory "/upload/" is writable&nbsp;<span id="res2_check3"></span></li>
-    <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check4"></span></li>
-    <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check5"></span></li>
-    <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check6"></span></li>
-    <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check7"></span></li>
-    <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check8"></span></li>
-    <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check13"></span></li>
-    <li>PHP function "mysqli_fetch_all" is available&nbsp;<span id="res2_check9"></span></li>
-    <li>PHP version is greater or equal to 5.4.0&nbsp;<span id="res2_check10"></span></li>
-    <li>Execution time limit&nbsp;<span id="res2_check11"></span></li>
+    <li>Directory "/includes/config/" is writable&nbsp;<span id="res2_check2"></span></li>
+    <li>Directory "/includes/avatars/" is writable&nbsp;<span id="res2_check3"></span></li>
+    <li>Directory "/includes/libraries/csrfp/libs/" is writable&nbsp;<span id="res2_check4"></span></li>
+    <li>Directory "/includes/libraries/csrfp/js/" is writable&nbsp;<span id="res2_check5"></span></li>
+    <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
+    <li>Directory "/files/" is writable&nbsp;<span id="res2_check7"></span></li>
+    <li>Directory "/upload/" is writable&nbsp;<span id="res2_check8"></span></li>
+    <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check9"></span></li>
+    <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check10"></span></li>
+    <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check11"></span></li>
+    <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check12"></span></li>
+    <li>PHP extension "iconv" is loaded&nbsp;<span id="res2_check13"></span></li>
+    <li>PHP extension "xml" is loaded&nbsp;<span id="res2_check14"></span></li>
+    <li>PHP extension "gd" is loaded&nbsp;<span id="res2_check15"></span></li>
+    <li>PHP extension "curl" is loaded&nbsp;<span id="res2_check16"></span></li>
+    <li>PHP version is greater or equal to 5.5.0&nbsp;<span id="res2_check17"></span></li>
+    <li>Execution time limit&nbsp;<span id="res2_check18"></span></li>
     </ul>
 </div>';
 
 echo '
 <div id="text_step3" style="display:none;">
     <h5>Database information:</h5>
-    <div>Indicate here the credentials for Database connection.</div>
-    <div class="line_entry">
-    <label for="db_host" class="label_block">Host :</label><input type="text" id="db_host" style="width:250px;"  />
-    </div>
-    <div class="line_entry">
-    <label for="db_bdd" class="label_block">dataBase name :</label><input type="text" id="db_bdd" style="width:250px;" />
-    </div>
-    <div class="line_entry">
-    <label for="db_login" class="label_block">Login :</label><input type="text" id="db_login" style="width:250px;" />
-    </div>
-    <div class="line_entry">
-    <label for="db_pw" class="label_block">Password :</label><input type="text" id="db_pw" tilte="Double quotes not allowed!" style="width:250px;" />
-    </div>
-    <div class="line_entry">
-    <label for="db_port" class="label_block">Port :</label><input type="text" id="db_port" value="3306" style="width:250px;" />
-    </div>
+    <div style="margin:5px 0 5px 0;">Database connection Information</div>
+    <table>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_host" class="label_block_big">Host :</label>
+            </td>
+            <td>
+                <input type="text" id="db_host" value="" style="width:350px;" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_bdd" class="label_block_big">DataBase name :</label>
+            </td>
+            <td>
+                <input type="text" id="db_bdd" value="" style="width:350px;" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_login" class="label_block_big">Login :</label>
+            </td>
+            <td>
+                <input type="text" id="db_login" value="" style="width:350px;" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_pw" class="label_block_big">Password :</label>
+            </td>
+            <td>
+                <input type="text" id="db_pw" value="" style="width:350px;" title="Double quotes not allowed!" />
+            </td>
+        </tr>
+        <tr>
+            <td style="width:150px;">
+                <label for="db_port" class="label_block_big">Port :</label>
+            </td>
+            <td>
+                <input type="text" id="db_port" value="3306" style="width:350px;" />
+            </td>
+        </tr>
+    </table>
 </div>';
 
 echo '
 <div id="text_step4" style="display:none;">
-    <h5>Teampass set-up:</h5>
-    <div class="line_entry">
-    <label for="tbl_prefix" class="label_block_big">Table prefix :</label><input type="text" id="tbl_prefix" value="teampass_" style="width:250px;" />&nbsp;<span id="res4_check0"></span>
-    </div>
-    <div class="line_entry">
-    <label for="encrypt_key" class="label_block_big">Encryption key (SaltKey): <img src="../includes/images/information-white.png" alt="" title="The saltkey must be of size 16, and should contains upper and lower case letters, special characters and numbers, and MUST NOT CONTAINS single quotes!!!" />
-    </label>
-    <input type="text" id="encrypt_key" style="width:300px;" />&nbsp;<input type="text" class="button" value="Generate" onclick="suggestKey()" style="width:70px;margin-left:10px;" />&nbsp;<span id="res4_check1"></span>
-    </div>
-    <div class="line_entry">
-    <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
-        <img src="../includes/images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server. So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder /includes/." />
-    </label>
-    <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
-    </div>
-    <h5>SMTP set-up:</h5>
-    <div class="line_entry">
-    <label for="smtp_server" class="label_block_big">SMTP server :<span style="font-size:8pt;font-weight:normal;">Email server configuration</span></label><input type="text" id="smtp_server" value="smtp.my_domain.com" style="width:250px;" />&nbsp;<span id="res4_check3"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_auth" class="label_block_big">SMTP authorization:<span style="font-size:8pt;font-weight:normal;">false or true</span></label><input type="text" id="smtp_auth" value="false" style="width:250px;" />&nbsp;<span id="res4_check4"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_auth_username" class="label_block_big">SMTP authorization username :</label><input type="text" id="smtp_auth_username" value="" style="width:250px;" />&nbsp;<span id="res4_check5"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_auth_password" class="label_block_big">SMTP authorization password :</label><input type="text" id="smtp_auth_password" value="" style="width:250px;" />&nbsp;<span id="res4_check6"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_port" class="label_block_big">SMTP Port :</label><input type="text" id="smtp_port" value="25" style="width:250px;" />&nbsp;<span id="res4_check7"></span>
-    </div>
-    <div class="line_entry">
-    <label for="smtp_security" class="label_block_big">SMTP security :</label>
-    <select id="smtp_security" name="email_security" class="text ui-widget-content">
-        <option value="none" selected="selected">None</option>
-        <option value="ssl">SSL</option>
-        <option value="tls">TLS</option>
-    </select>
-    </div>
-    <div class="line_entry">
-    <label for="email_from" class="label_block_big">Email from :</label><input type="text" id="email_from" value="" style="width:250px;"  />&nbsp;<span id="res4_check8"></span>
-    </div>
-    <div class="line_entry">
-    <label for="email_from_name" class="label_block_big">Email from name :</label><input type="text" id="email_from_name" value="" style="width:250px;" />&nbsp;<span id="res4_check9"></span>
-    </div>
-    <h5>Administrator account set-up:</h5>
-    <div class="line_entry">
-    <label for="admin_pwd" class="label_block_big">Administrator password :</label><input type="text" id="admin_pwd" style="width:250px;" />&nbsp;<span id="res4_check10"></span>
-    </div>
-    <h5>Anonymous statistics:</h5>
-    <div class="line_entry">
-    <input type="checkbox" name="send_stats" id="send_stats" />Send monthly anonymous statistics.<br />
-    <div style="font-style: italic; font-size:9px;">Please consider sending your statistics as a way to contribute to future improvements of Teampass. Indeed this will help the creator to evaluate how the tool is used and by this way how to improve the tool. When enabled, the tool will automatically send once by month a bunch of statistics without any action from you. Of course, those data are absolutely anonymous and no data is exported, just the following information : number of users, number of folders, number of items, tool version, ldap enabled, and personal folders enabled.<br>
-    This option can be enabled or disabled through the administration panel.</div>
-    </div>
+    <table>
+        <tr>
+            <td colspan="2">
+                <h5>Teampass set-up:</h5>
+            </td>
+        </tr>
+        <tr>
+            <td style="width:250px;">
+                <label for="tbl_prefix" class="label_block_big">Table prefix :</label>
+            </td>
+            <td>
+                <input type="text" id="tbl_prefix" value="teampass_" style="width:350px;" />&nbsp;<span id="res4_check0"></span>
+            </td>
+        </tr>
+        <tr>
+            <td style="width:250px;">
+                <label for="sk_path" class="label_block_big">Absolute path to SaltKey :
+                    <img src="images/information-white.png" alt="" title="The SaltKey is stored in a file called sk.php. But for security reasons, this file should be stored in a folder outside the www folder of your server (example: /var/teampass/). So please, indicate here the path to this folder.  If this field remains empty, this file will be stored in folder <path to Teampass>/includes/." />
+                </label>
+            </td>
+            <td>
+                <input type="text" id="sk_path" value="" style="width:350px;" />&nbsp;<span id="res4_check2"></span>
+            </td>
+
+            <div class="line_entry">
+        </tr>
+        <tr>
+            <td colspan="2">
+                <h5>Administrator account set-up:</h5>
+            </td>
+        </tr>
+        <tr>
+            <td style="width:250px;">
+                <label for="admin_pwd" class="label_block_big">Administrator password :</label>
+            </td>
+            <td>
+                <input type="text" id="admin_pwd" style="width:350px;" />&nbsp;<span id="res4_check10"></span>
+            </td>
+        </tr>
+    </table>
 </div>';
 
 echo '
 <div id="text_step5" style="display:none;">
-    <h5>Populate database:</h5>
-    <ul>
+    <h5>Now populating database</h5>
+    <ul id="pop_db"></ul>
+    <!--<ul>
     <li>Add table "items"&nbsp;<span id="res5_check0"></span></li>
     <li>Add table "log_items"&nbsp;<span id="res5_check1"></span></li>
     <li>Add table "misc"&nbsp;<span id="res5_check2"></span></li>
@@ -240,7 +261,9 @@ echo '
     <li>Add table "api"&nbsp;<span id="res5_check25"></span></li>
     <li>Add table "otv"&nbsp;<span id="res5_check26"></span></li>
     <li>Add table "suggestion"&nbsp;<span id="res5_check27"></span></li>
-    </ul>
+    <li>Add table "tokens"&nbsp;<span id="res5_check28"></span></li>
+    <li>Add table "items_change"&nbsp;<span id="res5_check29"></span></li>
+    </ul>-->
 </div>';
 
 
@@ -254,18 +277,26 @@ echo '
     </ul>
 </div>';
 
-echo '
-<div id="text_step7" style="display:none;">
-    <h5>Clean Up:</h5>
-    <ul>
-    <li>Delete the install directory <span id="res7_check0"></span></li>
-    </ul>
-</div>';
 
 echo '
-<div id="text_step8" style="display:none;">
-    <h5>Installation finished:</h5>
-    You can log as an Administrator by using login <b>admin</b> .<br /><br />
-    For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.
+<div id="text_step7" style="display:none;">
+    <h4>Thank you for installing <b>Teampass</b>.</h4>
+    <div style="margin-top:20px;">
+        The final step is now to move to the authentication page and start using <b>Teampass</b>.<br>
+        The Administrator login is `<b>admin</b>`.
+        <br>
+        Its password is the one you have written during the installation process.
+    </div>
+    <div style="margin-top:8px;">
+        <i>Please note that first page may be longer to load. Install files and folders will be deleted for security purpose.
+        <br>
+        In case warning "Install folder has to be removed!" is shown while login, this operation has failed and requires to be done manually.</i>
+    </div>
+    <div style="margin-top:40px; text-align:center;">
+        <a id="link_home_page" href="../index.php">Move to home page</a>
+    </div>
+    <div style="margin-top:80px; font-size:10px;">
+        For news, help and information, please visit <a href="http://teampass.net" target="_blank">TeamPass website</a>.
+    </div>
 </div>';
 ?>

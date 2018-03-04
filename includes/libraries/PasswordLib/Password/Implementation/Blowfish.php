@@ -18,8 +18,8 @@
 namespace PasswordLib\Password\Implementation;
 
 use PasswordLib\Random\Factory as RandomFactory;
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Random/Factory.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Implementation/Crypt.php";
+require_once dirname(__FILE__)."/../../Random/Factory.php";
+require_once dirname(__FILE__)."/Crypt.php";
 
 /**
  * The Blowfish password hashing implementation
@@ -78,7 +78,7 @@ class Blowfish extends Crypt {
         if (!static::detect($hash)) {
             throw new \InvalidArgumentException('Hash Not Created Here');
         }
-        list(, , $iterations) = explode('$', $hash, 4);
+        list(,, $iterations) = explode('$', $hash, 4);
         return new static(array('cost' => $iterations));
     }
 
@@ -106,6 +106,6 @@ class Blowfish extends Crypt {
         $salt    = parent::generateSalt();
         $prefix  = static::getPrefix();
         $prefix .= str_pad($this->options['cost'], 2, '0', STR_PAD_LEFT);
-        return $prefix . '$' . $salt;
+        return $prefix.'$'.$salt;
     }
 }

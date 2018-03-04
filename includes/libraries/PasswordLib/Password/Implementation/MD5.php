@@ -49,6 +49,6 @@ class MD5 extends Crypt {
 
     protected function generateSalt() {
         $salt = parent::generateSalt();
-        return '$1$' . $salt;
+        return '$1$'.$salt;
     }
 }

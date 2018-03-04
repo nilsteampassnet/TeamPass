@@ -1,0 +1,17 @@
+{
+	"sProcessing":   "Töötlen...",
+	"sLengthMenu":   "Kuva _MENU_ kirjeid",
+	"sZeroRecords":  "Tulemusi ei leitud",
+	"sInfo":         "Kuvan _START_ kuni _END_ kirjet, kokku _TOTAL_ kirjest",
+	"sInfoEmpty":    "Kuvan 0 kuni 0 kirjet, kokku 0 kirjest",
+	"sInfoFiltered": "(filtreeritud tegelikust _MAX_ kirjest)",
+	"sInfoPostFix":  "",
+	"sSearch":       "Otsi:",
+	"sUrl":          "",
+	"oPaginate": {
+		"sFirst":    "Esimene",
+		"sPrevious": "Eelmine",
+		"sNext":     "Järgmine",
+		"sLast":     "Viimane
+	}
+}

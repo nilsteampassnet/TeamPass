@@ -2,9 +2,9 @@
 /**
  * @file          kb.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,27 +12,44 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])
-        || !isset($_SESSION['settings']['enable_kb'])
-        || $_SESSION['settings']['enable_kb'] != 1)
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
+    die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+if (isset($SETTINGS['enable_kb']) === false || $SETTINGS['enable_kb'] !== "1") {
     die('Hacking attempt...');
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
 //load language
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'_kb.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+
+
+// Include files
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+$superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+// Prepare GET variables
+$get_id = $superGlobal->get("id", "GET");
 
 //build list of categories
 $tab_users = array();
@@ -40,7 +57,7 @@ $rows = DB::query(
     "SELECT id, login FROM ".prefix_table("users")." ORDER BY login ASC"
 );
 $counter = DB::count();
-if ($counter>0) {
+if ($counter > 0) {
     foreach ($rows as $reccord) {
         $tab_users[$reccord['login']] = array(
             'id'=>$reccord['id'],
@@ -51,11 +68,10 @@ if ($counter>0) {
 
 echo '
 <div class="title ui-widget-content ui-corner-all">
-    '.$LANG['kb'].'&nbsp;&nbsp;&nbsp;
-    <button title="'.$LANG['new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button">
-        <img src="includes/images/direction_plus.png" alt="" />
+    '.$LANG['knowledge_base'].'&nbsp;&nbsp;&nbsp;
+    <button title="'.$LANG['add_new_kb'].'" onclick="OpenDialog(\'kb_form\')" class="button" style="font-size:16px;">
+        <i class="fa fa-plus"></i>
     </button>
-    <span style="float:right;margin-right:5px;"><img src="includes/images/question-white.png" style="cursor:pointer" title="'.$LANG['show_help'].'" onclick="OpenDialog(\'help_on_users\')" /></span>
 </div>';
 
 //Show the KB in a table view
@@ -88,10 +104,10 @@ echo '
     <div style="width:100%;">
         <div style="float:left;width:50%;">
             <label for="kb_category" class="label">'.$LANG['category'].'</label>
-            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" width="300px;" value="">
+            <input name="kb_category" id="kb_category" class="kb_text ui-widget-content ui-corner-all" style="width: 300px;" value="" />
         </div>
         <div style="float:right;width:50%;">
-            <label for="" class="">'.$LANG['kb_anyone_can_modify'].' : </label>
+            <label class="modify_kb_label">'.$LANG['anyone_can_modify_it'].' : </label>
             <span class="div_radio">
                 <input type="radio" id="modify_kb_yes" name="modify_kb" value="1" checked="checked" /><label for="modify_kb_yes">'.$LANG['yes'].'</label>
                 <input type="radio" id="modify_kb_no" name="modify_kb" value="0" /><label for="modify_kb_no">'.$LANG['no'].'</label>
@@ -101,37 +117,57 @@ echo '
 
     <div style="float:left;width:100%;">
         <label for="kb_description" class="label">'.$LANG['description'].'</label>
-        <textarea rows="5" name="kb_description" id="kb_description" class="input"></textarea>
+        <textarea rows="5" name="kb_description" id="kb_description" class="input" cols="70"></textarea>
     </div>
 
     <div style="float:left;width:100%;margin-top:15px;">
         <label for="kb_associated_to" class="label">'.$LANG['associate_kb_to_items'].'</label>
         <select id="kb_associated_to" class="multiselect" multiple="multiple" name="kb_associated_to[]" style="width: 860px; height: 150px;">';
-            //get list of available items
-            $items_id_list = array();
-            $rows = DB::query(
-                "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
-                    l.date as date,
-                    n.renewal_period as renewal_period
-                FROM ".prefix_table("items")." as i
-                INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
-                INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                WHERE i.inactif = %i
-                AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                ORDER BY i.label ASC, l.date DESC",
-                '0',
-                'at_creation',
-                'at_modification',
-                'at_pw :%'
-            );
+//get list of available items
+$items_id_list = array();
+if (empty($_SESSION['list_folders_limited'])) {
+    $_SESSION['list_folders_limited'] = array();
+}
+$rows = DB::query(
+    "SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label,
+        i.description as description, i.pw as pw, i.login as login, i.anyone_can_modify as anyone_can_modify,
+        l.date as date
+    FROM ".prefix_table("items")." as i
+    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+    WHERE i.inactif = %i
+    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+    AND i.id_tree IN %ls
+    ORDER BY i.label ASC, l.date DESC",
+    '0',
+    'at_creation',
+    'at_modification',
+    'at_pw :%',
+    array_unique(
+        array_merge(
+            $_SESSION['all_non_personal_folders'],
+            $_SESSION['list_folders_editable_by_role'],
+            $_SESSION['list_restricted_folders_for_items'],
+            $_SESSION['list_folders_limited']
+        )
+    )
+);
 foreach ($rows as $reccord) {
     if (!in_array($reccord['id'], $items_id_list) && !empty($reccord['label'])) {
-        echo '
-        <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
-        array_push($items_id_list, $reccord['id']);
+        // exclude item if it is restricted to a group the user doesn't have
+        $include_item = false;
+        if (empty($reccord['restricted_to'])) {
+            $include_item = true;
+        } elseif (count(array_intersect(explode(";", $reccord['restricted_to']), $_SESSION['user_roles'])) !== 0) {
+            $include_item = true;
+        }
+        if ($include_item === true) {
+            echo '
+            <option value="'.$reccord['id'].'">'.$reccord['label'].'</option>';
+            array_push($items_id_list, $reccord['id']);
+        }
     }
 }
-        echo '
+echo '
         </select>
     </div>
 </div>';
@@ -150,11 +186,11 @@ echo '
 require_once 'kb.load.php';
 
 //If redirection is done to a speoific KB then open it
-if (isset($_GET['id']) && !empty($_GET['id'])) {
+if ($get_id !== null && empty($get_id) === false) {
     echo '
         <script language="javascript" type="text/javascript">
         <!--
-        openKB('.$_GET['id'].');
+        openKB('.$get_id.');
         -->
         </script>';
 }

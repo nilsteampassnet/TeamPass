@@ -2,9 +2,9 @@
 /**
  * @file          otv.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,48 +12,59 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sources/sessions.php');
-@session_start();
+require_once('sources/SecureHandler.php');
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
 
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
 $html = "";
-if (
-    filter_var($_GET['code'], FILTER_SANITIZE_STRING) != false
-    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) != false
+if (filter_var($_GET['code'], FILTER_SANITIZE_STRING) !== false
+    && filter_var($_GET['stamp'], FILTER_VALIDATE_INT) !== false
 ) {
     //Include files
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
-    require_once $_SESSION['settings']['cpassman_dir'].'/sources/main.functions.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
     // connect to DB
-    require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = $server;
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $pass = defuse_return_decrypted($pass);
+DB::$host = $server;
     DB::$user = $user;
     DB::$password = $pass;
     DB::$dbName = $database;
     DB::$port = $port;
     DB::$encoding = $encoding;
-    DB::$error_handler = 'db_error_handler';
+    DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
+
+    if (!isset($SETTINGS['otv_is_enabled']) || $SETTINGS['otv_is_enabled'] === "0") {
+        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;One-Time-View is not allowed!</div>';
+    }
 
     // check session validity
     $data = DB::queryfirstrow(
         "SELECT id, timestamp, code, item_id FROM ".prefix_table("otv")."
-        WHERE code = %i",
-        intval($_GET['code'])
+        WHERE code = %s",
+        $_GET['code']
     );
-    if (
-        $data['timestamp'] == $_GET['stamp']
-    ) {
+    if ($data['timestamp'] == intval($_GET['stamp'])) {
         // otv is too old
-        if ($data['timestamp'] < (time() - $_SESSION['settings']['otv_expiration_period'] * 86400) ) {
+        if ($data['timestamp'] < (time() - ($SETTINGS['otv_expiration_period'] * 86400))) {
             $html = "Link is too old!";
         } else {
+            // get from DB
             $dataItem = DB::queryfirstrow(
                 "SELECT *
                 FROM ".prefix_table("items")." as i
@@ -63,38 +74,82 @@ if (
                 'at_creation'
             );
 
-            // get data
-            $pw = cryption($dataItem['pw'], SALT, $dataItem['pw_iv'], "decrypt");
+            // is Item still valid regarding number of times being seen
+            // Decrement the number before being deleted
+            $dataDelete = DB::queryfirstrow(
+                "SELECT * FROM ".prefix_table("automatic_del")." WHERE item_id=%i",
+                $data['item_id']
+            );
+            if (isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] == 1) {
+                if ($dataDelete['del_enabled'] == 1) {
+                    if ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] >= 1) {
+                        // decrease counter
+                        DB::update(
+                            $pre."automatic_del",
+                            array(
+                                'del_value' => $dataDelete['del_value'] - 1
+                                ),
+                            "item_id = %i",
+                            $data['item_id']
+                        );
+                    } elseif ($dataDelete['del_type'] == 1 && $dataDelete['del_value'] <= 1
+                        || $dataDelete['del_type'] == 2 && $dataDelete['del_value'] < time()
+                    ) {
+                        // delete item
+                        DB::delete($pre."automatic_del", "item_id = %i", $data['item_id']);
+                        // make inactive object
+                        DB::update(
+                            prefix_table("items"),
+                            array(
+                                'inactif' => '1',
+                                ),
+                            "id = %i",
+                            $data['item_id']
+                        );
+                        // log
+                        logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_delete', 'otv', 'at_automatically_deleted');
 
+                        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.
+                        addslashes($LANG['not_allowed_to_see_pw_is_expired']).'</div>';
+                        return false;
+                    }
+                }
+            }
+
+            // get data
+            $pw = cryption($dataItem['pw'], "", "decrypt");
             $label = $dataItem['label'];
             $email = $dataItem['email'];
             $url = $dataItem['url'];
-            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $k['allowedTags']));
+            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags($dataItem['description'], $SETTINGS_EXT['allowedTags']));
             $login = str_replace('"', '&quot;', $dataItem['login']);
 
             // display data
             $html = "<div style='margin:30px;'>".
-            	"<div style='font-size:20px;font-weight:bold;'>Welcome to One-Time item view page.</div>".
-            	"<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
-            	"<div style='margin-top:10px;'><table>".
-				"<tr><td>Label:</td><td>" . $label . "</td</tr>".
-            	"<tr><td>Password:</td><td>" . $pw . "</td</tr>".
-            	"<tr><td>Description:</td><td>" . $description . "</td</tr>".
-            	"<tr><td>login:</td><td>" . $login . "</td</tr>".
-            	"<tr><td>URL:</td><td>" . $url ."</td</tr>".
-            	"</table></div>".
-            	"<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
-            	"</div>";
+                "<div style='font-size:20px;font-weight:bold;'>Welcome to One-Time item view page.</div>".
+                "<div style='font-style:italic;'>Here are the details of the Item that has been shared to you</div>".
+                "<div style='margin-top:10px;'><table>".
+                "<tr><td>Label:</td><td>".$label."</td></tr>".
+                "<tr><td>Password:</td><td>".htmlspecialchars($pw['string'])."</td></tr>".
+                "<tr><td>Description:</td><td>".$description."</td></tr>".
+                "<tr><td>login:</td><td>".$login."</td></tr>".
+                "<tr><td>URL:</td><td>".$url."</td></tr>".
+                "</table></div>".
+                "<div style='margin-top:30px;'>Copy carefully the data you need. This page is only visible once.</div>".
+                "</div>";
 
-        	// delete entry
-        	//DB::delete(prefix_table("otv"), "id = %i", intval($_GET['otv_id']));
-			
-			// display
-			echo $html;
+            // log
+            logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_shown', 'otv');
+
+            // delete entry
+            DB::delete(prefix_table("otv"), "id = %i", $data['id']);
+
+            // display
+            echo $html;
         }
     } else {
-        echo "Not a valid page!";
+        echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;Not a valid page!</div>';
     }
 } else {
-	echo "No valid OTV inputs!";
+    echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;No valid OTV inputs!</div>';
 }

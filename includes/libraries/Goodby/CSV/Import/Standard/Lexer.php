@@ -9,11 +9,11 @@ use Goodby\CSV\Import\Standard\LexerConfig;
 use Goodby\CSV\Import\Standard\StreamFilter\ConvertMbstringEncoding;
 use SplFileObject;
 
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/LexerInterface.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/InterpreterInterface.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Protocol/Exception/CsvFileNotFoundException.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php";
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/Goodby/CSV/Import/Standard/StreamFilter/ConvertMbstringEncoding.php";
+require_once dirname(__FILE__)."/../Protocol/LexerInterface.php";
+require_once dirname(__FILE__)."/../Protocol/InterpreterInterface.php";
+require_once dirname(__FILE__)."/../Protocol/Exception/CsvFileNotFoundException.php";
+require_once dirname(__FILE__)."/LexerConfig.php";
+require_once dirname(__FILE__)."/StreamFilter/ConvertMbstringEncoding.php";
 
 class Lexer implements LexerInterface
 {
@@ -47,7 +47,7 @@ class Lexer implements LexerInterface
         $flags          = $this->config->getFlags();
         $ignoreHeader   = $this->config->getIgnoreHeaderLine();
 
-        if ( $fromCharset === null ) {
+        if ($fromCharset === null) {
             $url = $filename;
         } else {
             $url = ConvertMbstringEncoding::getFilterURL($filename, $fromCharset, $toCharset);
@@ -61,7 +61,7 @@ class Lexer implements LexerInterface
         $originalLocale = setlocale(LC_ALL, '0'); // Backup current locale
         setlocale(LC_ALL, 'en_US.UTF-8');
 
-        foreach ( $csv as $lineNumber => $line ) {
+        foreach ($csv as $lineNumber => $line) {
             if ($ignoreHeader && $lineNumber == 0 || (count($line) === 1 && empty($line[0]))) {
                 continue;
             }

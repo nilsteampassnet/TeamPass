@@ -45,101 +45,102 @@ require_once(dirname(__FILE__)."/../phpCrypt.php");
  */
 class Cipher_Simple_XOR extends Cipher
 {
-	/** @type integer BYTES_BLOCK The size of the block, in bytes */
-	const BYTES_BLOCK = 1; // 8 bits
+    /** @type integer BYTES_BLOCK The size of the block, in bytes */
+    const BYTES_BLOCK = 1; // 8 bits
 
 
-	/**
-	 * Constructor
-	 * Sets the key used for encryption. Also sets the requied block size
-	 *
-	 * @param string $key string containing the user supplied encryption key
-	 * @return void
-	 */
-	public function __construct($key)
-	{
-		// SimpleXOR does not have a key size requirement
-		parent::__construct(PHP_Crypt::CIPHER_SIMPLEXOR, $key);
+    /**
+     * Constructor
+     * Sets the key used for encryption. Also sets the requied block size
+     *
+     * @param string $key string containing the user supplied encryption key
+     * @return void
+     */
+    public function __construct($key)
+    {
+        // SimpleXOR does not have a key size requirement
+        parent::__construct(PHP_Crypt::CIPHER_SIMPLEXOR, $key);
 
-		// required block size in bits
-		$this->blockSize(self::BYTES_BLOCK);
-	}
-
-
-	/**
-	 * Destructor
-	 *
-	 * @return void
-	 */
-	public function __destruct()
-	{
-		parent::__destruct();
-	}
+        // required block size in bits
+        $this->blockSize(self::BYTES_BLOCK);
+    }
 
 
-	/**
-	 * Encrypts data using an XOR encryption scheme
-	 *
-	 * @param string $text A string to encrypt
-	 * @return boolean Always returns true
-	 */
-	public function encrypt(&$text)
-	{
-		$this->operation(parent::ENCRYPT);
-		return $this->simpleXOR($text);
-	}
+    /**
+     * Destructor
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        parent::__destruct();
+    }
 
 
-	/**
-	 * Decrypts data encrypted with SimpleXOR::Encrypt()
-	 *
-	 * @param string $text An encrypted string to decrypt
-	 * @return boolean Always returns true
-	 */
-	public function decrypt(&$text)
-	{
-		$this->operation(parent::DECRYPT);
-		return $this->simpleXOR($text);
-	}
+    /**
+     * Encrypts data using an XOR encryption scheme
+     *
+     * @param string $text A string to encrypt
+     * @return boolean Always returns true
+     */
+    public function encrypt(&$text)
+    {
+        $this->operation(parent::ENCRYPT);
+        return $this->simpleXOR($text);
+    }
 
 
-	/**
-	 * Because XOR Encryption uses the same algorithm to encrypt and decrypt,
-	 * this function contains the code to do both. The SimpleXOR::Encrypt()
-	 * and SimpleXOR::Decrypt() function above just call this function
-	 *
-	 * @param string $input
-	 * @return boolean Always returns true
-	 */
-	private function simpleXOR(&$text)
-	{
-		$pos = 0;
-		$max = strlen($text);
-		$key = $this->key();
-
-		for($i = 0; $i < $max; ++$i)
-		{
-			// if the current position in the key reaches the end of the key,
-			// start over at position 0 of the key
-			if($pos >= $this->keySize())
-				$pos = 0;
-
-			$text[$i] = $text[$i] ^ $key[$pos];
-			++$pos;
-		}
-
-		return true;
-	}
+    /**
+     * Decrypts data encrypted with SimpleXOR::Encrypt()
+     *
+     * @param string $text An encrypted string to decrypt
+     * @return boolean Always returns true
+     */
+    public function decrypt(&$text)
+    {
+        $this->operation(parent::DECRYPT);
+        return $this->simpleXOR($text);
+    }
 
 
-	/**
-	 * Indicates that this is stream cipher
-	 *
-	 * @return integer Returns Cipher::STREAM
-	 */
-	public function type()
-	{
-		return parent::STREAM;
-	}
+    /**
+     * Because XOR Encryption uses the same algorithm to encrypt and decrypt,
+     * this function contains the code to do both. The SimpleXOR::Encrypt()
+     * and SimpleXOR::Decrypt() function above just call this function
+     *
+     * @param string $text
+     * @return boolean Always returns true
+     */
+    private function simpleXOR(&$text)
+    {
+        $pos = 0;
+        $max = strlen($text);
+        $key = $this->key();
+
+        for ($i = 0; $i < $max; ++$i)
+        {
+            // if the current position in the key reaches the end of the key,
+            // start over at position 0 of the key
+            if ($pos >= $this->keySize()) {
+                            $pos = 0;
+            }
+
+            $text[$i] = $text[$i] ^ $key[$pos];
+            ++$pos;
+        }
+
+        return true;
+    }
+
+
+    /**
+     * Indicates that this is stream cipher
+     *
+     * @return integer Returns Cipher::STREAM
+     */
+    public function type()
+    {
+        return parent::STREAM;
+    }
 }
 ?>

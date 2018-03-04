@@ -2,9 +2,9 @@
 /**
  * @file          kb.load.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,13 +12,22 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['settings']['enable_kb']) || $_SESSION['settings']['enable_kb'] != 1) {
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($SETTINGS['enable_kb']) || $SETTINGS['enable_kb'] != 1) {
     die('Hacking attempt...');
 }
 
-?>
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
 
+?>
 <script type="text/javascript">
+//<![CDATA[
 //Function opening
     function openKB(id)
     {
@@ -27,7 +36,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             {
             type    : "open_kb",
             id      : id,
-            key     : "<?php echo $_SESSION['key'];?>"
+            key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
                 data = $.parseJSON(data);
@@ -63,10 +72,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bServerSide": true,
-            "sAjaxSource": "sources/datatable/datatable.kb.php",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.kb.php",
             "bJQueryUI": true,
             "oLanguage": {
-                "sUrl": "includes/language/datatables.<?php echo $_SESSION['user_language'];?>.txt"
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
             }
         });
 
@@ -77,15 +86,15 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 300,
             height: 150,
-            title: "<?php echo $LANG['item_menu_del_elem'];?>",
+            title: "<?php echo $LANG['item_menu_del_elem']; ?>",
             buttons: {
-                "<?php echo $LANG['del_button'];?>": function() {
+                "<?php echo $LANG['del_button']; ?>": function() {
                     $.post(
-                		"sources/kb.queries.php",
+                        "sources/kb.queries.php",
                         {
                         type    : "delete_kb",
                         id      : $("#kb_id").val(),
-                        key     : "<?php echo $_SESSION['key'];?>"
+                        key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             $("#div_kb_delete").dialog("close");
@@ -94,7 +103,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                         }
                    )
                 },
-                "<?php echo $LANG['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button']; ?>": function() {
                     $(this).dialog("close");
                 }
             }
@@ -107,9 +116,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
             autoOpen: false,
             width: 900,
             height: 600,
-            title: "<?php echo $LANG['kb_form'];?>",
+            title: "<?php echo $LANG['manage_entries_in_kb']; ?>",
             buttons: {
-                "<?php echo $LANG['save_button'];?>": function() {
+                "<?php echo $LANG['save_button']; ?>": function() {
                     if ($("#kb_label").val() == "") {
                         $("#kb_label").addClass("ui-state-error");
                     } else if ($("#kb_category").val() == "") {
@@ -130,8 +139,8 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                          $.post("sources/kb.queries.php",
                               {
                                   type     : "kb_in_db",
-                                  data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key'];?>"),
-                                  key      : "<?php echo $_SESSION['key'];?>"
+                                  data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                                  key      : "<?php echo $_SESSION['key']; ?>"
                               },
                             function(data) {
                                 if (data[0].status == "done") {
@@ -144,7 +153,7 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                        );
                     }
                 },
-                "<?php echo $LANG['cancel_button'];?>": function() {
+                "<?php echo $LANG['cancel_button']; ?>": function() {
                     $(this).dialog("close");
                 }
             },
@@ -153,9 +162,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                 $("#kb_associated_to").multiselect();
                 var instance = CKEDITOR.instances["kb_description"];
                 if (instance) {
-                    CKEDITOR.replace("kb_description",{toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code'];?>"});
+                    CKEDITOR.replace("kb_description",{toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code']; ?>"});
                 } else {
-                    $("#kb_description").ckeditor({toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code'];?>"});
+                    $("#kb_description").ckeditor({toolbar:"Full", height: 250,language: "<?php echo $_SESSION['user_language_code']; ?>"});
                 }
             },
             close: function(event,ui) {
@@ -175,5 +184,5 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['setti
                 $(this).trigger("keydown.autocomplete");
         });
     });
-
+//]]>
 </script>

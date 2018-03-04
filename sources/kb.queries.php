@@ -2,9 +2,9 @@
 /**
  * @file          kb.queries.php
  * @author        Nils Laumaillé
- * @version       2.1.25
- * @copyright     (c) 2009-2015 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @version       2.1.27
+ * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,69 +12,81 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once 'sessions.php';
+require_once 'SecureHandler.php';
 session_start();
-if (
-        !isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-        !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-        !isset($_SESSION['key']) || empty($_SESSION['key'])
-        || !isset($_SESSION['settings']['enable_kb'])
-        || $_SESSION['settings']['enable_kb'] != 1)
-{
+if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
+    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
+    !isset($_SESSION['key']) || empty($_SESSION['key'])
+) {
+    die('Hacking attempt...');
+}
+
+// Load config
+if (file_exists('../includes/config/tp.config.php')) {
+    require_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php')) {
+    require_once './includes/config/tp.config.php';
+} else {
+    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+}
+
+// Is KB enabled
+if (isset($SETTINGS['enable_kb']) === false || $SETTINGS['enable_kb'] != 1) {
     die('Hacking attempt...');
 }
 
 /* do checks */
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/include.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "kb")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $_SESSION['settings']['cpassman_dir'].'/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $_SESSION['settings']['cpassman_dir'].'/includes/settings.php';
-require_once $_SESSION['settings']['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 header("Content-type: text/html; charset=utf-8");
 header("Cache-Control: no-cache, must-revalidate");
-header("Pragma: no-cache");
 require_once 'main.functions.php';
 
 //Connect to DB
-require_once $_SESSION['settings']['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+$pass = defuse_return_decrypted($pass);
 DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = 'db_error_handler';
+DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
 
-//Load AES
-$aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
-$aes->register();
-
 function utf8Urldecode($value)
 {
-    $value = preg_replace('/%([0-9a-f]{2})/ie', 'chr(hexdec($1))', (string) $value);
+    $value = preg_replace('/%([0-9a-f]{2})/ie', 'chr(hexdec($1))', filter_var($value, FILTER_SANITIZE_STRING));
 
     return $value;
 }
 
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+
 // Construction de la requéte en fonction du type de valeur
-if (!empty($_POST['type'])) {
-    switch ($_POST['type']) {
+if (null !== $post_type) {
+    switch ($post_type) {
         case "kb_in_db":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
             //decrypt and retreive data in JSON format
-            $data_received = prepareExchangedData($_POST['data'], "decode");
+            $data_received = prepareExchangedData($post_data, "decode");
 
             //Prepare variables
             $id = htmlspecialchars_decode($data_received['id']);
@@ -95,7 +107,7 @@ if (!empty($_POST['type'])) {
             } else {
                 $manage_kb = true;
             }
-            if ($manage_kb == true) {
+            if ($manage_kb === true) {
                 //Add category if new
                 DB::query("SELECT * FROM ".prefix_table("kb_categories")." WHERE category = %s", $category);
                 $counter = DB::count();
@@ -104,7 +116,7 @@ if (!empty($_POST['type'])) {
                         prefix_table("kb_categories"),
                         array(
                             'category' => $category
-                       )
+                        )
                     );
                     $cat_id = DB::insertId();
                 } else {
@@ -123,8 +135,9 @@ if (!empty($_POST['type'])) {
                             'author_id' => $_SESSION['user_id'],
                             'category_id' => $cat_id,
                             'anyone_can_modify' => $anyone_can_modify
-                       ),
-                        "id=%i", $id
+                        ),
+                        "id=%i",
+                        $id
                     );
                 } else {
                     //add new KB
@@ -136,14 +149,14 @@ if (!empty($_POST['type'])) {
                             'author_id' => $_SESSION['user_id'],
                             'category_id' => $cat_id,
                             'anyone_can_modify' => $anyone_can_modify
-                       )
+                        )
                     );
                     $id = DB::insertId();
                 }
 
                 //delete all associated items to this KB
                 DB::delete(prefix_table("kb_items"), "kb_id = %i", $id);
-                
+
                 //add all items associated to this KB
                 foreach (explode(',', $kb_associated_to) as $item_id) {
                     DB::insert(
@@ -151,7 +164,7 @@ if (!empty($_POST['type'])) {
                         array(
                             'kb_id' => $id,
                             'item_id' => $item_id
-                       )
+                        )
                     );
                 }
 
@@ -166,24 +179,26 @@ if (!empty($_POST['type'])) {
          */
         case "open_kb":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
+
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
             $ret = DB::queryfirstrow(
                 "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
                 FROM ".prefix_table("kb")." AS k
                 INNER JOIN ".prefix_table("kb_categories")." AS c ON (c.id = k.category_id)
                 INNER JOIN ".prefix_table("users")." AS u ON (u.id = k.author_id)
                 WHERE k.id = %i",
-                $_POST['id']
+                $post_id
             );
 
             //select associated items
-            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $_POST['id']);
+            $rows = DB::query("SELECT item_id FROM ".prefix_table("kb")."_items WHERE kb_id = %i", $post_id);
             $arrOptions = array();
             foreach ($rows as $record) {
-                //echo '$("#kb_associated_to option[value='.$record['item_id'].']").attr("selected","selected");';
                 array_push($arrOptions, $record['item_id']);
             }
 
@@ -195,18 +210,22 @@ if (!empty($_POST['type'])) {
                 "options"     => $arrOptions
             );
 
-            echo json_encode($arrOutput, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+            echo json_encode($arrOutput, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             break;
         /**
          * Delete the KB
          */
         case "delete_kb":
             // Check KEY
-            if ($_POST['key'] != $_SESSION['key']) {
+            if ($post_key !== $_SESSION['key']) {
                 echo '[ { "error" : "key_not_conform" } ]';
                 break;
             }
-            DB::delete(prefix_table("kb"), "id=%i", $_POST['id']);
+
+            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+            DB::delete(prefix_table("kb"), "id=%i", $post_id);
+
             break;
     }
 }

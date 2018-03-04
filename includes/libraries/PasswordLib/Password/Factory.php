@@ -15,7 +15,7 @@
 namespace PasswordLib\Password;
 
 use PasswordLib\Password\Implementation\Blowfish;
-require_once $_SESSION['settings']['cpassman_dir']."/includes/libraries/PasswordLib/Password/Implementation/Blowfish.php";
+require_once dirname(__FILE__)."/Implementation/Blowfish.php";
 
 /**
  * The Password Factory
@@ -98,7 +98,7 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
     public function registerImplementation($name, $class) {
         $this->registerType(
             'implementations',
-            __NAMESPACE__ . '\\Password',
+            __NAMESPACE__.'\\Password',
             $name,
             $class
         );
@@ -112,8 +112,8 @@ class Factory extends \PasswordLib\Core\AbstractFactory {
      */
     protected function loadImplementations() {
         $this->loadFiles(
-            __DIR__ . '/Implementation',
-            __NAMESPACE__ . '\\Implementation\\',
+            __DIR__.'/Implementation',
+            __NAMESPACE__.'\\Implementation\\',
             array($this, 'registerImplementation')
         );
     }
