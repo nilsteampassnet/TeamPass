@@ -760,6 +760,8 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
 );
+
+
 // alter table USERS to add a new field "user_ip"
 if (columnExists($pre."users", "user_ip") === true) {
     // Change name of field
@@ -772,6 +774,18 @@ if (columnExists($pre."users", "user_ip") === true) {
         "VARCHAR(400) NOT NULL DEFAULT 'none'"
     );
 }
+
+
+// alter table USERS to add a new field "user_api_key"
+if (columnExists($pre."users", "user_api_key") === false) {
+    // alter table misc to add an index
+    $res = addColumnIfNotExist(
+        $pre."users",
+        "user_api_key",
+        "VARCHAR(500) NOT NULL DEFAULT 'none'"
+    );
+}
+
 
 // alter table USERS to allow NULL on field "email"
 mysqli_query(

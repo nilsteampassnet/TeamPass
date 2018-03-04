@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          spanish.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',

@@ -924,7 +924,7 @@ function identifyUser($sentData)
                 "User's password verified: ".$userPasswordVerified."\n"
             );
         }
-        
+
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -1004,6 +1004,7 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
             $_SESSION['user_settings']['usertimezone'] = $data['usertimezone'];
             $_SESSION['user_settings']['session_duration'] = $dataReceived['duree_session'] * 60;
+            $_SESSION['user_settings']['api-key'] = $data['user_api_key'];
 
 
             // manage session expiration

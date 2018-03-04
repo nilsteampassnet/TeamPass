@@ -1620,19 +1620,30 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     break;
                 }
 
-                $post_field = filter_input(INPUT_POST, 'field', FILTER_SANITIZE_STRING);
-                $post_new_value = filter_input(INPUT_POST, 'new_value', FILTER_SANITIZE_NUMBER_INT);
-                $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+                // decrypt and retreive data in JSON format
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                    "decode"
+                );
+
+                // Prepare variables
+                $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
+                $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
+                $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
 
                 DB::update(
                     prefix_table("users"),
                     array(
-                        $$post_field => $post_new_value
+                        $field => $new_value
                         ),
                     "id = %i",
-                    $post_user_id
+                    $user_id
                 );
 
+                // Update session
+                if ($field === 'user_api_key') {
+                  $_SESSION['user_settings']['api-key'] = $new_value;
+                }
             break;
     }
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##

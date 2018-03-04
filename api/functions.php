@@ -88,7 +88,15 @@ function teampass_get_ips()
 function teampass_get_keys()
 {
     teampass_connect();
-    $response = DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key");
+    $response = array_unique(array_merge(
+        DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key"),
+        DB::queryOneColumn("user_api_key", "select * from ".prefix_table("users")."")
+    ));
+
+    // remove none value
+    if (($key = array_search('none', $response)) !== false) {
+        unset($response[$key]);
+    }
 
     return $response;
 }
@@ -2154,12 +2162,9 @@ function rest_get()
                         DB::update(
                             prefix_table("items"),
                             array(
-                                "label" => $item_definition['label'],
-                                "description" => $item_definition['description'],
                                 'pw' => $passwd['string'],
                                 'pw_iv' => '',
-                                "url" => $item_definition['label'],
-                                "id_tree" => $item_definition['destination_folder'],
+                                "url" => $item_definition['url'],
                                 "login" => $item_definition['login']
                             ),
                             "id = %i",
@@ -2181,8 +2186,6 @@ function rest_get()
                         DB::update(
                             prefix_table("cache"),
                             array(
-                                "label" => $item_definition['label'],
-                                "description" => $item_definition['description'],
                                 "login" => $item_definition['login'],
                                 "author" => $userData['id'],
                                 "timestamp" => time(),

@@ -1,4 +1,4 @@
-<?php 
+<?php
 /**
  *
  * @file          dutch.php
@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'E-mail Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google Authenticatie in en stuur e-mail',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',

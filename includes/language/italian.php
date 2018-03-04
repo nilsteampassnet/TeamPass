@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'user_profile_api_key' => 'Your API key',
     'settings_ldap_and_local_authentication' => 'Local and LDAP users',
     'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
     'request_access_to_item' => 'Request access for this item',
