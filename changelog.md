@@ -20,6 +20,7 @@
  #2111 Add support for login through http header
  #2109 restrict login to Group Ldap don't work
  #2102 Changed field renewal_period size
+ #2096 Offline mode decryption fails if too much items exported
  #2095 Can't upload files on items - Plupload update
  #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
  #2093 role human resources doesn't access expected pages

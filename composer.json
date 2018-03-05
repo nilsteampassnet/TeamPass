@@ -13,8 +13,8 @@
         "email": "nils@teampass.net",
         "issues": "https://github.com/nilsteampassnet/TeamPass/issues",
         "source": "https://github.com/nilsteampassnet/TeamPass",
-        "wiki": "http://www.teampass.net",
-        "docs": "http://teampass.readthedocs.io/en/latest/",
+        "wiki": "https://www.teampass.net",
+        "docs": "https://teampass.readthedocs.io/en/latest/",
         "forum": "https://www.reddit.com/r/TeamPass/"
     },
     "require": {

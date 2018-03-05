@@ -838,9 +838,9 @@ $( window ).on( "load", function() {
     echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://teampass.net" target="_blank" style="color:#F0F0F0;">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
+            <a href="https://teampass.net" target="_blank" style="color:#F0F0F0;">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
             &nbsp;|&nbsp;
-            <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
+            <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
             &nbsp;
             <a href="https://www.reddit.com/r/TeamPass/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['admin_help']).'"><i class="fa fa-reddit-alien"></i></a>
             &nbsp;

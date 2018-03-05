@@ -1491,7 +1491,7 @@ function rest_get()
             } else {
                 rest_error('AUTH_NO_IDENTIFIER');
             }
-        } elseif ($GLOBALS['request'][0] == "auth_tpc") {
+        } elseif ($GLOBALS['request'][0] === "auth_tpc") {
             /*
             ** TO BE USED ONLY BY TEAMPASS-CONNECT
             **
@@ -1500,138 +1500,142 @@ function rest_get()
             if (isset($GLOBALS['request'][1])) {
                 // Get passed variables
                 $passedData = explode(';', base64_decode($GLOBALS['request'][1]));
-                $tpc_url = $passedData[0];
-                $user_login = $passedData[1];
-                $user_pwd = $passedData[2];
-                $user_saltkey = $passedData[3];
+                if (count($passedData) === 4) {
+                    $tpc_url = $passedData[0];
+                    $user_login = $passedData[1];
+                    $user_pwd = $passedData[2];
+                    $user_saltkey = $passedData[3];
 
-                // get url
-                if (isset($tpc_url)) {
-                    // is user granted?
-                    $userData = DB::queryFirstRow(
-                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
-                        FROM ".prefix_table("users")."
-                        WHERE login = %s",
-                        $user_login
-                    );
-
-                    // Check if user exists
-                    if (empty($userData['id']) === true) {
-                        rest_error('AUTH_NOT_GRANTED');
-                    }
-
-                    // check if psk is correct.
-                    if (empty($user_saltkey) === false) {
-                        $user_saltkey = defuse_validate_personal_key(
-                            $user_saltkey,
-                            $userData['encrypted_psk']
+                    // get url
+                    if (isset($tpc_url)) {
+                        // is user granted?
+                        $userData = DB::queryFirstRow(
+                            "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
+                            FROM ".prefix_table("users")."
+                            WHERE login = %s",
+                            $user_login
                         );
-                        if (strpos($user_saltkey, "Error ") !== false) {
-                            // error
-                            rest_error('AUTH_PSK_ERROR');
-                        }
-                    }
 
-                    // load passwordLib library
-                    require_once '../sources/SplClassLoader.php';
-                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                    $pwdlib->register();
-                    $pwdlib = new PasswordLib\PasswordLib();
-
-                    if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
-                        // Manage the case TPC asks for user identification
-                        if ($tpc_url === 'identify_user') {
-                            echo json_encode(array('err' => '', 'status' => 'USER_GRANTED'));
-                            return false;
+                        // Check if user exists
+                        if (empty($userData['id']) === true) {
+                            rest_error('AUTH_NOT_GRANTED');
                         }
 
-                        // define the restriction of "id_tree" of this user
-                        //db::debugMode(true);
-                        $userDef = DB::queryOneColumn(
-                            'folder_id',
-                            "SELECT DISTINCT folder_id
-                            FROM ".prefix_table("roles_values")."
-                            WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ",
-                            empty($userData['groupes_interdits']) ? "" : "AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")",
-                            "AND role_id IN %ls
-                            GROUP BY folder_id",
-                            explode(";", $userData['groupes_interdits'])
-                        );
-                        // complete with "groupes_visibles"
-                        foreach (explode(";", $userData['groupes_visibles']) as $v) {
-                            array_push($userDef, $v);
-                        }
-
-                        // add PF
-                        $userpf = DB::queryFirstRow(
-                            "SELECT `id` FROM ".prefix_table("nested_tree")." WHERE title = %s",
-                            $userData['id']
-                        );
-                        array_push($userDef, $userpf['id']);
-
-                        // Parse provided URL
-                        $url_scheme = parse_url($tpc_url, PHP_URL_SCHEME);
-                        $url_post = parse_url($tpc_url, PHP_URL_HOST);
-
-                        // find the item associated to the url
-                        //db::debugmode(true);
-                        $response = DB::query(
-                            "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
-                            FROM ".prefix_table("items")."
-                            WHERE url LIKE %s
-                            AND id_tree IN (".implode(",", array_filter($userDef)).")
-                            AND inactif = %i
-                            ORDER BY id DESC",
-                            $url_scheme.'://'.$url_post.'%',
-                            0
-                        );
-                        $counter = DB::count();
-
-                        if ($counter > 0) {
-                            $json = [];
-                            foreach ($response as $data) {
-                                // check if item visible
-                                if (empty($data['restricted_to']) ||
-                                    ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
-                                ) {
-                                    // prepare export
-                                    $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                                    if ($data['perso'] === "0") {
-                                        $crypt_pw = cryption(
-                                            $data['pw'],
-                                            "",
-                                            "decrypt"
-                                        );
-                                    } elseif (empty($user_saltkey)) {
-                                        $crypt_pw['string'] = "no_psk";
-                                    } else {
-                                        $crypt_pw = cryption(
-                                            $data['pw'],
-                                            $user_saltkey,
-                                            "decrypt"
-                                        );
-                                    }
-                                    $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
-                                    $json[$data['id']]['perso'] = $data['perso'];
-                                    $json[$data['id']]['domain'] = $url_scheme.'://'.$url_post;
-                                    $json[$data['id']]['id'] = $data['id'];
-                                }
+                        // check if psk is correct.
+                        if (empty($user_saltkey) === false) {
+                            $user_saltkey = defuse_validate_personal_key(
+                                $user_saltkey,
+                                $userData['encrypted_psk']
+                            );
+                            if (strpos($user_saltkey, "Error ") !== false) {
+                                // error
+                                rest_error('AUTH_PSK_ERROR');
                             }
-                            // prepare answer. If no access then inform
-                            if (empty($json)) {
-                                rest_error('AUTH_NO_DATA');
+                        }
+
+                        // load passwordLib library
+                        require_once '../sources/SplClassLoader.php';
+                        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                        $pwdlib->register();
+                        $pwdlib = new PasswordLib\PasswordLib();
+
+                        if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
+                            // Manage the case TPC asks for user identification
+                            if ($tpc_url === 'identify_user') {
+                                echo json_encode(array('err' => '', 'status' => 'USER_GRANTED'));
+                                return false;
+                            }
+
+                            // define the restriction of "id_tree" of this user
+                            //db::debugMode(true);
+                            $userDef = DB::queryOneColumn(
+                                'folder_id',
+                                "SELECT DISTINCT folder_id
+                                FROM ".prefix_table("roles_values")."
+                                WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ",
+                                empty($userData['groupes_interdits']) ? "" : "AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")",
+                                "AND role_id IN %ls
+                                GROUP BY folder_id",
+                                explode(";", $userData['groupes_interdits'])
+                            );
+                            // complete with "groupes_visibles"
+                            foreach (explode(";", $userData['groupes_visibles']) as $v) {
+                                array_push($userDef, $v);
+                            }
+
+                            // add PF
+                            $userpf = DB::queryFirstRow(
+                                "SELECT `id` FROM ".prefix_table("nested_tree")." WHERE title = %s",
+                                $userData['id']
+                            );
+                            array_push($userDef, $userpf['id']);
+
+                            // Parse provided URL
+                            $url_scheme = parse_url($tpc_url, PHP_URL_SCHEME);
+                            $url_post = parse_url($tpc_url, PHP_URL_HOST);
+
+                            // find the item associated to the url
+                            //db::debugmode(true);
+                            $response = DB::query(
+                                "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
+                                FROM ".prefix_table("items")."
+                                WHERE url LIKE %s
+                                AND id_tree IN (".implode(",", array_filter($userDef)).")
+                                AND inactif = %i
+                                ORDER BY id DESC",
+                                $url_scheme.'://'.$url_post.'%',
+                                0
+                            );
+                            $counter = DB::count();
+
+                            if ($counter > 0) {
+                                $json = [];
+                                foreach ($response as $data) {
+                                    // check if item visible
+                                    if (empty($data['restricted_to']) ||
+                                        ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
+                                    ) {
+                                        // prepare export
+                                        $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                                        $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                                        if ($data['perso'] === "0") {
+                                            $crypt_pw = cryption(
+                                                $data['pw'],
+                                                "",
+                                                "decrypt"
+                                            );
+                                        } elseif (empty($user_saltkey)) {
+                                            $crypt_pw['string'] = "no_psk";
+                                        } else {
+                                            $crypt_pw = cryption(
+                                                $data['pw'],
+                                                $user_saltkey,
+                                                "decrypt"
+                                            );
+                                        }
+                                        $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
+                                        $json[$data['id']]['perso'] = $data['perso'];
+                                        $json[$data['id']]['domain'] = $url_scheme.'://'.$url_post;
+                                        $json[$data['id']]['id'] = $data['id'];
+                                    }
+                                }
+                                // prepare answer. If no access then inform
+                                if (empty($json)) {
+                                    rest_error('AUTH_NO_DATA');
+                                } else {
+                                    echo json_encode($json);
+                                }
                             } else {
-                                echo json_encode($json);
+                                rest_error('NO_DATA_EXIST');
                             }
                         } else {
-                            rest_error('NO_DATA_EXIST');
+                            rest_error('AUTH_NOT_GRANTED');
                         }
                     } else {
-                        rest_error('AUTH_NOT_GRANTED');
+                        rest_error('AUTH_NO_URL');
                     }
                 } else {
-                    rest_error('AUTH_NO_URL');
+                  rest_error('AUTH_NO_IDENTIFIER');
                 }
             } else {
                 rest_error('AUTH_NO_IDENTIFIER');
