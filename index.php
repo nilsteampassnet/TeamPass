@@ -781,27 +781,30 @@ if (isset($_SESSION['CPM'])) {
         if (isset($SETTINGS['enable_http_request_login']) === true
             && $SETTINGS['enable_http_request_login'] === '1'
             && isset($_SERVER['PHP_AUTH_USER']) === true
-            && !(isset($SETTINGS['maintenance_mode']) === true
+            && (isset($SETTINGS['maintenance_mode']) === false
             && $SETTINGS['maintenance_mode'] === '1')
         ) {
         echo	'
-        	<script>
-        		var seconds = 3;
-        		function updateLogonButton(timeToGo){
-				    document.getElementById("but_identify_user").value = "' . $LANG['duration_login_attempt'] . ' " + timeToGo;
-				}
-				$( window ).on( "load", function() {
-				    updateLogonButton(seconds);
-				    setInterval(function(){
-						if(seconds > 0){
-							seconds--;
-						}else if(seconds == 0){
-							launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\');
-						}
-						updateLogonButton(seconds);
-					}, 1000);
-				});
-    		</script>';
+<script>
+var seconds = 1;
+function updateLogonButton(timeToGo){
+    document.getElementById("but_identify_user").value = "' . $LANG['duration_login_attempt'] . ' " + timeToGo;
+}
+$( window ).on( "load", function() {
+    updateLogonButton(seconds);
+    setInterval(function() {
+        seconds--;
+        if (seconds >= 0) {
+            updateLogonButton(seconds);
+        } else if(seconds === 0) {
+            launchIdentify(\'', isset($SETTINGS['duo']) == true && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\');
+        }
+        updateLogonButton(seconds);
+    },
+    1000
+  );
+});
+</script>';
         }
 
         echo '
