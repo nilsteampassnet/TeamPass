@@ -200,17 +200,20 @@ if (isset($session_tp_defuse_installed) === false) {
 mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 // alter table MISC - rename ID is exists
-if (columnExists($pre."misc", "id") === true) {
-    // Change name of field
-    mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
-} else {
-    // alter table misc to add an index
-    $res = addColumnIfNotExist(
-        $pre."misc",
-        "increment_id",
-        "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
-    );
+$res = addColumnIfNotExist(
+    $pre."misc",
+    "increment_id",
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
+if ($res === true) {
+  // Change name of field
+  mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
+} elseif ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id user_ip to table misc! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
 }
+
 
 // alter table misc to add an index
 mysqli_query(
@@ -763,27 +766,31 @@ mysqli_query(
 
 
 // alter table USERS to add a new field "user_ip"
-if (columnExists($pre."users", "user_ip") === true) {
+$res = addColumnIfNotExist(
+    $pre."users",
+    "user_ip",
+    "VARCHAR(400) NOT NULL DEFAULT 'none'"
+);
+if ($res === true) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."users` CHANGE `user_ip` `user_ip` VARCHAR(400) NOT NULL DEFAULT 'none'");
-} else {
-    // alter table misc to add an index
-    $res = addColumnIfNotExist(
-        $pre."users",
-        "user_ip",
-        "VARCHAR(400) NOT NULL DEFAULT 'none'"
-    );
+} elseif ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_ip to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
 }
 
 
 // alter table USERS to add a new field "user_api_key"
-if (columnExists($pre."users", "user_api_key") === false) {
-    // alter table misc to add an index
-    $res = addColumnIfNotExist(
-        $pre."users",
-        "user_api_key",
-        "VARCHAR(500) NOT NULL DEFAULT 'none'"
-    );
+$res = addColumnIfNotExist(
+    $pre."users",
+    "user_api_key",
+    "VARCHAR(500) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_api_key to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
 }
 
 
