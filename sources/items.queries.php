@@ -2157,8 +2157,13 @@ if (null !== $post_type) {
             $post_target_folder_id = filter_var(htmlspecialchars_decode($dataReceived['target_folder_id']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check that user can access this folder
-            if (!in_array($post_source_folder_id, $_SESSION['groupes_visibles'])
-                || !in_array($post_target_folder_id, $_SESSION['groupes_visibles'])
+            if ((
+                  in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
+                  in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) &&
+                  (
+                      $post_target_folder_id === '0' &&
+                      isset($SETTINGS['can_create_root_folder']) === true && $SETTINGS['can_create_root_folder'] === '1'
+                  )
             ) {
                 $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
@@ -2200,18 +2205,17 @@ if (null !== $post_type) {
                 break;
             }
 
-            if ($tmp_source['parent_id'] !== "0") {
-                // moving SOURCE folder
-                DB::update(
-                    prefix_table("nested_tree"),
-                    array(
-                        'parent_id' => $post_target_folder_id
-                        ),
-                    'id=%s',
-                    $post_source_folder_id
-                );
-                $tree->rebuild();
-            }
+
+            // moving SOURCE folder
+            DB::update(
+                prefix_table("nested_tree"),
+                array(
+                    'parent_id' => $post_target_folder_id
+                    ),
+                'id=%s',
+                $post_source_folder_id
+            );
+            $tree->rebuild();
 
 
             // send data

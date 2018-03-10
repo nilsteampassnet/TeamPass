@@ -854,7 +854,7 @@ echo '
 // Formulaire MOVE FOLDER
 echo '
 <div id="div_move_folder" style="display:none;">
-    <div id="move_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div id="move_rep_show_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all hidden"></div>
     <div style="text-align:center;margin-top:20px;">
         <p>'.$LANG['folder_will_be_moved_below'].'</p>
         <div>
@@ -862,7 +862,7 @@ echo '
         </select>
         </div>
     </div>
-    <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="move_folder_loader" style="text-align:center;margin-top:20px;" class="hidden">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';

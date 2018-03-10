@@ -2016,7 +2016,6 @@ function open_move_group_div()
     if (RecupComplexite($('#hid_cat').val(), 0) == 0) return false;
 
     //Select the actual folder in the dialogbox
-    //$('#move_folder_id option[value=' + $('#hid_cat').val() + ']').prop('selected', true);
     $('#move_folder_title').html($.trim($('#move_folder_id :selected').text())+" [id"+$('#hid_cat').val()+"]");
     $('#move_folder_id').val(0);
     $('#div_move_folder').dialog('open');
@@ -3053,15 +3052,18 @@ $(function() {
             "<?php echo addslashes($LANG['save_button']); ?>": function() {
                 //Do some checks
                 $("#move_rep_show_error").addClass("hidden");
-                if ($("#move_folder_id").val() == "0") {
-                    $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_group']); ?>");
-                    $("#move_rep_show_error").show();
+
+                if ($("#move_folder_id").val() === null || $("#move_folder_id").val() === "") {
+                    $("#move_rep_show_error")
+                        .html("<?php echo addslashes($LANG['error_group']); ?>")
+                        .removeClass("hidden");
                 } else if($('#hid_cat').val() === $('#move_folder_id').val()) {
                     // do not move to itself
-                    $("#move_rep_show_error").html("<?php echo addslashes($LANG['error_not_allowed_to']); ?>");
-                    $("#move_rep_show_error").show();
+                    $("#move_rep_show_error")
+                        .html("<?php echo addslashes($LANG['error_not_allowed_to']); ?>")
+                        .removeClass("hidden");
                 } else {
-                    $("#move_folder_loader").show();
+                    $("#move_folder_loader").removeClass("hidden");
                     $("#div_editer_rep ~ .ui-dialog-buttonpane")
                         .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
                         .prop("disabled", true);
@@ -3081,14 +3083,14 @@ $(function() {
                         function(data) {
                             //check if format error
                             if (data[0].error == "") {
+                                $("#move_folder_loader").addClass("hidden");
                                 $("#div_move_folder ~ .ui-dialog-buttonpane")
                                     .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
                                 ListerItems($('#hid_cat').val(), "", 0);
-                                $("#move_folder_loader").addClass("hidden");
                                 refreshTree();
                                 $("#div_move_folder").dialog("close");
                             } else {
-                                $("#move_rep_show_error").html(data[0].error).show();
+                                $("#move_rep_show_error").html(data[0].error).removeClass("hidden");
                             }
                             $("#move_folder_loader").addClass("hidden");
                         },
