@@ -933,6 +933,9 @@ $htmlHeaders .= '
             height: 520,
             title: "'.$LANG['user_profile_dialogbox_menu'].'",
             buttons: {
+                "'.$LANG['report_a_bug'].'": function() {
+                    generateBugReport();
+                },
                 "'.$LANG['close'].'": function() {
                     $(this).dialog("close");
                 }

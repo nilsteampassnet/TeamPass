@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'report_a_bug' => 'Reporter un défaut',
     'user_profile_api_key' => 'Votre clé API',
     'settings_ldap_and_local_authentication' => 'Utilisateurs locaux et LDAP',
     'settings_ldap_and_local_authentication_tip' => 'En activant cette option, l\identification sera acceptée pour les utilisateurs locaux et dans un annuaire LDAP.',

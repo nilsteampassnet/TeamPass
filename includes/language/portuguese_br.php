@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'report_a_bug' => 'Report a Bug',
     'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'Enviar ao usuário o Código do Google Authenticator por e-mail',
     'send_ga_code' => 'Google Authenticator para usuário',
