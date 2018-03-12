@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -191,7 +191,7 @@ echo '
             return;
         }
 
-        if ($("#offline_pw_strength_value").val() < $("#min_offline_pw_strength_value").val()) {
+        if (parseInt($("#offline_pw_strength_value").val()) < parseInt($("#min_offline_pw_strength_value").val())) {
             $("#offline_information").addClass("ui-state-error ui-corner-all").show().html("<?php echo $LANG['error_complex_not_enought']; ?>");
             setTimeout(function(){$("#offline_information").effect( "fade", "slow" );}, 1000);
             return;

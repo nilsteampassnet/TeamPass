@@ -1078,7 +1078,7 @@ class DBHelper {
     }
 }
 
-function meekrodb_error_handler($params) {
+function meekrodb_error_handler($params) {echo $params['error'];
     echo prepareExchangedData('[{"error" : "'.$params['error'].'"}]', "encode");
 
     die;

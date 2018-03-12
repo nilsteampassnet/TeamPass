@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -370,10 +370,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
          */
         case "purgeLogs":
             // Prepare POST variable
-            $post_purgeFrom = explode(';', filter_input(INPUT_POST, 'purgeFrom', FILTER_SANITIZE_NUMBER_INT));
-            $post_purgeTo = explode(';', filter_input(INPUT_POST, 'purgeTo', FILTER_SANITIZE_NUMBER_INT));
-            $post_logType = explode(';', filter_input(INPUT_POST, 'logType', FILTER_SANITIZE_STRING));
+            $post_purgeFrom = filter_input(INPUT_POST, 'purgeFrom', FILTER_SANITIZE_STRING);
+            $post_purgeTo = filter_input(INPUT_POST, 'purgeTo', FILTER_SANITIZE_STRING);
+            $post_logType = filter_input(INPUT_POST, 'logType', FILTER_SANITIZE_STRING);
             $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+
+            $post_purgeFrom = strtotime(date_format(date_create_from_format($SETTINGS['date_format'], $post_purgeFrom), 'Y-m-d'));
+            $post_purgeTo = strtotime(date_format(date_create_from_format($SETTINGS['date_format'], $post_purgeTo), 'Y-m-d'));
 
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
@@ -383,31 +386,32 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Check conditions
             if (empty($post_purgeFrom) === false && empty($post_purgeTo) === false && empty($post_logType) === false
-                && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1) {
+                && isset($_SESSION['user_admin']) && $_SESSION['user_admin'] == 1
+            ) {
                 if ($post_logType === "items_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                         "AND date BETWEEN %i AND %i",
                         "at_shown",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                     $counter = DB::count();
-                        // Delete
-                        DB::delete(
-                            prefix_table("log_items"),
-                            "action=%s AND date BETWEEN %i AND %i",
-                            "at_shown",
-                            strtotime($post_purgeFrom),
-                            strtotime($post_purgeTo)
-                        );
+                    // Delete
+                    DB::delete(
+                        prefix_table("log_items"),
+                        "action=%s AND date BETWEEN %i AND %i",
+                        "at_shown",
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
+                    );
                 } elseif ($post_logType === "connections_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "user_connection",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -415,16 +419,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "user_connection",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                 } elseif ($post_logType === "errors_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "error",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -432,16 +436,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "error",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                 } elseif ($post_logType === "copy_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE action=%s ".
                         "AND date BETWEEN %i AND %i",
                         "at_copy",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -449,16 +453,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_items"),
                         "action=%s AND date BETWEEN %i AND %i",
                         "at_copy",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                 } elseif ($post_logType === "admin_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "admin_action",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -466,16 +470,16 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "admin_action",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                 } elseif ($post_logType === "failed_auth_logs") {
                     DB::query(
                         "SELECT * FROM ".prefix_table("log_system")." WHERE type=%s ".
                         "AND date BETWEEN %i AND %i",
                         "failed_auth",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                     $counter = DB::count();
                     // Delete
@@ -483,8 +487,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         prefix_table("log_system"),
                         "type=%s AND date BETWEEN %i AND %i",
                         "failed_auth",
-                        strtotime($post_purgeFrom),
-                        strtotime($post_purgeTo)
+                        ($post_purgeFrom),
+                        ($post_purgeTo)
                     );
                 } else {
                     $counter = 0;

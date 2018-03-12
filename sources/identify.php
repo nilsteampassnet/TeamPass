@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -320,10 +320,27 @@ function identifyUser($sentData)
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
 
-    // Prepare variables
-    $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-    $pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
-    $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+    // prepare variables
+	if (isset($SETTINGS['enable_http_request_login']) === true
+        && $SETTINGS['enable_http_request_login'] === '1'
+        && isset($_SERVER['PHP_AUTH_USER']) === true
+        && !(isset($SETTINGS['maintenance_mode']) === true
+        && $SETTINGS['maintenance_mode'] === '1')
+    ) {
+        if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
+			$username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+		} elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+			$username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+		} else {
+			$username = $_SERVER['PHP_AUTH_USER'];
+		}
+		$passwordClear = $_SERVER['PHP_AUTH_PW'];
+		$pwdOldEncryption = encryptOld($_SERVER['PHP_AUTH_PW']);
+	}else{
+		$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
+		$pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
+		$username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+	}
     $logError = "";
     $userPasswordVerified = false;
 
@@ -352,7 +369,7 @@ function identifyUser($sentData)
             'user_attribute : '.$SETTINGS['ldap_user_attribute']."\n".
             'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
             'domain_controllers : '.$SETTINGS['ldap_domain_controler']."\n".
-            'port : '.$SETTINGS['ldap_port']."\n".
+            'ad_port : '.$SETTINGS['ldap_port']."\n".
             'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
             'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
         );
@@ -407,6 +424,7 @@ function identifyUser($sentData)
                 fputs($dbgLdap, "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."\n");
             }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+            ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
 
             // Is LDAP connection ready?
             if ($ldapconn !== false) {
@@ -418,27 +436,13 @@ function identifyUser($sentData)
                     }
                 }
                 if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
-                    $filter = "(&(".$SETTINGS['ldap_user_attribute']."=$username)(objectClass=".$SETTINGS['ldap_object_class']."))";
-                    $result = ldap_search($ldapconn, $SETTINGS['ldap_search_base'], $filter, array('dn', 'mail', 'givenname', 'sn'));
-
-                    // Should we restrain the search in specified user groups
-                    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
-                        $filter_group = "memberUid=".$username;
-                        $result_group = ldap_search($ldapconn, $SETTINGS['ldap_usergroup'], $filter_group, array('dn'));
-                        if ($debugLdap == 1) {
-                                fputs(
-                                    $dbgLdap,
-                                    'Search filter (group): '.$filter_group."\n".
-                                    'Results : '.print_r(ldap_get_entries($ldapconn, $result_group), true)."\n"
-                                );
-                        }
-                        // Is user in the specified user groups?
-                        if (ldap_count_entries($ldapconn, $result_group) > 0) {
-                            $ldapConnection = true;
-                        } else {
-                            $ldapConnection = false;
-                        }
-                    }
+                    $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+                    $result = ldap_search(
+                      $ldapconn,
+                      $SETTINGS['ldap_search_base'],
+                      $filter,
+                      array('dn', 'mail', 'givenname', 'sn')
+                    );
                     if ($debugLdap == 1) {
                         fputs(
                             $dbgLdap,
@@ -447,36 +451,99 @@ function identifyUser($sentData)
                         );
                     }
 
-                    // Is user in the LDAP?
+                    // Check if user was found in AD
                     if (ldap_count_entries($ldapconn, $result) > 0) {
-                        // Try to auth inside LDAP
+                        // Get user's info and especially the DN
                         $result = ldap_get_entries($ldapconn, $result);
                         $user_dn = $result[0]['dn'];
-                        $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
-                        if ($ldapbind === true) {
-                            $ldapConnection = true;
 
-                            // Update user's password
-                            $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                        fputs(
+                            $dbgLdap,
+                            'User was found. '.$user_dn.'\n'
+                        );
 
-                            // Do things if user exists in TP
-                            if ($counter > 0) {
-                                // Update pwd in TP database
-                                DB::update(
-                                    prefix_table('users'),
-                                    array(
-                                        'pw' => $data['pw']
-                                    ),
-                                    "login=%s",
-                                    $username
-                                );
+                        // Should we restrain the search in specified user groups
+                        $GroupRestrictionEnabled = false;
+                        if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+                            // New way to check User's group membership
+                            $filter_group = "memberUid=".$username;
+                            $result_group = ldap_search(
+                                $ldapconn,
+                                $SETTINGS['ldap_search_base'],
+                                $filter_group,
+                                array('dn')
+                            );
 
-                                // No user creation is requested
-                                $proceedIdentification = true;
+                            if ($result_group) {
+                                $entries = ldap_get_entries($ldapconn, $result_group);
+
+                                if ($debugLdap == 1) {
+                                    fputs(
+                                        $dbgLdap,
+                                        'Search groups appartenance : '.$SETTINGS['ldap_search_base']."\n".
+                                        'Results : '.print_r($entries, true)."\n"
+                                    );
+                                }
+
+                                if ($entries['count'] > 0) {
+                                    // Now check if group fits
+                                    for ($i=0; $i<$entries['count']; $i++) {
+                                      $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
+                                      if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                        $GroupRestrictionEnabled = true;
+                                        break;
+                                      }
+                                    }
+
+                                }
                             }
-                        } else {
-                            $ldapConnection = false;
+
+                            if ($debugLdap == 1) {
+                                fputs(
+                                    $dbgLdap,
+                                    'Group was found : '.$GroupRestrictionEnabled."\n"
+                                );
+                            }
                         }
+
+                        // Is user in the LDAP?
+                        if ($GroupRestrictionEnabled === true
+                            || (
+                                $GroupRestrictionEnabled === false
+                                && (isset($SETTINGS['ldap_usergroup']) === false
+                                    || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
+                                )
+                            )
+                        ) {
+                            // Try to auth inside LDAP
+                            $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
+                            if ($ldapbind === true) {
+                                $ldapConnection = true;
+
+                                // Update user's password
+                                $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+
+                                // Do things if user exists in TP
+                                if ($counter > 0) {
+                                    // Update pwd in TP database
+                                    DB::update(
+                                        prefix_table('users'),
+                                        array(
+                                            'pw' => $data['pw']
+                                        ),
+                                        "login=%s",
+                                        $username
+                                    );
+
+                                    // No user creation is requested
+                                    $proceedIdentification = true;
+                                }
+                            } else {
+                                $ldapConnection = false;
+                            }
+                        }
+                    } else {
+                        $ldapConnection = false;
                     }
                 } else {
                     $ldapConnection = false;
@@ -492,7 +559,7 @@ function identifyUser($sentData)
                     'base_dn : '.$SETTINGS['ldap_domain_dn']."\n".
                     'account_suffix : '.$SETTINGS['ldap_suffix']."\n".
                     'domain_controllers : '.$SETTINGS['ldap_domain_controler']."\n".
-                    'port : '.$SETTINGS['ldap_port']."\n".
+                    'ad_port : '.$SETTINGS['ldap_port']."\n".
                     'use_ssl : '.$SETTINGS['ldap_ssl']."\n".
                     'use_tls : '.$SETTINGS['ldap_tls']."\n*********\n\n"
                 );
@@ -517,7 +584,7 @@ function identifyUser($sentData)
                     'base_dn' => $SETTINGS['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
                     'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
-                    'port' => $SETTINGS['ldap_port'],
+                    'ad_port' => $SETTINGS['ldap_port'],
                     'use_ssl' => $SETTINGS['ldap_ssl'],
                     'use_tls' => $SETTINGS['ldap_tls']
                 )
@@ -642,7 +709,7 @@ function identifyUser($sentData)
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
                 'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
-                'fonction_id' => '',
+                'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
                 'groupes_interdits' => '',
                 'groupes_visibles' => '',
                 'last_pw_change' => time(),
@@ -653,7 +720,7 @@ function identifyUser($sentData)
         );
         $newUserId = DB::insertId();
         // Create personnal folder
-        if ($SETTINGS['enable_pf_feature'] == "1") {
+        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
             DB::insert(
                 prefix_table("nested_tree"),
                 array(
@@ -826,23 +893,8 @@ function identifyUser($sentData)
         exit();
     }
 
-    if ($proceedIdentification === true && $user_initial_creation_through_ldap === false) {
+    if ($proceedIdentification === true) {
         // User exists in the DB
-        //v2.1.17 -> change encryption for users password
-        if ($pwdOldEncryption === $data['pw'] &&
-            !empty($data['pw'])
-        ) {
-            //update user's password
-            $data['pw'] = bCrypt($passwordClear, COST);
-            DB::update(
-                prefix_table('users'),
-                array(
-                    'pw' => $data['pw']
-                ),
-                "id=%i",
-                $data['id']
-            );
-        }
         if (crypt($passwordClear, $data['pw']) == $data['pw'] && !empty($data['pw'])) {
             //update user's password
             $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
@@ -897,6 +949,12 @@ function identifyUser($sentData)
                 isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1'
                 && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
             )
+            ||
+            (
+                isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1'
+                && isset($SETTINGS['ldap_mode']) && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
+                && $userPasswordVerified === true && $data['disabled'] == 0
+            )
         ) {
             $_SESSION['autoriser'] = true;
             $_SESSION["pwd_attempts"] = 0;
@@ -935,6 +993,7 @@ function identifyUser($sentData)
             $_SESSION['user_avatar'] = $data['avatar'];
             $_SESSION['user_avatar_thumb'] = $data['avatar_thumb'];
             $_SESSION['user_upgrade_needed'] = $data['upgrade_needed'];
+            $_SESSION['user_force_relog'] = $data['force-relog'];
             // get personal settings
             if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) {
                 $data['treeloadstrategy'] = "full";
@@ -945,6 +1004,7 @@ function identifyUser($sentData)
             $_SESSION['user_settings']['encrypted_psk'] = $data['encrypted_psk'];
             $_SESSION['user_settings']['usertimezone'] = $data['usertimezone'];
             $_SESSION['user_settings']['session_duration'] = $dataReceived['duree_session'] * 60;
+            $_SESSION['user_settings']['api-key'] = $data['user_api_key'];
 
 
             // manage session expiration
@@ -1044,7 +1104,7 @@ function identifyUser($sentData)
             }
 
             // Get user's rights
-            if ($user_initial_creation_through_ldap !== true) {
+            if ($user_initial_creation_through_ldap === false) {
                 identifyUserRights(
                     $data['groupes_visibles'],
                     $_SESSION['groupes_interdits'],

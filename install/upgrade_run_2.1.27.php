@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -200,22 +200,30 @@ if (isset($session_tp_defuse_installed) === false) {
 mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NULL DEFAULT '0'");
 
 // alter table MISC - rename ID is exists
-if (columnExists($pre."misc", "id") === true) {
-    // Change name of field
-    mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
-} else {
-    // alter table misc to add an index
-    $res = addColumnIfNotExist(
-        $pre."misc",
-        "increment_id",
-        "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
-    );
+$res = addColumnIfNotExist(
+    $pre."misc",
+    "increment_id",
+    "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
+if ($res === true) {
+  // Change name of field
+  mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
+} elseif ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id user_ip to table misc! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
 }
+
 
 // alter table misc to add an index
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
+// create index
+mysqli_query(
+    $db_link,
+    "CREATE INDEX teampass_log_items_id_item_IDX ON ".$pre."log_items (id_item, date);"
 );
 
 // add field agses-usercardid to Users table
@@ -377,6 +385,95 @@ if ($res === false) {
     mysqli_close($db_link);
     exit();
 }
+
+
+// alter table CACHE to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."cache` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+);
+
+
+// alter table EXPORT to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."export` ADD INDEX `id_idx` (`id`)"
+);
+
+// alter table ITEMS_EDITION to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."items_edition` ADD INDEX `item_id_idx` (`item_id`)"
+);
+
+
+// alter table NESTEED_TREE to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_parent_id` (`parent_id`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_nleft` (`nleft`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_nright` (`nright`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `nested_tree_nlevel` (`nlevel`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `personal_folder_idx` (`personal_folder`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` ADD KEY `id` (`id`)"
+);
+
+
+
+// alter table ROLES_VALUES to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."roles_values` ADD KEY `role_id_idx` (`role_id`)"
+);
+// alter table ROLES_VALUES to add a primary key
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."roles_values` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT PRIMARY KEY"
+);
+
+
+// alter table KB_ITEMS to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."kb_items` ADD PRIMARY KEY (`kb_id`)"
+);
+
+
+// alter table EMAILS to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."emails` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
+);
+
+
+// alter table AUTOMATIC_DEL to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."automatic_del` ADD PRIMARY KEY (`item_id`)"
+);
+
+
+// alter table CATEGORY_FOLDERS to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."categories_folders` ADD PRIMARY KEY (`id_category`)"
+);
+
 
 //-- generate new DEFUSE key
 if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installed === false) {
@@ -563,6 +660,34 @@ if (intval($tmp) === 0) {
 }
 
 
+// add new admin setting "ldap_port"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_port'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_port', '389')"
+    );
+}
+
+// add new admin setting "offline_key_level"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'offline_key_level'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'offline_key_level', '0')"
+    );
+}
+
+// add new admin setting "enable_http_request_login"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'enable_http_request_login'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_http_request_login', '0')"
+    );
+}
+
+
 // add new language "portuges_br"
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'portuguese_br'"));
 if (intval($tmp) === 0) {
@@ -573,23 +698,101 @@ if (intval($tmp) === 0) {
 }
 
 
+// add new language "Ukrainian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'ukrainian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('ukrainian', 'Ukrainian', 'ua', 'ua.png')"
+    );
+}
+
+
+// add new language "Romanian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'romanian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('romanian', 'Romanian', 'ro', 'ro.png')"
+    );
+}
+
+
+// add new language "Polish"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'polish'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('polish', 'Polish', 'po', 'po.png')"
+    );
+}
+
+
+// add new language "Hungarian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'hungarian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('hungarian', 'Hungarian', 'hu', 'hu.png')"
+    );
+}
+
+
+// add new language "Greek"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'greek'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('greek', 'Greek', 'gr', 'gr.png')"
+    );
+}
+
+
+// add new language "Bulgarian"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'bulgarian'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."languages` (`name`, `label`, `code`, `flag`) VALUES ('bulgarian', 'Bulgarian', 'bg', 'bg.png')"
+    );
+}
+
+
 // alter table USERS to add a new field "ga_temporary_code"
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."users` ADD `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none' AFTER `ga`;"
 );
+
+
 // alter table USERS to add a new field "user_ip"
-if (columnExists($pre."users", "user_ip") === true) {
+$res = addColumnIfNotExist(
+    $pre."users",
+    "user_ip",
+    "VARCHAR(400) NOT NULL DEFAULT 'none'"
+);
+if ($res === true) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."users` CHANGE `user_ip` `user_ip` VARCHAR(400) NOT NULL DEFAULT 'none'");
-} else {
-    // alter table misc to add an index
-    $res = addColumnIfNotExist(
-        $pre."users",
-        "user_ip",
-        "VARCHAR(400) NOT NULL DEFAULT 'none'"
-    );
+} elseif ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_ip to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
 }
+
+
+// alter table USERS to add a new field "user_api_key"
+$res = addColumnIfNotExist(
+    $pre."users",
+    "user_api_key",
+    "VARCHAR(500) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field user_api_key to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 
 // alter table USERS to allow NULL on field "email"
 mysqli_query(
@@ -642,6 +845,25 @@ if (intval($tmp) === 0) {
         "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'otv_is_enabled', '0')"
     );
 }
+
+
+// add new admin setting "ldap_and_local_authentication"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'ldap_and_local_authentication'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_and_local_authentication', '0')"
+    );
+}
+
+
+
+// alter table NESTEED_TREE to INT(5) on field "renewal_period"
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` CHANGE `renewal_period` `renewal_period` INT(5) NOT null DEFAULT '0';"
+);
+
 
 
 // add new field for items_change
@@ -767,6 +989,18 @@ global \$SETTINGS;
 fclose($file_handler);
 
 
+// Generate API key by user
+$result = mysqli_query($db_link, "SELECT id FROM `".$pre."users` WHERE login NOT IN ('admin', 'API', 'OTV')");
+while ($row = mysqli_fetch_assoc($result)) {
+    // Check if key already exists
+    $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."api` WHERE label = '".$row['id']."'"));
+    if (intval($tmp) === 0) {
+        mysqli_query(
+            $db_link,
+            "INSERT INTO `".$pre."api` (`type`, `label`, `value`, `timestamp`) VALUES ('user', '".$row['id']."', '".uniqidReal(39)."', '".time()."')"
+        );
+    }
+}
 
 // Finished
 echo '[{"finish":"1" , "next":"", "error":""}]';

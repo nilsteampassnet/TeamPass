@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -12,17 +12,18 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include '../includes/config/settings.php';
+include dirname(__FILE__) .'/../includes/config/settings.php';
+require_once dirname(__FILE__) .'/../includes/config/tp.config.php';
 header("Content-type: text/html; charset=utf-8");
 
 $_SESSION['CPM'] = 1;
 
 // connect to DB
-require_once '../sources/SplClassLoader.php';
-require_once '../includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'] .'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'] .'/includes/libraries/Database/Meekrodb/db.class.php';
 
 // Load libraries
-require_once '../sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 $pass = defuse_return_decrypted($pass);
 DB::$host = $server;
@@ -46,7 +47,7 @@ foreach ($rows as $record) {
 }
 
 // Check if key is conform
-if (!empty($settings['bck_script_passkey']) && !empty($settings['bck_script_passkey'])) {
+if (empty($settings['bck_script_passkey']) === false) {
     $currentKey = cryption(
         $settings['bck_script_passkey'],
         "",
@@ -98,9 +99,14 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
         $return .= "\n\n\n";
     }
 
-    // Encrypt file is required
+    //save the file
     $bck_filename = $settings['bck_script_filename'].'-'.time();
-    if (!empty($settings['bck_script_key'])) {
+    $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
+    fwrite($handle, $return);
+    fclose($handle);
+
+    // Encrypt file is required
+    if (empty($settings['bck_script_key']) === false) {
         // Encrypt the file
         prepareFileWithDefuse(
             'encrypt',
@@ -115,11 +121,6 @@ if (!empty($settings['bck_script_filename']) && !empty($settings['bck_script_pat
             $settings['bck_script_path'].'/'.$bck_filename.'.encrypted.sql',
             $settings['bck_script_path'].'/'.$bck_filename.'.sql'
         );
-    } else {
-        //save the file
-        $handle = fopen($settings['bck_script_path'].'/'.$bck_filename.'.sql', 'w+');
-        fwrite($handle, $return);
-        fclose($handle);
     }
 
     // store this file in DB

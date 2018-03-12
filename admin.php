@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -365,7 +365,7 @@ echo '
             <span class="fa fa-github fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['bug_canal']).'&nbsp;<a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues" style="font-weight:bold;font-style:italic;">Github</a>
         </div>
         <div style="margin-top:13px;">
-        <span class="fa fa-lightbulb-o fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['feature_request_canal']).'&nbsp;<a target="_blank" href="http://teampass.userecho.com/" style="font-weight:bold;font-style:italic;">UserEcho</a>
+        <span class="fa fa-lightbulb-o fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['feature_request_canal']).'&nbsp;<a target="_blank" href="https://teampass.userecho.com/" style="font-weight:bold;font-style:italic;">UserEcho</a>
         </div>
         <div style="margin-top:13px;">
         <span class="fa fa-reddit-alien fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['feature_support_canal']).'&nbsp;<a target="_blank" href="https://www.reddit.com/r/TeamPass/" style="font-weight:bold;font-style:italic;">Reddit</a>
@@ -373,7 +373,7 @@ echo '
 
 
         <div style="margin-top:30px;">
-        <span class="fa fa-beer fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['consider_a_donation']).'&nbsp;<span class="fa fa-smile-o"></span>&nbsp;<a target="_blank" href="http://teampass.net/donation" style="font-weight:bold;font-style:italic;">'.addslashes($LANG['more_information']).'</a>
+        <span class="fa fa-beer fa-lg"></span>&nbsp;&nbsp;'.addslashes($LANG['consider_a_donation']).'&nbsp;<span class="fa fa-smile-o"></span>&nbsp;<a target="_blank" href="https://teampass.net/donation" style="font-weight:bold;font-style:italic;">'.addslashes($LANG['more_information']).'</a>
         </div>
     </div>
     <div id="tabs-3">';

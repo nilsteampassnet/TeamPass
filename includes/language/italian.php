@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          italian.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @copyright     2009 - 2018 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,27 +14,15 @@
  */
 global $LANG;
 $LANG = array (
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
-    'text' => 'Text',
-    'masked' => 'Masked',
-    'type' => 'Type',
-    'select_type_of_field' => 'Select type of field',
-    'define_new_field' => 'Define new field',
-    'data_is_text' => 'Data is Text',
-    'data_is_masked' => 'Data is Hidden',
-    'at_export' => 'Export',
-    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
-    'confirm_change_field_type' => 'Confirm changing the field type',
+    'report_a_bug' => 'Report a Bug',
+    'user_profile_api_key' => 'Your API key',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Invia all\'utente per mail il link GoogleAuthenticator',
     'send_ga_code' => 'Google Authenticator per utente',
     'error_no_email' => 'Questo utente non ha un indirizzo email!',
@@ -1076,5 +1064,29 @@ $LANG = array (
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
     'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
+    'admin_script_backup_secret' => 'Passkey for backup execution',
+    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added as key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
+    'access_level_for_roles' => 'Associated access for Roles',
+    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
+    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
+    'error_security_level_not_reached' => 'Expected level of security not reached!',
+    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
+    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
+    'open_bug_report_in_github' => 'Open issue report in Github',
+    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
+    'create_github_bug_report' => 'Create new bug report',
+    'deselect_all' => 'Deselect all',
     '' => ''
 );

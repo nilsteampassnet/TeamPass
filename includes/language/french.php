@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          french.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @copyright     2009 - 2018 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,15 +14,15 @@
  */
 global $LANG;
 $LANG = array (
-    'deselect_all' => 'Désélectionner',
-    'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
-    'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',
-    'error_psk_should_be_changed' => 'Il vous est demandé de changer votre clé de salage personnelle.',
-    'personal_saltkey_security_level' => 'Niveau minimum de sécurité de la clé personnelle de salage',
-    'settings_disable_forgot_password_link' => 'Cacher le lien de récupération de mot de passe',
-    'settings_ldap_allowed_usergroup' => 'LDAP groupe autorisé',
-    'settings_ldap_allowed_usergroup_tip' => 'Indiquer le nom du groupe autorisé à se connecter à Teampass. Laisser vide si aucune restriction n\'est requise.',
-    'access_level_for_roles' => 'Droit associé des Roles',
+    'report_a_bug' => 'Reporter un défaut',
+    'user_profile_api_key' => 'Votre clé API',
+    'settings_ldap_and_local_authentication' => 'Utilisateurs locaux et LDAP',
+    'settings_ldap_and_local_authentication_tip' => 'En activant cette option, l\identification sera acceptée pour les utilisateurs locaux et dans un annuaire LDAP.',
+    'request_access_to_item' => 'Demander un accès à cet objet',
+    'request_access_to_item_info' => 'Fournir la raison pour laquelle vous souhaitez accèder à cet objet',
+    'send_request' => 'Envoyer la requête',
+    'error_no_reason_of_access' => 'Merci de fournir la raison de votre requête.',
+    'human_resources' => 'Ressources Humaines',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',
@@ -140,10 +140,10 @@ $LANG = array (
     'db_users_logged' => 'Utilisateurs actuellement connectés',
     'action' => 'Action',
     'login_time' => 'Connecté depuis',
-    'lastname' => 'Prénom',
+    'lastname' => 'Nom',
     'user_login' => 'Identifiant',
-    'at_user_new_lastname' => 'Prénom de l\'utilisateur #user_login# changé',
-    'at_user_new_name' => 'Nom de l\'utilisateur #user_login# changé',
+    'at_user_new_lastname' => 'Nom de l\'utilisateur #user_login# changé',
+    'at_user_new_name' => 'Prénom de l\'utilisateur #user_login# changé',
     'info_list_of_connected_users_approximation' => 'Information : cette liste peut présenter plus d\'utilisateurs connectés que la réalité.',
     'disconnect_all_users' => 'Déconnecter tous les utilisateurs (à l\'exception des administrateurs)',
     'role' => 'Rôle',
@@ -249,7 +249,7 @@ $LANG = array (
     'no_previous_pw' => 'Aucun ancien mot de passe',
     'request_access_ot_item' => 'Demander un accès au créateur',
     'email_request_access_subject' => '[TeamPass] Demande d\'accès à un élément',
-    'email_request_access_mail' => 'Bonjour #tp_item_author#,<br><br>L\'utilisateur #tp_user# a demandé un accès à \'#tp_item#\'.<br><br>Avant d\'autoriser l\'accès, soyez sûr de ce que vous faites.<br><br>Cordialement.',
+    'email_request_access_mail' => 'Bonjour #tp_item_author#,<br><br>L\'utilisateur #tp_user# a demandé un accès à \'#tp_item#\'.<br>Cette demande est accompagnée du justificatif suivant:<br><br><i>\'#tp_reason#\'</i><br><br>Merci de revoir et confirmer ou pas l\'accès.<br><br>Cordialement.',
     'admin_action_change_salt_key' => 'Changer la clé de salage principale',
     'admin_action_change_salt_key_tip' => 'Avant de changer votre clé de salage principale, merci de vous assurer d\'avoir réalisé une sauvegarde complète de la base de données, et de mettre TeamPass en mode maintenance',
     'block_admin_info' => 'Infos Administrateur',
@@ -507,7 +507,7 @@ $LANG = array (
     'import_csv_anyone_can_modify_in_role_txt' => 'Permettre la modification par n\'importe qui ayant le même rôle que les éléments importés.',
     'import_csv_anyone_can_modify_txt' => 'Permettre la modification par n\'importe qui des éléments importés.',
     'import_csv_dialog_info' => 'Information : l\'importation nécessite un fichier CSV. Un fichier exporté depuis KeePass a le format requis. Si vous désirez importer des données exportées depuis un autre outil, merci de vous assurer que ce dernier a la structure suivante : `Titre`,`Login`,`Mot de passe`,`Site Web`,`Commentaires`.',
-    'import_csv_menu_title' => 'Importer des éléments depuis un fichier CSV / XML KeePass',
+    'import_csv_menu_title' => 'Importer des éléments',
     'import_error_no_file' => 'Vous devez saisir un fichier !',
     'import_error_no_read_possible' => 'Impossible de lire le fichier !',
     'import_error_no_read_possible_kp' => 'Lecture du fichier impossible ! Il ne semble pas etre généré par KeePass.',
@@ -587,7 +587,7 @@ $LANG = array (
     'minutes' => 'minutes',
     'modify_button' => 'Modifier',
     'my_favourites' => 'Mes Favoris',
-    'name' => 'Nom',
+    'name' => 'Prénom',
     'nb_false_login_attempts' => 'Nombre de tentatives de connexion erronées avant blocage (0 pour désactiver)',
     'nb_folders' => 'Nombre de répertoires',
     'nb_items' => 'Nombre d\'éléments',
@@ -620,7 +620,7 @@ $LANG = array (
     'personal_salt_key_info' => 'Cette clé sera utilisée pour chiffrer et déchiffrer votre mot de passe. Elle n\'est pas sauvée en base de données et elle est seulement connue de vous. Ne la perdez surtout pas !',
     'please_update' => 'Pensez à effectuer la mise à jour !',
     'print' => 'Imprimer',
-    'print_out_menu_title' => 'Imprimer une liste de vos éléments',
+    'print_out_menu_title' => 'Exporter les éléments',
     'print_out_pdf_title' => 'TeamPass - Liste des éléments exportés',
     'print_out_warning' => 'En imprimant ces éléments, vous prenez l\'entière responsabilité de les  rendre accessibles. Attention tous les mots de passe seront visibles !',
     'pw' => 'Mots de passe',
@@ -1074,5 +1074,19 @@ $LANG = array (
     'at_export' => 'Export',
     'setting_disabled_by_admin' => 'Cette option a été désactivée',
     'confirm_change_field_type' => 'Confirmer le changement de type pour ce champ',
+    'admin_script_backup_secret' => 'Clé de Backup',
+    'admin_script_backup_secret_tip' => 'La clé de Backup est nécessaire pour lancer la sauvegarde. Elle doit être ajoutée comme paramètre à script.backup.php. Exemple : scripts.backup.php?key=votre_clé_de_backup',
+    'access_level_for_roles' => 'Droit associé des Roles',
+    'settings_ldap_allowed_usergroup' => 'LDAP groupe autorisé',
+    'settings_ldap_allowed_usergroup_tip' => 'Indiquer le nom du groupe autorisé à se connecter à Teampass. Laisser vide si aucune restriction n\'est requise.',
+    'error_security_level_not_reached' => 'Niveau de sécurité non atteint !',
+    'error_psk_should_be_changed' => 'Il vous est demandé de changer votre clé de salage personnelle.',
+    'personal_saltkey_security_level' => 'Niveau minimum de sécurité de la clé personnelle de salage',
+    'settings_disable_forgot_password_link' => 'Cacher le lien de récupération de mot de passe',
+    'newly_created_user_is_administrated_by' => 'Les nouveaux utilisateurs sont administrés par',
+    'open_bug_report_in_github' => 'Ouvrir un défaut dans Github',
+    'bug_report_to_github' => 'Compléter le contenu du rapport, le copier dans le presse-papier puis le coller dans une nouvelle page de défaut dans Github',
+    'create_github_bug_report' => 'Créer un rapport de défaut',
+    'deselect_all' => 'Désélectionner',
     '' => ''
 );

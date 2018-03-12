@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -597,6 +597,17 @@ $(function() {
         buttons: {
             "<?php echo $LANG['save_button']; ?>": function() {
                 var functions = managedby = allowFld = forbidFld = action_on_user = "";
+
+                // Check if is valid email
+                if (IsValidEmail(sanitizeString($('#user_edit_email').val())) === false) {
+                    $("#user_edit_error")
+                        .html("<?php echo addslashes($LANG['email_format_is_not_correct']); ?>")
+                        .show(1)
+                        .delay(2000)
+                        .fadeOut(1000);
+                    return false;
+                }
+
                 // manage the multiselect boxes
                 $("#user_edit_functions_list option:selected").each(function () {
                     functions += $(this).val() + ";";

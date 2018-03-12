@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -47,6 +47,7 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/css/passman.css" type="text/css" />
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
+        <script type="text/javascript" src="includes/js/platform/platform.js"></script>
 
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
@@ -155,6 +156,9 @@ $htmlHeaders .= '
         }
     }
 
+    /**
+     *
+     */
     function launchIdentify(isDuo, redirect, psk)
     {
         $("#connection_error").hide();
@@ -265,14 +269,6 @@ $htmlHeaders .= '
                             } else if (data[0].value === "error") {
                                 $("#mysql_error_warning").html(data[0].text).show();
                                 $("#div_mysql_error").show().dialog("open");
-                            } else if (data[0].value === "new_ldap_account_created") {
-                                $("#connection_error").html("'.addslashes($LANG['reload_page_after_user_account_creation']).'").show().switchClass("ui-state-error", "ui-state-default");
-                                setTimeout(
-                                    function (){
-                                        window.location.href="index.php"
-                                    },
-                                    2000
-                                );
                             } else if (data[0].value === "false_onetimepw") {
                                 $("#connection_error").html("'.addslashes($LANG['bad_onetime_password']).'").show();
                             } else if (data[0].pwd_attempts >=3 ||data[0].error === "bruteforce_wait") {
@@ -349,7 +345,10 @@ $htmlHeaders .= '
                         $("#connection_error").html("'.addslashes($LANG['2FA_new_code_by_user_not_allowed']).'").show();
                         $("#div_ga_url").hide();
                     } else if (data[0].error === "no_user") {
-                        $("#connection_error").html("'.addslashes($LANG['error_no_user']).'").show();
+                        $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                        $("#div_ga_url").hide();
+                    } else if (data[0].error === "no_email") {
+                        $("#connection_error").html("'.addslashes($LANG['error_no_email']).'").show();
                         $("#div_ga_url").hide();
                     } else {
                         $("#connection_error").html("'.addslashes($LANG['index_bas_pw']).'").show();
@@ -381,11 +380,14 @@ $htmlHeaders .= '
                 if (data[0].error === "0") {
                     $("#div_dialog_message").html(data[0].msg).dialog("open");
                 } else if (data[0].error === "no_user") {
-                    $("#connection_error").html("'.addslashes($LANG['error_no_user']).'")
+                    $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'")
                         .show().delay(3000).fadeOut(500);
                 } else if (data[0].error === "not_allowed") {
                     $("#connection_error").html("'.addslashes($LANG['setting_disabled_by_admin']).'")
                         .show().delay(3000).fadeOut(500);
+                } else if (data[0].error === "no_email") {
+                    $("#connection_error").html("'.addslashes($LANG['error_no_email']).'").show();
+                    $("#div_ga_url").hide();
                 } else {
 
                 }
@@ -613,20 +615,25 @@ $htmlHeaders .= '
         return html;
     }
 
-    function generateRandomKey(elem, size, numerals, capitalize, symbols, secure) {
+    /**
+     *
+     */
+    function generateRandomKey(elem, size, numerals, lowercase, capitalize, symbols, secure) {
         size = size || 20;
         numerals = numerals || true;
         capitalize = capitalize || true;
         symbols = symbols || true;
         secure = secure || true;
+        lowercase = lowercase || true;
 
-        $.post(
+        return $.post(
             "sources/main.queries.php",
             {
                 type        : "generate_a_password",
                 size        : size,
                 numerals    : numerals,
                 capitalize  : capitalize,
+                lowercase  : lowercase,
                 symbols     : symbols,
                 secure      : secure
             },
@@ -637,6 +644,66 @@ $htmlHeaders .= '
                 } else {
                     return data.key;
                 }
+            }
+        );
+    }
+
+    /**
+     * [generateBugReport description]
+     * @return [type] [description]
+     */
+    function generateBugReport() {
+        $.post(
+            "sources/main.queries.php",
+            {
+                type :    "generate_bug_report",
+                browser_name: platform.name,
+                browser_version: platform.version,
+                os: platform.os.family,
+                os_archi: platform.os.architecture,
+                key:      "'.$_SESSION['key'].'"
+            },
+            function(data) {
+                data = prepareExchangedData(data , "decode", "'.$_SESSION['key'].'");
+                //console.log(data);
+
+                // Prepare dialog content
+                $("#mysql_error_warning")
+                    .html(
+                        "<textarea rows=\"45\" cols=\"100\" style=\"max-height:300px; min-height:300px; resize:none;\" id=\"bug_text\">" + data.html + "</textarea>" +
+                        "<div class=\"ui-widget-content ui-state-focus\" style=\"margin-top:10px; padding:6px;\">'.addslashes($LANG['bug_report_to_github']).'" +
+                        "<div style=\"margin-top:5px;\">" +
+
+                        "<span class=\"fa-stack fa-lg tip\" id=\"select_bug_text\" title=\"'.addslashes($LANG['select_all']).'\" style=\"cursor:pointer;\">" +
+                            "<span class=\"fa fa-square fa-stack-2x\"></span><span class=\"fa fa-paint-brush fa-stack-1x fa-inverse\"></span>" +
+                        "</span>" +
+                        "&nbsp;&nbsp;&nbsp;&nbsp;" +
+
+                        "<a href=\"https://github.com/nilsteampassnet/TeamPass/issues/new\" target=\"_blank\">" +
+                        "<span class=\"fa-stack fa-lg tip\" id=\"select_bug_text\" title=\"'.addslashes($LANG['open_bug_report_in_github']).'\">" +
+                            "<span class=\"fa fa-square fa-stack-2x\"></span><span class=\"fa fa-github fa-stack-1x fa-inverse\"></span>" +
+                        "</span></a>" +
+
+                        "</div></div>"
+                    );
+
+                // Prepare selectall
+                $("#select_bug_text").click(function() {
+                    $("#bug_text").select();
+                });
+
+                // Add tooltips
+                $(".tip").tooltipster({multiple: true});
+
+                // Prepare dialog
+                $("#div_mysql_error")
+                    .dialog({
+                        title: "'.addslashes($LANG['create_github_bug_report']).'",
+                        buttons: [ {text: "'.addslashes($LANG['close']).'", click: function() {$(this).dialog("close");}} ],
+                        width: 800,
+                        height: 530,
+                    })
+                    .dialog("open");
             }
         );
     }
@@ -781,12 +848,22 @@ $htmlHeaders .= '
                             function(data) {
                                 $("#connection_error").hide();
                                 //redirection for admin is specific
-                                setTimeout(
-                                    function(){
-                                        window.location.href="index.php?page=items";
-                                    },
-                                    1
-                                );
+                                if (data[0].user_admin !== "1") {
+                                    setTimeout(
+                                        function(){
+                                            window.location.href="index.php?page=items";
+                                        },
+                                        1
+                                    );
+                                } else {
+                                    setTimeout(
+                                        function(){
+                                            window.location.href="index.php?page=manage_main";
+                                        },
+                                        1
+                                    );
+                                }
+
                             },
                             "json"
                         );
@@ -856,6 +933,9 @@ $htmlHeaders .= '
             height: 520,
             title: "'.$LANG['user_profile_dialogbox_menu'].'",
             buttons: {
+                "'.$LANG['report_a_bug'].'": function() {
+                    generateBugReport();
+                },
                 "'.$LANG['close'].'": function() {
                     $(this).dialog("close");
                 }
@@ -901,7 +981,7 @@ $htmlHeaders .= '
                     addslashes(str_replace("&quot;", '"', $_SESSION['user_settings']['clear_psk'])).
                 '");
                 $("#psk_strength_value").val("");
-                
+
                 // show expected security level
                 if ($("#expected_psk_complexPw").text() !== "") {
                     $("#expected_psk_complexPw").removeClass("hidden");

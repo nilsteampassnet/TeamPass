@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          vietnamese.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @copyright     2009 - 2018 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,27 +14,15 @@
  */
 global $LANG;
 $LANG = array (
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
-    'text' => 'Text',
-    'masked' => 'Masked',
-    'type' => 'Type',
-    'select_type_of_field' => 'Select type of field',
-    'define_new_field' => 'Define new field',
-    'data_is_text' => 'Data is Text',
-    'data_is_masked' => 'Data is Hidden',
-    'at_export' => 'Export',
-    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
-    'confirm_change_field_type' => 'Confirm changing the field type',
+    'report_a_bug' => 'Report a Bug',
+    'user_profile_api_key' => 'Your API key',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Gửi mã xác thực GoogleAuthenticator tới người sử dụng qua Email!',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'Người sử dụng này chưa khai báo địa chỉ email!',
@@ -42,7 +30,7 @@ $LANG = array (
     'email_ga_subject' => 'Your Google Authenticator one-time code for TeamPass',
     'email_ga_text' => 'Xin chào,<br><br>Vui lòng click vào <a href=\'#link#\'>Đường dẫn sau</a> và quét mã vạch bằng ứng dụng GoogleAuthenticator. Ứng dụng GoogleAuthenticator sẽ hỗ trợ sinh mã xác thực một lần (OTP) để đăng nhập Teampass.<br /><br />Xin cảm ơn ',
     'settings_attachments_encryption' => 'Bật mã hóa tập tin đính kèm',
-    'settings_attachments_encryption_tip' => 'TÍNH NĂNG NÀY CÓ THỂ LÀM HỎNG CÁC TẬP TIN ĐÍNH KÈM HIỆN CÓ, vui lòng đọc kĩ lưu ý sau. Nếu bạn kích hoạt tính năng này, các tài liệu đính kèm sẽ được mã hóa khi lưu trữ trên máy chủ. Việc mã hoá sử dụng chuỗi mã hoá ngẫu nhiên (SALT) do Teampass đã được định nghĩa sẵn cho Teampass. Việc mã hoá cũng sẽ làm tăng một phần tải hệ thống. LƯU Ý: việc mã hoá sẽ thực hiện với cả các tài liệu hiện có. Xem thêm thông tin tại mục \'Các thao tác đặc trưng\'.',
+    'settings_attachments_encryption_tip' => 'TÍNH NĂNGs NÀY CÓ THỂ LÀM HỎNG CÁC TẬP TIN ĐÍNH KÈM HIỆN CÓ, vui lòng đọc kĩ lưu ý sau. Nếu bạn kích hoạt tính năng này, các tài liệu đính kèm sẽ được mã hóa khi lưu trữ trên máy chủ. Việc mã hoá sử dụng chuỗi mã hoá ngẫu nhiên (SALT) do Teampass đã được định nghĩa sẵn cho Teampass. Việc mã hoá cũng sẽ làm tăng một phần tải hệ thống. LƯU Ý: việc mã hoá sẽ thực hiện với cả các tài liệu hiện có. Xem thêm thông tin tại mục \'Các thao tác đặc trưng\'.',
     'admin_action_attachments_cryption' => 'Mã hóa hoặc giải mã tập tin đính kèm',
     'admin_action_attachments_cryption_tip' => 'Warning: Only encrypt or decrypt files after changing attachment encryption settings to match. Select whether to encrypt or decrypt, then press start. Make a backup of the upload folder before running this function.',
     'encrypt' => 'Mã hóa',
@@ -929,7 +917,7 @@ $LANG = array (
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
-    'folder_will_be_moved_below' => 'The folder <b><span id=\\\'move_folder_title\\\'></span></b> will be moved below folder:',
+    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
     'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
     'runtime_upload' => 'Upload feature: runtime',
     'encrypted_data' => 'Data is encrypted in database',
@@ -983,7 +971,7 @@ $LANG = array (
     'suggest_password_change' => 'Suggest a password change',
     'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
     'suggestion_done' => 'Suggestion has been stored.',
-    'suggest_change_password_blank' => 'Leave this field empty if you DON\\\'T want to suggest a password change',
+    'suggest_change_password_blank' => 'Leave this field empty if you DON\'T want to suggest a password change',
     'item_id' => 'Item ID',
     'approve' => 'Approve',
     'reject' => 'Reject',
@@ -1076,5 +1064,29 @@ $LANG = array (
     'continue' => 'Continue',
     'please_confirm_operation' => 'Please confirm the operation',
     'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'text' => 'Text',
+    'masked' => 'Masked',
+    'type' => 'Type',
+    'select_type_of_field' => 'Select type of field',
+    'define_new_field' => 'Define new field',
+    'data_is_text' => 'Data is Text',
+    'data_is_masked' => 'Data is Hidden',
+    'at_export' => 'Export',
+    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
+    'confirm_change_field_type' => 'Confirm changing the field type',
+    'admin_script_backup_secret' => 'Passkey for backup execution',
+    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added as key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
+    'access_level_for_roles' => 'Associated access for Roles',
+    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
+    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
+    'error_security_level_not_reached' => 'Expected level of security not reached!',
+    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
+    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
+    'open_bug_report_in_github' => 'Open issue report in Github',
+    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
+    'create_github_bug_report' => 'Create new bug report',
+    'deselect_all' => 'Deselect all',
     '' => ''
 );

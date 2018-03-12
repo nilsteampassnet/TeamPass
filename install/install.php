@@ -296,7 +296,7 @@ echo '
         <a id="link_home_page" href="../index.php">Move to home page</a>
     </div>
     <div style="margin-top:80px; font-size:10px;">
-        For news, help and information, please visit <a href="http://teampass.net" target="_blank">TeamPass website</a>.
+        For news, help and information, please visit <a href="https://teampass.net" target="_blank">TeamPass website</a>.
     </div>
 </div>';
 ?>

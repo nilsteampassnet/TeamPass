@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -75,6 +75,8 @@ if (isset($LANG) === true) {
         $_SESSION['user_privilege'] = $LANG['gestionnaire'];
     } elseif ($_SESSION['user_read_only'] === '1') {
         $_SESSION['user_privilege'] = $LANG['read_only_account'];
+    } elseif ($_SESSION['user_can_manage_all_users'] === '1') {
+        $_SESSION['user_privilege'] = $LANG['human_resources'];
     } else {
         $_SESSION['user_privilege'] = $LANG['user'];
     }
@@ -158,9 +160,29 @@ echo '
         '.$LANG['index_last_seen'].' ', isset($SETTINGS['date_format']) ? date($SETTINGS['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($SETTINGS['time_format']) ? date($SETTINGS['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
     </div>';
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
+    // Handle last password change string
+    if (isset($_SESSION['last_pw_change']) === true) {
+        if (isset($SETTINGS['date_format']) === true) {
+            $last_pw_change = date($SETTINGS['date_format'], $_SESSION['last_pw_change']);
+        } else {
+            $last_pw_change = date("d/m/Y", $_SESSION['last_pw_change']);
+        }
+    } else {
+        $last_pw_change = "-";
+    }
+
+    // Handle expiration for pw
+    if (isset($_SESSION['numDaysBeforePwExpiration']) === false ||
+        $_SESSION['numDaysBeforePwExpiration'] === '' ||
+        $_SESSION['numDaysBeforePwExpiration'] === 'infinite'
+    ) {
+        $numDaysBeforePwExpiration = '';
+    } else {
+        $numDaysBeforePwExpiration = $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'.';
+    }
     echo '
     <div style="margin-bottom:6px;">
-        <i class="fa fa-calendar fa-fw fa-lg"></i>&nbsp;'. $LANG['index_last_pw_change'].' ', isset($SETTINGS['date_format']) ? date($SETTINGS['date_format'], $_SESSION['last_pw_change']) : (isset($_SESSION['last_pw_change']) ? date("d/m/Y", $_SESSION['last_pw_change']) : "-").'. ', $_SESSION['numDaysBeforePwExpiration'] == "infinite" ? '' : $LANG['index_pw_expiration'].' '.$_SESSION['numDaysBeforePwExpiration'].' '.$LANG['days'].'
+        <i class="fa fa-calendar fa-fw fa-lg"></i>&nbsp;&nbsp;'.$LANG['index_last_pw_change'].' '.$last_pw_change.'. '.$numDaysBeforePwExpiration.'
     </div>';
 }
 echo '
@@ -186,6 +208,13 @@ echo '
         <i class="fa fa-language fa-fw fa-lg"></i>&nbsp;'. $LANG['user_language'].':&nbsp;<span style="cursor:pointer; font-weight:bold;" class="editable_language" id="userlanguage_'.$_SESSION['user_id'].'" title="'.$LANG['click_to_change'].'">', isset($_SESSION['user_language']) ? $_SESSION['user_language'] : $SETTINGS['default_language'], '</span>&nbsp;<i class="fa fa-pencil fa-fw jeditable-activate" style="cursor:pointer;"></i>
     </div>';
 
+
+if (isset($SETTINGS['api']) && $SETTINGS['api'] === '1') {
+    echo '
+    <div style="margin-bottom:6px;">
+        <i class="fa fa-paper-plane fa-lg"></i>&nbsp;&nbsp;'. $LANG['user_profile_api_key'].':&nbsp;<span style="font-weight:bold;" id="user_api_key" title="">', isset($_SESSION['user_settings']['api-key']) === true ? $_SESSION['user_settings']['api-key'] : '', '</span>&nbsp;<i class="fa fa-refresh fa-fw" style="cursor:pointer;" id="but_new_api"></i>
+    </div>';
+}
 
 if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1) {
     echo '
@@ -408,7 +437,7 @@ $(function() {
         }
     });
 
-    // launche password change
+    // launch password change
     $("#button_change_pw").click(function() {
         $("#change_pwd_error").addClass("ui-state-error ui-corner-all").hide();
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
@@ -779,6 +808,15 @@ $(function() {
       $("#field_warning").html("<?php echo addslashes($LANG['error_not_allowed_to']); ?>").stop(true,true).show().fadeOut(1000);
       e.preventDefault();
    });
+
+   // If user api is empty then generate one
+   if ($("#user_api_key").text() === "none") {
+     generateNewUserApiKey();
+   }
+
+   $("#but_new_api").click(function() {
+     generateNewUserApiKey();
+   });
 });
 
 
@@ -839,6 +877,48 @@ function changePersonalSaltKey(credentials, ids, nb_total)
             }
         },
         "json"
+    );
+}
+
+/*
+**
+ */
+function generateNewUserApiKey() {
+    var newApiKey = "";
+
+    // Generate key
+    $.post(
+        "sources/main.queries.php",
+        {
+            type    : "generate_a_password",
+            size    : "39",
+            lowercase    : "true",
+            numerals    : "true",
+            capitalize  : "true",
+            symbols    : "false",
+            secure    : "false"
+        },
+        function(data) {
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+            if (data.key !== "") {
+                newApiKey = data.key;
+
+                // Save key in session and database
+                var data = "{\"field\":\"user_api_key\" ,\"new_value\":\""+newApiKey+"\" ,\"user_id\":\"<?php echo $_SESSION['user_id']; ?>\"}";
+
+                $.post(
+                  "sources/users.queries.php",
+                    {
+                        type    : "update_user_field",
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key     : "<?php echo $_SESSION['key']; ?>"
+                    },
+                    function(data){
+                        $("#user_api_key").text(newApiKey);
+                    }
+                );
+            }
+        }
     );
 }
 </script>

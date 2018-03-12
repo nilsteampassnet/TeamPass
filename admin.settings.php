@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -196,6 +196,18 @@ echo '
             <td>
                 <input type="text" size="15" id="default_session_expiration_time" name="default_session_expiration_time" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" />
              </td>
+            </tr>';
+echo '<tr><td colspan="3"><hr /></td></tr>';
+// Use authentication information in HTTP header
+echo '
+            <tr style="margin-bottom:3px">
+            <td>
+                  <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                  <label>' . $LANG['enable_http_request_login'].'</label>
+            </td>
+            <td>
+                 <div class="toggle toggle-modern" id="use_http_request_login" data-toggle-on="', isset($SETTINGS['enable_http_request_login']) && $SETTINGS['enable_http_request_login'] == 1 ? 'true' : 'false', '"></div><input type="hidden" name="enable_http_request_login_input" id="use_http_request_login_input" value="', isset($SETTINGS['enable_http_request_login']) && $SETTINGS['enable_http_request_login'] == 1 ? '1' : '0', '" />
+            	</td>
             </tr>';
 echo '<tr><td colspan="3"><hr /></td></tr>';
 //Enable SSL STS
@@ -1064,7 +1076,7 @@ echo '
 echo '
                     <tr style="display:', (isset($ldap_type)) ? '' : 'none', '" class="tr-windows tr-ldap tr-posix tr-posix-search">
                         <td><label for="ldap_suffix">'.$LANG['settings_ldap_domain'].'</label></td>
-                        <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="@dc=example,dc=com" value="', isset($SETTINGS['ldap_suffix']) ? $SETTINGS['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
+                        <td><input type="text" size="50" id="ldap_suffix" name="ldap_suffix" class="text ui-widget-content" title="dc=example,dc=com" value="', isset($SETTINGS['ldap_suffix']) ? $SETTINGS['ldap_suffix'] : '', '" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                     </tr>';
 
 // Domain DN
@@ -1099,7 +1111,7 @@ echo '
                 echo '
                 <tr style="display:', (isset($ldap_type) && $ldap_type === 'posix-search') ? '' : 'none', '" class="tr-posix-search tr-ldap">
                     <td><label for="ldap_usergroup">'.$LANG['settings_ldap_usergroup'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_usergroup_tip']), ENT_QUOTES).'"></i></label></td>
-                    <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="uid" value="',
+                    <td><input type="text" size="50" id="ldap_usergroup" name="ldap_usergroup" class="text ui-widget-content" title="usergroupname" value="',
                         isset($SETTINGS['ldap_usergroup']) ? $SETTINGS['ldap_usergroup'] : '', '" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));" /></td>
                 </tr>';
                 // LDAP BIND DN for search
@@ -1169,6 +1181,15 @@ echo '
                     </td>
                 </tr>';
 
+// Enable local and LDAP users
+echo '
+                <tr>
+                    <td><label>'.$LANG['settings_ldap_and_local_authentication'].'&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_ldap_and_local_authentication_tip']), ENT_QUOTES).'"></i></label></td>
+                    <td>
+                        <div class="toggle toggle-modern" id="ldap_and_local_authentication" data-toggle-on="', isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1' ? 'true' : 'false', '"></div><input type="hidden" id="ldap_and_local_authentication_input" name="ldap_and_local_authentication_input" value="', isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1' ? '1' : '0', '" />
+                    </td>
+                </tr>';
+
 // Enable Forgot password link on login page
 echo '
                 <tr>
@@ -1186,6 +1207,15 @@ echo '
                             </select>
                         </td>
                     </tr>';
+    // Enable newly_created_user_role
+    echo '
+                        <tr>
+                            <td><label for="ldap_type">'.$LANG['newly_created_user_role'].'</label></td>
+                            <td>
+                                <select id="ldap_new_user_role" class="text ui-widget-content" onchange="updateSetting($(this).attr(\'id\'));">
+                                </select>
+                            </td>
+                        </tr>';
 echo '
                 </table>';
 
@@ -1312,7 +1342,7 @@ echo '
                         </td>
                     </tr>';
 // Backup key
-if (isset($SETTINGS['bck_script_passkey'])) {
+if (isset($SETTINGS['bck_script_passkey']) === true) {
     require_once './sources/main.functions.php';
     $currentKey = cryption(
         $SETTINGS['bck_script_passkey'],

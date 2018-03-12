@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -497,7 +497,7 @@ if (null !== $post_type) {
                             // log
                             logItems(
                                 $record['id'],
-                                $record['label'],
+                                $record['l SeekableIteratorabel'],
                                 $_SESSION['user_id'],
                                 'at_export',
                                 $_SESSION['login'],
@@ -708,7 +708,16 @@ if (null !== $post_type) {
             }
 
             // Encrypt its content
-            $contents = GibberishAES::enc($contents, $post_pdf_password);
+            //$contents = GibberishAES::enc($contents, $post_pdf_password);
+            $encrypted_text = '';
+            $chunks = explode("|#|#|", chunk_split($contents, 10000, "|#|#|"));
+            foreach ($chunks as $chunk) {
+                if (empty($encrypted_text) === true) {
+                    $encrypted_text = GibberishAES::enc($chunk, $post_pdf_password);
+                } else {
+                    $encrypted_text .= "|#|#|".GibberishAES::enc($chunk, $post_pdf_password);
+                }
+            }
 
             // open file
             $outstream = fopen($post_file, "a");
@@ -719,9 +728,9 @@ if (null !== $post_type) {
         </table></div>
         <input type="button" value="Hide all" onclick="hideAll()" />
         <div id="footer" style="text-align:center;">
-            <a href="http://teampass.net/about/" target="_blank" style="">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
+            <a href="https://teampass.net/about/" target="_blank" style="">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
         </div>
-        <div id="enc_html" style="display:none;">'.$contents.'</div>
+        <div id="enc_html" style="display:none;">'.$encrypted_text.'</div>
         </body>
     </html>
     <script type="text/javascript">
@@ -735,7 +744,7 @@ if (null !== $post_type) {
                 );
             }
             catch(e) {
-                console.info("Key not corrected");
+                console.info("Key not correct");
                 document.getElementById("itemsTable_tbody").innerHTML = "";
                 document.getElementById("itemsTable").style.display  = "none";
                 document.getElementById("info_page").innerHTML = "ERROR - " + e;
@@ -749,13 +758,19 @@ if (null !== $post_type) {
 
                 // Uncrypt the table
                 try {
-                    var decryptedTable = GibberishAES.dec(
-                        document.getElementById("enc_html").innerHTML,
-                        document.getElementById("saltkey").value
-                    );
+                    var encodedString = document.getElementById("enc_html").innerHTML;
+                    var splitedString = encodedString.split("|#|#|");
+                    var decryptedTable = "";
+                    var i;
+                    for (i = 0; i < splitedString.length; i++) {
+                        decryptedTable += GibberishAES.dec(
+                            splitedString[i],
+                            document.getElementById("saltkey").value
+                        );
+                    }
                 }
                 catch(e) {
-                    console.info("Key not corrected");
+                    console.info("Key not correct");
                     document.getElementById("itemsTable_tbody").innerHTML = "";
                     document.getElementById("itemsTable").style.display  = "none";
                     document.getElementById("info_page").innerHTML = "ERROR - " + e;
@@ -783,8 +798,9 @@ if (null !== $post_type) {
                     return decryptedPw;
                 }
 
-                document.getElementById("span_"+id).innerHTML = decryptedPw +
+                document.getElementById("span_"+id).innerHTML = "<input type=\"text\" value=\"" +  decryptedPw + "\" id=\"pass_input_" + id + "\">" +
                     "&nbsp;<a href=\"#\" onclick=\"encryptme("+id+")\"><span style=\"font-size:7px;\">[Hide]</span></a>";
+                document.getElementById("pass_input_"+id).select();
             } else {
                 alert("Decryption Key is empty!");
             }

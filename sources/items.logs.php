@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -27,6 +27,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once 'main.functions.php';
@@ -88,6 +89,37 @@ if (null !== $post_type) {
                         "teampass"
                     );
                 }
+
+                // send notification if enabled
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
+                    // Get info about item
+                    $dataItem = DB::queryfirstrow(
+                        "SELECT id, id_tree, label
+                        FROM ".prefix_table("items")."
+                        WHERE id = %i",
+                        "at_creation"
+                    );
+
+                    // send back infos
+                    DB::insert(
+                        prefix_table('emails'),
+                        array(
+                            'timestamp' => time(),
+                            'subject' => $LANG['email_on_open_notification_subject'],
+                            'body' => str_replace(
+                                array('#tp_user#', '#tp_item#', '#tp_link#'),
+                                array(
+                                    addslashes($_SESSION['login']),
+                                    addslashes($dataItem['label']),
+                                    $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                                ),
+                                $LANG['email_on_open_notification_mail']
+                            ),
+                            'receivers' => $_SESSION['listNotificationEmails'],
+                            'status' => ''
+                        )
+                    );
+                }
             }
 
             break;
@@ -114,6 +146,37 @@ if (null !== $post_type) {
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"
+                    );
+                }
+
+                // send notification if enabled
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
+                    // Get info about item
+                    $dataItem = DB::queryfirstrow(
+                        "SELECT id, id_tree, label
+                        FROM ".prefix_table("items")."
+                        WHERE id = %i",
+                        "at_creation"
+                    );
+
+                    // send back infos
+                    DB::insert(
+                        prefix_table('emails'),
+                        array(
+                            'timestamp' => time(),
+                            'subject' => $LANG['email_on_open_notification_subject'],
+                            'body' => str_replace(
+                                array('#tp_user#', '#tp_item#', '#tp_link#'),
+                                array(
+                                    addslashes($_SESSION['login']),
+                                    addslashes($dataItem['label']),
+                                    $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                                ),
+                                $LANG['email_on_open_notification_mail']
+                            ),
+                            'receivers' => $_SESSION['listNotificationEmails'],
+                            'status' => ''
+                        )
                     );
                 }
             }

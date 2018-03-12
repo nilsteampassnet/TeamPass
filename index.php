@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -103,6 +103,7 @@ $session_user_language =        $superGlobal->get("user_language", "SESSION");
 $session_user_id =              $superGlobal->get("user_id", "SESSION");
 $session_user_flag =            $superGlobal->get("user_language_flag", "SESSION");
 $session_user_admin =           $superGlobal->get("user_admin", "SESSION");
+$session_user_human_resources = $superGlobal->get("user_can_manage_all_users", "SESSION");
 $session_user_avatar_thumb =    $superGlobal->get("user_avatar_thumb", "SESSION");
 $session_name =                 $superGlobal->get("name", "SESSION");
 $session_lastname =             $superGlobal->get("lastname", "SESSION");
@@ -202,6 +203,7 @@ if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === tru
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <title>Teampass</title>
 <script type="text/javascript">
     //<![CDATA[
@@ -239,7 +241,9 @@ if (isset($_SESSION['CPM'])) {
             .'&nbsp;['.$session_login.']</b>&nbsp;-&nbsp;'
             , $session_user_admin === '1' ? $LANG['god'] :
                 ($session_user_manager === '1' ? $LANG['gestionnaire'] :
-                    ($session_user_read_only === '1' ? $LANG['read_only_account'] : $LANG['user'])
+                    ($session_user_read_only === '1' ? $LANG['read_only_account'] :
+                        ($session_user_human_resources === '1' ? $LANG['human_resources'] :$LANG['user'])
+                    )
                 ), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
 
         echo '
@@ -305,7 +309,7 @@ if (isset($_SESSION['CPM'])) {
                     </a>';
         }
 
-        if ($session_user_admin === '1' || $session_user_manager === '1') {
+        if ($session_user_admin === '1' || $session_user_manager === '1' || $session_user_human_resources === '1') {
             echo '
                 &nbsp;
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'manage_folders\')">
@@ -552,10 +556,7 @@ if (isset($_SESSION['CPM'])) {
         && empty($_GET['page']) === false
         && empty($session_user_id) === false
     ) {
-        if (!extension_loaded('mcrypt')) {
-            $_SESSION['error']['code'] = ERR_NO_MCRYPT;
-            include $SETTINGS['cpassman_dir'].'/error.php';
-        } elseif ($session_initial_url !== null && empty($session_initial_url) === false) {
+        if ($session_initial_url !== null && empty($session_initial_url) === false) {
             include $session_initial_url;
         } elseif ($_GET['page'] == "items") {
             // SHow page with Items
@@ -594,7 +595,7 @@ if (isset($_SESSION['CPM'])) {
             // Define if user is allowed to see management pages
             if ($session_user_admin === '1') {
                 include($mngPages[$_GET['page']]);
-            } elseif ($session_user_manager === '1') {
+            } elseif ($session_user_manager === '1' || $session_user_human_resources == '1') {
                 if (($_GET['page'] != "manage_main" && $_GET['page'] != "manage_settings")) {
                     include($mngPages[$_GET['page']]);
                 } else {
@@ -691,12 +692,34 @@ if (isset($_SESSION['CPM'])) {
                             <span id="ajax_loader_connexion" style="display:none;margin-left:10px;"><span class="fa fa-cog fa-spin fa-1x"></span></span>
                         </div>
                         <div id="connection_error" style="display:none;text-align:center;margin:5px; padding:3px;" class="ui-state-error ui-corner-all">&nbsp;<i class="fa fa-warning"></i>&nbsp;'.$LANG['index_bas_pw'].'</div>';
-        echo '
-                        <div style="margin-bottom:3px;">
-                            <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
-                            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
-                            <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
+
+        if (isset($SETTINGS['enable_http_request_login']) === true
+            && $SETTINGS['enable_http_request_login'] === '1'
+            && isset($_SERVER['PHP_AUTH_USER']) === true
+            && !(isset($SETTINGS['maintenance_mode']) === true
+            && $SETTINGS['maintenance_mode'] === '1')
+        ) {
+            if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
+				$username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+			} elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+				$username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+			} else {
+				$username = $_SERVER['PHP_AUTH_USER'];
+			}
+			echo '
+        				<div style="margin-bottom:3px;">
+        			        <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
+        		            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="' , $username , '" readonly />
+        		            <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
+		} else {
+        	echo '
+                    	    <div style="margin-bottom:3px;">
+                    	        <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
+                                <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
+                                <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
+                           </div>';
+        }
 
         // AGSES
         if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1) {
@@ -710,11 +733,13 @@ if (isset($_SESSION['CPM'])) {
                         </div>';
         }
 
-                        echo '
+        if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true   && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1')) ) {
+            echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>
                             <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
+        }
 
         // Personal salt key
         if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1") {
@@ -730,7 +755,7 @@ if (isset($_SESSION['CPM'])) {
         }
 
         // Google Authenticator code
-        if (isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1") {
+        if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === "1") {
             echo '
                         <div id="ga_code_div" style="margin-bottom:10px;">
                             '.$LANG['ga_identification_code'].'
@@ -743,11 +768,46 @@ if (isset($_SESSION['CPM'])) {
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
                             <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
-                        </div>
+                        </div>';
 
+        // Google Authenticator code
+        if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['google_authentication'] !== "1") {
+            echo '
                         <div style="text-align:center;margin-top:5px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">'.$LANG['forgot_my_pw'].'</span>
-                        </div>
+                        </div>';
+        }
+
+        if (isset($SETTINGS['enable_http_request_login']) === true
+            && $SETTINGS['enable_http_request_login'] === '1'
+            && isset($_SERVER['PHP_AUTH_USER']) === true
+            && (isset($SETTINGS['maintenance_mode']) === false
+            && $SETTINGS['maintenance_mode'] === '1')
+        ) {
+        echo	'
+<script>
+var seconds = 1;
+function updateLogonButton(timeToGo){
+    document.getElementById("but_identify_user").value = "' . $LANG['duration_login_attempt'] . ' " + timeToGo;
+}
+$( window ).on( "load", function() {
+    updateLogonButton(seconds);
+    setInterval(function() {
+        seconds--;
+        if (seconds >= 0) {
+            updateLogonButton(seconds);
+        } else if(seconds === 0) {
+            launchIdentify(\'', isset($SETTINGS['duo']) == true && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\');
+        }
+        updateLogonButton(seconds);
+    },
+    1000
+  );
+});
+</script>';
+        }
+
+        echo '
                         <div style="text-align:center;margin-top:15px;">
                             <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
                         </div>
@@ -778,11 +838,14 @@ if (isset($_SESSION['CPM'])) {
     echo '
     <div id="footer">
         <div style="float:left;width:32%;">
-            <a href="http://teampass.net" target="_blank" style="color:#F0F0F0;">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
+            <a href="https://teampass.net" target="_blank" style="color:#F0F0F0;">'.$SETTINGS_EXT['tool_name'].'&nbsp;'.$SETTINGS_EXT['version'].'&nbsp;<i class="fa fa-copyright"></i>&nbsp;'.$SETTINGS_EXT['copyright'].'</a>
             &nbsp;|&nbsp;
-            <a href="http://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
+            <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['documentation_canal']).' ReadTheDocs"><i class="fa fa-book"></i></a>
             &nbsp;
             <a href="https://www.reddit.com/r/TeamPass/" target="_blank" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['admin_help']).'"><i class="fa fa-reddit-alien"></i></a>
+            &nbsp;
+            ', ($session_user_id !== null && empty($session_user_id) === false) ? '
+            <a href="#" style="color:#F0F0F0;" class="tip" title="'.addslashes($LANG['bugs_page']).'" onclick="generateBugReport()"><i class="fa fa-bug"></i></a>' : '' ,'
         </div>
         <div style="float:left;width:32%;text-align:center;">
             ', ($session_user_id !== null && empty($session_user_id) === false) ? '<i class="fa fa-users"></i>&nbsp;'.$session_nb_users_online.'&nbsp;'.$LANG['users_online'].'&nbsp;|&nbsp;<i class="fa fa-hourglass-end"></i>&nbsp;'.$LANG['index_expiration_in'].'&nbsp;<div style="display:inline;" id="countdown"></div>' : '', '

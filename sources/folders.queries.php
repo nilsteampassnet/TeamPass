@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -442,7 +442,7 @@ if (null !== $post_newtitle) {
                 if (isset($dataReceived['access_level']) === true) {
                     $access_level_by_role = filter_var(htmlspecialchars_decode($dataReceived['access_level']), FILTER_SANITIZE_STRING);
                 } else {
-                    if ($_SESSION['user_manager'] === "1") {
+                    if ($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === '1') {
                         $access_level_by_role = "W";
                     } else {
                         $access_level_by_role = "";
@@ -500,7 +500,7 @@ if (null !== $post_newtitle) {
 
                     // check if complexity level is good
                     // if manager or admin don't care
-                    if ($_SESSION['is_admin'] != 1 && $_SESSION['user_manager'] != 1) {
+                    if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] !== '1' || $_SESSION['user_can_manage_all_users'] !== '1')) {
                         // get complexity level for this folder
                         $data = DB::queryfirstrow(
                             "SELECT valeur
@@ -510,7 +510,7 @@ if (null !== $post_newtitle) {
                             "complex"
                         );
                         if (intval($complexity) < intval($data['valeur'])) {
-                            echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                            echo '[ { "error" : "error_pwd_compexity_not_reached" , "msg" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                             break;
                         }
                     }
@@ -519,7 +519,7 @@ if (null !== $post_newtitle) {
 
                 if ($isPersonal == 1
                     || $_SESSION['is_admin'] == 1
-                    || ($_SESSION['user_manager'] == 1)
+                    || ($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === '1')
                     || (isset($SETTINGS['enable_user_can_create_folders'])
                     && $SETTINGS['enable_user_can_create_folders'] == 1)
                 ) {
@@ -558,7 +558,7 @@ if (null !== $post_newtitle) {
                     $tree->rebuild();
 
                     // Add right to see this folder
-                    if ($_SESSION['is_admin'] === "1" || $_SESSION['user_manager'] === "1") {
+                    if ($_SESSION['is_admin'] === "1" || ($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === '1')) {
                         //Get user's rights
                         identifyUserRights(
                             $_SESSION['groupes_visibles'],
@@ -694,7 +694,7 @@ if (null !== $post_newtitle) {
 
             // check if complexity level is good
             // if manager or admin don't care
-            if ($_SESSION['is_admin'] != 1 && ($_SESSION['user_manager'] != 1)) {
+            if ($_SESSION['is_admin'] !== '1' && ($_SESSION['user_manager'] !== '1' || $_SESSION['user_can_manage_all_users'] !== '1')) {
                 $data = DB::queryfirstrow(
                     "SELECT valeur
                     FROM ".prefix_table("misc")."
@@ -703,7 +703,7 @@ if (null !== $post_newtitle) {
                     "complex"
                 );
                 if (intval($complexity) < intval($data['valeur'])) {
-                    echo '[ { "error" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
+                    echo '[ { "error" : "error_folder_complexity_lower_than_top_folder" , "error_msg" : "'.addslashes($LANG['error_folder_complexity_lower_than_top_folder']." [<b>".$SETTINGS_EXT['pwComplexity'][$data['valeur']][1]).'</b>]"} ]';
                     break;
                 }
             }
@@ -953,7 +953,7 @@ if (null !== $post_newtitle) {
         case "copy_folder":
             // Check KEY and rights
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                echo prepareExchangedData(array("error" => addslashes($LANG['error_not_allowed_to'])), "encode");
                 break;
             }
 
@@ -969,8 +969,19 @@ if (null !== $post_newtitle) {
             $tree->register();
             $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
 
-            // get info about target folder
-            $nodeTarget = $tree->getNode($target_folder_id);
+            // Test if target folder is Read-only
+            // If it is then stop
+            if (in_array($target_folder_id, $_SESSION['read_only_folders']) === true) {
+                echo prepareExchangedData(array("error" => addslashes($LANG['error_not_allowed_to'])), "encode");
+                break;
+            }
+
+            // Get all allowed folders
+            $array_all_visible_folders = array_merge(
+              $_SESSION['groupes_visibles'],
+              $_SESSION['read_only_folders'],
+              $_SESSION['personal_visible_groups']
+            );
 
             // get list of all folders
             $nodeDescendants = $tree->getDescendants($source_folder_id, true, false, false);
@@ -978,6 +989,12 @@ if (null !== $post_newtitle) {
             $tabNodes = [];
             foreach ($nodeDescendants as $node) {
                 // step1 - copy folder
+                //
+                // Can user access this subfolder?
+
+                if (in_array($node->id, $array_all_visible_folders) === false) {
+                  continue;
+                }
 
                 // get info about current node
                 $nodeInfo = $tree->getNode($node->id);
@@ -1209,7 +1226,12 @@ if (null !== $post_newtitle) {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             updateCacheTable("reload", "");
 
-            echo '[ { "error" : "" } ]';
+            $data = array(
+                'error' => ""
+            );
+
+            // send data
+            echo prepareExchangedData($data, "encode");
 
             break;
     }

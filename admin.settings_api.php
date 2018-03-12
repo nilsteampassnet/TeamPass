@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -302,6 +302,7 @@ function generateApiKey()
         {
             type    : "generate_a_password",
             size    : "39",
+            lowercase    : "true",
             numerals    : "true",
             capitalize  : "true",
             symbols    : "false",

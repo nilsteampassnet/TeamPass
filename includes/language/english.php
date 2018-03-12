@@ -4,8 +4,8 @@
  * @file          english.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @copyright     2009 - 2018 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,17 +14,18 @@
  */
 global $LANG;
 $LANG = array (
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group CN',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the CN group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
+    'report_a_bug' => 'Report a Bug',
+    'user_profile_api_key' => 'Your API key',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',
@@ -251,7 +252,7 @@ $LANG = array (
     'no_previous_pw' => 'No previous password',
     'request_access_ot_item' => 'Request access to modify',
     'email_request_access_subject' => 'You have a request to enable access to your password item',
-    'email_request_access_mail' => 'Hello #tp_item_author#,<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>Please review this request in the password manager and confirm that you will authorize access.',
+    'email_request_access_mail' => 'Hello #tp_item_author#,<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>The request comes with the next justification:<br><i>\'#tp_reason#\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
     'admin_action_change_salt_key' => 'Change the main salt key used for encryption',
     'admin_action_change_salt_key_tip' => 'Before changing the salt key, please enable maintenance mode and perform a full backup of both the database and attachments in the upload folder.',
     'block_admin_info' => 'Administrator\'s Info',
@@ -1076,5 +1077,19 @@ $LANG = array (
     'at_export' => 'Export',
     'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
     'confirm_change_field_type' => 'Confirm changing the field type',
+    'admin_script_backup_secret' => 'Passkey for backup execution',
+    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added as key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
+    'access_level_for_roles' => 'Associated access for Roles',
+    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
+    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
+    'error_security_level_not_reached' => 'Expected level of security not reached!',
+    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
+    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
+    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
+    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
+    'open_bug_report_in_github' => 'Open issue report in Github',
+    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
+    'create_github_bug_report' => 'Create new bug report',
+    'deselect_all' => 'Deselect all',
     '' => ''
 );

@@ -1,11 +1,11 @@
 <?php
 /**
- * @file        upload.files.php
- * @author      Nils Laumaillé
- * @version     2.1.16
- * @copyright   (c) 2009-2012 Nils Laumaillé
- * @licensing   GNU AFFERO GPL 3.0
- * @link        http://www.teampass.net
+ * @file          upload.files.php
+ * @author        Nils Laumaillé
+ * @version       2.1.27
+ * @copyright     (c) 2009-2012 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
+ * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -95,7 +95,7 @@ if (null === $post_user_token) {
 
         if (time() > $data['end_timestamp']) {
             // too old
-            handleAttachmentError('User token expired.', 110);
+            handleUploadError('User token expired.', 110);
             die();
         }
     }

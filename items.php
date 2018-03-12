@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -162,7 +162,7 @@ echo '
                         <li onclick="open_edit_group_div()"><i class="fa fa-pencil fa-fw"></i>&nbsp; '.$LANG['item_menu_edi_rep'].'</li>
                         <li onclick="open_move_group_div()"><i class="fa fa-arrows fa-fw"></i>&nbsp; '.$LANG['item_menu_mov_rep'].'</li>
                         <li onclick="open_del_group_div()"><i class="fa fa-eraser fa-fw"></i>&nbsp; '.$LANG['item_menu_del_rep'].'</li>
-                        <li onclick="$(\'#div_copy_folder\').dialog(\'open\');"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
+                        <li onclick="openCopyFolderDialog()"><i class="fa fa-copy fa-fw"></i>&nbsp; '.$LANG['copy_folder'].'</li>
                         ', isset($SETTINGS['allow_import']) && $SETTINGS['allow_import'] == 1 && $session_user_admin !== '1' ? '<li onclick="loadImportDialog()"><i class="fa fa-cloud-upload fa-fw"></i>&nbsp; '.$LANG['import_csv_menu_title'].'</li>' : '',
                         (isset($SETTINGS['allow_print']) && $SETTINGS['allow_print'] == 1 && $session_user_admin !== '1' && $_SESSION['temporary']['user_can_printout'] === true) ? '<li onclick="loadExportDialog()"><i class="fa fa-cloud-download fa-fw"></i>&nbsp; '.$LANG['print_out_menu_title'].'</li>' : '',
                         (isset($SETTINGS['settings_offline_mode']) && $SETTINGS['settings_offline_mode'] == 1 && $session_user_admin !== '1') ? '<li onclick="loadOfflineDialog()"><i class="fa fa-laptop fa-fw"></i>&nbsp; '.$LANG['offline_menu_title'].'</li>' : '', '
@@ -477,9 +477,10 @@ echo '
 
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="custom_pw">
-                    <input type="checkbox" id="pw_numerics" /><label for="pw_numerics">123</label>
-                    <input type="checkbox" id="pw_maj" /><label for="pw_maj">ABC</label>
-                    <input type="checkbox" id="pw_symbols" /><label for="pw_symbols">@#&amp;</label>
+                    <input type="checkbox" id="pw_lowercase" class="pw_definition" /><label for="pw_lowercase">abc</label>
+                    <input type="checkbox" id="pw_numerics" class="pw_definition" /><label for="pw_numerics">123</label>
+                    <input type="checkbox" id="pw_maj" class="pw_definition" /><label for="pw_maj">ABC</label>
+                    <input type="checkbox" id="pw_symbols" class="pw_definition" /><label for="pw_symbols">@#&amp;</label>
                     <input type="checkbox" id="pw_secure" checked="checked" /><label for="pw_secure">'.$LANG['secure'].'</label>
                     &nbsp;<label for="pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="pw_size" value="8" style="font-size:10px;" />
@@ -577,7 +578,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                         <label class="cpm_label">'.$field[1].'</span>
-                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">
                     </div>';
         }
         echo '
@@ -664,10 +665,11 @@ echo '
             </div>
             <div style="font-size:9px; text-align:center; width:100%;">
                 <span id="edit_custom_pw">
-                    <input type="checkbox" id="edit_pw_numerics" /><label for="edit_pw_numerics">123</label>
-                    <input type="checkbox" id="edit_pw_maj" /><label for="edit_pw_maj">ABC</label>
-                    <input type="checkbox" id="edit_pw_symbols" /><label for="edit_pw_symbols">@#&amp;</label>
-                    <input type="checkbox" id="edit_pw_secure" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
+                    <input type="checkbox" id="edit_pw_lowercase" class="pw_definition" /><label for="edit_pw_lowercase">abc</label>
+                    <input type="checkbox" id="edit_pw_numerics" class="pw_definition" /><label for="edit_pw_numerics">123</label>
+                    <input type="checkbox" id="edit_pw_maj" class="pw_definition" /><label for="edit_pw_maj">ABC</label>
+                    <input type="checkbox" id="edit_pw_symbols" class="pw_definition" /><label for="edit_pw_symbols">@#&amp;</label>
+                    <input type="checkbox" id="edit_pw_secure" class="pw_definition" checked="checked" /><label for="edit_pw_secure">'.$LANG['secure'].'</label>
                     &nbsp;<label for="edit_pw_size">'.$LANG['size'].' : </label>
                     &nbsp;<input type="text" size="2" id="edit_pw_size" value="8" style="font-size:10px;" />
                 </span>
@@ -770,7 +772,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
                         <label class="cpm_label">'.$field[1].'</label>
-                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40">
+                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">
                     </div>';
         }
         echo '
@@ -852,7 +854,7 @@ echo '
 // Formulaire MOVE FOLDER
 echo '
 <div id="div_move_folder" style="display:none;">
-    <div id="move_rep_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>
+    <div id="move_rep_show_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all hidden"></div>
     <div style="text-align:center;margin-top:20px;">
         <p>'.$LANG['folder_will_be_moved_below'].'</p>
         <div>
@@ -860,7 +862,7 @@ echo '
         </select>
         </div>
     </div>
-    <div id="move_folder_loader" style="display:none;text-align:center;margin-top:20px;">
+    <div id="move_folder_loader" style="text-align:center;margin-top:20px;" class="hidden">
         <i class="fa fa-cog fa-spin"></i>&nbsp;'.$LANG['please_wait'].'...
     </div>
 </div>';
@@ -1022,6 +1024,15 @@ echo '
 <div id="dialog_ssh" style="display:none;padding:4px;">
     <div id="div_ssh">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
+    </div>
+</div>';
+
+// Reason for item access dialogbox
+echo '
+<div id="dialog_reason_to_access" style="display:none;padding:4px;">
+    <div style="text-align:center;">
+        <textarea id="reason_to_access_text" rows="3" cols="75" placeholder="'.addslashes($LANG['request_access_to_item_info']).'" style="ui-widget ui-state-default ui-corner-all"></textarea>
+        <div id="reason_to_access_info" style="margin-top:5px; padding:4px;"></div>
     </div>
 </div>';
 

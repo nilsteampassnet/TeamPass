@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          portuguese_br.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @copyright     2009 - 2018 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,27 +14,8 @@
  */
 global $LANG;
 $LANG = array (
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
-    'text' => 'Text',
-    'masked' => 'Masked',
-    'type' => 'Type',
-    'select_type_of_field' => 'Select type of field',
-    'define_new_field' => 'Define new field',
-    'data_is_text' => 'Data is Text',
-    'data_is_masked' => 'Data is Hidden',
-    'at_export' => 'Export',
-    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
-    'confirm_change_field_type' => 'Confirm changing the field type',
+    'report_a_bug' => 'Report a Bug',
+    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'Enviar ao usuário o Código do Google Authenticator por e-mail',
     'send_ga_code' => 'Google Authenticator para usuário',
     'error_no_email' => 'Este usuário não tem e-mail definido!',
@@ -251,7 +232,7 @@ $LANG = array (
     'migrate_pf_no_sk' => 'Você não inseriu sua SALT key',
     'migrate_pf_no_sk_user' => 'Você deve inserir a Salt Key de usuário',
     'migrate_pf_no_user_id' => 'Você deve selecionar o Usuário";',
-    'email_subject_new_user' => '[TeamPass] Criação de conta',
+    'email_subject_new_user' => 'Conta no sistema Teampass.',
     'email_new_user_mail' => 'Olá,<br><br>Um Administrador criou uma conta para você no Teampass.<br>Você pode usar essas credenciais para entrar:<br>- Conta: #tp_login#<br>- Senha: #tp_pw#<br><br>Clique <a href=\'#tp_link#\'>Aqui</a> para acessar.<br><br>Atenciosamente. ',
     'error_empty_data' => 'Não há dados para prosseguir!',
     'error_not_allowed_to' => 'Você não tem permissão para fazer isso!',
@@ -586,7 +567,7 @@ $LANG = array (
     'link_copy' => 'Obter um link para este item',
     'link_is_copied' => 'O link para este item foi copiado para o clipboard',
     'login' => 'Login (se necessário)',
-    'login_attempts_on' => ' tentativas de login em ',
+    'login_attempts_on' => 'Número de tentativas de login',
     'login_copied_clipboard' => 'Login copiado para o clipboard',
     'login_copy' => 'Copiar conta para o clipboard',
     'logs' => 'Relatórios',
@@ -1076,5 +1057,35 @@ $LANG = array (
     'continue' => 'Continuar',
     'please_confirm_operation' => 'Por favor, confirme a operação',
     'setting_disabled_by_admin' => 'Esta opção foi desabilitada pelo Administrador',
+    'text' => 'Texto',
+    'masked' => 'Disfarçado',
+    'type' => 'Tipo',
+    'select_type_of_field' => 'Selecione o tipo do campo',
+    'define_new_field' => 'Criar um novo campo',
+    'data_is_text' => 'O dado é texto',
+    'data_is_masked' => 'O dado é Oculto',
+    'at_export' => 'Exportar',
+    'setting_disabled_by_admin' => 'Esta opção está desabilitada pelo Administrador',
+    'confirm_change_field_type' => 'Confirme a mudança de tipo do campo',
+    'admin_script_backup_secret' => 'Senha para a execução do backup',
+    'admin_script_backup_secret_tip' => 'A senha para a execução do backup deve ser fornecida para iniciar o processo de backup. A senha deve ser passada como parâmetro do script.backup.ph',
+    'access_level_for_roles' => 'Acesso associado às regras',
+    'settings_ldap_allowed_usergroup' => 'Grupo de usuários do LDAP permitido',
+    'settings_ldap_allowed_usergroup_tip' => 'Indique o grupo permitido a conectar ao Teampass. Se estiver em branco não haverá restrições de acesso a grupos.',
+    'error_security_level_not_reached' => 'O nível de segurança esperado não foi alcançado!',
+    'error_psk_should_be_changed' => 'De acordo com a mudança da política de segurança você deve alterar sua chave saltkey pessoal.',
+    'personal_saltkey_security_level' => 'Nível mínimo de segurança da chave Saltkey pessoal',
+    'settings_disable_forgot_password_link' => 'Esconder a opção de Recuperar a senha na Home Page',
+    'newly_created_user_is_administrated_by' => 'O usuário criado é administrado por',
+    'open_bug_report_in_github' => 'Abrir registro de problema no Github',
+    'bug_report_to_github' => 'Preencha os dados do relatório do problema, depois copie para a área de transferência e cole na página de problema do Github',
+    'create_github_bug_report' => 'Criar um novo relatório de erro',
+    'deselect_all' => 'Deselecionar todos',
+    'request_access_to_item' => 'Solicitar acesso ao item',
+    'request_access_to_item_info' => 'Forneça as razões para acessar este item',
+    'send_request' => 'Enviar a solicitação',
+    'error_no_reason_of_access' => 'Por favor, forneça as razões para acessar este item.',
+    'settings_ldap_and_local_authentication' => 'Usuários locais e do LDAP',
+    'settings_ldap_and_local_authentication_tip' => 'Habilite esta opção para permitir a autenticação tanto dos usuários LDAP quanto dos usuários locais do Teampass.',
     '' => ''
 );

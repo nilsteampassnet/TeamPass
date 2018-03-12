@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -786,10 +786,10 @@ $(function() {
         width: 600,
         height: 470,
         title: "<?php echo $LANG['category_in_folders']; ?>",
-        open: function() {            
+        open: function() {
             // pre-select folders
             var id = $("#post_id").val();
-            var folder = $("#catFoldersList_"+id).val().split(";");            
+            var folder = $("#catFoldersList_"+id).val().split(";");
             $("#cat_folders_selection")
                 .val(folder)
                 .multiSelect('refresh');
@@ -1018,7 +1018,7 @@ $(function() {
 
 
     // Load list of groups
-    $("#ldap_new_user_is_administrated_by").empty();
+    $("#ldap_new_user_is_administrated_by, #ldap_new_user_role").empty();
     $.post(
         "sources/admin.queries.php",
         {
@@ -1027,22 +1027,28 @@ $(function() {
         },
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            
-            var html = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
-                selected = 0;
+
+            var html_admin_by = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
+                html_roles = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
+                selected_admin_by = 0,
+                selected_role = 0;
 
             for (var i=0; i<data.length; i++) {
-                if (data[i].selected === 1) {
-                    selected = data[i].id;
+                if (data[i].selected_administrated_by === 1) {
+                    selected_admin_by = data[i].id;
                 }
-                html += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
+                if (data[i].selected_role === 1) {
+                    selected_role = data[i].id;
+                }
+                html_admin_by += '<option value="'+data[i].id+'"><?php echo addslashes($LANG['managers_of']." ");?>'+data[i].title+'</option>';
+                html_roles += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
             }
-            $("#ldap_new_user_is_administrated_by").append(html);
-            $("#ldap_new_user_is_administrated_by").val(selected);
+            $("#ldap_new_user_is_administrated_by").append(html_admin_by);
+            $("#ldap_new_user_is_administrated_by").val(selected_admin_by);
+            $("#ldap_new_user_role").append(html_roles);
+            $("#ldap_new_user_role").val(selected_role);
         }
    );
-
-
 });
 
 function manageEncryptionOfAttachments(list, cpt) {
@@ -1110,7 +1116,7 @@ function changeEncrypMode(id, encrypted_data) {
 */
 function generateAndStoreBackupPass() {
     $.when(
-        generateRandomKey('bck_script_passkey', '40', 'true', 'true', 'false', 'false')
+        generateRandomKey('bck_script_passkey', '40', 'true', 'true', 'true', 'false', 'false')
     ).then(function(x) {
         updateSetting('bck_script_passkey');
     });

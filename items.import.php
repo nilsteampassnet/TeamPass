@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -86,7 +86,7 @@ echo '
         <!-- show input file -->
         <div id="upload_container_csv">
             <div id="filelist_csv"></div><br />
-            <a id="pickfiles_csv" href="#">'.$LANG['csv_import_button_text'].'</a>
+            <span id="pickfiles_csv" class="button">'.$LANG['csv_import_button_text'].'</span>
         </div>
 
         <div style="display:none;margin-top:10px;" id="div_import_csv_selection">
@@ -107,7 +107,7 @@ echo '
         <div style="margin:10px 0 5px 0;" id="keypass_import_options">
             <label><b>'.$LANG['import_keepass_to_folder'].'</b></label>&nbsp;
             <select id="import_keepass_items_to" style="width:87%; height:35px;">
-                <option value="0">'.$LANG['root'].'</option>';
+                ', $_SESSION['user_read_only'] === '0' ? '<option value="0">'.$LANG['root'].'</option>' : '';
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
 $tree->register();
@@ -117,8 +117,10 @@ $prevLevel = 0;
 
 // show list of all folders
 foreach ($folders as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles'])) {
-        if (is_numeric($t->title)) {
+    if (($_SESSION['user_read_only'] === '0' && in_array($t->id, $_SESSION['groupes_visibles']))
+        || ($_SESSION['user_read_only'] === '1' && in_array($t->id, $_SESSION['personal_visible_groups']))
+    ) {
+        if (is_numeric($t->title) === true && $t->title === $_SESSION['user_id']) {
             $user = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id = %i", $t->title);
             $t->title = $user['login'];
             $t->id = $t->id."-perso";
@@ -156,7 +158,7 @@ foreach ($folders as $t) {
         <!-- uploader -->
          <div id="upload_container_kp" style="text-align:center;margin-top:10px;">
             <div id="filelist_kp"></div><br />
-            <a id="pickfiles_kp" href="#">'.$LANG['keepass_import_button_text'].'</a>
+            <span id="pickfiles_kp" class="button">'.$LANG['keepass_import_button_text'].'</span>
         </div>
 
         <div id="kp_import_information" style="margin:10px 0 0 10px;"></div>
@@ -173,6 +175,7 @@ foreach ($folders as $t) {
             language: "<?php echo $_SESSION['user_language_code']; ?>"
         });
         $("#import_tabs").tabs();
+        $('.button').button();
 
         // CSV IMPORT
         var csv_filename = '';
@@ -471,12 +474,14 @@ foreach ($folders as $t) {
             function(data) {
                 $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");
                 $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
-                // Reload page
-                /*$(this).delay(2000).queue(function() {
-                    $("#import_information").effect( "fade", "slow" );
-                    document.location = "index.php?page=items";
-                    $(this).dequeue();
-                });*/
+                if (data[0].error === "") {
+                    // Reload page
+                    $(this).delay(2000).queue(function() {
+                        $("#import_information").effect( "fade", "slow" );
+                        document.location = "index.php?page=items";
+                        $(this).dequeue();
+                    });
+                }
             },
             "json"
         );

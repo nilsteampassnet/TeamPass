@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -36,6 +36,10 @@ $pagesRights = array(
         "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users"
     ),
+    "human_resources" => array(
+        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "manage_views", "manage_users"
+    ),
     "admin" => array(
         "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users", "manage_settings", "manage_main"
@@ -61,6 +65,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Send back CSRFP info
             echo $csrfp_array['CSRFP_TOKEN'].";".filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
         }
+
+        break;
 }
 
 /**
@@ -136,7 +142,7 @@ function checkUser($userId, $userKey, $pageVisited)
 
     // load user's data
     $data = DB::queryfirstrow(
-        "SELECT login, key_tempo, admin, gestionnaire FROM ".prefix_table("users")." WHERE id = %i",
+        "SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ".prefix_table("users")." WHERE id = %i",
         $userId
     );
 
@@ -148,11 +154,12 @@ function checkUser($userId, $userKey, $pageVisited)
     // check if user is allowed to see this page
     if ($data['admin'] !== '1'
         && $data['gestionnaire'] !== '1'
+        && $data['can_manage_all_users'] !== '1'
         && IsInArray($pageVisited, $pagesRights['user']) === true
     ) {
         return true;
     } elseif ($data['admin'] !== '1'
-        && $data['gestionnaire'] === '1'
+        && ($data['gestionnaire'] === '1' || $data['can_manage_all_users'] === '1')
         && IsInArray($pageVisited, $pagesRights['manager']) === true
     ) {
         return true;

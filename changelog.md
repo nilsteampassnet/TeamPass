@@ -1,4 +1,51 @@
 2.1.27
+11/
+ Changed licensing to GNU GPL-3.0
+ New - User must provide a reason to access a restricted item
+ New - Add option to have local and remote accounts when LDAP is enabled
+ Improved security of password generator with php7
+ Improved cannot edit user without email
+ Improved read-only user limitation to copy folder and import action
+ Improved tree rebuild with API on folders change
+ Improved tables primary and index usage
+ Improved LDAP new user by default role
+ Introduced an API key by user
+ Fix for API keys truncated
+ Fix offline password dispay in case of html tags similar in password
+ Fix failed folder creation in case of password complexity not reached
+ #2140 Moving subfolder to root level not possible
+ #2127 Grant access with simple folder copy
+ #2118 Empty user at Keepass file is not empty after import
+ #2116 Insufficient password strength when creating Offline Mode
+ #2115 Fix script backup issue with encryption key
+ #2111 Add support for login through http header
+ #2109 restrict login to Group Ldap don't work
+ #2102 Changed field renewal_period size
+ #2096 Offline mode decryption fails if too much items exported
+ #2095 Can't upload files on items - Plupload update
+ #2094 PHP 7.2: Call to undefined function mcrypt_encrypt()
+ #2093 role human resources doesn't access expected pages
+ #2090 On folder copy, an empty message box is shown
+ #2087 Custom fields displayed if empty
+ #2085 CSV import error if URL too long
+ #2082 API: new folder is allocated to same roles as its parent
+ #2081 LDAP bug, can't check connection
+ #2080 Email sent on password copy in the clipboard
+ #2078 Purge Logs not selection not working properly
+ #2077 API: Deleting non existing folder deletes all folders
+ #2075 Button "delete selected Items" doesn't work
+ #2074 Backup by script not working
+ #2073 Move selected Items button
+ #2071 Search not working for items with multiple "Restricted to:" roles selected
+ #2069 Copy a read-only folder to a read-only folder
+ #2066 Read Only Users can Drag and drop items to there personal folder
+ #2065 send GAUTH-code on login form doesn't warn user if no email is set
+ #2064 LDAP and DUO users with administrator role taken to items page then logged out
+ #2063 Setting "Hide forgot password link on Home page" not correctly displayed
+ #2059 Fix for Custom LDAP port and adLDAP
+ #2035 After first time login as user Personal Folder is not correctly shown (100000)
+ #2015 Double click to edit not working for items created by a different user
+
 10/
  Copy password/login button are correctly hidden and shown
  Cursor is hidden on password display to permit a better visualization
@@ -26,7 +73,10 @@
  Ensure session extension is always positive
  Added user group allowed for LDAP Windows AD
  Added option to remove the forgot password link on home page if LDAP enabled
+ Added option lowercase letters for password generator
+ #2058 Importing KeyPass items into private personal folders
  #2056 Custom Fields - displayed in unassigned folders
+ #2055 restricted_to of cache table has 2 different values
  #2054 Alter table statement is run only once
  #2053 Custom Fields - folders unchecked at second call up
  #2051 2FA Google Name Displayed field not saving to configuration

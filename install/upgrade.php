@@ -365,7 +365,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                         <li>Create a dump of your database</li>
                         <li>Perform a zip of the current Teampass folder</li>
                         <li>Make a copy of teampass-seckey.txt (the upgrade process will perform one too)</li>
-                        <li>Refer to <a href="http://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank">upgrade documentation</a>.</li>
+                        <li>Refer to <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank">upgrade documentation</a>.</li>
                         </ul>
 
                         <h5>TeamPass is distributed under GNU AFFERO GPL licence.</h5>
@@ -595,7 +595,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         <h3>Step 6</h3>
         Upgrade is now completed!<br />
         You can delete the "Install" directory from your server for increased security.<br /><br />
-        For news, help and information, visit the <a href="http://teampass.net" target="_blank">TeamPass website</a>.<br /><br />
+        For news, help and information, visit the <a href="https://teampass.net" target="_blank">TeamPass website</a>.<br /><br />
         IMPORTANT: Due to encryption credentials changed during the update, you need to clean the cache of your Web Browser in order to log in successfully.';
 }
 

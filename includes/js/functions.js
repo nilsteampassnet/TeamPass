@@ -3,7 +3,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -213,7 +213,7 @@ function SendMail(category, contentEmail, keySent, message){
 /**
 *   Checks if email has expected format (xxx@yyy.zzz)
 **/
-function IsValidEmail(email){
+function IsValidEmail(email) {
     var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
     return filter.test(email);
 }

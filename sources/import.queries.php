@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -229,7 +229,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // Prepare a list of all folders that the user can choose
             $display .= '</table><div style=\"margin:10px 0 10px 0;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\" style=\"width:87%;\">';
             foreach ($tree as $t) {
-                if (in_array($t->id, $_SESSION['groupes_visibles'])) {
+                if (($_SESSION['user_read_only'] === '0' && in_array($t->id, $_SESSION['groupes_visibles']))
+                    || ($_SESSION['user_read_only'] === '1' && in_array($t->id, $_SESSION['personal_visible_groups']))
+                ) {
                     $ident = "";
                     for ($x = 1; $x < $t->nlevel; $x++) {
                         $ident .= "&nbsp;&nbsp;";
@@ -238,6 +240,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         $selected = " selected";
                     } else {
                         $selected = "";
+                    }
+                    // Check if folder is User id
+                    if (is_numeric($t->title) === true && $t->title === $_SESSION['user_id']) {
+                        $t->title = $_SESSION['login'];
                     }
                     if ($prev_level != null && $prev_level < $t->nlevel) {
                         $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
@@ -430,7 +436,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         /**
-        Recursive function that will permit to read each level of XML nodes
+        ** Recursive function that will permit to read each level of XML nodes
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
@@ -559,6 +565,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     if ($nom == "Entry" && ($xmlLevel < $historyLevel || empty($historyLevel))) {
                         $entry = true;
                         $group = false;
+                        $history = false;
 
                         // recap previous info
                         if (!empty($temparray[KP_TITLE])) {
@@ -578,7 +585,12 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $xmlChildren = $elem->children();
 
                     //recursive call
-                    recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
+                    if ($history !== true) {
+                      recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
+                    }
+
+                    // Force History to false
+                    $history = false;
 
                     //IMPORTING KEEPASS 2 XML FILE
                 } elseif ($keepassVersion != 1) {
@@ -983,7 +995,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 'id' => $newId,
                                 'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
-                                'url' => (isset($item[KP_NOTES]) && !empty($item[KP_NOTES])) ? $item[KP_NOTES] : "0",
+                                'url' => substr(stripslashes($item[KP_URL]), 0, 500),
                                 'tags' => "",
                                 'id_tree' => $folderId,
                                 'perso' => $personalFolder == 0 ? 0 : 1,
@@ -1025,9 +1037,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             unlink($SETTINGS['path_to_files_folder']."/".$file);
 
             //Display all messages to user
-            echo '[{"error":"no" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
+            echo '[{"error":"" , "message":"'.str_replace('"', "&quote;", strip_tags($text, '<br /><a><div><b><br>')).'"}]';
         } else {
-            echo '[{"error":"yes" , "message":""}]';
+            echo '[{"error":"yes" , "message":"Error - No item found!"}]';
         }
         break;
 }

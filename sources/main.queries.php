@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -63,7 +63,7 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
 function mainQuery()
 {
     global $server, $user, $pass, $database, $port, $encoding, $pre, $LANG;
-    global $SETTINGS;
+    global $SETTINGS, $SETTINGS_EXT;
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
@@ -324,6 +324,7 @@ function mainQuery()
                 // Prepare variables
                 $login = htmlspecialchars_decode($dataReceived['login']);
 
+                // Get data about user
                 $data = DB::queryfirstrow(
                     "SELECT id, email
                     FROM ".prefix_table("users")."
@@ -890,29 +891,36 @@ function mainQuery()
                 break;
             }
 
-            //Load PWGEN
-            $pwgen = new SplClassLoader('Encryption\PwGen', '../includes/libraries');
-            $pwgen->register();
-            $pwgen = new Encryption\PwGen\pwgen();
+            $generator = new SplClassLoader('PasswordGenerator\Generator', '../includes/libraries');
+            $generator->register();
+            $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
 
-            $pwgen->setLength(filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
-            if (null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING)
-                && filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) === "true"
+            // Is PHP7 being used?
+            if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
+                $php7generator = new SplClassLoader('PasswordGenerator\RandomGenerator', '../includes/libraries');
+                $php7generator->register();
+                $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
+            }
+
+            $generator->setLength((int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+
+            if (null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
+                && filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING) === "true"
             ) {
-                $pwgen->setSecure(true);
-                $pwgen->setSymbols(true);
-                $pwgen->setCapitalize(true);
-                $pwgen->setNumerals(true);
+                $generator->setSymbols(true);
+                $generator->setLowercase(true);
+                $generator->setUppercase(true);
+                $generator->setNumbers(true);
             } else {
-                $pwgen->setSecure((filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) === "true") ? true : false);
-                $pwgen->setNumerals((filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING) === "true") ? true : false);
-                $pwgen->setCapitalize((filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING) === "true") ? true : false);
-                $pwgen->setSymbols((filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setLowercase((filter_input(INPUT_POST, 'lowercase', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setUppercase((filter_input(INPUT_POST, 'capitalize', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setNumbers((filter_input(INPUT_POST, 'numerals', FILTER_SANITIZE_STRING) === "true") ? true : false);
+                $generator->setSymbols((filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) === "true") ? true : false);
             }
 
             echo prepareExchangedData(
                 array(
-                    "key" => $pwgen->generate(),
+                    "key" => $generator->generatePasswords(),
                     "error" => ""
                 ),
                 "encode"
@@ -989,7 +997,6 @@ function mainQuery()
 
             // get list of last items seen
             $x_counter = 1;
-            $return = "";
             $arrTmp = array();
             $arr_html = array();
             $rows = DB::query(
@@ -1060,11 +1067,10 @@ function mainQuery()
         case "save_token":
             $token = GenerateCryptKey(
                 null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
-                null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'ambiguous', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'ambiguous', FILTER_SANITIZE_STRING) : false,
-                null !== filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) ? filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_STRING) : false
+                null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_BOOLEAN) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_BOOLEAN) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_BOOLEAN) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_BOOLEAN) : false
             );
 
             // store in DB
@@ -1218,6 +1224,138 @@ function mainQuery()
             }
 
             fileDelete(filter_input(INPUT_POST, 'filename', FILTER_SANITIZE_STRING));
+
+            break;
+
+        /**
+         * Generate BUG report
+         */
+        case "generate_bug_report":
+            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // Read config file
+            $tmp = '';
+            $list_of_options = '';
+            $url_found = '';
+            $anonym_url = '';
+            $tp_config_file = "../includes/config/tp.config.php";
+            $data = file($tp_config_file);
+            foreach ($data as $line) {
+                if (substr($line, 0, 4) === '    ') {
+                    // Remove extra spaces
+                    $line = str_replace('    ', '', $line);
+
+                    // Identify url to anonymize it
+                    if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
+                        $url_found = substr($line, 19, strlen($line) - 22);//echo $url_found." ; ";
+                        $tmp = parse_url($url_found);
+                        $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
+                        $line = "'cpassman_url' => '" . $anonym_url . "\n";
+                    }
+
+                    // Anonymize all urls
+                    if (empty($anonym_url) === false) {
+                        $line = str_replace($url_found, $anonym_url, $line);
+                    }
+
+                    // Clear bck_script_passkey
+                    if (strpos($line, 'bck_script_passkey') > 0) {
+                        $line = "'bck_script_passkey' => '<removed>'\n";
+                    }
+
+                    // Complete line to display
+                    $list_of_options .= $line;
+                }
+            }
+
+            // Get error
+            $err = error_get_last();
+
+            // Get 10 latest errors in Teampass
+            $teampass_errors = '';
+            $rows = DB::query(
+                "SELECT label, date AS error_date
+                FROM ".prefix_table("log_system")."
+                WHERE `type` LIKE 'error'
+                ORDER BY `date` DESC
+                LIMIT 0, 10"
+            );
+            if (DB::count() > 0) {
+                foreach ($rows as $record) {
+                    if (empty($teampass_errors) === true) {
+                        $teampass_errors = ' * '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['error_date']).' - '.$record['label'];
+                    } else {
+                        $teampass_errors .= '
+ * '.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['error_date']).' - '.$record['label'];
+                    }
+                }
+            }
+
+            // Now prepare text
+            $txt = "### Steps to reproduce
+1.
+2.
+3.
+
+### Expected behaviour
+Tell us what should happen
+
+
+### Actual behaviour
+Tell us what happens instead
+
+### Server configuration
+**Operating system**: ".php_uname()."
+
+**Web server:** ".$_SERVER['SERVER_SOFTWARE']."
+
+**Database:** ".mysqli_get_server_info($link)."
+
+**PHP version:** ".PHP_VERSION."
+
+**Teampass version:** ".$SETTINGS_EXT['version_full']."
+
+**Teampass configuration file:**
+```
+" . $list_of_options . "
+```
+
+**Updated from an older Teampass or fresh install:**
+
+### Client configuration
+
+**Browser:** ".filter_input(INPUT_POST, 'browser_name', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'browser_version', FILTER_SANITIZE_STRING)."
+
+**Operating system:** ".filter_input(INPUT_POST, 'os', FILTER_SANITIZE_STRING)." - ".filter_input(INPUT_POST, 'os_archi', FILTER_SANITIZE_STRING)."bits
+
+### Logs
+
+#### Web server error log
+```
+" . $err['message']." - ".$err['file']." (".$err['line'] .")
+```
+
+#### Teampass 10 last system errors
+```
+" . $teampass_errors ."
+```
+
+#### Log from the web-browser developer console (CTRL + SHIFT + i)
+```
+Insert the log here and especially the answer of the query that failed.
+```
+";
+
+            echo prepareExchangedData(
+                array(
+                    "html" => $txt,
+                    "error" => ""
+                ),
+                "encode"
+            );
 
             break;
     }

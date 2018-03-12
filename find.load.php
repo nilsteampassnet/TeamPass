@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -297,7 +297,7 @@ $(function() {
                         function(data) {
                             //check if format error
                             if (data[0].error !== "") {
-                                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                                $("#div_mass_op_msg").html(data[1].error_text).show();
                             }
                             //if OK
                             if (data[0].status == "ok") {
@@ -329,10 +329,10 @@ $(function() {
                             item_ids    : sel_items,
                             key         : "<?php echo $_SESSION['key']; ?>"
                         },
-                        function(data) {
+                        function(data) {console.log(data[0].error);
                             //check if format error
                             if (data[0].error !== "") {
-                                $("#copy_item_to_folder_show_error").html(data[1].error_text).show();
+                                $("#div_mass_op_msg").html(data[0].error).show();
                             }
                             //if OK
                             if (data[0].status == "ok") {

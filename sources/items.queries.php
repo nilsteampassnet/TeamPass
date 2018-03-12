@@ -4,7 +4,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -1536,6 +1536,7 @@ if (null !== $post_type) {
                     || $dataItem['anyone_can_modify'] === '1'
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role'])
                     || in_array($_SESSION['user_id'], $restrictedTo)
+                    || count($restrictedTo) === 0
                 ) {
                     $arrData['user_can_modify'] = 1;
                     $user_is_allowed_to_modify = true;
@@ -2156,8 +2157,13 @@ if (null !== $post_type) {
             $post_target_folder_id = filter_var(htmlspecialchars_decode($dataReceived['target_folder_id']), FILTER_SANITIZE_NUMBER_INT);
 
             // Check that user can access this folder
-            if (!in_array($post_source_folder_id, $_SESSION['groupes_visibles'])
-                || !in_array($post_target_folder_id, $_SESSION['groupes_visibles'])
+            if ((
+                  in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
+                  in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) &&
+                  (
+                      $post_target_folder_id === '0' &&
+                      isset($SETTINGS['can_create_root_folder']) === true && $SETTINGS['can_create_root_folder'] === '1'
+                  )
             ) {
                 $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
@@ -2199,18 +2205,17 @@ if (null !== $post_type) {
                 break;
             }
 
-            if ($tmp_source['parent_id'] !== "0") {
-                // moving SOURCE folder
-                DB::update(
-                    prefix_table("nested_tree"),
-                    array(
-                        'parent_id' => $post_target_folder_id
-                        ),
-                    'id=%s',
-                    $post_source_folder_id
-                );
-                $tree->rebuild();
-            }
+
+            // moving SOURCE folder
+            DB::update(
+                prefix_table("nested_tree"),
+                array(
+                    'parent_id' => $post_target_folder_id
+                    ),
+                'id=%s',
+                $post_source_folder_id
+            );
+            $tree->rebuild();
 
 
             // send data
@@ -2549,7 +2554,7 @@ if (null !== $post_type) {
                             $restrictedTo = "";
                         }
 
-                        if ($list_folders_editable_by_role === '1') {
+                        if ($list_folders_editable_by_role === true) {
                             if (empty($restrictedTo)) {
                                 $restrictedTo = $_SESSION['user_id'];
                             } else {
@@ -2559,7 +2564,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['restricted'] = $restrictedTo;
 
                         // Can user modify it?
-                        if ($record['anyone_can_modify'] === '1'
+                        if (($record['anyone_can_modify'] === '1' && $_SESSION['user_read_only'] !== '1')
                             || $_SESSION['user_id'] === $record['log_user']
                             || ($_SESSION['user_read_only'] === '1' && $folderIsPf === false)
                             || (isset($SETTINGS['manager_edit']) && $SETTINGS['manager_edit'] === '1') // force draggable if user is manager
@@ -2586,14 +2591,16 @@ if (null !== $post_type) {
                             && $user_is_included_in_role === false
                             && isset($item_is_restricted_to_role)
                             && $item_is_restricted_to_role === true
-                            && (int) $is_user_in_restricted_list !== 1
+                            && $is_user_in_restricted_list === false
                             && (int) $folder_is_personal !== 1
                         ) {
                             $html_json[$record['id']]['perso'] = "fa-tag mi-red";
                             $html_json[$record['id']]['sk'] = 0;
                             $html_json[$record['id']]['display'] = "no_display";
-                            $html_json[$record['id']]['open_edit'] = 1;
+                            $html_json[$record['id']]['open_edit'] = 0;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = 3;
+                            $html_json[$record['id']]['canMove'] = 0;
                             $findPfGroup = 0;
                             $displayItem = false;
                             $need_sk = false;
@@ -2612,10 +2619,12 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['display'] = "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = 0;
+                            $html_json[$record['id']]['canMove'] = 1;
                         // CAse where item is restricted to a group of users included user
-                        } elseif (empty($record['restricted_to']) === false
-                            || (int) $list_folders_editable_by_role === 1
-                            && (int) $is_user_in_restricted_list === 1
+                        } elseif ((empty($record['restricted_to']) === false
+                            || $list_folders_editable_by_role === true)
+                            && $is_user_in_restricted_list === true
                         ) {
                             $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                             $findPfGroup = 0;
@@ -2625,23 +2634,25 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['display'] = "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = 0;
+                            $html_json[$record['id']]['canMove'] = ($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1;
                         // CAse where item is restricted to a group of users not including user
                         } elseif ((int) $record['perso'] === 1
                             ||
                             (
                                 empty($record['restricted_to']) === false
-                                && (int) $is_user_in_restricted_list !== 1
+                                && $is_user_in_restricted_list === false
                             )
                             ||
                             (
-                                isset($user_is_included_in_role)
-                                && isset($item_is_restricted_to_role)
+                                isset($user_is_included_in_role) === true
+                                && isset($item_is_restricted_to_role) === true
                                 && $user_is_included_in_role === false
                                 && $item_is_restricted_to_role === true
                             )
                         ) {
-                            if (isset($user_is_included_in_role)
-                                && isset($item_is_restricted_to_role)
+                            if (isset($user_is_included_in_role) === true
+                                && isset($item_is_restricted_to_role) === true
                                 && $user_is_included_in_role === false
                                 && $item_is_restricted_to_role === true
                             ) {
@@ -2654,6 +2665,8 @@ if (null !== $post_type) {
                                 $html_json[$record['id']]['display'] = "no_display";
                                 $html_json[$record['id']]['open_edit'] = 0;
                                 $html_json[$record['id']]['reload'] = "";
+                                $html_json[$record['id']]['accessLevel'] = 3;
+                                $html_json[$record['id']]['canMove'] = 0;
                             } else {
                                 $html_json[$record['id']]['perso'] = "fa-tag mi-yellow";
                                 // reinit in case of not personal group
@@ -2662,14 +2675,16 @@ if (null !== $post_type) {
                                     $init_personal_folder = true;
                                 }
 
-                                if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === '1') {
+                                if (empty($record['restricted_to']) === false && $is_user_in_restricted_list === true) {
                                     $displayItem = true;
                                 }
 
                                 $html_json[$record['id']]['sk'] = 0;
                                 $html_json[$record['id']]['display'] = "";
-                                $html_json[$record['id']]['open_edit'] = 1;
+                                $html_json[$record['id']]['open_edit'] = 0;
                                 $html_json[$record['id']]['reload'] = "";
+                                $html_json[$record['id']]['accessLevel'] = 0;
+                                $html_json[$record['id']]['canMove'] = 0;
                             }
                         } else {
                             $html_json[$record['id']]['perso'] = "fa-tag mi-green";
@@ -2684,10 +2699,10 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['display'] = "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
+                            $html_json[$record['id']]['accessLevel'] = $accessLevel;
+                            $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
                         }
 
-                        $html_json[$record['id']]['canMove'] = 1;
-                        $html_json[$record['id']]['accessLevel'] = 0;
                         $html_json[$record['id']]['pw_status'] = "";
 
                         // increment array for icons shortcuts (don't do if option is not enabled)
@@ -2892,7 +2907,9 @@ if (null !== $post_type) {
 
             // check if user can perform this action
             if (null !== $post_context && empty($post_context) === false) {
-                if ($post_context === "create_folder" || $post_context === "edit_folder" || $post_context === "delete_folder") {
+                if ($post_context === "create_folder" || $post_context === "edit_folder"
+                    || $post_context === "delete_folder" || $post_context === "copy_folder"
+                ) {
                     if ($_SESSION['is_admin'] !== '1'
                         && ($_SESSION['user_manager'] !== '1')
                         && (
@@ -3263,11 +3280,11 @@ if (null !== $post_type) {
                     );
 
                     // Check that user can access this folder
-                    if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
-                        || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
+                    if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
+                        || in_array($post_folder_id, $_SESSION['groupes_visibles']) === false
                     ) {
                         echo '[{"error":"not_allowed" , "status":"ok"}]';
-                        break;
+                        exit();
                     }
 
                     // get data about new folder
@@ -3285,7 +3302,7 @@ if (null !== $post_type) {
                                 'id_tree' => $post_folder_id
                                 ),
                             "id=%i",
-                            $post_item_id
+                            $item_id
                         );
                     } elseif ($dataSource['personal_folder'] === '0' && $dataDestination['personal_folder'] === '1') {
                         $decrypt = cryption(
@@ -3390,17 +3407,16 @@ if (null !== $post_type) {
                     );
 
                     // Check that user can access this folder
-                    if (!in_array($dataSource['id_tree'], $_SESSION['groupes_visibles'])
-                        || !in_array($post_folder_id, $_SESSION['groupes_visibles'])
+                    if (in_array($dataSource['id_tree'], $_SESSION['groupes_visibles']) === false
                     ) {
-                        echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
-                        break;
+                        echo '[{"error":"'.addslashes($LANG['error_not_allowed_to']).'" , "status":"nok"}]';
+                        exit();
                     }
 
                     // perform a check in case of Read-Only user creating an item in his PF
                     if ($_SESSION['user_read_only'] === true) {
-                        echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
-                        break;
+                        echo '[{"error":"'.addslashes($LANG['error_not_allowed_to']).'" , "status":"nok"}]';
+                        exit();
                     }
 
                     // delete item consists in disabling it
@@ -3641,7 +3657,7 @@ if (null !== $post_type) {
             }
 
             // generate session
-            $otv_code = GenerateCryptKey(32, false, true, true, true, false);
+            $otv_code = GenerateCryptKey(32, false, true, true, false);
 
             DB::insert(
                 prefix_table("otv"),
@@ -4222,6 +4238,58 @@ if (null !== $post_type) {
 
             // send data
             echo prepareExchangedData($data, "encode");
+            break;
+
+        case "send_request_access":
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo '[ { "error" : "key_not_conform" } ]';
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $data_received = prepareExchangedData($post_data, "decode");
+
+            // prepare variables
+            $emailText = htmlspecialchars_decode($data_received['text'], ENT_QUOTES);
+            $item_id = htmlspecialchars_decode($data_received['item_id']);
+            $user_id = htmlspecialchars_decode($data_received['user_id']);
+
+            // Send email
+            $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".prefix_table("users")." WHERE id= ".$user_id);
+            $dataItem = DB::queryfirstrow("SELECT label FROM ".prefix_table("items")." WHERE id= ".$item_id);
+            $ret = sendEmail(
+                $LANG['email_request_access_subject'],
+                str_replace(
+                  array(
+                      '#tp_item_author#',
+                      '#tp_user#',
+                      '#tp_item#',
+                      '#tp_reason#'
+                  ),
+                  array(
+                      " ".addslashes($dataAuthor['login']),
+                      addslashes($_SESSION['login']),
+                      addslashes($dataItem['label']),
+                      nl2br(addslashes($emailText))
+                  ),
+                  $LANG['email_request_access_mail']
+                ),
+                $dataAuthor['email']
+            );
+
+            // Do log
+            logItems(
+              $item_id,
+              $dataItem['label'],
+              $_SESSION['user_id'],
+              'at_access',
+              $_SESSION['login']
+            );
+
+            // Return
+            echo '[ { "error" : "" } ]';
+
             break;
     }
 }

@@ -1,11 +1,11 @@
-<?php 
+<?php
 /**
  *
  * @file          dutch.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     2009 - 2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @copyright     2009 - 2018 Nils Laumaillé
+ * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,27 +14,8 @@
  */
 global $LANG;
 $LANG = array (
-    'deselect_all' => 'Deselect all',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'access_level_for_roles' => 'Associated access for Roles',
-    'admin_script_backup_secret' => 'Passkey for backup execution',
-    'admin_script_backup_secret_tip' => 'The backup passkey needs to be provided to start the backup. It has to be added a key parameter to script.backup.php. Example:scripts.backup.php?key=your_passkey',
-    'text' => 'Text',
-    'masked' => 'Masked',
-    'type' => 'Type',
-    'select_type_of_field' => 'Select type of field',
-    'define_new_field' => 'Define new field',
-    'data_is_text' => 'Data is Text',
-    'data_is_masked' => 'Data is Hidden',
-    'at_export' => 'Export',
-    'setting_disabled_by_admin' => 'This setting is disabled by Administrator',
-    'confirm_change_field_type' => 'Confirm changing the field type',
+    'report_a_bug' => 'Report a Bug',
+    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'E-mail Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google Authenticatie in en stuur e-mail',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',
@@ -295,7 +276,7 @@ $LANG = array (
     'admin_action_db_restore_key' => 'Voer een encryptiesleutel in.',
     'admin_action_db_restore_tip' => 'Gebruik hiervoor een backup bestand gecreëerd door de backup functionaliteit van TeamPass.',
     'admin_action_purge_old_files' => 'Verwijder oude bestanden',
-    'admin_action_purge_old_files_result' => 'De bestanden zijn verwijderd.',
+    'admin_action_purge_old_files_result' => 'bestanden zijn verwijderd.',
     'admin_action_purge_old_files_tip' => 'Hiermee verwijderd u alle tijdelijke bestanden die ouder zijn dan 7 dagen.',
     'admin_action_reload_cache_table' => 'Cache tabel laden',
     'admin_action_reload_cache_table_tip' => 'test',
@@ -527,7 +508,7 @@ $LANG = array (
     'import_keepass_to_folder' => 'Selecteer een eindbestemming',
     'import_kp_finished' => 'Import van KeePass is klaar! <br /> De standard moeilijkheid`s graad van nieuwe mappen is gezet op medium. Wellicht dat je dit weer wilt veranderen.',
     'import_to_folder' => 'Selecteer de onderdelen die u in de map wilt importeren:',
-    'index_add_one_hour' => 'Sessie met 1 uur verlengen',
+    'index_add_one_hour' => 'Sessie verlengen',
     'index_alarm' => 'ALARM!!!',
     'index_bas_pw' => 'Ongeldig wachtwoord voor dit account',
     'index_change_pw' => 'Uw wachtwoord wijzigen',
@@ -1076,5 +1057,35 @@ $LANG = array (
     'continue' => 'Doorgaan',
     'please_confirm_operation' => 'Bevestig de operatie alstublieft',
     'setting_disabled_by_admin' => 'Deze instelling is uitgeschakeld door de beheerder',
+    'text' => 'Tekst',
+    'masked' => 'Gemaskeerd',
+    'type' => 'Type',
+    'select_type_of_field' => 'Selecteer veldtype',
+    'define_new_field' => 'Definieer nieuw veld',
+    'data_is_text' => 'Data is tekst',
+    'data_is_masked' => 'Data is verborgen',
+    'at_export' => 'Exporteer',
+    'setting_disabled_by_admin' => 'Deze instelling is uitgeschakeld door de Beheerder',
+    'confirm_change_field_type' => 'Bevestig wijziging veldtype',
+    'admin_script_backup_secret' => 'Wachtwoord voor het uitvoeren van backup',
+    'admin_script_backup_secret_tip' => 'Bij de start van de backup dient het backup wachtwoord gegeven te worden. Deze dient als paramater toegevoegd te worden aan: script.backup.ph',
+    'access_level_for_roles' => 'Toegangsniveau voor Rollen',
+    'settings_ldap_allowed_usergroup' => 'LDAP toegestaan voor gebruikersgroep',
+    'settings_ldap_allowed_usergroup_tip' => 'Geef aan welke groep mag verbinden met Teampass. Laat dit veld leeg wanneer er geen restrictie is met betrekking tot groepslidmaatschap.',
+    'error_security_level_not_reached' => 'Verwachte beveiligingsniveau niet bereik!',
+    'error_psk_should_be_changed' => 'Door een beleidsverandering zou het kunnen dat u uw persoonlijke sleutel moet wijzigen.',
+    'personal_saltkey_security_level' => 'Minimum beveiligingsniveau persoonlijke sleutel',
+    'settings_disable_forgot_password_link' => 'Verberg wachtwoord vergeten link op Home pagina',
+    'newly_created_user_is_administrated_by' => 'Nieuw aangemaakte gebruiker wordt beheerd door',
+    'open_bug_report_in_github' => 'Open issue rapportage in Github',
+    'bug_report_to_github' => 'Vul de inhoud aan van de rapportage, kopieer het naar het klembord en plak het in de nieuwe issue pagina van Github',
+    'create_github_bug_report' => 'Maak een nieuwe bug rapportage',
+    'deselect_all' => 'Deselecteer alles',
+    'request_access_to_item' => 'Vraag toegang aan voor dit item',
+    'request_access_to_item_info' => 'Geef de reden waarom u toegang wil tot dit item',
+    'send_request' => 'Verstuur veroek',
+    'error_no_reason_of_access' => 'Geef de reden waarom u dit item wilde benaderen',
+    'settings_ldap_and_local_authentication' => 'Lokale en LDAP gebruikers',
+    'settings_ldap_and_local_authentication_tip' => 'Activeer deze optie om zowel gebruikers geautenticeerd met LDAP en lokale gebruikers toe te staan.  ',
     '' => ''
 );

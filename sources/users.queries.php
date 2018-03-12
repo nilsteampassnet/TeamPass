@@ -5,7 +5,7 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     (c) 2009-2017 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
+ * @licensing     GNU GPL-3.0
  * @link        http://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -35,13 +35,12 @@ if (file_exists('../includes/config/tp.config.php')) {
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users")) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users") === false) {
     if (null === $filtered_newvalue) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
         include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
     } else {
-        $filtered_newvalue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
         // Do special check to allow user to change attributes of his profile
         if (empty($filtered_newvalue) || !checkUser($_SESSION['user_id'], $_SESSION['key'], "profile")) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -206,6 +205,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     // rebuild tree
                     $tree->rebuild();
                 }
+
+                // Create the API key
+                DB::insert(
+                    prefix_table("api"),
+                    array(
+                        'type' => 'user',
+                        'label' => $new_user_id,
+                        'value' => uniqidReal(39),
+                        'timestamp' => time()
+                        )
+                );
+
                 // get links url
                 if (empty($SETTINGS['email_server_url'])) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
@@ -1130,10 +1141,19 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $account_status_action = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
             $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
+            $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
+            $post_lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
+            $post_name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
 
             // Empty user
             if (empty($post_login) === true) {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
+                break;
+            }
+
+            // User has email?
+            if (empty($post_email) === true) {
+                echo '[ { "error" : "'.addslashes($LANG['error_no_email']).'" } ]';
                 break;
             }
 
@@ -1212,10 +1232,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     DB::update(
                         prefix_table("users"),
                         array(
-                            'login' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['login'])),
-                            'name' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name'])),
-                            'lastname' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname'])),
-                            'email' => mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email'])),
+                            'login' => $post_login,
+                            'name' => $post_name,
+                            'lastname' => $post_lastname,
+                            'email' => $post_email,
                             'disabled' => $accountDisabled,
                             'isAdministratedByRole' => $dataReceived['managedby'],
                             'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ";"),
@@ -1228,13 +1248,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                     // update SESSION
                     if ($_SESSION['user_id'] === $post_id) {
-                        $_SESSION['user_email'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']));
-                        $_SESSION['name'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['name']));
-                        $_SESSION['lastname'] = mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['lastname']));
+                        $_SESSION['user_email'] = $post_email;
+                        $_SESSION['name'] = $post_name;
+                        $_SESSION['lastname'] = $post_lastname;
                     }
 
                     // update LOG
-                    if ($oldData['email'] != mysqli_escape_string($link, htmlspecialchars_decode($dataReceived['email']))) {
+                    if ($oldData['email'] !== $post_email) {
                         logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
                     }
 
@@ -1591,6 +1611,39 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     }
                 }
             }
+            break;
+
+            case "update_user_field":
+                // Check KEY
+                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                    echo '[ { "error" : "key_not_conform" } ]';
+                    break;
+                }
+
+                // decrypt and retreive data in JSON format
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                    "decode"
+                );
+
+                // Prepare variables
+                $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
+                $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
+                $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
+
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        $field => $new_value
+                        ),
+                    "id = %i",
+                    $user_id
+                );
+
+                // Update session
+                if ($field === 'user_api_key') {
+                  $_SESSION['user_settings']['api-key'] = $new_value;
+                }
             break;
     }
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
