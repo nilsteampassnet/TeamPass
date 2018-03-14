@@ -1388,6 +1388,133 @@ function rest_get()
                 } else {
                     rest_error('NO_ITEM');
                 }
+            } elseif ($GLOBALS['request'][1] == "user") {
+            /*
+             * Case where a user has to be updated
+             *
+             * Expected call format: .../api/index.php/updated/user/<LOGIN>;<NAME>;<LASTNAME>;<PASSWORD>;<EMAIL>;<ADMINISTRATEDBY>;<READ_ONLY>;<ROLE1,ROLE2,...>;<IS_ADMIN>;<ISMANAGER>;<PERSONAL_FOLDER>?apikey=<VALID API KEY>
+             * with:
+             * for READ_ONLY, IS_ADMIN, IS_MANAGER, PERSONAL_FOLDER, accepted value is 1 for TRUE and 0 for FALSE
+             * for ADMINISTRATEDBY and ROLE1, accepted value is the real label (not the IDs)
+             *
+             * Example: /api/index.php/update/user/U4;Nils;Laumaille;test;nils@laumaille.fr;Users;0;Managers,Users;0;1;1?apikey=sae6iekahxiseL3viShoo0chahc1ievei8aequi
+             *
+             */
+
+                // get user definition
+                $array_user = explode(';', base64_decode($GLOBALS['request'][2]));
+                if (count($array_user) != 11) {
+                    rest_error('USERBADDEFINITION');
+                }
+
+                $login = $array_user[0];
+                $name = $array_user[1];
+                $lastname = $array_user[2];
+                $password = $array_user[3];
+                $email = $array_user[4];
+                $adminby = urldecode($array_user[5]);
+                $isreadonly = urldecode($array_user[6]);
+                $roles = urldecode($array_user[7]);
+                $isadmin = $array_user[8];
+                $ismanager = $array_user[9];
+                $haspf = $array_user[10];
+
+                // Empty user
+                if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
+                    rest_error('USERLOGINEMPTY');
+                }
+                // Check if user already exists
+                $data = DB::query(
+                    "SELECT id, fonction_id, groupes_interdits, groupes_visibles, personal_folder
+                    FROM ".prefix_table("users")."
+                    WHERE login LIKE %ss",
+                    mysqli_escape_string($link, stripslashes($login))
+                );
+
+                if (DB::count() === 1) {
+                    try {
+                        // find AdminRole code in DB
+                        $resRole = DB::queryFirstRow(
+                            "SELECT id
+                            FROM ".prefix_table("roles_title")."
+                            WHERE title LIKE %ss",
+                            mysqli_escape_string($link, stripslashes($adminby))
+                        );
+
+                        // prepare roles list
+                        $rolesList = "";
+                        foreach (explode(',', $roles) as $role) {//echo $role."-";
+                            $tmp = DB::queryFirstRow(
+                                "SELECT `id`
+                                FROM ".prefix_table("roles_title")."
+                                WHERE title = %s",
+                                $role
+                            );
+                            if (empty($rolesList)) {
+                                $rolesList = $tmp['id'];
+                            } else {
+                                $rolesList .= ";".$tmp['id'];
+                            }
+                        }
+
+                        // Update user in DB
+                        DB::update(
+                            prefix_table("users"),
+                            array(
+                                'login' => $login,
+                                'name' => $name,
+                                'lastname' => $lastname,
+                                'pw' => bCrypt(stringUtf8Decode($password), COST),
+                                'email' => $email,
+                                'admin' => intval($isadmin),
+                                'gestionnaire' => intval($ismanager),
+                                'read_only' => intval($isreadonly),
+                                'personal_folder' => intval($haspf),
+                                'user_language' => $lang['valeur'],
+                                'fonction_id' => $rolesList,
+                                'groupes_interdits' => '0',
+                                'groupes_visibles' => '0',
+                                'isAdministratedByRole' => empty($resRole) ? '0' : $resRole['id']
+                            ),
+                            "id = %i",
+                            $data['id']
+                        );
+
+                        // Create personnal folder
+                        if (intval($haspf) === '1') {
+                            $data_folder = DB::query(
+                                "SELECT id
+                                FROM ".prefix_table("nested_tree")."
+                                WHERE title = %s",
+                                $data['id']
+                            );
+                            if (DB::count() === 0) {
+                                DB::insert(
+                                    prefix_table("nested_tree"),
+                                    array(
+                                        'parent_id' => '0',
+                                        'title' => $data['id'],
+                                        'bloquer_creation' => '0',
+                                        'bloquer_modification' => '0',
+                                        'personal_folder' => '1'
+                                    )
+                                );
+                            }
+                        }
+
+                        // load settings
+                        loadSettings();
+
+                        // update LOG
+                        logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
+
+                        echo '{"status":"user added"}';
+                    } catch (PDOException $ex) {
+                        echo '<br />'.$ex->getMessage();
+                    }
+                } else {
+                    rest_error('USER_NOT_EXISTS');
+                }
             }
         } elseif ($GLOBALS['request'][0] == "auth") {
             /*
