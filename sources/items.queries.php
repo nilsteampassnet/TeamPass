@@ -1862,11 +1862,15 @@ if (null !== $post_type) {
                                 "decrypt"
                             );
                         } else {
-                            $reason[1] = cryption(
-                                $reason[1],
-                                $_SESSION['user_settings']['session_psk'],
-                                "decrypt"
-                            );
+                            if (isset($_SESSION['user_settings']['session_psk']) === true) {
+                                $reason[1] = cryption(
+                                    $reason[1],
+                                    $_SESSION['user_settings']['session_psk'],
+                                    "decrypt"
+                                );
+                            } else {
+                                $reason[1] = '';
+                            }
                         }
                         $reason[1] = @$reason[1]['string'];
                         // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
@@ -4083,11 +4087,15 @@ if (null !== $post_type) {
                             "decrypt"
                         );
                     } else {
-                        $reason[1] = cryption(
-                            $reason[1],
-                            $_SESSION['user_settings']['session_psk'],
-                            "decrypt"
-                        );
+                        if (isset($_SESSION['user_settings']['session_psk']) === true) {
+                            $reason[1] = cryption(
+                                $reason[1],
+                                $_SESSION['user_settings']['session_psk'],
+                                "decrypt"
+                            );
+                        } else {
+                            $reason[1] = '';
+                        }
                     }
                     $reason[1] = @$reason[1]['string'];
                     // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
