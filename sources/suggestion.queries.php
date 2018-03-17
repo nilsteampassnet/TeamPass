@@ -146,7 +146,9 @@ if (null !== $post_type) {
                     sendEmail(
                         $LANG['suggestion_notify_subject'],
                         str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $LANG['suggestion_notify_body']),
-                        $record['email']
+                        $record['email'],
+                        $LANG,
+                        $SETTINGS
                     );
                 }
 

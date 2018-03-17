@@ -1,6 +1,6 @@
 <?php
 /**
- *
+ * Teampass file 
  * @file          main.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.27
@@ -257,6 +257,8 @@ function mainQuery()
                                 $LANG['forgot_pw_email_subject'],
                                 $LANG['forgot_pw_email_body']." ".htmlspecialchars_decode($dataReceived['new_pw']),
                                 $row[0],
+                                $LANG,
+                                $SETTINGS,
                                 $LANG['forgot_pw_email_altbody_1']." ".htmlspecialchars_decode($dataReceived['new_pw'])
                             );
                         }
@@ -375,7 +377,9 @@ function mainQuery()
                                 $gaTemporaryCode,
                                 $LANG['email_ga_text']
                             ),
-                            $data['email']
+                            $data['email'],
+                            $LANG,
+                            $SETTINGS
                         );
                     }
 
@@ -471,7 +475,14 @@ function mainQuery()
                     );
                 }
 
-                echo '[{'.sendEmail($LANG['forgot_pw_email_subject'], $textMail, $post_email, $textMailAlt).'}]';
+                echo '[{'.sendEmail(
+                    $LANG['forgot_pw_email_subject'],
+                    $textMail,
+                    $post_email,
+                    $LANG,
+                    $SETTINGS,
+                    $textMailAlt
+                ).'}]';
             } else {
                 // no one has this email ... alert
                 echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
@@ -538,6 +549,8 @@ function mainQuery()
                         $LANG['forgot_pw_email_subject_confirm'],
                         $LANG['forgot_pw_email_body']." ".$newPwNotCrypted,
                         $dataUser['email'],
+                        $LANG,
+                        $SETTINGS,
                         strip_tags($LANG['forgot_pw_email_body'])." ".$newPwNotCrypted
                     )
                 );
@@ -828,7 +841,9 @@ function mainQuery()
                         $ret = sendEmail(
                             $record['subject'],
                             $record['body'],
-                            $record['receivers']
+                            $record['receivers'],
+                            $LANG,
+                            $SETTINGS
                         );
 
                         if (strpos($ret, "error_mail_not_send") !== false) {

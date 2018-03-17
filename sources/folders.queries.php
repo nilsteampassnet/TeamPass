@@ -564,7 +564,14 @@ if (null !== $post_newtitle) {
                             $_SESSION['groupes_visibles'],
                             implode(";", $_SESSION['groupes_interdits']),
                             $_SESSION['is_admin'],
-                            is_array($_SESSION['fonction_id']) === true ? implode(";", $_SESSION['fonction_id']) : $_SESSION['fonction_id']
+                            is_array($_SESSION['fonction_id']) === true ? implode(";", $_SESSION['fonction_id']) : $_SESSION['fonction_id'],
+                            $server,
+                            $user,
+                            $pass,
+                            $database,
+                            $port,
+                            $encoding,
+                            $SETTINGS
                         );
                     }
 
@@ -741,7 +748,14 @@ if (null !== $post_newtitle) {
                 implode(";", $_SESSION['groupes_visibles']).';'.$dataReceived['id'],
                 implode(";", $_SESSION['groupes_interdits']),
                 $_SESSION['is_admin'],
-                $_SESSION['fonction_id']
+                $_SESSION['fonction_id'],
+                $server,
+                $user,
+                $pass,
+                $database,
+                $port,
+                $encoding,
+                $SETTINGS
             );
 
 
@@ -1064,7 +1078,14 @@ if (null !== $post_newtitle) {
                         is_array($_SESSION['groupes_visibles']) ? array_push($_SESSION['groupes_visibles'], $newFolderId) : $_SESSION['groupes_visibles'].';'.$newFolderId,
                         $_SESSION['groupes_interdits'],
                         $_SESSION['is_admin'],
-                        $_SESSION['fonction_id']
+                        $_SESSION['fonction_id'],
+                        $server,
+                        $user,
+                        $pass,
+                        $database,
+                        $port,
+                        $encoding,
+                        $SETTINGS
                     );
 
                     //add access to this new folder

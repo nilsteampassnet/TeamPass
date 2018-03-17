@@ -15,9 +15,9 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key'])
+if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1 ||
+    isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) ||
+    isset($_SESSION['key']) === false || empty($_SESSION['key'])
 ) {
     die('Hacking attempt...');
 }
@@ -40,8 +40,8 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
     exit();
 }
 
-include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/config/tp.config.php';
 
 header("Content-type: text/html; charset=utf-8");

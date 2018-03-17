@@ -401,7 +401,14 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $data['groupes_visibles'],
             $data['groupes_interdits'],
             $data['admin'],
-            $data['fonction_id']
+            $data['fonction_id'],
+            $server,
+            $user,
+            $pass,
+            $database,
+            $port,
+            $encoding,
+            $SETTINGS
         );
 
         // user type

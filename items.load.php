@@ -4280,17 +4280,6 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         }
     };
 
-    // Adapt menu width
-    var maxWidth = 0;
-  var $items = $('ul.menu_250 > li');
-  $items.each(function(){
-      var width = $(this).width();
-      if (width > maxWidth)
-        maxWidth = width;
-    });
-  $('.menu_250').css('width', maxWidth + 'px');
-  
-
     NProgress.done();
 });
 
