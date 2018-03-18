@@ -65,9 +65,11 @@ $events = "";
 if (file_exists($filename)) {
     //copy some constants from this existing file
     $settingsFile = file($filename);
-    while (list($key, $val) = each($settingsFile)) {
-        if (substr_count($val, "@define('SECUREPATH'")) {
-            $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
+    if ($settingsFile !== false) {
+        while (list($key, $val) = each($settingsFile)) {
+            if (substr_count($val, "@define('SECUREPATH'")) {
+                $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
+            }
         }
     }
 }

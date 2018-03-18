@@ -18,22 +18,22 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
 /**
  * redirection management
- * @param  [string] $url new url
+ * @param  string  $url new url
  * @return refresh page to url
  */
 function redirect($url)
 {
     // Load AntiXSS
-    require_once '../includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once '../includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
@@ -492,7 +492,7 @@ if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === "1") {
             $_SESSION['validite_pw'] = true;
         } else {
             $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
-                (mktime(0, 0, 0, date('m'), date('d'), date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
+                (mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
             );
             if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
                 $_SESSION['validite_pw'] = false;

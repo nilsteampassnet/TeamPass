@@ -488,32 +488,37 @@ switch ($post_type) {
         //read folder
         $dir = opendir($SETTINGS['path_to_files_folder']);
 
-        //delete file FILES
-        while (false !== ($f = readdir($dir))) {
-            if ($f != "." && $f !== ".." && $f !== ".htaccess") {
-                if ((time() - filectime($dir.$f)) > 604800) {
-                    fileDelete($SETTINGS['path_to_files_folder']."/".$f);
-                    $nbFilesDeleted++;
+        if ($dir !== false) {
+            //delete file FILES
+            while (false !== ($f = readdir($dir))) {
+                if ($f != "." && $f !== ".." && $f !== ".htaccess") {
+                    if ((time() - filectime($dir.$f)) > 604800) {
+                        fileDelete($SETTINGS['path_to_files_folder']."/".$f);
+                        $nbFilesDeleted++;
+                    }
                 }
             }
+
+            //Close dir
+            closedir($dir);
         }
-        //Close dir
-        closedir($dir);
 
         //read folder  UPLOAD
         $dir = opendir($SETTINGS['path_to_upload_folder']);
 
-        //delete file
-        while (false !== ($f = readdir($dir))) {
-            if ($f != "." && $f !== "..") {
-                if (strpos($f, "_delete.") > 0) {
-                    fileDelete($SETTINGS['path_to_upload_folder']."/".$f);
-                    $nbFilesDeleted++;
+        if ($dir !== false) {
+            //delete file
+            while (false !== ($f = readdir($dir))) {
+                if ($f != "." && $f !== "..") {
+                    if (strpos($f, "_delete.") > 0) {
+                        fileDelete($SETTINGS['path_to_upload_folder']."/".$f);
+                        $nbFilesDeleted++;
+                    }
                 }
             }
+            //Close dir
+            closedir($dir);
         }
-        //Close dir
-        closedir($dir);
 
         //Show done
         echo '[{"result":"purge_old_files","nb_files_deleted":"'.$nbFilesDeleted.'"}]';
@@ -534,7 +539,7 @@ switch ($post_type) {
     case "admin_action_rebuild_config_file":
         $error = "";
 
-        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+        include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
         $ret = handleConfigFile("rebuild");
 
         if ($ret !== true) {
@@ -573,11 +578,11 @@ switch ($post_type) {
                 $err = "";
 
                 // it means that file is DEFUSE encrypted
-                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
-                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
-                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
-                require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
+                include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Crypto.php';
+                include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/DerivedKeys.php';
+                include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+                include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/File.php';
+                include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/Core.php';
 
                 try {
                     \Defuse\Crypto\File::decryptFileWithPassword(
@@ -596,11 +601,12 @@ switch ($post_type) {
             } else {
                     // file is bCrypt encrypted
                 $inF = fopen($Fnm, "r");
-                while (!feof($inF)) {
-                    $return .= fgets($inF, 4096);
+                if ($inF !== false) {
+                    while (!feof($inF)) {
+                        $return .= fgets($inF, 4096);
+                    }
+                    fclose($inF);
                 }
-                fclose($inF);
-
 
                 $return = Encryption\Crypt\aesctr::decrypt($return, $tp_settings['bck_script_key'], 256);
 
@@ -636,7 +642,7 @@ switch ($post_type) {
 
 
         // generate new saltkey
-        $old_sk_filename = SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).'.'.time();
+        $old_sk_filename = SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))).'.'.time();
         copy(
             SECUREPATH."/teampass-seckey.txt",
             $old_sk_filename
@@ -1206,90 +1212,6 @@ switch ($post_type) {
 
         echo '[{"result":"admin_email_send_backlog", "error : ""}]';
         break;
-
-    /*
-    * Generate exchanges encryption keys
-    */
-    case "admin_action_generate_encrypt_keys":
-        require_once("../includes/libraries/jCryption/jcryption.php");
-        $keyLength = 1024;
-        $jCryption = new jCryption();
-        $numberOfPairs = 100;
-        $arrKeyPairs = array();
-        for ($i = 0; $i < $numberOfPairs; $i++) {
-            $arrKeyPairs[] = $jCryption->generateKeypair($keyLength);
-        }
-        $file = array();
-        $file[] = '<?php';
-        $file[] = '$arrKeys = ';
-        $file[] = var_export($arrKeyPairs, true);
-        $file[] = ';';
-        file_put_contents(SECUREPATH."/".$numberOfPairs."_".$keyLength."_keys.inc.php", implode("\n", $file));
-
-        echo '[{"result":"generated_keys_file", "error":""}]';
-        break;
-
-    /*
-    * Correct passwords prefix
-    */
-    /*case "admin_action_pw_prefix_correct":
-        require_once 'main.functions.php';
-        $numOfItemsChanged = 0;
-        // go for all Items and get their PW
-        $rows = DB::query("SELECT id, pw, pw_iv FROM ".prefix_table("items")." WHERE perso = %s", "0");
-        foreach ($rows as $record) {
-            // check if key exists for this item
-            DB::query("SELECT * FROM ".prefix_table("keys")." WHERE `id` = %i AND `sql_table` = %s", $record['id'], "items");
-            $counter = DB::count();
-            if ($counter == 0) {
-                $storePrefix = false;
-                // decrypt pw
-                $pw = cryption($record['pw'], SALT, $record['pw_iv'], "decrypt");
-                if (!empty($pw['string']) && strlen($pw['string']) > 15 && isutf8($pw['string'])) {
-                    // Pw seems to have a prefix
-                    // get old prefix
-                    $randomKey = substr($pw, 0, 15);
-                    // check if prefix contains only lowercase and numerics
-                    //TODO
-                    // should we store?
-                    $storePrefix = true;
-                } elseif (!empty($pw) && isutf8($pw)) {
-                    // Pw doesn't seem to have a prefix
-
-                    // re-encrypt with key prefix
-                    $randomKey = generateKey();
-                    $pw = $randomKey.$pw;
-                    $pw = encrypt($pw);
-
-                    // store pw
-                    DB::update(
-                        prefix_table("items"),
-                        array(
-                            'pw' => $pw
-                        ),
-                        "id=%s",
-                        $record['id']
-                    );
-                    // should we store?
-                    $storePrefix = true;
-                }
-                if ($storePrefix === true) {
-                    // store key prefix
-                    DB::insert(
-                        prefix_table("keys"),
-                        array(
-                            'table'     => 'items',
-                            'id'        => $record['id'],
-                            'rand_key'  => $randomKey
-                        )
-                    );
-                }
-
-                $numOfItemsChanged++;
-            }
-        }
-        echo '[{"result":"pw_prefix_correct", "error":"", "ret":"'.$LANG['alert_message_done'].' '.$numOfItemsChanged.' '.$LANG['items_changed'].'"}]';
-        break;*/
 
     /*
     * Attachments encryption

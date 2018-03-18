@@ -381,17 +381,19 @@ echo '
 $Fnm = "changelog.md";
 if (file_exists($Fnm)) {
     $tab = file($Fnm);
-    echo '
-        <h3>'.$LANG['changelog'].'</h3>';
-    $show = false;
-    $cnt = 0;
-    while (list($cle, $val) = each($tab)) {
-        if ($cnt < 30) {
-            echo $val."<br />";
-            $cnt++;
-        } elseif ($cnt == 30) {
-            echo '...<br /><br /><b><a href="changelog.md" target="_blank"><span class="fa fa-book"></span>&nbsp;'.$LANG['readme_open'].'</a></b>';
-            break;
+    if ($tab !== false) {
+        echo '
+            <h3>'.$LANG['changelog'].'</h3>';
+        $show = false;
+        $cnt = 0;
+        while (list($cle, $val) = each($tab)) {
+            if ($cnt < 30) {
+                echo $val."<br />";
+                $cnt++;
+            } elseif ($cnt == 30) {
+                echo '...<br /><br /><b><a href="changelog.md" target="_blank"><span class="fa fa-book"></span>&nbsp;'.$LANG['readme_open'].'</a></b>';
+                break;
+            }
         }
     }
 }

@@ -117,7 +117,7 @@ function addToCacheTable($item_id)
         WHERE i.id = %i
         AND l.action = %s",
         intval($item_id),
-        at_creation
+        'at_creation'
     );
 
     // Get all TAGS
