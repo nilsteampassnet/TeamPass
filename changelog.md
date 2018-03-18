@@ -13,6 +13,7 @@
  Fix for API keys truncated
  Fix offline password dispay in case of html tags similar in password
  Fix failed folder creation in case of password complexity not reached
+ #2151 Error in knowledge base that does not show option to swap pages
  #2140 Moving subfolder to root level not possible
  #2127 Grant access with simple folder copy
  #2118 Empty user at Keepass file is not empty after import
