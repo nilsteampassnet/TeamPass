@@ -326,10 +326,11 @@ switch ($post_type) {
             //save file
             $filename = time().'-'.$token.'.sql';
             $handle = fopen($SETTINGS['path_to_files_folder']."/".$filename, 'w+');
-
-            //write file
-            fwrite($handle, $return);
-            fclose($handle);
+            if ($handle !== false) {
+                //write file
+                fwrite($handle, $return);
+                fclose($handle);
+            }
 
             // Encrypt the file
             if (empty($post_option) === false) {
@@ -1547,21 +1548,22 @@ switch ($post_type) {
 
         // Write back values in sk.php file
         $fh = fopen($tmp_skfile, 'w');
-        $result2 = fwrite(
-            $fh,
-            utf8_encode(
-                "<?php
-@define('COST', '13'); // Don't change this.
-// DUOSecurity credentials
-@define('AKEY', '".(string) $akey."');
-@define('IKEY', '".(string) $ikey."');
-@define('SKEY', '".(string) $skey."');
-@define('HOST', '".(string) $host."');
-?>"
-            )
-        );
-        fclose($fh);
-
+        if ($fh !== false) {
+            $result2 = fwrite(
+                $fh,
+                utf8_encode(
+                    "<?php
+    @define('COST', '13'); // Don't change this.
+    // DUOSecurity credentials
+    @define('AKEY', '".(string) $akey."');
+    @define('IKEY', '".(string) $ikey."');
+    @define('SKEY', '".(string) $skey."');
+    @define('HOST', '".(string) $host."');
+    ?>"
+                )
+            );
+            fclose($fh);
+        }
 
 
         // send data
