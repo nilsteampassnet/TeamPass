@@ -1155,7 +1155,14 @@ switch ($post_type) {
             echo '[{"result":"email_test_conf", "error":"error_mail_not_send" , "message":"User has no email defined!"}]';
         } else {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-            echo '[{"result":"email_test_conf", '.sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $_SESSION['user_email']).'}]';
+            echo '[{"result":"email_test_conf", '.
+                sendEmail(
+                    $LANG['admin_email_test_subject'],
+                    $LANG['admin_email_test_body'],
+                    $_SESSION['user_email'],
+                    $LANG,
+                    $SETTINGS
+                ).'}]';
         }
         break;
 
@@ -1172,7 +1179,9 @@ switch ($post_type) {
                 @sendEmail(
                     $record['subject'],
                     $record['body'],
-                    $record['receivers']
+                    $record['receivers'],
+                    $LANG,
+                    $SETTINGS
                 )
             );
 

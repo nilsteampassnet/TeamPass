@@ -51,9 +51,9 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLA
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
-//--------
-// DUO AUTHENTICATION
-//--------
+    //--------
+    // DUO AUTHENTICATION
+    //--------
     // This step creates the DUO request encrypted key
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
@@ -80,10 +80,10 @@ if ($post_type === "identify_duo_user") {
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
 // DUO Identification
 } elseif ($post_type === "identify_duo_user_check") {
-//--------
-// DUO AUTHENTICATION
-// this step is verifying the response received from the server
-//--------
+    //--------
+    // DUO AUTHENTICATION
+    // this step is verifying the response received from the server
+    //--------
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     require_once SECUREPATH."/sk.php";

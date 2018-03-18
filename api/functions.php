@@ -993,7 +993,9 @@ function rest_get()
                             str_replace(
                                 array('#tp_login#', '#tp_pw#', '#tp_link#'),
                                 array(" ".addslashes($login), addslashes($password), $SETTINGS['email_server_url']),
-                                $LANG['email_new_user_mail']
+                                $LANG['email_new_user_mail'],
+                                $LANG,
+                                $SETTINGS
                             ),
                             $email,
                             ""

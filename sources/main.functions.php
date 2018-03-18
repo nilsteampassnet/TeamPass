@@ -1202,7 +1202,7 @@ function getStatisticsData()
  * @param  array  $LANG        Language
  * @param  array  $SETTINGS    settings
  * @param  string $textMailAlt email message alt
- * @return void
+ * @return  string  some json info
  */
 function sendEmail(
     $subject,
