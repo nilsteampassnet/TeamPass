@@ -26,9 +26,10 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 /**
- * redirection management
- * @param  string  $url new url
- * @return refresh page to url
+ * Redirection management
+ * 
+ * @param  string $url new url
+ * @return string  refresh page to url
  */
 function redirect($url)
 {

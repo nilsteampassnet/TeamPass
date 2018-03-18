@@ -54,7 +54,7 @@ case "checkSessionExists":
     // Case permit to check if SESSION is still valid
     session_start();
     if (isset($_SESSION['CPM']) === true) {
-        return true;
+        echo "1";
     } else {
         // In case that no session is available
         // Force the page to be reloaded and attach the CSRFP info

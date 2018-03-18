@@ -612,8 +612,10 @@ switch ($post_type) {
 
                 //save the file
                 $handle = fopen($tp_settings['bck_script_path'].'/'.$filename.'.clear'.'.sql', 'w+');
-                fwrite($handle, $return);
-                fclose($handle);
+                if ($handle !== false) {
+                    fwrite($handle, $return);
+                    fclose($handle);
+                }
             }
             $result = "backup_decrypt_success";
             $msg = $tp_settings['bck_script_path'].'/'.$filename.'.clear'.'.sql';
@@ -1528,7 +1530,7 @@ switch ($post_type) {
                     $tmp_skfile,
                     $tmp_skfile.'.'.date(
                         "Y_m_d",
-                        mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                        mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))
                     )
                 )) {
                     echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
