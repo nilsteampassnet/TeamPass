@@ -1204,7 +1204,7 @@ switch ($post_type) {
         //update LOG
         logEvents('admin_action', 'Emails backlog', $_SESSION['user_id'], $_SESSION['login']);
 
-        echo '[{"result":"admin_email_send_backlog", '.@sendEmail($LANG['admin_email_test_subject'], $LANG['admin_email_test_body'], $SETTINGS['email_from']).'}]';
+        echo '[{"result":"admin_email_send_backlog", "error : ""}]';
         break;
 
     /*

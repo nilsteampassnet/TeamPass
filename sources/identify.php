@@ -297,6 +297,13 @@ function identifyUser(
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
+    // Load superGlobals
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Prepare GET variables
+    $session_user_language = $superGlobal->get("user_language", "SESSION");
+
     if ($debugDuo == 1) {
         $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "a");
 
@@ -325,7 +332,7 @@ function identifyUser(
     $pwdlib = new PasswordLib\PasswordLib();
 
     // User's language loading
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
