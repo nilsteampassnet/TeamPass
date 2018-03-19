@@ -51,9 +51,9 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLA
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
-//--------
-// DUO AUTHENTICATION
-//--------
+    //--------
+    // DUO AUTHENTICATION
+    //--------
     // This step creates the DUO request encrypted key
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
@@ -80,10 +80,10 @@ if ($post_type === "identify_duo_user") {
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
 // DUO Identification
 } elseif ($post_type === "identify_duo_user_check") {
-//--------
-// DUO AUTHENTICATION
-// this step is verifying the response received from the server
-//--------
+    //--------
+    // DUO AUTHENTICATION
+    // this step is verifying the response received from the server
+    //--------
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     require_once SECUREPATH."/sk.php";
@@ -230,21 +230,31 @@ if ($post_type === "identify_duo_user") {
     // manage brute force
     if ($_SESSION["pwd_attempts"] <= 3) {
         // identify the user through Teampass process
-        identifyUser($post_data);
+        identifyUser(
+            $post_data,
+            $debugLdap,
+            $debugDuo,
+            $SETTINGS
+        );
     } elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
         $_SESSION["pwd_attempts"] = 1;
         // identify the user through Teampass process
-        identifyUser($post_data);
+        identifyUser(
+            $post_data,
+            $debugLdap,
+            $debugDuo,
+            $SETTINGS
+        );
     } else {
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
         echo '[{"error" : "bruteforce_wait"}]';
         return false;
     }
 } elseif ($post_type === "store_data_in_cookie") {
-//--------
-// STORE DATA IN COOKIE
-//--------
-//
+    //--------
+    // STORE DATA IN COOKIE
+    //--------
+    //
     // not used any more (only development purpose)
     if ($post_key !== $_SESSION['key']) {
         echo '[{"error" : "something_wrong"}]';
@@ -262,15 +272,17 @@ if ($post_type === "identify_duo_user") {
 /*
 * Complete authentication of user through Teampass
 */
-function identifyUser($sentData)
-{
-    global $debugLdap, $debugDuo, $SETTINGS;
-
+function identifyUser(
+    $sentData,
+    $debugLdap,
+    $debugDuo,
+    $SETTINGS
+) {
     // Load config
     if (file_exists('../includes/config/tp.config.php')) {
-        require_once '../includes/config/tp.config.php';
+        include_once '../includes/config/tp.config.php';
     } elseif (file_exists('./includes/config/tp.config.php')) {
-        require_once './includes/config/tp.config.php';
+        include_once './includes/config/tp.config.php';
     } else {
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
@@ -278,18 +290,23 @@ function identifyUser($sentData)
 
     header("Content-type: text/html; charset=utf-8");
     error_reporting(E_ERROR);
-    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
+
+    // Load superGlobals
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    $superGlobal = new protect\SuperGlobal\SuperGlobal();
+
+    // Prepare GET variables
+    $session_user_language = $superGlobal->get("user_language", "SESSION");
 
     if ($debugDuo == 1) {
         $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "a");
-    }
 
-    if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
             "Content of data sent '".filter_var($sentData, FILTER_SANITIZE_STRING)."'\n"
@@ -297,7 +314,7 @@ function identifyUser($sentData)
     }
 
     // connect to the server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -315,32 +332,30 @@ function identifyUser($sentData)
     $pwdlib = new PasswordLib\PasswordLib();
 
     // User's language loading
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
 
     // prepare variables
-	if (isset($SETTINGS['enable_http_request_login']) === true
+    if (isset($SETTINGS['enable_http_request_login']) === true
         && $SETTINGS['enable_http_request_login'] === '1'
         && isset($_SERVER['PHP_AUTH_USER']) === true
-        && !(isset($SETTINGS['maintenance_mode']) === true
-        && $SETTINGS['maintenance_mode'] === '1')
+        && isset($SETTINGS['maintenance_mode']) === true
+        && $SETTINGS['maintenance_mode'] === '1'
     ) {
         if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-			$username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
-		} elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-			$username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
-		} else {
-			$username = $_SERVER['PHP_AUTH_USER'];
-		}
-		$passwordClear = $_SERVER['PHP_AUTH_PW'];
-		$pwdOldEncryption = encryptOld($_SERVER['PHP_AUTH_PW']);
-	}else{
-		$passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-		$pwdOldEncryption = encryptOld(htmlspecialchars_decode($dataReceived['pw']));
-		$username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
-	}
+            $username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+        } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+            $username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+        } else {
+            $username = $_SERVER['PHP_AUTH_USER'];
+        }
+        $passwordClear = $_SERVER['PHP_AUTH_PW'];
+    } else {
+        $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
+        $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+    }
     $logError = "";
     $userPasswordVerified = false;
 
@@ -1109,7 +1124,14 @@ function identifyUser($sentData)
                     $data['groupes_visibles'],
                     $_SESSION['groupes_interdits'],
                     $data['admin'],
-                    $data['fonction_id']
+                    $data['fonction_id'],
+                    $server,
+                    $user,
+                    $pass,
+                    $database,
+                    $port,
+                    $encoding,
+                    $SETTINGS
                 );
             } else {
                 // is new LDAP user. Show only his personal folder

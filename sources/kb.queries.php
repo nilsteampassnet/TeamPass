@@ -159,13 +159,15 @@ if (null !== $post_type) {
 
                 //add all items associated to this KB
                 foreach (explode(',', $kb_associated_to) as $item_id) {
-                    DB::insert(
-                        prefix_table("kb_items"),
-                        array(
-                            'kb_id' => $id,
-                            'item_id' => $item_id
-                        )
-                    );
+                    if (empty($item_id) === false) {
+                        DB::insert(
+                            prefix_table("kb_items"),
+                            array(
+                                'kb_id' => $id,
+                                'item_id' => $item_id
+                            )
+                        );
+                    }
                 }
 
                 echo '[ { "status" : "done" } ]';

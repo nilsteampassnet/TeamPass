@@ -384,6 +384,8 @@ if (null !== $post_type) {
                                     $LANG['new_item_email_body']
                                 ),
                                 $emailAddress,
+                                $LANG,
+                                $SETTINGS,
                                 str_replace(
                                     array("#label", "#link"),
                                     array(stripslashes($label), $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
@@ -993,6 +995,8 @@ if (null !== $post_type) {
                                         $LANG['email_body_item_updated']
                                     ),
                                     $emailAddress,
+                                    $LANG,
+                                    $SETTINGS,
                                     str_replace("#item_label#", $label, $LANG['email_bodyalt_item_updated'])
                                 );
                             }
@@ -3467,7 +3471,9 @@ if (null !== $post_type) {
                     $ret = sendEmail(
                         $LANG['email_request_access_subject'],
                         str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_request_access_mail']),
-                        $dataAuthor['email']
+                        $dataAuthor['email'],
+                        $LANG,
+                        $SETTINGS
                     );
                 } elseif ($post_cat === "share_this_item") {
                     $dataItem = DB::queryfirstrow(
@@ -3484,7 +3490,9 @@ if (null !== $post_type) {
                             array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($dataItem['label'])),
                             $LANG['email_share_item_mail']
                         ),
-                        $post_receipt
+                        $post_receipt,
+                        $LANG,
+                        $SETTINGS
                     );
                 }
                 echo '[{'.$ret.'}]';
@@ -4212,7 +4220,9 @@ if (null !== $post_type) {
                 sendEmail(
                     $LANG['suggestion_notify_subject'],
                     str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), $LANG['suggestion_notify_body']),
-                    $record['email']
+                    $record['email'],
+                    $LANG,
+                    $SETTINGS
                 );
             }
 
@@ -4283,7 +4293,9 @@ if (null !== $post_type) {
                   ),
                   $LANG['email_request_access_mail']
                 ),
-                $dataAuthor['email']
+                $dataAuthor['email'],
+                $LANG,
+                $SETTINGS
             );
 
             // Do log

@@ -14,7 +14,7 @@
 
 session_start();
 
-include '../includes/config/settings.php';
+require_once '../includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
@@ -34,7 +34,7 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 
 // ssh libraries
 stream_resolve_include_path('../includes/libraries/Authentication/phpseclib/Crypt/RC4.php');
-include('../includes/libraries/Authentication/phpseclib/Net/SSH2.php');
+require_once '../includes/libraries/Authentication/phpseclib/Net/SSH2.php';
 require_once '../sources/main.functions.php';
 
 //get settings infos

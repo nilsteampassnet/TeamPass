@@ -47,9 +47,6 @@ switch ($method) {
     case 'HEAD':
     rest_head();
     break;
-    case 'NEWUSER':
-    rest_newuser();
-    break;
     default:
     rest_error('UNKNOWN');
     break;

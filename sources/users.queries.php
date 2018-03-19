@@ -225,7 +225,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 sendEmail(
                     $LANG['email_subject_new_user'],
                     str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $SETTINGS['email_server_url']), $LANG['email_new_user_mail']),
-                    $dataReceived['email']
+                    $dataReceived['email'],
+                    $LANG,
+                    $SETTINGS
                 );
                 // update LOG
                 logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);

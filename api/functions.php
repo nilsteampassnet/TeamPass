@@ -117,7 +117,7 @@ function addToCacheTable($item_id)
         WHERE i.id = %i
         AND l.action = %s",
         intval($item_id),
-        at_creation
+        'at_creation'
     );
 
     // Get all TAGS
@@ -935,7 +935,7 @@ function rest_get()
 
                         // prepare roles list
                         $rolesList = "";
-                        foreach (explode(',', $roles) as $role) {//echo $role."-";
+                        foreach (explode(',', $roles) as $role) {
                             $tmp = DB::queryFirstRow(
                                 "SELECT `id`
                                 FROM ".prefix_table("roles_title")."
@@ -971,7 +971,7 @@ function rest_get()
                         );
                         $new_user_id = DB::insertId();
                         // Create personnal folder
-                        if (intval($haspf) == 1) {
+                        if (intval($haspf) === 1) {
                             DB::insert(
                                 prefix_table("nested_tree"),
                                 array(
@@ -996,7 +996,8 @@ function rest_get()
                                 $LANG['email_new_user_mail']
                             ),
                             $email,
-                            ""
+                            $LANG,
+                            $SETTINGS
                         );
 
                         // update LOG
@@ -1441,9 +1442,19 @@ function rest_get()
                             mysqli_escape_string($link, stripslashes($adminby))
                         );
 
+
+                        // get default language
+                        $lang = DB::queryFirstRow(
+                            "SELECT `valeur`
+                            FROM ".prefix_table("misc")."
+                            WHERE type = %s AND intitule = %s",
+                            "admin",
+                            "default_language"
+                        );
+
                         // prepare roles list
                         $rolesList = "";
-                        foreach (explode(',', $roles) as $role) {//echo $role."-";
+                        foreach (explode(',', $roles) as $role) {
                             $tmp = DB::queryFirstRow(
                                 "SELECT `id`
                                 FROM ".prefix_table("roles_title")."
@@ -1481,8 +1492,8 @@ function rest_get()
                         );
 
                         // Create personnal folder
-                        if (intval($haspf) === '1') {
-                            $data_folder = DB::query(
+                        if (intval($haspf) === 1) {
+                            DB::query(
                                 "SELECT id
                                 FROM ".prefix_table("nested_tree")."
                                 WHERE title = %s",
@@ -1506,7 +1517,7 @@ function rest_get()
                         loadSettings();
 
                         // update LOG
-                        logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
+                        logEvents('user_mngt', 'at_user_updated', 'api - '.$GLOBALS['apikey'], $data['id'], "");
 
                         echo '{"status":"user added"}';
                     } catch (PDOException $ex) {

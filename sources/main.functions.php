@@ -1,4 +1,5 @@
 <?php
+
 /**
  *
  * @file          main.functions.php
@@ -561,16 +562,24 @@ function db_error_handler($params)
  * @param  string $idFonctions          [description]
  * @return string                       [description]
  */
-function identifyUserRights($groupesVisiblesUser, $groupesInterditsUser, $isAdmin, $idFonctions)
-{
-    global $server, $user, $pass, $database, $port, $encoding;
-    global $SETTINGS;
-
+function identifyUserRights(
+    $groupesVisiblesUser,
+    $groupesInterditsUser,
+    $isAdmin,
+    $idFonctions,
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port,
+    $encoding,
+    $SETTINGS
+) {
     //load ClassLoader
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -1185,15 +1194,24 @@ function getStatisticsData()
 }
 
 /**
- * sendEmail()
+ * Permits to send an email
  *
- * @return
+ * @param  string $subject     email subject
+ * @param  string $textMail    email message
+ * @param  string $email       email
+ * @param  array  $LANG        Language
+ * @param  array  $SETTINGS    settings
+ * @param  string $textMailAlt email message alt
+ * @return  string  some json info
  */
-function sendEmail($subject, $textMail, $email, $textMailAlt = "")
-{
-    global $LANG;
-    global $SETTINGS;
-
+function sendEmail(
+    $subject,
+    $textMail,
+    $email,
+    $LANG,
+    $SETTINGS,
+    $textMailAlt = ""
+) {
     // CAse where email not defined
     if ($email === "none") {
         return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';

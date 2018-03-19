@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'at_user_updated' => 'User #user_login# was updated',
     'report_a_bug' => 'Report a Bug',
     'user_profile_api_key' => 'Your API key',
     'settings_ldap_and_local_authentication' => 'Local and LDAP users',
