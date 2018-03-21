@@ -2360,7 +2360,6 @@ if (null !== $post_type) {
                     $uniqueLoadData['counter'] = $counter;
                 }
 
-
                 // Identify if it is a personal folder
                 if (in_array($post_id, $_SESSION['personal_visible_groups'])) {
                     $findPfGroup = 1;
@@ -2593,11 +2592,20 @@ if (null !== $post_type) {
                             $record['perso'] = '1';
                         }
 
+                        // Now check 'list_restricted_folders_for_items'
+                        $item_limited_access = false;
+                        if (in_array($post_id, array_keys($_SESSION['list_restricted_folders_for_items'])) === true
+                            && in_array($post_id, array_keys($_SESSION['list_folders_limited'])) === false
+                        ) {
+                            if (in_array($record['id'], $_SESSION['list_restricted_folders_for_items'][$post_id]) === false) {
+                                $item_limited_access = true;
+                            }
+                        }
 
                         // CASE where item is restricted to a role to which the user is not associated
-                        if (isset($user_is_included_in_role)
+                        if (isset($user_is_included_in_role) === true
                             && $user_is_included_in_role === false
-                            && isset($item_is_restricted_to_role)
+                            && isset($item_is_restricted_to_role) === true
                             && $item_is_restricted_to_role === true
                             && $is_user_in_restricted_list === false
                             && (int) $folder_is_personal !== 1
@@ -2704,10 +2712,10 @@ if (null !== $post_type) {
                             }
 
                             $html_json[$record['id']]['sk'] = 0;
-                            $html_json[$record['id']]['display'] = "";
+                            $html_json[$record['id']]['display'] = $item_limited_access === true ? "no_display" : "";
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = "";
-                            $html_json[$record['id']]['accessLevel'] = $accessLevel;
+                            $html_json[$record['id']]['accessLevel'] = $item_limited_access === true ? 0 : $accessLevel;
                             $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
                         }
 

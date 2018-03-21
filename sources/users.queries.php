@@ -915,7 +915,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 if ($_SESSION['is_admin'] === "1"
                     || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                     || ($_SESSION['user_can_manage_all_users'] === "1" && $data_user['admin'] !== "1")
-                    ) {
+                ) {
                     DB::update(
                         prefix_table("users"),
                         array(
@@ -941,7 +941,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-            // Get info about user to delete
+            // Get info about user
             $rowUser = DB::queryfirstrow(
                 "SELECT *
                 FROM ".prefix_table("users")."
@@ -951,7 +951,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
             // Is this user allowed to do this?
             if ($_SESSION['is_admin'] === "1"
-                || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']))
+                || (in_array($rowUser['isAdministratedByRole'], $_SESSION['user_roles']) === true)
                 || ($_SESSION['user_can_manage_all_users'] === "1" && $rowUser['admin'] !== "1")
             ) {
                 $arrData = array();
@@ -973,7 +973,10 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                 $rows = DB::query("SELECT id,title,creator_id FROM ".prefix_table("roles_title"));
                 foreach ($rows as $record) {
-                    if ($_SESSION['is_admin'] == 1 || ($_SESSION['user_manager'] == 1 && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))) {
+                    if ($_SESSION['is_admin'] === '1'
+                        || (($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === "1")
+                        && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
+                    ) {
                         if (in_array($record['id'], $users_functions)) {
                             $tmp = ' selected="selected"';
 
