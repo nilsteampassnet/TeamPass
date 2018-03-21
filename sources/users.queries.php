@@ -15,18 +15,18 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key'])
+if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
+    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
+    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
     die('Hacking attempt...');
 }
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -42,7 +42,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users") === false)
         exit();
     } else {
         // Do special check to allow user to change attributes of his profile
-        if (empty($filtered_newvalue) || !checkUser($_SESSION['user_id'], $_SESSION['key'], "profile")) {
+        if (empty($filtered_newvalue) || checkUser($_SESSION['user_id'], $_SESSION['key'], "profile") === false) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $SETTINGS['cpassman_dir'].'/error.php';
             exit();
@@ -51,7 +51,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_users") === false)
 }
 
 
-include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
@@ -1613,39 +1613,6 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     }
                 }
             }
-            break;
-
-            case "update_user_field":
-                // Check KEY
-                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                    echo '[ { "error" : "key_not_conform" } ]';
-                    break;
-                }
-
-                // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                    "decode"
-                );
-
-                // Prepare variables
-                $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
-                $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
-                $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
-
-                DB::update(
-                    prefix_table("users"),
-                    array(
-                        $field => $new_value
-                        ),
-                    "id = %i",
-                    $user_id
-                );
-
-                // Update session
-                if ($field === 'user_api_key') {
-                  $_SESSION['user_settings']['api-key'] = $new_value;
-                }
             break;
     }
 // # NEW LOGIN FOR USER HAS BEEN DEFINED ##

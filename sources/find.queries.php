@@ -20,9 +20,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -31,7 +31,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 global $settings, $link;
-include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header("Content-type: text/html; charset=utf-8");
 require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 
@@ -462,13 +462,13 @@ if (!isset($_GET['type'])) {
         } elseif ($record['perso'] == 1
             ||
             (
-                !empty($record['restricted_to'])
-                && !in_array($_SESSION['user_id'], $restricted_users_array)
+                empty($record['restricted_to']) === false
+                && in_array($_SESSION['user_id'], $restricted_users_array) === false
             )
             ||
             (
-                isset($user_is_included_in_role)
-                && isset($item_is_restricted_to_role)
+                isset($user_is_included_in_role) === true
+                && isset($item_is_restricted_to_role) === true
                 && $user_is_included_in_role == 0
                 && $item_is_restricted_to_role == 1
             )
@@ -500,14 +500,14 @@ if (!isset($_GET['type'])) {
 
         // prepare pwd copy if enabled
         $arr_data[$record['id']]['pw_status'] = '';
-        if (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === "1") {
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true && $SETTINGS['copy_to_clipboard_small_icons'] === "1") {
             $data_item = DB::queryFirstRow(
                 "SELECT pw
                 from ".prefix_table("items")." WHERE id=%i",
                 $record['id']
             );
 
-            if ($record['perso'] === "1" && isset($_SESSION['user_settings']['session_psk'])) {
+            if ($record['perso'] === "1" && isset($_SESSION['user_settings']['session_psk']) === true) {
                 $pw = cryption(
                     $data_item['pw'],
                     $_SESSION['user_settings']['session_psk'],
@@ -531,8 +531,8 @@ if (!isset($_GET['type'])) {
             $pw = "";
         }
         $arr_data[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
-        $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = $SETTINGS['copy_to_clipboard_small_icons'];
-        $arr_data[$record['id']]['enable_favourites'] = $SETTINGS['enable_favourites'];
+        $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) === true ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
+        $arr_data[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) === true ? $SETTINGS['enable_favourites'] : '0';
         if (in_array($record['id'], $_SESSION['favourites'])) {
             $arr_data[$record['id']]['is_favorite'] = 1;
         } else {
