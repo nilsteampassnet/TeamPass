@@ -25,9 +25,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -47,7 +47,7 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
     exit();
 } elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
     (isset($post_type) && $post_type === "change_user_language"
-        && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
+    && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
     mainQuery();
@@ -69,11 +69,11 @@ function mainQuery()
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
     error_reporting(E_ERROR);
-    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to the server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -86,7 +86,7 @@ function mainQuery()
     $link->set_charset($encoding);
 
     // User's language loading
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     // Manage type of action asked
     switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         case "change_pw":
@@ -1372,6 +1372,39 @@ Insert the log here and especially the answer of the query that failed.
                 "encode"
             );
 
+            break;
+
+            case "update_user_field":
+                // Check KEY
+                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
+                    echo '[ { "error" : "key_not_conform" } ]';
+                    break;
+                }
+
+                // decrypt and retreive data in JSON format
+                $dataReceived = prepareExchangedData(
+                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                    "decode"
+                );
+
+                // Prepare variables
+                $field = noHTML(htmlspecialchars_decode($dataReceived['field']));
+                $new_value = noHTML(htmlspecialchars_decode($dataReceived['new_value']));
+                $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
+
+                DB::update(
+                    prefix_table("users"),
+                    array(
+                        $field => $new_value
+                        ),
+                    "id = %i",
+                    $user_id
+                );
+
+                // Update session
+                if ($field === 'user_api_key') {
+                  $_SESSION['user_settings']['api-key'] = $new_value;
+                }
             break;
     }
 }
