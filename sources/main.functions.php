@@ -725,7 +725,11 @@ function identifyUserRights(
                 }
             }
         }
-
+        
+        // Clean arrays
+        $listAllowedFolders = array_unique($listAllowedFolders);
+        $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
+        
         // Does this user is allowed to see other items
         $inc = 0;
         $rows = DB::query(
@@ -735,13 +739,14 @@ function identifyUserRights(
             '0'
         );
         foreach ($rows as $record) {
-            $listRestrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
-            $inc++;
+            // Exclude restriction on item if folder is fully accessible
+            if (in_array($record['id_tree'], $listAllowedFolders) === false) {
+                $listRestrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
+                $inc++;
+            }
         }
+        
         // => Build final lists
-        // Clean arrays
-        $listAllowedFolders = array_unique($listAllowedFolders);
-        $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
         // Add user allowed folders
         $allowedFoldersTmp = array_unique(
             array_merge($listAllowedFolders, $groupesVisiblesUser)
