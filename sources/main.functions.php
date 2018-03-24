@@ -1551,8 +1551,17 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
 }
 
 /**
+ * Logs sent events
+ *
+ * @param integer $ident
  * @param string $item
+ * @param integer $id_user
  * @param string $action
+ * @param string $login
+ * @param string $raison
+ * @param string $raison_iv
+ * @param string $encryption_type
+ * @return void
  */
 function logItems($ident, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
 {
@@ -1584,17 +1593,13 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
         )
     );
 
-    if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
-        // Get file info in DB
-        $dataItem = DB::queryfirstrow(
-            "SELECT label FROM ".prefix_table("items")." WHERE id = %i",
-            $ident
-        );
-
+    // Syslog
+    if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
+        // Extract reason
         $attribute = explode(' : ', $raison);
 
         send_syslog(
-            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$ident.' user='.$login.' itemname="'.$dataItem['label'].'"',
+            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$ident.' user='.$login.' itemname="'.$item.'"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             "teampass"

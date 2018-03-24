@@ -291,7 +291,7 @@ if (null !== $post_type) {
                         //Draw
                         $pdf->Rect($x, $y, $w, $h);
                         //Write
-                        $pdf->MultiCell($w, 5, ($record[$table[$i]]), 0, $a);
+                        $pdf->MultiCell($w, 5, iconv('UTF-8', 'windows-1252', html_entity_decode($record[$table[$i]])), 0, $a);
                         //go to right
                         $pdf->SetXY($x + $w, $y);
                     }

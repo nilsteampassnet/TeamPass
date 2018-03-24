@@ -11,6 +11,7 @@
  Improved LDAP new user by default role
  Improved single click on key icon in items search list
  Improved visibility of path in items list result
+ Improved email body with item path
  Introduced an API key by user
  Fix for API keys truncated
  Fix offline password dispay in case of html tags similar in password
