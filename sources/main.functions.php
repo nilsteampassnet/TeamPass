@@ -1534,14 +1534,14 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
     if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
         if ($type == "user_mngt") {
             send_syslog(
-                "The User ".$login." performed the action of ".$label." to the user ".$field_1." - ".$type,
+                'action='.str_replace('at_', '', $label).' attribute=user user='.$who.' userid="'.$login.'" change="'.$field_1.'" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 "teampass"
             );
         } else {
             send_syslog(
-                "The User ".$login." performed the action of ".$label." - ".$type,
+                'action='.$type.' attribute='.$label.' user='.$who.' userid="'.$login.'" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 "teampass"
@@ -1560,7 +1560,7 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
     global $SETTINGS;
 
     // include librairies & connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -1583,9 +1583,18 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
             'encryption_type' => $encryption_type
         )
     );
+
     if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
+        // Get file info in DB
+        $dataItem = DB::queryfirstrow(
+            "SELECT label FROM ".prefix_table("items")." WHERE id = %i",
+            $ident
+        );
+
+        $attribute = explode(' : ', $raison);
+
         send_syslog(
-            "The Item ".$item." was ".$action." by ".$login." ".$raison,
+            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$ident.' user='.$login.' itemname="'.$dataItem['label'].'"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             "teampass"

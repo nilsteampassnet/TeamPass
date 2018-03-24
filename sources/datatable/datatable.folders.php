@@ -141,7 +141,11 @@ foreach ($treeDesc as $t) {
         $sOutput .= ',';
 
         //col3
-        $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.$SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1].'</span>"';
+        if (isset($SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1]) === true) {
+            $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.$SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1].'</span>"';
+        } else {
+            $sOutput .= '""';
+        }
         $sOutput .= ',';
 
         //col4
