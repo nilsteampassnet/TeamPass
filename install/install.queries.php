@@ -3,7 +3,7 @@
  * @file          install.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
@@ -705,6 +705,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."cache` (
+                            `increment_id`INT(12) NOT NULL AUTO_INCREMENT FIRST,
                             `id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
                             `description` text NOT NULL,
@@ -718,7 +719,8 @@ global \$SETTINGS;
                             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
                             `timestamp` varchar(50) DEFAULT NULL,
                             `url` varchar(500) NOT NULL DEFAULT '0',
-                            `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0'
+                            `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "roles_title") {
@@ -856,10 +858,12 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."items_edition` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `item_id` int(11) NOT NULL,
                             `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL,
-                            KEY `item_id_idx` (`item_id`)
+                            KEY `item_id_idx` (`item_id`),
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "categories") {

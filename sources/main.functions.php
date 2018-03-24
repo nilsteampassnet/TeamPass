@@ -5,7 +5,7 @@
  * @file          main.functions.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link
  */
@@ -1553,9 +1553,9 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
 /**
  * Logs sent events
  *
- * @param integer $ident
+ * @param string $ident
  * @param string $item
- * @param integer $id_user
+ * @param string $id_user
  * @param string $action
  * @param string $login
  * @param string $raison
