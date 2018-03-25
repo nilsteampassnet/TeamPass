@@ -633,7 +633,7 @@ function mainQuery()
                     $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
                     setcookie(
                         "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                        encrypt($filter_psk, ""),
+                        $user_key_encoded,
                         (!isset($SETTINGS['personal_saltkey_cookie_duration']) || $SETTINGS['personal_saltkey_cookie_duration'] == 0) ? time() + 60 * 60 * 24 : time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
                     );
@@ -733,7 +733,7 @@ function mainQuery()
             // change salt
             setcookie(
                 "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                encrypt($newPersonalSaltkey, ""),
+                $user_key_encoded,
                 time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
             );

@@ -218,9 +218,9 @@ function decrypt($encrypted, $personalSalt = "")
     global $SETTINGS;
 
     if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-        require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+        include_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     } else {
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     }
 
     if (!empty($personalSalt)) {

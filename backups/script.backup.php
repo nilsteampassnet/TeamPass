@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-include dirname(__FILE__) .'/../includes/config/settings.php';
+require dirname(__FILE__) .'/../includes/config/settings.php';
 require_once dirname(__FILE__) .'/../includes/config/tp.config.php';
 header("Content-type: text/html; charset=utf-8");
 
@@ -36,8 +36,19 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 
 // Check provided key
 if (isset($_GET['key']) === false || empty($_GET['key']) === true) {
-    echo '[{"error":"no_key_provided"}]';
-    return false;
+    // Try if launched through shell
+    $opts = getopt('key:');
+    if (isset($opts['key']) === false || empty($opts['key']) === true) {
+        echo '[{"error":"no_key_provided"}]';
+        return false;
+    }
+}
+
+// Allocate correct key
+if (isset($_GET['key']) === true) {
+    $provided_key = $_GET['key'];
+} else if (isset($opts['key']) === true) {
+    $provided_key = $opts['key'];
 }
 
 //get backups infos
@@ -53,7 +64,7 @@ if (empty($settings['bck_script_passkey']) === false) {
         "",
         "decrypt"
     )['string'];
-    if ($currentKey !== $_GET['key']) {
+    if ($currentKey !== $provided_key) {
         echo '[{"error":"not_allowed"}]';
         return false;
     }
