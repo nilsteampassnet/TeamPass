@@ -3,7 +3,7 @@
  * @file          items.queries.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
@@ -64,9 +64,6 @@ if (isset($SETTINGS_EXT['pwComplexity']) === false) {
     );
 }
 
-// Class loader
-require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 $pass = defuse_return_decrypted($pass);
@@ -79,6 +76,9 @@ DB::$encoding = $encoding;
 DB::$error_handler = true;
 $link = mysqli_connect($server, $user, $pass, $database, $port);
 $link->set_charset($encoding);
+
+// Class loader
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -372,6 +372,14 @@ if (null !== $post_type) {
                     if (empty($SETTINGS['email_server_url'])) {
                         $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                     }
+
+                    // Get path
+                    $path = prepareEmaiItemPath(
+                        $dataReceived['categorie'],
+                        $label,
+                        $SETTINGS
+                    );
+
                     // send email
                     foreach (explode(';', $dataReceived['diffusion']) as $emailAddress) {
                         if (empty($emailAddress) === false) {
@@ -380,7 +388,7 @@ if (null !== $post_type) {
                                 $LANG['email_subject'],
                                 str_replace(
                                     array("#label", "#link"),
-                                    array(stripslashes($label), $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
+                                    array($path, $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
                                     $LANG['new_item_email_body']
                                 ),
                                 $emailAddress,
@@ -388,7 +396,7 @@ if (null !== $post_type) {
                                 $SETTINGS,
                                 str_replace(
                                     array("#label", "#link"),
-                                    array(stripslashes($label), $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
+                                    array($path, $SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataReceived['categorie'].'&id='.$newID.$txt['email_body3']),
                                     $LANG['new_item_email_body']
                                 )
                             );
@@ -1959,6 +1967,23 @@ if (null !== $post_type) {
 
                 // send notification if enabled
                 if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
+                    // Get path
+                    $arbo = $tree->getPath($dataItem['id_tree'], true);
+                    $path = '';
+                    foreach ($arbo as $elem) {
+                        if (empty($path) === true) {
+                            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
+                        } else {
+                            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                        }
+                    }
+                    // Build text to show user
+                    if (empty($path) === true) {
+                        $path = addslashes($dataItem['label']);
+                    } else {
+                        $path = addslashes($dataItem['label']).' ('.$path.')';
+                    }
+
                     // send back infos
                     DB::insert(
                         prefix_table('emails'),
@@ -1969,7 +1994,7 @@ if (null !== $post_type) {
                                 array('#tp_user#', '#tp_item#', '#tp_link#'),
                                 array(
                                     addslashes($_SESSION['login']),
-                                    addslashes($dataItem['label']),
+                                    $path,
                                     $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
                                 ),
                                 $LANG['email_on_open_notification_mail']
@@ -3475,10 +3500,22 @@ if (null !== $post_type) {
                 }
                 if ($post_cat === "request_access_to_author") {
                     $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".prefix_table("users")." WHERE id= ".$content[1]);
-                    $dataItem = DB::queryfirstrow("SELECT label FROM ".prefix_table("items")." WHERE id= ".$content[0]);
+                    $dataItem = DB::queryfirstrow("SELECT label, id_tree FROM ".prefix_table("items")." WHERE id= ".$content[0]);
+
+                    // Get path
+                    $path = prepareEmaiItemPath(
+                        $dataItem['id_tree'],
+                        $dataItem['label'],
+                        $SETTINGS
+                    );
+                    
                     $ret = sendEmail(
                         $LANG['email_request_access_subject'],
-                        str_replace(array('#tp_item_author#', '#tp_user#', '#tp_item#'), array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), addslashes($dataItem['label'])), $LANG['email_request_access_mail']),
+                        str_replace(
+                            array('#tp_item_author#', '#tp_user#', '#tp_item#'),
+                            array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
+                            $LANG['email_request_access_mail']
+                        ),
                         $dataAuthor['email'],
                         $LANG,
                         $SETTINGS
@@ -3490,12 +3527,20 @@ if (null !== $post_type) {
                         WHERE id= %i",
                         $post_id
                     );
+
+                    // Get path
+                    $path = prepareEmaiItemPath(
+                        $dataItem['id_tree'],
+                        $dataItem['label'],
+                        $SETTINGS
+                    );
+                    
                     // send email
                     $ret = sendEmail(
                         $LANG['email_share_item_subject'],
                         str_replace(
                             array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($dataItem['label'])),
+                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($path)),
                             $LANG['email_share_item_mail']
                         ),
                         $post_receipt,
@@ -4283,7 +4328,15 @@ if (null !== $post_type) {
 
             // Send email
             $dataAuthor = DB::queryfirstrow("SELECT email,login FROM ".prefix_table("users")." WHERE id= ".$user_id);
-            $dataItem = DB::queryfirstrow("SELECT label FROM ".prefix_table("items")." WHERE id= ".$item_id);
+            $dataItem = DB::queryfirstrow("SELECT label, id_tree FROM ".prefix_table("items")." WHERE id= ".$item_id);
+
+            // Get path
+            $path = prepareEmaiItemPath(
+                $dataItem['id_tree'],
+                $dataItem['label'],
+                $SETTINGS
+            );
+
             $ret = sendEmail(
                 $LANG['email_request_access_subject'],
                 str_replace(
@@ -4296,7 +4349,7 @@ if (null !== $post_type) {
                   array(
                       " ".addslashes($dataAuthor['login']),
                       addslashes($_SESSION['login']),
-                      addslashes($dataItem['label']),
+                      $path,
                       nl2br(addslashes($emailText))
                   ),
                   $LANG['email_request_access_mail']
@@ -4384,14 +4437,52 @@ function fileFormatImage($ext)
     return $image;
 }
 
-/*
-* FUNCTION
-* permits to remplace some specific characters in password
-*/
+/**
+ * Returns a cleaned up password
+ *
+ * @param string $pwd
+ * @return void
+ */
 function passwordReplacement($pwd)
 {
     $pwPatterns = array('/ETCOMMERCIAL/', '/SIGNEPLUS/');
     $pwRemplacements = array('&', '+');
 
     return preg_replace($pwPatterns, $pwRemplacements, $pwd);
+}
+
+/**
+ * Returns the Item + path 
+ *
+ * @param integer $id_tree
+ * @param string $label
+ * @param array $SETTINGS
+ * @return string
+ */
+function prepareEmaiItemPath($id_tree, $label, $SETTINGS) {
+    // Class loader
+    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
+    //Load Tree
+    $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
+    $tree->register();
+    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+
+    $arbo = $tree->getPath($id_tree, true);
+    $path = '';
+    foreach ($arbo as $elem) {
+        if (empty($path) === true) {
+            $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
+        } else {
+            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+        }
+    }
+    // Build text to show user
+    if (empty($path) === true) {
+        $path = addslashes($label);
+    } else {
+        $path = addslashes($label).' ('.$path.')';
+    }
+
+    return $path;
 }

@@ -9,10 +9,18 @@
  Improved tree rebuild with API on folders change
  Improved tables primary and index usage
  Improved LDAP new user by default role
+ Improved single click on key icon in items search list
+ Improved visibility of path in items list result
+ Improved email body with item path
  Introduced an API key by user
  Fix for API keys truncated
  Fix offline password dispay in case of html tags similar in password
  Fix failed folder creation in case of password complexity not reached
+ Fix missing quick icons in search results
+ #2161 Missing backslash in acount name
+ #2160 Added a test for preventing Folders list not shown
+ #2154 Personal saltkey is not stored when option enabled
+ #2153 [{"error":"no_key_provided"} when running backup script on teampass container
  #2152 No search result and empty popup appear
  #2151 Error in knowledge base that does not show option to swap pages
  #2140 Moving subfolder to root level not possible

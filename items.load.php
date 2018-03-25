@@ -3,7 +3,7 @@
  * @file          items.load.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
@@ -1437,17 +1437,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#request_ongoing").val("");
         return false;
     } else if ($('#recherche_group_pf').val() === "0" || ($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "1")) {
-        // Double click
-        if (open_edit === 1 && $("#item_editable").val() === '1') {
-            $("#request_ongoing").val("");
-            open_edit_item_div(
-                <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
-    echo 1;
-} else {
-    echo 0;
-}?>
-            );
-        } else if (parseInt($("#request_lastItem").val()) === id && reload !== 1) {
+        if (parseInt($("#request_lastItem").val()) === id && reload !== 1) {
             $("#request_ongoing").val("");
             LoadingPage();
             return;
@@ -1801,6 +1791,18 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_loading").addClass("hidden");
                     }
                     $("#request_ongoing").val("");
+
+                    // Double click
+                    if (open_edit === 1 && $("#item_editable").val() === '1') {
+                        $("#request_ongoing").val("");
+                        open_edit_item_div(
+                            <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
+    echo 1;
+} else {
+    echo 0;
+}?>
+                        );
+                     }
                 }
             );
 
@@ -1821,6 +1823,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                 }
             );*/
        }
+
         //Store Item id shown
         $("#request_lastItem").val(id);
     }
@@ -2209,7 +2212,7 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_desc').html($('#hid_desc').val());
     $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
     $("#edit_visible_pw").text($('#hid_pw').val());
-    $('#edit_item_login').val(unsanitizeString($('#hid_login').val()));
+    $('#edit_item_login').val(($('#hid_login').val()));
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
     $('#edit_categorie').val($('#id_categorie').val());
@@ -3742,7 +3745,7 @@ $(function() {
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        console.log(data);
+                        //console.log(data);
                         if (data[0].error === "") {
                           $("#reason_to_access_info")
                               .html('<i class="fa fa-info-circle fa-lg"></i>&nbsp;<?php echo addslashes($LANG['done']); ?>');
@@ -4668,7 +4671,7 @@ function globalItemsSearch()
                         value.desc = '&nbsp;<font size="1px">[' + value.desc + ']</font>';
                     }
 
-                    if (value.copy_to_clipboard_small_icons === 1) {
+                    if (value.copy_to_clipboard_small_icons === '1') {
                         // Prepare Login
                         if (value.login !== "") {
                             value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
@@ -4680,8 +4683,8 @@ function globalItemsSearch()
                         }
 
                         // Prepare favorite
-                        if (value.enable_favourites === 1) {
-                            if (value.is_favorite === 1) {
+                        if (value.enable_favourites === '1') {
+                            if (value.is_favorite === '1') {
                                 icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']);?>"></span>';
                             } else {
                                 icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']);?>"></span>';
@@ -4699,9 +4702,8 @@ function globalItemsSearch()
                     $("#full_items_list").append(
                     '<li class="item trunc_line" id="'+value.item_id+'"><a id="fileclass'+value.item_id+'" class="file_search">' +
                     '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']);?>"></span>&nbsp;' +
-                        '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')">'+value.label +
-                        value.desc +
-                        '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'</span>' +
+                        '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><b>'+value.label + '</b>' +
+                        '&nbsp;<span style="font-size:11px;font-style:italic; background-color:#f2e9e5;">&nbsp;<i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'&nbsp;</span>&nbsp;'+value.desc+'' +
                         '</span><span style="float:right;margin:2px 10px 0px 0px;">' +
                         value.login +
                         value.pw +

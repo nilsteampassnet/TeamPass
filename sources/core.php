@@ -3,7 +3,7 @@
  * @file          core.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
@@ -275,7 +275,14 @@ if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
     && isset($_SESSION['user_id']) === true
     && isset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])]) === true
 ) {
-    $_SESSION['user_settings']['clear_psk'] = decrypt($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], '');
+    // Only defuse key
+    if (substr($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])], 0, 3) === 'def') {
+        $_SESSION['user_settings']['session_psk'] = $_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])];
+    } else {
+        // Remove old cookie
+        unset($_COOKIE['TeamPass_PFSK_'.md5($_SESSION['user_id'])]);
+        setcookie('TeamPass_PFSK_'.md5($_SESSION['user_id']), '', time() - 3600, '/'); // empty value and old timestamp
+    }
 }
 
 /* CHECK IF MAINTENANCE MODE

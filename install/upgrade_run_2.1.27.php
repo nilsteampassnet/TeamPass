@@ -3,7 +3,7 @@
  * @file          upgrade.ajax.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link          http://www.teampass.net
  *
@@ -404,6 +404,16 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."items_edition` ADD INDEX `item_id_idx` (`item_id`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."items_edition` DROP INDEX `item_id_idx`"
+);
+
+// alter table items_edition to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."items_edition` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
 );
 
 

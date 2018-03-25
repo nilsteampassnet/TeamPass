@@ -5,7 +5,7 @@
  * @file          main.functions.php
  * @author        Nils Laumaillé
  * @version       2.1.27
- * @copyright     (c) 2009-2017 Nils Laumaillé
+ * @copyright     (c) 2009-2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
  * @link
  */
@@ -218,9 +218,9 @@ function decrypt($encrypted, $personalSalt = "")
     global $SETTINGS;
 
     if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-        require_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+        include_once '../includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     } else {
-        require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/PBKDF2/PasswordHash.php';
     }
 
     if (!empty($personalSalt)) {
@@ -1534,14 +1534,14 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
     if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
         if ($type == "user_mngt") {
             send_syslog(
-                "The User ".$login." performed the action of ".$label." to the user ".$field_1." - ".$type,
+                'action='.str_replace('at_', '', $label).' attribute=user user='.$who.' userid="'.$login.'" change="'.$field_1.'" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 "teampass"
             );
         } else {
             send_syslog(
-                "The User ".$login." performed the action of ".$label." - ".$type,
+                'action='.$type.' attribute='.$label.' user='.$who.' userid="'.$login.'" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
                 "teampass"
@@ -1551,8 +1551,17 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
 }
 
 /**
+ * Logs sent events
+ *
+ * @param string $ident
  * @param string $item
+ * @param string $id_user
  * @param string $action
+ * @param string $login
+ * @param string $raison
+ * @param string $raison_iv
+ * @param string $encryption_type
+ * @return void
  */
 function logItems($ident, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
 {
@@ -1560,7 +1569,7 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
     global $SETTINGS;
 
     // include librairies & connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -1583,9 +1592,14 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
             'encryption_type' => $encryption_type
         )
     );
-    if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
+
+    // Syslog
+    if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
+        // Extract reason
+        $attribute = explode(' : ', $raison);
+
         send_syslog(
-            "The Item ".$item." was ".$action." by ".$login." ".$raison,
+            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$ident.' user='.$login.' itemname="'.$item.'"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             "teampass"
