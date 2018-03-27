@@ -17,6 +17,8 @@
  Fix offline password dispay in case of html tags similar in password
  Fix failed folder creation in case of password complexity not reached
  Fix missing quick icons in search results
+ #2168 API for adding users is not working
+ #2167 Info tab is not working if behind a proxy
  #2161 Missing backslash in acount name
  #2160 Added a test for preventing Folders list not shown
  #2154 Personal saltkey is not stored when option enabled

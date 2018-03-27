@@ -285,6 +285,7 @@ function rest_get()
 {
     global $api_version;
     global $SETTINGS;
+    global $link;
 
     if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];

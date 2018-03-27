@@ -3406,7 +3406,7 @@ $(function() {
                         var list = data.list.split(';');
                         for (var i=0; i<list.length; i++) {
                             var elem = list[i].split('#');
-                            if (elem[0] != "") {
+                            if (elem[0] != "" && $("#edit_restricted_to_list").length > 0) {
                                 $("#edit_restricted_to_list").append("<option value='"+elem[0]+"' class='select_users'>"+elem[1]+"</option>");
                                 var index = $('#edit_restricted_to').val().lastIndexOf(elem[1]+";");
                                 if (index != -1) {

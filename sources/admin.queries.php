@@ -100,7 +100,27 @@ switch ($post_type) {
         if (!isset($SETTINGS_EXT['admin_no_info']) || (isset($SETTINGS_EXT['admin_no_info']) && $SETTINGS_EXT['admin_no_info'] == 0)) {
             if (isset($SETTINGS['get_tp_info']) && $SETTINGS['get_tp_info'] == 1) {
                 // Get info about Teampass
-                $context = stream_context_create(array('http' => array('ignore_errors' => true)));
+                if (isset($SETTINGS['proxy_ip']) === true && empty($SETTINGS['proxy_ip']) === false &&
+                    isset($SETTINGS['proxy_port']) === true && empty($SETTINGS['proxy_port']) === false
+                ) {
+                    $context = stream_context_create(
+                        array(
+                            'http' => array(
+                                'ignore_errors' => true,
+                                'proxy' =>  $SETTINGS['proxy_ip'] . ':' . $SETTINGS['proxy_port']
+                            )
+                        )
+                    );
+                } else {
+                    $context = stream_context_create(
+                        array(
+                            'http' => array(
+                                'ignore_errors' => true
+                            )
+                        )
+                    );
+                }
+                
                 $json = file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
                 if ($json) {
                     $json_array = json_decode($json, true);
@@ -1764,7 +1784,7 @@ switch ($post_type) {
             "decode"
         );
         $type = "admin";
-
+        
         require_once 'main.functions.php';
 
         // In case of key, then encrypt it
