@@ -705,7 +705,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."cache` (
-                            `increment_id`INT(12) NOT NULL AUTO_INCREMENT FIRST,
+                            `increment_id`INT(12) NOT NULL AUTO_INCREMENT,
                             `id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
                             `description` text NOT NULL,
@@ -781,16 +781,17 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."restriction_to_roles` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT PRIMARY KEY,
                             `role_id` int(12) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            KEY `role_id_idx`  (`role_id`)
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "languages") {
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."languages` (
-                            `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY ,
+                            `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY,
                             `name` VARCHAR(50) NOT null ,
                             `label` VARCHAR(50) NOT null ,
                             `code` VARCHAR(10) NOT null ,
@@ -948,6 +949,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."export` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id` int(12) NOT NULL,
                             `label` varchar(500) NOT NULL,
                             `login` varchar(100) NOT NULL,
@@ -958,7 +960,7 @@ global \$SETTINGS;
                             `url` varchar(500) NOT NULL default 'none',
                             `kbs` varchar(500) NOT NULL default 'none',
                             `tags` varchar(500) NOT NULL default 'none',
-                            KEY `id_idx` (`id`)
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "tokens") {

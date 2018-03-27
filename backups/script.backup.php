@@ -37,8 +37,8 @@ $link = mysqli_connect($server, $user, $pass, $database, $port);
 // Check provided key
 if (isset($_GET['key']) === false || empty($_GET['key']) === true) {
     // Try if launched through shell
-    $opts = getopt('key:');
-    if (isset($opts['key']) === false || empty($opts['key']) === true) {
+    $opts = getopt('k:');
+    if (isset($opts['k']) === false || empty($opts['k']) === true) {
         echo '[{"error":"no_key_provided"}]';
         return false;
     }
@@ -47,8 +47,8 @@ if (isset($_GET['key']) === false || empty($_GET['key']) === true) {
 // Allocate correct key
 if (isset($_GET['key']) === true) {
     $provided_key = $_GET['key'];
-} else if (isset($opts['key']) === true) {
-    $provided_key = $opts['key'];
+} else if (isset($opts['k']) === true) {
+    $provided_key = $opts['k'];
 }
 
 //get backups infos

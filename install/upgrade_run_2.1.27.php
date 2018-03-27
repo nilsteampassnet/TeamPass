@@ -203,7 +203,7 @@ mysqli_query($db_link, "ALTER TABLE `".$pre."items` MODIFY pw_len INT(5) NOT NUL
 $res = addColumnIfNotExist(
     $pre."misc",
     "increment_id",
-    "INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
 );
 if ($res === true) {
   // Change name of field
@@ -218,7 +218,7 @@ if ($res === true) {
 // alter table misc to add an index
 mysqli_query(
     $db_link,
-    "ALTER TABLE `".$pre."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "ALTER TABLE `".$pre."log_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
 );
 // create index
 mysqli_query(
@@ -390,7 +390,7 @@ if ($res === false) {
 // alter table CACHE to add an index
 mysqli_query(
     $db_link,
-    "ALTER TABLE `".$pre."cache` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "ALTER TABLE `".$pre."cache` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
 );
 
 
@@ -398,6 +398,17 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."export` ADD INDEX `id_idx` (`id`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."export` DROP INDEX `id_idx`"
+);
+
+
+// alter table EXPORT to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."export` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
 );
 
 // alter table ITEMS_EDITION to add an index
@@ -413,7 +424,24 @@ mysqli_query(
 // alter table items_edition to add an index
 mysqli_query(
     $db_link,
-    "ALTER TABLE `".$pre."items_edition` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`increment_id`)"
+    "ALTER TABLE `".$pre."items_edition` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
+);
+
+
+// alter table restriction_to_roles to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."restriction_to_roles` ADD INDEX `role_id_idx` (`role_id`)"
+);
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."restriction_to_roles` DROP INDEX `role_id_idx`"
+);
+
+// alter table restriction_to_roles to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."restriction_to_roles` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
 );
 
 
@@ -450,6 +478,7 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."roles_values` ADD KEY `role_id_idx` (`role_id`)"
 );
+
 // alter table ROLES_VALUES to add a primary key
 mysqli_query(
     $db_link,
