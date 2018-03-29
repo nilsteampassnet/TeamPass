@@ -163,7 +163,7 @@ echo '
     <input type="text" id="new_lastname" class="input_text text ui-widget-content ui-corner-all" onchange="loginCreation()" style="margin-bottom:3px;" />
 
     <label for="new_login" class="label_cpm">'.cleanText($LANG['login']).'&nbsp;<span id="new_login_status"></span></label>
-    <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />
+    <input type="text" id="new_login" class="input_text text ui-widget-content ui-corner-all text_only_alphanum" style="margin-bottom:3px;" />
 
     ', isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] == 1 ? '' : '<label for="new_pwd" class="label_cpm">'.cleanText($LANG['pw']).'&nbsp;<span class="fa fa-refresh"  onclick="pwGenerate(\'new_pwd\')" style="cursor:pointer;"></span></label>
     <input type="text" id="new_pwd" class="input_text text ui-widget-content ui-corner-all" style="margin-bottom:3px;" />', '
@@ -379,7 +379,7 @@ echo '
 
     <div style="width:100%;">
         <div style="width:70%; float:left;">
-            <label class="form_label_100" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="45" id="user_edit_login" class="ui-widget-content ui-corner-all form_text" /><br />
+            <label class="form_label_100" for="user_edit_login">'.$LANG['user_login'].'</label>&nbsp;<input type="text" size="45" id="user_edit_login" class="ui-widget-content ui-corner-all form_text text_only_alphanum" /><br />
             <label class="form_label_100" for="user_edit_name">'.$LANG['name'].'</label>&nbsp;<input type="text" size="45" id="user_edit_name" class="ui-widget-content ui-corner-all form_text" /><br />
             <label class="form_label_100" for="user_edit_lastname">'.$LANG['lastname'].'</label>&nbsp;<input type="text" size="45" id="user_edit_lastname" class="ui-widget-content ui-corner-all form_text" />
             <br />

@@ -166,6 +166,19 @@ $(function() {
         login_exists($(this).val());
     });
 
+    // only letters and numerics for LOGIN
+    $(".text_only_alphanum").keypress(function(e) {
+        var a = [];
+        var k = e.which;
+
+        for (i = 30; i < 48; i++) {
+            a.push(i);
+        }
+        console.log(k);
+        if ($.inArray(k, a) !== -1) {
+            e.preventDefault();
+        }
+    });
 
     $("#change_user_pw_newpw").simplePassMeter({
         "requirements": {},
@@ -631,7 +644,7 @@ $(function() {
 
 
                 //prepare data
-                var data = '{"login":"'+sanitizeString($('#user_edit_login').val())+'", '+
+                var data = '{"login":"'+($('#user_edit_login').val())+'", '+
                     '"name":"'+sanitizeString($('#user_edit_name').val())+'", '+
                     '"lastname":"'+sanitizeString($('#user_edit_lastname').val())+'", '+
                     '"email":"'+sanitizeString($('#user_edit_email').val())+'", '+
