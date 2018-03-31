@@ -1396,7 +1396,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     open_edit = parseInt(open_edit) || 0;
     reload = parseInt(reload) || 0;
 
-    //console.log(" > "+id+" - "+salt_key_required+" - "+expired_item+" - "+restricted+" - "+display+" - "+open_edit+" - "+reload+" - "+id_tree);
+    console.log(" > "+id+" - "+salt_key_required+" - "+expired_item+" - "+restricted+" - "+display+" - "+open_edit+" - "+reload+" - "+id_tree);
 
     // Store status query running
     $("#request_ongoing").val("1");
@@ -1437,7 +1437,17 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
         $("#request_ongoing").val("");
         return false;
     } else if ($('#recherche_group_pf').val() === "0" || ($('#recherche_group_pf').val() === "1" && $('#personal_sk_set').val() === "1")) {
-        if (parseInt($("#request_lastItem").val()) === id && reload !== 1) {
+        // Double click
+        if (open_edit === 1 && $("#item_editable").val() === '1') {
+            $("#request_ongoing").val("");
+            open_edit_item_div(
+                <?php if (isset($SETTINGS['restricted_to_roles']) && $SETTINGS['restricted_to_roles'] === "1") {
+    echo 1;
+} else {
+    echo 0;
+}?>
+            );
+        } else if (parseInt($("#request_lastItem").val()) === id && reload !== 1) {
             $("#request_ongoing").val("");
             LoadingPage();
             return;
@@ -1751,7 +1761,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         if (data.restricted == "1" || data.user_can_modify == "1") {
                             $("#item_editable").val(1);
                         }
-
+                        
                         //Manage double click
                         if (open_edit === "1" && (data.restricted === 1 || data.user_can_modify === 1)) {
                             open_edit_item_div(
