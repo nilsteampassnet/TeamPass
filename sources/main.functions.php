@@ -2283,6 +2283,8 @@ function uniqidReal($lenght = 13) {
 function obfuscate_email($email)
 {
     $prop = 2;
+    $start = '';
+    $end = '';
     $domain = substr(strrchr($email, "@"), 1);
     $mailname = str_replace($domain, '', $email);
     $name_l = strlen($mailname);
@@ -2295,16 +2297,7 @@ function obfuscate_email($email)
         $end .= 'x';
     }
 
-    return substr_replace(
-        $mailname,
-        $start,
-        2,
-        $name_l/$prop
-    ).substr_replace(
-        $domain,
-        $end,
-        2,
-        $domain_l/$prop
-    ); 
+    return substr_replace($mailname, $start, 2, $name_l/$prop )
+        .substr_replace($domain, $end, 2, $domain_l/$prop); 
 }
 
