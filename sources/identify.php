@@ -456,7 +456,7 @@ function identifyUser(
                       $ldapconn,
                       $SETTINGS['ldap_search_base'],
                       $filter,
-                      array('dn', 'mail', 'givenname', 'sn')
+                      array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
                     );
                     if ($debugLdap == 1) {
                         fputs(
@@ -486,7 +486,7 @@ function identifyUser(
                                 $ldapconn,
                                 $SETTINGS['ldap_search_base'],
                                 $filter_group,
-                                array('dn')
+                                array('dn', 'samaccountname')
                             );
 
                             if ($result_group) {
