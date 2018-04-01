@@ -2261,7 +2261,7 @@ function accessToItemIsGranted($item_id)
 
 /**
  * Creates a unique key
- * @param  integer $lenght key lenght
+ * @lenght  integer $lenght key lenght
  * @return string          key
  */
 function uniqidReal($lenght = 13) {
@@ -2278,13 +2278,13 @@ function uniqidReal($lenght = 13) {
 
 /**
  * Obfuscate an email address
- * @param {string}  email address
+ * @email {string}  email address
  */
 function obfuscate_email($email)
 {
     $prop = 2;
     $domain = substr(strrchr($email, "@"), 1);
-    $mailname = str_replace($domain,'',$email);
+    $mailname = str_replace($domain, '', $email);
     $name_l = strlen($mailname);
     $domain_l = strlen($domain);
     for($i = 0; $i <= $name_l/$prop-1; $i++) {
@@ -2295,6 +2295,16 @@ function obfuscate_email($email)
         $end .= 'x';
     }
 
-    return substr_replace($mailname, $start, 2, $name_l/$prop).substr_replace($domain, $end, 2, $domain_l/$prop); 
+    return substr_replace(
+        $mailname,
+        $start,
+        2,
+        $name_l/$prop
+    ).substr_replace(
+        $domain,
+        $end,
+        2,
+        $domain_l/$prop
+    ); 
 }
 

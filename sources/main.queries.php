@@ -351,7 +351,9 @@ function mainQuery()
             $pwdlib = new PasswordLib\PasswordLib();
 
             // check the given password
-            if ($counter === 0 || $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false) {
+            if ($counter === 0
+                || (isset($pwd) === true && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false)
+            ) {
                 // not a registered user !
                 echo '[{"error" : "no_user"}]';
             } else {
