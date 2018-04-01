@@ -307,7 +307,7 @@ function mainQuery()
             // is this allowed by setting
             if ((isset($SETTINGS['ga_reset_by_user']) === false || $SETTINGS['ga_reset_by_user'] !== "1")
                 && (null === filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING)
-                    || filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING) !== "users_management_list")
+                || filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING) !== "users_management_list")
             ) {
                 // User cannot ask for a new code
                 echo '[{"error" : "not_allowed"}]';
@@ -325,24 +325,33 @@ function mainQuery()
                 );
                 // Prepare variables
                 $login = htmlspecialchars_decode($dataReceived['login']);
+                $pwd = htmlspecialchars_decode($dataReceived['pwd']);
 
                 // Get data about user
                 $data = DB::queryfirstrow(
-                    "SELECT id, email
+                    "SELECT id, email, pw
                     FROM ".prefix_table("users")."
                     WHERE login = %s",
                     $login
                 );
             } else {
                 $data = DB::queryfirstrow(
-                    "SELECT id, login, email
+                    "SELECT id, login, email, pw
                     FROM ".prefix_table("users")."
                     WHERE id = %i",
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
             }
+            // Get number of returned users
             $counter = DB::count();
-            if ($counter == 0) {
+
+            // load passwordLib library
+            $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
+            $pwdlib->register();
+            $pwdlib = new PasswordLib\PasswordLib();
+
+            // check the given password
+            if ($counter === 0 || $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false) {
                 // not a registered user !
                 echo '[{"error" : "no_user"}]';
             } else {
@@ -350,7 +359,7 @@ function mainQuery()
                     echo '[{"error" : "no_email"}]';
                 } else {
                     // generate new GA user code
-                    include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+                    include_once $SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php";
                     $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
                     $gaSecretKey = $tfa->createSecret();
                     $gaTemporaryCode = GenerateCryptKey(12);
@@ -384,7 +393,7 @@ function mainQuery()
                     }
 
                     // send back
-                    echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace("#email#", "<b>".$data['email']."</b>", addslashes($LANG['admin_email_result_ok'])).'"}]';
+                    echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace("#email#", "<b>".obfuscate_email($data['email'])."</b>", addslashes($LANG['admin_email_result_ok'])).'"}]';
                 }
             }
             break;

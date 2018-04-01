@@ -466,7 +466,6 @@ if (null !== $post_type) {
                 && in_array($id, $_SESSION['groupes_visibles']) === true
                 && (in_array($id, $_SESSION['no_access_folders']) === false)
             ) {
-                //echo $id." > ".in_array($id, $_SESSION['groupes_visibles'])." ;; ";
                 // count elements to display
                 $result = DB::query(
                     "SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso

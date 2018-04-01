@@ -19,6 +19,7 @@
  Fix missing quick icons in search results
  #2175 Apostrophes are not handled correctly in usernames
  #2174 Offline mode file bypass read right restrictions
+ #2172 2FA Reset Link Can Be Abused
  #2168 API for adding users is not working
  #2167 Info tab is not working if behind a proxy
  #2161 Missing backslash in acount name
