@@ -395,7 +395,7 @@ echo '
         </div>';
 // # NOT ALLOWED
 echo '
-        <div id="item_details_no_personal_saltkey" style="display:none; width:400px; margin:20px auto 20px auto; height:180px;">
+        <div id="item_details_no_personal_saltkey" style="width:400px; margin:20px auto 20px auto; height:180px;" class="hidden">
             <div class="ui-state-highlight ui-corner-all" style="padding:10px;">
                 <i class="fa fa-warning fa-2x mi-red"></i>&nbsp;<b>'.$LANG['home_personal_saltkey_info'].'</b>
             </div>

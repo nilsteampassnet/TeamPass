@@ -453,10 +453,10 @@ function identifyUser(
                 if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
                     $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
                     $result = ldap_search(
-                      $ldapconn,
-                      $SETTINGS['ldap_search_base'],
-                      $filter,
-                      array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
+                        $ldapconn,
+                        $SETTINGS['ldap_search_base'],
+                        $filter,
+                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
                     );
                     if ($debugLdap == 1) {
                         fputs(
@@ -769,7 +769,7 @@ function identifyUser(
     if (isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 && $username !== "admin") {
         if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
             // load library
-            include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
+            include_once $SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php";
 
             // create new instance
             $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
@@ -826,7 +826,7 @@ function identifyUser(
 
 
     // check AGSES code
-    if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1 && $username != "admin") {
+    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' && $username !== "admin") {
         // load AGSES
         include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
         $agses = new AXSILPortal_V1_Auth();
@@ -939,36 +939,28 @@ function identifyUser(
                 "User's password verified: ".$userPasswordVerified."\n"
             );
         }
-
+        
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
         if ((
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '0'
-                && $userPasswordVerified === true && $data['disabled'] == 0
-            )
-            ||
-            (
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1'
-                && $ldapConnection === true && $data['disabled'] === '0' && $username != "admin"
-            )
-            ||
-            (
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '2'
-                && $ldapConnection === true && $data['disabled'] === '0' && $username != "admin"
-            )
-            ||
-            (
-                isset($SETTINGS['ldap_mode']) && $SETTINGS['ldap_mode'] === '1'
-                && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
-            )
-            ||
-            (
-                isset($SETTINGS['ldap_and_local_authentication']) && $SETTINGS['ldap_and_local_authentication'] === '1'
-                && isset($SETTINGS['ldap_mode']) && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
-                && $userPasswordVerified === true && $data['disabled'] == 0
+            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
+            && $userPasswordVerified === true && $data['disabled'] === '0'
+            ) || (
+            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin"
+            ) || (
+            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin"
+            ) || (
+            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
+            && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
+            ) || (
+            isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
+            && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
+            && $userPasswordVerified === true && $data['disabled'] === '0'
             )
         ) {
             $_SESSION['autoriser'] = true;

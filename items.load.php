@@ -355,18 +355,15 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                 if (data.error == "is_pf_but_no_saltkey") {
                     //warn user about his saltkey
-                    $("#item_details_no_personal_saltkey").show();
-                    $("#item_details_ok, #item_details_nok").addClass("hidden");
-
+                    $("#item_details_no_personal_saltkey").removeClass("hidden");
+                    $("#item_details_ok, #item_details_nok, #items_list_loader, #div_loading").addClass("hidden");
                     $('#menu_button_add_item').prop('disabled', 'true');
-                    $("#items_list_loader, #div_loading").addClass("hidden");
                 } else if (data.error == "not_authorized" || data.access_level === "") {
                     //warn user
                     $("#hid_cat").val("");
                     //$("#menu_button_copy_item, #menu_button_add_group, #menu_button_edit_group, #menu_button_del_group, #menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_history, #menu_button_share, #menu_button_otv").prop('disabled', 'true');
                     $("#item_details_nok").removeClass("hidden");
-                    $("#item_details_ok, #item_details_no_personal_saltkey").addClass("hidden");
-                    $("#items_list_loader").addClass("hidden");
+                    $("#item_details_ok, #item_details_no_personal_saltkey, #items_list_loader").addClass("hidden");
                 } else if (($("#user_is_read_only").val() == 1 && data.recherche_group_pf == 0) || data.access_level == 1) {
                     //readonly user
                     $("#recherche_group_pf").val(data.saltkey_is_required);
