@@ -781,7 +781,7 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."restriction_to_roles` (
-                            `increment_id` int(12) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `role_id` int(12) NOT NULL,
                             `item_id` int(12) NOT NULL,
                             PRIMARY KEY (`increment_id`)
@@ -791,11 +791,12 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."languages` (
-                            `id` INT(10) NOT null AUTO_INCREMENT PRIMARY KEY,
+                            `id` INT(10) NOT null AUTO_INCREMENT,
                             `name` VARCHAR(50) NOT null ,
                             `label` VARCHAR(50) NOT null ,
                             `code` VARCHAR(10) NOT null ,
-                            `flag` VARCHAR(30) NOT NULL
+                            `flag` VARCHAR(30) NOT NULL,
+                            PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
 

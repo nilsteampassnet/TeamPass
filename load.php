@@ -364,10 +364,16 @@ $htmlHeaders .= '
     }
 
     function send_user_new_temporary_ga_code() {
+        // Check login and password
+        if ($("#login").val() === "" || $("#pw").val() === "") {
+            $("#connection_error").html("'.addslashes($LANG['ga_enter_credentials']).'").show();
+            return false;
+        }
         $("#div_loading").show();
+        $("#connection_error").html("").hide();
 
         data = \'{"login":"\'+sanitizeString($("#login").val())+\'" ,\'+
-                   \'"pw":"\'+sanitizeString($("#pw").val())+\'"}\';
+                   \'"pwd":"\'+sanitizeString($("#pw").val())+\'"}\';
 
         $.post(
             "sources/main.queries.php",

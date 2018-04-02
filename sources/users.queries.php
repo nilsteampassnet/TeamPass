@@ -93,10 +93,11 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             );
 
             // Prepare variables
-            $login = noHTML(htmlspecialchars_decode($dataReceived['login']));
-            $name = noHTML(htmlspecialchars_decode($dataReceived['name']));
-            $lastname = noHTML(htmlspecialchars_decode($dataReceived['lastname']));
-            $pw = htmlspecialchars_decode($dataReceived['pw']);
+            $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
+            $email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
+            $lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
+            $name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
+            $pw = filter_var(htmlspecialchars_decode($dataReceived['pw']), FILTER_SANITIZE_STRING);
 
             // Empty user
             if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
@@ -125,7 +126,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         'name' => $name,
                         'lastname' => $lastname,
                         'pw' => bCrypt(stringUtf8Decode($pw), COST),
-                        'email' => $dataReceived['email'],
+                        'email' => $email,
                         'admin' => $dataReceived['admin'] == "true" ? '1' : '0',
                         'gestionnaire' => $dataReceived['manager'] == "true" ? '1' : '0',
                         'read_only' => $dataReceived['read_only'] == "true" ? '1' : '0',
@@ -1099,8 +1100,8 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                 $arrData['error'] = "no";
                 $arrData['log'] = $rowUser['login'];
-                $arrData['name'] = $rowUser['name'];
-                $arrData['lastname'] = $rowUser['lastname'];
+                $arrData['name'] = htmlspecialchars_decode($rowUser['name'], ENT_QUOTES);
+                $arrData['lastname'] = htmlspecialchars_decode($rowUser['lastname'], ENT_QUOTES);
                 $arrData['email'] = $rowUser['email'];
                 $arrData['function'] = $functionsList;
                 $arrData['managedby'] = $managedBy;
@@ -1149,7 +1150,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
             $post_lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
             $post_name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
-
+            
             // Empty user
             if (empty($post_login) === true) {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';

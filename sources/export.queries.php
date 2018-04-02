@@ -451,71 +451,66 @@ if (null !== $post_type) {
             echo '[{"text":"<a href=\''.$SETTINGS['url_to_files_folder'].$csv_file.'\' download>'.$LANG['pdf_download'].'</a>"}]';
             break;
 
-        //CASE export in HTML format
-        case "export_to_html_format":
-            // step 1:
-            // - prepare export file
-            // - get full list of objects id to export
-            include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
-            $idsList = array();
-            $objNumber = 0;
+    //CASE export in HTML format
+    case "export_to_html_format":
+        // step 1:
+        // - prepare export file
+        // - get full list of objects id to export
+        include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+        $idsList = array();
+        $objNumber = 0;
 
-            foreach (explode(';', $post_ids) as $id) {
-                if (!in_array($id, $_SESSION['forbiden_pfs']) && in_array($id, $_SESSION['groupes_visibles'])) {
-                    // count elements to display
-                    $result = DB::query(
-                        "SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
-                        FROM ".prefix_table("items")." as i
-                        INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
-                        INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                        WHERE i.inactif = %i
-                        AND i.id_tree= %i
-                        AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                        ORDER BY i.label ASC, l.date DESC",
-                        "0",
-                        $id,
-                        "at_creation",
-                        "at_modification",
-                        "at_pw :%"
-                    );
-                    foreach ($result as $record) {
-                        $restricted_users_array = explode(';', $record['restricted_to']);
-                        if ((
-                                (in_array($id, $_SESSION['personal_visible_groups']) && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to']) && !empty($record['restricted_to']))
-                                ||
-                                (!empty($record['restricted_to']) && !in_array($_SESSION['user_id'], $restricted_users_array))
-                                ||
-                                (in_array($id, $_SESSION['groupes_visibles']))
-                            ) && (
-                                !in_array($record['id'], $idsList)
-                            )
-                        ) {
-                            array_push($idsList, $record['id']);
-                            $objNumber++;
-
-                            // log
-                            logItems(
-                                $record['id'],
-                                $record['l SeekableIteratorabel'],
-                                $_SESSION['user_id'],
-                                'at_export',
-                                $_SESSION['login'],
-                                'html'
-                            );
-                        }
+        foreach (explode(';', $post_ids) as $id) {
+            if (in_array($id, $_SESSION['forbiden_pfs']) === false
+                && in_array($id, $_SESSION['groupes_visibles']) === true
+                && (in_array($id, $_SESSION['no_access_folders']) === false)
+            ) {
+                // count elements to display
+                $result = DB::query(
+                    "SELECT i.id AS id, i.label AS label, i.restricted_to AS restricted_to, i.perso AS perso
+                    FROM ".prefix_table("items")." as i
+                    INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+                    INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+                    WHERE i.inactif = %i
+                    AND i.id_tree= %i
+                    AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+                    ORDER BY i.label ASC, l.date DESC",
+                    "0",
+                    $id,
+                    "at_creation",
+                    "at_modification",
+                    "at_pw :%"
+                );
+                foreach ($result as $record) {
+                    $restricted_users_array = explode(';', $record['restricted_to']);
+                    if (((in_array($id, $_SESSION['personal_visible_groups']) === true
+                        && !($record['perso'] == 1 && $_SESSION['user_id'] == $record['restricted_to'])
+                        && empty($record['restricted_to']) === false)
+                        ||
+                        (empty($record['restricted_to']) === false 
+                        && in_array($_SESSION['user_id'], $restricted_users_array) === false)
+                        ||
+                        (in_array($id, $_SESSION['groupes_visibles']))
+                        ) && (
+                        in_array($record['id'], $idsList) === false
+                        )
+                    ) {
+                        array_push($idsList, $record['id']);
+                        $objNumber++;
                     }
                 }
             }
+        }
 
-                // prepare export file
-                //save the file
-                $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
-                //print_r($full_listing);
-                $outstream = fopen($SETTINGS['path_to_files_folder'].$html_file, "w");
-                fwrite(
-                    $outstream,
-                    '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+            // prepare export file
+            //save the file
+            $html_file = '/teampass_export_'.time().'_'.generateKey().'.html';
+            //print_r($full_listing);
+            $outstream = fopen($SETTINGS['path_to_files_folder'].$html_file, "w");
+            fwrite(
+                $outstream,
+                '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
     <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
     <title>TeamPass Off-line mode</title>
@@ -555,63 +550,73 @@ if (null !== $post_type) {
             <th style="width:20%;">'.$LANG['url'].'</th>
         </tr></thead>
         <tbody id="itemsTable_tbody">'
-                );
-
-            fclose($outstream);
-
-            // send back and continue
-            echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
-            break;
-
-        //CASE export in HTML format - Iteration loop
-        case "export_to_html_format_loop":
-            // do checks ... if fails, return an error
-            if (null === $post_idTree || null === $post_idsList) {
-                echo '[{"error":"true"}]';
-                break;
-            }
-
-            $full_listing = array();
-            $items_id_list = array();
-            include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
-
-            $rows = DB::query(
-                "SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
-                   l.date as date, i.pw_iv as pw_iv,
-                   n.renewal_period as renewal_period
-                FROM ".prefix_table("items")." as i
-                INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
-                INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
-                WHERE i.inactif = %i
-                AND i.id_tree= %i
-                AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
-                ORDER BY i.label ASC, l.date DESC",
-                "0",
-                $post_idTree,
-                "at_creation",
-                "at_modification",
-                "at_pw :%"
             );
 
-            foreach ($rows as $record) {
-                //exclude all results except the first one returned by query
-                if (empty($id_managed) || $id_managed != $record['id']) {
-                    // decrypt PW
-                    if (empty($post_salt_key) === false && null !== $post_salt_key) {
-                        $pw = cryption(
-                            $record['pw'],
-                            mysqli_escape_string($link, stripslashes($post_salt_key)),
-                            "decrypt"
-                        );
-                    } else {
-                        $pw = cryption(
-                            $record['pw'],
-                            "",
-                            "decrypt"
-                        );
-                    }
-                    array_push($full_listing, array(
+        fclose($outstream);
+
+        // send back and continue
+        echo '[{"loop":"true", "number":"'.$objNumber.'", "file":"'.$SETTINGS['path_to_files_folder'].$html_file.'" , "file_link":"'.$SETTINGS['url_to_files_folder'].$html_file.'"}]';
+        break;
+
+    //CASE export in HTML format - Iteration loop
+    case "export_to_html_format_loop":
+        // do checks ... if fails, return an error
+        if (null === $post_idTree || null === $post_idsList) {
+            echo '[{"error":"true"}]';
+            break;
+        }
+
+        // exclude this folder if not allowed
+        if (in_array($post_idTree, $_SESSION['forbiden_pfs']) === true
+            || in_array($post_idTree, $_SESSION['groupes_visibles']) === false
+            || (in_array($post_idTree, $_SESSION['no_access_folders']) === true)
+        ) {
+            echo '[{"loop":"true", "number":"'.$post_number.'", "cpt":"'.$post_cpt.'", "file":"'.$post_file.'", "idsList":"'.$post_idsList.'" , "file_link":"'.$post_file_link.'"}]';
+            break;
+        }
+
+        $full_listing = array();
+        $items_id_list = array();
+        include $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/GibberishAES/GibberishAES.php';
+
+        $rows = DB::query(
+            "SELECT i.id as id, i.url as url, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.id_tree as id_tree,
+                l.date as date, i.pw_iv as pw_iv,
+                n.renewal_period as renewal_period
+            FROM ".prefix_table("items")." as i
+            INNER JOIN ".prefix_table("nested_tree")." as n ON (i.id_tree = n.id)
+            INNER JOIN ".prefix_table("log_items")." as l ON (i.id = l.id_item)
+            WHERE i.inactif = %i
+            AND i.id_tree= %i
+            AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
+            ORDER BY i.label ASC, l.date DESC",
+            "0",
+            $post_idTree,
+            "at_creation",
+            "at_modification",
+            "at_pw :%"
+        );
+
+        foreach ($rows as $record) {
+            //exclude all results except the first one returned by query
+            if (empty($id_managed) || $id_managed != $record['id']) {
+                // decrypt PW
+                if (empty($post_salt_key) === false && null !== $post_salt_key) {
+                    $pw = cryption(
+                        $record['pw'],
+                        mysqli_escape_string($link, stripslashes($post_salt_key)),
+                        "decrypt"
+                    );
+                } else {
+                    $pw = cryption(
+                        $record['pw'],
+                        "",
+                        "decrypt"
+                    );
+                }
+                array_push(
+                    $full_listing, array(
                         'id_tree' => $record['id_tree'],
                         'id' => $record['id'],
                         'label' => $record['label'],
@@ -620,78 +625,89 @@ if (null !== $post_type) {
                         'login' => $record['login'],
                         'url' => $record['url'],
                         'perso' => $record['perso']
-                    ));
-                    $i++;
-                    array_push($items_id_list, $record['id']);
-                }
-                $id_managed = $record['id'];
+                    )
+                );
+                $i++;
+                array_push($items_id_list, $record['id']);
+
+                // log
+                logItems(
+                    $record['id'],
+                    $record['l SeekableIteratorabel'],
+                    $_SESSION['user_id'],
+                    'at_export',
+                    $_SESSION['login'],
+                    'html'
+                );
+            }
+            $id_managed = $record['id'];
+        }
+
+        //save in export file
+        $outstream = fopen($post_file.'.txt', "a");
+
+        $lineType = "line1";
+        $idTree = "";
+        foreach ($full_listing as $elem) {
+            if ($lineType == "line0") {
+                $lineType = "line1";
+            } else {
+                $lineType = "line0";
+            }
+            if (empty($elem['description'])) {
+                $desc = '&nbsp;';
+            } else {
+                $desc = addslashes($elem['description']);
+            }
+            if (empty($elem['login'])) {
+                $login = '&nbsp;';
+            } else {
+                $login = addslashes($elem['login']);
+            }
+            if (empty($elem['url'])) {
+                $url = '&nbsp;';
+            } else {
+                $url = addslashes($elem['url']);
             }
 
-            //save in export file
-            $outstream = fopen($post_file.'.txt', "a");
-
-            $lineType = "line1";
-            $idTree = "";
-            foreach ($full_listing as $elem) {
-                if ($lineType == "line0") {
-                    $lineType = "line1";
-                } else {
-                    $lineType = "line0";
-                }
-                if (empty($elem['description'])) {
-                    $desc = '&nbsp;';
-                } else {
-                    $desc = addslashes($elem['description']);
-                }
-                if (empty($elem['login'])) {
-                    $login = '&nbsp;';
-                } else {
-                    $login = addslashes($elem['login']);
-                }
-                if (empty($elem['url'])) {
-                    $url = '&nbsp;';
-                } else {
-                    $url = addslashes($elem['url']);
-                }
-
-                // Prepare tree
-                if ($idTree != $elem['id_tree']) {
-                    $arbo = $tree->getPath($elem['id_tree'], true);
-                    foreach ($arbo as $folder) {
-                        $arboHtml_tmp = htmlspecialchars(stripslashes($folder->title), ENT_QUOTES);
-                        if (empty($arboHtml)) {
-                            $arboHtml = $arboHtml_tmp;
-                        } else {
-                            $arboHtml .= ' » '.$arboHtml_tmp;
-                        }
+            // Prepare tree
+            if ($idTree != $elem['id_tree']) {
+                $arbo = $tree->getPath($elem['id_tree'], true);
+                foreach ($arbo as $folder) {
+                    $arboHtml_tmp = htmlspecialchars(stripslashes($folder->title), ENT_QUOTES);
+                    if (empty($arboHtml)) {
+                        $arboHtml = $arboHtml_tmp;
+                    } else {
+                        $arboHtml .= ' » '.$arboHtml_tmp;
                     }
-                    fputs(
-                        $outstream,
-                        '
-            <tr class="path"><td colspan="5">'.$arboHtml.'</td></tr>'
-                    );
-                    $idTree = $elem['id_tree'];
                 }
-
-                $encPw = GibberishAES::enc($elem['pw'], $post_pdf_password);
                 fputs(
                     $outstream,
                     '
-            <tr class="'.$lineType.'">
-                <td>'.addslashes($elem['label']).'</td>
-                <td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\');return false;">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
-                <td>'.$desc.'</td>
-                <td align="center">'.$login.'</td>
-                <td align="center">'.$url.'</td>
-                </tr>'
+        <tr class="path"><td colspan="5">'.$arboHtml.'</td></tr>'
                 );
+                $idTree = $elem['id_tree'];
             }
 
-            fclose($outstream);
+            $encPw = GibberishAES::enc($elem['pw'], $post_pdf_password);
+            fputs(
+                $outstream,
+                '
+        <tr class="'.$lineType.'">
+            <td>'.addslashes($elem['label']).'</td>
+            <td align="center"><span class="span_pw" id="span_'.$elem['id'].'"><a href="#" onclick="decryptme('.$elem['id'].', \''.$encPw.'\');return false;">Decrypt </a></span><input type="hidden" id="hide_'.$elem['id'].'" value="'.$encPw.'" /></td>
+            <td>'.$desc.'</td>
+            <td align="center">'.$login.'</td>
+            <td align="center">'.$url.'</td>
+            </tr>'
+            );
+        }
 
-            // send back and continue
-            echo '[{"loop":"true", "number":"'.$post_number.'", "cpt":"'.$post_cpt.'", "file":"'.$post_file.'", "idsList":"'.$post_idsList.'" , "file_link":"'.$post_file_link.'"}]';
-            break;
+        fclose($outstream);
+
+        // send back and continue
+        echo '[{"loop":"true", "number":"'.$post_number.'", "cpt":"'.$post_cpt.'", "file":"'.$post_file.'", "idsList":"'.$post_idsList.'" , "file_link":"'.$post_file_link.'"}]';
+        break;
 
             //CASE export in HTML format - Iteration loop
         case "export_to_html_format_finalize":
