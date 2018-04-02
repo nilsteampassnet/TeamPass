@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,19 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'at_user_updated' => 'User #user_login# was updated',
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'enable_http_request_login' => 'Automatic login using http header credentials',
-    'duration_login_attempt' => 'Seconds till auto login:',
-    'newly_created_user_role' => 'Newly created user has role',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'This user has no email address set!',
@@ -253,7 +240,7 @@ $LANG = array (
     'no_previous_pw' => 'No previous password',
     'request_access_ot_item' => 'Request access to modify',
     'email_request_access_subject' => 'You have a request to enable access to your password item',
-    'email_request_access_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>The request comes with the next justification:<br><i>\'#tp_reason#\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
+    'email_request_access_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>User #tp_user# has requested access to password item \\\'#tp_item#\\\'.<br><br>The request comes with the next justification:<br><i>\\\'#tp_reason#\\\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
     'admin_action_change_salt_key' => 'Change the main salt key used for encryption',
     'admin_action_change_salt_key_tip' => 'Before changing the salt key, please enable maintenance mode and perform a full backup of both the database and attachments in the upload folder.',
     'block_admin_info' => 'Administrator\'s Info',
@@ -1092,5 +1079,17 @@ $LANG = array (
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Report a bug',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );
