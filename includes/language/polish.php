@@ -5,8 +5,8 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
- * @link          http://www.teampass.net
+ * @licensing     GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,8 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'Wyślij emaila z Google Authenticator do użytkownika',
     'send_ga_code' => 'Ustaw i wyślij emaila z kodem Google Authenticator',
     'error_no_email' => 'Ten użytkownik nie ma ustawionego adresu e-mail',
@@ -31,7 +29,7 @@ $LANG = array (
     'admin_ga_website_name' => 'Wyświetlana nazwa w Google Authenticator dla Teampass',
     'admin_ga_website_name_tip' => 'Ta nazwa jest użyta jako kod identyfikacyjny w Google Authenticator.',
     'admin_action_pw_prefix_correct' => 'Napraw prefiks haseł',
-    'admin_action_pw_prefix_correct_tip' => 'Przed uruchomieniem tego skryptu PAMIĘTAJ o tym, by zrobić zrzut bazy danych. Ten skrypt przeprowadzi uaktualnienie prefix-ów haseł. Ta opcja powinna być użyta w przypadku, jeśli hasła są wyświetlane z dziwnym prefixem.',
+    'admin_action_pw_prefix_correct_tip' => 'Przed wykonaniem tego zadania wykonaj kopię zapasową bazy danych. Ten skrypt przeprowadzi uaktualnienie prefix-ów haseł w bazie danych. Ta opcja powinna być użyta w przypadku, jeśli hasła są wyświetlane niepoprawnie po aktualizacji ze starszej wersji.',
     'items_changed' => 'zostało zmienione.',
     'ga_not_yet_synchronized' => 'Identyfikuj przy użyciu Google Authenticator',
     'ga_scan_url' => 'Proszę zeskanuj ten kod QR twoją mobilną aplikacją Google Authenticator. Użyj tego kodu do zalogowania się.',
@@ -61,7 +59,7 @@ $LANG = array (
     'move' => 'Przenieś do',
     'field_add_in_category' => 'Dodaj nowe pole w tej kategorii',
     'rename' => 'Zmień nazwę',
-    'settings_item_extra_fields' => 'Zezwól na dodatkowe Pola w pozycjach (wg Kategorii)',
+    'settings_item_extra_fields' => 'Niestandardowe pola elementów włączone',
     'settings_item_extra_fields_tip' => 'Ta opcja zezwala na dodanie do pozycji dodatkowych pól, które są zdefiniowane i podzielone na kategorie przez administratora. Wszystkie dane są szyfrowane. Opcja ta wykorzystuje dodatkowe zapytania SQL (około 5 razy więcej na dodatkowe Pole podczas aktualizacji pozycji) co może wymagać więcej czasu na zakończenie działania. Zależnie od możliwości serwera.',
     'html' => 'html',
     'more' => 'Więcej',
@@ -92,7 +90,7 @@ $LANG = array (
     'channel_encryption_no_openssl' => 'Rozszerzenie OPENSSL nie zostało załadowane! Szyfrowanie nie może być rozpoczęte!',
     'channel_encryption_no_file' => 'Nie znaleziono pliku klucza syfrowania!<br>Proszę uruchomić proces aktualizacji.',
     'admin_action_generate_encrypt_keys' => 'Wygeneruj nowy zestaw kluczy szyfrowania',
-    'admin_action_generate_encrypt_keys_tip' => 'Klucze szyfrowania stanowią bardzo istotny aspekt pod względem bezpieczeństwa. Służą do szyfrowania kanału łączącego serwer z klientem. Nawet w przypadku posiadania serwera niepodłączonego do internetu, zalecane jest generowanie nowych kluczy co pewien czas. Operacja generowania kluczy może zająć nawet do 1 minuty.',
+    'admin_action_generate_encrypt_keys_tip' => 'Czasami utworzenie nowej pary kluczy może zwiększyć bezpieczeństwo',
     'settings_anyone_can_modify_bydefault' => 'Aktywuj \'<b><i>Każdy może modyfikować</b></i>\' (opcja domyślna)',
     'channel_encryption_in_progress' => 'Kanał szyfrowania ...',
     'channel_encryption_failed' => 'Uwierzytelnianie nie powiodło się!',
@@ -242,7 +240,7 @@ $LANG = array (
     'no_previous_pw' => 'Brak obecnego hasła',
     'request_access_ot_item' => 'Uzyskaj dostęp autora',
     'email_request_access_subject' => '[TeamPass] Zarządzaj dostępu do elementu',
-    'email_request_access_mail' => 'Witaj #tp_item_author#,<br><br>Użytkownik #tp_user# prosi o dostęp do \'#tp_item#\'.<br><br>Upewnij się czy dany użytkownik jest uprawniony do przeglądania tej pozycji przed nadaniem zezwolenia.<br><br>Pozdrawiam. ',
+    'email_request_access_mail' => 'Witaj #tp_item_author#,<br><br>Użytkownik #tp_user# prosi o dostęp do hasła \'#tp_item#\'.<br><br>Żądanie przychodzi z następującym uzasadnieniem:<br><i>\\\'#tp_reason#\\\'</i><br><br>Zapoznaj się z tą prośbą i potwierdź, że autoryzujesz dostęp.<br><br>Pozdrawiam. ',
     'admin_action_change_salt_key' => 'Zmień główny klucz SALTKey',
     'admin_action_change_salt_key_tip' => 'Przed zmianą klucza SALTKey, najlepiej wykonać pełną kopię zapasową bazy danych, oraz uaktywnić tryb konserwacji Teampass w celu zablokowania logowania się użytkowników.',
     'block_admin_info' => 'Informacje Administratora',
@@ -873,7 +871,7 @@ $LANG = array (
     'error_bad_credentials' => 'Poświadczenia logowania nie odpowiadają!',
     'reload_page_after_user_account_creation' => 'Twoje konto zostało dodane. Strona zostanie automatycznie przekierowana w ciągu 3 sekund ...',
     'settings_ldap_usergroup' => 'Grupa LDAP do przeszukiwania',
-    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa�',
+    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa�',
     'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze (używając połączenia SSH)',
     'error_login_missing' => 'Nie podano loginu!',
     'error_pwd_missing' => 'Nie podano hasła!',
@@ -1087,5 +1085,11 @@ $LANG = array (
     'error_no_reason_of_access' => 'Podaj powód aby uzyskać dostęp do tego elementu.',
     'settings_ldap_and_local_authentication' => 'Użytkownicy lokalni oraz LDAP',
     'settings_ldap_and_local_authentication_tip' => 'Włącz tę opcję, aby zezwolić na uwierzytelnianie użytkowników w LDAP lub na lokalnej liście użytkowników Teampass.',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Report a bug',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );

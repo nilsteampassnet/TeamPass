@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,15 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Google-Authenticator per E-Mail an Benutzer senden',
     'send_ga_code' => 'Google Authenticator Code aktivieren und per Mail verschicken.',
     'error_no_email' => 'Für diesen Nutzer wurde keine E-Mail-Adresse festgelegt.',
@@ -249,7 +240,7 @@ $LANG = array (
     'no_previous_pw' => 'Keine vorherigen Passwörter',
     'request_access_ot_item' => 'Zugang zum Ändern beantragen',
     'email_request_access_subject' => 'Zugriff auf Element anfordern.',
-    'email_request_access_mail' => 'Hallo #tp_item_author#,&lt;br&gt;&lt;br&gt;Benutzer #tp_user# hat Zugriff auf Element \'#tp_item#\' angefordert.&lt;br&gt;&lt;br&gt;Bitte überprüfen Sie die Zugriffsberechtigungen dieses Benutzers, bevor Sie die Zugriffsbeschränkungen dieses Elements lockern.&lt;br&gt;&lt;br&gt;',
+    'email_request_access_mail' => 'Hallo #tp_item_author#,&lt;br&gt;&lt;br&gt;Benutzer #tp_user# hat Zugriff auf Element \'#tp_item#\' angefordert.&lt;br&gt;&lt;br&gt;Bitte überprüfen Sie die Berechtigungen dieses Benutzers, bevor Sie die Zugriffsbeschränkungen dieses Elements lockern.&lt;br&gt;&lt;br&gt;',
     'admin_action_change_salt_key' => 'Änderung des SALT-Schlüssels',
     'admin_action_change_salt_key_tip' => 'Bevor Sie den SALT-Schlüssel ändern, legen Sie bitte eine Vollsicherung der Datenbank an und schalten Sie das Programm in den Verwaltungsmodus um, um das Anmelden anderer Benutzer zu unterbinden.',
     'block_admin_info' => 'Informationen für Admionistratoren',
@@ -679,7 +670,7 @@ $LANG = array (
     'settings_richtext' => 'Richtext in der Elementbeschreibung erlauben',
     'settings_richtext_tip' => 'Dies wird Richtext mit BBCodes in der Elementbeschreibung aktivieren.',
     'settings_send_stats' => 'Monatliche Statistik über die Nutzung von Teampass an den Autor senden',
-    'settings_send_stats_tip' => 'Diese Statistiken sind komplett anonym! Ihre IP wird nicht versendet, lediglich die folgenden Angaben: Anzahl Elemente, Ordner und Benutzer, Teampass Version, Aktivierung Persönlicher Ordner, Aktivierung LDAP. Herzlichen Dank, dass Sie diese Statistiken zulassen – Sie helfen dem Autor bei der Weiterentwicklung von Teampass.',
+    'settings_send_stats_tip' => 'Diese Statistiken sind komplett anonym!Ihre IP wird nicht versendet, lediglich die folgenden Angaben: Anzahl Elemente, Ordner und Benutzer, Teampass Version, Aktivierung Persönlicher Ordner, Aktivierung LDAP. Herzlichen Dank, dass Sie diese Statistiken zulassen – Sie helfen dem Autor bei der Weiterentwicklung von Teampass.',
     'settings_show_description' => 'Beschreibung in Elementliste anzeigen',
     'show' => 'Zeigen',
     'show_help' => 'Hilfe anzeigen',
@@ -1088,5 +1079,17 @@ $LANG = array (
     'bug_report_to_github' => 'Füllen Sie den Berichts aus, kopieren ihn in die Zwischenablage und fügen ihn dann in die Github New Issue Page ein.',
     'create_github_bug_report' => 'Neuen Fehlerbericht erstellen',
     'deselect_all' => 'Alle Markierungen aufheben',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Anfrage senden',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Einen Fehler melden',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );

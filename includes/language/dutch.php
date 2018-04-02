@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,8 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'E-mail Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google Authenticatie in en stuur e-mail',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',
@@ -1087,5 +1085,11 @@ $LANG = array (
     'error_no_reason_of_access' => 'Geef de reden waarom u dit item wilde benaderen',
     'settings_ldap_and_local_authentication' => 'Lokale en LDAP gebruikers',
     'settings_ldap_and_local_authentication_tip' => 'Activeer deze optie om zowel gebruikers geautenticeerd met LDAP en lokale gebruikers toe te staan.  ',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Report a bug',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );

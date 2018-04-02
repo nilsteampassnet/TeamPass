@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          chinese_simplified.php
+ * @file          chinese.php
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,15 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => '发送 Google 身份验证器至用户，通过电子邮件',
     'send_ga_code' => 'Google 身份验证器，为用户',
     'error_no_email' => '此用户未设置电子邮件地址！',
@@ -187,7 +178,7 @@ $LANG = array (
     'admin_email_result_ok' => '电子邮件已发往 #email# ...请检查您的收件箱。',
     'admin_email_result_nok' => '电子邮件未能发送 ... 请检查您的配置。相关错误：',
     'email_subject_item_updated' => '密码已更新',
-    'email_body_item_updated' => 'Hello,<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
+    'email_body_item_updated' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Password for \'#item_label#\' has been updated.<br /><br />You can check it <a href=\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\'>HERE</a><br /><br />Cheers',
     'email_bodyalt_item_updated' => '#item_label# 的密码已更新。',
     'admin_email_send_backlog' => '#nb_emails# unsent emails - send now',
     'admin_email_send_backlog_tip' => 'Re-send any queued backlog of outgoing emails waiting in the database.',
@@ -227,10 +218,10 @@ $LANG = array (
     'share' => '分享此项',
     'share_sent_ok' => '电子邮件已发送',
     'email_share_item_subject' => '[TeamPass] 一项已与您共享',
-    'email_share_item_mail' => 'Hello, #tp_user# has shared with you the password item #tp_item# <a href=\'#tp_link#\'>Click this link</a> to access the item.',
+    'email_share_item_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has shared with you the password item #tp_item# <a href=\'#tp_link#\'>Click this link</a> to access the item.',
     'see_item_title' => '项目细节',
     'email_on_open_notification_subject' => '[TeamPass] 项目打开通知',
-    'email_on_open_notification_mail' => 'Hello,<br><br>#tp_user# has opened and viewed the password item \'#tp_item#\'. <a href=\'#tp_link#\'>Click this link</a> to access the item.',
+    'email_on_open_notification_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>#tp_user# has opened and viewed the password item \'#tp_item#\'. <a href=\'#tp_link#\'>Click this link</a> to access the item.',
     'pdf' => 'PDF',
     'csv' => 'CSV',
     'user_admin_migrate_pw' => '迁移个人项目到用户账号',
@@ -240,7 +231,7 @@ $LANG = array (
     'migrate_pf_no_sk_user' => '您必须输入用户的 SALT 密钥',
     'migrate_pf_no_user_id' => '您必须选择用户";',
     'email_subject_new_user' => '[TeamPass] 您的账号已创建',
-    'email_new_user_mail' => 'An administrator has created an account for you on the password manager. Secure passwords for your organization are just a click away! <br><br>Use these credentials for your first login:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br><a href=\'#tp_link#\'>Click this link</a> to log in and reset your password.',
+    'email_new_user_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created an account for you on the password manager. Secure passwords for your organization are just a click away! <br><br>Use these credentials for your first login:<br>- Login: #tp_login#<br>- Password: #tp_pw#<br><br><a href=\'#tp_link#\'>Click this link</a> to log in and reset your password.',
     'error_empty_data' => '没有要处理的数据！',
     'error_not_allowed_to' => '您无权进行此操作！',
     'personal_saltkey_lost' => '我丢失了',
@@ -249,7 +240,7 @@ $LANG = array (
     'no_previous_pw' => '没有以前的密码',
     'request_access_ot_item' => '向作者请求访问权',
     'email_request_access_subject' => '[TeamPass] 请求访问一个项目',
-    'email_request_access_mail' => 'Hello #tp_item_author#,<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>Please review this request in the password manager and confirm that you will authorize access.',
+    'email_request_access_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>User #tp_user# has requested access to password item \\\'#tp_item#\\\'.<br><br>The request comes with the next justification:<br><i>\\\'#tp_reason#\\\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
     'admin_action_change_salt_key' => '更改主 SALT 密钥',
     'admin_action_change_salt_key_tip' => 'Before changing the salt key, please enable maintenance mode and perform a full backup of both the database and attachments in the upload folder.',
     'block_admin_info' => '管理员信息',
@@ -425,7 +416,7 @@ $LANG = array (
     'email_changed' => '电子邮件地址已更改！',
     'email_select' => 'Select users to inform',
     'email_subject' => 'New password item created in password manager',
-    'email_text_new_user' => 'Hi,<br /><br />Your account has been created in TeamPass.<br />You can now access $TeamPass_url using these credentials:<br />',
+    'email_text_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your account has been created in TeamPass.<br />You can now access $TeamPass_url using these credentials:<br />',
     'enable_favourites' => 'Favorites bookmark feature enabled',
     'enable_personal_folder' => '启用个人文件夹',
     'enable_personal_folder_feature' => '启用个人文件夹功能',
@@ -472,8 +463,8 @@ $LANG = array (
     'forgot_my_pw_error_email_not_exist' => '此邮件不存在！',
     'forgot_my_pw_text' => '您的密码将被发送到与您的账号关联的电子邮箱。',
     'forgot_pw_email_altbody_1' => 'Hi, Your identification credentials for TeamPass are:',
-    'forgot_pw_email_body' => 'Hi,<br /><br />Your new password for TeamPass is :',
-    'forgot_pw_email_body_1' => 'Hi, <br /><br />Your identification credentials for TeamPass are:<br /><br />',
+    'forgot_pw_email_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your new password for TeamPass is :',
+    'forgot_pw_email_body_1' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>Your identification credentials for TeamPass are:<br /><br />',
     'forgot_pw_email_subject' => 'TeamPass - 您的密码',
     'forgot_pw_email_subject_confirm' => '[TeamPass] 您的密码 - 第二步',
     'functions' => '角色',
@@ -913,7 +904,7 @@ $LANG = array (
     'error_folder_complexity_lower_than_top_folder' => 'Subfolders must have password strength set the same or higher than parent folder',
     'rebuild_config_file' => 'Rebuild configuration file',
     'csv_import_information' => 'The CSV file needs to follow these rules:<ul><li>The first line must be a header,</li><li>The header must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
-    'new_item_email_body' => 'Hi, <br /><br />New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
+    'new_item_email_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
@@ -1088,5 +1079,17 @@ $LANG = array (
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Report a bug',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );

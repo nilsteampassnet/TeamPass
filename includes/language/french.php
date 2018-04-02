@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,15 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Reporter un défaut',
-    'user_profile_api_key' => 'Votre clé API',
-    'settings_ldap_and_local_authentication' => 'Utilisateurs locaux et LDAP',
-    'settings_ldap_and_local_authentication_tip' => 'En activant cette option, l\identification sera acceptée pour les utilisateurs locaux et dans un annuaire LDAP.',
-    'request_access_to_item' => 'Demander un accès à cet objet',
-    'request_access_to_item_info' => 'Fournir la raison pour laquelle vous souhaitez accèder à cet objet',
-    'send_request' => 'Envoyer la requête',
-    'error_no_reason_of_access' => 'Merci de fournir la raison de votre requête.',
-    'human_resources' => 'Ressources Humaines',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',
@@ -187,7 +178,7 @@ $LANG = array (
     'admin_email_result_ok' => 'E-mail envoyé ... vérifiez votre boite de réception',
     'admin_email_result_nok' => 'E-mail non envoyé… Vérifiez votre configuration. Erreur retournée : ',
     'email_subject_item_updated' => 'Mot de passe mis à jour',
-    'email_body_item_updated' => 'Bonjour,<br><br>Le mot de passe de l\\\'élément \\\'#item_label#\\\' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=\\\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\\\'>ICI</a><br /><br />Salutation',
+    'email_body_item_updated' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>Le mot de passe de l\\\'élément \\\'#item_label#\\\' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=\\\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\\\'>ICI</a><br /><br />Salutation',
     'email_bodyalt_item_updated' => 'Le mot de passe de #item_label# a été mis à jour.',
     'admin_email_send_backlog' => 'Envoyer les e-mails dans la file d\'attente (actuellement #nb_emails# e-mails)',
     'admin_email_send_backlog_tip' => 'Ce script permet de forcer l\'envoi des e-mails dans la file d\'attente de la base de données.<br /> Cela peut prendre plusieurs minutes en fonction du nombre d\'e-mails à envoyer.',
@@ -230,7 +221,7 @@ $LANG = array (
     'email_share_item_mail' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br><u>#tp_user#</u> a partagé l\'élément <b>#tp_item#</b> avec vous.<br>Cliquez le <a href=\'#tp_link#\'>LIEN</a> pour y accéder.<br><br>Cordialement.',
     'see_item_title' => 'Détails de l\'élément',
     'email_on_open_notification_subject' => '[TeamPass] Notification suite à la consultation d\'un élément',
-    'email_on_open_notification_mail' => 'Bonjour,<br><br>#tp_user# a consulté l\'élément \'#tp_item#\'.<br>Cliquez sur le <a href=\'#tp_link#\'>LIEN</a> pour y accéder.<br><br>Cordialement.',
+    'email_on_open_notification_mail' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>#tp_user# a consulté l\'élément \'#tp_item#\'.<br>Cliquez sur le <a href=\'#tp_link#\'>LIEN</a> pour y accéder.<br><br>Cordialement.',
     'pdf' => 'PDF',
     'csv' => 'CSV',
     'user_admin_migrate_pw' => 'Migrer les Éléments personnels vers un autre compte',
@@ -240,7 +231,7 @@ $LANG = array (
     'migrate_pf_no_sk_user' => 'Vous devez saisir la clé',
     'migrate_pf_no_user_id' => 'Vous devez saisir l\'utilisateur',
     'email_subject_new_user' => '[TeamPass] Votre nouveau compte',
-    'email_new_user_mail' => 'Bonjour,<br><br>Un Administrateur vous a créé un compte pour TeamPass.<br>Vos identifiants de connexion sont les suivants :<br>- Identifiant : #tp_login#<br>- Mot de passe : #tp_pw#<br><br>Cliquez sur le <a href=\'#tp_link#\'>LIEN</a> pour y accéder.<br><br>Cordialement',
+    'email_new_user_mail' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>Un Administrateur vous a créé un compte pour TeamPass.<br>Vos identifiants de connexion sont les suivants :<br>- Identifiant : #tp_login#<br>- Mot de passe : #tp_pw#<br><br>Cliquez sur le <a href=\'#tp_link#\'>LIEN</a> pour y accéder.<br><br>Cordialement',
     'error_empty_data' => 'Aucune donnée à traiter !',
     'error_not_allowed_to' => 'Vous n\'etes pas autorisé à faire cela !',
     'personal_saltkey_lost' => 'Réinitialiser ma clé personnelle de salage',
@@ -249,7 +240,7 @@ $LANG = array (
     'no_previous_pw' => 'Aucun ancien mot de passe',
     'request_access_ot_item' => 'Demander un accès au créateur',
     'email_request_access_subject' => '[TeamPass] Demande d\'accès à un élément',
-    'email_request_access_mail' => 'Bonjour #tp_item_author#,<br><br>L\'utilisateur #tp_user# a demandé un accès à \'#tp_item#\'.<br>Cette demande est accompagnée du justificatif suivant:<br><br><i>\'#tp_reason#\'</i><br><br>Merci de revoir et confirmer ou pas l\'accès.<br><br>Cordialement.',
+    'email_request_access_mail' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>L\'utilisateur #tp_user# a demandé un accès à \'#tp_item#\'.<br>Cette demande est accompagnée du justificatif suivant:<br><br><i>\\\'#tp_reason#\\\'</i><br><br>Merci de revoir et confirmer ou pas l\'accès.<br><br>Cordialement.',
     'admin_action_change_salt_key' => 'Changer la clé de salage principale',
     'admin_action_change_salt_key_tip' => 'Avant de changer votre clé de salage principale, merci de vous assurer d\'avoir réalisé une sauvegarde complète de la base de données, et de mettre TeamPass en mode maintenance',
     'block_admin_info' => 'Infos Administrateur',
@@ -263,7 +254,7 @@ $LANG = array (
     'pw_encryption_error' => 'Erreur de déchiffrement du mot de passe !',
     'enable_send_email_on_user_login' => 'Envoyer un email aux Administrateurs lorsqu\'un utilisateur se connecte',
     'email_subject_on_user_login' => '[TeamPass] Un utilisateur s\'est connecté',
-    'email_body_on_user_login' => 'Bonjour,<br><br>L\'utilisateur #tp_user# s\'est connecté à TeamPass le #tp_date# à #tp_time#.<br><br>Cordialement.',
+    'email_body_on_user_login' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>L\'utilisateur #tp_user# s\'est connecté à TeamPass le #tp_date# à #tp_time#.<br><br>Cordialement.',
     'account_is_locked' => 'Ce compte est bloqué',
     'activity' => 'Activité',
     'add_button' => 'Ajouter',
@@ -472,7 +463,7 @@ $LANG = array (
     'forgot_my_pw_error_email_not_exist' => 'Cet e-mail n\'existe pas !',
     'forgot_my_pw_text' => 'Votre mot de passe vous sera envoyé sur l\'email associé à votre compte.',
     'forgot_pw_email_altbody_1' => 'Bonjour, vos identifiants de connexion à TeamPass sont :',
-    'forgot_pw_email_body' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>votre nouveau mot de passe pour TeamPass est :',
+    'forgot_pw_email_body' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>Ceci est un email généré par Teampass.<br><br>votre nouveau mot de passe pour TeamPass est :',
     'forgot_pw_email_body_1' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>Vos identifiants de connexion à TeamPass sont :<br /><br />',
     'forgot_pw_email_subject' => 'TeamPass - Votre mot de passe',
     'forgot_pw_email_subject_confirm' => 'TeamPass - Votre mot de passe - étape 2',
@@ -587,7 +578,7 @@ $LANG = array (
     'minutes' => 'minutes',
     'modify_button' => 'Modifier',
     'my_favourites' => 'Mes Favoris',
-    'name' => 'Prénom',
+    'name' => 'Nom',
     'nb_false_login_attempts' => 'Nombre de tentatives de connexion erronées avant blocage (0 pour désactiver)',
     'nb_folders' => 'Nombre de répertoires',
     'nb_items' => 'Nombre d\'éléments',
@@ -598,7 +589,7 @@ $LANG = array (
     'new_saltkey_warning' => 'Merci de vous assurer d\'utiliser la clé de salage originelle. Sans quoi le nouveau chiffrement sera corrompu ! Avant tout changement, merci de tester votre clé de salage.',
     'new_user_title' => 'Ajouter un nouvel utilisateur',
     'no' => 'Non',
-    'nom' => 'Nom',
+    'nom' => 'Prénom',
     'none' => 'Aucun',
     'none_selected_text' => 'Aucun',
     'not_allowed_to_see_pw' => 'Vous n\'avez pas le droit de consulter ce mot de passe',
@@ -620,7 +611,7 @@ $LANG = array (
     'personal_salt_key_info' => 'Cette clé sera utilisée pour chiffrer et déchiffrer votre mot de passe. Elle n\'est pas sauvée en base de données et elle est seulement connue de vous. Ne la perdez surtout pas !',
     'please_update' => 'Pensez à effectuer la mise à jour !',
     'print' => 'Imprimer',
-    'print_out_menu_title' => 'Exporter les éléments',
+    'print_out_menu_title' => 'Exporter des éléments',
     'print_out_pdf_title' => 'TeamPass - Liste des éléments exportés',
     'print_out_warning' => 'En imprimant ces éléments, vous prenez l\'entière responsabilité de les  rendre accessibles. Attention tous les mots de passe seront visibles !',
     'pw' => 'Mots de passe',
@@ -1088,5 +1079,17 @@ $LANG = array (
     'bug_report_to_github' => 'Compléter le contenu du rapport, le copier dans le presse-papier puis le coller dans une nouvelle page de défaut dans Github',
     'create_github_bug_report' => 'Créer un rapport de défaut',
     'deselect_all' => 'Désélectionner',
+    'request_access_to_item' => 'Demander un accès à cet objet',
+    'request_access_to_item_info' => 'Fournir la raison pour laquelle vous souhaitez accèder à cet objet',
+    'send_request' => 'Envoyer la requête',
+    'error_no_reason_of_access' => 'Merci de fournir la raison de votre requête.',
+    'settings_ldap_and_local_authentication' => 'Utilisateurs locaux et LDAP',
+    'settings_ldap_and_local_authentication_tip' => 'En activant cette option, l\'dentification sera acceptée pour les utilisateurs locaux et dans un annuaire LDAP.',
+    'user_profile_api_key' => 'Votre clé API',
+    'report_a_bug' => 'Reporter un défaut',
+    'enable_http_request_login' => 'Authentification automatique via l\'en-tête http',
+    'duration_login_attempt' => 'Nombre de secondes avant authentification automatique',
+    'newly_created_user_role' => 'Rôle de l\'utilisateur créé',
+    'at_user_updated' => 'Utilisateur #user_login# a été mis à jour',
     '' => ''
 );

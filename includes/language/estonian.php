@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,15 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Saada GoogleAuthenticator kasutajale e-mailiga',
     'send_ga_code' => 'Google Authenticator kasutajale',
     'error_no_email' => 'Kasutajal puudub e-posti aadress!',
@@ -1088,5 +1079,17 @@ $LANG = array (
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Report a bug',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );

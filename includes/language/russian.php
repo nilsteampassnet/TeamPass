@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,15 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Отправить приложение Google Authenticator на email пользователю',
     'send_ga_code' => 'Код Google Authenticator для пользователя',
     'error_no_email' => 'У пользователя не задан email!',
@@ -527,7 +518,7 @@ $LANG = array (
     'index_identify_you' => 'Пожалуйста, представьтесь',
     'index_last_pw_change' => 'Пароль был изменен',
     'index_last_seen' => 'Последнее подключение было',
-    'index_login' => 'Аккаунт',
+    'index_login' => ' ',
     'index_maintenance_mode' => 'Включен режим обслуживания. Вход только для администраторов.',
     'index_maintenance_mode_admin' => 'Включен режим обслуживания. Пользователи не могут войти в TeamPass.',
     'index_new_pw' => 'Новый пароль',
@@ -1077,16 +1068,28 @@ $LANG = array (
     'admin_script_backup_secret' => 'Пароль для выполнения резервного копирования',
     'admin_script_backup_secret_tip' => 'Для запуска резервного копирования нужен отдельный пароль. Он должен быть добавлен в список параметров в script.backup.p',
     'access_level_for_roles' => 'Связанные с ролями доступы',
-    'settings_ldap_allowed_usergroup' => 'LDAP allowed user group',
-    'settings_ldap_allowed_usergroup_tip' => 'Indicate the group allowed to connect to Teampass. Leave it empty is no restriction is expected regarding the group membership.',
-    'error_security_level_not_reached' => 'Expected level of security not reached!',
-    'error_psk_should_be_changed' => 'Due to policy change, you may need change your personal saltkey.',
-    'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
-    'settings_disable_forgot_password_link' => 'Hide forgot password link on Home page',
-    'newly_created_user_is_administrated_by' => 'Newly created user is administrated by',
-    'open_bug_report_in_github' => 'Open issue report in Github',
-    'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
-    'create_github_bug_report' => 'Create new bug report',
-    'deselect_all' => 'Deselect all',
+    'settings_ldap_allowed_usergroup' => 'допустимая группа пользователей LDAP',
+    'settings_ldap_allowed_usergroup_tip' => 'Укажите, что группе LDAP разрешено подключаться к Teampass. Оставьте его пустым, никаких ограничений в отношении членства в группе не ожидается.',
+    'error_security_level_not_reached' => 'Требуемый уровень безопасности не достигнут!',
+    'error_psk_should_be_changed' => 'Из-за изменения политики вам может потребоваться изменить вашу личную соль.',
+    'personal_saltkey_security_level' => 'Минимальный уровень безопасности персональной соли',
+    'settings_disable_forgot_password_link' => 'Скрыть ссылку на забытый пароль на главной странице',
+    'newly_created_user_is_administrated_by' => 'На давно созданный пользователь администрируется',
+    'open_bug_report_in_github' => 'Открыть отчет об ошибке в Github',
+    'bug_report_to_github' => 'Заполните содержимое отчета, затем скопируйте его в буфер обмена и вставьте его в новы отчет об ошибках на Github',
+    'create_github_bug_report' => 'Создать отчет об ошибке',
+    'deselect_all' => 'Снять выделение со всего',
+    'request_access_to_item' => 'Запросить доступ к этой элементу',
+    'request_access_to_item_info' => 'Укажите причину, по которой вы хотите получить доступ к этому элементу',
+    'send_request' => 'Отправить запрос',
+    'error_no_reason_of_access' => 'Укажите причину доступа к этому элементу.',
+    'settings_ldap_and_local_authentication' => 'Локальные и LDAP пользователи',
+    'settings_ldap_and_local_authentication_tip' => 'Включите эту опцию, чтобы разрешить пользователям, прошедшим проверку подлинности, в LDAP или в локальном списке пользователей Teampass.',
+    'user_profile_api_key' => 'Ваш ключ API',
+    'report_a_bug' => 'Сообщить о ошибке',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Секунд до автоматического входа:',
+    'newly_created_user_role' => 'Созданный пользователь имеет роль',
+    'at_user_updated' => 'Пользователь #user_login# обнавлен',
     '' => ''
 );

@@ -772,9 +772,10 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."kb_items` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `kb_id` int(12) NOT NULL,
                             `item_id` int(12) NOT NULL,
-                            PRIMARY KEY (`kb_id`)
+                            PRIMARY KEY (`increment_id`)
                            ) CHARSET=utf8;"
                         );
                     } elseif ($task == "restriction_to_roles") {

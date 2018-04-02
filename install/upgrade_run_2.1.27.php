@@ -491,6 +491,16 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."kb_items` ADD PRIMARY KEY (`kb_id`)"
 );
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."kb_items` DROP PRIMARY KEY"
+);
+
+// alter table kb_items to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."kb_items` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
+);
 
 
 // alter table EMAILS to add an index

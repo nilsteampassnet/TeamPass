@@ -5,8 +5,8 @@
  * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU AFFERO GPL 3.0
- * @link          http://www.teampass.net
+ * @licensing     GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,8 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',
@@ -1086,5 +1084,11 @@ $LANG = array (
     'error_no_reason_of_access' => 'Proporcione una razón para acceder a este elemento por favor.',
     'settings_ldap_and_local_authentication' => 'Usuarios locales y LDAP',
     'settings_ldap_and_local_authentication_tip' => 'Habilite esta opción para permitir que los usuarios se autentiquen en la biblioteca LDAP o en la lista local de usuarios de Teampass.',
+    'user_profile_api_key' => ' Su clave API ',
+    'report_a_bug' => 'Notificar un problema',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );

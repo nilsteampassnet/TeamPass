@@ -6,7 +6,7 @@
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
  * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -14,15 +14,6 @@
  */
 global $LANG;
 $LANG = array (
-    'report_a_bug' => 'Report a Bug',
-    'user_profile_api_key' => 'Your API key',
-    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
-    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
-    'request_access_to_item' => 'Request access for this item',
-    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
-    'send_request' => 'Send request',
-    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
-    'human_resources' => 'Human Resources',
     'user_ga_code' => 'Invia all\'utente per mail il link GoogleAuthenticator',
     'send_ga_code' => 'Google Authenticator per utente',
     'error_no_email' => 'Questo utente non ha un indirizzo email!',
@@ -913,7 +904,7 @@ $LANG = array (
     'error_folder_complexity_lower_than_top_folder' => 'Subfolders must have password strength set the same or higher than parent folder',
     'rebuild_config_file' => 'Rebuild configuration file',
     'csv_import_information' => 'The CSV file needs to follow these rules:<ul><li>The first line must be a header,</li><li>The header must contain 5 columns,</li><li>The separator character is a comma `,`,</li><li>The encalupsation character is a double quotes `"`,</li><li>Expected columns are: `Label` , `Login` , `Password` , `URL` , `Comments`.</li></ul>',
-    'new_item_email_body' => 'Hi, <br /><br />New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
+    'new_item_email_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
@@ -1088,5 +1079,17 @@ $LANG = array (
     'bug_report_to_github' => 'Complete the content of the report, then copy it to clipboard and paste it in the Github new issue page',
     'create_github_bug_report' => 'Create new bug report',
     'deselect_all' => 'Deselect all',
+    'request_access_to_item' => 'Request access for this item',
+    'request_access_to_item_info' => 'Provide the reason why you want to access this item',
+    'send_request' => 'Send request',
+    'error_no_reason_of_access' => 'Please provide a reason for accessing this item.',
+    'settings_ldap_and_local_authentication' => 'Local and LDAP users',
+    'settings_ldap_and_local_authentication_tip' => 'Enable this option to permit both users authenticated in LDAP library or in local Teampass users list.',
+    'user_profile_api_key' => 'Your API key',
+    'report_a_bug' => 'Report a bug',
+    'enable_http_request_login' => 'Automatic login using http header credentials',
+    'duration_login_attempt' => 'Seconds till auto login:',
+    'newly_created_user_role' => 'Newly created user has role',
+    'at_user_updated' => 'User #user_login# was updated',
     '' => ''
 );
