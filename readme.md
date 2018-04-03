@@ -4,7 +4,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright © 2009-2017, [Nils Laumaillé](Nils@TeamPass.net)
+> Copyright © 2009-2017, [Nils Laumaillé](mailto:Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
@@ -63,7 +63,7 @@ The included [docker-compose.yml](docker-compose.yml) file is an example setup, 
 
 ## Languages
 
-Teampass is translated in next languages:
+Teampass is currently available in the following languages:
 * CATALAN
 * CHINESE
 * CZECH
@@ -103,8 +103,8 @@ Visit [Teampass.net](http://www.teampass.net/)
 
 ## Bugs
 
-For bugs discovery, please report in [Github Issues](https://github.com/nilsteampassnet/TeamPass/issues)
+If you discover bugs, please report them in [GitHub Issues](https://github.com/nilsteampassnet/TeamPass/issues).
 
 ## Requests
 
-For requests, please report in [UserEcho](https://teamPass.userecho.com)
+Please report feature requests in [UserEcho](https://teamPass.userecho.com).
