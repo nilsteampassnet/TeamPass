@@ -36,7 +36,7 @@ Tell us what happens instead
 **Teampass configuration file:**
 
 **Updated from an older Teampass or fresh install:**
-PLEASE attach to this message the file `/includes/config/tp.config.php`.
+PLEASE attach to this issue the file `/includes/config/tp.config.php`.
 
 ### Client configuration
 **Browser:**
