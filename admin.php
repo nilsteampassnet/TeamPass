@@ -378,7 +378,7 @@ echo '
     </div>
     <div id="tabs-3">';
 // Display the readme file
-$Fnm = "changelog.md";
+$Fnm = "changelog.txt";
 if (file_exists($Fnm)) {
     $tab = file($Fnm);
     if ($tab !== false) {
@@ -391,7 +391,7 @@ if (file_exists($Fnm)) {
                 echo $val."<br />";
                 $cnt++;
             } elseif ($cnt == 30) {
-                echo '...<br /><br /><b><a href="changelog.md" target="_blank"><span class="fa fa-book"></span>&nbsp;'.$LANG['readme_open'].'</a></b>';
+                echo '...<br /><br /><b><a href="changelog.txt" target="_blank"><span class="fa fa-book"></span>&nbsp;'.$LANG['readme_open'].'</a></b>';
                 break;
             }
         }

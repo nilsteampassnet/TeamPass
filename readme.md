@@ -4,7 +4,7 @@
 
 Teampass is a Collaborative Passwords Manager
 
-> Copyright © 2009-2017, [Nils Laumaillé](mailto:Nils@Teampass.net)
+> Copyright © 2009-2018, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
