@@ -282,7 +282,7 @@ if (!isset($_GET['type'])) {
             '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"see_item('.$record['id'].','.$record['perso'].','.$record['id_tree'].','.$expired.','.$restrictedTo.');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
-        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.htmlspecialchars(stripslashes($record['label']), ENT_QUOTES).'</span>", ';
+        $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.(stripslashes($record['label'])).'</span>", ';
 
         //col3
         $sOutputItem .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes($record['login']), ENT_QUOTES)).'", ';
