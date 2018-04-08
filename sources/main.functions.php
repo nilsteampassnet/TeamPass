@@ -1483,16 +1483,16 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
     }
 
     // init
-    if (!empty($size)) {
+    if (empty($size) === false) {
         $generator->setLength(intval($size));
     }
-    if (!empty($numerals)) {
+    if (empty($numerals) === false) {
         $generator->setNumbers($numerals);
     }
-    if (!empty($capitalize)) {
+    if (empty($capitalize) === false) {
         $generator->setUppercase($capitalize);
     }
-    if (!empty($symbols)) {
+    if (empty($symbols) === false) {
         $generator->setSymbols($symbols);
     }
 
@@ -2429,7 +2429,7 @@ function connectLDAP($username, $password, $SETTINGS) {
         if ($SETTINGS['ldap_type'] === 'posix') {
             $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
         } else {
-            // case where $SETTINGS['ldap_type'] === 'windows'
+            // case where $SETTINGS['ldap_type'] equals 'windows'
             //Multiple Domain Names
             $ldap_suffix = $SETTINGS['ldap_suffix'];
         }

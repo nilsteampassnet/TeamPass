@@ -18,7 +18,14 @@
     <body>
 <?php
 // define root path
-$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/').substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
+$abs_path = rtrim(
+    filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_STRING),
+    '/'
+).substr(
+    filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING),
+    0,
+    strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING)) - 20
+);
 if (isset($_SERVER['HTTPS'])) {
     $protocol = 'https://';
 } else {
