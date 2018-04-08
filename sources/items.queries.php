@@ -3772,7 +3772,7 @@ if (null !== $post_type) {
 
             // get file info
             $file_info = DB::queryfirstrow(
-                "SELECT file, status FROM ".prefix_table("files")." WHERE id=%i",
+                "SELECT file, status, type, content FROM ".prefix_table("files")." WHERE id=%i",
                 intval(substr(filter_input(INPUT_POST, 'uri', FILTER_SANITIZE_STRING), 1))
             );
 
@@ -3811,8 +3811,11 @@ if (null !== $post_type) {
                 array(
                     "error" => "",
                     "new_file" => $file_to_display,
+                    "file_type" => $file_info['type'],
                     "file_suffix" => $file_suffix,
-                    "file_path" => $SETTINGS['path_to_upload_folder'].'/'.$image_code."_delete.".$extension
+                    "file_path" => $SETTINGS['path_to_upload_folder'].'/'.$image_code."_delete.".$extension,
+                    "image_secure" => isset($SETTINGS['secure_display_image']) === true ? $SETTINGS['secure_display_image'] : '0',
+                    "file_content" => base64_encode(file_get_contents($SETTINGS['path_to_upload_folder'].'/'.$image_code."_delete.".$extension))
                 ),
                 "encode"
             );

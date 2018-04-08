@@ -360,7 +360,7 @@ if (isset($SETTINGS['enable_sts']) === true
 if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
     // query on user
     $data = DB::queryfirstrow(
-        "SELECT admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
+        "SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ".prefix_table("users")." WHERE id=%i",
         $_SESSION['user_id']
     );
 

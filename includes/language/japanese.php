@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'login_attempts' => 'Login attempts since last successful connection',
+    'settings_secure_display_image' => 'Enable secure image display',
+    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'ユーザーにメールアドレスが設定されていません。',
@@ -32,7 +35,7 @@ $LANG = array (
     'admin_action_pw_prefix_correct_tip' => 'Please backup the database before performing this task. This script will perform an update of password prefix in database. Only run this to fix incorrectly displayed passwords after upgrading from older versions.',
     'items_changed' => '変更しました。',
     'ga_not_yet_synchronized' => 'Get identified with Google Authenticator',
-    'ga_scan_url' => 'Google認証アプリなどでこのQRコードをスキャンしてください�',
+    'ga_scan_url' => 'Google認証アプリなどでこのQRコードをスキャンしてください�',
     'ga_identification_code' => '識別コード',
     'ga_enter_credentials' => 'ログイン資格情報を入力する必要があります',
     'ga_bad_code' => 'Google認証システムのコードが間違っています',

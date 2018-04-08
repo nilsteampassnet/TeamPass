@@ -326,6 +326,7 @@ function mainQuery()
                 // Prepare variables
                 $login = htmlspecialchars_decode($dataReceived['login']);
                 $pwd = htmlspecialchars_decode($dataReceived['pwd']);
+                $ldap_user_never_auth = false;
 
                 // Get data about user
                 $data = DB::queryfirstrow(
@@ -350,11 +351,27 @@ function mainQuery()
             $pwdlib->register();
             $pwdlib = new PasswordLib\PasswordLib();
 
+            // If LDAP enabled and counter = 0 then perhaps new user to add
+            if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1' && $counter === 0) {
+                $ldap_info_user = json_decode(connectLDAP($login, $pwd, $SETTINGS));
+                if ($ldap_info_user->{'user_found'} === true) {
+                    $data['email'] = $ldap_info_user->{'email'};
+                    $counter = 1;
+                    $ldap_user_never_auth = true;
+                }
+            }
+
             // check the given password
             if ($counter === 0
-                || (isset($pwd) === true && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false)
+                || (isset($pwd) === true && isset($data['pw']) === true && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false)
             ) {
                 // not a registered user !
+                if ($counter === 0) {
+                    logEvents('failed_auth', 'user_not_exists', "", stripslashes($login), stripslashes($login));
+                } else if ($pwdlib->verifyPasswordHash($pwd, $data['pw']) === false) {
+                    logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
+                }
+
                 echo '[{"error" : "no_user"}]';
             } else {
                 if (empty($data['email'])) {
@@ -367,15 +384,57 @@ function mainQuery()
                     $gaTemporaryCode = GenerateCryptKey(12);
 
                     // save the code
-                    DB::update(
-                        prefix_table("users"),
-                        array(
-                            'ga' => $gaSecretKey,
-                            'ga_temporary_code' => $gaTemporaryCode
-                            ),
-                        "id = %i",
-                        $data['id']
-                    );
+                    if ($ldap_user_never_auth === false) {
+                        DB::update(
+                            prefix_table("users"),
+                            array(
+                                'ga' => $gaSecretKey,
+                                'ga_temporary_code' => $gaTemporaryCode
+                                ),
+                            "id = %i",
+                            $data['id']
+                        );
+                    } else {
+                        // save the code but also create an account in database
+                        DB::insert(
+                            prefix_table('users'),
+                            array(
+                                'login' => $login,
+                                'pw' => $pwdlib->createPasswordHash($pwd),
+                                'email' => $data['email'],
+                                'name' => $ldap_info_user->{'name'},
+                                'lastname' => $ldap_info_user->{'lastname'},
+                                'admin' => '0',
+                                'gestionnaire' => '0',
+                                'can_manage_all_users' => '0',
+                                'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
+                                'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
+                                'groupes_interdits' => '',
+                                'groupes_visibles' => '',
+                                'last_pw_change' => time(),
+                                'user_language' => $SETTINGS['default_language'],
+                                'encrypted_psk' => '',
+                                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                                'ga' => $gaSecretKey,
+                                'ga_temporary_code' => $gaTemporaryCode
+                            )
+                        );
+                        $newUserId = DB::insertId();
+                        // Create personnal folder
+                        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
+                            DB::insert(
+                                prefix_table("nested_tree"),
+                                array(
+                                    'parent_id' => '0',
+                                    'title' => $newUserId,
+                                    'bloquer_creation' => '0',
+                                    'bloquer_modification' => '0',
+                                    'personal_folder' => '1'
+                                )
+                            );
+                        }
+                    }
+                    
 
                     // send mail?
                     if (null !== filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING)

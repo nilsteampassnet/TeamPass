@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'login_attempts' => 'Login attempts since last successful connection',
+    'settings_secure_display_image' => 'Enable secure image display',
+    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
     'user_ga_code' => 'Wyślij emaila z Google Authenticator do użytkownika',
     'send_ga_code' => 'Ustaw i wyślij emaila z kodem Google Authenticator',
     'error_no_email' => 'Ten użytkownik nie ma ustawionego adresu e-mail',
@@ -871,7 +874,7 @@ $LANG = array (
     'error_bad_credentials' => 'Poświadczenia logowania nie odpowiadają!',
     'reload_page_after_user_account_creation' => 'Twoje konto zostało dodane. Strona zostanie automatycznie przekierowana w ciągu 3 sekund ...',
     'settings_ldap_usergroup' => 'Grupa LDAP do przeszukiwania',
-    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa�',
+    'settings_ldap_usergroup_tip' => 'Grupa LDAP której użytkownik musi być członkiem aby się zalogowa�',
     'server_password_change_enable' => 'Włącz zmianę hasła na zdalnym serwerze (używając połączenia SSH)',
     'error_login_missing' => 'Nie podano loginu!',
     'error_pwd_missing' => 'Nie podano hasła!',

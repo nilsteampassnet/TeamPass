@@ -14,6 +14,9 @@
  */
 global $LANG;
 $LANG = array (
+    'login_attempts' => 'Login attempts since last successful connection',
+    'settings_secure_display_image' => 'Enable secure image display',
+    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
     'user_ga_code' => '发送 Google 身份验证器至用户，通过电子邮件',
     'send_ga_code' => 'Google 身份验证器，为用户',
     'error_no_email' => '此用户未设置电子邮件地址！',

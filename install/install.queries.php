@@ -517,7 +517,8 @@ global \$SETTINGS;
                             array('admin', 'disable_show_forgot_pwd_link', '0'),
                             array('admin', 'offline_key_level', '0'),
                             array('admin', 'enable_http_request_login', '0'),
-                            array('admin', 'ldap_and_local_authentication', '0')
+                            array('admin', 'ldap_and_local_authentication', '0'),
+                            array('admin', 'secure_display_image', '1')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

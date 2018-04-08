@@ -828,13 +828,15 @@ $htmlHeaders .= '
         // load DUO login
         if ($("#duo_sig_response").val() !== "") {
             $("#login").val($("#duo_login").val());
+            $("#pw").val($("#duo_pwd").val());
 
             // checking that response is corresponding to user credentials
             $.post(
                 "sources/identify.php",
                 {
-                    type :             "identify_duo_user_check",
-                    login:             sanitizeString($("#login").val()),
+                    type :            "identify_duo_user_check",
+                    login:            sanitizeString($("#login").val()),
+                    pwd:              sanitizeString($("#duo_pwd").val()),
                     sig_response:     $("#duo_sig_response").val()
                 },
                 function(data) {
@@ -1380,6 +1382,11 @@ $htmlHeaders .= '
             $("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
             e.preventDefault();
         });
+
+        // 
+        if ($("#force_show_dialog").val() === "1") {
+            loadProfileDialog();
+        }
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';

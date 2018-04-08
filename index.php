@@ -94,6 +94,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/core.php';
 $post_language =        filter_input(INPUT_POST, 'language', FILTER_SANITIZE_STRING);
 $post_sig_response =    filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_duo_login =       filter_input(INPUT_POST, 'duo_login', FILTER_SANITIZE_STRING);
+$post_duo_pwd =         filter_input(INPUT_POST, 'duo_pwd', FILTER_SANITIZE_STRING);
 $post_duo_data =        filter_input(INPUT_POST, 'duo_data', FILTER_SANITIZE_STRING);
 $post_login =           filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
 $post_pw =              filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
@@ -119,7 +120,6 @@ $session_hide_maintenance =     $superGlobal->get("hide_maintenance", "SESSION")
 $session_initial_url =          $superGlobal->get("initial_url", "SESSION");
 $server_request_uri =           $superGlobal->get("REQUEST_URI", "SERVER");
 $session_nb_users_online =      $superGlobal->get("nb_users_online", "SESSION");
-
 
 /* DEFINE WHAT LANGUAGE TO USE */
 if (isset($_GET['language']) === true) {
@@ -907,6 +907,11 @@ $( window ).on( "load", function() {
     <div id="div_user_profil">
         <i class="fa fa-cog fa-spin fa-2x"></i>&nbsp;<b>'.$LANG['please_wait'].'</b>
     </div>
+    <input type="hidden" id="force_show_dialog" value="',
+        isset($_SESSION['unsuccessfull_login_attempts']) === true
+        && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
+        && $_SESSION['unsuccessfull_login_attempts']['shown'] === false ?
+        '1' : '0', '" />
 </div>';
 
 // DUO box
@@ -916,6 +921,7 @@ $( window ).on( "load", function() {
     '.$LANG['duo_loading_iframe'].'
     <form method="post" id="duo_form" action="">
         <input type="hidden" id="duo_login" name="duo_login" value="', null !== $post_duo_login ? $post_duo_login : '', '" />
+        <input type="hidden" id="duo_pwd" name="duo_pwd" value="', null !== $post_duo_pwd ? $post_duo_pwd : '', '" />
         <input type="hidden" id="duo_data" name="duo_data" value="', null !== $post_duo_data ? htmlentities(base64_decode($post_duo_data)) : '', '" />
     </form>
 </div>';

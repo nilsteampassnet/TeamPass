@@ -906,6 +906,16 @@ if (intval($tmp) === 0) {
 }
 
 
+// add new admin setting "secure_display_image"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'secure_display_image'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_display_image', '1')"
+    );
+}
+
+
 
 // alter table NESTEED_TREE to INT(5) on field "renewal_period"
 mysqli_query(

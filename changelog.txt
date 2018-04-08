@@ -1,4 +1,13 @@
 2.1.27
+12/
+ Added new option permitting to enable secure image preview
+ Added warning to user if login attempts identified since last successful connection
+ Improved the possibility to move `files` folder outside of Teampass Domain
+ Improved user creation with LDAP and Google and DUO 2FA
+ Improved log in case of failed authentication - used login is shown
+ #2192 Encrypted Files Are Stored (Temporary) in Plaintext And Can Be Downloaded Without Authorization
+ #2189 (Google) 2FA Does Not Work With LDAP (Windows / Active Directory)
+
 11/
  Changed licensing to GNU GPL-3.0
  New - User must provide a reason to access a restricted item

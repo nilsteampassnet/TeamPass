@@ -159,6 +159,27 @@ echo '
         <i class="fa fa-child fa-fw fa-lg"></i>&nbsp;
         '.$LANG['index_last_seen'].' ', isset($SETTINGS['date_format']) ? date($SETTINGS['date_format'], $_SESSION['derniere_connexion']) : date("d/m/Y", $_SESSION['derniere_connexion']), ' '.$LANG['at'].' ', isset($SETTINGS['time_format']) ? date($SETTINGS['time_format'], $_SESSION['derniere_connexion']) : date("H:i:s", $_SESSION['derniere_connexion']), '
     </div>';
+if (isset($_SESSION['unsuccessfull_login_attempts']) === true
+    && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
+) {
+    echo '
+    <div style="margin-bottom:6px;" class="',
+        $_SESSION['unsuccessfull_login_attempts']['shown'] === false ?
+        'ui-widget-content ui-state-error ui-corner-all'
+        :
+        ''
+        ,'">
+        <i class="fa fa-history fa-fw fa-lg"></i>&nbsp;
+        '.$LANG['login_attempts'].':
+        <div style="margin:1px 0 0 36px;">';
+    foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
+        echo '<span class="fa fa-caret-right"></span>&nbsp;'.$entry.'<br/>';
+    }
+    echo '
+        </div>
+    </div>';
+    $_SESSION['unsuccessfull_login_attempts']['shown'] = true;
+}
 if (isset($_SESSION['last_pw_change']) && !empty($_SESSION['last_pw_change'])) {
     // Handle last password change string
     if (isset($_SESSION['last_pw_change']) === true) {

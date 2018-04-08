@@ -1393,7 +1393,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
     open_edit = parseInt(open_edit) || 0;
     reload = parseInt(reload) || 0;
 
-    console.log(" > "+id+" - "+salt_key_required+" - "+expired_item+" - "+restricted+" - "+display+" - "+open_edit+" - "+reload+" - "+id_tree);
+    //console.log(" > "+id+" - "+salt_key_required+" - "+expired_item+" - "+restricted+" - "+display+" - "+open_edit+" - "+reload+" - "+id_tree);
 
     // Store status query running
     $("#request_ongoing").val("1");
@@ -2454,11 +2454,15 @@ PreviewImage = function(uri,title) {
             imageTag = $('#image_files');
 
             //Set the image src
-            imageTag.attr("src", data.new_file);
+            if (data.image_secure === '1') {
+                imageTag.attr("src", "data:" + data.file_type + ";base64," + data.file_content);
+            } else {
+                imageTag.attr("src", data.file_path);
+            }
 
             //When the image has loaded, display the dialog
             imageTag
-            .error(function() {
+            .error(function(e) {
                 $("#div_loading").addClass("hidden");
                 displayMessage("<?php echo "<i class='fa fa-exclamation-triangle fa-2x'></i>  ".addslashes($LANG['error_file_is_missing']); ?>");
             })
