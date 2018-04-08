@@ -313,6 +313,7 @@ function mainQuery()
                 echo '[{"error" : "not_allowed"}]';
                 break;
             }
+            $ldap_user_never_auth = false;
 
             // Check if user exists
             if (null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
@@ -326,7 +327,6 @@ function mainQuery()
                 // Prepare variables
                 $login = htmlspecialchars_decode($dataReceived['login']);
                 $pwd = htmlspecialchars_decode($dataReceived['pwd']);
-                $ldap_user_never_auth = false;
 
                 // Get data about user
                 $data = DB::queryfirstrow(
@@ -342,6 +342,8 @@ function mainQuery()
                     WHERE id = %i",
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
+                $login = $data['login'];
+                $pwd = $data['pw'];
             }
             // Get number of returned users
             $counter = DB::count();

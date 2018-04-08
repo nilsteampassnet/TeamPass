@@ -386,7 +386,7 @@ if (file_exists($Fnm)) {
             <h3>'.$LANG['changelog'].'</h3>';
         $show = false;
         $cnt = 0;
-        while (list($cle, $val) = each($tab)) {
+        foreach ($tab as $cle => $val) {
             if ($cnt < 30) {
                 echo $val."<br />";
                 $cnt++;

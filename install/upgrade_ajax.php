@@ -305,15 +305,7 @@ if (isset($post_type)) {
                 }
                 $var_x++;
             }
-
-            if (!extension_loaded('mcrypt')) {
-                $okExtensions = false;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"'.
-                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
-            } else {
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"'.
-                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
-            }
+            
             if (!extension_loaded('openssl')) {
                 //$okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"'.
@@ -396,7 +388,7 @@ if (isset($post_type)) {
             if (file_exists($filename)) {
                 //copy some constants from this existing file
                 $settingsFile = file($filename);
-                while (list($key, $val) = each($settingsFile)) {
+                foreach ($settingsFile as $key => $val) {
                     if (substr_count($val, 'charset') > 0) {
                         $superGlobal->put("charset", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '@define(') > 0 && substr_count($val, 'SALT') > 0) {
@@ -443,7 +435,7 @@ if (isset($post_type)) {
                     '</span><br />';
                 //copy some constants from this existing file
                 $skFile = file($session_sk_file);
-                while (list($key, $val) = each($skFile)) {
+                foreach ($skFile as $key => $val) {
                     if (substr_count($val, "@define('SALT'") > 0) {
                         $superGlobal->put("encrypt_key", substr($val, 17, strpos($val, "')") - 17), "SESSION");
                         $session_encrypt_key = $superGlobal->get("encrypt_key", "SESSION");

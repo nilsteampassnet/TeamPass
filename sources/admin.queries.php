@@ -1538,7 +1538,7 @@ switch ($post_type) {
         if (file_exists($filename)) {
             // get sk.php file path
             $settingsFile = file($filename);
-            while (list($key, $val) = each($settingsFile)) {
+            foreach ($settingsFile as $key => $val) {
                 if (substr_count($val, "@define('SECUREPATH'")) {
                     $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
                 }

@@ -526,6 +526,8 @@ function identifyUser(
                     if ($debugLdap == 1) {
                         fputs($dbgLdap, "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."\n");
                     }
+                } else {
+                    $ldapbind = false;
                 }
                 if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
                     $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
@@ -658,11 +660,12 @@ function identifyUser(
             }
             $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
             $adldap->register();
+            $ldap_suffix = '';
 
             // Posix style LDAP handles user searches a bit differently
             if ($SETTINGS['ldap_type'] === 'posix') {
                 $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
-            } elseif ($SETTINGS['ldap_type'] === 'windows' && empty($ldap_suffix) === true) {
+            } elseif ($SETTINGS['ldap_type'] === 'windows') {
                 //Multiple Domain Names
                 $ldap_suffix = $SETTINGS['ldap_suffix'];
             }

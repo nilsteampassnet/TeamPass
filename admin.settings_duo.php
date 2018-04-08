@@ -66,7 +66,7 @@ if (file_exists($filename)) {
     //copy some constants from this existing file
     $settingsFile = file($filename);
     if ($settingsFile !== false) {
-        while (list($key, $val) = each($settingsFile)) {
+        foreach ($settingsFile as $key => $val) {
             if (substr_count($val, "@define('SECUREPATH'")) {
                 $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
             }
@@ -78,15 +78,15 @@ if (file_exists($filename)) {
 $tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
 $skFile = file($tmp_skfile);
 if ($skFile !== false) {
-    while (list($key, $val) = each($skFile)) {
+    foreach ($skFile as $key => $val) {
         if (substr_count($val, "@define('AKEY'") > 0) {
-            $tmp_akey = substr($val, 17, strlen($val) - 21);
+            $tmp_akey = substr($val, 21, strlen($val) - 26);
         } elseif (substr_count($val, "@define('IKEY'") > 0) {
-            $tmp_ikey = substr($val, 17, strlen($val) - 21);
+            $tmp_ikey = substr($val, 21, strlen($val) - 26);
         } elseif (substr_count($val, "@define('SKEY'") > 0) {
-            $tmp_skey = substr($val, 17, strlen($val) - 21);
+            $tmp_skey = substr($val, 21, strlen($val) - 26);
         } elseif (substr_count($val, "@define('HOST'") > 0) {
-            $tmp_host = substr($val, 17, strlen($val) - 21);
+            $tmp_host = substr($val, 21, strlen($val) - 26);
         }
     }
 }

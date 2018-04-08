@@ -528,7 +528,7 @@ mysqli_query(
 if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installed === false) {
     $filename = "../includes/config/settings.php";
     $settingsFile = file($filename);
-    while (list($key, $val) = each($settingsFile)) {
+    foreach ($settingsFile as $key => $val) {
         if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
             $superGlobal->put("sk_file", substr($val, 14, strpos($val, '";') - 14), "SESSION");
             $session_sk_file = $superGlobal->get("sk_file", "SESSION");

@@ -21,8 +21,10 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
     include_once '../includes/config/tp.config.php';
+    include_once '../includes/config/include.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
     include_once './includes/config/tp.config.php';
+    include_once './includes/config/include.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -251,8 +253,8 @@ if (!isset($_GET['type'])) {
 
         // Expiration
         if ($SETTINGS['activate_expiration'] === "1") {
-            if ($record['renewal_period'] > 0 &&
-                ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
+            if ($record['renewal_period'] > 0
+                && ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
             ) {
                 $expired = 1;
             } else {

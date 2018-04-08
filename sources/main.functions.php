@@ -2306,11 +2306,14 @@ function obfuscate_email($email)
  *
  * @param string $username  user name
  * @param string $password  user password
- * @return array
+ * @return string
  */
 function connectLDAP($username, $password, $SETTINGS) {
     $user_email = '';
     $user_found = false;
+    $user_lastname = '';
+    $user_name = '';
+    $ldapConnection = false;
 
     // Prepare LDAP connection if set up
         //Multiple Domain Names
@@ -2340,6 +2343,8 @@ function connectLDAP($username, $password, $SETTINGS) {
             // Should we bind the connection?
             if ($SETTINGS['ldap_bind_dn'] !== "" && $SETTINGS['ldap_bind_passwd'] !== "") {
                 $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
+            } else {
+                $ldapbind = false;
             }
             if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
                 $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
@@ -2423,7 +2428,8 @@ function connectLDAP($username, $password, $SETTINGS) {
         // Posix style LDAP handles user searches a bit differently
         if ($SETTINGS['ldap_type'] === 'posix') {
             $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
-        } elseif ($SETTINGS['ldap_type'] === 'windows' && empty($ldap_suffix) === true) {
+        } else {
+            // case where $SETTINGS['ldap_type'] === 'windows'
             //Multiple Domain Names
             $ldap_suffix = $SETTINGS['ldap_suffix'];
         }
@@ -2471,15 +2477,11 @@ function connectLDAP($username, $password, $SETTINGS) {
             } else {
                 $ldapConnection = true;
             }
-
-            // Update user's password
-            if ($ldapConnection === true) {
-
-            }
         } else {
             $ldapConnection = false;
         }
     }
+
     return json_encode(
         array(
             'lastname' => $user_lastname,

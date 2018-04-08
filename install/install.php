@@ -124,7 +124,6 @@ echo '
     <li>Directory "/includes/libraries/csrfp/log/" is writable&nbsp;<span id="res2_check6"></span></li>
     <li>Directory "/files/" is writable&nbsp;<span id="res2_check7"></span></li>
     <li>Directory "/upload/" is writable&nbsp;<span id="res2_check8"></span></li>
-    <li>PHP extension "mcrypt" is loaded&nbsp;<span id="res2_check9"></span></li>
     <li>PHP extension "mbstring" is loaded&nbsp;<span id="res2_check10"></span></li>
     <li>PHP extension "openssl" is loaded&nbsp;<span id="res2_check11"></span></li>
     <li>PHP extension "bcmath" is loaded&nbsp;<span id="res2_check12"></span></li>
