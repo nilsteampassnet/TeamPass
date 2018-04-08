@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    'human_resources' => 'Super gestionnaire',
     'login_attempts' => 'Tentatives échouées de connexion depuis la dernière connexion réussie',
     'settings_secure_display_image' => 'Activer la sécurisation de prévisualisation des images',
     'settings_secure_display_image_tip' => 'Sécuriser la prévisualisation des images permet de réaliser la lecture de l\'image via le moteur de PHP quand un utilisateur demande un affichage d\'une image. Avantage: permet de sauvegarder les pièces jointes hors du domaine dans un répertoire serveur inaccessible. Inconvéniant : l\'affichage de l\'image est légèrement ralentie.',
