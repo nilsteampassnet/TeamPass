@@ -121,8 +121,8 @@ switch ($post_type) {
                     );
                 }
                 
-                $json = file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
-                if ($json) {
+                $json = @file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
+                if ($json !== false) {
                     $json_array = json_decode($json, true);
 
                     // About version

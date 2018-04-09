@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array (
+    'provide_yubico_identifiers' => 'Merci de fournir vos identifiants Yubico',
+    'admin_yubico_authentication_setting' => 'Activer la double identification avec Yubico',
+    'yubico_user_id' => 'ID client',
+    'yubico_user_key' => 'CLE secrète',
+    'yubico_bad_code' => 'Mauvaises information Yubico',
+    'show_yubico_info_form' => 'Montrer le formulaire de saisi Yubico',
     'human_resources' => 'Super gestionnaire',
     'login_attempts' => 'Tentatives échouées de connexion depuis la dernière connexion réussie',
     'settings_secure_display_image' => 'Activer la sécurisation de prévisualisation des images',

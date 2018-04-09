@@ -158,10 +158,6 @@ if (null !== $post_type) {
                 break;
             }
 
-
-
-
-
             // is pwd empty?
             if (empty($pw) &&
                 isset($_SESSION['user_settings']['create_item_without_password']) &&
@@ -259,7 +255,8 @@ if (null !== $post_type) {
                         'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
                         'perso' => (isset($dataReceived['salt_key_set']) && $dataReceived['salt_key_set'] === '1' && isset($dataReceived['is_pf']) && $dataReceived['is_pf'] === '1') ? '1' : '0',
                         'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
-                        'complexity_level' => $dataReceived['complexity_level']
+                        'complexity_level' => $dataReceived['complexity_level'],
+                        'encryption_type' => 'defuse'
                         )
                 );
                 $newID = DB::insertId();
@@ -458,7 +455,7 @@ if (null !== $post_type) {
                     "new_entry" => $html,
                     "array_items" => $itemsIDList,
                     "show_clipboard_small_icons" => (isset($SETTINGS['copy_to_clipboard_small_icons']) && $SETTINGS['copy_to_clipboard_small_icons'] === '1') ? 1 : 0
-                    );
+                );
             } elseif (isset($SETTINGS['duplicate_item']) && $SETTINGS['duplicate_item'] === '0' && (int) $itemExists === 1) {
                 // Encrypt data to return
                 echo prepareExchangedData(array("error" => "item_exists"), "encode");
@@ -646,7 +643,8 @@ if (null !== $post_type) {
                             'id_tree' => (!isset($dataReceived['categorie']) || $dataReceived['categorie'] === "undefined") ? $dataItem['id_tree'] : $dataReceived['categorie'],
                             'restricted_to' => isset($dataReceived['restricted_to']) ? $dataReceived['restricted_to'] : '0',
                             'anyone_can_modify' => (isset($dataReceived['anyone_can_modify']) && $dataReceived['anyone_can_modify'] === "on") ? '1' : '0',
-                            'complexity_level' => $dataReceived['complexity_level']
+                            'complexity_level' => $dataReceived['complexity_level'],
+                            'encryption_type' => 'defuse'
                             ),
                         "id=%i",
                         $dataReceived['id']

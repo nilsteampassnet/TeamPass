@@ -630,6 +630,8 @@ global \$SETTINGS;
                             `encrypted_psk` text NULL,
                             `user_ip` varchar(400) NOT null DEFAULT 'none',
                             `user_api_key` varchar(500) NOT null DEFAULT 'none',
+                            `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
+                            `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"

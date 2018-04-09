@@ -843,6 +843,32 @@ if ($res === false) {
 }
 
 
+// alter table USERS to add a new field "yubico_user_key"
+$res = addColumnIfNotExist(
+    $pre."users",
+    "yubico_user_key",
+    "VARCHAR(100) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_key to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// alter table USERS to add a new field "yubico_user_id"
+$res = addColumnIfNotExist(
+    $pre."users",
+    "yubico_user_id",
+    "VARCHAR(100) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_id to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
 // alter table USERS to allow NULL on field "email"
 mysqli_query(
     $db_link,

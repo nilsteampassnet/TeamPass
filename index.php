@@ -192,6 +192,11 @@ if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_auth
     include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php");
 }
 
+// load 2FA Yubico
+if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === "1") {
+    include_once($SETTINGS['cpassman_dir']."/includes/libraries/Authentication/Yubico/Yubico.php");
+}
+
 // Load links, css and javascripts
 if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === true) {
     require_once $SETTINGS['cpassman_dir'].'/load.php';
@@ -764,6 +769,7 @@ if (isset($_SESSION['CPM'])) {
                         <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">'.$LANG['i_need_to_generate_new_ga_code'].'</div>
                         </div>';
         }
+
         echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">'.$LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
@@ -784,7 +790,7 @@ if (isset($_SESSION['CPM'])) {
             && (isset($SETTINGS['maintenance_mode']) === false
             && $SETTINGS['maintenance_mode'] === '1')
         ) {
-        echo	'
+            echo '
 <script>
 var seconds = 1;
 function updateLogonButton(timeToGo){
@@ -807,10 +813,35 @@ $( window ).on( "load", function() {
 </script>';
         }
 
-        echo '
+        // Yubico authentication
+        if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === "1") {
+            echo '
+                        <div id="yubico_div" style="margin-top:5px; padding:5px; overflow: auto; width:95%;" class="ui-state-default ui-corner-all">
+                            <div style="width: 18%; float:left; display:block;">
+                                <img src="includes/images/yubico.png">
+                            </div>
+                            
+                            <div style="width: 82%; float:right; display:block;">
+                                <div id="yubico_credentials_div" class="hidden">
+                                    <h4>'.addslashes($LANG['provide_yubico_identifiers']).'</h4>
+                                    <label for="yubico_user_id">'.$LANG['yubico_user_id'].'</label>
+                                    <input type="text" size="10" id="yubico_user_id" class="input_text text ui-widget-content ui-corner-all" />
+
+                                    <label for="yubico_user_key">'.$LANG['yubico_user_key'].'</label>
+                                    <input type="text" size="10" id="yubico_user_key" class="input_text text ui-widget-content ui-corner-all" />
+                                </div>
+                                <input autocomplete="off" type="text" name="yubiko_key" id="yubiko_key" class="input_text text ui-widget-content ui-corner-all" placeholder="'.addslashes($LANG['press_your_yubico_key']).'" style="margin-top:20px;" onchange="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')">
+                                <div id="show_yubico_credentials" class="hidden"><a href="#" id="yubico_link">'.addslashes($LANG['show_yubico_info_form']).'</a></div>
+                            </div>
+                        </div>';
+        } else {
+            echo '
                         <div style="text-align:center;margin-top:15px;">
                             <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
-                        </div>
+                        </div>';
+        }
+
+        echo '
                     </div>
                 </form>
                 <script type="text/javascript">

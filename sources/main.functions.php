@@ -1231,76 +1231,82 @@ function sendEmail(
 
     // Get user language
     $session_user_language = $superGlobal->get("user_language", "SESSION");
-
-    // Load library
     $user_language = isset($session_user_language) ? $session_user_language : "english";
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+
+    // Load library
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // load PHPMailer
-    $mail = new PHPMailer();
+    $mail = new SplClassLoader('Email\PHPMailer', '../includes/libraries');
+    $mail->register();
+    $mail = new Email\PHPMailer\PHPMailer(true);
+    try {
+        // send to user
+        $mail->setLanguage("en", $SETTINGS['cpassman_dir']."/includes/libraries/Email/PHPMailer/language/");
+        $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
+        $mail->Port = $SETTINGS['email_port']; //COULD BE USED
+        $mail->CharSet = "utf-8";
+        if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
+            $mail->SMTPSecure = $SETTINGS['email_security'];
+            $SMTPAutoTLS = true;
+        } else {
+            $SMTPAutoTLS = false;
+            $mail->SMTPSecure = "";
+        }
+        $mail->SMTPAutoTLS = $SMTPAutoTLS;
+        $mail->isSmtp(); // send via SMTP
+        $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
+        $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
+        $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
+        $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
+        $mail->From = $SETTINGS['email_from'];
+        $mail->FromName = $SETTINGS['email_from_name'];
 
-    // send to user
-    $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
-    $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
-    $mail->Port = $SETTINGS['email_port']; //COULD BE USED
-    $mail->CharSet = "utf-8";
-    if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
-        $mail->SMTPSecure = $SETTINGS['email_security'];
-        $SMTPAutoTLS = true;
-    } else {
-        $SMTPAutoTLS = false;
-        $mail->SMTPSecure = "";
-    }
-    $mail->SMTPAutoTLS = $SMTPAutoTLS;
-    $mail->isSmtp(); // send via SMTP
-    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-    $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
-    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
-    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
-    $mail->From = $SETTINGS['email_from'];
-    $mail->FromName = $SETTINGS['email_from_name'];
+        // Prepare for each person
+        $dests = explode(",", $email);
+        foreach ($dests as $dest) {
+            $mail->addAddress($dest);
+        }
 
-    // Prepare for each person
-    $dests = explode(",", $email);
-    foreach ($dests as $dest) {
-        $mail->addAddress($dest);
-    }
+        // Prepare HTML
+        $text_html = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
+        w3.org/TR/html4/loose.dtd"><html>
+        <head><title>Email Template</title>
+        <style type="text/css">
+        body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
+        </style></head>
+        <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
+        <tr><td style="border-collapse: collapse;"><br>
+            <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
+            <tr><td style="border-collapse: collapse; padding: 11px 20px;">
+                <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
+            </td></tr></table></td>
+        </tr>
+        <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
+            <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
+            <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
+            <br><div style="float:right;">'.
+        $textMail.
+        '<br><br></td></tr></table>
+        </td></tr></table>
+        <br></body></html>';
 
-    // Prepare HTML
-    $text_html = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
-    w3.org/TR/html4/loose.dtd"><html>
-    <head><title>Email Template</title>
-    <style type="text/css">
-    body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
-    </style></head>
-    <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
-    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
-    <tr><td style="border-collapse: collapse;"><br>
-        <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
-        <tr><td style="border-collapse: collapse; padding: 11px 20px;">
-            <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
-        </td></tr></table></td>
-    </tr>
-    <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
-        <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
-        <br><div style="float:right;">'.
-    $textMail.
-    '<br><br></td></tr></table>
-    </td></tr></table>
-    <br></body></html>';
-
-    $mail->WordWrap = 80; // set word wrap
-    $mail->isHtml(true); // send as HTML
-    $mail->Subject = $subject;
-    $mail->Body = $text_html;
-    $mail->AltBody = $textMailAlt;
-    // send email
-    if (!$mail->send()) {
-        return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
-    } else {
-        return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+        $mail->WordWrap = 80; // set word wrap
+        $mail->isHtml(true); // send as HTML
+        $mail->Subject = $subject;
+        $mail->Body = $text_html;
+        $mail->AltBody = $textMailAlt;
+        // send email
+        if (!$mail->send()) {
+            return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        } else {
+            return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+        }
+    } catch (Exception $e) {
+        return '"error":"error_mail_not_send" , '.
+        '"message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
     }
 }
 

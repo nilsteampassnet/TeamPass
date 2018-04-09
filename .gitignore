@@ -6,3 +6,5 @@ _utils/
 *.201*
 install1/
 backups/*.sql
+includes/libraries/Email/Phpmailer_/*
+includes/libraries/Authentication/Yubico/php-yubico-master/*

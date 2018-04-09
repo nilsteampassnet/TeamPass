@@ -49,7 +49,6 @@ $post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_STRING);
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
     //--------
@@ -773,6 +772,51 @@ function identifyUser(
         } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
             echo '[{"value" : "bad_psk"}]';
             exit();
+        }
+    }
+
+
+    // Check Yubico
+    if (isset($SETTINGS['yubico_authentication'])
+        && $SETTINGS['yubico_authentication'] === "1"
+        && $data['admin'] !== "1"
+    ) {
+        $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
+        $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
+        $yubico_user_id = htmlspecialchars_decode($dataReceived['yubico_user_id']);
+
+        if (empty($yubico_user_key) === false && empty($yubico_user_id) === false) {
+            // save the new yubico in user's account
+            DB::update(
+                prefix_table('users'),
+                array(
+                    'yubico_user_key' => $yubico_user_key,
+                    'yubico_user_id' => $yubico_user_id
+                ),
+                "id=%i",
+                $data['id']
+            );
+        } else {
+            // Check existing yubico credentials
+            if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
+                echo '[{"value" : "no_user_yubico_credentials"}]';
+                exit();
+            } else {
+                $yubico_user_key = $data['yubico_user_key'];
+                $yubico_user_id = $data['yubico_user_id'];
+            }
+        }
+
+        // Now check yubico validity
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/Yubico/Yubico.php';
+        $yubi = new Auth_Yubico($yubico_user_id, $yubico_user_key);
+        $auth = $yubi->verify($yubico_key);
+        if (PEAR::isError($auth)) {
+            $proceedIdentification = false;
+            echo '[{"value" : "bad_user_yubico_credentials"}]';
+            exit();
+        } else {
+            $proceedIdentification = true;
         }
     }
 
