@@ -16,6 +16,7 @@ global $LANG;
 $LANG = array (
     'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
     'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
+    'press_your_yubico_key' => 'Press your Yubico key',
     'yubico_user_id' => 'Client ID',
     'yubico_user_key' => 'Secret KEY',
     'yubico_bad_code' => 'Wrong Yubico information',

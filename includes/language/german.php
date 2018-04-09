@@ -20,6 +20,7 @@ $LANG = array (
     'yubico_user_key' => 'Secret KEY',
     'yubico_bad_code' => 'Wrong Yubico information',
     'show_yubico_info_form' => 'Show Yubico user information form',
+    'press_your_yubico_key' => 'Press your Yubico key',
     'human_resources' => 'Super manager',
     'login_attempts' => 'Login attempts since last successful connection',
     'settings_secure_display_image' => 'Enable secure image display',

@@ -19,6 +19,7 @@ $LANG = array (
     'yubico_user_id' => 'Client ID',
     'yubico_user_key' => 'Secret KEY',
     'yubico_bad_code' => 'Wrong Yubico information',
+    'press_your_yubico_key' => 'Press your Yubico key',
     'show_yubico_info_form' => 'Show Yubico user information form',
     'human_resources' => 'Super manager',
     'login_attempts' => 'Login attempts since last successful connection',
