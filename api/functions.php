@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$api_version = "2.0";
+$api_version = "2.1";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -165,6 +165,26 @@ function getSettingValue($setting)
     );
 
     return $set['valeur'];
+}
+
+/**
+ * Permits to get rid of special characters that can break the url
+ *
+ * @param  string $string adapted base64 encoded string
+ * @return string
+ */
+function Urlsafe_b64decode($string)
+{
+    $data = str_replace(
+        array('-', '_'),
+        array('+', '/'),
+        $string
+    );
+    $mod4 = strlen($data) % 4;
+    if ($mod4) {
+        $data .= substr('====', $mod4);
+    }
+    return base64_decode($data);
 }
 
 function rest_delete()
@@ -734,7 +754,7 @@ function rest_get()
         } elseif ($GLOBALS['request'][0] == "add") {
             if ($GLOBALS['request'][1] == "item") {
                 // get sent parameters
-                $params = explode(';', base64_decode($GLOBALS['request'][2]));
+                $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][2]));
                 if (count($params) != 9) {
                     rest_error('ITEMBADDEFINITION');
                 }
@@ -886,7 +906,7 @@ function rest_get()
              */
 
                 // get user definition
-                $array_user = explode(';', base64_decode($GLOBALS['request'][2]));
+                $array_user = explode(';', Urlsafe_b64decode($GLOBALS['request'][2]));
                 if (count($array_user) != 11) {
                     rest_error('USERBADDEFINITION');
                 }
@@ -1019,7 +1039,7 @@ function rest_get()
             */
                 if (!empty($GLOBALS['request'][2])) {
                     // get sent parameters
-                    $params = explode(';', base64_decode($GLOBALS['request'][2]));
+                    $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][2]));
 
                     if (empty($params[0]) === false && (intval($params[1]) >= 0 && intval($params[1]) <= 1000)) {
                         if (empty($params[3])) {
@@ -1168,7 +1188,7 @@ function rest_get()
                 */
                 if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
                     // get sent parameters
-                    $params = explode(';', base64_decode($GLOBALS['request'][3]));
+                    $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][3]));
 
                     if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
                         // Check length
@@ -1303,7 +1323,7 @@ function rest_get()
             */
                 if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
                     // get sent parameters
-                    $params = explode(';', base64_decode($GLOBALS['request'][3]));
+                    $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][3]));
 
                     if (!empty($params[0])) {
                         if ($params[1] < 0) {
@@ -1404,7 +1424,7 @@ function rest_get()
              */
 
                 // get user definition
-                $array_user = explode(';', base64_decode($GLOBALS['request'][2]));
+                $array_user = explode(';', Urlsafe_b64decode($GLOBALS['request'][2]));
                 if (count($array_user) != 11) {
                     rest_error('USERBADDEFINITION');
                 }
@@ -1638,7 +1658,7 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1])) {
                 // Get passed variables
-                $passedData = explode(';', base64_decode($GLOBALS['request'][1]));
+                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
                 if (count($passedData) === 4) {
                     $tpc_url = $passedData[0];
                     $user_login = $passedData[1];
@@ -1783,7 +1803,7 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1])) {
                 // Get passed variables
-                $passedData = explode(';', base64_decode($GLOBALS['request'][1]));
+                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
                 $tpc_phrase = $passedData[0];
                 $user_login = $passedData[1];
                 $user_pwd = $passedData[2];
@@ -1925,7 +1945,7 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1])) {
                 // Get passed variables
-                $passedData = explode(';', base64_decode($GLOBALS['request'][1]));
+                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
                 $user_login = $passedData[0];
                 $user_pwd = $passedData[1];
                 $user_saltkey = $passedData[2];
@@ -2198,8 +2218,8 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1]) === true && isset($GLOBALS['request'][2]) === true && isset($GLOBALS['request'][3]) === true) {
                 // Get passed variables
-                $item_definition = json_decode(base64_decode($GLOBALS['request'][2]), true);
-                $passedData = explode(';', base64_decode($GLOBALS['request'][3]));
+                $item_definition = json_decode(Urlsafe_b64decode($GLOBALS['request'][2]), true);
+                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][3]));
                 $user_login = $passedData[0];
                 $user_pwd = $passedData[1];
                 $user_saltkey = $passedData[2];
@@ -2353,7 +2373,7 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1]) === true) {
                 // Get passed variables
-                $passedData = explode(';', base64_decode($GLOBALS['request'][1]));
+                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
                 $item_id = $passedData[0];
                 $user_login = $passedData[1];
                 $user_pwd = $passedData[2];
@@ -2821,7 +2841,7 @@ function apikey_checker($apikey_used)
 
     // if needed extract key from credentials
     if (strlen($apikey_used) > 40) {
-        $userCredentials = base64_decode(substr($apikey_used, 40));
+        $userCredentials = Urlsafe_b64decode(substr($apikey_used, 40));
         $apikey_used = substr($apikey_used, 0, 39);
     }
 
