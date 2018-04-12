@@ -82,8 +82,12 @@ if (null !== $post_type) {
 
                 // SysLog
                 if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
+                    $item = DB::queryfirstrow(
+                            "SELECT *
+                             FROM ".prefix_table("items")."
+                             WHERE id = $post_id_item");
                     send_syslog(
-                        "The password of Item #".$post_id_item." was shown to ".$_SESSION['login'].".",
+                        "The password of Item \"".$item['label']."(".$post_id_item.")"."\" was shown to ".$_SESSION['login'].".",
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"
@@ -141,8 +145,12 @@ if (null !== $post_type) {
 
                 // SysLog
                 if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
+                    $item = DB::queryfirstrow(
+                            "SELECT *
+                             FROM ".prefix_table("items")."
+                             WHERE id = $post_id_item");
                     send_syslog(
-                        "The password of Item #".$post_id_item." was copied to clipboard by ".$_SESSION['login'].".",
+                        "The password of Item \"".$item['label']."(".$post_id_item.")"."\" was copied to clipboard by ".$_SESSION['login'].".",
                         $SETTINGS['syslog_host'],
                         $SETTINGS['syslog_port'],
                         "teampass"
