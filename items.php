@@ -281,7 +281,8 @@ echo '
                     <td colspan="2">
                         &nbsp;
                         <div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>
-                        <input type="hidden" id="hid_pw" value="" />
+                        <div id="hid_pw" class="hidden"></div>
+                        <input type="hidden" id="hid_pw_old" value="" />
                         <input type="hidden" id="pw_shown" value="0" />
                     </td>
                 </tr>';
@@ -361,12 +362,14 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                     <tr class="tr_cf tr_fields hidden" id="cf_tr_'.$field[0].'">
                         <td valign="top" class="td_title">&nbsp;&nbsp;<i class="fa fa-caret-right"></i>&nbsp;<i>'.$field[1].'</i> :</td>
                         <td colspan="2">';
-            if ($field[3] === "masked") {
+            if ($field[4] === '1') {
                 echo '
-                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="float:left; cursor:pointer; width:300px;" class="fields_div unhide_masked_data pointer"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
+                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="float:left; width:300px;" class="fields_div unhide_masked_data pointer">
+                            </div><div id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields hidden"></div>';
             } else {
                 echo '
-                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="display:inline;" class="fields_div"></div><input type="hidden" id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields" />';
+                            <div id="id_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" style="display:inline;" class="fields_div"></div>
+                            <div id="hid_field_'.htmlspecialchars($field[0]).'_'.$elem[0].'" class="fields hidden"></div>';
             }
             echo '
                         </td>
@@ -574,11 +577,18 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                         <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
                     </div>';
         foreach ($elem[2] as $field) {
-                echo '
+            echo '
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                        <label class="cpm_label">'.$field[1].'</span>
-                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">
+                        <label class="cpm_label">'.$field[1].'</span>';
+            if ($field[3] === 'text') {
+                echo '
+                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">';
+            } else if ($field[3] === 'textarea') {
+                echo '
+                        <textarea id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field[3].'"></textarea>';
+            }
+            echo '    
                     </div>';
         }
         echo '
@@ -771,8 +781,15 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
             echo '
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                        <label class="cpm_label">'.$field[1].'</label>
-                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">
+                        <label class="cpm_label">'.$field[1].'</label>';
+            if ($field[3] === 'text') {
+                echo '
+                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'" data-field-masked="'.$field[4].'">';
+            } else if ($field[3] === 'textarea') {
+                echo '
+                        <textarea id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field["3"].'" data-field-masked="'.$field[4].'"></textarea>';
+            }
+            echo '
                     </div>';
         }
         echo '

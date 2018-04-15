@@ -701,6 +701,7 @@ global \$SETTINGS;
                             `type` varchar(255) NOT NULL,
                             `file` varchar(50) NOT NULL,
                             `status` varchar(50) NOT NULL DEFAULT '0',
+                            `content` longblob DEFAULT NULL,
                             PRIMARY KEY (`id`)
                            ) CHARSET=utf8;"
                         );
@@ -882,8 +883,10 @@ global \$SETTINGS;
                             `level` int(2) NOT NULL,
                             `description` text NULL,
                             `type` varchar(50) NULL default '',
+                            `masked` tinyint(1) NOT NULL default '0',
                             `order` int(12) NOT NULL default '0',
                             `encrypted_data` tinyint(1) NOT NULL default '1',
+                            `role_visibility` varchar(255) NOT NULL DEFAULT 'all',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

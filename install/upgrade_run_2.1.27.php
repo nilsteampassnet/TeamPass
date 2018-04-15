@@ -972,6 +972,19 @@ mysqli_query(
 );
 
 
+// add field status to FILE table
+$res = addColumnIfNotExist(
+    $pre."files",
+    "content",
+    "longblob DEFAULT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field content to table files! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
 
 // File encryption
 // add field status to FILE table
@@ -1030,6 +1043,48 @@ mysqli_query(
 // Remove some indexes
 mysqli_query($db_link, "ALTER TABLE ".$pre."nested_tree` DROP INDEX `id`;");
 mysqli_query($db_link, "ALTER TABLE ".$pre."tags` DROP INDEX `id`;");
+
+
+// add field masked to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre."categories",
+    "masked",
+    "tinyint(1) NOT NULL default '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field masked to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// add field role_visibility to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre."categories",
+    "role_visibility",
+    "VARCHAR(250) NOT NULL DEFAULT 'all'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field role_visibility to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// Now perform an operation on table CATEGORIES
+// This will change the 'masked' to an attribute of 'text' type
+$result = mysqli_query(
+    $db_link,
+    "SELECT id, type FROM `".$pre."categories` WHERE type = 'masked'"
+);
+while ($row_field = mysqli_fetch_assoc($result)) {
+    mysqli_query(
+        $db_link,
+        "UPDATE `".$pre."categories`
+        SET `type` = 'text', `masked` = '1'
+        WHERE id = ".$row_field['id']
+    );
+}
 
 
 /*

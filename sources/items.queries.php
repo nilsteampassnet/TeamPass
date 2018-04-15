@@ -655,7 +655,9 @@ if (null !== $post_type) {
                             $field_data = explode("~~", $field);
                             if (count($field_data) > 1 && empty($field_data[1]) === false) {
                                 $dataTmpCat = DB::queryFirstRow(
-                                    "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data
+                                    "SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv,
+                                    i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
+                                    c.masked AS masked
                                     FROM ".prefix_table("categories_items")." AS i
                                     INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
                                     WHERE i.field_id = %i AND i.item_id = %i",
@@ -663,7 +665,7 @@ if (null !== $post_type) {
                                     $dataReceived['id']
                                 );
                                 // store Field text in DB
-                                if (count($dataTmpCat['title']) === 0) {
+                                if (DB::count() === 0) {
                                     // get info about this custom field
                                     $dataTmpCat = DB::queryFirstRow(
                                         "SELECT title, encrypted_data
@@ -1665,7 +1667,7 @@ if (null !== $post_type) {
                         $rows_tmp = DB::query(
                             "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
                             i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
-                            c.type as field_type
+                            c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
                             FROM ".prefix_table("categories_items")." AS i
                             INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
                             WHERE i.item_id=%i AND c.parent_id IN %ls",
@@ -1685,15 +1687,20 @@ if (null !== $post_type) {
                                 $fieldText = $row['data'];
                             }
 
+                            // Manage textarea string
+                            if ($row['field_type'] === 'textarea') {
+                                $fieldText = nl2br($fieldText);
+                            }
+                            
                             // build returned list of Fields text
-                            if (empty($fieldsTmp)) {
+                            if (empty($fieldsTmp) === true) {
                                 $fieldsTmp = $row['field_id'].
                                     "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
-                                    "~~".$row['field_type'];
+                                    "~~".$row['field_type']."~~".$row['field_masked'];
                             } else {
                                 $fieldsTmp .= "_|_".$row['field_id'].
                                 "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
-                                "~~".$row['field_type'];
+                                "~~".$row['field_type']."~~".$row['field_masked'];
                             }
                         }
                     }

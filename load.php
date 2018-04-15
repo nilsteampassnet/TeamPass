@@ -458,7 +458,6 @@ $htmlHeaders .= '
             },
             function(data) {
                 if (data === "done") {
-                    //window.location.href="index.php";
                     setTimeout(function(){document.location.href="logout.php"}, 10);
                 } else {
                     $("#generate_new_pw_error").show().html(data);

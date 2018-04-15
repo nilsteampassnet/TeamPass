@@ -14,6 +14,14 @@
  */
 global $LANG;
 $LANG = array (
+    'position_in_list' => 'Position in list',
+    'visible_by' => 'Visible by',
+    'restrict_visibility_to' => 'Restrict visibility to',
+    'every_roles' => 'Every roles',
+    'masked_textarea' => 'Masked textarea',
+    'masked_text' => 'Masked text',
+    'textarea' => 'Textarea',
+    'data_is_textarea' => 'Data is Textarea',
     'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
     'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
     'press_your_yubico_key' => 'Press your Yubico key',

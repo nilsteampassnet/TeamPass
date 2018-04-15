@@ -859,7 +859,7 @@ function identifyUserRights(
             $_SESSION['nb_item_change_proposals'] = DB::count();
         } else {
             $_SESSION['nb_item_change_proposals'] = 0;
-        }
+        }            
 
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;

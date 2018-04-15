@@ -95,7 +95,7 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
             itemLog("item_password_shown");
-            $('#id_pw').text($('#hid_pw').val());
+            $('#id_pw').text($('#hid_pw').html());
         } else {
             $('#id_pw').html('<?php echo $var["hidden_asterisk"]; ?>');
         }
@@ -1123,7 +1123,7 @@ function EditerItem()
 
                         //Refresh hidden data
                         $("#hid_label").val($('#edit_label').val());
-                        $("#hid_pw").val($('#edit_pw1').val());
+                        $("#hid_pw").html($('#edit_pw1').val());
                         $("#hid_email").val($('#edit_email').val());
                         $("#hid_url").val($('#edit_url').val().escapeHTML());
                         $("#hid_desc").val(description);
@@ -1141,30 +1141,28 @@ function EditerItem()
                         }
                         if ($("#minilogin_" + data.id).length > 0) {
                           $("#minilogin_" + data.id).attr('data-clipboard-text', $('#edit_item_login').val());
-                        } else {
-
                         }
 
                         // refresh fields
-                        if ($('.edit_item_field').val() != undefined) {
+                        if ($('.edit_item_field').val() !== undefined) {
                             $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
                                 var input_id = $(this).attr('id');
                                 var id = $(this).attr('id').split('_');
                                 if ($('#'+input_id).val() !== "") {
                                     // copy data from form to Item Div
-                                    $('#hid_field_' + id[2] + '_' + id[3]).val($('#'+input_id).val());
-
+                                    $('#hid_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val());
+                                    console.log("> "+input_id+" - "+$('#'+input_id).attr('data-field-masked'));
                                     // Mange type of field
-                                    if ($('#'+input_id).attr('data-field-type') === 'masked') {
+                                    if ($('#'+input_id).attr('data-field-masked') === '1') {
                                         $('#id_field_' + id[2] + '_' + id[3]).html('<?php echo $var['hidden_asterisk']; ?>');
-                                    } else if ($('#'+input_id).attr('data-field-type') === 'text') {
-                                        $('#id_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val());
+                                    } else {console.log($('#'+input_id).val());
+                                        $('#id_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val().replace(/\n/g, "<br>"));
                                     }
 
                                     $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
                                 } else {
-                                    $('#hid_field_' + id[2] + '_' + id[3]).val('');
+                                    $('#hid_field_' + id[2] + '_' + id[3]).html('');
                                 }
                                 // clear form
                                 $(this).val("");
@@ -1541,7 +1539,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         } else {
                             $("#id_pw").html('<?php echo $var['hidden_asterisk']; ?>');
                         }
-                        $("#hid_pw").val(unsanitizeString(data.pw));
+                        $("#hid_pw").html(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
                             $("#hid_url").val(data.url);
@@ -1603,8 +1601,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');
                                 $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
-                                $('#hid_field_' + field[0] + '_' + field[2]).val(field[1]);
-                                if (field[3] === "masked") {
+                                $('#hid_field_' + field[0] + '_' + field[2]).html(field[1].replace(/<br ?\/?>/g,""));
+                                if (field[4] === "1") {
                                     $('#id_field_' + field[0] + '_' + field[2])
                                         .html('<?php echo $var['hidden_asterisk']; ?>');
                                 } else {
@@ -2217,8 +2215,8 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_display_title').html($('#hid_label').val());
     $('#edit_label').val($('#hid_label').val());
     $('#edit_desc').html($('#hid_desc').val());
-    $('#edit_pw1, #edit_pw2').val($('#hid_pw').val());
-    $("#edit_visible_pw").text($('#hid_pw').val());
+    $('#edit_pw1, #edit_pw2').val($('#hid_pw').html());
+    $("#edit_visible_pw").text($('#hid_pw').html());
     $('#edit_item_login').val(($('#hid_login').val()));
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
@@ -2241,7 +2239,7 @@ function open_edit_item_div(restricted_to_roles)
     if ($('.fields').val() != undefined && $("#display_categories").val() != "") {
         $('.fields').each(function(i){
             id = $(this).attr('id').split('_');
-            $('#edit_field_' + id[2] + '_' + id[3]).val(htmlspecialchars_decode($('#hid_field_' + id[2] + '_' + id[3]).val()));
+            $('#edit_field_' + id[2] + '_' + id[3]).val(htmlspecialchars_decode($('#hid_field_' + id[2] + '_' + id[3]).html()));
         });
     }
 
@@ -4308,8 +4306,9 @@ $('#item_details_ok').on('mousedown', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(elem_id){
-    if(mouseStillDown){
-        $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).val() + '</span>');
+    if(mouseStillDown){console.log($('#h'+elem_id).html());
+        $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).html().replace(/\n/g,"<br>") + '</span>');
+        $('#item_details_scroll').scrollTop($('#item_details_scroll')[0].scrollHeight);
         setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
         if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
