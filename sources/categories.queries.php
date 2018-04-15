@@ -373,7 +373,6 @@ if (null !== $post_type) {
             break;
 
         case "refreshCategoriesHTML":
-
             //Build tree of Categories
             $categoriesSelect = "";
             $arrCategories = array();

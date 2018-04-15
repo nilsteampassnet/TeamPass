@@ -362,10 +362,10 @@ function mainQuery()
                     $ldap_user_never_auth = true;
                 }
             }
-
+            
             // check the given password
             if ($counter === 0
-                || (isset($pwd) === true && isset($data['pw']) === true && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false)
+                || (isset($pwd) === true && isset($data['pw']) === true && $pwd !== $data['pw'])
             ) {
                 // not a registered user !
                 if ($counter === 0) {

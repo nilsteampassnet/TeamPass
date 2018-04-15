@@ -3079,32 +3079,6 @@ if (null !== $post_type) {
 
         /*
         * CASE
-        * REBUILD the description editor
-        */
-        case "rebuild_description_textarea":
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
-
-            $returnValues = array();
-            if (isset($SETTINGS['richtext']) && $SETTINGS['richtext'] === '1') {
-                if ($post_id === "desc") {
-                    $returnValues['desc'] = '$("#desc").ckeditor({toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$SETTINGS_EXT['langs'][$_SESSION['user_language']].'"});';
-                } elseif ($post_id === "edit_desc") {
-                    $returnValues['desc'] = 'CKEDITOR.replace("edit_desc",{toolbar :[["Bold", "Italic", "Strike", "-", "NumberedList", "BulletedList", "-", "Link","Unlink","-","RemoveFormat"]], height: 100,language: "'.$SETTINGS_EXT['langs'][$_SESSION['user_language']].'"});';
-                }
-            }
-            // Multselect
-            $returnValues['multi_select'] = '$("#edit_restricted_to_list").multiselect({selectedList: 7, minWidth: 430, height: 145, checkAllText: "'.$LANG['check_all_text'].'", uncheckAllText: "'.$LANG['uncheck_all_text'].'",noneSelectedText: "'.$LANG['none_selected_text'].'"});';
-            // Display popup
-            if ($post_id === "edit_desc") {
-                $returnValues['dialog'] = '$("#div_formulaire_edition_item").dialog("open");';
-            } else {
-                $returnValues['dialog'] = '$("#div_formulaire_saisi").dialog("open");';
-            }
-            echo $returnValues;
-            break;
-
-        /*
-        * CASE
         * Clear HTML tags
         */
         case "clear_html_tags":
