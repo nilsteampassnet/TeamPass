@@ -231,7 +231,13 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $SETTINGS
                 );
                 // update LOG
-                logEvents('user_mngt', 'at_user_added', $_SESSION['user_id'], $_SESSION['login'], $new_user_id);
+                logEvents(
+                    'user_mngt',
+                    'at_user_added',
+                    $_SESSION['user_id'],
+                    $_SESSION['login'],
+                    $new_user_id
+                );
 
                 echo '[ { "error" : "no" } ]';
             } else {

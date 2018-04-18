@@ -122,7 +122,9 @@ $(function() {
                                     $("#addgroup_show_error").show();
                                 } else {
                                     tableFolders.api().ajax.reload();
-                                    $("#parent_id, #edit_parent_id").empty().append(data[0].droplist);
+                                    $("#parent_id, #edit_parent_id")
+                                        .empty()
+                                        .append(data[0].droplist);
                                     $("#div_add_group").dialog("close");
                                 }
                                 $("#new_folder_wait").hide();
@@ -152,12 +154,12 @@ $(function() {
         open: function(event, ui) {
             var id = $("#folder_id_to_edit").val();
             $("#edit_folder_wait").hide();
-
+            
             //update dialogbox with data
             $("#edit_folder_title").val($("#title_"+id).text());
             $("#edit_folder_renewal_period").val($("#renewal_"+id).text());
             $("#edit_folder_complexite").val($("#renewal_id_"+id).val());
-            $("#edit_parent_id").val($("#parent_id_"+id).val());
+            $("#edit_parent_id option[value='"+$("#parent_id_"+id).val()+"']").prop('selected', true);
             $("#edit_folder_block_creation").val($("#block_creation_"+id).val());
             $("#edit_folder_block_modif").val($("#block_modif_"+id).val());
         },
@@ -207,25 +209,30 @@ $(function() {
                         key        : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
+                        //decrypt data
+                        data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+
                         $("#edit_folder_wait").hide();
                         //Check errors
-                        if (data[0].error === "error_title_only_with_numbers") {
+                        if (data.error === "error_title_only_with_numbers") {
                             $("#edit_folder_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name']; ?>").show();
-                        } else if (data[0].error === "error_group_exist") {
+                        } else if (data.error === "error_group_exist") {
                             $("#edit_folder_show_error").html("<?php echo $LANG['error_group_exist']; ?>").show();
-                        } else if (data[0].error === "error_html_codes") {
+                        } else if (data.error === "error_html_codes") {
                             $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes']; ?>").show();
-                        } else if (data[0].error === "error_folder_complexity_lower_than_top_folder") {
-                            $("#edit_folder_show_error").html(data[0].error_msg).show();
+                        } else if (data.error === "error_folder_complexity_lower_than_top_folder") {
+                            $("#edit_folder_show_error").html(data.error_msg).show();
                         } else {
                             $("#folder_id_to_edit").val("");    //clear id
                             tableFolders.api().ajax.reload();
-                            $("#parent_id, #edit_parent_id").remove();
-                            $("#parent_id, #edit_parent_id").append(data[0].droplist);
+                            $("#parent_id, #edit_parent_id")
+                                .find('option')
+                                .remove()
+                                .end()
+                                .append(data.droplist);
                             $("#div_edit_folder").dialog("close");
                         }
-                    },
-                    "json"
+                    }
                );
             },
             "<?php echo $LANG['cancel_button']; ?>": function() {
@@ -358,7 +365,7 @@ $(function() {
  **/
 function open_edit_folder_dialog(id)
 {
-    $("#folder_id_to_edit").val(id);
+    $("#folder_id_to_edit").val(id);console.log(">"+id);
     $("#div_edit_folder").dialog("open");
 }
 //]]>

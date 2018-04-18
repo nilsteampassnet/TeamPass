@@ -384,19 +384,19 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
         $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
     }
 
-    require_once $path.'Crypto.php';
-    require_once $path.'Encoding.php';
-    require_once $path.'DerivedKeys.php';
-    require_once $path.'Key.php';
-    require_once $path.'KeyOrPassword.php';
-    require_once $path.'File.php';
-    require_once $path.'RuntimeTests.php';
-    require_once $path.'KeyProtectedByPassword.php';
-    require_once $path.'Core.php';
+    include_once $path.'Crypto.php';
+    include_once $path.'Encoding.php';
+    include_once $path.'DerivedKeys.php';
+    include_once $path.'Key.php';
+    include_once $path.'KeyOrPassword.php';
+    include_once $path.'File.php';
+    include_once $path.'RuntimeTests.php';
+    include_once $path.'KeyProtectedByPassword.php';
+    include_once $path.'Core.php';
 
     // init
     $err = '';
-    if (empty($ascii_key)) {
+    if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     }
 
@@ -1593,10 +1593,20 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
  * @param string $encryption_type
  * @return void
  */
-function logItems($ident, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
+function logItems(
+    $item_id,
+    $item_label,
+    $id_user,
+    $action,
+    $login = "",
+    $raison = null,
+    $raison_iv = null,
+    $encryption_type = ""
+)
 {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
+    $dataItem = '';
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1610,10 +1620,12 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
     DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
+
+    // Insert log in DB
     DB::insert(
         prefix_table("log_items"),
         array(
-            'id_item' => $ident,
+            'id_item' => $item_id,
             'date' => time(),
             'id_user' => $id_user,
             'action' => $action,
@@ -1623,13 +1635,25 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
         )
     );
 
-    // Syslog
+    // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
         // Extract reason
         $attribute = explode(' : ', $raison);
 
+        // Get item info if not known
+        if (empty($item_label) === true) {
+            $dataItem = DB::queryfirstrow(
+                "SELECT id, id_tree, label
+                FROM ".prefix_table("items")."
+                WHERE id = %i",
+                $item_id
+            );
+
+            $item_label = $dataItem['label'];
+        }
+
         send_syslog(
-            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$ident.' user='.$login.' itemname="'.$item.'"',
+            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$item_id.' user='.addslashes($login).' itemname="'.addslashes($item_label).'"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             "teampass"
@@ -1642,12 +1666,15 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
         && $action === 'at_shown'
     ) {
         // Get info about item
-        $dataItem = DB::queryfirstrow(
-            "SELECT id, id_tree, label
-            FROM ".prefix_table("items")."
-            WHERE id = %i",
-            "at_creation"
-        );
+        if (empty($dataItem) === true && empty($item_label) === true) {
+            $dataItem = DB::queryfirstrow(
+                "SELECT id, id_tree, label
+                FROM ".prefix_table("items")."
+                WHERE id = %i",
+                $item_id
+            );
+            $item_label = $dataItem['label'];
+        }
 
         // send back infos
         DB::insert(
@@ -1659,7 +1686,7 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
                     array('#tp_user#', '#tp_item#', '#tp_link#'),
                     array(
                         addslashes($_SESSION['login']),
-                        addslashes($dataItem['label']),
+                        addslashes($item_label),
                         $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
                     ),
                     $LANG['email_on_open_notification_mail']

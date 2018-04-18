@@ -1295,9 +1295,13 @@ function AddNewFolder()
         }
 
         //prepare data
-        var data = {"title": sanitizeString($('#new_rep_titre').val()),
-            "complexity": sanitizeString($('#new_rep_complexite').val()), "is_pf": $('#pf_selected').val(),
-            "parent_id": $("#new_rep_groupe option:selected").val(), "renewal_period":"0"};
+        var data = {
+            "title": sanitizeString($('#new_rep_titre').val()),
+            "complexity": sanitizeString($('#new_rep_complexite').val()),
+            "is_pf": $('#pf_selected').val(),
+            "parent_id": $("#new_rep_groupe option:selected").val(),
+            "renewal_period":"0"
+        };
 
         //send query
         $.post(
@@ -4323,7 +4327,7 @@ var showPwdContinuous = function(elem_id){
         }
         setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
-        if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
+        if (elem_id === "id_pw" && $("#pw_shown").val() === "0") {
             itemLog(
                 'at_password_shown',
                 $('#id_item').val(),

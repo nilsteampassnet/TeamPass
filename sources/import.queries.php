@@ -23,9 +23,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -65,7 +65,7 @@ function sanitiseString($str, $crLFReplacement)
 global $k, $settings;
 header("Content-type: text/html; charset=utf-8");
 error_reporting(E_ERROR);
-include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 //Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -739,7 +739,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
 
             // If destination is not ROOT then get the complexity level
-            if (strpos($post_destination, "perso") !== 0) {
+            if (strpos($post_destination, "perso") !== false) {
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;
                 $import_perso = true;
@@ -961,7 +961,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'pw' => $encrypt['string'],
-                                'pw_iv' => $encrypt['iv'],
+                                'pw_iv' => '',
                                 'url' => substr(stripslashes($item[KP_URL]), 0, 500),
                                 'id_tree' => $folderId,
                                 'login' => substr(stripslashes($item[KP_USERNAME]), 0, 500),

@@ -478,7 +478,7 @@ foreach ($folders as $t) {
                     // Reload page
                     $(this).delay(2000).queue(function() {
                         $("#import_information").effect( "fade", "slow" );
-                        document.location = "index.php?page=items";
+                        //document.location = "index.php?page=items";
                         $(this).dequeue();
                     });
                 }

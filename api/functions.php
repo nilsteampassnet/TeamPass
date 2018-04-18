@@ -1022,7 +1022,13 @@ function rest_get()
                         );
 
                         // update LOG
-                        logEvents('user_mngt', 'at_user_added', 'api - '.$GLOBALS['apikey'], $new_user_id, "");
+                        logEvents(
+                            'user_mngt',
+                            'at_user_added',
+                            'api - '.$GLOBALS['apikey'],
+                            $new_user_id,
+                            ""
+                        );
 
                         echo '{"status":"user added"}';
                     } catch (PDOException $ex) {
@@ -1538,7 +1544,13 @@ function rest_get()
                         loadSettings();
 
                         // update LOG
-                        logEvents('user_mngt', 'at_user_updated', 'api - '.$GLOBALS['apikey'], $data['id'], "");
+                        logEvents(
+                            'user_mngt',
+                            'at_user_updated',
+                            'api - '.$GLOBALS['apikey'],
+                            $data['id'],
+                            ""
+                        );
 
                         echo '{"status":"user added"}';
                     } catch (PDOException $ex) {
@@ -2189,7 +2201,7 @@ function rest_get()
                                 "Credentials for ".urldecode($GLOBALS['request'][3].'%'),
                                 $userData['id'],
                                 'at_creation',
-                                $GLOBALS['request'][1]
+                                $GLOBALS['request'][4]
                             );
 
                             $json['status'] = "ok";
@@ -2287,7 +2299,7 @@ function rest_get()
                             $item_definition['label'],
                             $userData['id'],
                             'at_creation',
-                            $GLOBALS['request'][1]
+                            $user_login
                         );
 
                         // rebuild tree

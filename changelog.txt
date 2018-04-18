@@ -13,6 +13,7 @@
  #2204 Password copy - cryptic log entry using syslog
  #2202 Search functionality - no log entry upon display
  #2201 Search functionality - password shown in plaintext
+ #2198 Hang when changing second folder password strength and required password strength
  #2196 API create item fails when Base64 encoding contains "/"
  #2192 Encrypted Files Are Stored (Temporary) in Plaintext And Can Be Downloaded Without Authorization
  #2191 Bad redirection to login form on password recovery process
