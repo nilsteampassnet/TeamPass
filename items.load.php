@@ -91,10 +91,15 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
+        console.log("ici");
         if ($("#selected_items").val() == "") return;
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
-            itemLog("item_password_shown");
+            mini(
+                "at_password_shown",
+                $('#id_item').val(),
+                $('#hid_label').val()
+            );
             $('#id_pw').text($('#hid_pw').html());
         } else {
             $('#id_pw').html('<?php echo $var["hidden_asterisk"]; ?>');
@@ -507,7 +512,8 @@ function showItemsList(data)
             '<li name="' + value.label + '" class="'+ item_class + ' trunc_line" id="'+value.item_id+'" data-edition="'+value.open_edit+'">' + item_span +
             item_flag +
             '<i class="fa ' + value.perso + ' fa-sm"></i>&nbsp' +
-            '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"  ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+value.label+'&nbsp;<font size="1px">' +
+            '&nbsp;<a id="fileclass'+value.item_id+'" class="file " onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"  ondblclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"><div class="truncate">'+
+            '<span id="item_label_' + value.item_id + '">' + value.label + '</span>&nbsp;<font size="1px">' +
             value.desc +
             '</div></font></a>' +
             '<span style="float:right;margin-top:2px;">' +
@@ -1701,7 +1707,11 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             });
                             clipboard_pw.on('success', function(e) {
                                 $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']); ?>").show().fadeOut(1000);
-                                itemLog("item_password_copied");
+                                itemLog(
+                                    "at_password_copied",
+                                    e.trigger.dataset.clipboardId,
+                                    $('#item_label_'+e.trigger.dataset.clipboardId).text()
+                                );
 
                                 e.clearSelection();
                             });
@@ -4306,13 +4316,19 @@ $('#item_details_ok').on('mousedown', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(elem_id){
-    if(mouseStillDown){console.log($('#h'+elem_id).html());
+    if(mouseStillDown){
         $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).html().replace(/\n/g,"<br>") + '</span>');
-        $('#item_details_scroll').scrollTop($('#item_details_scroll')[0].scrollHeight);
+        if (elem_id !== 'id_pw') {
+            $('#item_details_scroll').scrollTop($('#item_details_scroll')[0].scrollHeight);
+        }
         setTimeout("showPwdContinuous('"+elem_id+"')", 50);
         // log password is shown
         if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
-            itemLog("item_password_shown");
+            itemLog(
+                'at_password_shown',
+                $('#id_item').val(),
+                $('#hid_label').val()
+            );
             $("#pw_shown").val("1");
         }
     } else {
@@ -4328,10 +4344,28 @@ var showPwd = function(){
 /*
 * permits to save
 */
-function itemLog(log_case, item_id)
+function itemLog(log_case, item_id, item_label)
 {
     item_id = item_id || $('#id_item').val();
+
+    var data = {
+        "id" : item_id,
+        "label" : item_label,
+        "user_id" : "<?php echo $_SESSION['user_id']; ?>",
+        "action" : log_case,
+        "login" : "<?php echo $_SESSION['login']; ?>"
+    };
+
     $.post(
+        "sources/items.logs.php",
+        {
+            type    : "log_action_on_item",
+            data    :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : "<?php echo $_SESSION['key']; ?>"
+        }
+    );
+
+    /*$.post(
         "sources/items.logs.php",
         {
             type        : log_case,
@@ -4340,7 +4374,7 @@ function itemLog(log_case, item_id)
             hid_label   : $('#hid_label').val(),
             key         : "<?php echo $_SESSION['key']; ?>"
         }
-    );
+    );*/
 }
 
 function htmlspecialchars_decode (string, quote_style)
@@ -4422,7 +4456,11 @@ function proceed_list_update(stop_proceeding)
         clipboard = new Clipboard('.mini_pw');
         clipboard.on('success', function(e) {
             $("#message_box").html("<?php echo addslashes($LANG['pw_copied_clipboard']); ?>").show().fadeOut(1000);
-            itemLog("item_password_copied", e.trigger.dataset.clipboardId);
+            itemLog(
+                "at_password_copied",
+                e.trigger.dataset.clipboardId,
+                $('#item_label_'+e.trigger.dataset.clipboardId).text()
+            );
             e.clearSelection();
         });
 

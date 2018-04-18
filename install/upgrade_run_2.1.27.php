@@ -522,6 +522,16 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."categories_folders` ADD PRIMARY KEY (`id_category`)"
 );
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."categories_folders` DROP PRIMARY KEY"
+);
+
+// alter table categories_folders to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."categories_folders` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
+);
 
 
 //-- generate new DEFUSE key

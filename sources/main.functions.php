@@ -1635,6 +1635,40 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
             "teampass"
         );
     }
+
+    // send notification if enabled
+    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+        && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
+        && $action === 'at_shown'
+    ) {
+        // Get info about item
+        $dataItem = DB::queryfirstrow(
+            "SELECT id, id_tree, label
+            FROM ".prefix_table("items")."
+            WHERE id = %i",
+            "at_creation"
+        );
+
+        // send back infos
+        DB::insert(
+            prefix_table('emails'),
+            array(
+                'timestamp' => time(),
+                'subject' => $LANG['email_on_open_notification_subject'],
+                'body' => str_replace(
+                    array('#tp_user#', '#tp_item#', '#tp_link#'),
+                    array(
+                        addslashes($_SESSION['login']),
+                        addslashes($dataItem['label']),
+                        $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                    ),
+                    $LANG['email_on_open_notification_mail']
+                ),
+                'receivers' => $_SESSION['listNotificationEmails'],
+                'status' => ''
+            )
+        );
+    }
 }
 
 /*

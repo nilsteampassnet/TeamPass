@@ -70,7 +70,7 @@ $tree->rebuild();
 */
 
 //Build tree of Categories
-$categoriesSelect = "";
+$categoriesSelect = '<option value="">-- '.addslashes($LANG['select']).' --</option>';
 $arrCategories = array();
 $rows = DB::query(
     "SELECT * FROM ".prefix_table("categories")."
@@ -92,7 +92,8 @@ foreach ($rows as $record) {
 }
 
 // Build list of Field Types
-$options_field_types = '<option value="text">'.addslashes($LANG['text']).'</option>'.
+$options_field_types = '<option value="">-- '.addslashes($LANG['select']).' --</option>'.
+    '<option value="text">'.addslashes($LANG['text']).'</option>'.
     '<option value="textarea">'.addslashes($LANG['textarea']).'</option>';
 
 // Build list of Roles
@@ -201,8 +202,8 @@ echo '
                 </td>
                 <td>
                     <select id="field_encrypted" class="ui-widget-content ui-corner-all field_edit" style="width:340px; padding:3px;">
-                        <option value="0">'.$LANG['no'].'</option>
                         <option value="1">'.$LANG['yes'].'</option>
+                        <option value="0">'.$LANG['no'].'</option>
                     </select>
                 </td>
             </tr>
@@ -260,8 +261,8 @@ echo '
                 </td>
                 <td>
                     <select id="new_field_encrypted" class="ui-widget-content ui-corner-all" style="width:340px; padding:3px;">
-                        <option value="0">'.$LANG['no'].'</option>
                         <option value="1">'.$LANG['yes'].'</option>
+                        <option value="0">'.$LANG['no'].'</option>
                     </select>
                 </td>
             </tr>
@@ -281,7 +282,7 @@ echo '
                     <label for="new_field_visibility">'.$LANG['restrict_visibility_to'].':</label>&nbsp;
                 </td>
                 <td>
-                    <select id="field_visibility" class="ui-widget-content ui-corner-all field_edit" style="width:340px; padding:3px;" multiple="multiple">
+                    <select id="new_field_visibility" class="ui-widget-content ui-corner-all field_edit" style="width:340px; padding:3px;" multiple="multiple">
                         '.$options_roles.'
                     </select>
                 </td>

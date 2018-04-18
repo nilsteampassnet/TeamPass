@@ -907,9 +907,10 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."categories_folders` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id_category` int(12) NOT NULL,
                             `id_folder` int(12) NOT NULL,
-                            PRIMARY KEY (`id_category`)
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "api") {

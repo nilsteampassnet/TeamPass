@@ -26,6 +26,7 @@ var requestRunning = false;
 */
 function fieldAdd(id) {
     $("#post_id").val(id);
+    $("#field_visibility").val('all');
     $("#add_new_field").dialog("open");
 }
 /*
@@ -100,19 +101,30 @@ function updateCategoryAndField(id) {
         }
     });
 
+    // if order is not numeric
+    if ($.isNumeric($("#field_order").val()) === false) {
+        $("#field_order")
+            .addClass("ui-state-error")
+            .delay(2000)
+            .queue(function() {
+                $(this).removeClass("ui-state-error");
+                $(this).dequeue();
+            });
+        return false;
+    }
+
     // prepare data to send
     var data = {
         "id" : id,
         "title" : $("#field_title").val(),
-        "category" : $('#field_is_category').val() === '' ? '' : $("#field_category").val(),
-        "type" : $('#field_is_category').val() === '' ? '' : $("#field_type").val(),
-        "masked" : $('#field_is_category').val() === '' ? '' : $("#field_masked").val(),
-        "encrypted" : $('#field_is_category').val() === '' ? '' : $("#field_encrypted").val(),
-        "roles" : $('#field_is_category').val() === '' ? 'all' : roles,
+        "category" : $('#field_category').val() === '' ? '0' : $("#field_category").val(),
+        "type" : $('#field_type').val() === '' ? '' : $("#field_type").val(),
+        "masked" : $('#field_masked').val() === '' ? '' : $("#field_masked").val(),
+        "encrypted" : $('#field_encrypted').val() === '' ? '' : $("#field_encrypted").val(),
+        "roles" : roles === '' ? 'all' : roles,
         "field_is_category" : $('#field_is_category').val(),
         "order" : $('#field_order').val()
     };
-    console.log(data);
 
     // send query
     $.post(
@@ -803,6 +815,18 @@ $(function() {
                         }
                     });
 
+                    // if order is not numeric
+                    if ($.isNumeric($("#new_field_order").val()) === false) {
+                        $("#new_field_order")
+                            .addClass("ui-state-error")
+                            .delay(2000)
+                            .queue(function() {
+                                $(this).removeClass("ui-state-error");
+                                $(this).dequeue();
+                            });
+                        return false;
+                    }
+
                     // store in DB
                     var data = {
                         "title" : $("#new_field_title").val(),
@@ -834,9 +858,12 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#div_loading").hide();
-                $("#field_visibility").val(null).trigger("change"); 
+                $("#new_field_visibility").val(null).trigger("change"); 
                 $(this).dialog("close");
             }
+        },
+        open: function() {
+            $("#new_field_visibility").val('all');
         }
     });
 

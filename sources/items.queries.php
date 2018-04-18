@@ -2501,7 +2501,7 @@ if (null !== $post_type) {
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id, l.date, l.id_user, l.action
-                        ORDER BY i.label ASC, l.date DESC".$query_limit, //
+                        ORDER BY i.label ASC, l.date DESC".$query_limit,
                         $where
                     );
                 } else {

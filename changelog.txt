@@ -3,10 +3,16 @@
  Added new option permitting to enable secure image preview
  Added warning to user if login attempts identified since last successful connection
  Added Yubico support for 2FA authentication
+ Added restriction access to Custom Fields
+ Added textarea format for custom field
  Improved the possibility to move `files` folder outside of Teampass Domain
  Improved user creation with LDAP and Google and DUO 2FA
  Improved log in case of failed authentication - used login is shown
+ Improved syslog message format
  Updated library PHPMailer to 5.5
+ #2204 Password copy - cryptic log entry using syslog
+ #2202 Search functionality - no log entry upon display
+ #2201 Search functionality - password shown in plaintext
  #2196 API create item fails when Base64 encoding contains "/"
  #2192 Encrypted Files Are Stored (Temporary) in Plaintext And Can Be Downloaded Without Authorization
  #2191 Bad redirection to login form on password recovery process
