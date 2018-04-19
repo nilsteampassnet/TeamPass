@@ -581,11 +581,11 @@ function identifyUser(
                                 if ($entries['count'] > 0) {
                                     // Now check if group fits
                                     for ($i=0; $i<$entries['count']; $i++) {
-                                      $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                      if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
-                                        $GroupRestrictionEnabled = true;
-                                        break;
-                                      }
+                                        $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
+                                        if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                            $GroupRestrictionEnabled = true;
+                                            break;
+                                        }
                                     }
 
                                 }
@@ -601,12 +601,10 @@ function identifyUser(
 
                         // Is user in the LDAP?
                         if ($GroupRestrictionEnabled === true
-                            || (
-                                $GroupRestrictionEnabled === false
-                                && (isset($SETTINGS['ldap_usergroup']) === false
-                                    || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
-                                )
-                            )
+                            || ($GroupRestrictionEnabled === false
+                            && (isset($SETTINGS['ldap_usergroup']) === false
+                            || (isset($SETTINGS['ldap_usergroup']) === true
+                            && empty($SETTINGS['ldap_usergroup']) === true)))
                         ) {
                             // Try to auth inside LDAP
                             $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
@@ -624,8 +622,8 @@ function identifyUser(
                                         array(
                                             'pw' => $data['pw']
                                         ),
-                                        "login=%s",
-                                        $username
+                                        "id = %i",
+                                        $data['id']
                                     );
 
                                     // No user creation is requested
@@ -722,8 +720,8 @@ function identifyUser(
                             array(
                                 'pw' => $data['pw']
                             ),
-                            "login=%s",
-                            $username
+                            "id = %i",
+                            $data['id']
                         );
 
                         // No user creation is requested
@@ -1034,7 +1032,9 @@ function identifyUser(
 
     if ($proceedIdentification === true) {
         // User exists in the DB
-        if (crypt($passwordClear, $data['pw']) == $data['pw'] && !empty($data['pw'])) {
+        if (crypt($passwordClear, $data['pw']) === $data['pw']
+            && empty($data['pw']) === false
+        ) {
             //update user's password
             $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
             DB::update(
@@ -1053,7 +1053,13 @@ function identifyUser(
                 $userPasswordVerified = true;
             } else {
                 $userPasswordVerified = false;
-                logEvents('failed_auth', 'user_password_not_correct', "", "", stripslashes($username));
+                logEvents(
+                    'failed_auth',
+                    'user_password_not_correct',
+                    "",
+                    "",
+                    stripslashes($username)
+                );
             }
         }
 
@@ -1069,23 +1075,17 @@ function identifyUser(
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
-        if ((
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
-            && $userPasswordVerified === true && $data['disabled'] === '0'
-            ) || (
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin"
-            ) || (
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin"
-            ) || (
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
-            ) || (
-            isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
+        if ((isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
+            && $userPasswordVerified === true && $data['disabled'] === '0')
+            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin")
+            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin")
+            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
+            && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0')
+            || (isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
             && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
-            && $userPasswordVerified === true && $data['disabled'] === '0'
-            )
+            && $userPasswordVerified === true && $data['disabled'] === '0')
         ) {
             $_SESSION['autoriser'] = true;
             $_SESSION["pwd_attempts"] = 0;
@@ -1312,8 +1312,8 @@ function identifyUser(
             $return = $dataReceived['randomstring'];
             // Send email
             if (isset($SETTINGS['enable_send_email_on_user_login'])
-                    && $SETTINGS['enable_send_email_on_user_login'] === '1'
-                    && $_SESSION['user_admin'] != 1
+                && $SETTINGS['enable_send_email_on_user_login'] === '1'
+                && $_SESSION['user_admin'] != 1
             ) {
                 // get all Admin users
                 $receivers = "";

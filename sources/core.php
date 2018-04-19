@@ -442,6 +442,7 @@ if (isset($SETTINGS['item_extra_fields']) === true
     && $SETTINGS['item_extra_fields'] == 1
     && isset($_GET['page']) === true
     && $_GET['page'] === 'items'
+    && isset($_SESSION['fonction_id']) === true
 ) {
     $_SESSION['item_fields'] = array();
     $rows = DB::query(

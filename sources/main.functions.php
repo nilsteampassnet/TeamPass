@@ -370,8 +370,12 @@ function testHex2Bin($val)
 }
 
 /**
- * @param string $ascii_key
- * @param string $type
+ * Defuse cryption function
+ *
+ * @param  string $message   what to de/crypt
+ * @param  string $ascii_key key to use
+ * @param  string $type      operation to perform
+ * @return array  
  */
 function cryption($message, $ascii_key, $type) //defuse_crypto
 {
@@ -384,15 +388,15 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
         $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
     }
 
-    require_once $path.'Crypto.php';
-    require_once $path.'Encoding.php';
-    require_once $path.'DerivedKeys.php';
-    require_once $path.'Key.php';
-    require_once $path.'KeyOrPassword.php';
-    require_once $path.'File.php';
-    require_once $path.'RuntimeTests.php';
-    require_once $path.'KeyProtectedByPassword.php';
-    require_once $path.'Core.php';
+    include_once $path.'Crypto.php';
+    include_once $path.'Encoding.php';
+    include_once $path.'DerivedKeys.php';
+    include_once $path.'Key.php';
+    include_once $path.'KeyOrPassword.php';
+    include_once $path.'File.php';
+    include_once $path.'RuntimeTests.php';
+    include_once $path.'KeyProtectedByPassword.php';
+    include_once $path.'Core.php';
 
     // init
     $err = '';
@@ -427,23 +431,34 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     );
 }
 
+/**
+ * Generating a defuse key
+ *
+ * @return void
+ */
 function defuse_generate_key()
 {
-    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/File.php';
-    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+    include_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    include_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    include_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    include_once '../includes/libraries/Encryption/Encryption/Key.php';
+    include_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    include_once '../includes/libraries/Encryption/Encryption/File.php';
+    include_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    include_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    include_once '../includes/libraries/Encryption/Encryption/Core.php';
 
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
 }
 
+/**
+ * Generate a Defuse personal key
+ *
+ * @param  string $psk psk used
+ * @return void
+ */
 function defuse_generate_personal_key($psk)
 {
     require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
@@ -463,7 +478,11 @@ function defuse_generate_personal_key($psk)
 }
 
 /**
- * @param string $psk
+ * Validate persoanl key with defuse
+ *
+ * @param  string $psk                   the user's psk
+ * @param  string $protected_key_encoded special key
+ * @return void
  */
 function defuse_validate_personal_key($psk, $protected_key_encoded)
 {
@@ -492,8 +511,9 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
 
 /**
  * Decrypt a defuse string if encrypted
- * @param  [type] $value Encrypted string
- * @return [type]        Decrypted string
+ * 
+ * @param  string $value Encrypted string
+ * @return string        Decrypted string
  */
 function defuse_return_decrypted($value)
 {
@@ -507,7 +527,8 @@ function defuse_return_decrypted($value)
  * trimElement()
  *
  * trim a string depending on a specific string
- * @param string $element
+ * @param  string $chaine  what to trim
+ * @param  string $element trim on what
  * @return string
  */
 function trimElement($chaine, $element)
@@ -528,9 +549,11 @@ function trimElement($chaine, $element)
 }
 
 /**
- * cleanString()
+ * Permits to suppress all "special" characters from string
  *
- * permits to suppress all "special" characters from string
+ * @param string  $string  what to clean
+ * @param boolean $special use of special chars?
+ * @return void
  */
 function cleanString($string, $special = false)
 {
@@ -547,6 +570,12 @@ function cleanString($string, $special = false)
     return str_replace($tabSpecialChar, "\n", $string);
 }
 
+/**
+ * Erro manager for DB
+ *
+ * @param  array $params output from query
+ * @return void
+ */
 function db_error_handler($params)
 {
     echo "Error: ".$params['error']."<br>\n";

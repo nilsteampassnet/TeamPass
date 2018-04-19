@@ -10,6 +10,7 @@
  Improved log in case of failed authentication - used login is shown
  Improved syslog message format
  Updated library PHPMailer to 5.5
+ #2206 New ldap user and ad password change
  #2204 Password copy - cryptic log entry using syslog
  #2202 Search functionality - no log entry upon display
  #2201 Search functionality - password shown in plaintext
