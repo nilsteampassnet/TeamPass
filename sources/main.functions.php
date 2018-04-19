@@ -384,19 +384,19 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
         $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
     }
 
-    include_once $path.'Crypto.php';
-    include_once $path.'Encoding.php';
-    include_once $path.'DerivedKeys.php';
-    include_once $path.'Key.php';
-    include_once $path.'KeyOrPassword.php';
-    include_once $path.'File.php';
-    include_once $path.'RuntimeTests.php';
-    include_once $path.'KeyProtectedByPassword.php';
-    include_once $path.'Core.php';
+    require_once $path.'Crypto.php';
+    require_once $path.'Encoding.php';
+    require_once $path.'DerivedKeys.php';
+    require_once $path.'Key.php';
+    require_once $path.'KeyOrPassword.php';
+    require_once $path.'File.php';
+    require_once $path.'RuntimeTests.php';
+    require_once $path.'KeyProtectedByPassword.php';
+    require_once $path.'Core.php';
 
     // init
     $err = '';
-    if (empty($ascii_key) === true) {
+    if (empty($ascii_key)) {
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
     }
 
@@ -1589,7 +1589,6 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
  * @param string $action
  * @param string $login
  * @param string $raison
- * @param string $raison_iv
  * @param string $encryption_type
  * @return void
  */
@@ -1600,7 +1599,6 @@ function logItems(
     $action,
     $login = "",
     $raison = null,
-    $raison_iv = null,
     $encryption_type = ""
 )
 {

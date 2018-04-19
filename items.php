@@ -521,10 +521,10 @@ echo '
             <input type="text" name="item_tags" id="item_tags" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for Item modification
 echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] == 1 ? '' : 'display:none;', '">
-                <input type="checkbox" name="anyone_can_modify" id="anyone_can_modify"',
-                    isset($SETTINGS['anyone_can_modify_bydefault'])
-                    && $SETTINGS['anyone_can_modify_bydefault'] == 1 ?
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($SETTINGS['anyone_can_modify']) === true && $SETTINGS['anyone_can_modify'] === '1' ? '' : 'display:none;', '">
+                <input type="checkbox" id="anyone_can_modify"',
+                    isset($SETTINGS['anyone_can_modify_bydefault']) === true
+                    && $SETTINGS['anyone_can_modify_bydefault'] === '1' ?
                     ' checked="checked"' : '', ' />
                 <label for="anyone_can_modify">'.$LANG['anyone_can_modify'].'</label>
             </div>';
@@ -717,10 +717,10 @@ echo '
             <input type="text" size="50" name="edit_tags" id="edit_tags" class="input_text text ui-widget-content ui-corner-all" />';
 // Line for Item modification
 echo '
-            <div style="width:100%;margin:0px 0px 6px 0px;', isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] == 1 ? '' : 'display:none;', '">
-                <input type="checkbox" name="edit_anyone_can_modify" id="edit_anyone_can_modify"',
-                    isset($SETTINGS['anyone_can_modify_bydefault'])
-                    && $SETTINGS['anyone_can_modify_bydefault'] == 1 ?
+            <div style="width:100%;margin:0px 0px 6px 0px;', isset($SETTINGS['anyone_can_modify']) === true && $SETTINGS['anyone_can_modify'] === '1' ? '' : 'display:none;', '">
+                <input type="checkbox" id="edit_anyone_can_modify"',
+                    isset($SETTINGS['anyone_can_modify_bydefault']) === true
+                    && $SETTINGS['anyone_can_modify_bydefault'] === '1' ?
                     ' checked="checked"' : '', ' />
                 <label for="edit_anyone_can_modify">'.$LANG['anyone_can_modify'].'</label>
             </div>';

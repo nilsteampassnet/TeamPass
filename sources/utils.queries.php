@@ -475,7 +475,6 @@ if (null !== $post_type) {
                     'at_modification',
                     $_SESSION['login'],
                     'at_pw :'.$dataItem['pw'],
-                    "",
                     "defuse"
                 );
                 $ret .= "<br />".$LANG['ssh_action_performed'];

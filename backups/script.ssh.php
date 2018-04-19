@@ -104,8 +104,7 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
                 SSH_USER_ID,
                 'at_modification',
                 'script',
-                'at_pw :'.$record['pw'],
-                ''
+                'at_pw :'.$record['pw']
             );
         } else {
             $log .= "   An error occured with password change.\n\n";

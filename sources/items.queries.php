@@ -327,8 +327,16 @@ if (null !== $post_type) {
                         );
                     }
                 }
+
                 // log
-                logItems($newID, $label, $_SESSION['user_id'], 'at_creation', $_SESSION['login']);
+                logItems(
+                    $newID,
+                    $label,
+                    $_SESSION['user_id'],
+                    'at_creation',
+                    $_SESSION['login']
+                );
+
                 // Add tags
                 $tags = explode(' ', $tags);
                 foreach ($tags as $tag) {
@@ -342,6 +350,7 @@ if (null !== $post_type) {
                         );
                     }
                 }
+                
                 // Check if any files have been added
                 if (empty($dataReceived['random_id_from_files']) === false) {
                     $rows = DB::query(
@@ -700,7 +709,14 @@ if (null !== $post_type) {
                                     );
 
                                     // update LOG
-                                    logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmpCat['title'].' : '.$field_data[1]);
+                                    logItems(
+                                        $dataReceived['id'],
+                                        $label,
+                                        $_SESSION['user_id'],
+                                        'at_modification',
+                                        $_SESSION['login'],
+                                        'at_field : '.$dataTmpCat['title'].' : '.$field_data[1]
+                                    );
                                 } else {
                                     // compare the old and new value
                                     if ($dataTmpCat['encryption_type'] === "defuse") {
@@ -741,7 +757,14 @@ if (null !== $post_type) {
                                         );
 
                                         // update LOG
-                                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_field : '.$dataTmpCat['title'].' => '.$oldVal['string']);
+                                        logItems(
+                                            $dataReceived['id'],
+                                            $label,
+                                            $_SESSION['user_id'],
+                                            'at_modification',
+                                            $_SESSION['login'],
+                                            'at_field : '.$dataTmpCat['title'].' => '.$oldVal['string']
+                                        );
                                     }
                                 }
                             } else {
@@ -775,7 +798,14 @@ if (null !== $post_type) {
                                         )
                                 );
                                 // update LOG
-                                logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_automatic_del : '.$dataReceived['to_be_deleted']);
+                                logItems(
+                                    $dataReceived['id'],
+                                    $label,
+                                    $_SESSION['user_id'],
+                                    'at_modification',
+                                    $_SESSION['login'],
+                                    'at_automatic_del : '.$dataReceived['to_be_deleted']
+                                );
                             }
                         } else {
                             // Automatic deletion exists for this item
@@ -795,7 +825,14 @@ if (null !== $post_type) {
                                 DB::delete($pre."automatic_del", "item_id = %i", $dataReceived['id']);
                             }
                             // update LOG
-                            logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_automatic_del : '.$dataReceived['to_be_deleted']);
+                            logItems(
+                                $dataReceived['id'],
+                                $label,
+                                $_SESSION['user_id'],
+                                'at_modification',
+                                $_SESSION['login'],
+                                'at_automatic_del : '.$dataReceived['to_be_deleted']
+                            );
                         }
                     }
 
@@ -875,30 +912,72 @@ if (null !== $post_type) {
                     // Log all modifications done
                     /*LABEL */
                     if ($data['label'] != $label) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_label : '.$data['label'].' => '.$label);
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_label : '.$data['label'].' => '.$label
+                        );
                     }
                     /*LOGIN */
                     if ($data['login'] != $login) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_login : '.$data['login'].' => '.$login);
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_login : '.$data['login'].' => '.$login
+                        );
                     }
                     /*EMAIL */
                     if ($data['email'] != $dataReceived['email']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_email : '.$data['email'].' => '.$dataReceived['email']);
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_email : '.$data['email'].' => '.$dataReceived['email']
+                        );
                     }
                     /*URL */
                     if ($data['url'] != $url && $url != "http://") {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_url : '.$data['url'].' => '.$url);
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_url : '.$data['url'].' => '.$url
+                        );
                     }
                     /*DESCRIPTION */
                     if ($data['description'] != $dataReceived['description']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_description');
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_description'
+                        );
                     }
                     /*FOLDER */
                     if ($data['id_tree'] != $dataReceived['categorie']) {
                         // Get name of folders
                         $dataTmp = DB::query("SELECT title FROM ".prefix_table("nested_tree")." WHERE id IN %li", array($data['id_tree'],$dataReceived['categorie']));
 
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_category : '.$dataTmp[0]['title'].' => '.$dataTmp[1]['title']);
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_category : '.$dataTmp[0]['title'].' => '.$dataTmp[1]['title']
+                        );
                         // ask for page reloading
                         $reloadPage = true;
                     }
@@ -919,11 +998,26 @@ if (null !== $post_type) {
                         );
                     }
                     if ($sentPw != $oldPwClear['string']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_pw :'.$oldPw, "", "defuse");
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_pw :'.$oldPw,
+                            "defuse"
+                        );
                     }
                     /*RESTRICTIONS */
                     if ($data['restricted_to'] != $dataReceived['restricted_to']) {
-                        logItems($dataReceived['id'], $label, $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_restriction : '.$oldRestrictionList.' => '.$listOfRestricted);
+                        logItems(
+                            $dataReceived['id'],
+                            $label,
+                            $_SESSION['user_id'],
+                            'at_modification',
+                            $_SESSION['login'],
+                            'at_restriction : '.$oldRestrictionList.' => '.$listOfRestricted
+                        );
                     }
                     // Reload new values
                     $dataItem = DB::queryfirstrow(
@@ -1307,13 +1401,22 @@ if (null !== $post_type) {
                     );
                 }
 
-                // Add custom fields
-
-
                 // Add this duplicate in logs
-                logItems($newID, $originalRecord['label'], $_SESSION['user_id'], 'at_creation', $_SESSION['login']);
+                logItems(
+                    $newID,
+                    $originalRecord['label'],
+                    $_SESSION['user_id'],
+                    'at_creation',
+                    $_SESSION['login']
+                );
                 // Add the fact that item has been copied in logs
-                logItems($newID, $originalRecord['label'], $_SESSION['user_id'], 'at_copy', $_SESSION['login']);
+                logItems(
+                    $newID,
+                    $originalRecord['label'],
+                    $_SESSION['user_id'],
+                    'at_copy',
+                    $_SESSION['login']
+                );
                 // reload cache table
                 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 updateCacheTable("reload", "");
@@ -1627,11 +1730,17 @@ if (null !== $post_type) {
                     $arrData['auto_update_pwd_frequency'] = "0";
                 }
 
-                if (isset($SETTINGS['anyone_can_modify_bydefault'])
-                    && $SETTINGS['anyone_can_modify_bydefault'] === '1') {
-                    $arrData['anyone_can_modify'] = 1;
-                } else {
-                    $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+                $arrData['anyone_can_modify'] = $dataItem['anyone_can_modify'];
+
+                // Add the fact that item has been viewed in logs
+                if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1') {
+                    logItems(
+                        $post_id,
+                        $dataItem['label'],
+                        $_SESSION['user_id'],
+                        'at_shown',
+                        $_SESSION['login']
+                    );
                 }
 
                 // statistics
@@ -1750,7 +1859,14 @@ if (null !== $post_type) {
                                 $post_id
                             );
                             // log
-                            logItems($post_id, $dataItem['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login'], 'at_automatically_deleted');
+                            logItems(
+                                $post_id,
+                                $dataItem['label'],
+                                $_SESSION['user_id'],
+                                'at_delete',
+                                $_SESSION['login'],
+                                'at_automatically_deleted'
+                            );
                             $arrData['to_be_deleted'] = 0;
                         } elseif ($dataDelete['del_type'] === '2') {
                             $arrData['to_be_deleted'] = date($SETTINGS['date_format'], $dataDelete['del_value']);
@@ -1949,11 +2065,6 @@ if (null !== $post_type) {
                     $favourite = 0;
                 }
 
-                // Add the fact that item has been viewed in logs
-                if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] === '1') {
-                    logItems($post_id, $dataItem['label'], $_SESSION['user_id'], 'at_shown', $_SESSION['login']);
-                }
-
                 // Add this item to the latests list
                 if (isset($_SESSION['latest_items']) && isset($SETTINGS['max_latest_items']) && !in_array($dataItem['id'], $_SESSION['latest_items'])) {
                     if (count($_SESSION['latest_items']) >= $SETTINGS['max_latest_items']) {
@@ -2073,7 +2184,13 @@ if (null !== $post_type) {
                 $post_id
             );
             // log
-            logItems($post_id, $post_label, $_SESSION['user_id'], 'at_delete', $_SESSION['login']);
+            logItems(
+                $post_id,
+                $post_label,
+                $_SESSION['user_id'],
+                'at_delete',
+                $_SESSION['login']
+            );
             // Update CACHE table
             updateCacheTable("delete_value", $post_id);
             break;
@@ -2501,7 +2618,7 @@ if (null !== $post_type) {
                         INNER JOIN ".prefix_table("log_items")." AS l ON (i.id = l.id_item)
                         WHERE %l
                         GROUP BY i.id, l.date, l.id_user, l.action
-                        ORDER BY i.label ASC, l.date DESC".$query_limit,
+                        ORDER BY i.label ASC, l.date DESC".$query_limit, //
                         $where
                     );
                 } else {
@@ -3071,7 +3188,14 @@ if (null !== $post_type) {
                     filter_input(INPUT_POST, 'file_id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 // Update the log
-                logItems($data['id_item'], $data['name'], $_SESSION['user_id'], 'at_modification', $_SESSION['login'], 'at_del_file : '.$data['name']);
+                logItems(
+                    $data['id_item'],
+                    $data['name'],
+                    $_SESSION['user_id'],
+                    'at_modification',
+                    $_SESSION['login'],
+                    'at_del_file : '.$data['name']
+                );
                 // Delete file from server
                 fileDelete($SETTINGS['path_to_upload_folder']."/".$data['file']);
             }
@@ -3450,7 +3574,13 @@ if (null !== $post_type) {
                     );
 
                     // log
-                    logItems($item_id, $dataSource['label'], $_SESSION['user_id'], 'at_delete', $_SESSION['login']);
+                    logItems(
+                        $item_id,
+                        $dataSource['label'],
+                        $_SESSION['user_id'],
+                        'at_delete',
+                        $_SESSION['login']
+                    );
 
                     // Update CACHE table
                     updateCacheTable("delete_value", $item_id);
@@ -3626,7 +3756,14 @@ if (null !== $post_type) {
                 ) {
                     $error = "";
                     // Query
-                    logItems($dataReceived['item_id'], $dataItem['label'], $_SESSION['user_id'], 'at_manual', $_SESSION['login'], htmlspecialchars_decode($dataReceived['label']), ENT_QUOTES);
+                    logItems(
+                        $dataReceived['item_id'],
+                        $dataItem['label'],
+                        $_SESSION['user_id'],
+                        'at_manual',
+                        $_SESSION['login'],
+                        htmlspecialchars_decode($dataReceived['label'], ENT_QUOTES)
+                    );
                     // Prepare new line
                     $data = DB::queryfirstrow(
                         "SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i ORDER BY date DESC",

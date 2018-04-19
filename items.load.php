@@ -2244,10 +2244,8 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_tags').val($('#hid_tags').val());
     if ($('#hid_anyone_can_modify').val() == "1") {
         $('#edit_anyone_can_modify').attr("checked","checked");
-        $('#edit_anyone_can_modify').button("refresh");
     } else {
         $('#edit_anyone_can_modify').attr("checked",false);
-        $('#edit_anyone_can_modify').button("refresh");
     }
     // fields display
     if ($('.fields').val() != undefined && $("#display_categories").val() != "") {
@@ -2615,11 +2613,9 @@ function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
         $("#jstree").jstree("deselect_all");
 
         $('#jstree')
-        .one("refresh.jstree", function (e, data) {
+        .one("refresh.jstree", function(e, data) {
             data.instance.select_node("#li_"+node_to_select);
         });
-        //.jstree("select_node", "#li_"+node_to_select);
-
     }
 
     if (refresh_visible_folders === 1) {
@@ -2824,7 +2820,7 @@ $(function() {
 
     // Build buttons
     $("#custom_pw, #edit_custom_pw").buttonset();
-    $(".cpm_button, #anyone_can_modify, #annonce, #edit_anyone_can_modify, #edit_annonce, .button").button();
+    $(".cpm_button, #annonce, #edit_annonce, .button").button();
 
     // Launch items loading
     if ($("#jstree_group_selected").val() == "") {
