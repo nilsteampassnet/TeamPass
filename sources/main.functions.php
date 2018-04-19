@@ -434,7 +434,7 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
 /**
  * Generating a defuse key
  *
- * @return void
+ * @return string
  */
 function defuse_generate_key()
 {
@@ -457,7 +457,7 @@ function defuse_generate_key()
  * Generate a Defuse personal key
  *
  * @param  string $psk psk used
- * @return void
+ * @return string
  */
 function defuse_generate_personal_key($psk)
 {
@@ -482,7 +482,7 @@ function defuse_generate_personal_key($psk)
  *
  * @param  string $psk                   the user's psk
  * @param  string $protected_key_encoded special key
- * @return void
+ * @return string
  */
 function defuse_validate_personal_key($psk, $protected_key_encoded)
 {
@@ -551,9 +551,9 @@ function trimElement($chaine, $element)
 /**
  * Permits to suppress all "special" characters from string
  *
- * @param string  $string  what to clean
- * @param boolean $special use of special chars?
- * @return void
+ * @param  string  $string  what to clean
+ * @param  boolean $special use of special chars?
+ * @return string
  */
 function cleanString($string, $special = false)
 {
