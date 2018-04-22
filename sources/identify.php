@@ -580,7 +580,7 @@ function identifyUser(
 
                                 if ($entries['count'] > 0) {
                                     // Now check if group fits
-                                    for ($i=0; $i<$entries['count']; $i++) {
+                                    for ($i = 0; $i < $entries['count']; $i++) {
                                         $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
                                         if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                             $GroupRestrictionEnabled = true;
