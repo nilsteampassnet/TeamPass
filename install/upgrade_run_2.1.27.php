@@ -206,8 +206,8 @@ $res = addColumnIfNotExist(
     "INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
 );
 if ($res === true) {
-  // Change name of field
-  mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
+    // Change name of field
+    mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
 } elseif ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id user_ip to table misc! '.mysqli_error($db_link).'!"}]';
     mysqli_close($db_link);
@@ -522,13 +522,23 @@ mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."categories_folders` ADD PRIMARY KEY (`id_category`)"
 );
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."categories_folders` DROP PRIMARY KEY"
+);
+
+// alter table categories_folders to add an index
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."categories_folders` ADD `increment_id` INT(12) NOT NULL AUTO_INCREMENT, ADD PRIMARY KEY (`increment_id`)"
+);
 
 
 //-- generate new DEFUSE key
 if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installed === false) {
     $filename = "../includes/config/settings.php";
     $settingsFile = file($filename);
-    while (list($key, $val) = each($settingsFile)) {
+    foreach ($settingsFile as $key => $val) {
         if (substr_count($val, 'require_once "') > 0 && substr_count($val, 'sk.php') > 0) {
             $superGlobal->put("sk_file", substr($val, 14, strpos($val, '";') - 14), "SESSION");
             $session_sk_file = $superGlobal->get("sk_file", "SESSION");
@@ -537,7 +547,7 @@ if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installe
 
     copy(
         SECUREPATH."/teampass-seckey.txt",
-        SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".time()
+        SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))).".".time()
     );
     $superGlobal->put("tp_defuse_new_key", true, "SESSION");
     $new_salt = defuse_generate_key();
@@ -550,7 +560,7 @@ if (isset($session_tp_defuse_installed) === false || $session_tp_defuse_installe
     // update sk.php file
     copy(
         $session_sk_file,
-        $session_sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))).".".time()
+        $session_sk_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))).".".time()
     );
     $data = file($session_sk_file); // reads an array of lines
     function replace_a_line($data)
@@ -843,6 +853,32 @@ if ($res === false) {
 }
 
 
+// alter table USERS to add a new field "yubico_user_key"
+$res = addColumnIfNotExist(
+    $pre."users",
+    "yubico_user_key",
+    "VARCHAR(100) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_key to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// alter table USERS to add a new field "yubico_user_id"
+$res = addColumnIfNotExist(
+    $pre."users",
+    "yubico_user_id",
+    "VARCHAR(100) NOT NULL DEFAULT 'none'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field yubico_user_id to table Users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
 // alter table USERS to allow NULL on field "email"
 mysqli_query(
     $db_link,
@@ -906,6 +942,16 @@ if (intval($tmp) === 0) {
 }
 
 
+// add new admin setting "secure_display_image"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'secure_display_image'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_display_image', '1')"
+    );
+}
+
+
 
 // alter table NESTEED_TREE to INT(5) on field "renewal_period"
 mysqli_query(
@@ -934,6 +980,19 @@ mysqli_query(
     PRIMARY KEY (`id`)
     ) CHARSET=utf8;"
 );
+
+
+// add field status to FILE table
+$res = addColumnIfNotExist(
+    $pre."files",
+    "content",
+    "longblob DEFAULT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field content to table files! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 
 
@@ -996,12 +1055,54 @@ mysqli_query($db_link, "ALTER TABLE ".$pre."nested_tree` DROP INDEX `id`;");
 mysqli_query($db_link, "ALTER TABLE ".$pre."tags` DROP INDEX `id`;");
 
 
+// add field masked to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre."categories",
+    "masked",
+    "tinyint(1) NOT NULL default '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field masked to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// add field role_visibility to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre."categories",
+    "role_visibility",
+    "VARCHAR(250) NOT NULL DEFAULT 'all'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field role_visibility to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// Now perform an operation on table CATEGORIES
+// This will change the 'masked' to an attribute of 'text' type
+$result = mysqli_query(
+    $db_link,
+    "SELECT id, type FROM `".$pre."categories` WHERE type = 'masked'"
+);
+while ($row_field = mysqli_fetch_assoc($result)) {
+    mysqli_query(
+        $db_link,
+        "UPDATE `".$pre."categories`
+        SET `type` = 'text', `masked` = '1'
+        WHERE id = ".$row_field['id']
+    );
+}
+
+
 /*
 * Introduce new CONFIG file
 */
 $tp_config_file = "../includes/config/tp.config.php";
 if (file_exists($tp_config_file)) {
-    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
         echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
         return false;
     } else {
@@ -1030,7 +1131,7 @@ if ($any_settings === true) {
         utf8_encode(
             "<?php
 global \$SETTINGS;
-\$SETTINGS = array (" . $config_text . "
+\$SETTINGS = array (" . $config_text."
 );"
         )
     );

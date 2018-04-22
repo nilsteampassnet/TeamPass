@@ -180,7 +180,7 @@ function mainQuery()
 
                 // update sessions
                 $_SESSION['last_pw'] = $oldPw;
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
@@ -190,7 +190,7 @@ function mainQuery()
                         prefix_table("users"),
                         array(
                             'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
+                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                             'last_pw' => $oldPw
                             ),
                         "id = %i",
@@ -200,7 +200,7 @@ function mainQuery()
                     logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
                     echo '[ { "error" : "none" } ]';
                 } else {
-                     echo '[ { "error" : "pwd_hash_not_correct" } ]';
+                        echo '[ { "error" : "pwd_hash_not_correct" } ]';
                 }
                 break;
 
@@ -208,7 +208,7 @@ function mainQuery()
             } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && ((filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "admin_change"
                     || filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change"
-                    ) && ($_SESSION['user_admin'] === "1"|| $_SESSION['user_manager'] === "1"
+                    ) && ($_SESSION['user_admin'] === "1" || $_SESSION['user_manager'] === "1"
                     || $_SESSION['user_can_manage_all_users'] === "1")
                 )
             ) {
@@ -236,7 +236,7 @@ function mainQuery()
                         prefix_table("users"),
                         array(
                             'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
                             ),
                         "id = %i",
                         $dataReceived['user_id']
@@ -279,7 +279,7 @@ function mainQuery()
                     prefix_table("users"),
                     array(
                         'pw' => $newPw,
-                        'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                        'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
                         ),
                     "id = %i",
                     $_SESSION['user_id']
@@ -287,7 +287,7 @@ function mainQuery()
 
                 // update sessions
                 $_SESSION['last_pw'] = "";
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // update LOG
@@ -313,6 +313,7 @@ function mainQuery()
                 echo '[{"error" : "not_allowed"}]';
                 break;
             }
+            $ldap_user_never_auth = false;
 
             // Check if user exists
             if (null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
@@ -341,6 +342,8 @@ function mainQuery()
                     WHERE id = %i",
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
+                $login = $data['login'];
+                $pwd = $data['pw'];
             }
             // Get number of returned users
             $counter = DB::count();
@@ -350,11 +353,27 @@ function mainQuery()
             $pwdlib->register();
             $pwdlib = new PasswordLib\PasswordLib();
 
+            // If LDAP enabled and counter = 0 then perhaps new user to add
+            if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1' && $counter === 0) {
+                $ldap_info_user = json_decode(connectLDAP($login, $pwd, $SETTINGS));
+                if ($ldap_info_user->{'user_found'} === true) {
+                    $data['email'] = $ldap_info_user->{'email'};
+                    $counter = 1;
+                    $ldap_user_never_auth = true;
+                }
+            }
+            
             // check the given password
             if ($counter === 0
-                || (isset($pwd) === true && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false)
+                || (isset($pwd) === true && isset($data['pw']) === true && $pwd !== $data['pw'])
             ) {
                 // not a registered user !
+                if ($counter === 0) {
+                    logEvents('failed_auth', 'user_not_exists', "", stripslashes($login), stripslashes($login));
+                } else if ($pwdlib->verifyPasswordHash($pwd, $data['pw']) === false) {
+                    logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
+                }
+
                 echo '[{"error" : "no_user"}]';
             } else {
                 if (empty($data['email'])) {
@@ -367,15 +386,57 @@ function mainQuery()
                     $gaTemporaryCode = GenerateCryptKey(12);
 
                     // save the code
-                    DB::update(
-                        prefix_table("users"),
-                        array(
-                            'ga' => $gaSecretKey,
-                            'ga_temporary_code' => $gaTemporaryCode
-                            ),
-                        "id = %i",
-                        $data['id']
-                    );
+                    if ($ldap_user_never_auth === false) {
+                        DB::update(
+                            prefix_table("users"),
+                            array(
+                                'ga' => $gaSecretKey,
+                                'ga_temporary_code' => $gaTemporaryCode
+                                ),
+                            "id = %i",
+                            $data['id']
+                        );
+                    } else {
+                        // save the code but also create an account in database
+                        DB::insert(
+                            prefix_table('users'),
+                            array(
+                                'login' => $login,
+                                'pw' => $pwdlib->createPasswordHash($pwd),
+                                'email' => $data['email'],
+                                'name' => $ldap_info_user->{'name'},
+                                'lastname' => $ldap_info_user->{'lastname'},
+                                'admin' => '0',
+                                'gestionnaire' => '0',
+                                'can_manage_all_users' => '0',
+                                'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
+                                'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
+                                'groupes_interdits' => '',
+                                'groupes_visibles' => '',
+                                'last_pw_change' => time(),
+                                'user_language' => $SETTINGS['default_language'],
+                                'encrypted_psk' => '',
+                                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                                'ga' => $gaSecretKey,
+                                'ga_temporary_code' => $gaTemporaryCode
+                            )
+                        );
+                        $newUserId = DB::insertId();
+                        // Create personnal folder
+                        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
+                            DB::insert(
+                                prefix_table("nested_tree"),
+                                array(
+                                    'parent_id' => '0',
+                                    'title' => $newUserId,
+                                    'bloquer_creation' => '0',
+                                    'bloquer_modification' => '0',
+                                    'personal_folder' => '1'
+                                )
+                            );
+                        }
+                    }
+                    
 
                     // send mail?
                     if (null !== filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING)
@@ -1263,7 +1324,6 @@ function mainQuery()
             }
 
             // Read config file
-            $tmp = '';
             $list_of_options = '';
             $url_found = '';
             $anonym_url = '';
@@ -1276,10 +1336,10 @@ function mainQuery()
 
                     // Identify url to anonymize it
                     if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
-                        $url_found = substr($line, 19, strlen($line) - 22);//echo $url_found." ; ";
+                        $url_found = substr($line, 19, strlen($line) - 22);
                         $tmp = parse_url($url_found);
-                        $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
-                        $line = "'cpassman_url' => '" . $anonym_url . "\n";
+                        $anonym_url = $tmp['scheme'].'://<anonym_url>'.$tmp['path'];
+                        $line = "'cpassman_url' => '".$anonym_url."\n";
                     }
 
                     // Anonymize all urls
@@ -1346,7 +1406,7 @@ Tell us what happens instead
 
 **Teampass configuration file:**
 ```
-" . $list_of_options . "
+" . $list_of_options."
 ```
 
 **Updated from an older Teampass or fresh install:**
@@ -1361,12 +1421,12 @@ Tell us what happens instead
 
 #### Web server error log
 ```
-" . $err['message']." - ".$err['file']." (".$err['line'] .")
+" . $err['message']." - ".$err['file']." (".$err['line'].")
 ```
 
 #### Teampass 10 last system errors
 ```
-" . $teampass_errors ."
+" . $teampass_errors."
 ```
 
 #### Log from the web-browser developer console (CTRL + SHIFT + i)
@@ -1414,7 +1474,7 @@ Insert the log here and especially the answer of the query that failed.
 
                 // Update session
                 if ($field === 'user_api_key') {
-                  $_SESSION['user_settings']['api-key'] = $new_value;
+                    $_SESSION['user_settings']['api-key'] = $new_value;
                 }
             break;
     }

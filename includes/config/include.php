@@ -12,7 +12,7 @@
 global $SETTINGS, $languagesList, $SETTINGS_EXT;
 
 $SETTINGS_EXT['version'] = "2.1.27";
-$SETTINGS_EXT['version_full'] = $SETTINGS_EXT['version'].".11";
+$SETTINGS_EXT['version_full'] = $SETTINGS_EXT['version'].".12";
 $SETTINGS_EXT['tool_name'] = "TeamPass";
 $SETTINGS_EXT['one_day_seconds'] = 86400;
 $SETTINGS_EXT['one_week_seconds'] = 604800;
@@ -30,6 +30,7 @@ define('ERR_SESS_EXPIRED', "1002");
 define('ERR_NO_MCRYPT', "1003");
 define('ERR_VALID_SESSION', "1004");
 define('OTV_USER_ID', "9999991");
+define('SSH_USER_ID', "9999998");
 define('API_USER_ID', "9999999");
 define('DEFUSE_ENCRYPTION', true);
 

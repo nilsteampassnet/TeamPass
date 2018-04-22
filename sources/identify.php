@@ -45,10 +45,10 @@ $adldap = "";
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING);
+$post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_STRING);
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
     //--------
@@ -104,6 +104,82 @@ if ($post_type === "identify_duo_user") {
 
     // return the response (which should be the user name)
     if ($resp === $post_login) {
+        // Check if this account exists in Teampass or only in LDAP
+        if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
+            require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            // connect to the server
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+            $pass = defuse_return_decrypted($pass);
+            DB::$host = $server;
+            DB::$user = $user;
+            DB::$password = $pass;
+            DB::$dbName = $database;
+            DB::$port = $port;
+            DB::$encoding = $encoding;
+            DB::$error_handler = true;
+            $link = mysqli_connect($server, $user, $pass, $database, $port);
+            $link->set_charset($encoding);
+            
+            // is user in Teampass?
+            $data = DB::queryfirstrow(
+                "SELECT id
+                FROM ".prefix_table("users")."
+                WHERE login = %s",
+                $post_login
+            );
+
+            if (DB::count() === 0) {
+                // Get LDAP info for this user
+                $ldap_info_user = json_decode(connectLDAP($post_login, $post_pwd, $SETTINGS));
+                
+                if ($ldap_info_user->{'user_found'} === true && $ldap_info_user->{'auth_success'} === true) {
+                    // load passwordLib library
+                    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    // save an account in database
+                    DB::insert(
+                        prefix_table('users'),
+                        array(
+                            'login' => $post_login,
+                            'pw' => $pwdlib->createPasswordHash($post_pwd),
+                            'email' => $ldap_info_user->{'email'},
+                            'name' => $ldap_info_user->{'name'},
+                            'lastname' => $ldap_info_user->{'lastname'},
+                            'admin' => '0',
+                            'gestionnaire' => '0',
+                            'can_manage_all_users' => '0',
+                            'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
+                            'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
+                            'groupes_interdits' => '',
+                            'groupes_visibles' => '',
+                            'last_pw_change' => time(),
+                            'user_language' => $SETTINGS['default_language'],
+                            'encrypted_psk' => '',
+                            'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
+                        )
+                    );
+                    $newUserId = DB::insertId();
+                    // Create personnal folder
+                    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
+                        DB::insert(
+                            prefix_table("nested_tree"),
+                            array(
+                                'parent_id' => '0',
+                                'title' => $newUserId,
+                                'bloquer_creation' => '0',
+                                'bloquer_modification' => '0',
+                                'personal_folder' => '1'
+                            )
+                        );
+                    }
+                }
+            }
+        }
+
         echo '[{"resp" : "'.$resp.'"}]';
     } else {
         echo '[{"resp" : "'.$resp.'"}]';
@@ -129,7 +205,7 @@ if ($post_type === "identify_duo_user") {
     $link->set_charset($encoding);
 
     // do checks
-    if (null !== $post_cardid && empty(post_cardid) === true) {
+    if (null !== $post_cardid && empty($post_cardid) === true) {
         // no card id is given
         // check if it is DB
         $row = DB::queryFirstRow(
@@ -298,7 +374,7 @@ function identifyUser(
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // Load superGlobals
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare GET variables
@@ -449,6 +525,8 @@ function identifyUser(
                     if ($debugLdap == 1) {
                         fputs($dbgLdap, "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."\n");
                     }
+                } else {
+                    $ldapbind = false;
                 }
                 if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
                     $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
@@ -502,33 +580,30 @@ function identifyUser(
 
                                 if ($entries['count'] > 0) {
                                     // Now check if group fits
-                                    for ($i=0; $i<$entries['count']; $i++) {
-                                      $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                      if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
-                                        $GroupRestrictionEnabled = true;
-                                        break;
-                                      }
+                                    for ($i = 0; $i < $entries['count']; $i++) {
+                                        $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                        if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                            $GroupRestrictionEnabled = true;
+                                            break;
+                                        }
                                     }
-
                                 }
                             }
 
                             if ($debugLdap == 1) {
                                 fputs(
                                     $dbgLdap,
-                                    'Group was found : '.$GroupRestrictionEnabled."\n"
+                                    'Group was found : '.var_export($GroupRestrictionEnabled, true)."\n"
                                 );
                             }
                         }
 
                         // Is user in the LDAP?
                         if ($GroupRestrictionEnabled === true
-                            || (
-                                $GroupRestrictionEnabled === false
-                                && (isset($SETTINGS['ldap_usergroup']) === false
-                                    || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
-                                )
-                            )
+                            || ($GroupRestrictionEnabled === false
+                            && (isset($SETTINGS['ldap_usergroup']) === false
+                            || (isset($SETTINGS['ldap_usergroup']) === true
+                            && empty($SETTINGS['ldap_usergroup']) === true)))
                         ) {
                             // Try to auth inside LDAP
                             $ldapbind = ldap_bind($ldapconn, $user_dn, $passwordClear);
@@ -546,8 +621,8 @@ function identifyUser(
                                         array(
                                             'pw' => $data['pw']
                                         ),
-                                        "login=%s",
-                                        $username
+                                        "id = %i",
+                                        $data['id']
                                     );
 
                                     // No user creation is requested
@@ -581,11 +656,12 @@ function identifyUser(
             }
             $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
             $adldap->register();
+            $ldap_suffix = '';
 
             // Posix style LDAP handles user searches a bit differently
             if ($SETTINGS['ldap_type'] === 'posix') {
                 $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
-            } elseif ($SETTINGS['ldap_type'] === 'windows' && empty($ldap_suffix) === true) {
+            } elseif ($SETTINGS['ldap_type'] === 'windows') {
                 //Multiple Domain Names
                 $ldap_suffix = $SETTINGS['ldap_suffix'];
             }
@@ -643,8 +719,8 @@ function identifyUser(
                             array(
                                 'pw' => $data['pw']
                             ),
-                            "login=%s",
-                            $username
+                            "id = %i",
+                            $data['id']
                         );
 
                         // No user creation is requested
@@ -693,6 +769,51 @@ function identifyUser(
         } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
             echo '[{"value" : "bad_psk"}]';
             exit();
+        }
+    }
+
+
+    // Check Yubico
+    if (isset($SETTINGS['yubico_authentication'])
+        && $SETTINGS['yubico_authentication'] === "1"
+        && $data['admin'] !== "1"
+    ) {
+        $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
+        $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
+        $yubico_user_id = htmlspecialchars_decode($dataReceived['yubico_user_id']);
+
+        if (empty($yubico_user_key) === false && empty($yubico_user_id) === false) {
+            // save the new yubico in user's account
+            DB::update(
+                prefix_table('users'),
+                array(
+                    'yubico_user_key' => $yubico_user_key,
+                    'yubico_user_id' => $yubico_user_id
+                ),
+                "id=%i",
+                $data['id']
+            );
+        } else {
+            // Check existing yubico credentials
+            if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
+                echo '[{"value" : "no_user_yubico_credentials"}]';
+                exit();
+            } else {
+                $yubico_user_key = $data['yubico_user_key'];
+                $yubico_user_id = $data['yubico_user_id'];
+            }
+        }
+
+        // Now check yubico validity
+        include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/Yubico/Yubico.php';
+        $yubi = new Auth_Yubico($yubico_user_id, $yubico_user_key);
+        $auth = $yubi->verify($yubico_key);
+        if (PEAR::isError($auth)) {
+            $proceedIdentification = false;
+            echo '[{"value" : "bad_user_yubico_credentials"}]';
+            exit();
+        } else {
+            $proceedIdentification = true;
         }
     }
 
@@ -760,7 +881,7 @@ function identifyUser(
     );
     $counter = DB::count();
     if ($counter === 0) {
-        logEvents('failed_auth', 'user_not_exists', "", stripslashes($username));
+        logEvents('failed_auth', 'user_not_exists', "", stripslashes($username), stripslashes($username));
         echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
         exit();
     }
@@ -796,7 +917,7 @@ function identifyUser(
                         $data['id']
                     );
 
-                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+                    echo '[{' +'"value" : "<img src=\"'.$new_2fa_qr.'\">", ' +'"user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? +$antiXss->xss_clean($_SESSION['user_admin']) : "", '", ' +'"initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
                     exit();
                 }
@@ -901,7 +1022,7 @@ function identifyUser(
         $logError = "Install folder has to be removed!";
 
         echo '[{"value" : "'.$return.'", "user_admin":"',
-        isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "",
+        isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "",
         '", "initial_url" : "'.@$_SESSION['initial_url'].'",
         "error" : "'.$logError.'"}]';
 
@@ -910,7 +1031,9 @@ function identifyUser(
 
     if ($proceedIdentification === true) {
         // User exists in the DB
-        if (crypt($passwordClear, $data['pw']) == $data['pw'] && !empty($data['pw'])) {
+        if (crypt($passwordClear, $data['pw']) === $data['pw']
+            && empty($data['pw']) === false
+        ) {
             //update user's password
             $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
             DB::update(
@@ -929,7 +1052,13 @@ function identifyUser(
                 $userPasswordVerified = true;
             } else {
                 $userPasswordVerified = false;
-                logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($username));
+                logEvents(
+                    'failed_auth',
+                    'user_password_not_correct',
+                    "",
+                    "",
+                    stripslashes($username)
+                );
             }
         }
 
@@ -945,23 +1074,17 @@ function identifyUser(
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
         // 3-  LDAP mode + user enabled + pw ok + usre is admin
         // This in order to allow admin by default to connect even if LDAP is activated
-        if ((
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
-            && $userPasswordVerified === true && $data['disabled'] === '0'
-            ) || (
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin"
-            ) || (
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin"
-            ) || (
-            isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0'
-            ) || (
-            isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
+        if ((isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
+            && $userPasswordVerified === true && $data['disabled'] === '0')
+            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin")
+            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin")
+            || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
+            && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0')
+            || (isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
             && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
-            && $userPasswordVerified === true && $data['disabled'] === '0'
-            )
+            && $userPasswordVerified === true && $data['disabled'] === '0')
         ) {
             $_SESSION['autoriser'] = true;
             $_SESSION["pwd_attempts"] = 0;
@@ -975,6 +1098,32 @@ function identifyUser(
                     "User's token: ".$key."\n"
                 );
             }
+
+            // Check if any unsuccessfull login tries exist
+            $arrAttempts = array();
+            $rows = DB::query(
+                "SELECT date
+                FROM ".prefix_table("log_system")."
+                WHERE field_1 = %s
+                AND type = 'failed_auth'
+                AND label = 'user_password_not_correct'
+                AND date >= %s AND date < %s",
+                $data['login'],
+                $data['last_connexion'],
+                time()
+            );
+            $arrAttempts['nb'] = DB::count();
+            $arrAttempts['shown'] = false;
+            $arrAttempts['attempts'] = array();
+            if (DB::count() > 0) {
+                foreach ($rows as $record) {
+                    array_push(
+                        $arrAttempts['attempts'],
+                        date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])
+                    );
+                }
+            }
+            $_SESSION['unsuccessfull_login_attempts'] = $arrAttempts;
 
             // Log into DB the user's connection
             if (isset($SETTINGS['log_connections']) && $SETTINGS['log_connections'] === '1') {
@@ -1022,12 +1171,15 @@ function identifyUser(
                 $SETTINGS['use_md5_password_as_salt'] == 1
             ) {
                 $_SESSION['user_settings']['clear_psk'] = md5($passwordClear);
-                setcookie(
-                    "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                    encrypt($_SESSION['user_settings']['clear_psk'], ""),
-                    time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
-                    '/'
-                );
+                $tmp = encrypt($_SESSION['user_settings']['clear_psk'], "");
+                if ($tmp !== false) {
+                    setcookie(
+                        "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                        $tmp,
+                        time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
+                        '/'
+                    );
+                }
             }
 
             if (empty($data['last_connexion'])) {
@@ -1162,8 +1314,8 @@ function identifyUser(
             $return = $dataReceived['randomstring'];
             // Send email
             if (isset($SETTINGS['enable_send_email_on_user_login'])
-                    && $SETTINGS['enable_send_email_on_user_login'] === '1'
-                    && $_SESSION['user_admin'] != 1
+                && $SETTINGS['enable_send_email_on_user_login'] === '1'
+                && $_SESSION['user_admin'] != 1
             ) {
                 // get all Admin users
                 $receivers = "";
@@ -1222,7 +1374,6 @@ function identifyUser(
                 prefix_table('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
-                    'last_connexion' => time(),
                     'disabled' => $userIsLocked,
                     'no_bad_attempts' => $nbAttempts
                 ),
@@ -1259,7 +1410,7 @@ function identifyUser(
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
     $_SESSION['initial_url'] = "";
     if ($SETTINGS['cpassman_dir'] === '..') {

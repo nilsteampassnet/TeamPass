@@ -65,7 +65,11 @@ if (isset($_GET['pathIsFiles']) && $_GET['pathIsFiles'] == 1) {
     $link->set_charset($encoding);
 
     // get file key
-    $file_info = DB::queryfirstrow("SELECT file, status FROM ".prefix_table("files")." WHERE id=%i", $get_fileid);
+    $file_info = DB::queryfirstrow(
+        "SELECT file, status 
+        FROM ".prefix_table("files")."
+        WHERE id=%i", $get_fileid
+    );
 
     // should we encrypt/decrypt the file
     encrypt_or_decrypt_file($file_info['file'], $file_info['status']);

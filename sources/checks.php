@@ -50,23 +50,23 @@ $pagesRights = array(
 Handle CASES
  */
 switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-case "checkSessionExists":
-    // Case permit to check if SESSION is still valid
-    session_start();
-    if (isset($_SESSION['CPM']) === true) {
-        echo "1";
-    } else {
-        // In case that no session is available
-        // Force the page to be reloaded and attach the CSRFP info
+    case "checkSessionExists":
+        // Case permit to check if SESSION is still valid
+        session_start();
+        if (isset($_SESSION['CPM']) === true) {
+            echo "1";
+        } else {
+            // In case that no session is available
+            // Force the page to be reloaded and attach the CSRFP info
 
-        // Load CSRFP
-        $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
+            // Load CSRFP
+            $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
 
-        // Send back CSRFP info
-        echo $csrfp_array['CSRFP_TOKEN'].";".filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
-    }
+            // Send back CSRFP info
+            echo $csrfp_array['CSRFP_TOKEN'].";".filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
+        }
 
-    break;
+        break;
 }
 
 /**

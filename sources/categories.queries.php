@@ -94,73 +94,36 @@ if (null !== $post_type) {
             break;
 
         case "addNewField":
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                "decode"
+            );
+
+            $post_title = filter_var($dataReceived['title'], FILTER_SANITIZE_STRING);
+
             // store key
-            if (empty($post_field_title) === false
-                && empty($post_id) === false
-            ) {
+            if (empty($post_title) === false) {
                 DB::insert(
                     prefix_table("categories"),
                     array(
-                        'parent_id' => $post_id,
-                        'title' => $post_field_title,
-                        'type' => $post_field_type,
+                        'parent_id' => filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
+                        'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_STRING),
+                        'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_STRING),
+                        'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING),
+                        'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING),
+                        'role_visibility' => filter_var($dataReceived['field_visibility'], FILTER_SANITIZE_STRING),
                         'level' => 1,
-                        'order' => 1
+                        'order' => filter_var($dataReceived['order'], FILTER_SANITIZE_NUMBER_INT)
                     )
                 );
                 echo '[{"error" : "", "id" : "'.DB::insertId().'"}]';
-            }
-            break;
-
-        case "renameItem":
-            // update key
-            if (empty($post_data) === false
-                && empty($post_id) === false
-            ) {
-                DB::update(
-                    prefix_table("categories"),
-                    array(
-                        'title' => $post_data
-                        ),
-                    "id=%i",
-                    $post_id
-                );
-                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
-            }
-            break;
-
-        case "moveItem":
-            // update key
-            if (empty($post_data) === false
-                && empty($post_id) === false
-            ) {
-                DB::update(
-                    prefix_table("categories"),
-                    array(
-                        'parent_id' => $post_data,
-                        'order' => 99
-                        ),
-                    "id=%i",
-                    $post_id
-                );
-                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
-            }
-            break;
-
-        case "changeFieldType":
-            // update key
-            if (empty($post_data) === false
-                && empty($post_id) === false
-            ) {
-                DB::update(
-                    prefix_table("categories"),
-                    array(
-                        'type' => $post_data
-                        ),
-                    "id=%i",
-                    $post_id
-                );
-                echo '[{"error" : "", "id" : "'.$post_id.'"}]';
             }
             break;
 
@@ -182,10 +145,56 @@ if (null !== $post_type) {
             }
             break;
 
+        case "update_category_and_field":
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
+            }
+
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                "decode"
+            );
+            
+            if (filter_var(($dataReceived['field_is_category']), FILTER_SANITIZE_NUMBER_INT) === 1) {
+                $array = array(
+                    'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_STRING)
+                );
+            } else {
+                $array = array(
+                    'title' => filter_var($dataReceived['title'], FILTER_SANITIZE_STRING),
+                    'parent_id' => filter_var($dataReceived['category'], FILTER_SANITIZE_NUMBER_INT),
+                    'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_STRING),
+                    'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING),
+                    'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING),
+                    'role_visibility' => filter_var($dataReceived['roles'], FILTER_SANITIZE_STRING),
+                    'order' => filter_var($dataReceived['order'], FILTER_SANITIZE_NUMBER_INT)
+                );
+            }
+
+            // Perform update
+            DB::update(
+                prefix_table("categories"),
+                $array,
+                "id=%i",
+                filter_var(($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT)
+            );
+            echo '[{"error" : ""}]';
+
+            break;
+
         case "loadFieldsList":
             $categoriesSelect = "";
             $arrCategories = $arrFields = array();
-            $rows = DB::query("SELECT * FROM ".$pre."categories WHERE level = %i ORDER BY ".$pre."categories.order ASC", 0);
+            $rows = DB::query(
+                "SELECT *
+                FROM ".$pre."categories
+                WHERE level = %i
+                ORDER BY ".$pre."categories.order ASC",
+                0
+            );
             foreach ($rows as $record) {
                 // get associated folders
                 $foldersList = $foldersNumList = "";
@@ -219,13 +228,34 @@ if (null !== $post_type) {
                     )
                 );
                 $rows = DB::query(
-                    "SELECT * FROM ".prefix_table("categories")."
+                    "SELECT *
+                    FROM ".prefix_table("categories")."
                     WHERE parent_id = %i
                     ORDER BY ".$pre."categories.order ASC",
                     $record['id']
                 );
                 if (count($rows) > 0) {
                     foreach ($rows as $field) {
+                        // Get lsit of Roles
+                        if ($field['role_visibility'] === 'all') {
+                            $roleVisibility = $LANG['every_roles'];
+                        } else {
+                            $roleVisibility = '';
+                            foreach (explode(',', $field['role_visibility']) as $role) {
+                                $data = DB::queryFirstRow(
+                                    "SELECT title
+                                    FROM ".$pre."roles_title
+                                    WHERE id = %i",
+                                    $role
+                                );
+                                if (empty($roleVisibility) === true) {
+                                    $roleVisibility = $data['title'];
+                                } else {
+                                    $roleVisibility .= ', '.$data['title'];
+                                }
+                            }
+                        }
+                        // Store for exchange
                         array_push(
                             $arrCategories,
                             array(
@@ -235,7 +265,10 @@ if (null !== $post_type) {
                                 $field['order'],
                                 $field['encrypted_data'],
                                 "",
-                                $field['type']
+                                $field['type'],
+                                $field['masked'],
+                                addslashes($roleVisibility),
+                                $field['role_visibility']
                             )
                         );
                     }
@@ -337,6 +370,121 @@ if (null !== $post_type) {
             }
 
             echo '[{"error" : ""}]';
+            break;
+
+        case "refreshCategoriesHTML":
+            //Build tree of Categories
+            $categoriesSelect = "";
+            $arrCategories = array();
+            $rows = DB::query(
+                "SELECT * FROM ".prefix_table("categories")."
+                WHERE level = %i
+                ORDER BY ".$pre."categories.order ASC",
+                '0'
+            );
+            foreach ($rows as $record) {
+                array_push(
+                    $arrCategories,
+                    array(
+                        $record['id'],
+                        $record['title'],
+                        $record['order']
+                    )
+                );
+            }
+            $arrReturn = array(
+                'html' => '',
+                'no_category' => false
+            );
+            $html = '';
+
+            if (isset($arrCategories) && count($arrCategories) > 0) {
+                // build table
+                foreach ($arrCategories as $category) {
+                    // get associated Folders
+                    $foldersList = $foldersNumList = "";
+                    $rows = DB::query(
+                        "SELECT t.title AS title, c.id_folder as id_folder
+                        FROM ".prefix_table("categories_folders")." AS c
+                        INNER JOIN ".prefix_table("nested_tree")." AS t ON (c.id_folder = t.id)
+                        WHERE c.id_category = %i",
+                        $category[0]
+                    );
+                    foreach ($rows as $record) {
+                        if (empty($foldersList)) {
+                            $foldersList = $record['title'];
+                            $foldersNumList = $record['id_folder'];
+                        } else {
+                            $foldersList .= " | ".$record['title'];
+                            $foldersNumList .= ";".$record['id_folder'];
+                        }
+                    }
+                    // display each cat and fields
+                    $html .= '
+<tr id="t_cat_'.$category[0].'">
+    <td colspan="2">
+        <input type="text" id="catOrd_'.$category[0].'" size="1" class="category_order" value="'.$category[2].'" />&nbsp;
+        <span class="fa-stack tip" title="'.$LANG['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" style="cursor:pointer;">
+            <i class="fa fa-square fa-stack-2x"></i>
+            <i class="fa fa-plus fa-stack-1x fa-inverse"></i>
+        </span>
+        &nbsp;
+        <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
+        <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'" style="font-weight:bold;">'.$category[1].'</label>
+    </td>
+    <td>
+        <span class="fa-stack tip" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" style="cursor:pointer;">
+            <i class="fa fa-square fa-stack-2x"></i>
+            <i class="fa fa-edit fa-stack-1x fa-inverse"></i>
+        </span>
+        &nbsp;
+        '.$LANG['category_in_folders_title'].':
+        <span style="font-family:italic; margin-left:10px;" id="catFolders_'.$category[0].'">'.$foldersList.'</span>
+        <input type="hidden" id="catFoldersList_'.$category[0].'" value="'.$foldersNumList.'" />
+    </td>
+</tr>';
+                    $rows = DB::query(
+                        "SELECT * FROM ".prefix_table("categories")."
+                        WHERE parent_id = %i
+                        ORDER BY ".$pre."categories.order ASC",
+                        $category[0]
+                    );
+                    $counter = DB::count();
+                    if ($counter > 0) {
+                        foreach ($rows as $field) {
+                            $html .= '
+<tr id="t_field_'.$field['id'].'">
+    <td width="60px"></td>
+    <td colspan="2">
+        <input type="text" id="catOrd_'.$field['id'].'" size="1" class="category_order" value="'.$field['order'].'" />&nbsp;
+        <input type="radio" name="sel_item" id="item_'.$field['id'].'_cat" />
+        <label for="item_'.$field['id'].'_cat" id="item_'.$field['id'].'">'.($field['title']).'</label>
+        <span id="encryt_data_'.$field['id'].'" style="margin-left:4px; cursor:pointer;">'.(isset($field['encrypted_data']) && $field['encrypted_data'] === "1") ? '<i class="fa fa-key tip" title="'.$LANG['encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'1\')"></i>' : '<span class="fa-stack" title="'.$LANG['not_encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>'.'
+        </span>';
+                            if (isset($field['type'])) {
+                                if ($field['type'] === "text") {
+                                    $html .= '
+        <span style="margin-left:4px;"><i class="fa fa-paragraph tip" title="'.$LANG['data_is_text'].'"></i></span>';
+                                } elseif ($field['type'] === "masked") {
+                                    $html .= '
+        <span style="margin-left:4px;"><i class="fa fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
+                                }
+                            }
+                            $html .= '
+    </td>
+    <td></td>
+</tr>';
+                        }
+                    }
+                }
+            } else {
+                $arrReturn['no_category'] === true;
+                $html = addslashes($LANG['no_category_defined']);
+            }
+
+            $arrReturn['html'] === $html;
+
+            echo json_encode($arrReturn, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
             break;
     }
 }

@@ -507,16 +507,37 @@ if (null !== $post_type) {
             foreach ($fields_to_update as $field) {
                 if (!empty($field)) {
                     if ($field !== "pw") {
-                        logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$current_item[$field].' => '.$data[$field]);
+                        logItems(
+                            $data['item_id'],
+                            $current_item['label'],
+                            $data['user_id'],
+                            'at_modification',
+                            $author['login'],
+                            'at_'.$field.' : '.$current_item[$field].' => '.$data[$field]
+                        );
                     } elseif ($field === "description") {
-                        logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field);
+                        logItems(
+                            $data['item_id'],
+                            $current_item['label'],
+                            $data['user_id'],
+                            'at_modification',
+                            $author['login'],
+                            'at_'.$field
+                        );
                     } else {
                         $oldPwClear = cryption(
                             $current_item['pw'],
                             "",
                             "decrypt"
                         );
-                        logItems($data['item_id'], $current_item['label'], $data['user_id'], 'at_modification', $author['login'], 'at_'.$field.' : '.$oldPwClear);
+                        logItems(
+                            $data['item_id'],
+                            $current_item['label'],
+                            $data['user_id'],
+                            'at_modification',
+                            $author['login'],
+                            'at_'.$field.' : '.$oldPwClear
+                        );
                     }
                 }
             }

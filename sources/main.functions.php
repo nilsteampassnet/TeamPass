@@ -1,5 +1,4 @@
 <?php
-
 /**
  *
  * @file          main.functions.php
@@ -19,24 +18,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config if $SETTINGS not defined
 if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-  if (file_exists('../includes/config/tp.config.php')) {
-      require_once '../includes/config/tp.config.php';
-  } elseif (file_exists('./includes/config/tp.config.php')) {
-      require_once './includes/config/tp.config.php';
-  } elseif (file_exists('../../includes/config/tp.config.php')) {
-      require_once '../../includes/config/tp.config.php';
-  } else {
-      throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-  }
+    if (file_exists('../includes/config/tp.config.php')) {
+        include_once '../includes/config/tp.config.php';
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        include_once './includes/config/tp.config.php';
+    } elseif (file_exists('../../includes/config/tp.config.php')) {
+        include_once '../../includes/config/tp.config.php';
+    } else {
+        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    }
 }
 
 // load phpCrypt
 if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-    require_once '../includes/libraries/phpcrypt/phpCrypt.php';
-    require_once '../includes/config/settings.php';
+    include_once '../includes/libraries/phpcrypt/phpCrypt.php';
+    include_once '../includes/config/settings.php';
 } else {
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 }
 
 // Prepare PHPCrypt class calls
@@ -274,27 +273,6 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption_before_defuse($message, $saltkey, $init_vect, $type = null, $scope = "public")
-{
-    if (DEFUSE_ENCRYPTION === true) {
-        if ($scope === "perso") {
-            return defuse_crypto(
-                $message,
-                $saltkey,
-                $type
-            );
-        } else {
-            return defuse_crypto(
-                $message,
-                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
-                $type
-            );
-        }
-    } else {
-        return cryption_phpCrypt($message, $saltkey, $init_vect, $type);
-    }
-}
-
 /*
  * cryption() - Encrypt and decrypt string based upon phpCrypt library
  *
@@ -332,7 +310,7 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
     } elseif ($type == "decrypt") {
         // case if IV is empty
         if (empty($init_vect)) {
-                    return array(
+            return array(
                 'string' => "",
                 'error' => "ERR_ENCRYPTION_NOT_CORRECT"
             );
@@ -370,8 +348,12 @@ function testHex2Bin($val)
 }
 
 /**
- * @param string $ascii_key
- * @param string $type
+ * Defuse cryption function
+ *
+ * @param  string $message   what to de/crypt
+ * @param  string $ascii_key key to use
+ * @param  string $type      operation to perform
+ * @return array
  */
 function cryption($message, $ascii_key, $type) //defuse_crypto
 {
@@ -384,15 +366,15 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
         $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
     }
 
-    require_once $path.'Crypto.php';
-    require_once $path.'Encoding.php';
-    require_once $path.'DerivedKeys.php';
-    require_once $path.'Key.php';
-    require_once $path.'KeyOrPassword.php';
-    require_once $path.'File.php';
-    require_once $path.'RuntimeTests.php';
-    require_once $path.'KeyProtectedByPassword.php';
-    require_once $path.'Core.php';
+    include_once $path.'Crypto.php';
+    include_once $path.'Encoding.php';
+    include_once $path.'DerivedKeys.php';
+    include_once $path.'Key.php';
+    include_once $path.'KeyOrPassword.php';
+    include_once $path.'File.php';
+    include_once $path.'RuntimeTests.php';
+    include_once $path.'KeyProtectedByPassword.php';
+    include_once $path.'Core.php';
 
     // init
     $err = '';
@@ -427,23 +409,34 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     );
 }
 
+/**
+ * Generating a defuse key
+ *
+ * @return string
+ */
 function defuse_generate_key()
 {
-    require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
-    require_once '../includes/libraries/Encryption/Encryption/Encoding.php';
-    require_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
-    require_once '../includes/libraries/Encryption/Encryption/Key.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/File.php';
-    require_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
-    require_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
-    require_once '../includes/libraries/Encryption/Encryption/Core.php';
+    include_once '../includes/libraries/Encryption/Encryption/Crypto.php';
+    include_once '../includes/libraries/Encryption/Encryption/Encoding.php';
+    include_once '../includes/libraries/Encryption/Encryption/DerivedKeys.php';
+    include_once '../includes/libraries/Encryption/Encryption/Key.php';
+    include_once '../includes/libraries/Encryption/Encryption/KeyOrPassword.php';
+    include_once '../includes/libraries/Encryption/Encryption/File.php';
+    include_once '../includes/libraries/Encryption/Encryption/RuntimeTests.php';
+    include_once '../includes/libraries/Encryption/Encryption/KeyProtectedByPassword.php';
+    include_once '../includes/libraries/Encryption/Encryption/Core.php';
 
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
     return $key;
 }
 
+/**
+ * Generate a Defuse personal key
+ *
+ * @param  string $psk psk used
+ * @return string
+ */
 function defuse_generate_personal_key($psk)
 {
     require_once '../includes/libraries/Encryption/Encryption/Crypto.php';
@@ -463,7 +456,11 @@ function defuse_generate_personal_key($psk)
 }
 
 /**
- * @param string $psk
+ * Validate persoanl key with defuse
+ *
+ * @param  string $psk                   the user's psk
+ * @param  string $protected_key_encoded special key
+ * @return string
  */
 function defuse_validate_personal_key($psk, $protected_key_encoded)
 {
@@ -492,8 +489,9 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
 
 /**
  * Decrypt a defuse string if encrypted
- * @param  [type] $value Encrypted string
- * @return [type]        Decrypted string
+ *
+ * @param  string $value Encrypted string
+ * @return string        Decrypted string
  */
 function defuse_return_decrypted($value)
 {
@@ -507,7 +505,8 @@ function defuse_return_decrypted($value)
  * trimElement()
  *
  * trim a string depending on a specific string
- * @param string $element
+ * @param  string $chaine  what to trim
+ * @param  string $element trim on what
  * @return string
  */
 function trimElement($chaine, $element)
@@ -528,9 +527,11 @@ function trimElement($chaine, $element)
 }
 
 /**
- * cleanString()
+ * Permits to suppress all "special" characters from string
  *
- * permits to suppress all "special" characters from string
+ * @param  string  $string  what to clean
+ * @param  boolean $special use of special chars?
+ * @return string
  */
 function cleanString($string, $special = false)
 {
@@ -547,6 +548,12 @@ function cleanString($string, $special = false)
     return str_replace($tabSpecialChar, "\n", $string);
 }
 
+/**
+ * Erro manager for DB
+ *
+ * @param  array $params output from query
+ * @return void
+ */
 function db_error_handler($params)
 {
     echo "Error: ".$params['error']."<br>\n";
@@ -673,9 +680,9 @@ function identifyUserRights(
         $_SESSION['fonction_id'] = $idFonctions;
         $groupesInterdits = array();
         if (is_array($groupesInterditsUser) === false) {
-            $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+            $groupesInterditsUser = explode(';', trimElement(/** @scrutinizer ignore-type */ $groupesInterditsUser, ";"));
         }
-        if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {
+        if (empty($groupesInterditsUser) === false && count($groupesInterditsUser) > 0) {
             $groupesInterdits = $groupesInterditsUser;
         }
         $_SESSION['is_admin'] = $isAdmin;
@@ -785,7 +792,7 @@ function identifyUserRights(
         }
         // Get IDs of personal folders
         if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
-            && isset($_SESSION['personal_folder']) === true &&  $_SESSION['personal_folder'] === '1'
+            && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
         ) {
             $persoFld = DB::queryfirstrow(
                 "SELECT id
@@ -1030,7 +1037,7 @@ function updateCacheTable($action, $ident = "")
             "id = %i",
             $ident
         );
-        // ADD an item
+    // ADD an item
     } elseif ($action === "add_value") {
         // get new value from db
         $data = DB::queryFirstRow(
@@ -1082,7 +1089,7 @@ function updateCacheTable($action, $ident = "")
             )
         );
 
-        // DELETE an item
+    // DELETE an item
     } elseif ($action === "delete_value") {
         DB::delete(prefix_table('cache'), "id = %i", $ident);
     }
@@ -1231,76 +1238,82 @@ function sendEmail(
 
     // Get user language
     $session_user_language = $superGlobal->get("user_language", "SESSION");
-
-    // Load library
     $user_language = isset($session_user_language) ? $session_user_language : "english";
     require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Email/Phpmailer/PHPMailerAutoload.php';
+
+    // Load library
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // load PHPMailer
-    $mail = new PHPMailer();
+    $mail = new SplClassLoader('Email\PHPMailer', '../includes/libraries');
+    $mail->register();
+    $mail = new Email\PHPMailer\PHPMailer(true);
+    try {
+        // send to user
+        $mail->setLanguage("en", $SETTINGS['cpassman_dir']."/includes/libraries/Email/PHPMailer/language/");
+        $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
+        $mail->Port = $SETTINGS['email_port']; //COULD BE USED
+        $mail->CharSet = "utf-8";
+        if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
+            $mail->SMTPSecure = $SETTINGS['email_security'];
+            $SMTPAutoTLS = true;
+        } else {
+            $SMTPAutoTLS = false;
+            $mail->SMTPSecure = "";
+        }
+        $mail->SMTPAutoTLS = $SMTPAutoTLS;
+        $mail->isSmtp(); // send via SMTP
+        $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
+        $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
+        $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
+        $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
+        $mail->From = $SETTINGS['email_from'];
+        $mail->FromName = $SETTINGS['email_from_name'];
 
-    // send to user
-    $mail->setLanguage("en", "../includes/libraries/Email/Phpmailer/language/");
-    $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
-    $mail->Port = $SETTINGS['email_port']; //COULD BE USED
-    $mail->CharSet = "utf-8";
-    if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
-        $mail->SMTPSecure = $SETTINGS['email_security'];
-        $SMTPAutoTLS = true;
-    } else {
-        $SMTPAutoTLS = false;
-        $mail->SMTPSecure = "";
-    }
-    $mail->SMTPAutoTLS = $SMTPAutoTLS;
-    $mail->isSmtp(); // send via SMTP
-    $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-    $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
-    $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
-    $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
-    $mail->From = $SETTINGS['email_from'];
-    $mail->FromName = $SETTINGS['email_from_name'];
+        // Prepare for each person
+        $dests = explode(",", $email);
+        foreach ($dests as $dest) {
+            $mail->addAddress($dest);
+        }
 
-    // Prepare for each person
-    $dests = explode(",", $email);
-    foreach ($dests as $dest) {
-        $mail->addAddress($dest);
-    }
+        // Prepare HTML
+        $text_html = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
+        w3.org/TR/html4/loose.dtd"><html>
+        <head><title>Email Template</title>
+        <style type="text/css">
+        body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
+        </style></head>
+        <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
+        <tr><td style="border-collapse: collapse;"><br>
+            <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
+            <tr><td style="border-collapse: collapse; padding: 11px 20px;">
+                <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
+            </td></tr></table></td>
+        </tr>
+        <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
+            <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
+            <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
+            <br><div style="float:right;">'.
+        $textMail.
+        '<br><br></td></tr></table>
+        </td></tr></table>
+        <br></body></html>';
 
-    // Prepare HTML
-    $text_html = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.=
-    w3.org/TR/html4/loose.dtd"><html>
-    <head><title>Email Template</title>
-    <style type="text/css">
-    body { background-color: #f0f0f0; padding: 10px 0; margin:0 0 10px =0; }
-    </style></head>
-    <body style="-ms-text-size-adjust: none; size-adjust: none; margin: 0; padding: 10px 0; background-color: #f0f0f0;" bgcolor="#f0f0f0" leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
-    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0" bgcolor="#f0f0f0" style="border-spacing: 0;">
-    <tr><td style="border-collapse: collapse;"><br>
-        <table border="0" width="100%" cellpadding="0" cellspacing="0" bgcolor="#17357c" style="border-spacing: 0; margin-bottom: 25px;">
-        <tr><td style="border-collapse: collapse; padding: 11px 20px;">
-            <div style="max-width:150px; max-height:34px; color:#f0f0f0; font-weight:bold;">Teampass</div>
-        </td></tr></table></td>
-    </tr>
-    <tr><td align="center" valign="top" bgcolor="#f0f0f0" style="border-collapse: collapse; background-color: #f0f0f0;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" class="container" bgcolor="#ffffff" style="border-spacing: 0; border-bottom: 1px solid #e0e0e0; box-shadow: 0 0 3px #ddd; color: #434343; font-family: Helvetica, Verdana, sans-serif;">
-        <tr><td class="container-padding" bgcolor="#ffffff" style="border-collapse: collapse; border-left: 1px solid #e0e0e0; background-color: #ffffff; padding-left: 30px; padding-right: 30px;">
-        <br><div style="float:right;">'.
-    $textMail.
-    '<br><br></td></tr></table>
-    </td></tr></table>
-    <br></body></html>';
-
-    $mail->WordWrap = 80; // set word wrap
-    $mail->isHtml(true); // send as HTML
-    $mail->Subject = $subject;
-    $mail->Body = $text_html;
-    $mail->AltBody = $textMailAlt;
-    // send email
-    if (!$mail->send()) {
-        return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
-    } else {
-        return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+        $mail->WordWrap = 80; // set word wrap
+        $mail->isHtml(true); // send as HTML
+        $mail->Subject = $subject;
+        $mail->Body = $text_html;
+        $mail->AltBody = $textMailAlt;
+        // send email
+        if (!$mail->send()) {
+            return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        } else {
+            return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+        }
+    } catch (Exception $e) {
+        return '"error":"error_mail_not_send" , '.
+        '"message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
     }
 }
 
@@ -1479,20 +1492,20 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
     // Can we use PHP7 random_int function?
     if (version_compare(phpversion(), '7.0', '>=')) {
         require_once $SETTINGS['cpassman_dir'].'/includes/libraries/PasswordGenerator/RandomGenerator/Php7RandomGenerator.php';
-         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
+        $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
     }
 
     // init
-    if (!empty($size)) {
+    if (empty($size) === false) {
         $generator->setLength(intval($size));
     }
-    if (!empty($numerals)) {
+    if (empty($numerals) === false) {
         $generator->setNumbers($numerals);
     }
-    if (!empty($capitalize)) {
+    if (empty($capitalize) === false) {
         $generator->setUppercase($capitalize);
     }
-    if (!empty($symbols)) {
+    if (empty($symbols) === false) {
         $generator->setSymbols($symbols);
     }
 
@@ -1583,14 +1596,21 @@ function logEvents($type, $label, $who, $login = "", $field_1 = null)
  * @param string $action
  * @param string $login
  * @param string $raison
- * @param string $raison_iv
  * @param string $encryption_type
  * @return void
  */
-function logItems($ident, $item, $id_user, $action, $login = "", $raison = null, $raison_iv = null, $encryption_type = "")
-{
+function logItems(
+    $item_id,
+    $item_label,
+    $id_user,
+    $action,
+    $login = "",
+    $raison = null,
+    $encryption_type = ""
+) {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
+    $dataItem = '';
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1604,29 +1624,80 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
     DB::$error_handler = true;
     $link = mysqli_connect($server, $user, $pass, $database, $port);
     $link->set_charset($encoding);
+
+    // Insert log in DB
     DB::insert(
         prefix_table("log_items"),
         array(
-            'id_item' => $ident,
+            'id_item' => $item_id,
             'date' => time(),
             'id_user' => $id_user,
             'action' => $action,
             'raison' => $raison,
-            'raison_iv' => $raison_iv,
+            'raison_iv' => '',
             'encryption_type' => $encryption_type
         )
     );
 
-    // Syslog
+    // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
         // Extract reason
         $attribute = explode(' : ', $raison);
 
+        // Get item info if not known
+        if (empty($item_label) === true) {
+            $dataItem = DB::queryfirstrow(
+                "SELECT id, id_tree, label
+                FROM ".prefix_table("items")."
+                WHERE id = %i",
+                $item_id
+            );
+
+            $item_label = $dataItem['label'];
+        }
+
         send_syslog(
-            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$ident.' user='.$login.' itemname="'.$item.'"',
+            'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$item_id.' user='.addslashes($login).' itemname="'.addslashes($item_label).'"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
             "teampass"
+        );
+    }
+
+    // send notification if enabled
+    if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+        && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
+        && $action === 'at_shown'
+    ) {
+        // Get info about item
+        if (empty($dataItem) === true && empty($item_label) === true) {
+            $dataItem = DB::queryfirstrow(
+                "SELECT id, id_tree, label
+                FROM ".prefix_table("items")."
+                WHERE id = %i",
+                $item_id
+            );
+            $item_label = $dataItem['label'];
+        }
+
+        // send back infos
+        DB::insert(
+            prefix_table('emails'),
+            array(
+                'timestamp' => time(),
+                'subject' => $LANG['email_on_open_notification_subject'],
+                'body' => str_replace(
+                    array('#tp_user#', '#tp_item#', '#tp_link#'),
+                    array(
+                        addslashes($_SESSION['login']),
+                        addslashes($item_label),
+                        $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                    ),
+                    $LANG['email_on_open_notification_mail']
+                ),
+                'receivers' => $_SESSION['listNotificationEmails'],
+                'status' => ''
+            )
         );
     }
 }
@@ -1637,19 +1708,19 @@ function logItems($ident, $item, $id_user, $action, $login = "", $raison = null,
 function get_client_ip_server()
 {
     if (getenv('HTTP_CLIENT_IP')) {
-            $ipaddress = getenv('HTTP_CLIENT_IP');
+        $ipaddress = getenv('HTTP_CLIENT_IP');
     } elseif (getenv('HTTP_X_FORWARDED_FOR')) {
-            $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
     } elseif (getenv('HTTP_X_FORWARDED')) {
-            $ipaddress = getenv('HTTP_X_FORWARDED');
+        $ipaddress = getenv('HTTP_X_FORWARDED');
     } elseif (getenv('HTTP_FORWARDED_FOR')) {
-            $ipaddress = getenv('HTTP_FORWARDED_FOR');
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
     } elseif (getenv('HTTP_FORWARDED')) {
-            $ipaddress = getenv('HTTP_FORWARDED');
+        $ipaddress = getenv('HTTP_FORWARDED');
     } elseif (getenv('REMOTE_ADDR')) {
-            $ipaddress = getenv('REMOTE_ADDR');
+        $ipaddress = getenv('REMOTE_ADDR');
     } else {
-            $ipaddress = 'UNKNOWN';
+        $ipaddress = 'UNKNOWN';
     }
 
     return $ipaddress;
@@ -1986,7 +2057,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
  * @param  string $type        can be either encrypt or decrypt
  * @param  string $source_file path to source file
  * @param  string $target_file path to target file
- * @return string              'true' is success or error message
+ * @return string|boolean
  */
 function prepareFileWithDefuse($type, $source_file, $target_file, $password = '')
 {
@@ -1997,7 +2068,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // Protect against bad inputs
-    if (is_array($source_file) ||is_array($target_file)) {
+    if (is_array($source_file) || is_array($target_file)) {
         return 'error_cannot_be_array';
     }
 
@@ -2018,9 +2089,9 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
     if (empty($password) === true) {
-    /*
-    File encryption/decryption is done with the SALTKEY
-     */
+        /*
+        File encryption/decryption is done with the SALTKEY
+         */
 
         // get KEY
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
@@ -2057,9 +2128,9 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
             }
         }
     } else {
-    /*
-    File encryption/decryption is done with special password and not the SALTKEY
-     */
+        /*
+        File encryption/decryption is done with special password and not the SALTKEY
+         */
 
         $err = '';
         if ($type === 'decrypt') {
@@ -2131,10 +2202,13 @@ function fileDelete($file)
     }
 }
 
-/*
-* Permits to extract the file extension
-*/
-function getFileExtension($file)
+/**
+ * Permits to extract the file extension
+ *
+ * @param  string $file File name
+ * @return string
+ */
+function getFileExtension(string $file)
 {
     if (strpos($file, '.') === false) {
         return $file;
@@ -2144,29 +2218,12 @@ function getFileExtension($file)
 }
 
 /**
- * array_map
- * @param  [type] $func [description]
- * @param  [type] $arr  [description]
- * @return [type]       [description]
- */
-function array_map_r($func, $arr)
-{
-    $newArr = array();
-
-    foreach ($arr as $key => $value) {
-        $newArr[ $key ] = (is_array($value) ? array_map_r($func, $value) : ( is_array($func) ? call_user_func_array($func, $value) : $func( $value )));
-    }
-
-    return $newArr;
-}
-
-/**
  * Permits to clean and sanitize text to be displayed
- * @param  string $text text to clean
- * @param  string $type what clean to perform
- * @return string       text cleaned up
+ * @param  string $text Text to clean
+ * @param  string $type What clean to perform
+ * @return string
  */
-function cleanText($string, $type = "")
+function cleanText(string $string, string $type = "")
 {
     global $SETTINGS;
 
@@ -2188,7 +2245,7 @@ function cleanText($string, $type = "")
  * @param  string  $dir             Parent folder
  * @param  integer $dirPermissions  New permission on folders
  * @param  integer $filePermissions New permission on files
- * @return boolean                  Success/Failure
+ * @return boolean
  */
 function chmodRecursive($dir, $dirPermissions, $filePermissions)
 {
@@ -2223,7 +2280,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
 
 /**
  * Check if user can access to this item
- * @param $item_id
+ * @param integer $item_id ID of item
  */
 function accessToItemIsGranted($item_id)
 {
@@ -2261,10 +2318,11 @@ function accessToItemIsGranted($item_id)
 
 /**
  * Creates a unique key
- * @lenght  integer $lenght key lenght
- * @return string          key
+ * @lenght  integer $lenght Key lenght
+ * @return string
  */
-function uniqidReal($lenght = 13) {
+function uniqidReal($lenght = 13)
+{
     // uniqid gives 13 chars, but you could adjust it to your needs.
     if (function_exists("random_bytes")) {
         $bytes = random_bytes(ceil($lenght / 2));
@@ -2289,15 +2347,206 @@ function obfuscate_email($email)
     $mailname = str_replace($domain, '', $email);
     $name_l = strlen($mailname);
     $domain_l = strlen($domain);
-    for($i = 0; $i <= $name_l/$prop-1; $i++) {
+    for ($i = 0; $i <= $name_l / $prop - 1; $i++) {
         $start .= 'x';
     }
 
-    for($i = 0; $i <= $domain_l/$prop-1; $i++) {
+    for ($i = 0; $i <= $domain_l / $prop - 1; $i++) {
         $end .= 'x';
     }
 
-    return substr_replace($mailname, $start, 2, $name_l/$prop )
-        .substr_replace($domain, $end, 2, $domain_l/$prop); 
+    return substr_replace($mailname, $start, 2, $name_l / $prop)
+        .substr_replace($domain, $end, 2, $domain_l / $prop);
 }
 
+/**
+ * Permits to get LDAP information about a user
+ *
+ * @param string $username  User name
+ * @param string $password  User password
+ * @return string
+ */
+function connectLDAP($username, $password, $SETTINGS)
+{
+    $user_email = '';
+    $user_found = false;
+    $user_lastname = '';
+    $user_name = '';
+    $ldapConnection = false;
+
+    // Prepare LDAP connection if set up
+    //Multiple Domain Names
+    if (strpos(html_entity_decode($username), '\\') === true) {
+        $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+        $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
+    }
+    if ($SETTINGS['ldap_type'] === 'posix-search') {
+        $ldapURIs = "";
+        foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
+            if ($SETTINGS['ldap_ssl'] == 1) {
+                $ldapURIs .= "ldaps://".$domainControler.":".$SETTINGS['ldap_port']." ";
+            } else {
+                $ldapURIs .= "ldap://".$domainControler.":".$SETTINGS['ldap_port']." ";
+            }
+        }
+        $ldapconn = ldap_connect($ldapURIs);
+
+        if ($SETTINGS['ldap_tls']) {
+            ldap_start_tls($ldapconn);
+        }
+        ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
+        ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
+
+        // Is LDAP connection ready?
+        if ($ldapconn !== false) {
+            // Should we bind the connection?
+            if ($SETTINGS['ldap_bind_dn'] !== "" && $SETTINGS['ldap_bind_passwd'] !== "") {
+                $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
+            } else {
+                $ldapbind = false;
+            }
+            if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
+                $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+                $result = ldap_search(
+                    $ldapconn,
+                    $SETTINGS['ldap_search_base'],
+                    $filter,
+                    array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
+                );
+
+                // Check if user was found in AD
+                if (ldap_count_entries($ldapconn, $result) > 0) {
+                    // Get user's info and especially the DN
+                    $result = ldap_get_entries($ldapconn, $result);
+                    $user_dn = $result[0]['dn'];
+                    $user_email = $result[0]['mail'][0];
+                    $user_lastname = $result[0]['sn'][0];
+                    $user_name = isset($result[0]['givenname'][0]) === true ? $result[0]['givenname'][0] : '';
+                    $user_found = true;
+
+                    // Should we restrain the search in specified user groups
+                    $GroupRestrictionEnabled = false;
+                    if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
+                        // New way to check User's group membership
+                        $filter_group = "memberUid=".$username;
+                        $result_group = ldap_search(
+                            $ldapconn,
+                            $SETTINGS['ldap_search_base'],
+                            $filter_group,
+                            array('dn', 'samaccountname')
+                        );
+
+                        if ($result_group) {
+                            $entries = ldap_get_entries($ldapconn, $result_group);
+
+                            if ($entries['count'] > 0) {
+                                // Now check if group fits
+                                for ($i = 0; $i < $entries['count']; $i++) {
+                                    $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                    if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                        $GroupRestrictionEnabled = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Is user in the LDAP?
+                    if ($GroupRestrictionEnabled === true
+                        || (
+                            $GroupRestrictionEnabled === false
+                            && (
+                                isset($SETTINGS['ldap_usergroup']) === false
+                                || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
+                            )
+                        )
+                    ) {
+                        // Try to auth inside LDAP
+                        $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
+                        if ($ldapbind === true) {
+                            $ldapConnection = true;
+                        } else {
+                            $ldapConnection = false;
+                        }
+                    }
+                } else {
+                    $ldapConnection = false;
+                }
+            } else {
+                $ldapConnection = false;
+            }
+        } else {
+            $ldapConnection = false;
+        }
+    } else {
+        $adldap = new SplClassLoader('adLDAP', '../includes/libraries/LDAP');
+        $adldap->register();
+
+        // Posix style LDAP handles user searches a bit differently
+        if ($SETTINGS['ldap_type'] === 'posix') {
+            $ldap_suffix = ','.$SETTINGS['ldap_suffix'].','.$SETTINGS['ldap_domain_dn'];
+        } else {
+            // case where $SETTINGS['ldap_type'] equals 'windows'
+            //Multiple Domain Names
+            $ldap_suffix = $SETTINGS['ldap_suffix'];
+        }
+
+        // Ensure no double commas exist in ldap_suffix
+        $ldap_suffix = str_replace(',,', ',', $ldap_suffix);
+
+        // Create LDAP connection
+        $adldap = new adLDAP\adLDAP(
+            array(
+                'base_dn' => $SETTINGS['ldap_domain_dn'],
+                'account_suffix' => $ldap_suffix,
+                'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
+                'ad_port' => $SETTINGS['ldap_port'],
+                'use_ssl' => $SETTINGS['ldap_ssl'],
+                'use_tls' => $SETTINGS['ldap_tls']
+            )
+        );
+
+        // OpenLDAP expects an attribute=value pair
+        if ($SETTINGS['ldap_type'] === 'posix') {
+            $auth_username = $SETTINGS['ldap_user_attribute'].'='.$username;
+        } else {
+            $auth_username = $username;
+        }
+
+        // Authenticate the user
+        if ($adldap->authenticate($auth_username, html_entity_decode($password))) {
+            // Get user info
+            $result = $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'));
+            $user_email = $result[0]['mail'][0];
+            $user_lastname = $result[0]['sn'][0];
+            $user_name = $result[0]['givenname'][0];
+            $user_found = true;
+
+            // Is user in allowed group
+            if (isset($SETTINGS['ldap_allowed_usergroup']) === true
+                && empty($SETTINGS['ldap_allowed_usergroup']) === false
+            ) {
+                if ($adldap->user()->inGroup($auth_username, $SETTINGS['ldap_allowed_usergroup']) === true) {
+                    $ldapConnection = true;
+                } else {
+                    $ldapConnection = false;
+                }
+            } else {
+                $ldapConnection = true;
+            }
+        } else {
+            $ldapConnection = false;
+        }
+    }
+
+    return json_encode(
+        array(
+            'lastname' => $user_lastname,
+            'name' => $user_name,
+            'email' => $user_email,
+            'auth_success' => $ldapConnection,
+            'user_found' => $user_found
+        )
+    );
+}

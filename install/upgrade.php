@@ -32,7 +32,7 @@ $events = "";
 if (file_exists($filename)) {
     //copy some constants from this existing file
     $settings_file = file($filename);
-    while (list($key, $val) = each($settings_file)) {
+    foreach ($settings_file as $key => $val) {
         if (substr_count($val, 'charset') > 0) {
             $_SESSION['charset'] = getSettingValue($val);
         } elseif (substr_count($val, '@define(') > 0 && substr_count($val, 'SALT') > 0) {
@@ -66,7 +66,7 @@ if (file_exists($filename)) {
         } elseif (substr_count($val, '$pre = ') > 0) {
             $_SESSION['pre'] = getSettingValue($val);
         } elseif (substr_count($val, "define('SECUREPATH',") > 0) {
-            $_SESSION['sk_file'] = substr($val, 23, strpos($val, ');')-24)."/sk.php";
+            $_SESSION['sk_file'] = substr($val, 23, strpos($val, ');') - 24)."/sk.php";
         }
     }
 }
@@ -75,7 +75,7 @@ if (isset($_SESSION['sk_file']) && !empty($_SESSION['sk_file'])
 ) {
     //copy some constants from this existing file
     $skFile = file($_SESSION['sk_file']);
-    while (list($key, $val) = each($skFile)) {
+    foreach ($skFile as $key => $val) {
         if (substr_count($val, '@define(') > 0) {
             $_SESSION['encrypt_key'] = substr($val, 17, strpos($val, "')") - 17);
         }
@@ -322,7 +322,14 @@ if (empty($post_root_url) === false) {
 }
 
 //define root path
-$abs_path = rtrim($_SERVER['DOCUMENT_ROOT'], '/').substr($_SERVER['PHP_SELF'], 0, strlen($_SERVER['PHP_SELF']) - 20);
+$abs_path = rtrim(
+    filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_STRING),
+    '/'
+).substr(
+    filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING),
+    0,
+    strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_STRING)) - 20
+);
 if (isset($_SERVER['HTTPS'])) {
     $protocol = 'https://';
 } else {
@@ -418,7 +425,6 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                      <span style="padding-left:30px;font-size:13pt;">Directory "/includes/avatars/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/files/" is writable</span><br />
                      <span style="padding-left:30px;font-size:13pt;">Directory "/upload/" is writable</span><br />
-                     <span style="padding-left:30px;font-size:13pt;">PHP extension "mcrypt" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "openssl" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "gd" is loaded</span><br />
                      <span style="padding-left:30px;font-size:13pt;">PHP extension "curl" is loaded</span><br />

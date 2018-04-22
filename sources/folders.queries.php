@@ -762,9 +762,9 @@ if (null !== $post_newtitle) {
             // rebuild the droplist
             $prev_level = 0;
             $tst = $tree->getDescendants();
-            $droplist .= '<option value=\"na\">---'.addslashes($LANG['select']).'---</option>';
+            $droplist .= '<option value="na">---'.addslashes($LANG['select']).'---</option>';
             if ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1) {
-                $droplist .= '<option value=\"0\">'.addslashes($LANG['root']).'</option>';
+                $droplist .= '<option value="0">'.addslashes($LANG['root']).'</option>';
             }
             foreach ($tst as $t) {
                 if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups']) && $t->personal_folder == 0) {
@@ -773,17 +773,24 @@ if (null !== $post_newtitle) {
                         $ident .= "&nbsp;&nbsp;";
                     }
                     if ($prev_level < $t->nlevel) {
-                        $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                        $droplist .= '<option value="'.$t->id.'">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
                     } elseif ($prev_level == $t->nlevel) {
-                        $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                        $droplist .= '<option value="'.$t->id.'">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
                     } else {
-                        $droplist .= '<option value=\"'.$t->id.'\">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
+                        $droplist .= '<option value="'.$t->id.'">'.$ident.addslashes(str_replace("'", "&lsquo;", $t->title)).'</option>';
                     }
                     $prev_level = $t->nlevel;
                 }
             }
 
-            echo '[ { "error" : "'.$error.'" , "droplist" : "'.$droplist.'" } ]';
+            $returnValues = array(
+                "error" => $error,
+                "droplist" => $droplist
+            );
+
+            // Encrypt data to return
+            echo prepareExchangedData($returnValues, "encode");
+
             break;
 
         //CASE where to update the associated Function
@@ -992,9 +999,9 @@ if (null !== $post_newtitle) {
 
             // Get all allowed folders
             $array_all_visible_folders = array_merge(
-              $_SESSION['groupes_visibles'],
-              $_SESSION['read_only_folders'],
-              $_SESSION['personal_visible_groups']
+                $_SESSION['groupes_visibles'],
+                $_SESSION['read_only_folders'],
+                $_SESSION['personal_visible_groups']
             );
 
             // get list of all folders
@@ -1007,7 +1014,7 @@ if (null !== $post_newtitle) {
                 // Can user access this subfolder?
 
                 if (in_array($node->id, $array_all_visible_folders) === false) {
-                  continue;
+                    continue;
                 }
 
                 // get info about current node
@@ -1231,9 +1238,21 @@ if (null !== $post_newtitle) {
                             );
                         }
                         // Add this duplicate in logs
-                        logItems($newItemId, $record['label'], $_SESSION['user_id'], 'at_creation', $_SESSION['login']);
+                        logItems(
+                            $newItemId,
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_creation',
+                            $_SESSION['login']
+                        );
                         // Add the fact that item has been copied in logs
-                        logItems($newItemId, $record['label'], $_SESSION['user_id'], 'at_copy', $_SESSION['login']);
+                        logItems(
+                            $newItemId,
+                            $record['label'],
+                            $_SESSION['user_id'],
+                            'at_copy',
+                            $_SESSION['login']
+                        );
                     }
                 }
             }

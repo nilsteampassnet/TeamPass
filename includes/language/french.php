@@ -13,7 +13,25 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array (
+$LANG = array(
+    'position_in_list' => 'Position',
+    'visible_by' => 'Visible par',
+    'restrict_visibility_to' => 'Uniquement visible par',
+    'every_roles' => 'Tous les rôles',
+    'masked_textarea' => 'Zone de texte masquée',
+    'masked_text' => 'Texte masqué',
+    'textarea' => 'Zone de texte',
+    'provide_yubico_identifiers' => 'Merci de fournir vos identifiants Yubico',
+    'admin_yubico_authentication_setting' => 'Activer la double identification avec Yubico',
+    'yubico_user_id' => 'ID client',
+    'yubico_user_key' => 'CLE secrète',
+    'yubico_bad_code' => 'Mauvaises informations Yubico',
+    'show_yubico_info_form' => 'Montrer le formulaire de saisi Yubico',
+    'Press your Yubico key' => 'Presser la clé Yubico',
+    'human_resources' => 'Super gestionnaire',
+    'login_attempts' => 'Tentatives échouées de connexion depuis la dernière connexion réussie',
+    'settings_secure_display_image' => 'Activer la sécurisation de prévisualisation des images',
+    'settings_secure_display_image_tip' => 'Sécuriser la prévisualisation des images permet de réaliser la lecture de l\'image via le moteur de PHP quand un utilisateur demande un affichage d\'une image. Avantage: permet de sauvegarder les pièces jointes hors du domaine dans un répertoire serveur inaccessible. Inconvéniant : l\'affichage de l\'image est légèrement ralentie.',
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',

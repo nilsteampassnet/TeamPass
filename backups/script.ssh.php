@@ -91,14 +91,21 @@ if (!empty($settings['enable_server_password_change']) && $settings['enable_serv
                 prefix_table("items"),
                 array(
                     'pw' => $encrypt['string'],
-                    'pw_iv' => $encrypt['iv'],
+                    'pw_iv' => '',
                     'auto_update_pwd_next_date' => time() + (2592000 * intval($record['auto_update_pwd_frequency']))
                     ),
                 "id = %i",
                 $record['id']
             );
             // update log
-            logItems($record['id'], $record['label'], "script", 'at_modification', '999998', 'at_pw :'.$record['pw'], $record['pw_iv']);
+            logItems(
+                $record['id'],
+                $record['label'],
+                SSH_USER_ID,
+                'at_modification',
+                'script',
+                'at_pw :'.$record['pw']
+            );
         } else {
             $log .= "   An error occured with password change.\n\n";
         }

@@ -65,6 +65,7 @@ $(function() {
                 });
 
                 $("#duo_login").val($("#login").val());
+                $("#duo_pwd").val($("#pw").val());
             }
         },
         "json"

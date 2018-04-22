@@ -346,7 +346,6 @@ if (!$chunks || $chunk == $chunks - 1) {
 $fileRandomId = md5($fileName.time());
 rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
 
-
 // Encrypt the file if requested
 if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === '1') {
     // Do encryption

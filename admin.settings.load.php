@@ -26,6 +26,7 @@ var requestRunning = false;
 */
 function fieldAdd(id) {
     $("#post_id").val(id);
+    $("#field_visibility").val('all');
     $("#add_new_field").dialog("open");
 }
 /*
@@ -83,47 +84,63 @@ function categoryAdd() {
    );
 }
 
-/*
-* rename an Element
-*/
-function renameItem() {
-    var data = $("input[name=sel_item]:checked").attr("id").split('_');
-    $("#post_id").val(data[1]);
-    $("#post_type").val("renameItem");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_rename']; ?>");
-    $("#category_confirm").dialog("open");
-}
 
 /*
-* Delete an Element
+*
 */
-function deleteItem() {
-    var data = $("input[name=sel_item]:checked").attr("id").split('_');
-    $("#post_id").val(data[1]);
-    $("#post_type").val("deleteCategory");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_deletion']; ?>");
-    $("#category_confirm").dialog("open");
-}
+function updateCategoryAndField(id) {
+    $("#div_loading").show();
 
-/*
-* Move an Element
-*/
-function moveItem() {
-    var data = $("input[name=sel_item]:checked").attr("id").split('_');
-    $("#post_id").val(data[1]);
-    $("#post_type").val("moveItem");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_moveto']; ?>");
-    $("#category_confirm").dialog("open");
-}
-/*
-* Change Field Type
-*/
-function changeFieldTypeNow() {
-    var data = $("input[name=sel_item]:checked").attr("id").split('_');
-    $("#post_id").val(data[1]);
-    $("#post_type").val("changeFieldType");
-    $("#category_confirm_text").html("<?php echo $LANG['confirm_change_field_type']; ?>");
-    $("#category_confirm").dialog("open");
+    // Get list of roles
+    var roles = '';
+    $("#field_visibility option:selected").each(function () {
+        if (roles === '') {
+            roles = $(this).val();
+        } else {
+            roles += ',' + $(this).val();
+        }
+    });
+
+    // if order is not numeric
+    if ($.isNumeric($("#field_order").val()) === false) {
+        $("#field_order")
+            .addClass("ui-state-error")
+            .delay(2000)
+            .queue(function() {
+                $(this).removeClass("ui-state-error");
+                $(this).dequeue();
+            });
+        return false;
+    }
+
+    // prepare data to send
+    var data = {
+        "id" : id,
+        "title" : $("#field_title").val(),
+        "category" : $('#field_category').val() === '' ? '0' : $("#field_category").val(),
+        "type" : $('#field_type').val() === '' ? '' : $("#field_type").val(),
+        "masked" : $('#field_masked').val() === '' ? '' : $("#field_masked").val(),
+        "encrypted" : $('#field_encrypted').val() === '' ? '' : $("#field_encrypted").val(),
+        "roles" : roles === '' ? 'all' : roles,
+        "field_is_category" : $('#field_is_category').val(),
+        "order" : $('#field_order').val()
+    };
+
+    // send query
+    $.post(
+        "sources/categories.queries.php",
+        {
+            type    : "update_category_and_field",
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            loadFieldsList();
+            $("#div_loading").hide();
+            $("#item_dialog").dialog("close");
+        },
+        "json"
+    );
 }
 
 /*
@@ -168,6 +185,7 @@ function storePosition() {
 */
 function loadFieldsList() {
     $("#div_loading").show();
+    $("#no_category").addClass("hidden");
     //send query
     $.post(
         "sources/categories.queries.php",
@@ -176,60 +194,83 @@ function loadFieldsList() {
             title   : prepareExchangedData(sanitizeString($("#new_category_label").val()), "encode", "<?php echo $_SESSION['key']; ?>")
         },
         function(data) {
-            var newList = '<table id="tbl_categories" style="">';
+            var newList = '<table id="tbl_categories" cellspacing="0" cellpadding="0" border="0px" width="100%">';
             // parse json table and disaply
             var json = $.parseJSON(data);
-            $(json).each(function(i,val){
-                if (val[0] === "1") {
-                    newList += '<tr id="t_cat_'+val[1]+'"><td colspan="2">'+
-                    '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
-                    '<span class="fa-stack tip" title="<?php echo $LANG["field_add_in_category"]; ?>" onclick="fieldAdd('+
-                    val[1]+')" style="cursor:pointer;">'+
-                    '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
-                    '</span>&nbsp;'+
-                    '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
-                    '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>'+
-                    '</td><td>'+
-                    '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders']; ?>" onclick="catInFolders('+val[1]+')" style="cursor:pointer;">'+
-                    '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
-                    '</span>&nbsp;'+
-                    '<?php echo $LANG['category_in_folders_title']; ?>:'+
-                    '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+val[4]+'</span>'+
-                    '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
-                } else {
-                    newList += '<tr id="t_field_'+val[1]+'"><td width="60px"></td>'+
-                    '<td colspan="2"><input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
-                    '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" />'+
-                    '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'">'+val[2]+'</label>';
 
-                    if (val[4] !== "") {
-                        newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
-                        if (val[4] === "1") {
-                            newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 1)"></i>';
-                        } else if (val[4] === "0") {
-                            newList += '<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data'];?>" onclick="changeEncrypMode('+val[1]+', 0)"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>';
+            if ($(json).length > 0) {
+                var current_category = '';
+                $(json).each(function(i,val){
+                    if (val[0] === "1") {
+                        current_category = val[1];
+                        newList += '<tr id="t_cat_'+val[1]+'" style="background-color:#e1e1e1; margin-bottom:2px;" width="40%">'+
+                        '<td colspan="2" style="font-weight:bold; padding:2px;">'+
+                        '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
+                        '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" class="hidden" />'+
+                        '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'" class="pointer">'+val[2]+'</label>'+
+                        '</td><td style="padding:2px;" width="8%">'+
+                        '<span class="fa-stack tip" title="<?php echo $LANG["field_add_in_category"]; ?>" onclick="fieldAdd('+
+                        val[1]+')" style="cursor:pointer;">'+
+                        '<span class="fa fa-square fa-stack-2x"></span><span class="fa fa-plus fa-stack-1x fa-inverse"></span>'+
+                        '</span>&nbsp;'+
+                        '<span class="fa-stack tip" title="<?php echo $LANG['category_in_folders']; ?>" onclick="catInFolders('+val[1]+')" style="cursor:pointer;">'+
+                        '<span class="fa fa-square fa-stack-2x"></span><span class="fa fa-folder-o fa-stack-1x fa-inverse"></span>'+
+                        '</span>'+
+                        '</td><td style="padding:2px;" width="52%"><?php echo $LANG['category_in_folders_title']; ?>:'+
+                        '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+val[1]+'">'+
+                        (val[4] === '' ? '<?php echo $LANG['none']; ?>' : val[4])+'</span>'+
+                        '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
+                    } else {
+                        newList += '<tr id="t_field_'+val[1]+'" class="drag">'+
+                        '<td width="20px"><input type="hidden" class="field_info" value="' + current_category + ','+val[4]+','+val[6]+','+val[7]+'" /></td>'+
+                        '<td colspan="1" style="border-bottom:1px solid #a0a0a0; padding:3px 0 1px 0;">'+
+                        '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
+                        '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" class="hidden" />'+
+                        '<label for="item_'+val[1]+'_cat" id="item_'+val[1]+'" width="100%" class="pointer">'+val[2]+'</label>'+
+                        '</td><td colspan="1" style="border-bottom:1px solid #a0a0a0;">';
+
+                        if (val[4] !== "") {
+                            newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
+                            if (val[4] === "1") {
+                                newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>"></i>';
+                            } else if (val[4] === "0") {
+                                newList += '<span class="fa-stack tip" title="<?php echo $LANG['not_encrypted_data']; ?>">'+
+                                    '<span class="fa fa-key fa-stack-1x"></span><span class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></span></span>';
+                            }
+                            newList += '</span>'
                         }
-                        newList += '</span>'
-                    }
 
-                    if (val[6] !== "") {
-                        newList += '<span style="margin-left:4px;">';
-                        if (val[6] === "text") {
-                            newList += '<i class="fa fa-paragraph tip" title="<?php echo $LANG['data_is_text'];?>"></i>';
-                        } else if (val[6] === "masked") {
-                            newList += '<i class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked'];?>"></i>';
+                        if (val[6] !== "") {
+                            newList += '<span style="margin-left:4px;">';
+                            if (val[6] === "text") {
+                                newList += '<span class="fa fa-paragraph tip" title="<?php echo $LANG['text']; ?>"></span>';
+                            } else if (val[6] === "textarea") {
+                                newList += '<span class="fa fa-align-justify tip" title="<?php echo $LANG['textarea']; ?>"></span>';
+                            }
+
+                            if (val[7] === "1") {
+                                newList += '&nbsp;<span class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked']; ?>"></ispan>';
+                            }
+                            newList += '</span>'
                         }
-                        newList += '</span>'
+
+                        // Manage display Roles visibility
+                        newList += '<td colspan="1" style="border-bottom:1px solid #a0a0a0;">' +
+                            '<?php echo $LANG['visible_by']; ?>: <span style="font-family:italic;">' + val[8] +
+                            '</span><input type="hidden" id="roleVisibilityList_'+val[1]+'" value="' + val[9] + '" /></td></tr>';
                     }
+                });
 
-                    newList += '</td></tr>';
-                }
-            });
-
-            // display
-            newList += '</table>';
-            $("#new_item_title").val("");
-            $("#categories_list").html(newList);
+                // display
+                newList += '</table>';
+                $("#new_item_title").val("");
+                $("#categories_list").html(newList);
+            } else {
+                $("#no_category")
+                    .html("<?php echo addslashes($LANG['no_category_defined']); ?>")
+                    .removeClass("hidden");
+            }
+            $('.tip').tooltipster({multiple: true});
             $("#div_loading").hide();
         }
    );
@@ -566,6 +607,7 @@ function startFileEncDecyption() {
 
 // Init
 $(function() {
+    $('.tip').tooltipster({multiple: true});
     $('.toggle').toggles({
         drag: true, // allow dragging the toggle between positions
         click: true, // allow clicking on the toggle
@@ -669,64 +711,85 @@ $(function() {
     });
 
     // display text of selected item
-    $(document).on("click","input[name=sel_item]",function(){
+    $(document).on("click","input[name=sel_item]", function(){
         var data = $("input[name=sel_item]:checked").attr("id").split('_');
-        $("#new_item_title").val($("#item_"+data[1]).html());
+        $("#new_item_title")
+            .val($("#item_"+data[1]).html())
+            .focus();
         $("#moveItemTo, #changeFieldType").val(0);
+        
+        $("#item_dialog").dialog("open");
     });
 
-    // confirm dialogbox
-    $("#category_confirm").dialog({
+    //Prepare multiselect widget
+    $("#field_visibility, #new_field_visibility").select2({
+        language: "<?php echo $_SESSION['user_language_code']; ?>"
+    });
+
+    // 
+    $("#item_dialog").dialog({
         bgiframe: true,
-        modal: true,
         autoOpen: false,
-        width: 400,
-        height: 140,
-        title: "<?php echo $LANG['confirm']; ?>",
+        width: 700,
+        height: 330,
+        title: "<?php echo $LANG['at_modification']; ?>",
         buttons: {
-            "<?php echo $LANG['confirm']; ?>": function() {
-                $("#div_loading").show();
-                var $this = $(this);
-                // prepare data to send
-                var data = "";
-                if ($("#post_type").val() === "renameItem") {
-                    data = sanitizeString($("#new_item_title").val());
-                } else if ($("#post_type").val() === "moveItem") {
-                    data = $("#moveItemTo").val();
-                } else if ($("#post_type").val() === "changeFieldType") {
-                    data = $("#changeFieldType").val();
-                } else if ($("#post_type").val() === "deleteCategory") {
-                    data = "no_data";
-                }
-                if (data === "") {
-                    return false;
-                }
-                // send query
+            "<?php echo $LANG['save_button']; ?>": function() {
+                updateCategoryAndField($("input[name=sel_item]:checked").attr("id").split('_')[1]);
+            },
+            "<?php echo $LANG['delete']; ?>": function() {
                 $.post(
                     "sources/categories.queries.php",
                     {
-                        type    : $("#post_type").val(),
-                        id      : $("#post_id").val(),
-                        data    : data
+                        type    : "deleteCategory",
+                        id      : $("input[name=sel_item]:checked").attr("id").split('_')[1],
+                        key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
-                        if ($("#post_type").val() === "deleteCategory") {
-                            $("#t_field_"+$("#post_id").val()).hide();
-                        } else if ($("#post_type").val() === "renameItem") {
-                            $("#item_"+$("#post_id").val()).html($("#new_item_title").val());
-                        }
                         loadFieldsList();
-                        $("#new_category_label, #new_item_title").val("");
-                        $("#div_loading").hide();
-                        $this.dialog("close");
-                    },
-                    "json"
-               );
+                    }
+                );
+                $("#div_loading").hide();
+                $(this).dialog("close");
             },
-            "<?php echo $LANG['cancel_button']; ?>": function() {
+            "<?php echo $LANG['close']; ?>": function() {
                 $("#div_loading").hide();
                 $(this).dialog("close");
             }
+        },
+        open: function() {
+            var data = $("input[name=sel_item]:checked").attr("id").split('_'),
+                roles = [];
+
+            $("#field_title").val($("#item_"+data[1]).text());
+            $("#field_order").val($("#catOrd_"+data[1]).val());
+
+            if ($("#t_field_" + data[1]).find(".field_info").length > 0) {
+                $("#item_dialog").dialog("option", "height", 330);
+                $(".not_category").removeClass("hidden");
+                field_info = $("#t_field_" + data[1]).find(".field_info").val().split(',');
+                $("#field_is_category").val('0');
+                $("#field_category").val(field_info[0]);
+                $("#field_type").val(field_info[2]);
+                $("#field_masked").val(field_info[3]);
+                $("#field_encrypted").val(field_info[1]);
+                
+                if ($("#roleVisibilityList_" + data[1]).val() !== 'all' && $("#roleVisibilityList_" + data[1]).val() !== '') {
+                    roles = JSON.parse("[" + $("#roleVisibilityList_" + data[1]).val() + "]"); 
+                } else {
+                    roles = ['all'];
+                }
+                $("#field_visibility").val(roles);
+                $('#field_visibility').trigger('change');
+            } else {
+                $("#item_dialog").dialog("option", "height", 165);
+                $("#field_is_category").val('1');
+                $(".not_category").addClass("hidden");
+            }
+        },
+        close: function() {
+            $(".field_edit").val("");
+            $("#field_visibility").val(null).trigger("change"); 
         }
     });
 
@@ -734,28 +797,60 @@ $(function() {
         bgiframe: true,
         modal: true,
         autoOpen: false,
-        width: 550,
-        height: 210,
+        width: 700,
+        height: 310,
         title: "<?php echo $LANG['define_new_field']; ?>",
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
-                if ($("#new_field_title").val() !== "" && $("#post_id").val() !== "") {
+                if ($("#new_field_title").val() !== "") {
                     $("#div_loading").show();
-                    var $this = $(this);
+                    
+                    // Get list of roles
+                    var roles = '';
+                    $("#new_field_visibility option:selected").each(function () {
+                        if (roles === '') {
+                            roles = $(this).val();
+                        } else {
+                            roles += ',' + $(this).val();
+                        }
+                    });
+
+                    // if order is not numeric
+                    if ($.isNumeric($("#new_field_order").val()) === false) {
+                        $("#new_field_order")
+                            .addClass("ui-state-error")
+                            .delay(2000)
+                            .queue(function() {
+                                $(this).removeClass("ui-state-error");
+                                $(this).dequeue();
+                            });
+                        return false;
+                    }
+
+                    // store in DB
+                    var data = {
+                        "title" : $("#new_field_title").val(),
+                        "type" : $("#new_field_type").val(),
+                        "encrypted" : $("#new_field_encrypted").val(),
+                        "masked" : $("#new_field_masked").val(),
+                        "id" : $("#post_id").val(),
+                        "field_visibility" : roles,
+                        "order" : $("#new_field_order").val()
+                    };
+
                     //send query
                     $.post(
                         "sources/categories.queries.php",
                         {
-                            type        : "addNewField",
-                            field_title : sanitizeString($("#new_field_title").val()),
-                            field_type  : sanitizeString($("#new_field_type").val()),
-                            id          : $("#post_id").val()
+                            type    : "addNewField",
+                            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key     : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
                             $("#new_field_title").val("");
                             // reload table
                             loadFieldsList();
-                            $this.dialog("close");
+                            $("#add_new_field").dialog("close");
                         },
                         "json"
                     );
@@ -763,8 +858,12 @@ $(function() {
             },
             "<?php echo $LANG['cancel_button']; ?>": function() {
                 $("#div_loading").hide();
+                $("#new_field_visibility").val(null).trigger("change"); 
                 $(this).dialog("close");
             }
+        },
+        open: function() {
+            $("#new_field_visibility").val('all');
         }
     });
 
@@ -837,6 +936,7 @@ $(function() {
                 .multiSelect('refresh');
         }
     });
+
 
     $("#restore_bck_encryption_key_dialog").dialog({
         bgiframe: true,
@@ -1028,8 +1128,8 @@ $(function() {
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
 
-            var html_admin_by = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
-                html_roles = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
+            var html_admin_by = '<option value="">-- <?php echo addslashes($LANG['select']); ?> --</option>',
+                html_roles = '<option value="">-- <?php echo addslashes($LANG['select']); ?> --</option>',
                 selected_admin_by = 0,
                 selected_role = 0;
 
@@ -1040,7 +1140,7 @@ $(function() {
                 if (data[i].selected_role === 1) {
                     selected_role = data[i].id;
                 }
-                html_admin_by += '<option value="'+data[i].id+'"><?php echo addslashes($LANG['managers_of']." ");?>'+data[i].title+'</option>';
+                html_admin_by += '<option value="'+data[i].id+'"><?php echo addslashes($LANG['managers_of']." "); ?>'+data[i].title+'</option>';
                 html_roles += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
             }
             $("#ldap_new_user_is_administrated_by").append(html_admin_by);
@@ -1094,12 +1194,12 @@ function changeEncrypMode(id, encrypted_data) {
         {
             type    : "dataIsEncryptedInDB",
             id      : id,
-            encrypt : encrypted_data === "1" ? "0" : "1"
+            encrypt : encrypted_data === 1 ? "0" : "1"
         },
         function(data) {
             // show to user
             if (data[0].error === ""){
-                if (encrypted_data === "1") {
+                if (encrypted_data === 1) {
                     $("#encryt_data_"+id).html('<span class="fa-stack" title="<?php echo $LANG['not_encrypted_data']; ?>" onclick="changeEncrypMode(\''+id+'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>');
                 } else {
                     $("#encryt_data_"+id).html('<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>" onclick="changeEncrypMode(\''+id+'\', \'1\')"></i>');

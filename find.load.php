@@ -15,6 +15,9 @@
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
+
+$var['hidden_asterisk'] = '<i class="fa fa-eye fa-border fa-sm tip" title="'.$LANG['show_password'].'"></i>&nbsp;&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>&nbsp;<i class="fa fa-asterisk"></i>';
+
 ?>
 
 <script type="text/javascript">
@@ -97,6 +100,48 @@ function see_item(item_id, personalItem, folder_id, expired_item, restricted)
     $('#div_item_data').dialog('open');
 }
 
+// show password during longpress
+var mouseStillDown = false;
+$('#div_item_data_text').on('mousedown', '.unhide_masked_data', function(event) {
+    mouseStillDown = true;
+     showPwdContinuous($(this).attr('id'));
+}).on('mouseup', '.unhide_masked_data', function(event) {
+     mouseStillDown = false;
+}).on('mouseleave', '.unhide_masked_data', function(event) {
+     mouseStillDown = false;
+});
+var showPwdContinuous = function(elem_id){
+    if(mouseStillDown){
+        $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).html().replace(/\n/g,"<br>") + '</span>');
+        setTimeout("showPwdContinuous('"+elem_id+"')", 50);
+        // log password is shown
+        if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
+            // log passd show
+            var data = {
+                "id" : $('#id_selected_item').val(),
+                "label" : $('#item_label').text(),
+                "user_id" : "<?php echo $_SESSION['user_id']; ?>",
+                "action" : 'at_password_shown',
+                "login" : "<?php echo $_SESSION['login']; ?>"
+            };
+
+            $.post(
+                "sources/items.logs.php",
+                {
+                    type    : "log_action_on_item",
+                    data :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                    key        : "<?php echo $_SESSION['key']; ?>"
+                }
+            );
+
+            $("#pw_shown").val("1");
+        }
+    } else {
+        $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
+        $('.tip').tooltipster({multiple: true});
+    }
+};
+
 $("#div_item_data").dialog({
       bgiframe: true,
       modal: true,
@@ -128,7 +173,7 @@ $("#div_item_data").dialog({
                 },
                 function(data) {
                     //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");console.log(data);
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
                     var return_html = "";
                     if (data.show_detail_option != "0" || data.show_details == 0) {
                         //item expired
@@ -138,15 +183,22 @@ $("#div_item_data").dialog({
                         return_html = "<?php echo $LANG['not_allowed_to_see_pw']; ?>";
                     } else {
                         return_html = "<table>"+
-                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['label']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.label+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['label']; ?> :</td><td style='font-style:italic;display:inline;' id='item_label'>"+data.label+"</td></tr>"+
                             "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['description']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.description+"</td></tr>"+
-                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['pw']; ?> :</td><td style='font-style:italic;display:inline;'>"+unsanitizeString(data.pw)+"</td></tr>"+
+                            "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['pw']; ?> :</td>"+
+                            "<td style='font-style:italic;display:inline;'>"+
+                            '<div id="id_pw" class="unhide_masked_data" style="float:left; cursor:pointer; width:300px;"></div>'+
+                            '<div id="hid_pw" class="hidden"></div>'+
+                            '<input type="hidden" id="pw_shown" value="0" />'+
+                            "</td></tr>"+
                             "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['index_login']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.login+"</td></tr>"+
                             "<tr><td valign='top' class='td_title'><span class='fa fa-caret-right'></span>&nbsp;<?php echo $LANG['url']; ?> :</td><td style='font-style:italic;display:inline;'>"+data.url+"</td></tr>"+
                         "</table>";
-                    }console.log(return_html);
+                    }
                     $("#div_item_data_show_error").html("").hide();
                     $("#div_item_data_text").html(return_html);
+                    $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
+                    $('#hid_pw').html(unsanitizeString(data.pw));
                 }
            );
         }
@@ -329,7 +381,7 @@ $(function() {
                             item_ids    : sel_items,
                             key         : "<?php echo $_SESSION['key']; ?>"
                         },
-                        function(data) {console.log(data[0].error);
+                        function(data) {
                             //check if format error
                             if (data[0].error !== "") {
                                 $("#div_mass_op_msg").html(data[0].error).show();

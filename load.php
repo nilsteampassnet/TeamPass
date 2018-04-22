@@ -168,16 +168,31 @@ $htmlHeaders .= '
         // Check form data
         if (psk === "1" && $("#psk").val() === "") {
             $("#psk").addClass("ui-state-error");
+
+            if ($("#yubiko_key").length > 0) {
+                $("#yubiko_key").val("");
+            }
+
             return false;
         } else if (psk === "1") {
             $("#psk").removeClass("ui-state-error");
         }
         if ($("#pw").val() === "") {
             $("#pw").addClass("ui-state-error");
+
+            if ($("#yubiko_key").length > 0) {
+                $("#yubiko_key").val("");
+            }
+
             return false;
         }
         if ($("#login").val() === "") {
             $("#login").addClass("ui-state-error");
+
+            if ($("#yubiko_key").length > 0) {
+                $("#yubiko_key").val("");
+            }
+
             return false;
         }
         // launch identification
@@ -194,6 +209,13 @@ $htmlHeaders .= '
         if ($("#psk").val() !== undefined) {
             data = \', "psk":"\' + sanitizeString($("#psk").val()) + \'"\'+
                 \', "psk_confirm":"\' + sanitizeString($("#psk_confirm").val()) + \'"\';
+        }
+        
+        // Yubico
+        if ($("#yubiko_key").val() !== undefined) {
+            data = \', "yubico_key":"\' + $("#yubiko_key").val()+ \'"\'+
+                \', "yubico_user_id":"\' + sanitizeString($("#yubico_user_id").val()) + \'"\'+
+                \', "yubico_user_key":"\' + sanitizeString($("#yubico_user_key").val()) + \'"\';
         }
 
         // get timezone
@@ -287,8 +309,25 @@ $htmlHeaders .= '
                                 $("#2fa_new_code_div").html(data[0].value+"<br />'.addslashes($LANG['ga_flash_qr_and_login']).'").show();
                             } else if (data[0].value === "install_error") {
                                 $("#connection_error").html(data[0].error).show();
+                            } else if (data[0].value === "no_user_yubico_credentials") {
+                                $("#yubico_credentials_div").removeClass("hidden");
+                                $("#yubico_user_id").focus();
+                            } else if (data[0].value === "bad_user_yubico_credentials") {
+                                $("#connection_error").html("'.addslashes($LANG['yubico_bad_code']).'").show();
+                                if ($("#yubico_credentials_div").hasClass("hidden")) {
+                                    $("#show_yubico_credentials").removeClass("hidden");
+                                    $("#yubico_link").click(function() {
+                                        $("#yubico_credentials_div").removeClass("hidden");
+                                        $("#show_yubico_credentials").addClass("hidden");
+                                    });
+                                }
                             } else {
                                 $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
+                            }
+
+                            // Clear Yubico
+                            if ($("#yubiko_key").length > 0) {
+                                $("#yubiko_key").val("");
                             }
 
                             $("#ajax_loader_connexion").hide();
@@ -419,7 +458,7 @@ $htmlHeaders .= '
             },
             function(data) {
                 if (data === "done") {
-                    window.location.href="index.php";
+                    setTimeout(function(){document.location.href="logout.php"}, 10);
                 } else {
                     $("#generate_new_pw_error").show().html(data);
                 }
@@ -828,13 +867,15 @@ $htmlHeaders .= '
         // load DUO login
         if ($("#duo_sig_response").val() !== "") {
             $("#login").val($("#duo_login").val());
+            $("#pw").val($("#duo_pwd").val());
 
             // checking that response is corresponding to user credentials
             $.post(
                 "sources/identify.php",
                 {
-                    type :             "identify_duo_user_check",
-                    login:             sanitizeString($("#login").val()),
+                    type :            "identify_duo_user_check",
+                    login:            sanitizeString($("#login").val()),
+                    pwd:              sanitizeString($("#duo_pwd").val()),
                     sig_response:     $("#duo_sig_response").val()
                 },
                 function(data) {
@@ -1380,6 +1421,11 @@ $htmlHeaders .= '
             $("#set_personal_saltkey_warning").html("'.addslashes($LANG['error_not_allowed_to']).'").stop(true,true).show().fadeOut(1000);
             e.preventDefault();
         });
+
+        // Show Profile dialog is expected
+        if ($("#force_show_dialog").val() === "1") {
+            loadProfileDialog();
+        }
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';

@@ -224,12 +224,14 @@ if (null !== $post_type) {
                     WHERE id = %i",
                     $post_current_id
                 );
-                if ($data['encryption_type'] === "defuse") {
-                    $decrypt = cryption(
-                        $data['pw'],
-                        $_SESSION['user_settings']['encrypted_oldpsk'],
-                        "decrypt"
-                    );
+
+                // decrypt with Defuse (assuming default)
+                $decrypt = cryption(
+                    $data['pw'],
+                    $_SESSION['user_settings']['encrypted_oldpsk'],
+                    "decrypt"
+                );
+                if (empty($decrypt['err']) === true) {
                     $pw = $decrypt['string'];
                 } else {
                     // check if current encryption protocol #3
@@ -473,7 +475,6 @@ if (null !== $post_type) {
                     'at_modification',
                     $_SESSION['login'],
                     'at_pw :'.$dataItem['pw'],
-                    "",
                     "defuse"
                 );
                 $ret .= "<br />".$LANG['ssh_action_performed'];

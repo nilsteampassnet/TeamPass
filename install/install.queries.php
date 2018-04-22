@@ -228,15 +228,15 @@ if (null !== $post_type) {
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'url_path'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '". empty($session_url_path) ? $db['url_path'] : $session_url_path. "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('url_path', '".empty($session_url_path) ? $db['url_path'] : $session_url_path."');");
                 } else {
                     mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '", empty($session_url_path) ? $db['url_path'] : $session_url_path, "' WHERE `key` = 'url_path';");
                 }
                 $tmp = mysqli_num_rows(mysqli_query($dbTmp, "SELECT * FROM `_install` WHERE `key` = 'abspath'"));
                 if (intval($tmp) === 0) {
-                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '". empty($session_abspath) ? $db['abspath'] : $session_abspath. "');");
+                    mysqli_query($dbTmp, "INSERT INTO `_install` (`key`, `value`) VALUES ('abspath', '".empty($session_abspath) ? $db['abspath'] : $session_abspath."');");
                 } else {
-                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '". empty($session_abspath) ? $db['abspath'] : $session_abspath. "' WHERE `key` = 'abspath';");
+                    mysqli_query($dbTmp, "UPDATE `_install` SET `value` = '".empty($session_abspath) ? $db['abspath'] : $session_abspath."' WHERE `key` = 'abspath';");
                 }
 
                 echo '[{"error" : "", "result" : "Connection is successful", "multiple" : ""}]';
@@ -382,7 +382,7 @@ if (null !== $post_type) {
                         // prepare config file
                         $tp_config_file = "../includes/config/tp.config.php";
                         if (file_exists($tp_config_file)) {
-                            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
                                 echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                                 break;
                             } else {
@@ -517,7 +517,8 @@ global \$SETTINGS;
                             array('admin', 'disable_show_forgot_pwd_link', '0'),
                             array('admin', 'offline_key_level', '0'),
                             array('admin', 'enable_http_request_login', '0'),
-                            array('admin', 'ldap_and_local_authentication', '0')
+                            array('admin', 'ldap_and_local_authentication', '0'),
+                            array('admin', 'secure_display_image', '1')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
@@ -629,6 +630,8 @@ global \$SETTINGS;
                             `encrypted_psk` text NULL,
                             `user_ip` varchar(400) NOT null DEFAULT 'none',
                             `user_api_key` varchar(500) NOT null DEFAULT 'none',
+                            `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
+                            `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
                             PRIMARY KEY (`id`),
                             UNIQUE KEY `login` (`login`)
                             ) CHARSET=utf8;"
@@ -698,6 +701,7 @@ global \$SETTINGS;
                             `type` varchar(255) NOT NULL,
                             `file` varchar(50) NOT NULL,
                             `status` varchar(50) NOT NULL DEFAULT '0',
+                            `content` longblob DEFAULT NULL,
                             PRIMARY KEY (`id`)
                            ) CHARSET=utf8;"
                         );
@@ -879,8 +883,10 @@ global \$SETTINGS;
                             `level` int(2) NOT NULL,
                             `description` text NULL,
                             `type` varchar(50) NULL default '',
+                            `masked` tinyint(1) NOT NULL default '0',
                             `order` int(12) NOT NULL default '0',
                             `encrypted_data` tinyint(1) NOT NULL default '1',
+                            `role_visibility` varchar(255) NOT NULL DEFAULT 'all',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -901,9 +907,10 @@ global \$SETTINGS;
                         $mysqli_result = mysqli_query(
                             $dbTmp,
                             "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."categories_folders` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                             `id_category` int(12) NOT NULL,
                             `id_folder` int(12) NOT NULL,
-                            PRIMARY KEY (`id_category`)
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     } elseif ($task === "api") {
@@ -1059,7 +1066,7 @@ global \$SETTINGS;
                     $filename_seckey = $securePath."/teampass-seckey.txt";
 
                     if (file_exists($filename_seckey)) {
-                        if (!copy($filename_seckey, $filename_seckey.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($filename_seckey, $filename_seckey.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
                             echo '[{"error" : "File `$filename_seckey` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1091,7 +1098,7 @@ global \$SETTINGS;
                     $filename = "../includes/config/settings.php";
 
                     if (file_exists($filename)) {
-                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
                             echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1140,7 +1147,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                 } elseif ($task === "sk.php") {
 //Create sk.php file
                     if (file_exists($skFile)) {
-                        if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
                             echo '[{"error" : "sk.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1194,7 +1201,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                     $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
                     if (file_exists($csrfp_file)) {
-                        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
                             echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {

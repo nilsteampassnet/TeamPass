@@ -570,8 +570,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         $sOrder = "ORDER BY  ";
         for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true" &&
-                preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true"
+                && preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
             ) {
                 $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
                 .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
@@ -679,7 +679,7 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
 /* FAILED AUTHENTICATIO? */
 } elseif (isset($_GET['action']) && $_GET['action'] == "failed_auth") {
     //Columns name
-    $aColumns = array('l.date', 'l.label', 'l.qui');
+    $aColumns = array('l.date', 'l.label', 'l.qui', 'l.field_1');
 
     //Ordering
     if (isset($_GET['iSortCol_0']) && isset($_GET['sSortDir_0']) && in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
@@ -716,13 +716,14 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         array(
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
     $iTotal = DB::count();
 
     $rows = DB::query(
-        "SELECT l.date as auth_date, l.label as label, l.qui as who
+        "SELECT l.date as auth_date, l.label as label, l.qui as who, l.field_1
         FROM ".$pre."log_system as l
         $sWhere
         $sOrder
@@ -730,7 +731,8 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         array(
             '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
             '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
+            '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+            '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING)
         )
     );
 
@@ -756,7 +758,12 @@ if (isset($_GET['action']) && $_GET['action'] == "connections") {
         $sOutput .= '"'.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['auth_date']).'", ';
 
         //col2
-        $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        if ($record['label'] === 'user_password_not_correct' || $record['label'] === 'user_not_exists') {
+            $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).' - '.$record['field_1'].'", ';
+        } else {
+            $sOutput .= '"'.str_replace(array(CHR(10), CHR(13)), array(' ', ' '), htmlspecialchars(stripslashes($record['label']), ENT_QUOTES)).'", ';
+        }
+        
 
         //col3
         $sOutput .= '"'.htmlspecialchars(stripslashes($record['who']), ENT_QUOTES).'"';

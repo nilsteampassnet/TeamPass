@@ -460,6 +460,19 @@ echo '
                             <div class="toggle toggle-modern" id="enable_attachment_encryption" data-toggle-on="', isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="enable_attachment_encryption_input" name="enable_attachment_encryption_input" value="', isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] == 1 ? '1' : '0', '" />
                     </td></tr>';
 
+// Attachments image display secure_display_image
+
+echo '
+                    <tr><td>
+                        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+                        <label>
+                            '.$LANG['settings_secure_display_image'].'
+                            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_secure_display_image_tip']), ENT_QUOTES).'"></i>&nbsp;</span>
+                        </label>
+                        </td><td>
+                            <div class="toggle toggle-modern" id="secure_display_image" data-toggle-on="', isset($SETTINGS['secure_display_image']) && $SETTINGS['secure_display_image'] == 1 ? 'true' : 'false', '"></div><input type="hidden" id="secure_display_image_input" name="secure_display_image_input" value="', isset($SETTINGS['secure_display_image']) && $SETTINGS['secure_display_image'] == 1 ? '1' : '0', '" />
+                    </td></tr>';
+
 echo '<tr><td colspan="3"><hr /></td></tr>';
 // Enable KB
 echo '

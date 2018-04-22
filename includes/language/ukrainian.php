@@ -13,7 +13,26 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array (
+$LANG = array(
+    'position_in_list' => 'Position in list',
+    'visible_by' => 'Visible by',
+    'restrict_visibility_to' => 'Restrict visibility to',
+    'every_roles' => 'Every roles',
+    'masked_textarea' => 'Masked textarea',
+    'masked_text' => 'Masked text',
+    'textarea' => 'Textarea',
+    'data_is_textarea' => 'Data is Textarea',
+    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
+    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
+    'yubico_user_id' => 'Client ID',
+    'yubico_user_key' => 'Secret KEY',
+    'yubico_bad_code' => 'Wrong Yubico information',
+    'show_yubico_info_form' => 'Show Yubico user information form',
+    'press_your_yubico_key' => 'Press your Yubico key',
+    'human_resources' => 'Super manager',
+    'login_attempts' => 'Login attempts since last successful connection',
+    'settings_secure_display_image' => 'Enable secure image display',
+    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
     'user_ga_code' => 'Відправити Google Authenticator користувачу на електронну пошту',
     'send_ga_code' => 'Код Google Authenticator для користувача',
     'error_no_email' => 'У цього користувача не вказано електронну пошту!',
@@ -21,7 +40,7 @@ $LANG = array (
     'email_ga_subject' => 'Ваш Google Authenticator флеш код для Teampass',
     'email_ga_text' => 'Вітаю, <a href=\'#link#\'>перейдіть за цим посиланням</a> і зіскануйте QR код за допомогою застосунка Google Authenticator. Це потрибно для налаштування вашого флеш-коду',
     'settings_attachments_encryption' => 'Ввімкнути шифрування для вкладень',
-    'settings_attachments_encryption_tip' => 'ЦЕ НАЛАШТУВАННЯ МОЖЕ ПОШКОДИТИ ІСНУЮЧІ ВКЛАДЕНН�',
+    'settings_attachments_encryption_tip' => 'ЦЕ НАЛАШТУВАННЯ МОЖЕ ПОШКОДИТИ ІСНУЮЧІ ВКЛАДЕНН�',
     'admin_action_attachments_cryption' => 'Зашифрувати або розшифрувати всі вкладення',
     'admin_action_attachments_cryption_tip' => 'Увага: Лише зашифровані чи розшифровані файли після зміни до',
     'encrypt' => 'Зашифрувати',

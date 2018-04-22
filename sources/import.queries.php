@@ -23,9 +23,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 || !isset($_SESSION['key']
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -65,7 +65,7 @@ function sanitiseString($str, $crLFReplacement)
 global $k, $settings;
 header("Content-type: text/html; charset=utf-8");
 error_reporting(E_ERROR);
-include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
 //Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -105,7 +105,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //load full tree
         $tree->rebuild();
         $tree = $tree->getDescendants();
-       // Init post variable
+        // Init post variable
         $post_operation_id = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
@@ -150,7 +150,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $config->setIgnoreHeaderLine("true");
             // extract data from CSV file
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
                     'Label'     => $row[0],
                     'Login'     => $row[1],
@@ -436,7 +436,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         /**
-        ** Recursive function that will permit to read each level of XML nodes
+         ** Recursive function that will permit to read each level of XML nodes
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
@@ -586,7 +586,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                     //recursive call
                     if ($history !== true) {
-                      recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
+                        recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
                     }
 
                     // Force History to false
@@ -739,7 +739,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             }
 
             // If destination is not ROOT then get the complexity level
-            if (strpos($post_destination, "perso") !== 0) {
+            if (strpos($post_destination, "perso") !== false) {
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;
                 $import_perso = true;
@@ -961,7 +961,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                                 'label' => substr(stripslashes($item[KP_TITLE]), 0, 500),
                                 'description' => stripslashes(str_replace($lineEndSeparator, '<br />', $item[KP_NOTES])),
                                 'pw' => $encrypt['string'],
-                                'pw_iv' => $encrypt['iv'],
+                                'pw_iv' => '',
                                 'url' => substr(stripslashes($item[KP_URL]), 0, 500),
                                 'id_tree' => $folderId,
                                 'login' => substr(stripslashes($item[KP_USERNAME]), 0, 500),
@@ -1051,7 +1051,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         break;
 }
 
-spl_autoload_register(function ($class) {
+spl_autoload_register(function($class) {
     $prefix = 'League\\Csv\\';
     $base_dir = __DIR__.'/src/';
     $len = strlen($prefix);

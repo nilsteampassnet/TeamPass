@@ -130,16 +130,16 @@ function buildNodeTree($nodeId)
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare superGlobal variables
-    $session_forbiden_pfs =                         $superGlobal->get("forbiden_pfs", "SESSION");
-    $session_groupes_visibles =                     $superGlobal->get("groupes_visibles", "SESSION");
-    $session_list_restricted_folders_for_items =    $superGlobal->get("list_restricted_folders_for_items", "SESSION");
-    $session_user_id =                              $superGlobal->get("user_id", "SESSION");
-    $session_login =                                $superGlobal->get("login", "SESSION");
-    $session_no_access_folders =                    $superGlobal->get("no_access_folders", "SESSION");
-    $session_list_folders_limited =                 $superGlobal->get("list_folders_limited", "SESSION");
-    $session_read_only_folders =                    $superGlobal->get("read_only_folders", "SESSION");
-    $session_personal_folders =                    $superGlobal->get("personal_folders", "SESSION");
-    $session_personal_visible_groups =                    $superGlobal->get("personal_visible_groups", "SESSION");
+    $session_forbiden_pfs = $superGlobal->get("forbiden_pfs", "SESSION");
+    $session_groupes_visibles = $superGlobal->get("groupes_visibles", "SESSION");
+    $session_list_restricted_folders_for_items = $superGlobal->get("list_restricted_folders_for_items", "SESSION");
+    $session_user_id = $superGlobal->get("user_id", "SESSION");
+    $session_login = $superGlobal->get("login", "SESSION");
+    $session_no_access_folders = $superGlobal->get("no_access_folders", "SESSION");
+    $session_list_folders_limited = $superGlobal->get("list_folders_limited", "SESSION");
+    $session_read_only_folders = $superGlobal->get("read_only_folders", "SESSION");
+    $session_personal_folders = $superGlobal->get("personal_folders", "SESSION");
+    $session_personal_visible_groups = $superGlobal->get("personal_visible_groups", "SESSION");
 
     // Be sure that user can only see folders he/she is allowed to
     if (in_array($nodeId, $session_forbiden_pfs) === false
@@ -304,15 +304,15 @@ function recursiveTree($nodeId)
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare superGlobal variables
-    $session_forbiden_pfs =                         $superGlobal->get("forbiden_pfs", "SESSION");
-    $session_groupes_visibles =                     $superGlobal->get("groupes_visibles", "SESSION");
-    $session_list_restricted_folders_for_items =    $superGlobal->get("list_restricted_folders_for_items", "SESSION");
-    $session_user_id =                              $superGlobal->get("user_id", "SESSION");
-    $session_login =                                $superGlobal->get("login", "SESSION");
-    $session_user_read_only =                       $superGlobal->get("user_read_only", "SESSION");
-    $session_no_access_folders =                    $superGlobal->get("no_access_folders", "SESSION");
-    $session_list_folders_limited =                 $superGlobal->get("list_folders_limited", "SESSION");
-    $session_read_only_folders =                    $superGlobal->get("read_only_folders", "SESSION");
+    $session_forbiden_pfs = $superGlobal->get("forbiden_pfs", "SESSION");
+    $session_groupes_visibles = $superGlobal->get("groupes_visibles", "SESSION");
+    $session_list_restricted_folders_for_items = $superGlobal->get("list_restricted_folders_for_items", "SESSION");
+    $session_user_id = $superGlobal->get("user_id", "SESSION");
+    $session_login = $superGlobal->get("login", "SESSION");
+    $session_user_read_only = $superGlobal->get("user_read_only", "SESSION");
+    $session_no_access_folders = $superGlobal->get("no_access_folders", "SESSION");
+    $session_list_folders_limited = $superGlobal->get("list_folders_limited", "SESSION");
+    $session_read_only_folders = $superGlobal->get("read_only_folders", "SESSION");
 
     // Be sure that user can only see folders he/she is allowed to
     if (in_array($completTree[$nodeId]->id, $session_forbiden_pfs) === false

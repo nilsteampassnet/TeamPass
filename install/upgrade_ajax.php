@@ -305,15 +305,7 @@ if (isset($post_type)) {
                 }
                 $var_x++;
             }
-
-            if (!extension_loaded('mcrypt')) {
-                $okExtensions = false;
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"'.
-                    '&nbsp;&nbsp;<img src=\"images/minus-circle.png\"></span><br />';
-            } else {
-                $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"mcrypt\"'.
-                    '&nbsp;&nbsp;<img src=\"images/tick-circle.png\"></span><br />';
-            }
+            
             if (!extension_loaded('openssl')) {
                 //$okExtensions = false;
                 $txt .= '<span style=\"padding-left:30px;font-size:13pt;\">PHP extension \"openssl\"'.
@@ -396,7 +388,7 @@ if (isset($post_type)) {
             if (file_exists($filename)) {
                 //copy some constants from this existing file
                 $settingsFile = file($filename);
-                while (list($key, $val) = each($settingsFile)) {
+                foreach ($settingsFile as $key => $val) {
                     if (substr_count($val, 'charset') > 0) {
                         $superGlobal->put("charset", getSettingValue($val), "SESSION");
                     } elseif (substr_count($val, '@define(') > 0 && substr_count($val, 'SALT') > 0) {
@@ -430,7 +422,7 @@ if (isset($post_type)) {
                     } elseif (substr_count($val, '$pre') > 0) {
                         $pre = getSettingValue($val);
                     } elseif (substr_count($val, "define('SECUREPATH',") > 0) {
-                        $superGlobal->put("sk_file", substr($val, 23, strpos($val, ');')-24)."/sk.php", "SESSION");
+                        $superGlobal->put("sk_file", substr($val, 23, strpos($val, ');') - 24)."/sk.php", "SESSION");
                     }
                 }
             }
@@ -443,7 +435,7 @@ if (isset($post_type)) {
                     '</span><br />';
                 //copy some constants from this existing file
                 $skFile = file($session_sk_file);
-                while (list($key, $val) = each($skFile)) {
+                foreach ($skFile as $key => $val) {
                     if (substr_count($val, "@define('SALT'") > 0) {
                         $superGlobal->put("encrypt_key", substr($val, 17, strpos($val, "')") - 17), "SESSION");
                         $session_encrypt_key = $superGlobal->get("encrypt_key", "SESSION");
@@ -693,7 +685,7 @@ if (isset($post_type)) {
                     $filename,
                     $filename.'.'.date(
                         "Y_m_d",
-                        mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
                     )
                 )) {
                     echo 'document.getElementById("res_step5").innerHTML = '.
@@ -810,7 +802,7 @@ if (file_exists(\"".$skFile."\")) {
                 $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                 $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
                 if (file_exists($csrfp_file) === true) {
-                    if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                    if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
                         echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                         break;
                     } else {

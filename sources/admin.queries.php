@@ -107,7 +107,7 @@ switch ($post_type) {
                         array(
                             'http' => array(
                                 'ignore_errors' => true,
-                                'proxy' =>  $SETTINGS['proxy_ip'] . ':' . $SETTINGS['proxy_port']
+                                'proxy' =>  $SETTINGS['proxy_ip'].':'.$SETTINGS['proxy_port']
                             )
                         )
                     );
@@ -121,8 +121,8 @@ switch ($post_type) {
                     );
                 }
                 
-                $json = file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
-                if ($json) {
+                $json = @file_get_contents('https://teampass.net/utils/teampass_info.json', false, $context);
+                if ($json !== false) {
                     $json_array = json_decode($json, true);
 
                     // About version
@@ -665,7 +665,7 @@ switch ($post_type) {
 
 
         // generate new saltkey
-        $old_sk_filename = SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))).'.'.time();
+        $old_sk_filename = SECUREPATH."/teampass-seckey.txt".'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))).'.'.time();
         copy(
             SECUREPATH."/teampass-seckey.txt",
             $old_sk_filename
@@ -769,7 +769,7 @@ switch ($post_type) {
             $objects = explode(",", $post_object);
 
             // Allowed values for $_POST['object'] : "items,logs,files,categories"
-            if (in_array($objects[0], array("items","logs","files","categories")) === false) {
+            if (in_array($objects[0], array("items", "logs", "files", "categories")) === false) {
                 echo '[{"nextAction":"" , "error":"Input `'.$objects[0].'` is not allowed" , "nbOfItems":""}]';
                 break;
             }
@@ -1259,7 +1259,7 @@ switch ($post_type) {
             foreach ($rows as $record) {
                 if (is_file($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
                     $addFile = 0;
-                    if ($post_option== "decrypt" && $record['status'] === 'encrypted') {
+                    if ($post_option == "decrypt" && $record['status'] === 'encrypted') {
                         $addFile = 1;
                     } elseif ($post_option == "encrypt" && $record['status'] === 'clear') {
                         $addFile = 1;
@@ -1538,7 +1538,7 @@ switch ($post_type) {
         if (file_exists($filename)) {
             // get sk.php file path
             $settingsFile = file($filename);
-            while (list($key, $val) = each($settingsFile)) {
+            foreach ($settingsFile as $key => $val) {
                 if (substr_count($val, "@define('SECUREPATH'")) {
                     $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
                 }
@@ -1551,7 +1551,7 @@ switch ($post_type) {
                     $tmp_skfile,
                     $tmp_skfile.'.'.date(
                         "Y_m_d",
-                        mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))
+                        mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
                     )
                 )) {
                     echo '[{"result" : "" , "error" : "Could NOT perform a copy of file: '.$tmp_skfile.'"}]';
@@ -2040,7 +2040,7 @@ switch ($post_type) {
             $debug_ldap .= "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."<br/>";
 
             if ($ldapconn) {
-              $debug_ldap .= "DN : ".$dataReceived[0]['ldap_bind_dn']." -- ".$dataReceived[0]['ldap_bind_passwd']."<br/>";
+                $debug_ldap .= "DN : ".$dataReceived[0]['ldap_bind_dn']." -- ".$dataReceived[0]['ldap_bind_passwd']."<br/>";
                 ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
                 ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
                 $ldapbind = ldap_bind($ldapconn, $dataReceived[0]['ldap_bind_dn'], $dataReceived[0]['ldap_bind_passwd']);
@@ -2067,7 +2067,7 @@ switch ($post_type) {
                         );
 
                         $debug_ldap .= 'Search filter (group): '.$filter_group."<br/>".
-                          'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
+                            'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
 
                         if ($result_group) {
                             $entries = ldap_get_entries($ldapconn, $result_group);
@@ -2075,11 +2075,11 @@ switch ($post_type) {
                             if ($entries['count'] > 0) {
                                 // Now check if group fits
                                 for ($i=0; $i<$entries['count']; $i++) {
-                                  $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                  if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                    $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
+                                    if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                     $GroupRestrictionEnabled = true;
                                     break;
-                                  }
+                                    }
                                 }
 
                             }
@@ -2089,7 +2089,7 @@ switch ($post_type) {
                     }
 
                     $debug_ldap .= 'Search filter : '.$filter."<br/>".
-                            'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result), true))."<br/>";
+                            'Results : '.str_replace("\n", "<br>", print_r(ldap_get_entries($ldapconn, $result), true))."<br/>";
 
                     if (ldap_count_entries($ldapconn, $result)) {
                         // try auth

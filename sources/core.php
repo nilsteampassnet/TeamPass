@@ -100,8 +100,8 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
     );
     if ($row['valeur'] === "true") {
         /**
-        * Permits to delete files and folders recursively
-        */
+         * Permits to delete files and folders recursively
+         */
         function delTree($dir)
         {
             $files = array_diff(scandir($dir), array('.', '..'));
@@ -360,7 +360,7 @@ if (isset($SETTINGS['enable_sts']) === true
 if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
     // query on user
     $data = DB::queryfirstrow(
-        "SELECT admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id FROM ".prefix_table("users")." WHERE id=%i",
+        "SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ".prefix_table("users")." WHERE id=%i",
         $_SESSION['user_id']
     );
 
@@ -431,57 +431,72 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
                 $_SESSION['user_privilege'] = $LANG['user'];
             }
         }
+    }
+}
 
-        /*
-        * LOAD CATEGORIES
-        */
-        if (isset($SETTINGS['item_extra_fields']) === true
-            && $SETTINGS['item_extra_fields'] == 1
-            && empty($_SESSION['item_fields']) === true
-        ) {
-            $_SESSION['item_fields'] = array();
-            $rows = DB::query(
-                "SELECT *
-                FROM ".prefix_table("categories")."
-                WHERE level=%i",
-                "0"
-            );
-            foreach ($rows as $record) {
-                $arrFields = array();
 
-                // get each field
-                $rows2 = DB::query(
-                    "SELECT *
-                    FROM ".prefix_table("categories")."
-                    WHERE parent_id=%i
-                    ORDER BY `order` ASC",
-                    $record['id']
-                );
-                if (DB::count() > 0) {
-                    foreach ($rows2 as $field) {
-                        array_push(
-                            $arrFields,
-                            array(
-                                $field['id'],
-                                addslashes($field['title']),
-                                $field['encrypted_data'],
-                                $field['type']
-                            )
-                        );
-                    }
+/*
+* LOAD CATEGORIES
+*/
+if (isset($SETTINGS['item_extra_fields']) === true
+    && $SETTINGS['item_extra_fields'] == 1
+    && isset($_GET['page']) === true
+    && $_GET['page'] === 'items'
+    && isset($_SESSION['fonction_id']) === true
+) {
+    $_SESSION['item_fields'] = array();
+    $rows = DB::query(
+        "SELECT *
+        FROM ".prefix_table("categories")."
+        WHERE level=%i",
+        "0"
+    );
+    foreach ($rows as $record) {
+        $arrFields = array();
+
+        // get each field
+        $rows2 = DB::query(
+            "SELECT *
+            FROM ".prefix_table("categories")."
+            WHERE parent_id=%i
+            ORDER BY `order` ASC",
+            $record['id']
+        );
+        
+        if (DB::count() > 0) {
+            foreach ($rows2 as $field) {
+                // Is this Field visibile by user?
+                if ($field['role_visibility'] === 'all'
+                    || count(
+                        array_intersect(
+                            explode(';', $_SESSION['fonction_id']),
+                            explode(',', $field['role_visibility'])
+                        )
+                    ) > 0
+                ) {
+                    array_push(
+                        $arrFields,
+                        array(
+                            $field['id'],
+                            addslashes($field['title']),
+                            $field['encrypted_data'],
+                            $field['type'],
+                            $field['masked']
+                        )
+                    );
                 }
-
-                // store the categories
-                array_push(
-                    $_SESSION['item_fields'],
-                    array(
-                        $record['id'],
-                        addslashes($record['title']),
-                        $arrFields
-                    )
-                );
             }
         }
+
+        // store the categories
+        array_push(
+            $_SESSION['item_fields'],
+            array(
+                $record['id'],
+                addslashes($record['title']),
+                $arrFields
+            )
+        );
     }
 }
 
@@ -500,7 +515,7 @@ if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === "1") {
             $_SESSION['validite_pw'] = true;
         } else {
             $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
-                (mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
+                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
             );
             if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
                 $_SESSION['validite_pw'] = false;

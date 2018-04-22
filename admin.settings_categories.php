@@ -70,7 +70,7 @@ $tree->rebuild();
 */
 
 //Build tree of Categories
-$categoriesSelect = "";
+$categoriesSelect = '<option value="">-- '.addslashes($LANG['select']).' --</option>';
 $arrCategories = array();
 $rows = DB::query(
     "SELECT * FROM ".prefix_table("categories")."
@@ -92,8 +92,20 @@ foreach ($rows as $record) {
 }
 
 // Build list of Field Types
-$options_field_types = '<option value="text">'.$LANG['text'].'</option>'.
-                '<option value="masked">'.$LANG['masked'].'</option>';
+$options_field_types = '<option value="">-- '.addslashes($LANG['select']).' --</option>'.
+    '<option value="text">'.addslashes($LANG['text']).'</option>'.
+    '<option value="textarea">'.addslashes($LANG['textarea']).'</option>';
+
+// Build list of Roles
+$options_roles = '<option value="all">'.addslashes($LANG['every_roles']).'</option>';
+$rows = DB::query(
+    "SELECT id, title FROM ".prefix_table("roles_title")."
+    ORDER BY title ASC"
+);
+foreach ($rows as $record) {
+    $options_roles .= '<option value="'.$record['id'].'">'.addslashes($record['title']).'</option>';
+}
+
 
 echo '
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -108,134 +120,25 @@ echo '
     <div style="float:left; margin-left:20px;" class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ? 'true' : 'false', '"></div>
     <div style="float:left;"><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ? '1' : '0', '" /></div>
     </div>
+
     <hr />
 
-
-    <div id="categories_list">
-        <table id="tbl_categories" style=""><tr style="display: none ! important;"><td>HTML validation placeholder</td></tr>';
-
-if (isset($arrCategories) && count($arrCategories) > 0) {
-    // build table
-    foreach ($arrCategories as $category) {
-        // get associated Folders
-        $foldersList = $foldersNumList = "";
-        $rows = DB::query(
-            "SELECT t.title AS title, c.id_folder as id_folder
-            FROM ".prefix_table("categories_folders")." AS c
-            INNER JOIN ".prefix_table("nested_tree")." AS t ON (c.id_folder = t.id)
-            WHERE c.id_category = %i",
-            $category[0]
-        );
-        foreach ($rows as $record) {
-            if (empty($foldersList)) {
-                $foldersList = $record['title'];
-                $foldersNumList = $record['id_folder'];
-            } else {
-                $foldersList .= " | ".$record['title'];
-                $foldersNumList .= ";".$record['id_folder'];
-            }
-        }
-        // display each cat and fields
-        echo '
-        <tr id="t_cat_'.$category[0].'">
-            <td colspan="2">
-                <input type="text" id="catOrd_'.$category[0].'" size="1" class="category_order" value="'.$category[2].'" />&nbsp;
-                <span class="fa-stack tip" title="'.$LANG['field_add_in_category'].'" onclick="fieldAdd('.$category[0].')" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-plus fa-stack-1x fa-inverse"></i>
-                </span>
-                &nbsp;
-                <input type="radio" name="sel_item" id="item_'.$category[0].'_cat" />
-                <label for="item_'.$category[0].'_cat" id="item_'.$category[0].'" style="font-weight:bold;">'.$category[1].'</label>
-            </td>
-            <td>
-                <span class="fa-stack tip" title="'.$LANG['category_in_folders'].'" onclick="catInFolders('.$category[0].')" style="cursor:pointer;">
-                    <i class="fa fa-square fa-stack-2x"></i>
-                    <i class="fa fa-edit fa-stack-1x fa-inverse"></i>
-                </span>
-                &nbsp;
-                '.$LANG['category_in_folders_title'].':
-                <span style="font-family:italic; margin-left:10px;" id="catFolders_'.$category[0].'">'.$foldersList.'</span>
-                <input type="hidden" id="catFoldersList_'.$category[0].'" value="'.$foldersNumList.'" />
-            </td>
-        </tr>';
-        $rows = DB::query(
-            "SELECT * FROM ".prefix_table("categories")."
-            WHERE parent_id = %i
-            ORDER BY ".$pre."categories.order ASC",
-            $category[0]
-        );
-        $counter = DB::count();
-        if ($counter > 0) {
-            foreach ($rows as $field) {
-                echo '
-        <tr id="t_field_'.$field['id'].'">
-            <td width="60px"></td>
-            <td colspan="2">
-                <input type="text" id="catOrd_'.$field['id'].'" size="1" class="category_order" value="'.$field['order'].'" />&nbsp;
-                <input type="radio" name="sel_item" id="item_'.$field['id'].'_cat" />
-                <label for="item_'.$field['id'].'_cat" id="item_'.$field['id'].'">'.($field['title']).'</label>
-                <span id="encryt_data_'.$field['id'].'" style="margin-left:4px; cursor:pointer;">', (isset($field['encrypted_data']) && $field['encrypted_data'] === "1") ? '<i class="fa fa-key tip" title="'.$LANG['encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'1\')"></i>' : '<span class="fa-stack" title="'.$LANG['not_encrypted_data'].'" onclick="changeEncrypMode(\''.$field['id'].'\', \'0\')"><i class="fa fa-key fa-stack-1x"></i><i class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></i></span>', '
-                </span>';
-                if (isset($field['type'])) {
-                    if ($field['type'] === "text") {
-                        echo '
-                <span style="margin-left:4px;"><i class="fa fa-paragraph tip" title="'.$LANG['data_is_text'].'"></i></span>';
-                    } elseif ($field['type'] === "masked") {
-                        echo '
-                <span style="margin-left:4px;"><i class="fa fa-eye-slash tip" title="'.$LANG['data_is_masked'].'"></i></span>';
-                    }
-                }
-                echo '
-            </td>
-            <td></td>
-        </tr>';
-            }
-        }
-    }
-}
-echo '
-        </table>
-    </div>';
-
-if (!isset($arrCategories) || count($arrCategories) == 0) {
-    echo '
-    <div class="ui-state-highlight ui-corner-all" style="padding:2px;" id="no_category">
-        '.$LANG['no_category_defined'].'
-    </div>';
-}
-
-// add management button
-echo '
-    <div class="ui-state-highlight ui-corner-all" style="padding: 5px; margin-top:25px;">
+    <div class="ui-state-highlight ui-corner-all" style="padding: 5px; margin:5px 0 20px 0;">
         <div>
             '.$LANG['new_category_label'].':
             <input type="text" id="new_category_label" class="ui-content" style="margin-left:5px; width: 200px;" />
             <input type="button" value="'.$LANG['add_category'].'" onclick="categoryAdd()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
+            <div style="margin-top:3px;">
+                <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
+                <input type="button" value="'.$LANG['reload_table'].'" onclick="loadFieldsList()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
+            </div>
         </div>
-        <div style="margin-top:5px;">
-            '.$LANG['for_selected_items'].':<br />
-            <input type="text" id="new_item_title" class="ui-content" style="margin-left:30px; width: 200px;" />
-            <input type="button" value="'.$LANG['rename'].'" onclick="renameItem()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
-            &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['delete'].'" onclick="deleteItem()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
-            &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['move'].'" onclick="moveItem()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
-            <select id="moveItemTo" style="margin-left:10px;">
-                <option style="display: none ! important;" value="HTML validation placeholder"></option>
-                '.$categoriesSelect.'
-            </select>
-            &nbsp;|&nbsp;
-            <input type="button" value="'.$LANG['type'].'" onclick="changeFieldTypeNow()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
-            <select id="changeFieldType" style="margin-left:10px;">
-                <option style="display: none ! important;" value="HTML validation placeholder"></option>
-                '.$options_field_types.'
-            </select>
-        </div>
-        <div style="margin-top:5px;">
-            <input type="button" value="'.$LANG['save_categories_position'].'" onclick="storePosition()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
-            <input type="button" value="'.$LANG['reload_table'].'" onclick="loadFieldsList()" style="margin-left:5px;" class="ui-state-default ui-corner-all pointer" />
-        </div>
+    </div>
+
+    <div id="categories_list">
+    </div>
+    
+    <div class="ui-state-highlight ui-corner-all hidden" style="padding:2px;" id="no_category">
     </div>';
 
 echo '
@@ -250,22 +153,149 @@ echo '
 
 // dialogboxes
 echo '
+<div id="item_dialog" class="hidden">
+    <div style="margin:0px 0 0px 30px;">
+        <input type="hidden" id="field_is_category" value="" />
+        <table>
+            <tr>
+                <td width="200px">
+                    <label for="field_title">'.$LANG['at_label'].':</label>&nbsp;
+                </td>
+                <td>
+                    <input type="text" id="field_title" class="ui-widget-content ui-corner-all field_edit" style="width: 330px; padding:3px;" />
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
+                    <label for="field_category">'.$LANG['category'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_category" class="ui-widget-content ui-corner-all field_edit" style="width: 340px; padding:3px;">
+                        '.$categoriesSelect.'
+                    </select>
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
+                    <label for="field_type">'.$LANG['type'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_type" class="ui-widget-content ui-corner-all field_edit" style="width: 340px; padding:3px;">
+                        '.$options_field_types.'
+                    </select>
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
+                    <label for="field_masked">'.$LANG['masked_text'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_masked" class="ui-widget-content ui-corner-all field_edit" style="width: 340px; padding:3px;">
+                        <option value="0">'.$LANG['no'].'</option>
+                        <option value="1">'.$LANG['yes'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
+                    <label for="field_encrypted">'.$LANG['encrypted_data'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_encrypted" class="ui-widget-content ui-corner-all field_edit" style="width:340px; padding:3px;">
+                        <option value="1">'.$LANG['yes'].'</option>
+                        <option value="0">'.$LANG['no'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
+                    <label for="field_visibility">'.$LANG['restrict_visibility_to'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_visibility" class="ui-widget-content ui-corner-all field_edit" style="width:340px; padding:3px;" multiple="multiple">
+                        '.$options_roles.'
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="field_order">'.$LANG['position_in_list'].':</label>&nbsp;
+                </td>
+                <td>
+                    <input type="text" id="field_order" class="ui-widget-content ui-corner-all" style="width: 30px; padding:3px;" />
+                </td>
+            </tr>
+        </table>
+    </div>
+</div>';
+
+echo '
     <div id="category_confirm" style="display:none;">
         <span id="category_confirm_text"></span>?
     </div>';
 
 echo '
     <div id="add_new_field" style="display:none;">
-        <div style="width:100%;">
-            <label for="new_field_title" style="display:inline-block;width:220px;">'.$LANG['new_field_title'].'</label>
-            <input type="text" id="new_field_title" style="width: 200px; margin-left:20px; padding:3px;" />
-        </div>
-        <div style="margin-top:3px;">
-            <label for="new_field_type" style="display:inline-block;width:220px;">'.$LANG['select_type_of_field'].'</label>
-            <select id="new_field_type" style="width: 200px; margin-left:20px; padding:3px;">'.
-                $options_field_types.'
-            </select>
-        </div>
+        <table>
+            <tr>
+                <td>
+                    <label for="new_field_title">'.$LANG['new_field_title'].':</label>&nbsp;
+                </td>
+                <td>
+                    <input type="text" id="new_field_title" class="ui-widget-content ui-corner-all" style="width: 330px; padding:3px;" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_type">'.$LANG['type'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="new_field_type" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
+                        '.$options_field_types.'
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_encrypted">'.$LANG['encrypted_data'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="new_field_encrypted" class="ui-widget-content ui-corner-all" style="width:340px; padding:3px;">
+                        <option value="1">'.$LANG['yes'].'</option>
+                        <option value="0">'.$LANG['no'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_masked">'.$LANG['masked_text'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="new_field_masked" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
+                        <option value="0">'.$LANG['no'].'</option>
+                        <option value="1">'.$LANG['yes'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_visibility">'.$LANG['restrict_visibility_to'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="new_field_visibility" class="ui-widget-content ui-corner-all field_edit" style="width:340px; padding:3px;" multiple="multiple">
+                        '.$options_roles.'
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_title">'.$LANG['position_in_list'].':</label>&nbsp;
+                </td>
+                <td>
+                    <input type="text" id="new_field_order" class="ui-widget-content ui-corner-all" style="width: 30px; padding:3px;" />
+                </td>
+            </tr>
+        </table>
     </div>';
 
 echo '
@@ -306,4 +336,10 @@ echo '
 
 require_once 'admin.settings.load.php';
 echo '
-</body></html>';
+<script type="text/javascript">
+//<![CDATA[
+    $(function() {
+        loadFieldsList();
+    });
+//]]>
+</script></body></html>';

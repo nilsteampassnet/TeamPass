@@ -66,7 +66,7 @@ if (file_exists($filename)) {
     //copy some constants from this existing file
     $settingsFile = file($filename);
     if ($settingsFile !== false) {
-        while (list($key, $val) = each($settingsFile)) {
+        foreach ($settingsFile as $key => $val) {
             if (substr_count($val, "@define('SECUREPATH'")) {
                 $tmp_skfile = substr($val, 23, strpos($val, "');") - 23).'/sk.php';
             }
@@ -78,15 +78,15 @@ if (file_exists($filename)) {
 $tmp_akey = $tmp_ikey = $tmp_skey = $tmp_host = "";
 $skFile = file($tmp_skfile);
 if ($skFile !== false) {
-    while (list($key, $val) = each($skFile)) {
+    foreach ($skFile as $key => $val) {
         if (substr_count($val, "@define('AKEY'") > 0) {
-            $tmp_akey = substr($val, 17, strlen($val) - 21);
+            $tmp_akey = substr($val, 21, strlen($val) - 26);
         } elseif (substr_count($val, "@define('IKEY'") > 0) {
-            $tmp_ikey = substr($val, 17, strlen($val) - 21);
+            $tmp_ikey = substr($val, 21, strlen($val) - 26);
         } elseif (substr_count($val, "@define('SKEY'") > 0) {
-            $tmp_skey = substr($val, 17, strlen($val) - 21);
+            $tmp_skey = substr($val, 21, strlen($val) - 26);
         } elseif (substr_count($val, "@define('HOST'") > 0) {
-            $tmp_host = substr($val, 17, strlen($val) - 21);
+            $tmp_host = substr($val, 21, strlen($val) - 26);
         }
     }
 }
@@ -118,6 +118,7 @@ td {
 .google_enabled { ', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 ? '' : 'display:none;', ' }
 .duo_enabled { ', isset($SETTINGS['duo']) && $SETTINGS['duo'] == 1 ? '' : 'display:none;', ' }
 .agses_enabled { ', isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1 ? '' : 'display:none;', ' }
+.yubico_enabled { ', isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] == 1 ? '' : 'display:none;', ' }
 </style>
 </head><body>';
 
@@ -336,6 +337,26 @@ echo '
       </td>
     </tr>
 
+    <tr>
+      <td colspan="2"><hr />
+      </td>
+    </tr>
+
+    <!-- YUBICO Authentication toggle -->
+    <tr class="yubicoauth">
+      <td>
+        <label>
+          <i class="fa fa-chevron-right mi-grey-1"></i>
+          '.$LANG['admin_yubico_authentication_setting'].'
+        </label>
+      </td>
+      <td>
+        <div class="toggle toggle-modern" id="yubico_authentication" data-toggle-on="', isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] == 1 ? 'true' : 'false', '">
+        </div>
+        <input type="hidden" id="yubico_authentication_input" name="yubico_authentication_input" value="', isset($SETTINGS['yubico_authentication']) && $SETTINGS['yubico_authentication'] == 1 ? '1' : '0', '" />
+      </td>
+    </tr>
+
   </tbody></table>
 </div>';
 
@@ -507,11 +528,13 @@ $(function() {
             if(e.target.id == "duo") $(".duo_enabled").show();
             if(e.target.id == "google_authentication") $(".google_enabled").show();
             if(e.target.id == "agses_authentication_enabled") $(".agses_enabled").show();
+            if(e.target.id == "yubico_authentication") $(".yubico_enabled").show();
         } else {
             $("#"+e.target.id+"_input").val(0);
             if(e.target.id == "duo") $(".duo_enabled").hide();
             if(e.target.id == "google_authentication") $(".google_enabled").hide();
             if(e.target.id == "agses_authentication_enabled") $(".agses_enabled").hide();
+            if(e.target.id == "yubico_authentication") $(".yubico_enabled").hide();
         }
         // store in DB
         var data = "{\"field\":\""+e.target.id+"\", \"value\":\""+$("#"+e.target.id+"_input").val()+"\"}";

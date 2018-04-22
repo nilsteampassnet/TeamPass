@@ -52,6 +52,7 @@ $link->set_charset($encoding);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_id_item = filter_input(INPUT_POST, 'id_item', FILTER_SANITIZE_NUMBER_INT);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // Check KEY and rights
 if (null === $post_key
@@ -64,123 +65,26 @@ if (null === $post_key
 // Do asked action
 if (null !== $post_type) {
     switch ($post_type) {
-        /*
-        * CASE
-        * log if item's password is shown
-        */
-        case "item_password_shown":
-            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] == 1) {
-                DB::insert(
-                    prefix_table("log_items"),
-                    array(
-                        'id_item' => $post_id_item,
-                        'date' => time(),
-                        'id_user' => $_SESSION['user_id'],
-                        'action' => 'at_password_shown'
-                    )
-                );
-
-                // SysLog
-                if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
-                    send_syslog(
-                        "The password of Item #".$post_id_item." was shown to ".$_SESSION['login'].".",
-                        $SETTINGS['syslog_host'],
-                        $SETTINGS['syslog_port'],
-                        "teampass"
-                    );
-                }
-
-                // send notification if enabled
-                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
-                    // Get info about item
-                    $dataItem = DB::queryfirstrow(
-                        "SELECT id, id_tree, label
-                        FROM ".prefix_table("items")."
-                        WHERE id = %i",
-                        "at_creation"
-                    );
-
-                    // send back infos
-                    DB::insert(
-                        prefix_table('emails'),
-                        array(
-                            'timestamp' => time(),
-                            'subject' => $LANG['email_on_open_notification_subject'],
-                            'body' => str_replace(
-                                array('#tp_user#', '#tp_item#', '#tp_link#'),
-                                array(
-                                    addslashes($_SESSION['login']),
-                                    addslashes($dataItem['label']),
-                                    $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
-                                ),
-                                $LANG['email_on_open_notification_mail']
-                            ),
-                            'receivers' => $_SESSION['listNotificationEmails'],
-                            'status' => ''
-                        )
-                    );
-                }
+        case "log_action_on_item":
+            // Check KEY and rights
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(array("error" => "ERR_KEY_NOT_CORRECT"), "encode");
+                break;
             }
 
-            break;
-        /*
-        * CASE
-        * log if item's password is copied
-        */
-        case "item_password_copied":
-            if (isset($SETTINGS['log_accessed']) && $SETTINGS['log_accessed'] == 1) {
-                DB::insert(
-                    prefix_table("log_items"),
-                    array(
-                        'id_item' => $post_id_item,
-                        'date' => time(),
-                        'id_user' => $_SESSION['user_id'],
-                        'action' => 'at_password_copied'
-                    )
-                );
+            // decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                $post_data,
+                "decode"
+            );
 
-                // SysLog
-                if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
-                    send_syslog(
-                        "The password of Item #".$post_id_item." was copied to clipboard by ".$_SESSION['login'].".",
-                        $SETTINGS['syslog_host'],
-                        $SETTINGS['syslog_port'],
-                        "teampass"
-                    );
-                }
-
-                // send notification if enabled
-                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1') {
-                    // Get info about item
-                    $dataItem = DB::queryfirstrow(
-                        "SELECT id, id_tree, label
-                        FROM ".prefix_table("items")."
-                        WHERE id = %i",
-                        "at_creation"
-                    );
-
-                    // send back infos
-                    DB::insert(
-                        prefix_table('emails'),
-                        array(
-                            'timestamp' => time(),
-                            'subject' => $LANG['email_on_open_notification_subject'],
-                            'body' => str_replace(
-                                array('#tp_user#', '#tp_item#', '#tp_link#'),
-                                array(
-                                    addslashes($_SESSION['login']),
-                                    addslashes($dataItem['label']),
-                                    $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
-                                ),
-                                $LANG['email_on_open_notification_mail']
-                            ),
-                            'receivers' => $_SESSION['listNotificationEmails'],
-                            'status' => ''
-                        )
-                    );
-                }
-            }
-
+            logItems(
+                filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT),
+                filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_STRING),
+                filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT),
+                filter_var(htmlspecialchars_decode($dataReceived['action']), FILTER_SANITIZE_STRING),
+                filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING)
+            );
             break;
     }
 }

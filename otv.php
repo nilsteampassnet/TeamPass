@@ -107,7 +107,14 @@ DB::$host = $server;
                             $data['item_id']
                         );
                         // log
-                        logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_delete', 'otv', 'at_automatically_deleted');
+                        logItems(
+                            $data['item_id'],
+                            $dataItem['label'],
+                            OTV_USER_ID,
+                            'at_delete',
+                            'otv',
+                            'at_automatically_deleted'
+                        );
 
                         echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fa fa-warning fa-2x"></i>&nbsp;'.
                         addslashes($LANG['not_allowed_to_see_pw_is_expired']).'</div>';
@@ -139,7 +146,13 @@ DB::$host = $server;
                 "</div>";
 
             // log
-            logItems($data['item_id'], $dataItem['label'], OTV_USER_ID, 'at_shown', 'otv');
+            logItems(
+                $data['item_id'],
+                $dataItem['label'],
+                OTV_USER_ID,
+                'at_shown',
+                'otv'
+            );
 
             // delete entry
             DB::delete(prefix_table("otv"), "id = %i", $data['id']);
