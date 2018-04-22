@@ -1,5 +1,4 @@
 <?php
-
 /**
  *
  * @file          main.functions.php
@@ -19,24 +18,24 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config if $SETTINGS not defined
 if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-  if (file_exists('../includes/config/tp.config.php')) {
-      require_once '../includes/config/tp.config.php';
-  } elseif (file_exists('./includes/config/tp.config.php')) {
-      require_once './includes/config/tp.config.php';
-  } elseif (file_exists('../../includes/config/tp.config.php')) {
-      require_once '../../includes/config/tp.config.php';
-  } else {
-      throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
-  }
+    if (file_exists('../includes/config/tp.config.php')) {
+        include_once '../includes/config/tp.config.php';
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        include_once './includes/config/tp.config.php';
+    } elseif (file_exists('../../includes/config/tp.config.php')) {
+        include_once '../../includes/config/tp.config.php';
+    } else {
+        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    }
 }
 
 // load phpCrypt
 if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
-    require_once '../includes/libraries/phpcrypt/phpCrypt.php';
-    require_once '../includes/config/settings.php';
+    include_once '../includes/libraries/phpcrypt/phpCrypt.php';
+    include_once '../includes/config/settings.php';
 } else {
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
-    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/phpcrypt/phpCrypt.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 }
 
 // Prepare PHPCrypt class calls
@@ -332,7 +331,7 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
     } elseif ($type == "decrypt") {
         // case if IV is empty
         if (empty($init_vect)) {
-                    return array(
+            return array(
                 'string' => "",
                 'error' => "ERR_ENCRYPTION_NOT_CORRECT"
             );
@@ -375,7 +374,7 @@ function testHex2Bin($val)
  * @param  string $message   what to de/crypt
  * @param  string $ascii_key key to use
  * @param  string $type      operation to perform
- * @return array  
+ * @return array
  */
 function cryption($message, $ascii_key, $type) //defuse_crypto
 {
@@ -511,7 +510,7 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
 
 /**
  * Decrypt a defuse string if encrypted
- * 
+ *
  * @param  string $value Encrypted string
  * @return string        Decrypted string
  */
@@ -888,7 +887,7 @@ function identifyUserRights(
             $_SESSION['nb_item_change_proposals'] = DB::count();
         } else {
             $_SESSION['nb_item_change_proposals'] = 0;
-        }            
+        }
 
         $_SESSION['all_non_personal_folders'] = $listAllowedFolders;
         $_SESSION['groupes_visibles'] = $listAllowedFolders;
@@ -1059,7 +1058,7 @@ function updateCacheTable($action, $ident = "")
             "id = %i",
             $ident
         );
-        // ADD an item
+    // ADD an item
     } elseif ($action === "add_value") {
         // get new value from db
         $data = DB::queryFirstRow(
@@ -1111,7 +1110,7 @@ function updateCacheTable($action, $ident = "")
             )
         );
 
-        // DELETE an item
+    // DELETE an item
     } elseif ($action === "delete_value") {
         DB::delete(prefix_table('cache'), "id = %i", $ident);
     }
@@ -1514,7 +1513,7 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
     // Can we use PHP7 random_int function?
     if (version_compare(phpversion(), '7.0', '>=')) {
         require_once $SETTINGS['cpassman_dir'].'/includes/libraries/PasswordGenerator/RandomGenerator/Php7RandomGenerator.php';
-         $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
+        $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
     }
 
     // init
@@ -1629,8 +1628,7 @@ function logItems(
     $login = "",
     $raison = null,
     $encryption_type = ""
-)
-{
+) {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
     $dataItem = '';
@@ -1657,7 +1655,7 @@ function logItems(
             'id_user' => $id_user,
             'action' => $action,
             'raison' => $raison,
-            'raison_iv' => $raison_iv,
+            'raison_iv' => '',
             'encryption_type' => $encryption_type
         )
     );
@@ -1731,19 +1729,19 @@ function logItems(
 function get_client_ip_server()
 {
     if (getenv('HTTP_CLIENT_IP')) {
-            $ipaddress = getenv('HTTP_CLIENT_IP');
+        $ipaddress = getenv('HTTP_CLIENT_IP');
     } elseif (getenv('HTTP_X_FORWARDED_FOR')) {
-            $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
+        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
     } elseif (getenv('HTTP_X_FORWARDED')) {
-            $ipaddress = getenv('HTTP_X_FORWARDED');
+        $ipaddress = getenv('HTTP_X_FORWARDED');
     } elseif (getenv('HTTP_FORWARDED_FOR')) {
-            $ipaddress = getenv('HTTP_FORWARDED_FOR');
+        $ipaddress = getenv('HTTP_FORWARDED_FOR');
     } elseif (getenv('HTTP_FORWARDED')) {
-            $ipaddress = getenv('HTTP_FORWARDED');
+        $ipaddress = getenv('HTTP_FORWARDED');
     } elseif (getenv('REMOTE_ADDR')) {
-            $ipaddress = getenv('REMOTE_ADDR');
+        $ipaddress = getenv('REMOTE_ADDR');
     } else {
-            $ipaddress = 'UNKNOWN';
+        $ipaddress = 'UNKNOWN';
     }
 
     return $ipaddress;
@@ -2112,9 +2110,9 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
     if (empty($password) === true) {
-    /*
-    File encryption/decryption is done with the SALTKEY
-     */
+        /*
+        File encryption/decryption is done with the SALTKEY
+         */
 
         // get KEY
         $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
@@ -2151,9 +2149,9 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
             }
         }
     } else {
-    /*
-    File encryption/decryption is done with special password and not the SALTKEY
-     */
+        /*
+        File encryption/decryption is done with special password and not the SALTKEY
+         */
 
         $err = '';
         if ($type === 'decrypt') {
@@ -2225,10 +2223,13 @@ function fileDelete($file)
     }
 }
 
-/*
-* Permits to extract the file extension
-*/
-function getFileExtension($file)
+/**
+ * Permits to extract the file extension
+ *
+ * @param  string $file File name
+ * @return string
+ */
+function getFileExtension(string $file)
 {
     if (strpos($file, '.') === false) {
         return $file;
@@ -2248,7 +2249,7 @@ function array_map_r($func, $arr)
     $newArr = array();
 
     foreach ($arr as $key => $value) {
-        $newArr[ $key ] = (is_array($value) ? array_map_r($func, $value) : ( is_array($func) ? call_user_func_array($func, $value) : $func( $value )));
+        $newArr[ $key ] = (is_array($value) ? array_map_r($func, $value) : (is_array($func) ? call_user_func_array($func, $value) : $func($value)));
     }
 
     return $newArr;
@@ -2256,11 +2257,11 @@ function array_map_r($func, $arr)
 
 /**
  * Permits to clean and sanitize text to be displayed
- * @param  string $text text to clean
- * @param  string $type what clean to perform
- * @return string       text cleaned up
+ * @param  string $text Text to clean
+ * @param  string $type What clean to perform
+ * @return string
  */
-function cleanText($string, $type = "")
+function cleanText(string $string, string $type = "")
 {
     global $SETTINGS;
 
@@ -2282,7 +2283,7 @@ function cleanText($string, $type = "")
  * @param  string  $dir             Parent folder
  * @param  integer $dirPermissions  New permission on folders
  * @param  integer $filePermissions New permission on files
- * @return boolean                  Success/Failure
+ * @return boolean
  */
 function chmodRecursive($dir, $dirPermissions, $filePermissions)
 {
@@ -2317,7 +2318,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
 
 /**
  * Check if user can access to this item
- * @param $item_id
+ * @param integer $item_id ID of item
  */
 function accessToItemIsGranted($item_id)
 {
@@ -2355,10 +2356,11 @@ function accessToItemIsGranted($item_id)
 
 /**
  * Creates a unique key
- * @lenght  integer $lenght key lenght
- * @return string          key
+ * @lenght  integer $lenght Key lenght
+ * @return string
  */
-function uniqidReal($lenght = 13) {
+function uniqidReal($lenght = 13)
+{
     // uniqid gives 13 chars, but you could adjust it to your needs.
     if (function_exists("random_bytes")) {
         $bytes = random_bytes(ceil($lenght / 2));
@@ -2383,26 +2385,27 @@ function obfuscate_email($email)
     $mailname = str_replace($domain, '', $email);
     $name_l = strlen($mailname);
     $domain_l = strlen($domain);
-    for($i = 0; $i <= $name_l/$prop-1; $i++) {
+    for ($i = 0; $i <= $name_l/$prop-1; $i++) {
         $start .= 'x';
     }
 
-    for($i = 0; $i <= $domain_l/$prop-1; $i++) {
+    for ($i = 0; $i <= $domain_l/$prop-1; $i++) {
         $end .= 'x';
     }
 
-    return substr_replace($mailname, $start, 2, $name_l/$prop )
-        .substr_replace($domain, $end, 2, $domain_l/$prop); 
+    return substr_replace($mailname, $start, 2, $name_l/$prop)
+        .substr_replace($domain, $end, 2, $domain_l/$prop);
 }
 
 /**
  * Permits to get LDAP information about a user
  *
- * @param string $username  user name
- * @param string $password  user password
+ * @param string $username  User name
+ * @param string $password  User password
  * @return string
  */
-function connectLDAP($username, $password, $SETTINGS) {
+function connectLDAP($username, $password, $SETTINGS)
+{
     $user_email = '';
     $user_found = false;
     $user_lastname = '';
@@ -2410,7 +2413,7 @@ function connectLDAP($username, $password, $SETTINGS) {
     $ldapConnection = false;
 
     // Prepare LDAP connection if set up
-        //Multiple Domain Names
+    //Multiple Domain Names
     if (strpos(html_entity_decode($username), '\\') === true) {
         $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
@@ -2479,11 +2482,10 @@ function connectLDAP($username, $password, $SETTINGS) {
                                 for ($i=0; $i<$entries['count']; $i++) {
                                     $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
                                     if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
-                                    $GroupRestrictionEnabled = true;
-                                    break;
+                                        $GroupRestrictionEnabled = true;
+                                        break;
                                     }
                                 }
-
                             }
                         }
                     }
@@ -2492,7 +2494,8 @@ function connectLDAP($username, $password, $SETTINGS) {
                     if ($GroupRestrictionEnabled === true
                         || (
                             $GroupRestrictionEnabled === false
-                            && (isset($SETTINGS['ldap_usergroup']) === false
+                            && (
+                                isset($SETTINGS['ldap_usergroup']) === false
                                 || (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === true)
                             )
                         )
@@ -2501,7 +2504,6 @@ function connectLDAP($username, $password, $SETTINGS) {
                         $ldapbind = ldap_bind($ldapconn, $user_dn, $password);
                         if ($ldapbind === true) {
                             $ldapConnection = true;
-
                         } else {
                             $ldapConnection = false;
                         }
@@ -2586,4 +2588,3 @@ function connectLDAP($username, $password, $SETTINGS) {
         )
     );
 }
-

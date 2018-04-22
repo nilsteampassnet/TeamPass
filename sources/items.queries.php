@@ -1040,13 +1040,17 @@ if (null !== $post_type) {
                     );
                     foreach ($rows as $record) {
                         $reason = explode(':', $record['raison']);
-                        if (empty($history)) {
-                            $history = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])." - ".$record['login']." - ".$LANG[$record['action']].
-                            " - ".(empty($record['raison']) === false ? (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1] : $LANG[trim($reason[0])]) : '');
-                        } else {
-                            $history .= "<br />".date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])." - ".
-                            $record['login']." - ".$LANG[$record['action']]." - ".
-                            (empty($record['raison']) === false ? (count($reason) > 1 ? $LANG[trim($reason[0])].' => '.$reason[1] : ($record['action'] != "at_manual" ? $LANG[trim($reason[0])] : trim($reason[0]))) : '');
+                        if (count($reason) > 0) {
+                            $sentence = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])." - "
+                                .$record['login']." - ".$LANG[$record['action']]." - "
+                                .(empty($record['raison']) === false ?
+                                (count($reason) > 1 ? $LANG[trim($reason[0])].' : '.$reason[1]
+                                : $LANG[trim($reason[0])]) : '');
+                            if (empty($history)) {
+                                $history = $sentence;
+                            } else {
+                                $history .= "<br />".$sentence;
+                            }
                         }
                     }
                     // decrypt PW

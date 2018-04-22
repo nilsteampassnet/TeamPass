@@ -999,9 +999,9 @@ if (null !== $post_newtitle) {
 
             // Get all allowed folders
             $array_all_visible_folders = array_merge(
-              $_SESSION['groupes_visibles'],
-              $_SESSION['read_only_folders'],
-              $_SESSION['personal_visible_groups']
+                $_SESSION['groupes_visibles'],
+                $_SESSION['read_only_folders'],
+                $_SESSION['personal_visible_groups']
             );
 
             // get list of all folders
@@ -1014,7 +1014,7 @@ if (null !== $post_newtitle) {
                 // Can user access this subfolder?
 
                 if (in_array($node->id, $array_all_visible_folders) === false) {
-                  continue;
+                    continue;
                 }
 
                 // get info about current node

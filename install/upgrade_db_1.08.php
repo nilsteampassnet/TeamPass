@@ -56,8 +56,6 @@ $spanish_vals = array(
 );
 
 changeDB();
-changeDB();
-changeDB();
 
 //This will permit to update DB due to major change in log_items table for 1.08 version needs.
 

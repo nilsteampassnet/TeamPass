@@ -299,7 +299,7 @@ if (null !== $post_type) {
                     $pdf->Ln($h);
                 }
 
-                $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, date('m'), date('d'), date('y')))."_".generateKey().".pdf";
+                $pdf_file = "print_out_pdf_".date("Y-m-d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y')))."_".generateKey().".pdf";
 
                 //send the file
                 $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdf_file);

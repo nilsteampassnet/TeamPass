@@ -587,7 +587,6 @@ function identifyUser(
                                             break;
                                         }
                                     }
-
                                 }
                             }
 

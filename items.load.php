@@ -3376,6 +3376,7 @@ $(function() {
             $('#edit_visible_pw').addClass("hidden");
         },
         open: function(event,ui) {
+            $("#div_loading, #edit_show_error").addClass("hidden");
             //refresh pw complexity
             $("#item_edit_tabs").tabs( "option", "active",1  );
             $("#edit_pw1").first().focus();

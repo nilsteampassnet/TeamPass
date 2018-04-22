@@ -180,7 +180,7 @@ function mainQuery()
 
                 // update sessions
                 $_SESSION['last_pw'] = $oldPw;
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
@@ -190,7 +190,7 @@ function mainQuery()
                         prefix_table("users"),
                         array(
                             'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y')),
+                            'last_pw_change' => mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y')),
                             'last_pw' => $oldPw
                             ),
                         "id = %i",
@@ -236,7 +236,7 @@ function mainQuery()
                         prefix_table("users"),
                         array(
                             'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                            'last_pw_change' => mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))
                             ),
                         "id = %i",
                         $dataReceived['user_id']
@@ -279,7 +279,7 @@ function mainQuery()
                     prefix_table("users"),
                     array(
                         'pw' => $newPw,
-                        'last_pw_change' => mktime(0, 0, 0, date('m'), date('d'), date('y'))
+                        'last_pw_change' => mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))
                         ),
                     "id = %i",
                     $_SESSION['user_id']
@@ -287,7 +287,7 @@ function mainQuery()
 
                 // update sessions
                 $_SESSION['last_pw'] = "";
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, date('m'), date('d'), date('y'));
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // update LOG
@@ -1324,7 +1324,6 @@ function mainQuery()
             }
 
             // Read config file
-            $tmp = '';
             $list_of_options = '';
             $url_found = '';
             $anonym_url = '';
@@ -1337,7 +1336,7 @@ function mainQuery()
 
                     // Identify url to anonymize it
                     if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
-                        $url_found = substr($line, 19, strlen($line) - 22);//echo $url_found." ; ";
+                        $url_found = substr($line, 19, strlen($line) - 22);
                         $tmp = parse_url($url_found);
                         $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
                         $line = "'cpassman_url' => '" . $anonym_url . "\n";

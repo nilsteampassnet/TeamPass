@@ -245,8 +245,10 @@ if (isset($_SESSION['CPM'])) {
             .$LANG['index_welcome'].'&nbsp;<b>'.$session_name.'&nbsp;'.$session_lastname
             .'&nbsp;['.$session_login.']</b>&nbsp;-&nbsp;'
             , $session_user_admin === '1' ? $LANG['god'] :
-                ($session_user_manager === '1' ? $LANG['gestionnaire'] :
-                    ($session_user_read_only === '1' ? $LANG['read_only_account'] :
+                (
+                    $session_user_manager === '1' ? $LANG['gestionnaire'] :
+                    (
+                        $session_user_read_only === '1' ? $LANG['read_only_account'] :
                         ($session_user_human_resources === '1' ? $LANG['human_resources'] :$LANG['user'])
                     )
                 ), '&nbsp;'.strtolower($LANG['index_login']).'</div>';
@@ -528,7 +530,7 @@ if (isset($_SESSION['CPM'])) {
             );
             include $SETTINGS['cpassman_dir'].'/error.php';
         }
-    // Ask the user to change his password
+        // Ask the user to change his password
     } elseif (($session_validite_pw === null || $session_validite_pw === false)
         && empty($session_user_id) === false
     ) {
@@ -615,7 +617,7 @@ if (isset($_SESSION['CPM'])) {
             $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
             include $SETTINGS['cpassman_dir'].'/error.php';
         }
-    // Case of password recovery
+        // Case of password recovery
     } elseif (isset($_GET['action']) && $_GET['action'] === "password_recovery") {
         // Case where user has asked new PW
         echo '
@@ -640,7 +642,7 @@ if (isset($_SESSION['CPM'])) {
         // Page doesn't exist
         $_SESSION['error']['code'] = ERR_NOT_EXIST;
         include $SETTINGS['cpassman_dir'].'/error.php';
-        // When user is not identified
+    // When user is not identified
     } else {
         // Automatic redirection
         if (strpos($server_request_uri, "?") > 0) {
@@ -705,20 +707,20 @@ if (isset($_SESSION['CPM'])) {
             && $SETTINGS['maintenance_mode'] === '1')
         ) {
             if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-				$username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
-			} elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-				$username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
-			} else {
-				$username = $_SERVER['PHP_AUTH_USER'];
-			}
-			echo '
+                $username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+            } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+                $username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+            } else {
+                $username = $_SERVER['PHP_AUTH_USER'];
+            }
+            echo '
         				<div style="margin-bottom:3px;">
         			        <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
         		            <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="' , $username , '" readonly />
         		            <span id="login_check_wait" style="display:none; float:right;"><i class="fa fa-cog fa-spin fa-1x"></i></span>
                         </div>';
-		} else {
-        	echo '
+        } else {
+            echo '
                     	    <div style="margin-bottom:3px;">
                     	        <label for="login" class="form_label">', isset($SETTINGS['custom_login_text']) && !empty($SETTINGS['custom_login_text']) ? (string) $SETTINGS['custom_login_text'] : $LANG['index_login'], '</label>
                                 <input type="text" size="10" id="login" name="login" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_login) === false ? $post_login : '', '" />
@@ -738,7 +740,7 @@ if (isset($_SESSION['CPM'])) {
                         </div>';
         }
 
-        if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true   && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1')) ) {
+        if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true   && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))) {
             echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">'.$LANG['index_password'].'</label>

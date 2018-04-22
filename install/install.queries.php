@@ -382,7 +382,7 @@ if (null !== $post_type) {
                         // prepare config file
                         $tp_config_file = "../includes/config/tp.config.php";
                         if (file_exists($tp_config_file)) {
-                            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))))) {
                                 echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                                 break;
                             } else {
@@ -1066,7 +1066,7 @@ global \$SETTINGS;
                     $filename_seckey = $securePath."/teampass-seckey.txt";
 
                     if (file_exists($filename_seckey)) {
-                        if (!copy($filename_seckey, $filename_seckey.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($filename_seckey, $filename_seckey.'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))))) {
                             echo '[{"error" : "File `$filename_seckey` already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1098,7 +1098,7 @@ global \$SETTINGS;
                     $filename = "../includes/config/settings.php";
 
                     if (file_exists($filename)) {
-                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($filename, $filename.'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))))) {
                             echo '[{"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1147,7 +1147,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                 } elseif ($task === "sk.php") {
 //Create sk.php file
                     if (file_exists($skFile)) {
-                        if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($skFile, $skFile.'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))))) {
                             echo '[{"error" : "sk.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
@@ -1201,7 +1201,7 @@ if (file_exists(\"".str_replace('\\', '/', $skFile)."\")) {
                     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
                     $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
                     if (file_exists($csrfp_file)) {
-                        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, date('m'), date('d'), date('y'))))) {
+                        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))))) {
                             echo '[{"error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
                             break;
                         } else {
