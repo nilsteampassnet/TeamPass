@@ -580,7 +580,7 @@ function identifyUser(
 
                                 if ($entries['count'] > 0) {
                                     // Now check if group fits
-                                    for ($i = 0; $i < $entries['count']; $i++) {
+                                    for ($i=0; $i<$entries['count']; $i++) {
                                         $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
                                         if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                             $GroupRestrictionEnabled = true;
@@ -1022,7 +1022,7 @@ function identifyUser(
         $logError = "Install folder has to be removed!";
 
         echo '[{"value" : "'.$return.'", "user_admin":"',
-        isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "",
+        isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "",
         '", "initial_url" : "'.@$_SESSION['initial_url'].'",
         "error" : "'.$logError.'"}]';
 
@@ -1410,7 +1410,7 @@ function identifyUser(
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
     $_SESSION['initial_url'] = "";
     if ($SETTINGS['cpassman_dir'] === '..') {
