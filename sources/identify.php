@@ -580,9 +580,9 @@ function identifyUser(
 
                                 if ($entries['count'] > 0) {
                                     // Now check if group fits
-                                    for ($i=0; $i<$entries['count']; $i++) {
-                                        $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                        if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                    for ($i = 0; $i < $entries['count']; $i++) {
+                                        $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                        if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                             $GroupRestrictionEnabled = true;
                                             break;
                                         }
@@ -917,11 +917,7 @@ function identifyUser(
                         $data['id']
                     );
 
-                    echo '[{' +
-                        '"value" : "<img src=\"'.$new_2fa_qr.'\">", ' +
-                        '"user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? +
-                        $antiXss->xss_clean($_SESSION['user_admin']) : "", '", ' +
-                        '"initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+                    echo '[{' +'"value" : "<img src=\"'.$new_2fa_qr.'\">", ' +'"user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? +$antiXss->xss_clean($_SESSION['user_admin']) : "", '", ' +'"initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
                     exit();
                 }

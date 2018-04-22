@@ -343,8 +343,8 @@ if (!isset($_GET['type'])) {
         if ($getItemInList === true) {
             $sOutputConst .= $sOutputItem;
         } else {
-            $iFilteredTotal --;
-            $iTotal --;
+            $iFilteredTotal--;
+            $iTotal--;
         }
     }
     if (!empty($sOutputConst)) {

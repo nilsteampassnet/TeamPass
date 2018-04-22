@@ -200,7 +200,7 @@ function mainQuery()
                     logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
                     echo '[ { "error" : "none" } ]';
                 } else {
-                     echo '[ { "error" : "pwd_hash_not_correct" } ]';
+                        echo '[ { "error" : "pwd_hash_not_correct" } ]';
                 }
                 break;
 
@@ -1474,7 +1474,7 @@ Insert the log here and especially the answer of the query that failed.
 
                 // Update session
                 if ($field === 'user_api_key') {
-                  $_SESSION['user_settings']['api-key'] = $new_value;
+                    $_SESSION['user_settings']['api-key'] = $new_value;
                 }
             break;
     }

@@ -12,15 +12,15 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require dirname(__FILE__) .'/../includes/config/settings.php';
-require_once dirname(__FILE__) .'/../includes/config/tp.config.php';
+require dirname(__FILE__).'/../includes/config/settings.php';
+require_once dirname(__FILE__).'/../includes/config/tp.config.php';
 header("Content-type: text/html; charset=utf-8");
 
 $_SESSION['CPM'] = 1;
 
 // connect to DB
-require_once $SETTINGS['cpassman_dir'] .'/sources/SplClassLoader.php';
-require_once $SETTINGS['cpassman_dir'] .'/includes/libraries/Database/Meekrodb/db.class.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 
 // Load libraries
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';

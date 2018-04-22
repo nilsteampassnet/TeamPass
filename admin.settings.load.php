@@ -232,9 +232,9 @@ function loadFieldsList() {
                         if (val[4] !== "") {
                             newList += '<span id="encryt_data_'+val[1]+'" style="margin-left:4px; cursor:pointer;">';
                             if (val[4] === "1") {
-                                newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data'];?>"></i>';
+                                newList += '<i class="fa fa-key tip" title="<?php echo $LANG['encrypted_data']; ?>"></i>';
                             } else if (val[4] === "0") {
-                                newList += '<span class="fa-stack tip" title="<?php echo $LANG['not_encrypted_data'];?>">'+
+                                newList += '<span class="fa-stack tip" title="<?php echo $LANG['not_encrypted_data']; ?>">'+
                                     '<span class="fa fa-key fa-stack-1x"></span><span class="fa fa-ban fa-stack-1x fa-lg" style="color:red;"></span></span>';
                             }
                             newList += '</span>'
@@ -243,20 +243,20 @@ function loadFieldsList() {
                         if (val[6] !== "") {
                             newList += '<span style="margin-left:4px;">';
                             if (val[6] === "text") {
-                                newList += '<span class="fa fa-paragraph tip" title="<?php echo $LANG['text'];?>"></span>';
+                                newList += '<span class="fa fa-paragraph tip" title="<?php echo $LANG['text']; ?>"></span>';
                             } else if (val[6] === "textarea") {
-                                newList += '<span class="fa fa-align-justify tip" title="<?php echo $LANG['textarea'];?>"></span>';
+                                newList += '<span class="fa fa-align-justify tip" title="<?php echo $LANG['textarea']; ?>"></span>';
                             }
 
                             if (val[7] === "1") {
-                                newList += '&nbsp;<span class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked'];?>"></ispan>';
+                                newList += '&nbsp;<span class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked']; ?>"></ispan>';
                             }
                             newList += '</span>'
                         }
 
                         // Manage display Roles visibility
                         newList += '<td colspan="1" style="border-bottom:1px solid #a0a0a0;">' +
-                            '<?php echo $LANG['visible_by'];?>: <span style="font-family:italic;">' + val[8] +
+                            '<?php echo $LANG['visible_by']; ?>: <span style="font-family:italic;">' + val[8] +
                             '</span><input type="hidden" id="roleVisibilityList_'+val[1]+'" value="' + val[9] + '" /></td></tr>';
                     }
                 });
@@ -267,7 +267,7 @@ function loadFieldsList() {
                 $("#categories_list").html(newList);
             } else {
                 $("#no_category")
-                    .html("<?php echo addslashes($LANG['no_category_defined']);?>")
+                    .html("<?php echo addslashes($LANG['no_category_defined']); ?>")
                     .removeClass("hidden");
             }
             $('.tip').tooltipster({multiple: true});
@@ -1128,8 +1128,8 @@ $(function() {
         function(data) {
             data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
 
-            var html_admin_by = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
-                html_roles = '<option value="">-- <?php echo addslashes($LANG['select']);?> --</option>',
+            var html_admin_by = '<option value="">-- <?php echo addslashes($LANG['select']); ?> --</option>',
+                html_roles = '<option value="">-- <?php echo addslashes($LANG['select']); ?> --</option>',
                 selected_admin_by = 0,
                 selected_role = 0;
 
@@ -1140,7 +1140,7 @@ $(function() {
                 if (data[i].selected_role === 1) {
                     selected_role = data[i].id;
                 }
-                html_admin_by += '<option value="'+data[i].id+'"><?php echo addslashes($LANG['managers_of']." ");?>'+data[i].title+'</option>';
+                html_admin_by += '<option value="'+data[i].id+'"><?php echo addslashes($LANG['managers_of']." "); ?>'+data[i].title+'</option>';
                 html_roles += '<option value="'+data[i].id+'">'+data[i].title+'</option>';
             }
             $("#ldap_new_user_is_administrated_by").append(html_admin_by);

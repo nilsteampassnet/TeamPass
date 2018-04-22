@@ -105,7 +105,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         //load full tree
         $tree->rebuild();
         $tree = $tree->getDescendants();
-       // Init post variable
+        // Init post variable
         $post_operation_id = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
@@ -150,7 +150,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $config->setIgnoreHeaderLine("true");
             // extract data from CSV file
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
                     'Label'     => $row[0],
                     'Login'     => $row[1],
@@ -436,7 +436,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         /**
-        ** Recursive function that will permit to read each level of XML nodes
+         ** Recursive function that will permit to read each level of XML nodes
          */
         function recursiveKeepassXML($xmlRoot, $xmlLevel = 0)
         {
@@ -586,7 +586,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                     //recursive call
                     if ($history !== true) {
-                      recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
+                        recursiveKeepassXML($xmlChildren, $xmlLevel + 1);
                     }
 
                     // Force History to false
@@ -1051,7 +1051,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         break;
 }
 
-spl_autoload_register(function ($class) {
+spl_autoload_register(function($class) {
     $prefix = 'League\\Csv\\';
     $base_dir = __DIR__.'/src/';
     $len = strlen($prefix);

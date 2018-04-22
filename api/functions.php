@@ -662,7 +662,7 @@ function rest_get()
                             $json[$inc]['nlevel'] = mb_convert_encoding($folder->nlevel, mb_detect_encoding($folder->nlevel), 'UTF-8');
                             $json[$inc]['personal'] = mb_convert_encoding($folder->personal_folder, mb_detect_encoding($folder->personal_folder), 'UTF-8');
 
-                            $inc ++;
+                            $inc++;
                         }
                     }
                 }
@@ -1806,7 +1806,7 @@ function rest_get()
                         rest_error('AUTH_NO_URL');
                     }
                 } else {
-                  rest_error('AUTH_NO_IDENTIFIER');
+                    rest_error('AUTH_NO_IDENTIFIER');
                 }
             } else {
                 rest_error('AUTH_NO_IDENTIFIER');
@@ -2308,7 +2308,7 @@ function rest_get()
                         $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
                         $tree->rebuild();
 
-                        echo json_encode(array('new_id' => $newID , 'err' => ''));
+                        echo json_encode(array('new_id' => $newID, 'err' => ''));
                     } elseif ($GLOBALS['request'][1] === "edit") {
                         // Is this folder a personal one?
                         $fldData = DB::queryFirstRow(
@@ -2370,7 +2370,7 @@ function rest_get()
                             $item_definition['item_id']
                         );
 
-                        echo json_encode(array('new_id' => '' , 'err' => ''));
+                        echo json_encode(array('new_id' => '', 'err' => ''));
                     }
                 } else {
                     rest_error('AUTH_NOT_GRANTED');
