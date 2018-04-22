@@ -273,27 +273,6 @@ function bCrypt($password, $cost)
     return crypt($password, $salt);
 }
 
-function cryption_before_defuse($message, $saltkey, $init_vect, $type = null, $scope = "public")
-{
-    if (DEFUSE_ENCRYPTION === true) {
-        if ($scope === "perso") {
-            return defuse_crypto(
-                $message,
-                $saltkey,
-                $type
-            );
-        } else {
-            return defuse_crypto(
-                $message,
-                file_get_contents(SECUREPATH."/teampass-seckey.txt"),
-                $type
-            );
-        }
-    } else {
-        return cryption_phpCrypt($message, $saltkey, $init_vect, $type);
-    }
-}
-
 /*
  * cryption() - Encrypt and decrypt string based upon phpCrypt library
  *
@@ -701,9 +680,9 @@ function identifyUserRights(
         $_SESSION['fonction_id'] = $idFonctions;
         $groupesInterdits = array();
         if (is_array($groupesInterditsUser) === false) {
-            $groupesInterditsUser = explode(';', trimElement($groupesInterditsUser, ";"));
+            $groupesInterditsUser = explode(';', trimElement(/** @scrutinizer ignore-type */ $groupesInterditsUser, ";"));
         }
-        if (!empty($groupesInterditsUser) && count($groupesInterditsUser) > 0) {
+        if (empty($groupesInterditsUser) === false && count($groupesInterditsUser) > 0) {
             $groupesInterdits = $groupesInterditsUser;
         }
         $_SESSION['is_admin'] = $isAdmin;
@@ -2078,7 +2057,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
  * @param  string $type        can be either encrypt or decrypt
  * @param  string $source_file path to source file
  * @param  string $target_file path to target file
- * @return string              'true' is success or error message
+ * @return string|boolean
  */
 function prepareFileWithDefuse($type, $source_file, $target_file, $password = '')
 {
@@ -2236,23 +2215,6 @@ function getFileExtension(string $file)
     }
 
     return substr($file, strrpos($file, '.') + 1);
-}
-
-/**
- * array_map
- * @param  [type] $func [description]
- * @param  [type] $arr  [description]
- * @return [type]       [description]
- */
-function array_map_r($func, $arr)
-{
-    $newArr = array();
-
-    foreach ($arr as $key => $value) {
-        $newArr[$key] = (is_array($value) ? array_map_r($func, $value) : (is_array($func) ? call_user_func_array($func, $value) : $func($value)));
-    }
-
-    return $newArr;
 }
 
 /**

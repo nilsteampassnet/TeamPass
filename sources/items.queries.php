@@ -4538,10 +4538,12 @@ function recupDroitCreationSansComplexite($groupe)
     return array("bloquer_modification_complexite" => $data['bloquer_modification'], "bloquer_creation_complexite" => $data['bloquer_creation']);
 }
 
-/*
-* FUNCTION
-* permits to identify what icon to display depending on file extension
-*/
+/**
+ * Permits to identify what icon to display depending on file extension
+ *
+ * @param  string $ext Extension
+ * @return string
+ */
 function fileFormatImage($ext)
 {
     global $SETTINGS_EXT;
@@ -4563,8 +4565,8 @@ function fileFormatImage($ext)
 /**
  * Returns a cleaned up password
  *
- * @param string $pwd
- * @return void
+ * @param  string $pwd String for pwd
+ * @return string
  */
 function passwordReplacement($pwd)
 {
@@ -4575,7 +4577,7 @@ function passwordReplacement($pwd)
 }
 
 /**
- * Returns the Item + path 
+ * Returns the Item + path
  *
  * @param integer $id_tree
  * @param string $label

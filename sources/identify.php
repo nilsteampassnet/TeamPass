@@ -205,7 +205,7 @@ if ($post_type === "identify_duo_user") {
     $link->set_charset($encoding);
 
     // do checks
-    if (null !== $post_cardid && empty(post_cardid) === true) {
+    if (null !== $post_cardid && empty($post_cardid) === true) {
         // no card id is given
         // check if it is DB
         $row = DB::queryFirstRow(
@@ -593,7 +593,7 @@ function identifyUser(
                             if ($debugLdap == 1) {
                                 fputs(
                                     $dbgLdap,
-                                    'Group was found : '.$GroupRestrictionEnabled."\n"
+                                    'Group was found : '.var_export($GroupRestrictionEnabled, true)."\n"
                                 );
                             }
                         }
@@ -917,7 +917,11 @@ function identifyUser(
                         $data['id']
                     );
 
-                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+                    echo '[{' +
+                        '"value" : "<img src=\"'.$new_2fa_qr.'\">", ' +
+                        '"user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? +
+                        $antiXss->xss_clean($_SESSION['user_admin']) : "", '", ' +
+                        '"initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
                     exit();
                 }
@@ -1171,12 +1175,15 @@ function identifyUser(
                 $SETTINGS['use_md5_password_as_salt'] == 1
             ) {
                 $_SESSION['user_settings']['clear_psk'] = md5($passwordClear);
-                setcookie(
-                    "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                    encrypt($_SESSION['user_settings']['clear_psk'], ""),
-                    time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
-                    '/'
-                );
+                $tmp = encrypt($_SESSION['user_settings']['clear_psk'], "");
+                if ($tmp !== false) {
+                    setcookie(
+                        "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                        $tmp,
+                        time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
+                        '/'
+                    );
+                }
             }
 
             if (empty($data['last_connexion'])) {
@@ -1407,7 +1414,7 @@ function identifyUser(
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'.$antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
+    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
     $_SESSION['initial_url'] = "";
     if ($SETTINGS['cpassman_dir'] === '..') {
