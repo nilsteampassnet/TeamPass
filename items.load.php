@@ -459,28 +459,28 @@ function showItemsList(data)
 
         // Prepare error message
         if (value.pw_status === "encryption_error") {
-            pwd_error = '<span class="fa fa-warning fa-sm mi-red tip" title="<?php echo addslashes($LANG['pw_encryption_error']);?>"></span>&nbsp;';
+            pwd_error = '<span class="fa fa-warning fa-sm mi-red tip" title="<?php echo addslashes($LANG['pw_encryption_error']); ?>"></span>&nbsp;';
         }
 
         // Prepare anyone can modify icon
         if (value.anyone_can_modify === "1") {
-            icon_all_can_modify = '<span class="fa fa-pencil fa-sm mi-grey-1 pointer tip" title="<?php echo addslashes($LANG['item_menu_collab_enable']);?>" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"></span>&nbsp;&nbsp;';
+            icon_all_can_modify = '<span class="fa fa-pencil fa-sm mi-grey-1 pointer tip" title="<?php echo addslashes($LANG['item_menu_collab_enable']); ?>" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')"></span>&nbsp;&nbsp;';
         }
 
         // Prepare mini icons
         if (value.copy_to_clipboard_small_icons === "1" && value.display_item === 1) {
             // Login icon
             if (value.login !== "") {
-                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+sanitizeString(value.login)+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>" id="minilogin_'+value.item_id+'"></span>&nbsp;';
+                icon_login = '<span class="fa fa-sm fa-user mi-black mini_login" data-clipboard-text="'+sanitizeString(value.login)+'" title="<?php echo addslashes($LANG['item_menu_copy_login']); ?>" id="minilogin_'+value.item_id+'"></span>&nbsp;';
             }
             // Pwd icon
             if (value.pw !== "") {
-                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+sanitizeString(value.pw)+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>" data-clipboard-id="'+value.item_id+'" id="minipwd_'+value.item_id+'"></span>&nbsp;';
+                icon_pwd = '<span class="fa fa-sm fa-lock mi-black mini_pw" data-clipboard-text="'+sanitizeString(value.pw)+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']); ?>" data-clipboard-id="'+value.item_id+'" id="minipwd_'+value.item_id+'"></span>&nbsp;';
             }
 
             // Now check if pwd is empty. If it is then warn user
             if (value.pw === "") {
-                pwd_error = '&nbsp;<span class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['password_is_empty']);?>"></span>&nbsp;';
+                pwd_error = '&nbsp;<span class="fa fa-exclamation-circle fa-sm mi-yellow tip" title="<?php echo addslashes($LANG['password_is_empty']); ?>"></span>&nbsp;';
             }
         }
 
@@ -2426,8 +2426,8 @@ function delete_attached_file(file_id, confirm)
         $("#delete-edit-file_"+file_id)
             .hide()
             .after(
-                '<span class="delete_me">&nbsp;<span id="confirm-delete-edit-file_'+file_id+'" class="fa fa-thumbs-up tip" style="cursor:pointer;" onclick="delete_attached_file('+file_id+', 1)" title="<?php echo addslashes($LANG['confirm']);?>"></span>' +
-                '&nbsp;<span id="cancel-delete-edit-file_'+file_id+'" class="fa fa-thumbs-down tip" style="cursor:pointer;" onclick="cancel_delete_attached_file('+file_id+')" title="<?php echo addslashes($LANG['cancel']);?>"></span>&nbsp;</span>'
+                '<span class="delete_me">&nbsp;<span id="confirm-delete-edit-file_'+file_id+'" class="fa fa-thumbs-up tip" style="cursor:pointer;" onclick="delete_attached_file('+file_id+', 1)" title="<?php echo addslashes($LANG['confirm']); ?>"></span>' +
+                '&nbsp;<span id="cancel-delete-edit-file_'+file_id+'" class="fa fa-thumbs-down tip" style="cursor:pointer;" onclick="cancel_delete_attached_file('+file_id+')" title="<?php echo addslashes($LANG['cancel']); ?>"></span>&nbsp;</span>'
             );
             $(".tip").tooltipster({multiple: true});
     }
@@ -2650,9 +2650,9 @@ function refreshVisibleFolders()
 
                 // Shall we show the root folder
                 if (data.html_json.can_create_root_folder === 1) {
-                    html_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
-                    html_full_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
-                    html_active_visible = '<option value="0"><?php echo addslashes($LANG['root']);?></option>';
+                    html_visible = '<option value="0"><?php echo addslashes($LANG['root']); ?></option>';
+                    html_full_visible = '<option value="0"><?php echo addslashes($LANG['root']); ?></option>';
+                    html_active_visible = '<option value="0"><?php echo addslashes($LANG['root']); ?></option>';
                 }
 
                 //
@@ -4723,20 +4723,20 @@ function globalItemsSearch()
                     if (value.copy_to_clipboard_small_icons === '1') {
                         // Prepare Login
                         if (value.login !== "") {
-                            value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+                            value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']); ?>"></span>&nbsp;';
                         }
 
                         // Prepare PWD
                         if (value.pw !== "") {
-                            value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
+                            value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']); ?>"></span>&nbsp;'
                         }
 
                         // Prepare favorite
                         if (value.enable_favourites === '1') {
                             if (value.is_favorite === '1') {
-                                icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']);?>"></span>';
+                                icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']); ?>"></span>';
                             } else {
-                                icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']);?>"></span>';
+                                icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']); ?>"></span>';
                             }
                         } else {
                             icon_favorite = '';
@@ -4750,7 +4750,7 @@ function globalItemsSearch()
                     // Append
                     $("#full_items_list").append(
                     '<li class="item trunc_line" id="'+value.item_id+'"><a id="fileclass'+value.item_id+'" class="file_search">' +
-                    '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']);?>"></span>&nbsp;' +
+                    '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']); ?>"></span>&nbsp;' +
                         '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')"><b>'+value.label + '</b>' +
                         '&nbsp;<span style="font-size:11px;font-style:italic; background-color:#f2e9e5;">&nbsp;<i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'&nbsp;</span>&nbsp;'+value.desc+'' +
                         '</span><span style="float:right;margin:2px 10px 0px 0px;">' +
@@ -4807,20 +4807,20 @@ function searchItemsWithTags(tag)
                 if (value.copy_to_clipboard_small_icons === "1") {
                     // Prepare Login
                     if (value.login !== "") {
-                        value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']);?>"></span>&nbsp;';
+                        value.login = '<span class="fa fa-user fa-lg mi-black mini_login tip" data-clipboard-text="'+value.login+'" title="<?php echo addslashes($LANG['item_menu_copy_login']); ?>"></span>&nbsp;';
                     }
 
                     // Prepare PWD
                     if (value.pw !== "") {
-                        value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']);?>"></span>&nbsp;'
+                        value.pw = '<span class="fa fa-lock fa-lg mi-black mini_pw tip" data-clipboard-text="'+value.pw+'" title="<?php echo addslashes($LANG['item_menu_copy_pw']); ?>"></span>&nbsp;'
                     }
 
                     // Prepare favorite
                     if (value.enable_favourites === "1") {
                         if (value.is_favorite === 1) {
-                            icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']);?>"></span>';
+                            icon_favorite = '<span class="fa fa-star fa-lg mi-yellow tip" onclick="ActionOnQuickIcon('+value.item_id+',0)" class="tip" title="<?php echo addslashes($LANG['item_menu_del_from_fav']); ?>"></span>';
                         } else {
-                            icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']);?>"></span>';
+                            icon_favorite = '<span class="fa fa-star-o fa-lg tip" onclick="ActionOnQuickIcon('+value.item_id+',1)" class="tip" title="<?php echo addslashes($LANG['item_menu_add_to_fav']); ?>"></span>';
                         }
                     } else {
                         icon_favorite = '';
@@ -4834,7 +4834,7 @@ function searchItemsWithTags(tag)
                 // Append
                 $("#full_items_list").append(
                 '<li class="item trunc_line" id="'+value.item_id+'"><a id="fileclass'+value.item_id+'" class="file_search">' +
-                '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']);?>"></span>&nbsp;' +
+                '<span class="fa fa-key mi-yellow tip" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \''+value.open_edit+'\', \''+value.reload+'\', \''+value.tree_id+'\')" title="<?php echo addslashes($LANG['click_to_edit']); ?>"></span>&nbsp;' +
                     '<span class="truncate" onclick="AfficherDetailsItem(\''+value.item_id+'\',\''+value.sk+'\',\''+value.expired+'\', \''+value.restricted+'\', \''+value.display+'\', \'\', \''+value.reload+'\', \''+value.tree_id+'\')">'+value.label +
                     value.desc +
                     '&nbsp;<span style="font-size:11px;font-style:italic;"><i class="fa fa-folder-o"></i>&nbsp;'+value.folder+'</span>' +

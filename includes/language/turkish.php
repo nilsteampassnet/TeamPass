@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array (
+$LANG = array(
     'position_in_list' => 'Position in list',
     'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',

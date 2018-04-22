@@ -100,8 +100,8 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
     );
     if ($row['valeur'] === "true") {
         /**
-        * Permits to delete files and folders recursively
-        */
+         * Permits to delete files and folders recursively
+         */
         function delTree($dir)
         {
             $files = array_diff(scandir($dir), array('.', '..'));
@@ -515,7 +515,7 @@ if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === "1") {
             $_SESSION['validite_pw'] = true;
         } else {
             $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
-                (mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
+                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
             );
             if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
                 $_SESSION['validite_pw'] = false;

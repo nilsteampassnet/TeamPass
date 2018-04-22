@@ -968,7 +968,7 @@ if (null !== $post_type) {
                     /*FOLDER */
                     if ($data['id_tree'] != $dataReceived['categorie']) {
                         // Get name of folders
-                        $dataTmp = DB::query("SELECT title FROM ".prefix_table("nested_tree")." WHERE id IN %li", array($data['id_tree'],$dataReceived['categorie']));
+                        $dataTmp = DB::query("SELECT title FROM ".prefix_table("nested_tree")." WHERE id IN %li", array($data['id_tree'], $dataReceived['categorie']));
 
                         logItems(
                             $dataReceived['id'],
@@ -2094,7 +2094,7 @@ if (null !== $post_type) {
                         if (empty($path) === true) {
                             $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
                         } else {
-                            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                            $path .= '&#8594; '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
                         }
                     }
                     // Build text to show user
@@ -2317,12 +2317,12 @@ if (null !== $post_type) {
 
             // Check that user can access this folder
             if ((
-                  in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
+                    in_array($post_source_folder_id, $_SESSION['groupes_visibles']) === false ||
                   in_array($post_target_folder_id, $_SESSION['groupes_visibles']) === false) &&
                   (
-                      $post_target_folder_id === '0' &&
+                        $post_target_folder_id === '0' &&
                       isset($SETTINGS['can_create_root_folder']) === true && $SETTINGS['can_create_root_folder'] === '1'
-                  )
+                    )
             ) {
                 $returnValues = '[{"error" : "'.addslashes($LANG['error_not_allowed_to']).'"}]';
                 echo $returnValues;
@@ -3308,7 +3308,7 @@ if (null !== $post_type) {
             if ((isset($_SESSION['user_settings']['session_psk']) === false || empty($_SESSION['user_settings']['session_psk']) === true)
                 && ($dataSource['personal_folder'] === '1' || $dataDestination['personal_folder'] === '1')
             ) {
-                 echo '[{"error" : "ERR_PSK_REQUIRED"}]';
+                    echo '[{"error" : "ERR_PSK_REQUIRED"}]';
                 break;
             }
 
@@ -4463,19 +4463,19 @@ if (null !== $post_type) {
             $ret = sendEmail(
                 $LANG['email_request_access_subject'],
                 str_replace(
-                  array(
-                      '#tp_item_author#',
-                      '#tp_user#',
-                      '#tp_item#',
-                      '#tp_reason#'
-                  ),
-                  array(
-                      " ".addslashes($dataAuthor['login']),
-                      addslashes($_SESSION['login']),
-                      $path,
-                      nl2br(addslashes($emailText))
-                  ),
-                  $LANG['email_request_access_mail']
+                    array(
+                        '#tp_item_author#',
+                        '#tp_user#',
+                        '#tp_item#',
+                        '#tp_reason#'
+                    ),
+                    array(
+                        " ".addslashes($dataAuthor['login']),
+                        addslashes($_SESSION['login']),
+                        $path,
+                        nl2br(addslashes($emailText))
+                    ),
+                    $LANG['email_request_access_mail']
                 ),
                 $dataAuthor['email'],
                 $LANG,
@@ -4484,11 +4484,11 @@ if (null !== $post_type) {
 
             // Do log
             logItems(
-              $item_id,
-              $dataItem['label'],
-              $_SESSION['user_id'],
-              'at_access',
-              $_SESSION['login']
+                $item_id,
+                $dataItem['label'],
+                $_SESSION['user_id'],
+                'at_access',
+                $_SESSION['login']
             );
 
             // Return
@@ -4599,7 +4599,7 @@ function prepareEmaiItemPath($id_tree, $label, $SETTINGS) {
         if (empty($path) === true) {
             $path = htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES).' ';
         } else {
-            $path .= '&#8594; ' . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+            $path .= '&#8594; '.htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
         }
     }
     // Build text to show user

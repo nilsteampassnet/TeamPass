@@ -305,7 +305,7 @@ foreach ($folders as $t) {
                 BeforeUpload: function (up, file) {
                     $("#import_status_ajax_loader").show();
                     up.settings.multipart_params = {
-                        "PHPSESSID":"<?php echo $_SESSION['user_id'];?>",
+                        "PHPSESSID":"<?php echo $_SESSION['user_id']; ?>",
                         "type_upload":"import_items_from_keypass",
                         "user_token": $("#import_user_token").val()
                     };
