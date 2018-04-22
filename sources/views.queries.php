@@ -358,7 +358,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 }
             }
 
-            $pdfFile = "renewal_pdf_".date("Y-m-d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))).".pdf";
+            $pdfFile = "renewal_pdf_".date("Y-m-d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))).".pdf";
             //send the file
             $pdf->Output($SETTINGS['path_to_files_folder']."/".$pdfFile);
 

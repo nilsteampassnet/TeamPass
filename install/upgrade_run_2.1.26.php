@@ -274,7 +274,7 @@ if (!isset($_SESSION['upgrade']['csrfp_config_file']) || $_SESSION['upgrade']['c
     $csrfp_file_sample = "../includes/libraries/csrfp/libs/csrfp.config.sample.php";
     $csrfp_file = "../includes/libraries/csrfp/libs/csrfp.config.php";
     if (file_exists($csrfp_file)) {
-        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))))) {
+        if (!copy($csrfp_file, $csrfp_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
             echo '[{"finish":"1" , "next":"", "error" : "csrfp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch."}]';
             return false;
         } else {

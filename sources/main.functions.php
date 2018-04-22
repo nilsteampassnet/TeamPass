@@ -813,7 +813,7 @@ function identifyUserRights(
         }
         // Get IDs of personal folders
         if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1'
-            && isset($_SESSION['personal_folder']) === true &&  $_SESSION['personal_folder'] === '1'
+            && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
         ) {
             $persoFld = DB::queryfirstrow(
                 "SELECT id
@@ -2089,7 +2089,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // Protect against bad inputs
-    if (is_array($source_file) ||is_array($target_file)) {
+    if (is_array($source_file) || is_array($target_file)) {
         return 'error_cannot_be_array';
     }
 
@@ -2249,7 +2249,7 @@ function array_map_r($func, $arr)
     $newArr = array();
 
     foreach ($arr as $key => $value) {
-        $newArr[ $key ] = (is_array($value) ? array_map_r($func, $value) : (is_array($func) ? call_user_func_array($func, $value) : $func($value)));
+        $newArr[$key] = (is_array($value) ? array_map_r($func, $value) : (is_array($func) ? call_user_func_array($func, $value) : $func($value)));
     }
 
     return $newArr;
@@ -2385,16 +2385,16 @@ function obfuscate_email($email)
     $mailname = str_replace($domain, '', $email);
     $name_l = strlen($mailname);
     $domain_l = strlen($domain);
-    for ($i = 0; $i <= $name_l/$prop-1; $i++) {
+    for ($i = 0; $i <= $name_l / $prop - 1; $i++) {
         $start .= 'x';
     }
 
-    for ($i = 0; $i <= $domain_l/$prop-1; $i++) {
+    for ($i = 0; $i <= $domain_l / $prop - 1; $i++) {
         $end .= 'x';
     }
 
-    return substr_replace($mailname, $start, 2, $name_l/$prop)
-        .substr_replace($domain, $end, 2, $domain_l/$prop);
+    return substr_replace($mailname, $start, 2, $name_l / $prop)
+        .substr_replace($domain, $end, 2, $domain_l / $prop);
 }
 
 /**
@@ -2479,9 +2479,9 @@ function connectLDAP($username, $password, $SETTINGS)
 
                             if ($entries['count'] > 0) {
                                 // Now check if group fits
-                                for ($i=0; $i<$entries['count']; $i++) {
-                                    $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                    if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                for ($i = 0; $i < $entries['count']; $i++) {
+                                    $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                    if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                         $GroupRestrictionEnabled = true;
                                         break;
                                     }

@@ -180,7 +180,7 @@ function mainQuery()
 
                 // update sessions
                 $_SESSION['last_pw'] = $oldPw;
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'));
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
@@ -190,7 +190,7 @@ function mainQuery()
                         prefix_table("users"),
                         array(
                             'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y')),
+                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                             'last_pw' => $oldPw
                             ),
                         "id = %i",
@@ -208,7 +208,7 @@ function mainQuery()
             } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && ((filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "admin_change"
                     || filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change"
-                    ) && ($_SESSION['user_admin'] === "1"|| $_SESSION['user_manager'] === "1"
+                    ) && ($_SESSION['user_admin'] === "1" || $_SESSION['user_manager'] === "1"
                     || $_SESSION['user_can_manage_all_users'] === "1")
                 )
             ) {
@@ -236,7 +236,7 @@ function mainQuery()
                         prefix_table("users"),
                         array(
                             'pw' => $newPw,
-                            'last_pw_change' => mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))
+                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
                             ),
                         "id = %i",
                         $dataReceived['user_id']
@@ -279,7 +279,7 @@ function mainQuery()
                     prefix_table("users"),
                     array(
                         'pw' => $newPw,
-                        'last_pw_change' => mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'))
+                        'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
                         ),
                     "id = %i",
                     $_SESSION['user_id']
@@ -287,7 +287,7 @@ function mainQuery()
 
                 // update sessions
                 $_SESSION['last_pw'] = "";
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int)date('m'), (int)date('d'), (int)date('y'));
+                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
                 $_SESSION['validite_pw'] = true;
 
                 // update LOG
@@ -1338,8 +1338,8 @@ function mainQuery()
                     if (strpos($line, 'cpassman_url') > 0 && empty($url_found) === true) {
                         $url_found = substr($line, 19, strlen($line) - 22);
                         $tmp = parse_url($url_found);
-                        $anonym_url = $tmp['scheme'] . '://<anonym_url>' . $tmp['path'];
-                        $line = "'cpassman_url' => '" . $anonym_url . "\n";
+                        $anonym_url = $tmp['scheme'].'://<anonym_url>'.$tmp['path'];
+                        $line = "'cpassman_url' => '".$anonym_url."\n";
                     }
 
                     // Anonymize all urls
@@ -1406,7 +1406,7 @@ Tell us what happens instead
 
 **Teampass configuration file:**
 ```
-" . $list_of_options . "
+" . $list_of_options."
 ```
 
 **Updated from an older Teampass or fresh install:**
@@ -1421,12 +1421,12 @@ Tell us what happens instead
 
 #### Web server error log
 ```
-" . $err['message']." - ".$err['file']." (".$err['line'] .")
+" . $err['message']." - ".$err['file']." (".$err['line'].")
 ```
 
 #### Teampass 10 last system errors
 ```
-" . $teampass_errors ."
+" . $teampass_errors."
 ```
 
 #### Log from the web-browser developer console (CTRL + SHIFT + i)
