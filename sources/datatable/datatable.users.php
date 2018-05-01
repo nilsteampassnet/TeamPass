@@ -97,14 +97,17 @@ if (isset($_GET['order'][0]['dir']) && in_array($_GET['order'][0]['dir'], $aSort
    * word by word on any field. It's possible to do here, but concerned about efficiency
    * on very large tables, and MySQL's regex functionality is very limited
 */
-if (isset($_GET['letter']) && $_GET['letter'] != "" && $_GET['letter'] != "None") {
+if (isset($_GET['letter']) === true
+    && $_GET['letter'] !== ""
+    && $_GET['letter'] !== "None"
+) {
     if (empty($sWhere)) {
         $sWhere = " WHERE ";
     }
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' ";
-} elseif (isset($_GET['search']['value']) && $_GET['search']['value'] != "") {
+} elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== "") {
     if (empty($sWhere)) {
         $sWhere = " WHERE ";
     }
@@ -114,15 +117,21 @@ if (isset($_GET['letter']) && $_GET['letter'] != "" && $_GET['letter'] != "None"
 }
 
 // enlarge the query in case of Manager
-if (!$_SESSION['is_admin'] && !$_SESSION['user_can_manage_all_users']) {
-    if (empty($sWhere)) {
+
+if (isset($_SESSION['is_admin']) === false
+    && isset($_SESSION['user_can_manage_all_users']) === false
+) {
+    if (empty($sWhere) === true) {
         $sWhere = " WHERE ";
     } else {
         $sWhere .= " AND ";
     }
-    $sWhere .= "isAdministratedByRole IN (".implode(",", array_filter($_SESSION['user_roles'])).")";
+    $arrUserRoles = array_filter($_SESSION['user_roles']);
+    if (count($arrUserRoles) > 0) {
+        $sWhere .= "isAdministratedByRole IN (".implode(",", $arrUserRoles).")";
+    }
 }
-db::debugmode(false);
+
 $rows = DB::query(
     "SELECT * FROM ".$pre."users
     $sWhere"
