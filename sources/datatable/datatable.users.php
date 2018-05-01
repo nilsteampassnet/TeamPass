@@ -101,16 +101,12 @@ if (isset($_GET['letter']) === true
     && $_GET['letter'] !== ""
     && $_GET['letter'] !== "None"
 ) {
-    if (empty($sWhere)) {
-        $sWhere = " WHERE ";
-    }
+    $sWhere = " WHERE ";
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['letter'], FILTER_SANITIZE_STRING)."%' ";
 } elseif (isset($_GET['search']['value']) === true && $_GET['search']['value'] !== "") {
-    if (empty($sWhere)) {
-        $sWhere = " WHERE ";
-    }
+    $sWhere = " WHERE ";
     $sWhere .= $aColumns[1]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[2]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' OR ";
     $sWhere .= $aColumns[3]." LIKE '".filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING)."%' ";
