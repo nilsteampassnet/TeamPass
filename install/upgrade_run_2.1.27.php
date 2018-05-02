@@ -209,7 +209,7 @@ if ($res === true) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
 } elseif ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id user_ip to table misc! '.mysqli_error($db_link).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id to table misc! '.mysqli_error($db_link).'!"}]';
     mysqli_close($db_link);
     exit();
 }
