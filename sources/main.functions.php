@@ -2227,7 +2227,7 @@ function getFileExtension(string $file)
  * @param  string $type What clean to perform
  * @return string
  */
-function cleanText(string $string, string $type = null)
+function cleanText(string $string, $type = null)
 {
     global $SETTINGS;
 
@@ -2238,7 +2238,7 @@ function cleanText(string $string, string $type = null)
     if ($type === "css") {
         // Escape text and quotes in UTF8 format
         return htmlentities($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    } elseif ($type === "html" || empty($type) === true) {
+    } elseif (empty($type) === true || is_null($type) === true || $type === "html") {
         // Html cleaner
         return $antiXss->xss_clean($string);
     }
