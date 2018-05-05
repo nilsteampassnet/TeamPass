@@ -3151,6 +3151,9 @@ $(function() {
         },
         open: function(event,ui) {
             $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+            $('#copy_folder_destination_id, #copy_folder_source_id').select2({
+                language: "<?php echo $_SESSION['user_language_code']; ?>"
+            });
 
             // get list of folders
                 $.post(

@@ -2212,7 +2212,7 @@ function fileDelete($file)
  * @param  string $file File name
  * @return string
  */
-function getFileExtension(string $file)
+function getFileExtension($file)
 {
     if (strpos($file, '.') === false) {
         return $file;
@@ -2227,7 +2227,7 @@ function getFileExtension(string $file)
  * @param  string $type What clean to perform
  * @return string
  */
-function cleanText(string $string, $type = null)
+function cleanText($string, $type = null)
 {
     global $SETTINGS;
 
