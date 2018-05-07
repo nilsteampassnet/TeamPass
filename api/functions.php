@@ -887,25 +887,25 @@ function rest_get()
         } elseif ($GLOBALS['request'][0] == "add") {
             if ($GLOBALS['request'][1] == "item") {
                 // get sent parameters
-                $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][2]));
+                $params = explode(';', $GLOBALS['request'][2]);
                 if (count($params) != 9) {
                     rest_error('ITEMBADDEFINITION');
                 }
 
-                $item_label = $params[0];
-                $item_pwd = $params[1];
-                $item_desc = $params[2];
-                $item_folder_id = $params[3];
-                $item_login = $params[4];
-                $item_email = $params[5];
-                $item_url = $params[6];
-                $item_tags = $params[7];
-                $item_anyonecanmodify = $params[8];
+                $item_label = Urlsafe_b64decode($params[0]);
+                $item_pwd = Urlsafe_b64decode($params[1]);
+                $item_desc = Urlsafe_b64decode($params[2]);
+                $item_folder_id = Urlsafe_b64decode($params[3]);
+                $item_login = Urlsafe_b64decode($params[4]);
+                $item_email = Urlsafe_b64decode($params[5]);
+                $item_url = Urlsafe_b64decode($params[6]);
+                $item_tags = Urlsafe_b64decode($params[7]);
+                $item_anyonecanmodify = Urlsafe_b64decode($params[8]);
 
                 // do some checks
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                     // Check length
-                    if (strlen($item_pwd) > 50) {
+                    if (strlen($item_pwd) > 100) {
                         rest_error('PASSWORDTOOLONG');
                     }
 
@@ -1331,7 +1331,7 @@ function rest_get()
 
                     if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
                         // Check length
-                        if (strlen($params[1]) > 50) {
+                        if (strlen($params[1]) > 100) {
                             rest_error('PASSWORDTOOLONG');
                         }
 
