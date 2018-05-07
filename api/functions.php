@@ -1327,11 +1327,24 @@ function rest_get()
                 */
                 if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
                     // get sent parameters
-                    $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][3]));
+                    $params = explode(';', $GLOBALS['request'][3]);
+                    if (count($params) != 9) {
+                        rest_error('ITEMBADDEFINITION');
+                    }
 
-                    if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
+                    $item_label = Urlsafe_b64decode($params[0]);
+                    $item_pwd = Urlsafe_b64decode($params[1]);
+                    $item_desc = Urlsafe_b64decode($params[2]);
+                    $item_folder_id = Urlsafe_b64decode($params[3]);
+                    $item_login = Urlsafe_b64decode($params[4]);
+                    $item_email = Urlsafe_b64decode($params[5]);
+                    $item_url = Urlsafe_b64decode($params[6]);
+                    $item_tags = Urlsafe_b64decode($params[7]);
+                    $item_anyonecanmodify = Urlsafe_b64decode($params[8]);
+
+                    if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                         // Check length
-                        if (strlen($params[1]) > 100) {
+                        if (strlen($item_pwd) > 100) {
                             rest_error('PASSWORDTOOLONG');
                         }
 
@@ -1340,7 +1353,7 @@ function rest_get()
                             "SELECT *
                             FROM ".prefix_table("nested_tree")."
                             WHERE id = %i",
-                            $params[3]
+                            $item_folder_id
                         );
                         $counter = DB::count();
                         if ($counter == 0) {
@@ -1358,7 +1371,7 @@ function rest_get()
                         if ($counter > 0) {
                             // encrypt pwd
                             $encrypt = cryption(
-                                $params[1],
+                                $item_pwd,
                                 "",
                                 "encrypt"
                             );
@@ -1371,15 +1384,15 @@ function rest_get()
                                 DB::update(
                                     prefix_table("items"),
                                     array(
-                                        "label" => $params[0],
-                                        "description" => $params[2],
+                                        "label" => $item_label,
+                                        "description" => $item_desc,
                                         'pw' => $encrypt['string'],
                                         'pw_iv' => '',
-                                        "email" => $params[5],
-                                        "url" => $params[6],
-                                        "id_tree" => intval($params[3]),
-                                        "login" => $params[4],
-                                        "anyone_can_modify" => intval($params[8])
+                                        "email" => $item_email,
+                                        "url" => $item_url,
+                                        "id_tree" => intval($item_folder_id),
+                                        "login" => $item_login,
+                                        "anyone_can_modify" => intval($item_anyonecanmodify)
                                     ),
                                     "id = %i",
                                     $GLOBALS['request'][2]
@@ -1397,7 +1410,7 @@ function rest_get()
                                 );
 
                                 // Add tags
-                                $tags = explode(' ', $params[7]);
+                                $tags = explode(' ', $item_tags);
                                 foreach ((array) $tags as $tag) {
                                     if (!empty($tag)) {
                                         // check if already exists
@@ -1425,18 +1438,18 @@ function rest_get()
                                 DB::update(
                                     prefix_table("cache"),
                                     array(
-                                        "label" => $params[0],
-                                        "description" => $params[2],
-                                        "tags" => $params[7],
-                                        "id_tree" => intval($params[3]),
+                                        "label" => $item_label,
+                                        "description" => $item_desc,
+                                        "tags" => $item_tags,
+                                        "id_tree" => intval($item_folder_id),
                                         "perso" => "0",
                                         "restricted_to" => "",
-                                        "login" => $params[4],
+                                        "login" => $item_login,
                                         "folder" => "",
                                         "author" => API_USER_ID,
                                         "renewal_period" => "0",
                                         "timestamp" => time(),
-                                        "url" => $params[6],
+                                        "url" => $item_url,
                                     ),
                                     "id = %i",
                                     $GLOBALS['request'][2]
