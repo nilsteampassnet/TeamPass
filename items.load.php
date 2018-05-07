@@ -796,9 +796,26 @@ function AjouterItem()
             var fields = "";
             $('.item_field').each(function(i){
                 id = $(this).attr('id').split('_');
+                
+                // Check if mandatory
+                if ($(this).data('field-is-mandatory') === 1 && $(this).val() === '') {
+                    fields = false; 
+
+                    $('#new_show_error')
+                        .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
+                        .show();
+                    $("#div_formulaire_saisi_info").addClass("hidden").html("");
+
+                    return false;
+                }
+
+                // Store date
                 if (fields == "") fields = id[1] + '~~' + $(this).val() + '~~' + id[2];
                 else fields += '_|_' + id[1] + '~~' + $(this).val() + '~~' + id[2];
-            });
+            });            
+            if (fields === false) {
+                return false;
+            }
 
             // check if a folder is selected
             var selected_folder;
@@ -1022,9 +1039,30 @@ function EditerItem()
             var fields = "";
             $('.edit_item_field').each(function(i){
                 id = $(this).attr('id').split('_');
+                
+                // Check if mandatory
+                if ($(this).data('field-is-mandatory') === 1 && $(this).val() === '') {
+                    fields = false; 
+                    $('#edit_show_error')
+                        .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
+                        .show();
+                    $("#div_formulaire_edition_item_info")
+                        .addClass("hidden")
+                        .html("");
+                    $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
+                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+                        .prop("disabled", false);
+                    return false;
+                }
+
+                // Store data
                 if (fields == "") fields = id[2] + '~~' + $(this).val();
                 else fields += '_|_' + id[2] + '~~' + $(this).val();
-            });
+            });     
+            console.log(fields);       
+            if (fields === false) {
+                return false;
+            }
 
               //prepare data
             var data = {
@@ -1158,11 +1196,10 @@ function EditerItem()
                                 if ($('#'+input_id).val() !== "") {
                                     // copy data from form to Item Div
                                     $('#hid_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val());
-                                    console.log("> "+input_id+" - "+$('#'+input_id).attr('data-field-masked'));
                                     // Mange type of field
                                     if ($('#'+input_id).attr('data-field-masked') === '1') {
                                         $('#id_field_' + id[2] + '_' + id[3]).html('<?php echo $var['hidden_asterisk']; ?>');
-                                    } else {console.log($('#'+input_id).val());
+                                    } else {
                                         $('#id_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val().replace(/\n/g, "<br>"));
                                     }
 
@@ -1488,7 +1525,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-
+                    console.log(data);
                     if (data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
@@ -4971,5 +5008,29 @@ String.prototype.escapeHTML = function() {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 };
+
+/*
+**
+*/
+function getCustomFields(fieldClassName) {
+    var fields = ""; 
+    $(fieldClassName).each(function(i){
+        id = $(this).attr('id').split('_');
+        // Check if mandatory
+        if ($(this).data('field-is-mandatory') === 1 && $(this).val() === '') {
+            fields = "false"; 
+            return false;
+        }
+
+        // Store
+        if (fields == "") fields = id[1] + '~~' + $(this).val();
+        else fields += '_|_' + id[1] + '~~' + $(this).val();
+    });
+    if (fields === 'false') {
+        return false;
+    } else {
+        return fields; 
+    }
+}
 //]]>
 </script>

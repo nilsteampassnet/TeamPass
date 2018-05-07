@@ -198,6 +198,17 @@ echo '
             </tr>
             <tr class="not_category">
                 <td>
+                    <label for="field_is_mandatory">'.$LANG['is_mandatory'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_is_mandatory" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
+                        <option value="0">'.$LANG['no'].'</option>
+                        <option value="1">'.$LANG['yes'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
                     <label for="field_encrypted">'.$LANG['encrypted_data'].':</label>&nbsp;
                 </td>
                 <td>
@@ -272,6 +283,17 @@ echo '
                 </td>
                 <td>
                     <select id="new_field_masked" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
+                        <option value="0">'.$LANG['no'].'</option>
+                        <option value="1">'.$LANG['yes'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_is_mandatory">'.$LANG['is_mandatory'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="new_field_is_mandatory" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
                         <option value="0">'.$LANG['no'].'</option>
                         <option value="1">'.$LANG['yes'].'</option>
                     </select>

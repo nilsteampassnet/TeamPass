@@ -151,17 +151,17 @@ if (null !== $post_type) {
             }
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === true &&
-                in_array($dataReceived['categorie'], $_SESSION['personal_folders']) === false
+            if ($_SESSION['user_read_only'] === true
+                && in_array($dataReceived['categorie'], $_SESSION['personal_folders']) === false
             ) {
                 echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                 break;
             }
 
             // is pwd empty?
-            if (empty($pw) &&
-                isset($_SESSION['user_settings']['create_item_without_password']) &&
-                $_SESSION['user_settings']['create_item_without_password'] !== '1'
+            if (empty($pw)
+                && isset($_SESSION['user_settings']['create_item_without_password'])
+                && $_SESSION['user_settings']['create_item_without_password'] !== '1'
             ) {
                 echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
                 break;

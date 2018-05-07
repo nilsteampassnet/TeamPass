@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array(
+    'is_mandatory' => 'Is mandatory',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
     'position_in_list' => 'Position in list',
     'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',

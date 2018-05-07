@@ -580,13 +580,17 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
             echo '
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                        <label class="cpm_label">'.$field[1].'</span>';
+                        <label class="cpm_label">'.$field[1];
+            if ($field[5] === '1') {
+                echo '&nbsp;<i class="fa fa-fire mi-red">&nbsp;</i>';
+            }
+            echo '</label>';
             if ($field[3] === 'text') {
                 echo '
-                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'">';
+                        <input type="text" id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'" data-field-is-mandatory="'.$field[5].'">';
             } else if ($field[3] === 'textarea') {
                 echo '
-                        <textarea id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field[3].'"></textarea>';
+                        <textarea id="field_'.$field[0].'_'.$field[2].'" class="item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field[3].'" data-field-is-mandatory="'.$field[5].'"></textarea>';
             }
             echo '    
                     </div>';
@@ -781,13 +785,17 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
             echo '
                     <div style="margin:2px 0 2px 15px;">
                         <span class="fa fa-tag mi-grey-1">&nbsp;</span>
-                        <label class="cpm_label">'.$field[1].'</label>';
+                        <label class="cpm_label">'.$field[1];
+            if ($field[5] === '1') {
+                echo '&nbsp;<i class="fa fa-fire mi-red">&nbsp;</i>';
+            }
+            echo '</label>';
             if ($field[3] === 'text') {
                 echo '
-                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'" data-field-masked="'.$field[4].'">';
+                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'" data-field-masked="'.$field[4].'" data-field-is-mandatory="'.$field[5].'">';
             } else if ($field[3] === 'textarea') {
                 echo '
-                        <textarea id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field["3"].'" data-field-masked="'.$field[4].'"></textarea>';
+                        <textarea id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field["3"].'" data-field-masked="'.$field[4].'" data-field-is-mandatory="'.$field[5].'"></textarea>';
             }
             echo '
                     </div>';

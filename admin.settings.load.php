@@ -120,6 +120,7 @@ function updateCategoryAndField(id) {
         "category" : $('#field_category').val() === '' ? '0' : $("#field_category").val(),
         "type" : $('#field_type').val() === '' ? '' : $("#field_type").val(),
         "masked" : $('#field_masked').val() === '' ? '' : $("#field_masked").val(),
+        "is_mandatory" : $('#is_mandatory').val() === '' ? '' : $("#is_mandatory").val(),
         "encrypted" : $('#field_encrypted').val() === '' ? '' : $("#field_encrypted").val(),
         "roles" : roles === '' ? 'all' : roles,
         "field_is_category" : $('#field_is_category').val(),
@@ -222,7 +223,7 @@ function loadFieldsList() {
                         '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
                     } else {
                         newList += '<tr id="t_field_'+val[1]+'" class="drag">'+
-                        '<td width="20px"><input type="hidden" class="field_info" value="' + current_category + ','+val[4]+','+val[6]+','+val[7]+'" /></td>'+
+                        '<td width="20px"><input type="hidden" class="field_info" value="' + current_category + ','+val[4]+','+val[6]+','+val[7]+','+val[10]+'" /></td>'+
                         '<td colspan="1" style="border-bottom:1px solid #a0a0a0; padding:3px 0 1px 0;">'+
                         '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
                         '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" class="hidden" />'+
@@ -250,6 +251,10 @@ function loadFieldsList() {
 
                             if (val[7] === "1") {
                                 newList += '&nbsp;<span class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked']; ?>"></ispan>';
+                            }
+
+                            if (val[10] === "1") {
+                                newList += '&nbsp;<span class="fa fa-fire tip mi-red" title="<?php echo $LANG['is_mandatory']; ?>"></ispan>';
                             }
                             newList += '</span>'
                         }
@@ -731,7 +736,7 @@ $(function() {
         bgiframe: true,
         autoOpen: false,
         width: 700,
-        height: 330,
+        height: 360,
         title: "<?php echo $LANG['at_modification']; ?>",
         buttons: {
             "<?php echo $LANG['save_button']; ?>": function() {
@@ -772,6 +777,7 @@ $(function() {
                 $("#field_category").val(field_info[0]);
                 $("#field_type").val(field_info[2]);
                 $("#field_masked").val(field_info[3]);
+                $("#field_is_mandatory").val(field_info[4]);
                 $("#field_encrypted").val(field_info[1]);
                 
                 if ($("#roleVisibilityList_" + data[1]).val() !== 'all' && $("#roleVisibilityList_" + data[1]).val() !== '') {
@@ -798,7 +804,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 700,
-        height: 310,
+        height: 330,
         title: "<?php echo $LANG['define_new_field']; ?>",
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
@@ -833,6 +839,7 @@ $(function() {
                         "type" : $("#new_field_type").val(),
                         "encrypted" : $("#new_field_encrypted").val(),
                         "masked" : $("#new_field_masked").val(),
+                        "is_mandatory" : $("#new_field_is_mandatory").val(),
                         "id" : $("#post_id").val(),
                         "field_visibility" : roles,
                         "order" : $("#new_field_order").val()

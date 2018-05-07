@@ -118,6 +118,7 @@ if (null !== $post_type) {
                         'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_STRING),
                         'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING),
                         'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING),
+                        'is_mandatory' => filter_var($dataReceived['is_mandatory'], FILTER_SANITIZE_STRING),
                         'role_visibility' => filter_var($dataReceived['field_visibility'], FILTER_SANITIZE_STRING),
                         'level' => 1,
                         'order' => filter_var($dataReceived['order'], FILTER_SANITIZE_NUMBER_INT)
@@ -268,7 +269,8 @@ if (null !== $post_type) {
                                 $field['type'],
                                 $field['masked'],
                                 addslashes($roleVisibility),
-                                $field['role_visibility']
+                                $field['role_visibility'],
+                                $field['is_mandatory']
                             )
                         );
                     }

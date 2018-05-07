@@ -46,10 +46,10 @@ csrfProtector::init();
 session_id();
 
 // Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+if (file_exists('../includes/config/tp.config.php') === true) {
+    include_once '../includes/config/tp.config.php';
+} elseif (file_exists('./includes/config/tp.config.php') === true) {
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -177,7 +177,7 @@ if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === 
 // Load user languages files
 if (in_array($session_user_language, $languagesList) === true) {
     if (file_exists($SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php') === true) {
-        require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
+        include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
     }
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
@@ -196,9 +196,10 @@ if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_auth
 
 // Load links, css and javascripts
 if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === true) {
-    require_once $SETTINGS['cpassman_dir'].'/load.php';
+    include_once $SETTINGS['cpassman_dir'].'/load.php';
 }
 
+$SETTINGS['item_templates'] = "1";
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -221,7 +222,7 @@ if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === tru
 <?php
 
 // load HEADERS
-if (isset($_SESSION['CPM'])) {
+if (isset($_SESSION['CPM']) === true) {
     echo $htmlHeaders;
 }
 ?>

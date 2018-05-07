@@ -481,7 +481,8 @@ if (isset($SETTINGS['item_extra_fields']) === true
                             addslashes($field['title']),
                             $field['encrypted_data'],
                             $field['type'],
-                            $field['masked']
+                            $field['masked'],
+                            $field['is_mandatory']
                         )
                     );
                 }
