@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          items.php
- * @author        Nils Laumaillé
+ * @package       items.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -22,9 +22,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -217,6 +217,7 @@ echo '
             <input type="hidden" id="id_categorie" value="" />
             <input type="hidden" id="id_item" value="" />
             <input type="hidden" id="hid_anyone_can_modify" value="" />
+            <input type="hidden" id="template_selected_id" value="" />
             <div style="height:220px;overflow-y:auto;" id="item_details_scroll">
                 <div id="handle" class="ui-resizable-handle ui-resizable-n"></div>';
 
@@ -230,7 +231,7 @@ echo'
 // Line for LABEL
 echo '
                 <tr>
-                    <td valign="top" class="td_title" width="120px" style="background-color:rgba(178, 178, 178, 0.13);">
+                    <td valign="top" class="td_title" width="150px" style="background-color:rgba(178, 178, 178, 0.13);">
                         <div class="quick_menu2" style="float:left; margin-right: 5px;">
                             <ul class="quick_menu ui-menu">
                                 <li><i class="fa fa-bars"></i>
@@ -268,7 +269,7 @@ echo '
                 </tr>';
 // Line for DESCRIPTION
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title" width="180px">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['description'].' :</td>
                     <td colspan="2">
                         <div id="id_desc" style="font-style:italic;display:inline;"></div><input type="hidden" id="hid_desc" value="', isset($dataItem) ? htmlspecialchars($dataItem['description']) : '', '" />
@@ -276,7 +277,7 @@ echo '
                 </tr>';
 // Line for PW
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<span class="fa fa-angle-right"></span>&nbsp;'.$LANG['pw'].' :<span id="button_quick_pw_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_pw'].'"></span></td>
                     <td colspan="2">
                         &nbsp;
@@ -288,7 +289,7 @@ echo '
                 </tr>';
 // Line for LOGIN
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['index_login'].' :<span id="button_quick_login_copy" class="fa fa-paste fa-border fa-sm tip" style="cursor:pointer;float:right;margin-right:2px;" title="'.$LANG['item_menu_copy_login'].'"></span></td>
                     <td colspan="2">
                         <div id="id_login" style="float:left;"></div>
@@ -297,7 +298,7 @@ echo '
                 </tr>';
 // Line for EMAIL
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['email'].' :</td>
                     <td colspan="2">
                         <div id="id_email" style="display:inline;"></div><input type="hidden" id="hid_email" value="" />
@@ -305,7 +306,7 @@ echo '
                 </tr>';
 // Line for URL
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['url'].' :</td>
                     <td colspan="2">
                         <div id="id_url" style="display:inline;"></div><input type="hidden" id="hid_url" value="" />
@@ -313,7 +314,7 @@ echo '
                 </tr>';
 // Line for FILES
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['files_&_images'].' :</td>
                     <td colspan="2">
                         <div id="id_files" style="display:inline;font-size:11px;"></div><input type="hidden" id="hid_files" />
@@ -324,7 +325,7 @@ echo '
                 </tr>';
 // Line for RESTRICTED TO
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['restricted_to'].' :</td>
                     <td colspan="2">
                         <div id="id_restricted_to" style="display:inline;"></div><input type="hidden" id="hid_restricted_to" /><input type="hidden" id="hid_restricted_to_roles" />
@@ -332,7 +333,7 @@ echo '
                 </tr>';
 // Line for TAGS
 echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['tags'].' :</td>
                     <td colspan="2">
                         <div id="id_tags" style="display:inline;"></div><input type="hidden" id="hid_tags" />
@@ -341,7 +342,7 @@ echo '
 // Line for KBs
 if (isset($SETTINGS['enable_kb']) && $SETTINGS['enable_kb'] == 1) {
     echo '
-                <tr>
+                <tr class="default_item_field">
                     <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$LANG['kbs'].' :</td>
                     <td colspan="2">
                         <div id="id_kbs" style="display:inline;"></div><input type="hidden" id="hid_kbs" />
@@ -354,8 +355,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
         $itemCatName = $elem[0];
         echo '
                 <tr class="tr_fields hidden" id="tr_catfield_'.$elem[0].'">
-                    <td valign="top" class="td_title">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
-                    <td colspan="2"></td>
+                    <td valign="top" class="td_title" colspan="3">&nbsp;<i class="fa fa-angle-right"></i>&nbsp;'.$elem[1].' :</td>
                 </tr>';
         foreach ($elem[2] as $field) {
             echo '
@@ -779,7 +779,15 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
         echo '
                 <div class="editItemCat" id="editItemCatName_'.$elem[0].'">
                     <div style="font-weight:bold;font-size:12px;">
-                        <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
+                        <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1];
+        // Manage template
+        if (isset($SETTINGS['item_creation_templates']) === true && $SETTINGS['item_creation_templates'] === '1') {
+            echo '
+                        &nbsp;
+                        <input type="checkbox" id="template_'.$elem[0].'" class="item_template" data-category-id="'.$elem[0].'"/>
+                        <label for="template_'.$elem[0].'">'.$LANG['main_template'].'</label>';
+        }
+        echo '
                     </div>';
         foreach ($elem[2] as $field) {
             echo '

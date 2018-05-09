@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          index.php
- * @author        Nils Laumaillé
+ * @package       index.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -199,7 +199,6 @@ if (isset($_SESSION['CPM']) === true && isset($SETTINGS['cpassman_dir']) === tru
     include_once $SETTINGS['cpassman_dir'].'/load.php';
 }
 
-$SETTINGS['item_templates'] = "1";
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -289,8 +288,9 @@ if (empty($session_login) === false) {
     echo '
         <span id="menu_suggestion_position">';
     // SUGGESTION menu
-    if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
-        && ($session_user_read_only === '1' || $session_user_admin === '1' || $session_user_manager === '1')
+    if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] === '1'
+        && ($session_user_admin === '1' || $session_user_manager === '1')
+        // Removed this condition in previous $session_user_read_only === '1' || 
     ) {
         echo '
                 <a class="btn btn-default" href="#" onclick="MenuAction(\'suggestion\')">

@@ -4,7 +4,7 @@
     "description": "TeamPass is a Passwords Manager dedicated for managing passwords in a collaborative way",
     "version": "2.1.27",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
-    "homepage": "http://www.teampass.net/",
+    "homepage": " * @package       /",
     "license": "GNU GPL-3.0",
     "authors": [
         {"name": "Nils Laumaillé", "email": "nils@teampass.net"}
@@ -13,7 +13,7 @@
         "email": "nils@teampass.net",
         "issues": "https://github.com/nilsteampassnet/TeamPass/issues",
         "source": "https://github.com/nilsteampassnet/TeamPass",
-        "wiki": "https://www.teampass.net",
+        "wiki": " * @package       ",
         "docs": "https://teampass.readthedocs.io/en/latest/",
         "forum": "https://www.reddit.com/r/TeamPass/"
     },

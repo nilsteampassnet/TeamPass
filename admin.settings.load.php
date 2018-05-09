@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          admin.settings.load.php
- * @author        Nils Laumaillé
+ * @package       admin.settings.load.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -736,7 +736,7 @@ $(function() {
         bgiframe: true,
         autoOpen: false,
         width: 700,
-        height: 360,
+        height: 350,
         title: "<?php echo $LANG['at_modification']; ?>",
         buttons: {
             "<?php echo $LANG['save_button']; ?>": function() {
@@ -770,7 +770,7 @@ $(function() {
             $("#field_order").val($("#catOrd_"+data[1]).val());
 
             if ($("#t_field_" + data[1]).find(".field_info").length > 0) {
-                $("#item_dialog").dialog("option", "height", 330);
+                $("#item_dialog").dialog("option", "height", 350);
                 $(".not_category").removeClass("hidden");
                 field_info = $("#t_field_" + data[1]).find(".field_info").val().split(',');
                 $("#field_is_category").val('0');

@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          find.php
- * @author        Nils Laumaillé
+ * @package       find.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
  * @link
  */
 
@@ -18,9 +18,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }

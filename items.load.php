@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          items.load.php
- * @author        Nils Laumaillé
+ * @package       items.load.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,9 +18,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -798,7 +798,10 @@ function AjouterItem()
                 id = $(this).attr('id').split('_');
                 
                 // Check if mandatory
-                if ($(this).data('field-is-mandatory') === 1 && $(this).val() === '') {
+                if ($(this).data('field-is-mandatory') === 1
+                    && $(this).val() === ''
+                    && $(this).is(':visible') === true
+                ) {
                     fields = false; 
 
                     $('#new_show_error')
@@ -917,7 +920,7 @@ function AjouterItem()
                         $("#item_tabs").tabs({selected: 0});
                         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
                         $(".fields, .item_field, #categorie, #random_id").val("");
-                        $(".fields_div, #item_file_queue, #display_title, #visible_pw").html("");
+                        $(".fields_div, .fields, #item_file_queue, #display_title, #visible_pw").html("");
 
                         $("#div_formulaire_saisi").dialog('close');
                         $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
@@ -1041,7 +1044,10 @@ function EditerItem()
                 id = $(this).attr('id').split('_');
                 
                 // Check if mandatory
-                if ($(this).data('field-is-mandatory') === 1 && $(this).val() === '') {
+                if ($(this).data('field-is-mandatory') === 1
+                    && $(this).val() === ''
+                    && $(this).is(':visible') === true
+                ) {
                     fields = false; 
                     $('#edit_show_error')
                         .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
@@ -1058,11 +1064,19 @@ function EditerItem()
                 // Store data
                 if (fields == "") fields = id[2] + '~~' + $(this).val();
                 else fields += '_|_' + id[2] + '~~' + $(this).val();
-            });     
-            console.log(fields);       
+            });           
             if (fields === false) {
                 return false;
             }
+
+            // get template
+            var template = "";
+            $('.item_template').each(function(i){
+                if ($(this).prop('checked') === true) {
+                    template = $(this).data('category-id');
+                    return false;
+                }
+            });
 
               //prepare data
             var data = {
@@ -1085,7 +1099,8 @@ function EditerItem()
                 "tags": sanitizeString($('#edit_tags').val()),
                 "to_be_deleted": to_be_deleted,
                 "fields": sanitizeString(fields),
-                "complexity_level": parseInt($("#edit_mypassword_complex").val())
+                "complexity_level": parseInt($("#edit_mypassword_complex").val()),
+                "template_id": template
             };
 
             //send query
@@ -1525,7 +1540,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    console.log(data);
+                    
                     if (data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
@@ -1586,7 +1601,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         } else {
                             $("#id_pw").html('<?php echo $var['hidden_asterisk']; ?>');
                         }
-                        $("#hid_pw").html(unsanitizeString(data.pw));
+                        $("#hid_pw").text(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
                             $("#hid_url").val(data.url);
@@ -1638,7 +1653,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         // ---
                         // Show Field values
                         $(".fields").val("");
-                        $(".fields_div").html("");
+                        $(".fields_div, .fields").html("");
                         // If no CF then hide
                         if (data.fields === "") {
                             $(".tr_fields").addClass("hidden");
@@ -1647,7 +1662,14 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             var liste = data.fields.split('_|_');
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');
-                                $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
+                                if (data.template_id !== '') {
+                                    if (data.template_id === field[2]) {
+                                        $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
+                                    }
+                                } else {
+                                    $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
+                                }
+                                
                                 $('#hid_field_' + field[0] + '_' + field[2]).html(field[1].replace(/<br ?\/?>/g,""));
                                 if (field[4] === "1") {
                                     $('#id_field_' + field[0] + '_' + field[2])
@@ -1658,6 +1680,17 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                 }
                             }
                         }
+
+                        // 
+                        if (data.template_id !== '') {
+                            $('.default_item_field, .tr_fields_header').addClass('hidden');
+                            //$('#tr_catfield_'+data.template_id)
+                        } else {
+                            $('.default_item_field, .tr_fields_header').removeClass('hidden');
+                        }
+
+                        // Template id
+                        $('#template_selected_id').val(data.template_id);
 
                         //Anyone can modify button
                         if (data.anyone_can_modify == "1") {
@@ -2359,7 +2392,11 @@ function open_edit_item_div(restricted_to_roles)
     }
 
     // Set password length in size spinner
-    $('#edit_pw_size').val($('#edit_pw1').val().length);
+    if ($('#edit_pw1').val().length === 0) {
+        $('#edit_pw_size').val(8);
+    } else {
+        $('#edit_pw_size').val($('#edit_pw1').val().length);
+    }
 
     //open dialog
     $("#div_formulaire_edition_item_info").addClass("hidden").html("");
@@ -3400,8 +3437,11 @@ $(function() {
             }
             $("#div_loading, #edit_show_error").addClass("hidden");
             $("#item_edit_upload_list").html("");
-            $(".edit_item_field").val("");  // clean values in Fields
-            //Unlock the Item
+            // Clean values in Fields
+            $(".edit_item_field").val('');
+            // Uncheck checkboxes
+            $('.item_template').prop('checked', false);
+            // Unlock the Item
             $.post(
                 "sources/items.queries.php",
                 {
@@ -3422,6 +3462,9 @@ $(function() {
             $("#edit_pw1").first().focus();
             $("#item_edit_tabs").tabs( "option", "active",0  );
             $(".ui-tooltip").siblings(".tooltip").remove();
+            if ($('#template_selected_id').val() !== '') {
+                $('#template_'+$('#template_selected_id').val()).prop('checked', true);
+            }
 
             // show tab fields ? Not if PersonalFolder
             if ($("#recherche_group_pf").val() == 1) {
@@ -4343,6 +4386,11 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         }
     };
 
+    // Ensure only one template is selected
+    $('input.item_template').on('change', function() {
+        $('input.item_template').not(this).prop('checked', false);  
+    });
+
     NProgress.done();
 });
 
@@ -4734,7 +4782,7 @@ function globalItemsSearch()
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching']); ?>');
 
         // clean
-        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, .fields, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
         $("#full_items_list").html("");
         $("#selected_items").val("");
@@ -5008,29 +5056,5 @@ String.prototype.escapeHTML = function() {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 };
-
-/*
-**
-*/
-function getCustomFields(fieldClassName) {
-    var fields = ""; 
-    $(fieldClassName).each(function(i){
-        id = $(this).attr('id').split('_');
-        // Check if mandatory
-        if ($(this).data('field-is-mandatory') === 1 && $(this).val() === '') {
-            fields = "false"; 
-            return false;
-        }
-
-        // Store
-        if (fields == "") fields = id[1] + '~~' + $(this).val();
-        else fields += '_|_' + id[1] + '~~' + $(this).val();
-    });
-    if (fields === 'false') {
-        return false;
-    } else {
-        return fields; 
-    }
-}
 //]]>
 </script>

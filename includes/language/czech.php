@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          czech.php
- * @author        Nils Laumaillé
+ * @package       czech.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array(
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'main_template' => 'Use as main template',
+    'is_mandatory' => 'Is mandatory',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
     'position_in_list' => 'Position in list',
     'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',
@@ -263,7 +268,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Změna hlavního klíče SALT',
     'admin_action_change_salt_key_tip' => 'Před změnou klíče SALT, proveďte, prosím, úplnou zálohu databanky a přepněte program do správního režimu, abyste zabránili přihlášení ostatních uživatelů.',
     'block_admin_info' => 'Informace pro správce',
-    'admin_new1' => '&lt;i&gt;&lt;u&gt;14FEB2012:&lt;/i&gt;&lt;/u&gt;&lt;br&gt;Profil správce již nesmí nahlížet položky. Tento profil  je nyní čistě administrativní.&lt;br /&gt;Viz &lt;a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'&gt;TeamPass.net page&lt;/a&gt; pro další informace o této změně.',
+    'admin_new1' => '&lt;i&gt;&lt;u&gt;14FEB2012:&lt;/i&gt;&lt;/u&gt;&lt;br&gt;Profil správce již nesmí nahlížet položky. Tento profil  je nyní čistě administrativní.&lt;br /&gt;Viz &lt;a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'&gt;TeamPass.net page&lt;/a&gt; pro další informace o této změně.',
     'nb_items_by_query' => 'Počet položek obdržených při každém vyhledávání',
     'nb_items_by_query_tip' => '&lt;span style="font-size:11px;max-width:300px;"&gt;Zobrazení seznamu většího počtu položek vyžaduje více času.&lt;br&gt;Při nastavení \'auto\' program upraví tento počet podle velikosti uživatelovy obrazovky.&lt;br&gt;Při nastavení \'max\' bude najednou zobrazen kompletní výpis.&lt;br&gt;Zadejte číslo dle počtu položek, který chcete obdržet při každém vyhledávání.&lt;/span&gt;',
     'error_no_selected_folder' => 'Musíte vybrat složku',

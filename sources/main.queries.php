@@ -1,12 +1,12 @@
 <?php
 /**
  * Teampass file 
- * @file          main.queries.php
- * @author        Nils Laumaillé
+ * @package       main.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -362,18 +362,18 @@ function mainQuery()
                     $ldap_user_never_auth = true;
                 }
             }
-            
-            // check the given password
-            if ($counter === 0
-                || (isset($pwd) === true && isset($data['pw']) === true && $pwd !== $data['pw'])
-            ) {
-                // not a registered user !
-                if ($counter === 0) {
-                    logEvents('failed_auth', 'user_not_exists', "", stripslashes($login), stripslashes($login));
-                } else if ($pwdlib->verifyPasswordHash($pwd, $data['pw']) === false) {
-                    logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
-                }
 
+            // Do treatment
+            if ($counter === 0) {
+                // Not a registered user !
+                logEvents('failed_auth', 'user_not_exists', "", stripslashes($login), stripslashes($login));
+                echo '[{"error" : "no_user"}]';
+            } else if (isset($pwd) === true
+                && isset($data['pw']) === true
+                && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
+            ) {
+                // checked the given password
+                logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
                 echo '[{"error" : "no_user"}]';
             } else {
                 if (empty($data['email'])) {
