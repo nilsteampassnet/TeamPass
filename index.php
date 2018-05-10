@@ -723,8 +723,35 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                            </div>';
     }
 
+    if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))) {
+        echo '
+                        <div id="connect_pw" style="margin-bottom:3px;">
+                            <label for="pw" class="form_label" id="user_pwd">' . $LANG['index_password'].'</label>
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
+                        </div>';
+    }
+
+/*
+    // 2FA auth selector
+    echo '
+                        <div id="2fa_selector" class="hidden1">
+                            <div>
+                            <legend>'.addslashes($LANG['2fa_authentication_selector']).'</legend>
+                            <label for="radio-1">New York</label>
+                            <input type="radio" name="2fa_selector_select" id="radio-1">
+                            <label for="radio-2">Paris</label>
+                            <input type="radio" name="2fa_selector_select" id="radio-2">
+                            <label for="radio-3">London</label>
+                            <input type="radio" name="2fa_selector_select" id="radio-3">
+                            </div>
+                            <div>
+
+                            </div>
+                        </div>';
+*/
+
     // AGSES
-    if (isset($SETTINGS['agses_authentication_enabled']) && $SETTINGS['agses_authentication_enabled'] == 1) {
+    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
         echo '
                         <div id="agses_cardid_div" style="text-align:center; display:none; padding:5px; width:454px; margin-bottom:5px;" class="ui-state-active ui-corner-all">
                             ' . $LANG['user_profile_agses_card_id'].': &nbsp;
@@ -732,14 +759,6 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                         </div>
                         <div id="agses_flickercode_div" style="text-align:center; display:none;">
                             <canvas id="axs_canvas"></canvas>
-                        </div>';
-    }
-
-    if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))) {
-        echo '
-                        <div id="connect_pw" style="margin-bottom:3px;">
-                            <label for="pw" class="form_label" id="user_pwd">' . $LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
     }
 

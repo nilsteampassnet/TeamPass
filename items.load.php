@@ -820,6 +820,15 @@ function AjouterItem()
                 return false;
             }
 
+            // get template
+            var template = "";
+            $('.item_template').each(function(i){
+                if ($(this).prop('checked') === true) {
+                    template = $(this).data('category-id');
+                    return false;
+                }
+            });
+
             // check if a folder is selected
             var selected_folder;
             if ($('#categorie').val() === "" || $('#categorie').val() === null) {
@@ -829,14 +838,28 @@ function AjouterItem()
             }
 
             //prepare data
-            var data = {"pw": sanitizeString($('#pw1').val()) , "label": sanitizeString($('#label').val()) ,
-                "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf.toString() ,
-                "description": (description) , "email": $('#email').val() , "url": url , "categorie": selected_folder ,
-                "restricted_to": restriction , "restricted_to_roles": restriction_role ,
-                "salt_key_set": $('#personal_sk_set').val() , "diffusion": diffusion , "id": $('#id_item').val() ,
-                "anyone_can_modify": $('#anyone_can_modify:checked').val() , "tags": sanitizeString($('#item_tags').val()) ,
-                "random_id_from_files": $('#random_id').val() , "to_be_deleted": to_be_deleted ,
-                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#mypassword_complex").val())};
+            var data = {
+                "pw": sanitizeString($('#pw1').val()),
+                "label": sanitizeString($('#label').val()) ,
+                "login": sanitizeString($('#item_login').val()),
+                "is_pf": is_pf.toString(),
+                "description": (description),
+                "email": $('#email').val(),
+                "url": url,
+                "categorie": selected_folder,
+                "restricted_to": restriction,
+                "restricted_to_roles": restriction_role,
+                "salt_key_set": $('#personal_sk_set').val(),
+                "diffusion": diffusion,
+                "id": $('#id_item').val(),
+                "anyone_can_modify": $('#anyone_can_modify:checked').val(),
+                "tags": sanitizeString($('#item_tags').val()),
+                "random_id_from_files": $('#random_id').val(),
+                "to_be_deleted": to_be_deleted,
+                "fields": sanitizeString(fields),
+                "complexity_level": parseInt($("#mypassword_complex").val()),
+                "template_id": template
+            };
 
             //Send query
             $.post(
@@ -1071,7 +1094,7 @@ function EditerItem()
 
             // get template
             var template = "";
-            $('.item_template').each(function(i){
+            $('.item_edit_template').each(function(i){
                 if ($(this).prop('checked') === true) {
                     template = $(this).data('category-id');
                     return false;
@@ -3440,7 +3463,7 @@ $(function() {
             // Clean values in Fields
             $(".edit_item_field").val('');
             // Uncheck checkboxes
-            $('.item_template').prop('checked', false);
+            $('.item_edit_template').prop('checked', false);
             // Unlock the Item
             $.post(
                 "sources/items.queries.php",
@@ -3463,7 +3486,7 @@ $(function() {
             $("#item_edit_tabs").tabs( "option", "active",0  );
             $(".ui-tooltip").siblings(".tooltip").remove();
             if ($('#template_selected_id').val() !== '') {
-                $('#template_'+$('#template_selected_id').val()).prop('checked', true);
+                $('#template_edit_'+$('#template_selected_id').val()).prop('checked', true);
             }
 
             // show tab fields ? Not if PersonalFolder
@@ -4387,8 +4410,8 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
     };
 
     // Ensure only one template is selected
-    $('input.item_template').on('change', function() {
-        $('input.item_template').not(this).prop('checked', false);  
+    $('input.template_for_items').on('change', function() {
+        $('input.template_for_items').not(this).prop('checked', false);  
     });
 
     NProgress.done();

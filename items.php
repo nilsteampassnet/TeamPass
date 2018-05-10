@@ -574,7 +574,15 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
         echo '
                 <div id="newItemCatName_'.$itemCatName.'" class="newItemCat">
                     <div style="font-weight:bold;font-size:12px;">
-                        <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1].'
+                        <span class="fa fa-folder-open mi-grey-1">&nbsp;</span>'.$elem[1];
+        // Manage template
+        if (isset($SETTINGS['item_creation_templates']) === true && $SETTINGS['item_creation_templates'] === '1') {
+            echo '
+                        &nbsp;
+                        <input type="checkbox" id="template_'.$elem[0].'" class="item_template template_for_items" data-category-id="'.$elem[0].'"/>
+                        <label for="template_'.$elem[0].'">'.$LANG['main_template'].'</label>';
+        }
+        echo '
                     </div>';
         foreach ($elem[2] as $field) {
             echo '
@@ -784,8 +792,8 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
         if (isset($SETTINGS['item_creation_templates']) === true && $SETTINGS['item_creation_templates'] === '1') {
             echo '
                         &nbsp;
-                        <input type="checkbox" id="template_'.$elem[0].'" class="item_template" data-category-id="'.$elem[0].'"/>
-                        <label for="template_'.$elem[0].'">'.$LANG['main_template'].'</label>';
+                        <input type="checkbox" id="template_edit_'.$elem[0].'" class="item_edit_template template_for_items" data-category-id="'.$elem[0].'"/>
+                        <label for="template_edit_'.$elem[0].'">'.$LANG['main_template'].'</label>';
         }
         echo '
                     </div>';

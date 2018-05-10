@@ -133,6 +133,7 @@ if (null !== $post_type) {
             $pw = htmlspecialchars_decode($dataReceived['pw']);
             $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
             $tags = htmlspecialchars_decode($dataReceived['tags']);
+            $post_template_id = filter_var(htmlspecialchars_decode($dataReceived['template_id']), FILTER_SANITIZE_NUMBER_INT);
 
             // is author authorized to create in this folder
             if (count($_SESSION['list_folders_limited']) > 0) {
@@ -296,6 +297,48 @@ if (null !== $post_type) {
                                     'data_iv' => "",
                                     'encryption_type' => $enc_type
                                 )
+                            );
+                        }
+                    }
+                }
+
+                // If template enable, is there a main one selected?
+                if (isset($SETTINGS['item_creation_templates']) === true
+                    && $SETTINGS['item_creation_templates'] === '1'
+                    && isset($post_template_id) === true
+                ) {
+                    DB::queryFirstRow(
+                        "SELECT *
+                        FROM ".prefix_table('templates')."
+                        WHERE item_id = %i",
+                        $newID
+                    );
+                    if (DB::count() === 0) {
+                        // store field text
+                        DB::insert(
+                            prefix_table('templates'),
+                            array(
+                                'item_id' => $newID,
+                                'category_id' => $post_template_id
+                            )
+                        );
+                    } else {
+                        // Delete if empty
+                        if (empty($post_template_id) === true) {
+                            DB::delete(
+                                $pre."templates",
+                                "item_id = %i",
+                                $newID
+                            );
+                        } else {
+                            // Update value
+                            DB::update(
+                                prefix_table('templates'),
+                                array(
+                                    'category_id' => $post_template_id
+                                ),
+                                "item_id = %i",
+                                $newID
                             );
                         }
                     }

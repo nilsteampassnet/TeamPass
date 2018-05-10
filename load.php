@@ -1663,7 +1663,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         $("#detele_fav_id").val(id);
         OpenDialog("div_delete_fav");
     }';
-} elseif (isset($_GET['page']) && isset($_SESSION['user_id'])) {
+} elseif (isset($_GET['page']) === true && isset($_SESSION['user_id']) === true) {
     // simulate a CRON activity (only 4 secs after page loading)
     // check for existing suggestions / changes
     $htmlHeaders .= '
@@ -1702,7 +1702,9 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         },
         4000
     );';
-}
+}/* elseif (isset($_SESSION['user_id']) === false) {
+    
+}*/
 
 $htmlHeaders .= '
 // ]]>
