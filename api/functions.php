@@ -887,6 +887,146 @@ function rest_get()
         } elseif ($GLOBALS['request'][0] == "add") {
             if ($GLOBALS['request'][1] == "item") {
                 // get sent parameters
+                $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][2]));
+                if (count($params) != 9) {
+                    rest_error('ITEMBADDEFINITION');
+                }
+
+                $item_label = $params[0];
+                $item_pwd = $params[1];
+                $item_desc = $params[2];
+                $item_folder_id = $params[3];
+                $item_login = $params[4];
+                $item_email = $params[5];
+                $item_url = $params[6];
+                $item_tags = $params[7];
+                $item_anyonecanmodify = $params[8];
+
+                // do some checks
+                if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
+                    // Check length
+                    if (strlen($item_pwd) > 50) {
+                        rest_error('PASSWORDTOOLONG');
+                    }
+
+                    // Check Folder ID
+                    DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
+                    $counter = DB::count();
+                    if ($counter == 0) {
+                        rest_error('NOSUCHFOLDER');
+                    }
+
+                    // check if element doesn't already exist
+                    $item_duplicate_allowed = getSettingValue("duplicate_item");
+                    if ($item_duplicate_allowed !== "1") {
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("items")."
+                            WHERE label = %s AND inactif = %i",
+                            addslashes($item_label),
+                            "0"
+                        );
+                        $counter = DB::count();
+                        if ($counter != 0) {
+                            $itemExists = 1;
+                            // prevent the error if the label already exists
+                            // so lets just add the time() as a random factor
+                            $item_label .= " (".time().")";
+                        } else {
+                            $itemExists = 0;
+                        }
+                    } else {
+                        $itemExists = 0;
+                    }
+                    if ($itemExists === 0) {
+                        $encrypt = cryption(
+                            $item_pwd,
+                            "",
+                            "encrypt"
+                        );
+                        if (empty($encrypt['string'])) {
+                            rest_error('PASSWORDEMPTY');
+                        }
+
+                        // ADD item
+                        try {
+                            DB::insert(
+                                prefix_table("items"),
+                                array(
+                                    "label" => $item_label,
+                                    "description" => $item_desc,
+                                    'pw' => $encrypt['string'],
+                                    'pw_iv' => '',
+                                    "email" => $item_email,
+                                    "url" => $item_url,
+                                    "id_tree" => intval($item_folder_id),
+                                    "login" => $item_login,
+                                    "inactif" => 0,
+                                    "restricted_to" => "",
+                                    "perso" => 0,
+                                    "anyone_can_modify" => intval($item_anyonecanmodify)
+                                )
+                            );
+                            $newID = DB::InsertId();
+
+                            // log
+                            DB::insert(
+                                prefix_table("log_items"),
+                                array(
+                                    "id_item" => $newID,
+                                    "date" => time(),
+                                    "id_user" => API_USER_ID,
+                                    "action" => "at_creation",
+                                    "raison" => $api_info['label']
+                                )
+                            );
+
+                            // Add tags
+                            $tags = explode(' ', $item_tags);
+                            foreach ((array) $tags as $tag) {
+                                if (!empty($tag)) {
+                                    DB::insert(
+                                        prefix_table("tags"),
+                                        array(
+                                            "item_id" => $newID,
+                                            "tag" => strtolower($tag)
+                                        )
+                                    );
+                                }
+                            }
+
+                            // Update CACHE table
+                            DB::insert(
+                                prefix_table("cache"),
+                                array(
+                                    "id" => $newID,
+                                    "label" => $item_label,
+                                    "description" => $item_desc,
+                                    "tags" => $item_tags,
+                                    "id_tree" => $item_folder_id,
+                                    "perso" => "0",
+                                    "restricted_to" => "",
+                                    "login" => $item_login,
+                                    "folder" => "",
+                                    "author" => API_USER_ID,
+                                    "renewal_period" => "0",
+                                    "timestamp" => time(),
+                                    "url" => "0"
+                                )
+                            );
+
+                            echo '{"status":"item added" , "new_item_id" : "'.$newID.'"}';
+                        } catch (PDOException $ex) {
+                            echo '<br />'.$ex->getMessage();
+                        }
+                    } else {
+                        rest_error('ITEMEXISTS');
+                    }
+                } else {
+                    rest_error('ITEMMISSINGDATA');
+                }
+            } elseif ($GLOBALS['request'][1] == "item_v2") {
+                // get sent parameters
                 $params = explode(';', $GLOBALS['request'][2]);
                 if (count($params) != 9) {
                     rest_error('ITEMBADDEFINITION');
@@ -1322,6 +1462,140 @@ function rest_get()
             * Section dedicated for UPDATING
             */
             if ($GLOBALS['request'][1] == "item") {
+                /*
+                * Expected call format: .../api/index.php/update/item/<item_id>/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
+                */
+                if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
+                    // get sent parameters
+                    $params = explode(';', Urlsafe_b64decode($GLOBALS['request'][3]));
+
+                    if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
+                        // Check length
+                        if (strlen($params[1]) > 50) {
+                            rest_error('PASSWORDTOOLONG');
+                        }
+
+                        // Check Folder ID
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %i",
+                            $params[3]
+                        );
+                        $counter = DB::count();
+                        if ($counter == 0) {
+                            rest_error('NOSUCHFOLDER');
+                        }
+
+                        // check if item exists
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("items")."
+                            WHERE id = %i",
+                            $GLOBALS['request'][2]
+                        );
+                        $counter = DB::count();
+                        if ($counter > 0) {
+                            // encrypt pwd
+                            $encrypt = cryption(
+                                $params[1],
+                                "",
+                                "encrypt"
+                            );
+                            if (empty($encrypt['string'])) {
+                                rest_error('PASSWORDEMPTY');
+                            }
+
+                            // ADD item
+                            try {
+                                DB::update(
+                                    prefix_table("items"),
+                                    array(
+                                        "label" => $params[0],
+                                        "description" => $params[2],
+                                        'pw' => $encrypt['string'],
+                                        'pw_iv' => '',
+                                        "email" => $params[5],
+                                        "url" => $params[6],
+                                        "id_tree" => intval($params[3]),
+                                        "login" => $params[4],
+                                        "anyone_can_modify" => intval($params[8])
+                                    ),
+                                    "id = %i",
+                                    $GLOBALS['request'][2]
+                                );
+
+                                // log
+                                DB::insert(
+                                    prefix_table("log_items"),
+                                    array(
+                                        "id_item" => $GLOBALS['request'][2],
+                                        "date" => time(),
+                                        "id_user" => API_USER_ID,
+                                        "action" => "at_modification"
+                                    )
+                                );
+
+                                // Add tags
+                                $tags = explode(' ', $params[7]);
+                                foreach ((array) $tags as $tag) {
+                                    if (!empty($tag)) {
+                                        // check if already exists
+                                        DB::query(
+                                            "SELECT *
+                                            FROM ".prefix_table("tags")."
+                                            WHERE tag = %s AND item_id = %i",
+                                            strtolower($tag),
+                                            $GLOBALS['request'][2]
+                                        );
+                                        $counter = DB::count();
+                                        if ($counter === 0) {
+                                            DB::insert(
+                                                prefix_table("tags"),
+                                                array(
+                                                    "item_id" => $GLOBALS['request'][2],
+                                                    "tag" => strtolower($tag)
+                                                )
+                                            );
+                                        }
+                                    }
+                                }
+
+                                // Update CACHE table
+                                DB::update(
+                                    prefix_table("cache"),
+                                    array(
+                                        "label" => $params[0],
+                                        "description" => $params[2],
+                                        "tags" => $params[7],
+                                        "id_tree" => intval($params[3]),
+                                        "perso" => "0",
+                                        "restricted_to" => "",
+                                        "login" => $params[4],
+                                        "folder" => "",
+                                        "author" => API_USER_ID,
+                                        "renewal_period" => "0",
+                                        "timestamp" => time(),
+                                        "url" => $params[6],
+                                    ),
+                                    "id = %i",
+                                    $GLOBALS['request'][2]
+                                );
+
+                                echo '{"status":"item updated"}';
+                            } catch (PDOException $ex) {
+                                echo '<br />'.$ex->getMessage();
+                            }
+                        } else {
+                            rest_error('NO_DATA_EXIST');
+                        }
+                    } else {
+                        rest_error('ITEMMISSINGDATA');
+                    }
+                } else {
+                    rest_error('NO_ITEM');
+                }
+            } elseif ($GLOBALS['request'][1] == "item_v2") {
                 /*
                 * Expected call format: .../api/index.php/update/item/<item_id>/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
                 */
