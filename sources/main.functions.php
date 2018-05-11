@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          main.functions.php
- * @author        Nils Laumaillé
+ * @package       main.functions.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
  * @link
  */
 
@@ -2212,7 +2212,7 @@ function fileDelete($file)
  * @param  string $file File name
  * @return string
  */
-function getFileExtension(string $file)
+function getFileExtension($file)
 {
     if (strpos($file, '.') === false) {
         return $file;
@@ -2227,7 +2227,7 @@ function getFileExtension(string $file)
  * @param  string $type What clean to perform
  * @return string
  */
-function cleanText(string $string, $type = null)
+function cleanText($string, $type = null)
 {
     global $SETTINGS;
 

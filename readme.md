@@ -99,7 +99,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 
 ## Website
 
-Visit [Teampass.net](http://www.teampass.net/)
+Visit [Teampass.net]( * @package       /)
 
 ## Bugs
 

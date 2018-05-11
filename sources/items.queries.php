@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          items.queries.php
- * @author        Nils Laumaillé
+ * @package       items.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -19,9 +19,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -133,6 +133,7 @@ if (null !== $post_type) {
             $pw = htmlspecialchars_decode($dataReceived['pw']);
             $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
             $tags = htmlspecialchars_decode($dataReceived['tags']);
+            $post_template_id = filter_var(htmlspecialchars_decode($dataReceived['template_id']), FILTER_SANITIZE_NUMBER_INT);
 
             // is author authorized to create in this folder
             if (count($_SESSION['list_folders_limited']) > 0) {
@@ -151,17 +152,17 @@ if (null !== $post_type) {
             }
 
             // perform a check in case of Read-Only user creating an item in his PF
-            if ($_SESSION['user_read_only'] === true &&
-                in_array($dataReceived['categorie'], $_SESSION['personal_folders']) === false
+            if ($_SESSION['user_read_only'] === true
+                && in_array($dataReceived['categorie'], $_SESSION['personal_folders']) === false
             ) {
                 echo prepareExchangedData(array("error" => "ERR_FOLDER_NOT_ALLOWED"), "encode");
                 break;
             }
 
             // is pwd empty?
-            if (empty($pw) &&
-                isset($_SESSION['user_settings']['create_item_without_password']) &&
-                $_SESSION['user_settings']['create_item_without_password'] !== '1'
+            if (empty($pw)
+                && isset($_SESSION['user_settings']['create_item_without_password'])
+                && $_SESSION['user_settings']['create_item_without_password'] !== '1'
             ) {
                 echo prepareExchangedData(array("error" => "ERR_PWD_EMPTY"), "encode");
                 break;
@@ -296,6 +297,48 @@ if (null !== $post_type) {
                                     'data_iv' => "",
                                     'encryption_type' => $enc_type
                                 )
+                            );
+                        }
+                    }
+                }
+
+                // If template enable, is there a main one selected?
+                if (isset($SETTINGS['item_creation_templates']) === true
+                    && $SETTINGS['item_creation_templates'] === '1'
+                    && isset($post_template_id) === true
+                ) {
+                    DB::queryFirstRow(
+                        "SELECT *
+                        FROM ".prefix_table('templates')."
+                        WHERE item_id = %i",
+                        $newID
+                    );
+                    if (DB::count() === 0) {
+                        // store field text
+                        DB::insert(
+                            prefix_table('templates'),
+                            array(
+                                'item_id' => $newID,
+                                'category_id' => $post_template_id
+                            )
+                        );
+                    } else {
+                        // Delete if empty
+                        if (empty($post_template_id) === true) {
+                            DB::delete(
+                                $pre."templates",
+                                "item_id = %i",
+                                $newID
+                            );
+                        } else {
+                            // Update value
+                            DB::update(
+                                prefix_table('templates'),
+                                array(
+                                    'category_id' => $post_template_id
+                                ),
+                                "item_id = %i",
+                                $newID
                             );
                         }
                     }
@@ -509,6 +552,7 @@ if (null !== $post_type) {
                 $tags = htmlspecialchars_decode($dataReceived['tags']);
                 $email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
                 $post_category = filter_var(htmlspecialchars_decode($dataReceived['categorie']), FILTER_SANITIZE_NUMBER_INT);
+                $post_template_id = filter_var(htmlspecialchars_decode($dataReceived['template_id']), FILTER_SANITIZE_NUMBER_INT);
 
                 // perform a check in case of Read-Only user creating an item in his PF
                 if ($_SESSION['user_read_only'] === true && (!in_array($dataReceived['categorie'], $_SESSION['personal_folders']) || $dataReceived['is_pf'] !== '1')) {
@@ -776,6 +820,48 @@ if (null !== $post_type) {
                                         $field_data[0]
                                     );
                                 }
+                            }
+                        }
+                    }
+
+                    // If template enable, is there a main one selected?
+                    if (isset($SETTINGS['item_creation_templates']) === true
+                        && $SETTINGS['item_creation_templates'] === '1'
+                        && isset($post_template_id) === true
+                    ) {
+                        DB::queryFirstRow(
+                            "SELECT *
+                            FROM ".prefix_table('templates')."
+                            WHERE item_id = %i",
+                            $dataReceived['id']
+                        );
+                        if (DB::count() === 0) {
+                            // store field text
+                            DB::insert(
+                                prefix_table('templates'),
+                                array(
+                                    'item_id' => $dataReceived['id'],
+                                    'category_id' => $post_template_id
+                                )
+                            );
+                        } else {
+                            // Delete if empty
+                            if (empty($post_template_id) === true) {
+                                DB::delete(
+                                    $pre."templates",
+                                    "item_id = %i",
+                                    $dataReceived['id']
+                                );
+                            } else {
+                                // Update value
+                                DB::update(
+                                    prefix_table('templates'),
+                                    array(
+                                        'category_id' => $post_template_id
+                                    ),
+                                    "item_id = %i",
+                                    $dataReceived['id']
+                                );
                             }
                         }
                     }
@@ -1759,67 +1845,81 @@ if (null !== $post_type) {
                 $arrData['viewed_no'] = $dataItem['viewed_no'] + 1;
 
                 // get fields
-                $fieldsTmp = $arrCatList = "";
-                if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1'
-                    && null !== $post_page && $post_page === "items"
-                ) {
-                    // get list of associated Categories
-                    $arrCatList = array();
-                    $rows_tmp = DB::query(
-                        "SELECT id_category
-                        FROM ".prefix_table("categories_folders")."
-                        WHERE id_folder=%i",
-                        $post_folder_id
-                    );
-                    if (DB::count() > 0) {
-                        foreach ($rows_tmp as $row) {
-                            array_push($arrCatList, $row['id_category']);
-                        }
-
-                        // get fields for this Item
+                $fieldsTmp = $arrCatList = $template_id = "";
+                if (null !== $post_page && $post_page === "items") {
+                    if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                        // get list of associated Categories
+                        $arrCatList = array();
                         $rows_tmp = DB::query(
-                            "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
-                            i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
-                            c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
-                            FROM ".prefix_table("categories_items")." AS i
-                            INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
-                            WHERE i.item_id=%i AND c.parent_id IN %ls",
-                            $post_id,
-                            $arrCatList
+                            "SELECT id_category
+                            FROM ".prefix_table("categories_folders")."
+                            WHERE id_folder=%i",
+                            $post_folder_id
                         );
-                        foreach ($rows_tmp as $row) {
-                            // Uncrypt data
-                            if ($row['encryption_type'] === "defuse") {
-                                $fieldText = cryption(
-                                    $row['data'],
-                                    "",
-                                    "decrypt"
-                                );
-                                $fieldText = $fieldText['string'];
-                            } else {
-                                $fieldText = $row['data'];
+                        if (DB::count() > 0) {
+                            foreach ($rows_tmp as $row) {
+                                array_push($arrCatList, $row['id_category']);
                             }
 
-                            // Manage textarea string
-                            if ($row['field_type'] === 'textarea') {
-                                $fieldText = nl2br($fieldText);
-                            }
-                            
-                            // build returned list of Fields text
-                            if (empty($fieldsTmp) === true) {
-                                $fieldsTmp = $row['field_id'].
+                            // get fields for this Item
+                            $rows_tmp = DB::query(
+                                "SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
+                                i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
+                                c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
+                                FROM ".prefix_table("categories_items")." AS i
+                                INNER JOIN ".prefix_table("categories")." AS c ON (i.field_id=c.id)
+                                WHERE i.item_id=%i AND c.parent_id IN %ls",
+                                $post_id,
+                                $arrCatList
+                            );
+                            foreach ($rows_tmp as $row) {
+                                // Uncrypt data
+                                if ($row['encryption_type'] === "defuse") {
+                                    $fieldText = cryption(
+                                        $row['data'],
+                                        "",
+                                        "decrypt"
+                                    );
+                                    $fieldText = $fieldText['string'];
+                                } else {
+                                    $fieldText = $row['data'];
+                                }
+
+                                // Manage textarea string
+                                if ($row['field_type'] === 'textarea') {
+                                    $fieldText = nl2br($fieldText);
+                                }
+                                
+                                // build returned list of Fields text
+                                if (empty($fieldsTmp) === true) {
+                                    $fieldsTmp = $row['field_id'].
+                                        "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
+                                        "~~".$row['field_type']."~~".$row['field_masked'];
+                                } else {
+                                    $fieldsTmp .= "_|_".$row['field_id'].
                                     "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
                                     "~~".$row['field_type']."~~".$row['field_masked'];
-                            } else {
-                                $fieldsTmp .= "_|_".$row['field_id'].
-                                "~~".str_replace('"', '&quot;', $fieldText)."~~".$row['parent_id'].
-                                "~~".$row['field_type']."~~".$row['field_masked'];
+                                }
                             }
+                        }
+                    }
+
+                    // Now get the selected template (if exists)
+                    if (isset($SETTINGS['item_creation_templates']) && $SETTINGS['item_creation_templates'] === '1') {
+                        $rows_tmp = DB::queryfirstrow(
+                            "SELECT category_id
+                            FROM ".prefix_table("templates")."
+                            WHERE item_id = %i",
+                            $post_id
+                        );
+                        if (DB::count() > 0) {
+                            $template_id = $rows_tmp['category_id'];
                         }
                     }
                 }
                 $arrData['fields'] = $fieldsTmp;
                 $arrData['categories'] = $arrCatList;
+                $arrData['template_id'] = $template_id;
 
                 // Manage user restriction
                 if (null !== $post_restricted) {

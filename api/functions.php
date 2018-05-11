@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          (api)functions.php
- * @author        Nils Laumaillé
+ * @package       (api)functions.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.0
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -330,7 +330,7 @@ function rest_get()
 
         // Load config
         if (file_exists('../includes/config/tp.config.php')) {
-            require_once '../includes/config/tp.config.php';
+            include_once '../includes/config/tp.config.php';
         } else {
             throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
         }
@@ -395,6 +395,139 @@ function rest_get()
 
                     $inc++;
                 }
+            } elseif ($GLOBALS['request'][1] == "listfiles") {
+                /*
+                * LIST FILE ATTACHMENTS
+                *
+                * <url to teampass>/api/index.php/read/listfiles/<item_id>?apikey=<valid api key>
+                */
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+
+                // List a password item's file attachments
+                // only accepts a single numeric item id
+                $item = $GLOBALS['request'][2];
+
+                if (trim($item) == "") {
+                    rest_error('NO_ITEM');
+                }
+
+                if (!is_numeric($item)) {
+                    rest_error('ITEM_MALFORMED');
+                }
+
+                $response = DB::query("select id,name,size,extension,type,file from ".prefix_table("files")." where id_item = %d", $item);
+
+                foreach ($response as $data)
+                {
+                    // prepare output
+                    $id = $data['id'];
+                    $json[$id]['id'] = $data['id'];
+                    $json[$id]['name'] = utf8_encode($data['name']);
+                    $json[$id]['size'] = utf8_encode($data['size']);
+                    $json[$id]['extension'] = utf8_encode($data['extension']);
+                    $json[$id]['type'] = utf8_encode($data['type']);
+                }
+            } elseif ($GLOBALS['request'][1] == "files") {
+                /*
+                * READ FILE ATTACHMENTS
+                *
+                * <url to teampass>/api/index.php/read/files/<file_id>?apikey=<valid api key>
+                */
+
+                // load library
+                require_once '../sources/SplClassLoader.php';
+
+                // Returns a password item's attachment files
+                // only accepts a single numeric file id
+                $fileId = $GLOBALS['request'][2];
+
+                if (trim($fileId) == "") {
+                    rest_error('NO_FILE_ID');
+                }
+
+                if (!is_numeric($fileId)) {
+                    rest_error('FILE_MALFORMED');
+                }
+
+                $settings = array();
+                foreach (DB::query("select intitule, valeur from ".prefix_table("misc")) as $data) {
+                    $settings[$data['intitule']] = $data['valeur'];
+                }
+
+                $file_info = DB::queryfirstrow("select id,name,size,extension,type,file,status from ".prefix_table("files")." where id = %i", $fileId);
+
+                if (DB::count() == 0) {
+                    rest_error('EMPTY');
+                }
+
+                header('Content-disposition: attachment; filename='.rawurldecode(basename($file_info['name'])));
+                header('Content-Type: application/octet-stream');
+                header('Cache-Control: must-revalidate, no-cache, no-store');
+                header('Expires: 0');
+
+                // should we encrypt/decrypt the file
+                encrypt_or_decrypt_file($file_info['file'], $file_info['status']);
+
+                // should we decrypt the attachment?
+                if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
+                    // load PhpEncryption library
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Crypto.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Encoding.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'DerivedKeys.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Key.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyOrPassword.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'File.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'RuntimeTests.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'KeyProtectedByPassword.php';
+                    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/'.'Core.php';
+
+                    // get KEY
+                    $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+
+                    // Now encrypt the file with new saltkey
+                    $err = '';
+                    try {
+                        \Defuse\Crypto\File::decryptFile(
+                            $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
+                            $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete",
+                            \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
+                        );
+                    } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
+                        $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+                    } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
+                        $err = $ex;
+                    } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
+                        $err = $ex;
+                    } catch (Defuse\Crypto\Exception\CryptoException $ex) {
+                        $err = $ex;
+                    } catch (Defuse\Crypto\Exception\IOException $ex) {
+                        $err = $ex;
+                    }
+                    if (empty($err) === false) {
+                        echo $err;
+                    }
+
+                    $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete", 'rb');
+
+                    // Read the file contents
+                    fpassthru($fp);
+
+                    // Close the file
+                    fclose($fp);
+
+                    unlink($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'].".delete");
+                } else {
+                    $fp = fopen($SETTINGS['path_to_upload_folder'].'/'.$file_info['file'], 'rb');
+
+                    // Read the file contents
+                    fpassthru($fp);
+
+                    // Close the file
+                    fclose($fp);
+                }
+                exit(0);
             } elseif ($GLOBALS['request'][1] == "userpw") {
                 /*
                 * READ USER ITEMS
@@ -773,6 +906,146 @@ function rest_get()
                 if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
                     // Check length
                     if (strlen($item_pwd) > 50) {
+                        rest_error('PASSWORDTOOLONG');
+                    }
+
+                    // Check Folder ID
+                    DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
+                    $counter = DB::count();
+                    if ($counter == 0) {
+                        rest_error('NOSUCHFOLDER');
+                    }
+
+                    // check if element doesn't already exist
+                    $item_duplicate_allowed = getSettingValue("duplicate_item");
+                    if ($item_duplicate_allowed !== "1") {
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("items")."
+                            WHERE label = %s AND inactif = %i",
+                            addslashes($item_label),
+                            "0"
+                        );
+                        $counter = DB::count();
+                        if ($counter != 0) {
+                            $itemExists = 1;
+                            // prevent the error if the label already exists
+                            // so lets just add the time() as a random factor
+                            $item_label .= " (".time().")";
+                        } else {
+                            $itemExists = 0;
+                        }
+                    } else {
+                        $itemExists = 0;
+                    }
+                    if ($itemExists === 0) {
+                        $encrypt = cryption(
+                            $item_pwd,
+                            "",
+                            "encrypt"
+                        );
+                        if (empty($encrypt['string'])) {
+                            rest_error('PASSWORDEMPTY');
+                        }
+
+                        // ADD item
+                        try {
+                            DB::insert(
+                                prefix_table("items"),
+                                array(
+                                    "label" => $item_label,
+                                    "description" => $item_desc,
+                                    'pw' => $encrypt['string'],
+                                    'pw_iv' => '',
+                                    "email" => $item_email,
+                                    "url" => $item_url,
+                                    "id_tree" => intval($item_folder_id),
+                                    "login" => $item_login,
+                                    "inactif" => 0,
+                                    "restricted_to" => "",
+                                    "perso" => 0,
+                                    "anyone_can_modify" => intval($item_anyonecanmodify)
+                                )
+                            );
+                            $newID = DB::InsertId();
+
+                            // log
+                            DB::insert(
+                                prefix_table("log_items"),
+                                array(
+                                    "id_item" => $newID,
+                                    "date" => time(),
+                                    "id_user" => API_USER_ID,
+                                    "action" => "at_creation",
+                                    "raison" => $api_info['label']
+                                )
+                            );
+
+                            // Add tags
+                            $tags = explode(' ', $item_tags);
+                            foreach ((array) $tags as $tag) {
+                                if (!empty($tag)) {
+                                    DB::insert(
+                                        prefix_table("tags"),
+                                        array(
+                                            "item_id" => $newID,
+                                            "tag" => strtolower($tag)
+                                        )
+                                    );
+                                }
+                            }
+
+                            // Update CACHE table
+                            DB::insert(
+                                prefix_table("cache"),
+                                array(
+                                    "id" => $newID,
+                                    "label" => $item_label,
+                                    "description" => $item_desc,
+                                    "tags" => $item_tags,
+                                    "id_tree" => $item_folder_id,
+                                    "perso" => "0",
+                                    "restricted_to" => "",
+                                    "login" => $item_login,
+                                    "folder" => "",
+                                    "author" => API_USER_ID,
+                                    "renewal_period" => "0",
+                                    "timestamp" => time(),
+                                    "url" => "0"
+                                )
+                            );
+
+                            echo '{"status":"item added" , "new_item_id" : "'.$newID.'"}';
+                        } catch (PDOException $ex) {
+                            echo '<br />'.$ex->getMessage();
+                        }
+                    } else {
+                        rest_error('ITEMEXISTS');
+                    }
+                } else {
+                    rest_error('ITEMMISSINGDATA');
+                }
+            } elseif ($GLOBALS['request'][1] == "item_v2") {
+                // get sent parameters
+                $params = explode(';', $GLOBALS['request'][2]);
+                if (count($params) != 9) {
+                    rest_error('ITEMBADDEFINITION');
+                }
+
+                $item_label = Urlsafe_b64decode($params[0]);
+                $item_pwd = Urlsafe_b64decode($params[1]);
+                $item_desc = Urlsafe_b64decode($params[2]);
+                $item_folder_id = Urlsafe_b64decode($params[3]);
+                $item_login = Urlsafe_b64decode($params[4]);
+                $item_email = Urlsafe_b64decode($params[5]);
+                $item_url = Urlsafe_b64decode($params[6]);
+                $item_tags = Urlsafe_b64decode($params[7]);
+                $item_anyonecanmodify = Urlsafe_b64decode($params[8]);
+
+                // do some checks
+                if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
+                    // Check length
+                    if (strlen($item_pwd) > 100) {
                         rest_error('PASSWORDTOOLONG');
                     }
 
@@ -1322,6 +1595,153 @@ function rest_get()
                 } else {
                     rest_error('NO_ITEM');
                 }
+            } elseif ($GLOBALS['request'][1] == "item_v2") {
+                /*
+                * Expected call format: .../api/index.php/update/item/<item_id>/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
+                */
+                if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
+                    // get sent parameters
+                    $params = explode(';', $GLOBALS['request'][3]);
+                    if (count($params) != 9) {
+                        rest_error('ITEMBADDEFINITION');
+                    }
+
+                    $item_label = Urlsafe_b64decode($params[0]);
+                    $item_pwd = Urlsafe_b64decode($params[1]);
+                    $item_desc = Urlsafe_b64decode($params[2]);
+                    $item_folder_id = Urlsafe_b64decode($params[3]);
+                    $item_login = Urlsafe_b64decode($params[4]);
+                    $item_email = Urlsafe_b64decode($params[5]);
+                    $item_url = Urlsafe_b64decode($params[6]);
+                    $item_tags = Urlsafe_b64decode($params[7]);
+                    $item_anyonecanmodify = Urlsafe_b64decode($params[8]);
+
+                    if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
+                        // Check length
+                        if (strlen($item_pwd) > 100) {
+                            rest_error('PASSWORDTOOLONG');
+                        }
+
+                        // Check Folder ID
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("nested_tree")."
+                            WHERE id = %i",
+                            $item_folder_id
+                        );
+                        $counter = DB::count();
+                        if ($counter == 0) {
+                            rest_error('NOSUCHFOLDER');
+                        }
+
+                        // check if item exists
+                        DB::query(
+                            "SELECT *
+                            FROM ".prefix_table("items")."
+                            WHERE id = %i",
+                            $GLOBALS['request'][2]
+                        );
+                        $counter = DB::count();
+                        if ($counter > 0) {
+                            // encrypt pwd
+                            $encrypt = cryption(
+                                $item_pwd,
+                                "",
+                                "encrypt"
+                            );
+                            if (empty($encrypt['string'])) {
+                                rest_error('PASSWORDEMPTY');
+                            }
+
+                            // ADD item
+                            try {
+                                DB::update(
+                                    prefix_table("items"),
+                                    array(
+                                        "label" => $item_label,
+                                        "description" => $item_desc,
+                                        'pw' => $encrypt['string'],
+                                        'pw_iv' => '',
+                                        "email" => $item_email,
+                                        "url" => $item_url,
+                                        "id_tree" => intval($item_folder_id),
+                                        "login" => $item_login,
+                                        "anyone_can_modify" => intval($item_anyonecanmodify)
+                                    ),
+                                    "id = %i",
+                                    $GLOBALS['request'][2]
+                                );
+
+                                // log
+                                DB::insert(
+                                    prefix_table("log_items"),
+                                    array(
+                                        "id_item" => $GLOBALS['request'][2],
+                                        "date" => time(),
+                                        "id_user" => API_USER_ID,
+                                        "action" => "at_modification"
+                                    )
+                                );
+
+                                // Add tags
+                                $tags = explode(' ', $item_tags);
+                                foreach ((array) $tags as $tag) {
+                                    if (!empty($tag)) {
+                                        // check if already exists
+                                        DB::query(
+                                            "SELECT *
+                                            FROM ".prefix_table("tags")."
+                                            WHERE tag = %s AND item_id = %i",
+                                            strtolower($tag),
+                                            $GLOBALS['request'][2]
+                                        );
+                                        $counter = DB::count();
+                                        if ($counter === 0) {
+                                            DB::insert(
+                                                prefix_table("tags"),
+                                                array(
+                                                    "item_id" => $GLOBALS['request'][2],
+                                                    "tag" => strtolower($tag)
+                                                )
+                                            );
+                                        }
+                                    }
+                                }
+
+                                // Update CACHE table
+                                DB::update(
+                                    prefix_table("cache"),
+                                    array(
+                                        "label" => $item_label,
+                                        "description" => $item_desc,
+                                        "tags" => $item_tags,
+                                        "id_tree" => intval($item_folder_id),
+                                        "perso" => "0",
+                                        "restricted_to" => "",
+                                        "login" => $item_login,
+                                        "folder" => "",
+                                        "author" => API_USER_ID,
+                                        "renewal_period" => "0",
+                                        "timestamp" => time(),
+                                        "url" => $item_url,
+                                    ),
+                                    "id = %i",
+                                    $GLOBALS['request'][2]
+                                );
+
+                                echo '{"status":"item updated"}';
+                            } catch (PDOException $ex) {
+                                echo '<br />'.$ex->getMessage();
+                            }
+                        } else {
+                            rest_error('NO_DATA_EXIST');
+                        }
+                    } else {
+                        rest_error('ITEMMISSINGDATA');
+                    }
+                } else {
+                    rest_error('NO_ITEM');
+                }
             } elseif ($GLOBALS['request'][1] == "folder") {
             /*
             * UPDATING A FOLDER
@@ -1569,7 +1989,7 @@ function rest_get()
             ** Example: https://127.0.0.1/teampass/api/index.php/auth/http/www.zadig-tge.adp.com/U1/test/76?apikey=chahthait5Aidood6johh6Avufieb6ohpaixain
             ** RESTRICTIONS:
             **              - <PROTOCOL>        ==> http|https|ftp|...
-            **              - <URL>             ==> encode URL without protocol (example: http://www.teampass.net becomes www.teampass.net)
+            **              - <URL>             ==> encode URL without protocol (example:  * @package        becomes www.teampass.net)
             **              - <login>           ==> user's login
             **              - <password>        ==> currently clear password
             **
@@ -2714,6 +3134,243 @@ function rest_put()
     }
 }
 
+function rest_post()
+{
+    global $api_version;
+    global $SETTINGS;
+    global $link;
+
+    if (!@count($GLOBALS['request']) == 0) {
+        $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
+        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
+        if (count($matches) == 0) {
+            rest_error('REQUEST_SENT_NOT_UNDERSTANDABLE');
+        }
+        $GLOBALS['request'] = explode('/', $matches[2]);
+    }
+
+    if (apikey_checker($GLOBALS['apikey'])) {
+        teampass_connect();
+
+        // define the API user through the LABEL of apikey
+        $api_info = DB::queryFirstRow(
+            "SELECT label
+            FROM ".prefix_table("api")."
+            WHERE value = %s",
+            $GLOBALS['apikey']
+        );
+
+        // Load config
+        if (file_exists('../includes/config/tp.config.php')) {
+            require_once '../includes/config/tp.config.php';
+        } else {
+            throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+        }
+
+
+        if ($GLOBALS['request'][0] == "add") {
+            if ($GLOBALS['request'][1] == "file") {
+                /*
+                * ADDING A FILE
+                * POST to url <url to teampass>/api/index.php/add/file?apikey=<VALID API KEY>
+                * Content-Type multipart/form-data according to RFC 2388
+                * Data fields:
+                * - item_id: The item id to which the file will be attached
+                * - file: The file data. Use parameter 'filename' to set the file name for the attachment
+                * Example: curl "http://127.0.0.1/api/index.php/add/file?apikey=<VALID API KEY> -F "file=@Test.txt;filename=Test.txt" -F "item_id=1"
+                */
+
+                // HTTP headers for no cache etc
+                header("Expires: Mon, 26 Jul 1997 05:00:00 GMT");
+                header("Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT");
+                header("Cache-Control: no-store, no-cache, must-revalidate");
+                header("Cache-Control: post-check=0, pre-check=0", false);
+                header("Content-Type: application/json");
+
+                // Look for the content type header
+                if (isset($_SERVER["HTTP_CONTENT_TYPE"])) {
+                    $contentType = $_SERVER["HTTP_CONTENT_TYPE"];
+                }
+
+                if (isset($_SERVER["CONTENT_TYPE"])) {
+                    $contentType = $_SERVER["CONTENT_TYPE"];
+                }
+
+                if (strpos($contentType, "multipart/form-data") !== 0) {
+                    http_response_code(400);
+                    die('{"status": "error", "message": "Content-type must be multipart/form-data"}');
+                }
+
+                $targetDir = $SETTINGS['path_to_upload_folder'];
+                $valid_chars_regex = 'A-Za-z0-9'; //accept only those characters
+                $MAX_FILENAME_LENGTH = 260;
+                $max_file_size_in_bytes = 2147483647; //2Go
+
+                // Check post_max_size
+                $POST_MAX_SIZE = ini_get('post_max_size');
+                $unit = strtoupper(substr($POST_MAX_SIZE, -1));
+                $multiplier = ($unit == 'M' ? 1048576 : ($unit == 'K' ? 1024 : ($unit == 'G' ? 1073741824 : 1)));
+                if ((int) $_SERVER['CONTENT_LENGTH'] > $multiplier * (int) $POST_MAX_SIZE && $POST_MAX_SIZE) {
+                    http_response_code(413);
+                    die('{"status": "error", "message": "POST exceeded maximum allowed size"}');
+                }
+
+                // Validate file name (for our purposes we'll just remove invalid characters)
+                $fileName = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['file']['name'])));
+                if (strlen($fileName) == 0 || strlen($fileName) > $MAX_FILENAME_LENGTH) {
+                    http_response_code(400);
+                    die('{"status": "error", "message": "Invalid file name"}');
+                }
+
+                $fileType = $_FILES['file']['type'];
+                $fileTmpName = $_FILES['file']['tmp_name'];
+                $fileError = $_FILES['file']['error'];
+
+                // Validate file extension
+                $ext = strtolower(getFileExtension($_FILES['file']['name']));
+                if (!in_array(
+                    $ext,
+                    explode(
+                        ',',
+                        $SETTINGS['upload_docext'].','.$SETTINGS['upload_imagesext'].
+                        ','.$SETTINGS['upload_pkgext'].','.$SETTINGS['upload_otherext']
+                    )
+                )) {
+                    http_response_code(400);
+                    die('{"status": "error", "message": "Invalid file extension"}');
+                }
+
+                // 5 minutes execution time
+                set_time_limit(5 * 60);
+
+                // Clean the fileName for security reasons
+                $fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
+                $fileName = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($fileName)));
+
+                // Make sure the fileName is unique
+                if (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
+                    $ext = strrpos($fileName, '.');
+                    $fileNameA = substr($fileName, 0, $ext);
+                    $fileNameB = substr($fileName, $ext);
+
+                    $count = 1;
+                    while (file_exists($targetDir.DIRECTORY_SEPARATOR.$fileNameA.'_'.$count.$fileNameB)) {
+                        $count++;
+                    }
+
+                    $fileName = $fileNameA.'_'.$count.$fileNameB;
+                }
+
+                $post_itemId = $_POST['item_id'];
+
+                DB::queryFirstRow(
+                            "SELECT id
+                            FROM ".prefix_table("items")."
+                            WHERE id = %i",
+                            $post_itemId
+                );
+                if (DB::count() < 1) {
+                    http_response_code(404);
+                    die('{"status": "error", "message": "No item found"}');
+                }
+
+                $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
+
+                // Create target dir
+                if (!file_exists($targetDir)) {
+                    try {
+                        mkdir($targetDir, 0777, true);
+                    } catch (Exception $e) {
+                        print_r($e);
+                    }
+                }
+
+                if (isset($_FILES['file']['tmp_name']) && is_uploaded_file($_FILES['file']['tmp_name'])) {
+                    // Open temp file
+                    $out = fopen($filePath, "wb");
+
+                    if ($out) {
+                        // Read binary input stream and append it to temp file
+                        $in = fopen($_FILES['file']['tmp_name'], "rb");
+
+                        if ($in) {
+                            while ($buff = fread($in, 4096)) {
+                                fwrite($out, $buff);
+                            }
+                        } else {
+                            http_response_code(500);
+                            die('{"status": "error", "message": "Failed to open input stream."}');
+                        }
+                        fclose($in);
+                        fclose($out);
+
+                        fileDelete($_FILES['file']['tmp_name']);
+                    } else {
+                        http_response_code(500);
+                        die('{"status": "error", "message": "Failed to open output stream."}');
+                    }
+                } else {
+                    http_response_code(500);
+                    die('{"status": "error", "message": "Failed to move uploaded file."}');
+                }
+
+                // Get some variables
+                $fileRandomId = md5($fileName.time());
+                rename($filePath, $targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
+
+                // Encrypt the file if requested
+                if (isset($SETTINGS['enable_attachment_encryption']) && $SETTINGS['enable_attachment_encryption'] === '1') {
+                    // Do encryption
+                    prepareFileWithDefuse(
+                        'encrypt',
+                        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId,
+                        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId."_encrypted"
+                    );
+
+                    // Do cleanup of files
+                    unlink($targetDir.DIRECTORY_SEPARATOR.$fileRandomId);
+                    rename(
+                        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId."_encrypted",
+                        $targetDir.DIRECTORY_SEPARATOR.$fileRandomId
+                    );
+
+                    $file_status = "encrypted";
+                } else {
+                    $file_status = "clear";
+                }
+
+                // Store to database
+                DB::insert(
+                    prefix_table('files'),
+                    array(
+                        'id_item' => $post_itemId,
+                        'name' => $fileName,
+                        'size' => $_FILES['file']['size'],
+                        'extension' => $ext,
+                        'type' => $_FILES['file']['type'],
+                        'file' => $fileRandomId,
+                        'status' => $file_status
+                    )
+                );
+
+                // Log upload into databse
+                DB::insert(
+                    prefix_table('log_items'),
+                    array(
+                        'id_item' => $post_itemId,
+                        'date' => time(),
+                        'id_user' => -1,
+                        'action' => 'api at_modification',
+                        'raison' => 'api at_add_file : '.addslashes($fileName)
+                    )
+                );
+
+                echo '{"status": "success"}';
+            }
+        }
+    }
+}
+
 /**
  * @param string $type
  */
@@ -2835,6 +3492,22 @@ function rest_error($type, $detail = 'N/A')
             break;
         case 'EXPECTED_PARAMETER_NOT_PROVIDED':
             $message = array('err' => 'Provided parameters are not correct');
+            break;
+        case 'NO_FILE_NAME':
+            http_response_code(400);
+            $message = array('err' => 'No file name provided');
+            break;
+        case 'NO_FILE_ID':
+            http_response_code(400);
+            $message = array('err' => 'No file id provided');
+            break;
+        case 'FILE_MALFORMED':
+            http_response_code(400);
+            $message = array('err' => 'File definition not numeric');
+            break;
+        case 'ITEM_NOT_FOUND':
+            http_response_code(400);
+            $message = array('err' => 'Item not found');
             break;
         default:
             $message = array('err' => 'Something happen ... but what ?');
