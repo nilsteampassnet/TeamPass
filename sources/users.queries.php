@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          users.queries.php
- * @author        Nils Laumaillé
+ * @package       users.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link        http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link         * @package       
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -1378,120 +1378,125 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $arrData['allowed_folders'] = array_filter(explode(';', $rowUser['groupes_visibles']));
             $arrData['denied_folders'] = array_filter(explode(';', $rowUser['groupes_interdits']));
 
-            // refine folders based upon roles
-            $rows = DB::query(
-                "SELECT folder_id, type
-                FROM ".prefix_table("roles_values")."
-                WHERE role_id IN %ls
-                ORDER BY folder_id ASC",
-                $arrData['functions']
-            );
-            foreach ($rows as $record) {
-                $bFound = false;
-                $x = 0;
-                foreach ($arrFolders as $fld) {
-                    if ($fld['id'] === $record['folder_id']) {
-                        // get the level of access on the folder
-                        $arrFolders[$x]['type'] = evaluate_folder_acces_level($record['type'], $arrFolders[$x]['type']);
-                        $bFound = true;
-                        break;
+            // Exit if no roles
+            if (count($arrData['functions']) > 0) {
+                // refine folders based upon roles
+                $rows = DB::query(
+                    "SELECT folder_id, type
+                    FROM ".prefix_table("roles_values")."
+                    WHERE role_id IN %ls
+                    ORDER BY folder_id ASC",
+                    $arrData['functions']
+                );
+                foreach ($rows as $record) {
+                    $bFound = false;
+                    $x = 0;
+                    foreach ($arrFolders as $fld) {
+                        if ($fld['id'] === $record['folder_id']) {
+                            // get the level of access on the folder
+                            $arrFolders[$x]['type'] = evaluate_folder_acces_level($record['type'], $arrFolders[$x]['type']);
+                            $bFound = true;
+                            break;
+                        }
+                        $x++;
                     }
-                    $x++;
-                }
-                if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
-                    array_push($arrFolders, array("id" => $record['folder_id'], "type" => $record['type']));
-                }
-            }
-
-            $tree_desc = $tree->getDescendants();
-            foreach ($tree_desc as $t) {
-                foreach ($arrFolders as $fld) {
-                    if ($fld['id'] === $t->id) {
-                        // get folder name
-                        $row = DB::queryFirstRow(
-                            "SELECT title, nlevel
-                            FROM ".prefix_table("nested_tree")."
-                            WHERE id = %i",
-                            $fld['id']
-                        );
-
-                        // manage indentation
-                        $ident = '';
-                        for ($y = 1; $y < $row['nlevel']; $y++) {
-                            $ident .= '<i class="fa fa-sm fa-caret-right"></i>&nbsp;';
-                        }
-
-                        // manage right icon
-                        if ($fld['type'] == "W") {
-                            $color = '#008000';
-                            $allowed = "W";
-                            $title = $LANG['write'];
-                            $label = '
-                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-indent fa-stack-1x"></i>
-                            </span>
-                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-edit fa-stack-1x"></i>
-                            </span>
-                            <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-eraser fa-stack-1x"></i>
-                            </span>';
-                        } elseif ($fld['type'] == "ND") {
-                            $color = '#4E45F7';
-                            $allowed = "ND";
-                            $title = $LANG['no_delete'];
-                            $label = '
-                            <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-indent fa-stack-1x"></i>
-                            </span>
-                            <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-edit fa-stack-1x"></i>
-                            </span>';
-                        } elseif ($fld['type'] == "NE") {
-                            $color = '#4E45F7';
-                            $allowed = "NE";
-                            $title = $LANG['no_edit'];
-                            $label = '
-                            <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-indent fa-stack-1x"></i>
-                            </span>
-                            <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-eraser fa-stack-1x"></i>
-                            </span>';
-                        } elseif ($fld['type'] == "NDNE") {
-                            $color = '#4E45F7';
-                            $allowed = "NDNE";
-                            $title = $LANG['no_edit_no_delete'];
-                            $label = '
-                            <span class="fa-stack" title="'.$LANG['no_edit_no_delete'].'" style="color:#4E45F7;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-indent fa-stack-1x"></i>
-                            </span>';
-                        } else {
-                            $color = '#FEBC11';
-                            $allowed = "R";
-                            $title = $LANG['read'];
-                            $label = '
-                            <span class="fa-stack" title="'.$LANG['read'].'" style="color:#ff9000;">
-                                <i class="fa fa-square-o fa-stack-2x"></i>
-                                <i class="fa fa-eye fa-stack-1x"></i>
-                            </span>';
-                        }
-
-                        $html .= '<tr><td>'.$ident.$row['title'].'</td><td>'.$label."</td></tr>";
-                        break;
+                    if ($bFound === false && !in_array($record['folder_id'], $arrData['denied_folders'])) {
+                        array_push($arrFolders, array("id" => $record['folder_id'], "type" => $record['type']));
                     }
                 }
-            }
 
-            $html .= '</table><div style="margin-top:15px; padding:3px;" class="ui-widget-content ui-state-default ui-corner-all"><span class="fa fa-info"></span>&nbsp;'.$LANG['folders_not_visible_are_not_displayed'].'</div>';
+                $tree_desc = $tree->getDescendants();
+                foreach ($tree_desc as $t) {
+                    foreach ($arrFolders as $fld) {
+                        if ($fld['id'] === $t->id) {
+                            // get folder name
+                            $row = DB::queryFirstRow(
+                                "SELECT title, nlevel
+                                FROM ".prefix_table("nested_tree")."
+                                WHERE id = %i",
+                                $fld['id']
+                            );
+
+                            // manage indentation
+                            $ident = '';
+                            for ($y = 1; $y < $row['nlevel']; $y++) {
+                                $ident .= '<i class="fa fa-sm fa-caret-right"></i>&nbsp;';
+                            }
+
+                            // manage right icon
+                            if ($fld['type'] == "W") {
+                                $color = '#008000';
+                                $allowed = "W";
+                                $title = $LANG['write'];
+                                $label = '
+                                <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-indent fa-stack-1x"></i>
+                                </span>
+                                <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-edit fa-stack-1x"></i>
+                                </span>
+                                <span class="fa-stack" title="'.$LANG['write'].'" style="color:#008000;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-eraser fa-stack-1x"></i>
+                                </span>';
+                            } elseif ($fld['type'] == "ND") {
+                                $color = '#4E45F7';
+                                $allowed = "ND";
+                                $title = $LANG['no_delete'];
+                                $label = '
+                                <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-indent fa-stack-1x"></i>
+                                </span>
+                                <span class="fa-stack" title="'.$LANG['no_delete'].'" style="color:#4E45F7;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-edit fa-stack-1x"></i>
+                                </span>';
+                            } elseif ($fld['type'] == "NE") {
+                                $color = '#4E45F7';
+                                $allowed = "NE";
+                                $title = $LANG['no_edit'];
+                                $label = '
+                                <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-indent fa-stack-1x"></i>
+                                </span>
+                                <span class="fa-stack" title="'.$LANG['no_edit'].'" style="color:#4E45F7;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-eraser fa-stack-1x"></i>
+                                </span>';
+                            } elseif ($fld['type'] == "NDNE") {
+                                $color = '#4E45F7';
+                                $allowed = "NDNE";
+                                $title = $LANG['no_edit_no_delete'];
+                                $label = '
+                                <span class="fa-stack" title="'.$LANG['no_edit_no_delete'].'" style="color:#4E45F7;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-indent fa-stack-1x"></i>
+                                </span>';
+                            } else {
+                                $color = '#FEBC11';
+                                $allowed = "R";
+                                $title = $LANG['read'];
+                                $label = '
+                                <span class="fa-stack" title="'.$LANG['read'].'" style="color:#ff9000;">
+                                    <i class="fa fa-square-o fa-stack-2x"></i>
+                                    <i class="fa fa-eye fa-stack-1x"></i>
+                                </span>';
+                            }
+
+                            $html .= '<tr><td>'.$ident.$row['title'].'</td><td>'.$label."</td></tr>";
+                            break;
+                        }
+                    }
+                }
+
+                $html .= '</table>';
+            }
+            
+            $html .= '<div style="margin-top:15px; padding:3px;" class="ui-widget-content ui-state-default ui-corner-all"><span class="fa fa-info"></span>&nbsp;'.$LANG['folders_not_visible_are_not_displayed'].'</div>';
 
             $return_values = prepareExchangedData(
                 array(

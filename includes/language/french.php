@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          french.php
- * @author        Nils Laumaillé
+ * @package       french.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array(
+    'create_item_based_upon_template' => 'Activer le Modèle par Objet',
+    'create_item_based_upon_template_tip' => 'Quand activée, cette fonction permet à l\'auteur de choisir un modèle réalisé à partir des Champs Spéciaux. A noter que cela ne fonctionnera que si l\'option Champs Spéciaux est activée.',
+    'main_template' => 'Utiliser comme Modèle',
+    'is_mandatory' => 'Est obligatoire',
+    'error_field_is_mandatory' => 'Au moins un champ spécial est obligatoire.',
     'position_in_list' => 'Position',
     'visible_by' => 'Visible par',
     'restrict_visibility_to' => 'Uniquement visible par',
@@ -262,7 +267,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Changer la clé de salage principale',
     'admin_action_change_salt_key_tip' => 'Avant de changer votre clé de salage principale, merci de vous assurer d\'avoir réalisé une sauvegarde complète de la base de données, et de mettre TeamPass en mode maintenance',
     'block_admin_info' => 'Infos Administrateur',
-    'admin_new1' => '<i><u>14FÉV2012 :</i></u><br>Le profil Administrateur n\'est plus autorisé à voir les éléments. Ce profil est maintenant uniquement un profil technique.<br />Voir<a href=\\"http://www.teampass.net/how-to-handle-changes-on-administrator-profile\\" target=\\"_blank\\">TeamPass.net</a> pour voir comment prendre en compte ce changement.',
+    'admin_new1' => '<i><u>14FÉV2012 :</i></u><br>Le profil Administrateur n\'est plus autorisé à voir les éléments. Ce profil est maintenant uniquement un profil technique.<br />Voir<a href=\\" * @package       /how-to-handle-changes-on-administrator-profile\\" target=\\"_blank\\">TeamPass.net</a> pour voir comment prendre en compte ce changement.',
     'nb_items_by_query' => 'Nombre d\'éléments à afficher par requête',
     'nb_items_by_query_tip' => '<span style="font-size:11px;max-width:300px;">Plus d\'éléments signifie plus de temps pour les afficher.<br>Sélectionner \'auto\' pour laisser l\'outil choisir le nombre d\'éléments à afficher en fonction de la taille de l\'écran.<br>Sélectionner \'max\' pour forcer l\'affichage de la liste complète en une seule fois.<br>Sélectionner un nombre fixe d\'éléments à afficher à chaque nouvelle requête.</span>',
     'error_no_selected_folder' => 'Vous devez sélectionner un répertoire',

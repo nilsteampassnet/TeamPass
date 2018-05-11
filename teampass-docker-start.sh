@@ -1,5 +1,5 @@
 #!/bin/sh
-if [ ! -d ${VOL}/www ];
+if [ ! -d ${VOL}/www/.git ];
 then
 	echo "Initial setup..."
 	git clone $REPO_URL ${VOL}/www

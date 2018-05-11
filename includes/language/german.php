@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          german.php
- * @author        Nils Laumaillé
+ * @package       german.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,11 @@
  */
 global $LANG;
 $LANG = array(
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'main_template' => 'Use as main template',
+    'is_mandatory' => 'Is mandatory',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
     'position_in_list' => 'Position in list',
     'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',
@@ -263,7 +268,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Änderung des SALT-Schlüssels',
     'admin_action_change_salt_key_tip' => 'Bevor Sie den SALT-Schlüssel ändern, legen Sie bitte eine Vollsicherung der Datenbank an und schalten Sie das Programm in den Verwaltungsmodus um, um das Anmelden anderer Benutzer zu unterbinden.',
     'block_admin_info' => 'Informationen für Admionistratoren',
-    'admin_new1' => 'Dieses Profil ist nun ein Administratorkonto und darf nicht länger Elemente betrachten. Es dient nun lediglich der Verwaltung.&lt;br&gt;Siehe &lt;a href="http://www.teampass.net/how-to-handle-changes-on-administrator-profile" target="_blank"&gt;TeamPass.net page&lt;/a&gt; für Hinweise zu dieser Änderung.',
+    'admin_new1' => 'Dieses Profil ist nun ein Administratorkonto und darf nicht länger Elemente betrachten. Es dient nun lediglich der Verwaltung.&lt;br&gt;Siehe &lt;a href=" * @package       /how-to-handle-changes-on-administrator-profile" target="_blank"&gt;TeamPass.net page&lt;/a&gt; für Hinweise zu dieser Änderung.',
     'nb_items_by_query' => 'Anzahl Elemente, die bei jedem Suchlauf ausgegeben werden.',
     'nb_items_by_query_tip' => '&lt;span style=\'font-size:11px;max-width:300px;\'&gt;Auflistung vieler Elemente benötigt mehr Zeit.&lt;br /&gt;Bei Einstellung \'auto\' passt das Programm die Anzahl entsprechend der Bildschirmgröße des Benutzers an.&lt;br /&gt;Bei Einstellung \'max\' wird immer die gesamte Liste dargestellt.&lt;br /&gt;Geben Sie die gewünschte Anzahl Elemente ein, die bei jedem Suchlauf darzustellen ist.&lt;/span&gt;',
     'error_no_selected_folder' => 'Sie müssen ein Verzeichnis auswählen',

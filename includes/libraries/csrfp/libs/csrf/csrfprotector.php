@@ -463,11 +463,13 @@ if (!defined('__CSRF_PROTECTOR__')) {
             $log['REQUEST_URI'] = $_SERVER['REQUEST_URI'];
             $log['requestType'] = self::$requestType;
 
+            /*
             if (self::$requestType === "GET") {
                             $log['query'] = $_GET;
             } else {
                             $log['query'] = $_POST;
             }
+            */
 
             $log['cookie'] = $_COOKIE;
 

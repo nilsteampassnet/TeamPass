@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          upgrade.ajax.php
- * @author        Nils Laumaillé
+ * @package       upgrade.ajax.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -209,7 +209,7 @@ if ($res === true) {
     // Change name of field
     mysqli_query($db_link, "ALTER TABLE `".$pre."misc` CHANGE `id` `increment_id` INT(12) NOT NULL AUTO_INCREMENT");
 } elseif ($res === false) {
-    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id user_ip to table misc! '.mysqli_error($db_link).'!"}]';
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding increment_id to table misc! '.mysqli_error($db_link).'!"}]';
     mysqli_close($db_link);
     exit();
 }
@@ -247,6 +247,19 @@ $res = addColumnIfNotExist(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field encrypted_data to table categories! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// add field is_mandatory to Categories table
+$res = addColumnIfNotExist(
+    $pre."categories",
+    "is_mandatory",
+    "BOOLEAN NOT NULL DEFAULT FALSE"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field is_mandatory to table categories! '.mysqli_error($db_link).'!"}]';
     mysqli_close($db_link);
     exit();
 }
