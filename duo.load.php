@@ -61,7 +61,7 @@ $(function() {
                 Duo.init({
                     'host': '<?php echo HOST; ?>',
                     'sig_request': data[0].sig_request,
-                    'post_action': "index.php?type=duo_check&"+data[0].csrfp_token+"="+data[0].csrfp_key
+                    'post_action': "index.php?type=duo_check&"+data[0].csrfp_token+"="+data[0].csrfp_key+"&post_type=duo"
                 });
 
                 $("#duo_login").val($("#login").val());

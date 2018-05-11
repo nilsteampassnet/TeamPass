@@ -51,7 +51,10 @@ $htmlHeaders = '
 
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
-        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />';
+        <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />
+
+        <script type="text/javascript" src="includes/js/radioforbuttons/jquery.radiosforbuttons.min.js"></script>
+        <link rel="stylesheet" href="includes/js/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />';
 // For ITEMS page, load specific CSS files for treeview
 if (isset($_GET['page']) && $_GET['page'] == "items") {
     $htmlHeaders .= '
@@ -165,57 +168,56 @@ $htmlHeaders .= '
         if (redirect == undefined) {
             redirect = ""; //Check if redirection
         }
-        // Check form data
-        if (psk === "1" && $("#psk").val() === "") {
-            $("#psk").addClass("ui-state-error");
 
+        // Check credentials are set
+        if ($("#pw").val() === "" || $("#login").val() === "") {
+            // Show warning
+            if ($("#pw").val() === "") $("#pw").addClass("ui-state-error");
+            if ($("#login").val() === "") $("#login").addClass("ui-state-error");
+
+            // Clear 2fa code
             if ($("#yubiko_key").length > 0) {
                 $("#yubiko_key").val("");
             }
-
-            return false;
-        } else if (psk === "1") {
-            $("#psk").removeClass("ui-state-error");
-        }
-        if ($("#pw").val() === "") {
-            $("#pw").addClass("ui-state-error");
-
-            if ($("#yubiko_key").length > 0) {
-                $("#yubiko_key").val("");
+            if ($("#ga_code").length > 0) {
+                $("#ga_code").val("");
             }
 
             return false;
         }
-        if ($("#login").val() === "") {
-            $("#login").addClass("ui-state-error");
 
-            if ($("#yubiko_key").length > 0) {
-                $("#yubiko_key").val("");
+        // 2FA method
+        var user2FaMethod = $("#2fa_user_selection").val();
+
+        if (user2FaMethod !== "") {
+            if ((user2FaMethod === "yubico" && $("#yubiko_key").val() === "")
+                || (user2FaMethod === "google" && $("#ga_code").val() === "")
+            ) {
+                return false;
             }
+        } else {
 
-            return false;
         }
+        
         // launch identification
         $("#pw, #login").removeClass("ui-state-error");
         $("#ajax_loader_connexion").show();
-
+        
         //create random string
         var randomstring = CreateRandomString(10);
 
         var data = "";
-        if ($("#ga_code").val() !== undefined) {
-            data = \', "GACode":"\' + sanitizeString($("#ga_code").val()) + \'"\';
-        }
-        if ($("#psk").val() !== undefined) {
-            data = \', "psk":"\' + sanitizeString($("#psk").val()) + \'"\'+
-                \', "psk_confirm":"\' + sanitizeString($("#psk_confirm").val()) + \'"\';
+
+        // Google 2FA
+        if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
+            data = \', "GACode":"\' + $("#ga_code").val() + \'"\';
         }
         
         // Yubico
-        if ($("#yubiko_key").val() !== undefined) {
+        if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
             data = \', "yubico_key":"\' + $("#yubiko_key").val()+ \'"\'+
-                \', "yubico_user_id":"\' + sanitizeString($("#yubico_user_id").val()) + \'"\'+
-                \', "yubico_user_key":"\' + sanitizeString($("#yubico_user_key").val()) + \'"\';
+                \', "yubico_user_id":"\' + ($("#yubico_user_id").val()) + \'"\'+
+                \', "yubico_user_key":"\' + ($("#yubico_user_key").val()) + \'"\';
         }
 
         // get timezone
@@ -231,15 +233,38 @@ $htmlHeaders .= '
             if (answered_data.ip !== "") {
                 client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
             }
-            data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'"}\';
 
-            // Handle if DUOSecurity is enabled
-            if (isDuo !== "1" || $("#login").val() === "admin") {
-                identifyUser(redirect, psk, data, randomstring);
-            } else {
-                $("#duo_data").val(window.btoa(data));
-                loadDuoDialog();
-            }
+            // Get 2fa
+            $.post(
+                "sources/identify.php",
+                {
+                    type : "get2FAMethods"
+                },
+                function(fa_methods) {
+                    if (user2FaMethod === "" && fa_methods[0].nb === "1") {
+                        user2FaMethod = fa_methods[0].method;
+                    }
+
+                    // Google 2FA
+                    if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
+                        data = \', "agses_code":"\' + $("#agses_code").val() + \'"\';
+                    }
+
+                    data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'" , "user_2fa_selection":"\'+user2FaMethod+\'"}\';
+
+                    // Handle if DUOSecurity is enabled
+                    if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
+                        startAgsesAuth();
+                    } else if (user2FaMethod !== "duo" || $("#login").val() === "admin") {
+                        identifyUser(redirect, psk, data, randomstring);
+                    } else {
+                        // Handle if DUOSecurity is enabled
+                        $("#duo_data").val(window.btoa(data));
+                        loadDuoDialog();
+                    }
+                },
+                "json"
+            );
         });
     }
 
@@ -321,14 +346,22 @@ $htmlHeaders .= '
                                         $("#show_yubico_credentials").addClass("hidden");
                                     });
                                 }
+                            } else if (data[0].value === "2fa_not_set") {
+                                $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                             } else {
                                 $("#connection_error").html("'.addslashes($LANG['error_bad_credentials']).'").show();
                             }
 
                             // Clear Yubico
-                            if ($("#yubiko_key").length > 0) {
+                            if ($("#2fa_user_selection").val() === "yubico" && $("#yubiko_key").length > 0) {
                                 $("#yubiko_key").val("");
                             }
+
+                            // Clear Google
+                            if ($("#2fa_user_selection").val() === "google" && $("#ga_code").length > 0) {
+                                $("#ga_code").val("");
+                            }
+
 
                             $("#ajax_loader_connexion").hide();
                         },
@@ -753,6 +786,96 @@ $htmlHeaders .= '
         );
     }
 
+    /*
+    **
+    */
+    function startAgsesAuth()
+    {
+        // exclude if login is empty or Admin
+        if ($("#login").val() === "" || $("#login").val() === "admin") return false;
+
+        $("#pw").attr("disabled", true);
+
+        // show a wait message
+        $("#agses_cardid_div").after("<div class=\"ui-state-focus ui-corner-all\" id=\"tmp_agses_wait_div\" style=\"padding:5px; text-align:center; width:454px;\"><i class=\"fa fa-cog fa-spin fa-1x\"></i>&nbsp;'.addslashes($LANG['admin_agses_wait']).'</div>");
+
+        // send query
+        $.post(
+            "sources/identify.php",
+            {
+                type :    "identify_user_with_agses",
+                login:    sanitizeString($("#login").val()),
+                cardid:   sanitizeString($("#agses_cardid").val()),
+                key:      "'.$_SESSION['key'].'"
+            },
+            function(data) {
+                // init
+                $("#pw").attr("disabled", false);
+                $("#agses_flickercode_div").hide();
+                $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
+
+                if (data[0].error !== "" && data[0].agses_message === "") {
+                // an error occured during query
+                    if (data[0].error === "no_agses_info") {
+                        data[0].error = "'.addslashes($LANG['agses_error_missing_api_data']).'";
+                    }
+                    $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
+                    $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+                } else if (data[0].error !== "" && data[0].agses_message === "none" && data[0].agses_status === "no_user_card_id") {
+                    // Agses returned an error
+                        $("#agses_cardid_div").show();
+                        $("#agses_cardid").focus();
+    
+                        $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">Please provide your AGSES Card ID</div>");
+                        $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+                } else if (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
+                // Agses returned an error
+                    $("#agses_cardid_div").show();
+                    $("#agses_cardid").focus();
+
+                    $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].agses_message+"</div>");
+                    $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+                } else if (data[0].agses_message !== "") {
+                // show agses flicker
+                    $("#agses_cardid_div").hide();
+                    // check if already generated
+                    if ($("#axs_canvas").data("agsesFlicker") !== undefined) {
+                        $("#axs_canvas").agsesFlicker({
+                            "message": data[0].agses_message,
+                        });
+                    } else {
+                        // generateflickercode
+                        $("#axs_canvas").agsesInit({
+                            "message": data[0].agses_message,
+                        });
+                    }
+                    $("#agses_flickercode_div, #agses_code").show();
+                    //$("#user_pwd").text("'.addslashes($LANG['index_agses_key']).'");
+                    $("#agses_code").val("").focus();
+
+                } else if (data[0].agses_message === "") {
+                // user needs to enter his user card id
+                    $("#agses_cardid_div, #agses_code").show();
+                    $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
+                    $("#agses_cardid").focus();
+
+                } else {
+                // something wrong
+                // typically the user login does not exist
+                    $("#agses_flickercode_div, #agses_cardid_div").hide();
+                    $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
+                    $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
+                    $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
+                }
+
+                // remove wait message
+                $("#tmp_agses_wait_div").remove();
+                $("#ajax_loader_connexion").hide();
+            },
+            "json"
+        );
+    }
+
     $(function() {
         // In case that session was expired and login form was reloaded
         // Force the launchIdentify as if the user has clicked the button
@@ -761,14 +884,9 @@ $htmlHeaders .= '
         }
 
         // AGSES authentication
-        if ($("#axs_canvas").length > 0) {
+        if ($("#2fa_user_selection").val() === "agses" && $("#axs_canvas").length > 0) {
             // show the agsesflicker
             $("#login, #agses_cardid").blur(function() {
-                // exclude if login is empty or Admin
-                if ($("#login").val() === "" || $("#login").val() === "admin") return false;
-
-                $("#pw").attr("disabled", true);
-
                 // special check for agses_cardid
                 // must contain 12 numbers
                 if ($("#agses_cardid").val() === "") {
@@ -786,78 +904,7 @@ $htmlHeaders .= '
                         return false;
                     }
                 }
-
-                // show a wait message
-                $("#agses_cardid_div").after("<div class=\"ui-state-focus ui-corner-all\" id=\"tmp_agses_wait_div\" style=\"padding:5px; text-align:center; width:454px;\"><i class=\"fa fa-cog fa-spin fa-1x\"></i>&nbsp;'.addslashes($LANG['admin_agses_wait']).'</div>");
-
-                // send query
-                $.post(
-                    "sources/identify.php",
-                    {
-                        type :    "identify_user_with_agses",
-                        login:    sanitizeString($("#login").val()),
-                        cardid:   sanitizeString($("#agses_cardid").val()),
-                        key:      "'.$_SESSION['key'].'"
-                    },
-                    function(data) {
-                        // init
-                        $("#pw").attr("disabled", false);
-                        $("#agses_flickercode_div").hide();
-                        $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
-
-                        if (data[0].error !== "" && data[0].agses_message === "") {
-                        // an error occured during query
-                            if (data[0].error === "no_agses_info") {
-                                data[0].error = "'.addslashes($LANG['agses_error_missing_api_data']).'";
-                            }
-                            $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
-                            $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
-
-                        } else if (data[0].agses_message !== "" && (data[0].agses_message.indexOf("ERROR ") === 0 || data[0].agses_status === "no_user_card_id")) {
-                        // Agses returned an error
-                            $("#agses_cardid_div").show();
-                            $("#agses_cardid").focus();
-
-                            $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].agses_message+"</div>");
-                            $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
-
-                        } else if (data[0].agses_message !== "") {
-                        // show agses flicker
-                            $("#agses_cardid_div").hide();
-                            // check if already generated
-                            if ($("#axs_canvas").data("agsesFlicker") !== undefined) {
-                                $("#axs_canvas").agsesFlicker({
-                                    "message": data[0].agses_message,
-                                });
-                            } else {
-                                // generateflickercode
-                                $("#axs_canvas").agsesInit({
-                                    "message": data[0].agses_message,
-                                });
-                            }
-                            $("#agses_flickercode_div").show();
-                            $("#user_pwd").text("'.addslashes($LANG['index_agses_key']).'");
-
-                        } else if (data[0].agses_message === "") {
-                        // user needs to enter his user card id
-                            $("#agses_cardid_div").show();
-                            $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
-                            $("#agses_cardid").focus();
-
-                        } else {
-                        // something wrong
-                        // typically the user login does not exist
-                            $("#agses_flickercode_div, #agses_cardid_div").hide();
-                            $("#user_pwd").text("'.addslashes($LANG['index_password']).'");
-                            $("#agses_cardid_div").after("<div class=\"ui-state-error ui-corner-all\" id=\"tmp_agses_div\" style=\"padding:5px; text-align:center; width:454px;\">ERROR: "+data[0].error+"</div>");
-                            $("#tmp_agses_div").show(1).delay(3000).fadeOut(1000);
-                        }
-
-                        // remove wait message
-                        $("#tmp_agses_wait_div").remove();
-                    },
-                    "json"
-                );
+                startAgsesAuth();
             })
         }
 
@@ -865,7 +912,7 @@ $htmlHeaders .= '
         countdown();
 
         // load DUO login
-        if ($("#duo_sig_response").val() !== "") {
+        if ($("#2fa_user_selection").val() === "duo" && $("#duo_sig_response").val() !== "") {
             $("#login").val($("#duo_login").val());
             $("#pw").val($("#duo_pwd").val());
 
@@ -954,7 +1001,9 @@ $htmlHeaders .= '
         })
         .mouseup(function() {
                 $(this).removeClass("ui-state-active");
-        });
+        })
+        .button()
+        .css({ width:  "300px", "padding-top": "10px", "padding-bottom": "10px" });
 
         //WARNING FOR QUERY ERROR
         $("#div_mysql_error").dialog({
@@ -1702,9 +1751,7 @@ if (isset($_GET['page']) && $_GET['page'] == "find") {
         },
         4000
     );';
-}/* elseif (isset($_SESSION['user_id']) === false) {
-    
-}*/
+}
 
 $htmlHeaders .= '
 // ]]>

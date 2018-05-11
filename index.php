@@ -727,75 +727,85 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">' . $LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
-                        </div>';
-    }
-
-/*
-    // 2FA auth selector
-    echo '
-                        <div id="2fa_selector" class="hidden1">
-                            <div>
-                            <legend>'.addslashes($LANG['2fa_authentication_selector']).'</legend>
-                            <label for="radio-1">New York</label>
-                            <input type="radio" name="2fa_selector_select" id="radio-1">
-                            <label for="radio-2">Paris</label>
-                            <input type="radio" name="2fa_selector_select" id="radio-2">
-                            <label for="radio-3">London</label>
-                            <input type="radio" name="2fa_selector_select" id="radio-3">
-                            </div>
-                            <div>
-
-                            </div>
-                        </div>';
-*/
-
-    // AGSES
-    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
-        echo '
-                        <div id="agses_cardid_div" style="text-align:center; display:none; padding:5px; width:454px; margin-bottom:5px;" class="ui-state-active ui-corner-all">
-                            ' . $LANG['user_profile_agses_card_id'].': &nbsp;
-                            <input type="text" size="12" id="agses_cardid">
-                        </div>
-                        <div id="agses_flickercode_div" style="text-align:center; display:none;">
-                            <canvas id="axs_canvas"></canvas>
-                        </div>';
-    }
-
-    // Personal salt key
-    if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1") {
-        echo '
-                        <div id="connect_psk" style="margin-bottom:3px;">
-                            <label for="personal_psk" class="form_label">' . $LANG['home_personal_saltkey'].'</label>
-                            <input type="password" size="10" id="psk" name="psk" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
-                        </div>
-                        <div id="connect_psk_confirm" style="margin-bottom:3px; display:none;">
-                            <label for="psk_confirm" class="form_label">' . $LANG['home_personal_saltkey_confirm'].'</label>
-                            <input type="password" size="10" id="psk_confirm" name="psk_confirm" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" class="input_text text ui-widget-content ui-corner-all" />
-                        </div>';
-    }
-
-    // Google Authenticator code
-    if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === "1") {
-        echo '
-                        <div id="ga_code_div" style="margin-bottom:10px;">
-                            ' . $LANG['ga_identification_code'].'
-                            <input type="text" size="4" id="ga_code" name="ga_code" style="margin:0px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" />
-                        <div id="2fa_new_code_div" style="text-align:center; display:none; margin-top:5px; padding:5px;" class="ui-state-default ui-corner-all"></div>
-                        <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">' . $LANG['i_need_to_generate_new_ga_code'].'</div>
+                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
     }
 
     echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">' . $LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
                         </div>';
+
+    // 2FA auth selector
+    echo '
+                        <input type="hidden" id="2fa_agses" value="', isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' ? '1' : '0', '" />
+                        <input type="hidden" id="2fa_duo" value="', isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1' ? '1' : '0', '" />
+                        <input type="hidden" id="2fa_google" value="', isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1' ? '1' : '0', '" />
+                        <input type="hidden" id="2fa_yubico" value="', isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1' ? '1' : '0', '" />
+                        <input type="hidden" id="2fa_user_selection" value="', 
+                            (isset($_GET['post_type']) === true && $_GET['post_type'] === 'duo' ? 'duo' : '')
+                        , '" />
+                        <div id="2fa_selector" class="hidden">
+                            <div>
+                                <legend>'.addslashes($LANG['2fa_authentication_selector']).'</legend>
+                                <div id="2fa_methods_selector" class="2fa-methods" style="padding:3px; text-align:center;">
+                                ', isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1' ?
+                                    '<label for="select2fa-google">Google</label>
+                                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-google">' : '', '
+                                    ', isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' ?
+                                    '<label for="select2fa-agses">Agses</label>
+                                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-agses">' : '', '
+                                    ', isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1' ?
+                                    '<label for="select2fa-duo">Duo Security</label>
+                                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-duo">' : '', '
+                                    ', isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1' ?
+                                    '<label for="select2fa-yubico">Yubico</label>
+                                    <input type="radio" class="2fa_selector_select" name="2fa_selector_select" id="select2fa-yubico">' : '', '
+                                </div>
+                            </div>
+                            <div>
+
+                            </div>
+                        </div>';
+
+    // AGSES
+    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
+        echo '
+                        <div id="div-2fa-agses" class="div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '':'hidden', '">
+                        <div id="agses_cardid_div" style="text-align:center; padding:5px; width:454px; margin:5px 0 5px;" class="ui-state-active ui-corner-all">
+                            ' . $LANG['user_profile_agses_card_id'].': &nbsp;
+                            <input type="text" size="12" id="agses_cardid">
+                        </div>
+                        <div id="agses_flickercode_div" style="text-align:center; display:none;">
+                            <canvas id="axs_canvas"></canvas>
+                        </div>
+                        <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" placeholder="' . addslashes($LANG['index_agses_key']).'" />
+                        </div>';
+    }
+
+    // Google Authenticator code
+    if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === "1") {
+        echo '
+                        <div id="div-2fa-google" class="div-2fa-method ', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '':'hidden', '">
+                        <div id="ga_code_div" style="margin-top:5px; padding:5px; overflow: auto; width:95%;" class="ui-state-default ui-corner-all">
+                            <div style="width: 18%; float:left; display:block;">
+                                <img src="includes/images/2fa_google_auth.png">
+                            </div>
+
+                            <div style="width: 82%; float:right; display:block;">
+                                <input type="text" size="4" id="ga_code" name="ga_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" placeholder="' . addslashes($LANG['ga_identification_code']).'" />
+                                <div id="2fa_new_code_div" style="text-align:center; display:none; margin-top:5px; padding:5px;" class="ui-state-default ui-corner-all"></div>
+                                <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">' . $LANG['i_need_to_generate_new_ga_code'].'</div>
+                            </div>
+                        </div>
+                        </div>';
+    }
 
     // Google Authenticator code
     if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['google_authentication'] !== "1") {
         echo '
-                        <div style="text-align:center;margin-top:5px;font-size:10pt;">
+                        <div style="text-align:center;margin-top:10px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">' . $LANG['forgot_my_pw'].'</span>
                         </div>';
     }
@@ -819,7 +829,7 @@ $( window ).on( "load", function() {
         if (seconds >= 0) {
             updateLogonButton(seconds);
         } else if(seconds === 0) {
-            launchIdentify(\'', isset($SETTINGS['duo']) == true && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\');
+            launchIdentify(\'\', \''.$nextUrl.'\');
         }
         updateLogonButton(seconds);
     },
@@ -832,6 +842,7 @@ $( window ).on( "load", function() {
     // Yubico authentication
     if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === "1") {
         echo '
+                        <div id="div-2fa-yubico" class="div-2fa-method ', isset($_SESSION['2famethod-yubico']) === true && $_SESSION['2famethod-yubico'] === '1' ? '':'hidden', '">
                         <div id="yubico_div" style="margin-top:5px; padding:5px; overflow: auto; width:95%;" class="ui-state-default ui-corner-all">
                             <div style="width: 18%; float:left; display:block;">
                                 <img src="includes/images/yubico.png">
@@ -846,16 +857,18 @@ $( window ).on( "load", function() {
                                     <label for="yubico_user_key">' . $LANG['yubico_user_key'].'</label>
                                     <input type="text" size="10" id="yubico_user_key" class="input_text text ui-widget-content ui-corner-all" />
                                 </div>
-                                <input autocomplete="off" type="text" name="yubiko_key" id="yubiko_key" class="input_text text ui-widget-content ui-corner-all" placeholder="' . addslashes($LANG['press_your_yubico_key']).'" style="margin-top:20px;" onchange="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')">
+                                <input autocomplete="off" type="text" name="yubiko_key" id="yubiko_key" class="input_text text ui-widget-content ui-corner-all" placeholder="' . addslashes($LANG['press_your_yubico_key']).'" style="margin-top:20px;" onchange="launchIdentify(\'\', \''.$nextUrl.'\')">
                                 <div id="show_yubico_credentials" class="hidden"><a href="#" id="yubico_link">' . addslashes($LANG['show_yubico_info_form']).'</a></div>
                             </div>
-                        </div>';
-    } else {
-        echo '
-                        <div style="text-align:center;margin-top:15px;">
-                            <input type="button" id="but_identify_user" onclick="launchIdentify(\'', isset($SETTINGS['duo']) && $SETTINGS['duo'] === "1" ? 1 : '', '\', \''.$nextUrl.'\', \'', isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] === "1" ? 1 : '', '\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['index_identify_button'].'" />
+                        </div>
                         </div>';
     }
+    
+    // LOgin button
+    echo '
+                        <div id="div-login-button" class="" style="text-align:center;margin-top:15px;">
+                            <a href="#" id="but_identify_user" onclick="launchIdentify(\'\', \''.$nextUrl.'\')" style="padding:3px;cursor:pointer;">'.$LANG['log_in'].'</a>
+                        </div>';
 
     echo '
                     </div>
@@ -983,7 +996,76 @@ echo '
 
 closelog();
 
+
+if (isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true) {
+    ?>
+    <script type="text/javascript">
+    var twoFaMethods = parseInt($("#2fa_google").val()) + parseInt($("#2fa_agses").val()) + parseInt($("#2fa_duo").val()) + parseInt($("#2fa_yubico").val());
+    if (twoFaMethods > 1) {
+        var loginButMethods = ['google', 'agses', 'duo'];
+
+        // Show methods
+        $("#2fa_selector").removeClass("hidden");
+
+        // Hide login button
+        $('#div-login-button').addClass('hidden');
+
+        // Unselect any method
+        $(".2fa_selector_select").prop('checked', false);
+
+        // Prepare buttons
+        $('.2fa-methods').radiosforbuttons({
+            margin: 20,
+            vertical: false,
+            group: false,
+            autowidth: true
+        });
+
+        // Handle click
+        $('.radiosforbuttons-2fa_selector_select')
+        .click(function() {
+            $('.div-2fa-method').addClass('hidden');
+            var twofaMethod = $(this).data('id').split('-');
+
+            // Save user choice
+            $('#2fa_user_selection').val(twofaMethod[1]);
+
+            // Show 2fa method div
+            $('#div-2fa-'+twofaMethod[1]).removeClass('hidden');
+
+            // Show login button if required
+            if ($.inArray(twofaMethod[1], loginButMethods) !== -1) {
+                $('#div-login-button').removeClass('hidden');
+            } else {
+                $('#div-login-button').addClass('hidden');
+            }
+
+            // Make focus
+            if (twofaMethod[1] === 'google') {
+                $('#ga_code').focus();
+            } else if (twofaMethod[1] === 'yubico') {
+                $('#yubiko_key').focus();
+            } else if (twofaMethod[1] === 'agses') {
+                startAgsesAuth();
+            }
+        });
+    } else if (twoFaMethods === 1) {
+        if ($('#2fa_google').val() === '1') {
+            $('#div-2fa-google').removeClass('hidden');
+        } else if ($('#2fa_yubico').val() === '1') {
+            $('#div-2fa-yubico').removeClass('hidden');
+        } else if ($('#2fa_agses').val() === '1') {
+            $('#div-2fa-agses').removeClass('hidden');
+        }
+        $('#login').focus();
+    }
+    </script>
+    <?php
+}
+
 ?>
-<script type="text/javascript">NProgress.start();</script>
+<script type="text/javascript">
+NProgress.start();
+</script>
     </body>
 </html>

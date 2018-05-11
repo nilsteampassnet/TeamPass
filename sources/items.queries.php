@@ -3676,7 +3676,7 @@ if (null !== $post_type) {
                         "id = %i",
                         $item_id
                     );
-
+                    
                     // log
                     logItems(
                         $item_id,

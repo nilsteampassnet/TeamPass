@@ -49,6 +49,7 @@ $post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_STRING);
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+//$_SESSION['user_2fa_selection'] = filter_input(INPUT_POST, 'user_2fa_selection', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
     //--------
@@ -288,7 +289,7 @@ if ($post_type === "identify_duo_user") {
         if (empty($ret_agses_apikey['valeur']) || empty($ret_agses_url['valeur']) || empty($ret_agses_id['valeur'])) {
             echo '[{"error" : "no_agses_info" , "agses_message" : ""}]';
         } else {
-            echo '[{"error" : "something_wrong" , "agses_message" : ""}]'; // user not found but not displayed as this in the error message
+            echo '[{"error" : "something_wrong" , "agses_message" : "none" , "agses_status" : "no_user_card_id"}]'; // user not found but not displayed as this in the error message
         }
     }
 } elseif ($post_type === "identify_user") {
@@ -343,6 +344,35 @@ if ($post_type === "identify_duo_user") {
         time() + 60 * 60,
         '/'
     );
+} elseif ($post_type === "get2FAMethods") {
+    //--------
+    // STORE DATA IN COOKIE
+    //--------
+    //
+    $agses = $duo = $google = $yubico = $nb = '0';
+    $fa_method = '';
+    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
+        $agses = 1;
+        $fa_method = 'agses';
+        $nb++;
+    }
+    if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
+        $google = 1;
+        $fa_method = 'google';
+        $nb++;
+    }
+    if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1') {
+        $yubico = 1;
+        $fa_method = 'yubico';
+        $nb++;
+    }
+    if (isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1') {
+        $duo = 1;
+        $fa_method = 'duo';
+        $nb++;
+    }
+    echo '[{"agses" : "'.$agses.'" , "google" : "'.$google.'" , "yubico" : "'.$yubico.'" , "duo" : "'.$duo.'" , "nb" : "'.$nb.'" , "method" : "'.$fa_method.'"}]';
+    return false;
 }
 
 /*
@@ -412,6 +442,24 @@ function identifyUser(
 
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
+
+    // User's 2FA method
+    $user_2fa_selection = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['user_2fa_selection']));
+
+    // User's agses code
+    $user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
+    
+    // Check 2FA
+    if (($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
+        || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true)
+    ) {
+        echo '[{"value" : "2fa_not_set", "user_admin":"',
+            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+            '", "initial_url" : "'.@$_SESSION['initial_url'].'",
+            "error" : "2fa_not_set"}]';
+
+            exit();
+    }
 
     // prepare variables
     if (isset($SETTINGS['enable_http_request_login']) === true
@@ -748,35 +796,11 @@ function identifyUser(
         );
     }
 
-
-    // Check PSK
-    if (isset($SETTINGS['psk_authentication'])
-        && $SETTINGS['psk_authentication'] === "1"
-        && $data['admin'] !== "1"
-    ) {
-        $psk = htmlspecialchars_decode($dataReceived['psk']);
-        $pskConfirm = htmlspecialchars_decode($dataReceived['psk_confirm']);
-        if (empty($psk)) {
-            echo '[{"value" : "psk_required"}]';
-            exit();
-        } elseif (empty($data['psk'])) {
-            if (empty($pskConfirm)) {
-                echo '[{"value" : "bad_psk_confirmation"}]';
-                exit();
-            } else {
-                $_SESSION['user_settings']['clear_psk'] = $psk;
-            }
-        } elseif ($pwdlib->verifyPasswordHash($psk, $data['psk']) === true) {
-            echo '[{"value" : "bad_psk"}]';
-            exit();
-        }
-    }
-
-
     // Check Yubico
     if (isset($SETTINGS['yubico_authentication'])
         && $SETTINGS['yubico_authentication'] === "1"
         && $data['admin'] !== "1"
+        && $user_2fa_selection === 'yubico'
     ) {
         $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
         $yubico_user_key = htmlspecialchars_decode($dataReceived['yubico_user_key']);
@@ -887,7 +911,11 @@ function identifyUser(
     }
 
     // check GA code
-    if (isset($SETTINGS['google_authentication']) && $SETTINGS['google_authentication'] == 1 && $username !== "admin") {
+    if (isset($SETTINGS['google_authentication']) === true
+        && $SETTINGS['google_authentication'] === '1'
+        && $username !== "admin"
+        && $user_2fa_selection === 'google'
+    ) {
         if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
             // load library
             include_once $SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php";
@@ -947,7 +975,12 @@ function identifyUser(
 
 
     // check AGSES code
-    if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1' && $username !== "admin") {
+    if (isset($SETTINGS['agses_authentication_enabled']) === true
+        && $SETTINGS['agses_authentication_enabled'] === '1'
+        && $username !== "admin"
+        && $user_2fa_selection === 'agses'
+        && empty($user_agses_code) === false
+    ) {
         // load AGSES
         include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
         $agses = new AXSILPortal_V1_Auth();
@@ -961,7 +994,7 @@ function identifyUser(
             $_SESSION['hedgeId'] = md5(time());
         }
 
-        $responseCode = $passwordClear;
+        $responseCode = $user_agses_code;
         if ($responseCode != "" && strlen($responseCode) >= 4) {
             // Verify response code, store result in session
             $result = $agses->verifyResponse(

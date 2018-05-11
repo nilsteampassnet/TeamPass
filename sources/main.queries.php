@@ -1027,13 +1027,7 @@ function mainQuery()
             } else {
                 $userOk = true;
             }
-            if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1
-                && !empty($data['psk'])
-            ) {
-                $pskSet = true;
-            } else {
-                $pskSet = false;
-            }
+            $pskSet = false;
 
             echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
             break;

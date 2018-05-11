@@ -249,6 +249,14 @@ switch ($post_type) {
             $text .= $item['label']."[".$item['id']."] - ";
             //Delete item
             DB::DELETE(prefix_table("items"), "id = %i", $item['id']);
+
+            // Delete if template related to item
+            DB::delete(
+                $pre."templates",
+                "item_id = %i",
+                $item['id']
+            );
+
             //log
             DB::DELETE(prefix_table("log_items"), "id_item = %i", $item['id']);
 

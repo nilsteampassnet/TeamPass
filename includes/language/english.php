@@ -14,7 +14,8 @@
  */
 global $LANG;
 $LANG = array(
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator',
+    'log_in' => 'Log In',
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'create_item_based_upon_template' => 'Use of template for Item',
     'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
     'main_template' => 'Use as main template',
