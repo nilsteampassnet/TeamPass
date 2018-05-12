@@ -206,20 +206,6 @@ $htmlHeaders .= '
         //create random string
         var randomstring = CreateRandomString(10);
 
-        var data = "";
-
-        // Google 2FA
-        if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
-            data = \', "GACode":"\' + $("#ga_code").val() + \'"\';
-        }
-        
-        // Yubico
-        if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
-            data = \', "yubico_key":"\' + $("#yubiko_key").val()+ \'"\'+
-                \', "yubico_user_id":"\' + ($("#yubico_user_id").val()) + \'"\'+
-                \', "yubico_user_key":"\' + ($("#yubico_user_key").val()) + \'"\';
-        }
-
         // get timezone
         var d = new Date();
         var TimezoneOffset = d.getTimezoneOffset()*60;
@@ -241,6 +227,7 @@ $htmlHeaders .= '
                     type : "get2FAMethods"
                 },
                 function(fa_methods) {
+                    var data = "";
                     if (user2FaMethod === "" && fa_methods[0].nb === "1") {
                         user2FaMethod = fa_methods[0].method;
                     }
@@ -248,6 +235,18 @@ $htmlHeaders .= '
                     // Google 2FA
                     if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
                         data = \', "agses_code":"\' + $("#agses_code").val() + \'"\';
+                    }
+            
+                    // Google 2FA
+                    if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
+                        data = \', "GACode":"\' + $("#ga_code").val() + \'"\';
+                    }
+                    
+                    // Yubico
+                    if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
+                        data = \', "yubico_key":"\' + $("#yubiko_key").val()+ \'"\'+
+                            \', "yubico_user_id":"\' + ($("#yubico_user_id").val()) + \'"\'+
+                            \', "yubico_user_key":"\' + ($("#yubico_user_key").val()) + \'"\';
                     }
 
                     data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'" , "user_2fa_selection":"\'+user2FaMethod+\'"}\';

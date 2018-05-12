@@ -442,6 +442,26 @@ function identifyUser(
     // decrypt and retreive data in JSON format
     $dataReceived = prepareExchangedData($sentData, "decode");
 
+    // prepare variables
+    if (isset($SETTINGS['enable_http_request_login']) === true
+        && $SETTINGS['enable_http_request_login'] === '1'
+        && isset($_SERVER['PHP_AUTH_USER']) === true
+        && isset($SETTINGS['maintenance_mode']) === true
+        && $SETTINGS['maintenance_mode'] === '1'
+    ) {
+        if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
+            $username = explode("@", filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
+        } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
+            $username = explode("\\", filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
+        } else {
+            $username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
+        }
+        $passwordClear = $_SERVER['PHP_AUTH_PW'];
+    } else {
+        $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
+        $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+    }
+    
     // User's 2FA method
     $user_2fa_selection = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['user_2fa_selection']));
 
@@ -449,8 +469,9 @@ function identifyUser(
     $user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
     
     // Check 2FA
-    if (($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
-        || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true)
+    if ((($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
+        || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true))
+        && $username !== 'admin'
     ) {
         echo '[{"value" : "2fa_not_set", "user_admin":"',
             isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
@@ -460,27 +481,10 @@ function identifyUser(
             exit();
     }
 
-    // prepare variables
-    if (isset($SETTINGS['enable_http_request_login']) === true
-        && $SETTINGS['enable_http_request_login'] === '1'
-        && isset($_SERVER['PHP_AUTH_USER']) === true
-        && isset($SETTINGS['maintenance_mode']) === true
-        && $SETTINGS['maintenance_mode'] === '1'
-    ) {
-        if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-            $username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
-        } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-            $username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
-        } else {
-            $username = $_SERVER['PHP_AUTH_USER'];
-        }
-        $passwordClear = $_SERVER['PHP_AUTH_PW'];
-    } else {
-        $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-        $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
-    }
+    // Init
     $logError = "";
     $userPasswordVerified = false;
+    $ldapConnection = false;
 
     if ($debugDuo == 1) {
         fputs(
@@ -488,8 +492,6 @@ function identifyUser(
             "Starting authentication of '".$username."'\n"
         );
     }
-
-    $ldapConnection = false;
 
     /* LDAP connection */
     if ($debugLdap == 1) {
