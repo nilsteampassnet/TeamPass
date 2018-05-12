@@ -49,7 +49,6 @@ $post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_STRING);
 $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_STRING);
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-//$_SESSION['user_2fa_selection'] = filter_input(INPUT_POST, 'user_2fa_selection', FILTER_SANITIZE_STRING);
 
 if ($post_type === "identify_duo_user") {
     //--------
@@ -1007,7 +1006,7 @@ function identifyUser(
                 $return = "";
                 $logError = "";
                 $proceedIdentification = true;
-                $userPasswordVerified = true;
+                $userPasswordVerified = false;
                 unset($_SESSION['hedgeId']);
                 unset($_SESSION['flickercode']);
             } else {
@@ -1281,7 +1280,6 @@ function identifyUser(
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'psk' => isset($psk) ? $pwdlib->createPasswordHash(htmlspecialchars_decode($psk)) : '',
                     'user_ip' =>  $dataReceived['client']
                 ),
                 "id=%i",

@@ -1027,9 +1027,8 @@ function mainQuery()
             } else {
                 $userOk = true;
             }
-            $pskSet = false;
 
-            echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
+            echo '[{"login" : "'.$userOk.'", "psk":"0"}]';
             break;
         /**
          * Make statistics on item

@@ -727,14 +727,14 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">' . $LANG['index_password'].'</label>
-                            <input type="password" size="10" id="pw" name="pw" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all" value="', empty($post_pw) === false ? $post_pw : '', '" />
+                            <input type="password" size="10" id="pw" name="pw" class="input_text text ui-widget-content ui-corner-all submit-button" value="', empty($post_pw) === false ? $post_pw : '', '" />
                         </div>';
     }
 
     echo '
                         <div style="margin-bottom:3px;">
                             <label for="duree_session" class="">' . $LANG['index_session_duration'].'&nbsp;('.$LANG['minutes'].') </label>
-                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" class="input_text text ui-widget-content ui-corner-all numeric_only" />
+                            <input type="text" size="4" id="duree_session" name="duree_session" value="', isset($SETTINGS['default_session_expiration_time']) ? $SETTINGS['default_session_expiration_time'] : "60", '" class="input_text text ui-widget-content ui-corner-all numeric_only submit-button" />
                         </div>';
 
     // 2FA auth selector
@@ -780,7 +780,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                         <div id="agses_flickercode_div" style="text-align:center; display:none;">
                             <canvas id="axs_canvas"></canvas>
                         </div>
-                        <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" placeholder="' . addslashes($LANG['index_agses_key']).'" />
+                        <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="' . addslashes($LANG['index_agses_key']).'" />
                         </div>';
     }
 
@@ -794,7 +794,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                             </div>
 
                             <div style="width: 82%; float:right; display:block;">
-                                <input type="text" size="4" id="ga_code" name="ga_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all numeric_only" onkeypress="if (event.keyCode == 13) launchIdentify(\'\', \''.$nextUrl.'\')" placeholder="' . addslashes($LANG['ga_identification_code']).'" />
+                                <input type="text" size="4" id="ga_code" name="ga_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all numeric_only submit-button" placeholder="' . addslashes($LANG['ga_identification_code']).'" />
                                 <div id="2fa_new_code_div" style="text-align:center; display:none; margin-top:5px; padding:5px;" class="ui-state-default ui-corner-all"></div>
                                 <div style="margin-top:2px; font-size:10px; text-align:center; cursor:pointer;" onclick="send_user_new_temporary_ga_code()">' . $LANG['i_need_to_generate_new_ga_code'].'</div>
                             </div>
@@ -857,8 +857,8 @@ $( window ).on( "load", function() {
                                     <label for="yubico_user_key">' . $LANG['yubico_user_key'].'</label>
                                     <input type="text" size="10" id="yubico_user_key" class="input_text text ui-widget-content ui-corner-all" />
                                 </div>
-                                <input autocomplete="off" type="text" name="yubiko_key" id="yubiko_key" class="input_text text ui-widget-content ui-corner-all" placeholder="' . addslashes($LANG['press_your_yubico_key']).'" style="margin-top:20px;" onchange="launchIdentify(\'\', \''.$nextUrl.'\')">
-                                <div id="show_yubico_credentials" class="hidden"><a href="#" id="yubico_link">' . addslashes($LANG['show_yubico_info_form']).'</a></div>
+                                <input autocomplete="off" type="text" id="yubiko_key" class="input_text text ui-widget-content ui-corner-all" placeholder="'.addslashes($LANG['press_your_yubico_key']).'" style="margin-top:20px;">
+                                <div id="show_yubico_credentials" class="hidden"><a href="#" id="yubico_link">'.addslashes($LANG['show_yubico_info_form']).'</a></div>
                             </div>
                         </div>
                         </div>';
@@ -1059,6 +1059,18 @@ if (isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === tru
         }
         $('#login').focus();
     }
+
+    $('.submit-button').keypress(function(event){
+        if (event.keyCode === 10 || event.keyCode === 13) {
+            launchIdentify('', '<?php echo $nextUrl;?>', '');
+            event.preventDefault();
+        }
+    });
+
+    $('#yubiko_key').change(function(event) {
+        launchIdentify('', '<?php echo $nextUrl;?>', '');
+        event.preventDefault();
+    });
     </script>
     <?php
 }
