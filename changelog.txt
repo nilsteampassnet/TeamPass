@@ -1,5 +1,6 @@
 2.1.27
 12/
+ New - Templating system based upon Custom Fields
  Added new option permitting to enable secure image preview
  Added warning to user if login attempts identified since last successful connection
  Added Yubico support for 2FA authentication
