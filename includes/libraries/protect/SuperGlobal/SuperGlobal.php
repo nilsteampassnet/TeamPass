@@ -51,7 +51,7 @@ class SuperGlobal
      *
      * @param  string $key  Key to use
      * @param  string $type Type of super global
-     * @return void
+     * @return mixed
      */
     public static function get($key, $type)
     {
