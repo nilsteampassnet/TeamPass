@@ -1233,13 +1233,13 @@ function sendEmail(
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
     // Load superglobal
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get user language
     $session_user_language = $superGlobal->get("user_language", "SESSION");
     $user_language = isset($session_user_language) ? $session_user_language : "english";
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
 
     // Load library
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -1258,8 +1258,8 @@ function sendEmail(
             $mail->SMTPSecure = $SETTINGS['email_security'];
             $SMTPAutoTLS = true;
         } else {
-            $SMTPAutoTLS = false;
             $mail->SMTPSecure = "";
+            $SMTPAutoTLS = false;
         }
         $mail->SMTPAutoTLS = $SMTPAutoTLS;
         $mail->isSmtp(); // send via SMTP
@@ -1271,8 +1271,7 @@ function sendEmail(
         $mail->FromName = $SETTINGS['email_from_name'];
 
         // Prepare for each person
-        $dests = explode(",", $email);
-        foreach ($dests as $dest) {
+        foreach (explode(",", $email) as $dest) {
             $mail->addAddress($dest);
         }
 
@@ -1304,11 +1303,8 @@ function sendEmail(
         $mail->isHtml(true); // send as HTML
         $mail->Subject = $subject;
         $mail->Body = $text_html;
-        if (is_null($textMailAlt) === false) {
-            $mail->AltBody = $textMailAlt;
-        } else {
-            $mail->AltBody = '';
-        }
+        $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
+        
         // send email
         if (!$mail->send()) {
             return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';

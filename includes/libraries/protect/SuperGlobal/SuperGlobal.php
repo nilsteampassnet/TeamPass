@@ -1,8 +1,6 @@
 <?php
-
-namespace protect\SuperGlobal;
-
 /**
+ * Manage global variables
  *
  * @package       SuperGlobal.php
  * @author        Nils Laumaillé <nils@teampass.net>
@@ -16,6 +14,8 @@ namespace protect\SuperGlobal;
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
+namespace protect\SuperGlobal;
+
 // Start session in case its not
 if (session_id() === '') {
     include_once __DIR__.'/../../../../sources/SecureHandler.php';
@@ -28,7 +28,7 @@ if (session_id() === '') {
 class SuperGlobal
 {
     /**
-     * Undocumented function
+     * Sets a variable
      *
      * @param  string $key   Key to use
      * @param  string $value Value to put
@@ -47,7 +47,7 @@ class SuperGlobal
     }
 
     /**
-     * Undocumented function
+     * Returns a variable
      *
      * @param  string $key  Key to use
      * @param  string $type Type of super global
@@ -65,7 +65,7 @@ class SuperGlobal
     }
 
     /**
-     * Undocumented function
+     * Delete a variable
      *
      * @param  string $key  Key to use
      * @param  string $type Type of super global
