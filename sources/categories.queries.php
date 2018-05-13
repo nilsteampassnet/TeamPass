@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          categories.queries.php
- * @author        Nils Laumaillé
+ * @package       categories.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,9 +23,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -118,6 +118,7 @@ if (null !== $post_type) {
                         'type' => filter_var($dataReceived['type'], FILTER_SANITIZE_STRING),
                         'masked' => filter_var($dataReceived['masked'], FILTER_SANITIZE_STRING),
                         'encrypted_data' => filter_var($dataReceived['encrypted'], FILTER_SANITIZE_STRING),
+                        'is_mandatory' => filter_var($dataReceived['is_mandatory'], FILTER_SANITIZE_STRING),
                         'role_visibility' => filter_var($dataReceived['field_visibility'], FILTER_SANITIZE_STRING),
                         'level' => 1,
                         'order' => filter_var($dataReceived['order'], FILTER_SANITIZE_NUMBER_INT)
@@ -268,7 +269,8 @@ if (null !== $post_type) {
                                 $field['type'],
                                 $field['masked'],
                                 addslashes($roleVisibility),
-                                $field['role_visibility']
+                                $field['role_visibility'],
+                                $field['is_mandatory']
                             )
                         );
                     }

@@ -1,18 +1,18 @@
 <?php
 /**
  *
- * @file          include.php
- * @author        Nils Laumaillé
+ * @package       include.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
  * @link
  */
 // DONT'T CHANGE BELOW THIS LINE
 global $SETTINGS, $languagesList, $SETTINGS_EXT;
 
 $SETTINGS_EXT['version'] = "2.1.27";
-$SETTINGS_EXT['version_full'] = $SETTINGS_EXT['version'].".12";
+$SETTINGS_EXT['version_full'] = $SETTINGS_EXT['version'].".13";
 $SETTINGS_EXT['tool_name'] = "TeamPass";
 $SETTINGS_EXT['one_day_seconds'] = 86400;
 $SETTINGS_EXT['one_week_seconds'] = 604800;

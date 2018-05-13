@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          admin.settings_categories.php
- * @author        Nils Laumaillé
+ * @package       admin.settings_categories.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,9 +23,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -113,14 +113,30 @@ echo '
 <div id="tabs-8">
     <!-- Enable CUSTOM FOLDERS (toggle) -->
     <div style="width:100%; height:30px;">
-    <div style="float:left;">
-        '.$LANG['settings_item_extra_fields'].'
-        <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_item_extra_fields_tip']), ENT_QUOTES).'"></i></span>
-    </div>
-    <div style="float:left; margin-left:20px;" class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ? 'true' : 'false', '"></div>
-    <div style="float:left;"><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ? '1' : '0', '" /></div>
-    </div>
+        <div style="float:left;">
+            <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+            '.$LANG['settings_item_extra_fields'].'
+            <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['settings_item_extra_fields_tip']), ENT_QUOTES).'"></i></span>
+        </div>
+        <div style="float:left; margin-left:20px;" class="toggle toggle-modern" id="item_extra_fields" data-toggle-on="', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ? 'true' : 'false', '"></div>
+        <div style="float:left;"><input type="hidden" id="item_extra_fields_input" name="item_extra_fields_input" value="', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ? '1' : '0', '" /></div>
+    </div>';
+    
+// Enable item_creation_templates
+echo '
+    <div style="width:100%; height:30px;">
+        <div style="float:left;">
+        <i class="fa fa-chevron-right mi-grey-1" style="margin-right: .3em;">&nbsp;</i>
+            <label>
+                '.$LANG['create_item_based_upon_template'].'
+                <span style="margin-left:0px;">&nbsp;<i class="fa fa-question-circle tip" title="'.htmlentities(strip_tags($LANG['create_item_based_upon_template_tip']), ENT_QUOTES).'"></i></span>
+            </label>
+        </div>
+        <div style="float:left; margin-left:20px;" class="toggle toggle-modern" id="item_creation_templates" data-toggle-on="', isset($SETTINGS['item_creation_templates']) && $SETTINGS['item_creation_templates'] == 1 ? 'true' : 'false', '"></div>
+        <input type="hidden" id="item_creation_templates_input" name="item_creation_templates_input" value="', isset($SETTINGS['item_creation_templates']) && $SETTINGS['item_creation_templates'] == 1 ? '1' : '0', '" />
+    </div>';
 
+echo '
     <hr />
 
     <div class="ui-state-highlight ui-corner-all" style="padding: 5px; margin:5px 0 20px 0;">
@@ -134,7 +150,7 @@ echo '
             </div>
         </div>
     </div>
-
+    
     <div id="categories_list">
     </div>
     
@@ -191,6 +207,17 @@ echo '
                 </td>
                 <td>
                     <select id="field_masked" class="ui-widget-content ui-corner-all field_edit" style="width: 340px; padding:3px;">
+                        <option value="0">'.$LANG['no'].'</option>
+                        <option value="1">'.$LANG['yes'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr class="not_category">
+                <td>
+                    <label for="field_is_mandatory">'.$LANG['is_mandatory'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="field_is_mandatory" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
                         <option value="0">'.$LANG['no'].'</option>
                         <option value="1">'.$LANG['yes'].'</option>
                     </select>
@@ -272,6 +299,17 @@ echo '
                 </td>
                 <td>
                     <select id="new_field_masked" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
+                        <option value="0">'.$LANG['no'].'</option>
+                        <option value="1">'.$LANG['yes'].'</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="new_field_is_mandatory">'.$LANG['is_mandatory'].':</label>&nbsp;
+                </td>
+                <td>
+                    <select id="new_field_is_mandatory" class="ui-widget-content ui-corner-all" style="width: 340px; padding:3px;">
                         <option value="0">'.$LANG['no'].'</option>
                         <option value="1">'.$LANG['yes'].'</option>
                     </select>

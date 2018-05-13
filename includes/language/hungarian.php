@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          hungarian.php
- * @author        Nils Laumaillé
+ * @package       hungarian.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'log_in' => 'Log In',
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'main_template' => 'Use as template',
+    'is_mandatory' => 'Is mandatory',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
     'position_in_list' => 'Position in list',
     'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',
@@ -263,7 +269,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Fő SALT kulcs megváltoztatása',
     'admin_action_change_salt_key_tip' => 'Mielőtt megváltoztatja a SALT kulcsot, kérjük bizonyosodjon meg arról, hogy van mentése a teljes adatbázisról, és állítsa át a rendszer karbantartási üzemmódba, hogy más felhasználók ne léphessenek be.',
     'block_admin_info' => 'Adminisztrátori információ',
-    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Az adminisztrátor profil többé nem látja a tételeket. Ez a profil már csak adminisztratív célra használható<br />A <a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net oldalon</a> további információkat talál. ',
+    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Az adminisztrátor profil többé nem látja a tételeket. Ez a profil már csak adminisztratív célra használható<br />A <a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net oldalon</a> további információkat talál. ',
     'nb_items_by_query' => 'Az egy menetben lekérdezett tételek száma',
     'nb_items_by_query_tip' => '<span style=\'font-size:11px;max-width:300px;\'>Több tétel esetén azok megjelenítése is több időt vesz igénybe.<br />Az \'auto\' használatával a program automatikusan állítja be a lekérdezés paramétereit, a képernyő mérete alapján.<br />A \'max\' beállítással egyszerre az összes tétel megjelenítésre kerül.<br />Érték megadásával beállítható az egy menetben lekérdezett tételek száma.</span>',
     'error_no_selected_folder' => 'Ki kell választani egy mappát',

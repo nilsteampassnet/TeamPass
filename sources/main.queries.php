@@ -1,12 +1,12 @@
 <?php
 /**
  * Teampass file 
- * @file          main.queries.php
- * @author        Nils Laumaillé
+ * @package       main.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -362,18 +362,18 @@ function mainQuery()
                     $ldap_user_never_auth = true;
                 }
             }
-            
-            // check the given password
-            if ($counter === 0
-                || (isset($pwd) === true && isset($data['pw']) === true && $pwd !== $data['pw'])
-            ) {
-                // not a registered user !
-                if ($counter === 0) {
-                    logEvents('failed_auth', 'user_not_exists', "", stripslashes($login), stripslashes($login));
-                } else if ($pwdlib->verifyPasswordHash($pwd, $data['pw']) === false) {
-                    logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
-                }
 
+            // Do treatment
+            if ($counter === 0) {
+                // Not a registered user !
+                logEvents('failed_auth', 'user_not_exists', "", stripslashes($login), stripslashes($login));
+                echo '[{"error" : "no_user"}]';
+            } else if (isset($pwd) === true
+                && isset($data['pw']) === true
+                && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
+            ) {
+                // checked the given password
+                logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
                 echo '[{"error" : "no_user"}]';
             } else {
                 if (empty($data['email'])) {
@@ -547,14 +547,19 @@ function mainQuery()
                     );
                 }
 
-                echo '[{'.sendEmail(
-                    $LANG['forgot_pw_email_subject'],
-                    $textMail,
-                    $post_email,
-                    $LANG,
-                    $SETTINGS,
-                    $textMailAlt
-                ).'}]';
+                $ret = json_decode(
+                    sendEmail(
+                        $LANG['forgot_pw_email_subject'],
+                        $textMail,
+                        $post_email,
+                        $LANG,
+                        $SETTINGS,
+                        $textMailAlt
+                    ),
+                    true
+                );
+
+                echo '[{"error":"'.$ret['error'].'" , "message":"'.$ret['message'].'"}]';
             } else {
                 // no one has this email ... alert
                 echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
@@ -624,7 +629,8 @@ function mainQuery()
                         $LANG,
                         $SETTINGS,
                         strip_tags($LANG['forgot_pw_email_body'])." ".$newPwNotCrypted
-                    )
+                    ),
+                    true
                 );
                 // send email
                 if (empty($ret['error'])) {
@@ -910,15 +916,18 @@ function mainQuery()
                     $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                     foreach ($rows as $record) {
                         // Send email
-                        $ret = sendEmail(
-                            $record['subject'],
-                            $record['body'],
-                            $record['receivers'],
-                            $LANG,
-                            $SETTINGS
+                        $ret = json_decode(
+                            sendEmail(
+                                $record['subject'],
+                                $record['body'],
+                                $record['receivers'],
+                                $LANG,
+                                $SETTINGS
+                            ),
+                            true
                         );
 
-                        if (strpos($ret, "error_mail_not_send") !== false) {
+                        if ($ret['error'] === "error_mail_not_send") {
                             $status = "not_sent";
                         } else {
                             $status = "sent";
@@ -1027,15 +1036,8 @@ function mainQuery()
             } else {
                 $userOk = true;
             }
-            if (isset($SETTINGS['psk_authentication']) && $SETTINGS['psk_authentication'] == 1
-                && !empty($data['psk'])
-            ) {
-                $pskSet = true;
-            } else {
-                $pskSet = false;
-            }
 
-            echo '[{"login" : "'.$userOk.'", "psk":"'.$pskSet.'"}]';
+            echo '[{"login" : "'.$userOk.'", "psk":"0"}]';
             break;
         /**
          * Make statistics on item
@@ -1260,7 +1262,6 @@ function mainQuery()
                 }
 
                 // connect to Teampass Statistics database
-                db::debugmode(true);
                 $link2 = new MeekroDB(
                     "sql11.freemysqlhosting.net",
                     "sql11197223",

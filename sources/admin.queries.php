@@ -1,12 +1,12 @@
 <?php
 
 /**
- * @file          admin.queries.php
- * @author        Nils Laumaillé
+ * @package       admin.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,9 +24,9 @@ if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1 ||
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -249,6 +249,14 @@ switch ($post_type) {
             $text .= $item['label']."[".$item['id']."] - ";
             //Delete item
             DB::DELETE(prefix_table("items"), "id = %i", $item['id']);
+
+            // Delete if template related to item
+            DB::delete(
+                $pre."templates",
+                "item_id = %i",
+                $item['id']
+            );
+
             //log
             DB::DELETE(prefix_table("log_items"), "id_item = %i", $item['id']);
 
@@ -1184,14 +1192,19 @@ switch ($post_type) {
             echo '[{"result":"email_test_conf", "error":"error_mail_not_send" , "message":"User has no email defined!"}]';
         } else {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-            echo '[{"result":"email_test_conf", '.
+
+            //send email
+            $ret = json_decode(
                 sendEmail(
                     $LANG['admin_email_test_subject'],
                     $LANG['admin_email_test_body'],
                     $_SESSION['user_email'],
                     $LANG,
                     $SETTINGS
-                ).'}]';
+                ),
+                true
+            );
+            echo '[{"result":"email_test_conf", "error":"'.$ret['error'].'"}]';
         }
         break;
 
@@ -1205,16 +1218,17 @@ switch ($post_type) {
         foreach ($rows as $record) {
             //send email
             $ret = json_decode(
-                @sendEmail(
+                sendEmail(
                     $record['subject'],
                     $record['body'],
                     $record['receivers'],
                     $LANG,
                     $SETTINGS
-                )
+                ),
+                true
             );
 
-            if (!empty($ret['error'])) {
+            if (empty($ret['error']) === false) {
                 //update item_id in files table
                 DB::update(
                     prefix_table("emails"),
@@ -2067,16 +2081,16 @@ switch ($post_type) {
                         );
 
                         $debug_ldap .= 'Search filter (group): '.$filter_group."<br/>".
-                            'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
+                            'Results : '.str_replace("\n", "<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
 
                         if ($result_group) {
                             $entries = ldap_get_entries($ldapconn, $result_group);
 
                             if ($entries['count'] > 0) {
                                 // Now check if group fits
-                                for ($i=0; $i<$entries['count']; $i++) {
-                                    $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                    if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                for ($i = 0; $i < $entries['count']; $i++) {
+                                    $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                    if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                     $GroupRestrictionEnabled = true;
                                     break;
                                     }

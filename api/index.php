@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          (api)index.php
- * @author        Nils Laumaillé
+ * @package       (api)index.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.0
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link		  http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link		   * @package       
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of

@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          russian.php
- * @author        Nils Laumaillé
+ * @package       russian.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -14,6 +14,12 @@
  */
 global $LANG;
 $LANG = array(
+    'log_in' => 'Log In',
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'main_template' => 'Use as template',
+    'is_mandatory' => 'Is mandatory',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
     'position_in_list' => 'Position in list',
     'visible_by' => 'Visible by',
     'restrict_visibility_to' => 'Restrict visibility to',
@@ -263,7 +269,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Сменить основную соль',
     'admin_action_change_salt_key_tip' => 'Перед изменением соли, сделайте полную резервную копию БД и переведите TeamPass в режим обслуживания, чтобы исключить возможность входа других пользователей.',
     'block_admin_info' => 'Информация об администраторах',
-    'admin_new1' => 'Администратор не может просматривать элементы. Эта учетная запись предназначена только для администрирования. См. <a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>страницу на TeamPass.net</a> с пояснениями по данному изменению.',
+    'admin_new1' => 'Администратор не может просматривать элементы. Эта учетная запись предназначена только для администрирования. См. <a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>страницу на TeamPass.net</a> с пояснениями по данному изменению.',
     'nb_items_by_query' => 'Количество элементов, получаемых за один запрос',
     'nb_items_by_query_tip' => 'Слишком большое количество затрудняет процесс отображения списка. Значение \'auto\' позволяет автоматически подстраиваться под размер экрана пользователя. Значение \'max\' принудительно заставляет показывать весь список сразу. Также можно задать конкретное количество элементов, загружаемых за один запрос.',
     'error_no_selected_folder' => 'Вы должны выбрать папку',
