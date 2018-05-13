@@ -3722,16 +3722,19 @@ if (null !== $post_type) {
                         $SETTINGS
                     );
                     
-                    $ret = sendEmail(
-                        $LANG['email_request_access_subject'],
-                        str_replace(
-                            array('#tp_item_author#', '#tp_user#', '#tp_item#'),
-                            array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
-                            $LANG['email_request_access_mail']
+                    $ret = json_decode(
+                        sendEmail(
+                            $LANG['email_request_access_subject'],
+                            str_replace(
+                                array('#tp_item_author#', '#tp_user#', '#tp_item#'),
+                                array(" ".addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
+                                $LANG['email_request_access_mail']
+                            ),
+                            $dataAuthor['email'],
+                            $LANG,
+                            $SETTINGS
                         ),
-                        $dataAuthor['email'],
-                        $LANG,
-                        $SETTINGS
+                        true
                     );
                 } elseif ($post_cat === "share_this_item") {
                     $dataItem = DB::queryfirstrow(
@@ -3749,19 +3752,22 @@ if (null !== $post_type) {
                     );
                     
                     // send email
-                    $ret = sendEmail(
-                        $LANG['email_share_item_subject'],
-                        str_replace(
-                            array('#tp_link#', '#tp_user#', '#tp_item#'),
-                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($path)),
-                            $LANG['email_share_item_mail']
+                    $ret = json_decode(
+                        sendEmail(
+                            $LANG['email_share_item_subject'],
+                            str_replace(
+                                array('#tp_link#', '#tp_user#', '#tp_item#'),
+                                array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($path)),
+                                $LANG['email_share_item_mail']
+                            ),
+                            $post_receipt,
+                            $LANG,
+                            $SETTINGS
                         ),
-                        $post_receipt,
-                        $LANG,
-                        $SETTINGS
+                        true
                     );
                 }
-                echo '[{'.$ret.'}]';
+                echo '[{"error":"'.$ret['error'].'" , "message":"'.$ret['message'].'"}]';
             }
             break;
 

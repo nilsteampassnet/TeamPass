@@ -1192,14 +1192,19 @@ switch ($post_type) {
             echo '[{"result":"email_test_conf", "error":"error_mail_not_send" , "message":"User has no email defined!"}]';
         } else {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-            echo '[{"result":"email_test_conf", '.
+
+            //send email
+            $ret = json_decode(
                 sendEmail(
                     $LANG['admin_email_test_subject'],
                     $LANG['admin_email_test_body'],
                     $_SESSION['user_email'],
                     $LANG,
                     $SETTINGS
-                ).'}]';
+                ),
+                true
+            );
+            echo '[{"result":"email_test_conf", "error":"'.$ret['error'].'"}]';
         }
         break;
 
@@ -1213,16 +1218,17 @@ switch ($post_type) {
         foreach ($rows as $record) {
             //send email
             $ret = json_decode(
-                @sendEmail(
+                sendEmail(
                     $record['subject'],
                     $record['body'],
                     $record['receivers'],
                     $LANG,
                     $SETTINGS
-                )
+                ),
+                true
             );
 
-            if (!empty($ret['error'])) {
+            if (empty($ret['error']) === false) {
                 //update item_id in files table
                 DB::update(
                     prefix_table("emails"),

@@ -1214,7 +1214,7 @@ function getStatisticsData()
  * @param  array  $LANG        Language
  * @param  array  $SETTINGS    settings
  * @param  string $textMailAlt email message alt
- * @return  string  some json info
+ * @return string some json info
  */
 function sendEmail(
     $subject,
@@ -1272,7 +1272,9 @@ function sendEmail(
 
         // Prepare for each person
         foreach (explode(",", $email) as $dest) {
-            $mail->addAddress($dest);
+            if (empty($dest) === false) {
+                $mail->addAddress($dest);
+            }
         }
 
         // Prepare HTML
@@ -1306,14 +1308,28 @@ function sendEmail(
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
         
         // send email
-        if (!$mail->send()) {
-            return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        if ($mail->send()) {
+            return json_encode(
+                array(
+                    "error" => "",
+                    "message" => $LANG['forgot_my_pw_email_sent']
+                )
+            );
         } else {
-            return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+            return json_encode(
+                array(
+                    "error" => "error_mail_not_send",
+                    "message" => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo)
+                )
+            );
         }
     } catch (Exception $e) {
-        return '"error":"error_mail_not_send" , '.
-        '"message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        return json_encode(
+            array(
+                "error" => "error_mail_not_send",
+                "message" => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo)
+            )
+        );
     }
 }
 
@@ -1610,6 +1626,7 @@ function logItems(
 ) {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
+    global $LANG;
     $dataItem = '';
 
     // include librairies & connect to DB
@@ -1670,7 +1687,7 @@ function logItems(
         && $action === 'at_shown'
     ) {
         // Get info about item
-        if (empty($dataItem) === true && empty($item_label) === true) {
+        if (empty($dataItem) === true || empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
                 "SELECT id, id_tree, label
                 FROM ".prefix_table("items")."

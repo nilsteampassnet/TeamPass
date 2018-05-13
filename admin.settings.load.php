@@ -286,7 +286,7 @@ function loadFieldsList() {
 //###########
 function LaunchAdminActions(action, option)
 {
-    var option;
+    var option = '';
 
     $("#div_loading").show();
     $("#email_testing_results, #result_admin_script_backup").hide();
@@ -309,7 +309,8 @@ function LaunchAdminActions(action, option)
     } else if (action === "admin_email_send_backlog") {
         $("#email_testing_results")
             .show().
-            html("<?php echo addslashes($LANG['please_wait']); ?>").attr("class","ui-corner-all ui-state-focus");
+            html("<?php echo addslashes($LANG['please_wait']); ?>")
+            .attr("class","ui-corner-all ui-state-focus");
     } else if (action === "admin_action_attachments_cryption") {
         option = $("input[name=attachments_cryption]:checked").val();
         if (option === "" || option === undefined) {
@@ -343,11 +344,11 @@ function LaunchAdminActions(action, option)
     $.post(
         "sources/admin.queries.php",
         {
-           type        : action,
-           option    : option
+           type   : action,
+           option : option
         },
         function(data) {
-            $("#div_loading").hide();
+            $("#div_loading").hide();console.log(data);
             if (data != null) {
                 if (data[0].result == "db_backup") {
                     $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download']; ?></a>").show();
@@ -380,8 +381,8 @@ function LaunchAdminActions(action, option)
                     $("#menu_action").val("deconnexion");
                     sessionStorage.clear();
                     window.location.href = "logout.php"
-                } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
-                    if (data[0].error != "") {
+                } else if (data[0].result == "email_test_conf" || data[0].result === "admin_email_send_backlog") {
+                    if (data[0].error !== "") {
                         $("#email_testing_results").html("<?php echo addslashes($LANG['admin_email_result_nok']); ?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
                     } else {
                         $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $LANG['admin_email_result_ok'])); ?>").show().attr("class","ui-corner-all ui-state-focus");

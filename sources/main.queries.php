@@ -547,14 +547,19 @@ function mainQuery()
                     );
                 }
 
-                echo '[{'.sendEmail(
-                    $LANG['forgot_pw_email_subject'],
-                    $textMail,
-                    $post_email,
-                    $LANG,
-                    $SETTINGS,
-                    $textMailAlt
-                ).'}]';
+                $ret = json_decode(
+                    sendEmail(
+                        $LANG['forgot_pw_email_subject'],
+                        $textMail,
+                        $post_email,
+                        $LANG,
+                        $SETTINGS,
+                        $textMailAlt
+                    ),
+                    true
+                );
+
+                echo '[{"error":"'.$ret['error'].'" , "message":"'.$ret['message'].'"}]';
             } else {
                 // no one has this email ... alert
                 echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
@@ -624,7 +629,8 @@ function mainQuery()
                         $LANG,
                         $SETTINGS,
                         strip_tags($LANG['forgot_pw_email_body'])." ".$newPwNotCrypted
-                    )
+                    ),
+                    true
                 );
                 // send email
                 if (empty($ret['error'])) {
@@ -910,15 +916,18 @@ function mainQuery()
                     $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
                     foreach ($rows as $record) {
                         // Send email
-                        $ret = sendEmail(
-                            $record['subject'],
-                            $record['body'],
-                            $record['receivers'],
-                            $LANG,
-                            $SETTINGS
+                        $ret = json_decode(
+                            sendEmail(
+                                $record['subject'],
+                                $record['body'],
+                                $record['receivers'],
+                                $LANG,
+                                $SETTINGS
+                            ),
+                            true
                         );
 
-                        if (strpos($ret, "error_mail_not_send") !== false) {
+                        if ($ret['error'] === "error_mail_not_send") {
                             $status = "not_sent";
                         } else {
                             $status = "sent";
