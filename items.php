@@ -50,8 +50,10 @@ $get_id = $superGlobal->get("id", "GET");
 $session_user_admin = $superGlobal->get("user_admin", "SESSION");
 
 
-if ($session_user_admin === '1' && (isset($SETTINGS_EXT['admin_full_right'])
-    && $SETTINGS_EXT['admin_full_right'] === true) || !isset($SETTINGS_EXT['admin_full_right'])) {
+if ($session_user_admin === '1'
+    && (isset($SETTINGS_EXT['admin_full_right']) === true && $SETTINGS_EXT['admin_full_right'] === true)
+    || isset($SETTINGS_EXT['admin_full_right']) == false
+) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
 }

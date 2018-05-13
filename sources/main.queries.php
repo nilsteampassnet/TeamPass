@@ -1253,7 +1253,6 @@ function mainQuery()
                 }
 
                 // connect to Teampass Statistics database
-                db::debugmode(true);
                 $link2 = new MeekroDB(
                     "sql11.freemysqlhosting.net",
                     "sql11197223",

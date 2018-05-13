@@ -438,7 +438,7 @@ if ($session_autoriser !== null && $session_autoriser === true) {
 }
 // ---------
 // Display a help to admin
-$errorAdmin = "";
+$errorAdmin = $nextUrl = "";
 
 // error nb folders
 if ($session_nb_folders !== null && intval($session_nb_folders) === 0) {
@@ -492,7 +492,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
 if (isset($SETTINGS['update_needed']) && $SETTINGS['update_needed'] === true
     && $session_user_admin !== null && $session_user_admin === '1'
     && (($session_hide_maintenance !== null && $session_hide_maintenance === '0')
-        || $session_hide_maintenance === null)
+    || $session_hide_maintenance === null)
 ) {
     echo '
             <div style="text-align:center;margin-bottom:5px;padding:10px;"
@@ -642,8 +642,6 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     // Automatic redirection
     if (strpos($server_request_uri, "?") > 0) {
         $nextUrl = filter_var(substr($server_request_uri, strpos($server_request_uri, "?")), FILTER_SANITIZE_URL);
-    } else {
-        $nextUrl = "";
     }
     // MAINTENANCE MODE
     if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1') {
