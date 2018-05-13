@@ -772,7 +772,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     // AGSES
     if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
         echo '
-                        <div id="div-2fa-agses" class="div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '':'hidden', '">
+                        <div id="div-2fa-agses" class="div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '' : 'hidden', '">
                         <div id="agses_cardid_div" style="text-align:center; padding:5px; width:454px; margin:5px 0 5px;" class="ui-state-active ui-corner-all">
                             ' . $LANG['user_profile_agses_card_id'].': &nbsp;
                             <input type="text" size="12" id="agses_cardid">
@@ -787,7 +787,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     // Google Authenticator code
     if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === "1") {
         echo '
-                        <div id="div-2fa-google" class="div-2fa-method ', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '':'hidden', '">
+                        <div id="div-2fa-google" class="div-2fa-method ', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '' : 'hidden', '">
                         <div id="ga_code_div" style="margin-top:5px; padding:5px; overflow: auto; width:95%;" class="ui-state-default ui-corner-all">
                             <div style="width: 18%; float:left; display:block;">
                                 <img src="includes/images/2fa_google_auth.png">
@@ -842,7 +842,7 @@ $( window ).on( "load", function() {
     // Yubico authentication
     if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === "1") {
         echo '
-                        <div id="div-2fa-yubico" class="div-2fa-method ', isset($_SESSION['2famethod-yubico']) === true && $_SESSION['2famethod-yubico'] === '1' ? '':'hidden', '">
+                        <div id="div-2fa-yubico" class="div-2fa-method ', isset($_SESSION['2famethod-yubico']) === true && $_SESSION['2famethod-yubico'] === '1' ? '' : 'hidden', '">
                         <div id="yubico_div" style="margin-top:5px; padding:5px; overflow: auto; width:95%;" class="ui-state-default ui-corner-all">
                             <div style="width: 18%; float:left; display:block;">
                                 <img src="includes/images/yubico.png">
@@ -1062,13 +1062,13 @@ if (isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === tru
 
     $('.submit-button').keypress(function(event){
         if (event.keyCode === 10 || event.keyCode === 13) {
-            launchIdentify('', '<?php echo $nextUrl;?>', '');
+            launchIdentify('', '<?php echo $nextUrl; ?>', '');
             event.preventDefault();
         }
     });
 
     $('#yubiko_key').change(function(event) {
-        launchIdentify('', '<?php echo $nextUrl;?>', '');
+        launchIdentify('', '<?php echo $nextUrl; ?>', '');
         event.preventDefault();
     });
     </script>

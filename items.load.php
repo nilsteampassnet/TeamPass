@@ -1205,7 +1205,7 @@ function EditerItem()
 
                         //Refresh hidden data
                         $("#hid_label").val($('#edit_label').val());
-                        $("#hid_pw").html($('#edit_pw1').val());
+                        $("#hid_pw").text($('#edit_pw1').val());
                         $("#hid_email").val($('#edit_email').val());
                         $("#hid_url").val($('#edit_url').val().escapeHTML());
                         $("#hid_desc").val(description);
@@ -1214,8 +1214,6 @@ function EditerItem()
                         $("#hid_restricted_to_roles").val(restriction_role);
                         $("#hid_tags").val($('#edit_tags').val());
                         $("#hid_files").val(data.files);
-                        /*$("#id_categorie").html(data.id_tree);
-                        $("#id_item").html(data.id);*/
 
                         // Refresh mini-icons if needed
                         if ($("#minipwd_" + data.id).length > 0) {
@@ -1230,20 +1228,28 @@ function EditerItem()
                             $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
                                 var input_id = $(this).attr('id');
+                                console.log(input_id);
                                 var id = $(this).attr('id').split('_');
                                 if ($('#'+input_id).val() !== "") {
                                     // copy data from form to Item Div
-                                    $('#hid_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val());
+                                    $('#hid_field_' + id[2] + '_' + id[3]).text($('#'+input_id).val());
                                     // Mange type of field
                                     if ($('#'+input_id).attr('data-field-masked') === '1') {
                                         $('#id_field_' + id[2] + '_' + id[3]).html('<?php echo $var['hidden_asterisk']; ?>');
                                     } else {
-                                        $('#id_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val().replace(/\n/g, "<br>"));
+                                        $('#id_field_' + id[2] + '_' + id[3]).text($('#'+input_id).val().replace(/\n/g, "<br>"));
                                     }
-
-                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
+                                    
+                                    // In case of enabled template then only show the expected one
+                                    if ($('#template_selected_id').val() !== '') {
+                                        if ($('#template_selected_id').val() === id[3]) {
+                                            $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
+                                        }
+                                    } else {
+                                        $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
+                                    }
                                 } else {
-                                    $('#hid_field_' + id[2] + '_' + id[3]).html('');
+                                    $('#hid_field_' + id[2] + '_' + id[3]).text('');
                                 }
                                 // clear form
                                 $(this).val("");
@@ -1624,6 +1630,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         } else {
                             $("#id_pw").html('<?php echo $var['hidden_asterisk']; ?>');
                         }
+                        
                         $("#hid_pw").text(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
@@ -1693,13 +1700,13 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                                     $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
                                 }
                                 
-                                $('#hid_field_' + field[0] + '_' + field[2]).html(field[1].replace(/<br ?\/?>/g,""));
+                                $('#hid_field_' + field[0] + '_' + field[2]).text(field[1].replace(/<br ?\/?>/g,""));
                                 if (field[4] === "1") {
                                     $('#id_field_' + field[0] + '_' + field[2])
                                         .html('<?php echo $var['hidden_asterisk']; ?>');
                                 } else {
                                     $('#id_field_' + field[0] + '_' + field[2])
-                                        .html(field[1]);
+                                        .text(field[1]);
                                 }
                             }
                         }
@@ -1707,7 +1714,6 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         // 
                         if (data.template_id !== '') {
                             $('.default_item_field, .tr_fields_header').addClass('hidden');
-                            //$('#tr_catfield_'+data.template_id)
                         } else {
                             $('.default_item_field, .tr_fields_header').removeClass('hidden');
                         }
@@ -2322,8 +2328,8 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_display_title').html($('#hid_label').val());
     $('#edit_label').val($('#hid_label').val());
     $('#edit_desc').html($('#hid_desc').val());
-    $('#edit_pw1, #edit_pw2').val($('#hid_pw').html());
-    $("#edit_visible_pw").text($('#hid_pw').html());
+    $('#edit_pw1, #edit_pw2').val($('#hid_pw').text());
+    $("#edit_visible_pw").text($('#hid_pw').text());
     $('#edit_item_login').val(($('#hid_login').val()));
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());

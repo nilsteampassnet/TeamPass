@@ -791,9 +791,11 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
         // Manage template
         if (isset($SETTINGS['item_creation_templates']) === true && $SETTINGS['item_creation_templates'] === '1') {
             echo '
+                        <div style="display:inline; float:right; font-weight:normal; font-style: italic;">
                         &nbsp;
                         <input type="checkbox" id="template_edit_'.$elem[0].'" class="item_edit_template template_for_items" data-category-id="'.$elem[0].'"/>
-                        <label for="template_edit_'.$elem[0].'">'.$LANG['main_template'].'</label>';
+                        <label for="template_edit_'.$elem[0].'" class="pointer">'.$LANG['main_template'].'</label>
+                        </div>';
         }
         echo '
                     </div>';

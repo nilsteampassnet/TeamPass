@@ -2075,16 +2075,16 @@ switch ($post_type) {
                         );
 
                         $debug_ldap .= 'Search filter (group): '.$filter_group."<br/>".
-                            'Results : '.str_replace("\n","<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
+                            'Results : '.str_replace("\n", "<br>", print_r(ldap_get_entries($ldapconn, $result_group), true))."<br/>";
 
                         if ($result_group) {
                             $entries = ldap_get_entries($ldapconn, $result_group);
 
                             if ($entries['count'] > 0) {
                                 // Now check if group fits
-                                for ($i=0; $i<$entries['count']; $i++) {
-                                    $parsr=ldap_explode_dn($entries[$i]['dn'], 0);
-                                    if (str_replace(array('CN=','cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
+                                for ($i = 0; $i < $entries['count']; $i++) {
+                                    $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
+                                    if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                     $GroupRestrictionEnabled = true;
                                     break;
                                     }

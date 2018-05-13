@@ -835,7 +835,7 @@ if (null !== $post_type) {
                             WHERE item_id = %i",
                             $dataReceived['id']
                         );
-                        if (DB::count() === 0) {
+                        if (DB::count() === 0 && empty($post_template_id) === false) {
                             // store field text
                             DB::insert(
                                 prefix_table('templates'),
