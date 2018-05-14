@@ -887,6 +887,7 @@ global \$SETTINGS;
                             `order` int(12) NOT NULL default '0',
                             `encrypted_data` tinyint(1) NOT NULL default '1',
                             `role_visibility` varchar(255) NOT NULL DEFAULT 'all',
+                            `is_mandatory` tinyint(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -1003,6 +1004,16 @@ global \$SETTINGS;
                             `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`)
+                            ) CHARSET=utf8;"
+                        );
+                    } elseif ($task === "templates") {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."templates` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                            `item_id` int(12) NOT NULL,
+                            `category_id` int(12) NOT NULL,
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     }

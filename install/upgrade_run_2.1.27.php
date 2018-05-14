@@ -1008,6 +1008,18 @@ if ($res === false) {
 }
 
 
+// add new table for templates
+mysqli_query(
+    $db_link,
+    "CREATE TABLE IF NOT EXISTS `".$pre."templates` (
+    `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+    `item_id` int(12) NOT NULL,
+    `category_id` int(12) NOT NULL,
+    PRIMARY KEY (`increment_id`)
+    ) CHARSET=utf8;"
+);
+
+
 
 // File encryption
 // add field status to FILE table
@@ -1089,6 +1101,19 @@ $res = addColumnIfNotExist(
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field role_visibility to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
+// add field is_mandatory to CATEGORIES table
+$res = addColumnIfNotExist(
+    $pre."categories",
+    "is_mandatory",
+    "tinyint(1) NOT NULL DEFAULT '0'"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field is_mandatory to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
     mysqli_close($db_link);
     exit();
 }
