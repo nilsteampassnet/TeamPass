@@ -55,29 +55,11 @@ function categoryAdd() {
             title   : sanitizeString($("#new_category_label").val())
         },
         function(data) {
-            // build new row
-            $("#tbl_categories").append(
-                '<tr id="t_cat_'+data[0].id+'"><td colspan="2">'+
-                '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;&nbsp;'+
-                '<span class="fa-stack tip" title="<?php echo $LANG["field_add_in_category"]; ?>" onclick="fieldAdd('+
-                data[0].id+')" style="cursor:pointer;">'+
-                '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
-                '</span>&nbsp;'+
-                '<input type="radio" name="sel_item" id="item_'+data[0].id+'_cat" />'+
-                '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
-                $("#new_category_label").val()+'</label>'+
-                '</td><td>'+
-                '<span class="fa-stack tip" title="<?php echo $LANG["category_in_folders"]; ?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
-                '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
-                '</span>&nbsp;'+
-                '<?php echo $LANG["category_in_folders_title"]; ?>:'+
-                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
-                '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
             $("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
             // clean
             $("#new_category_label, #new_item_title").val("");
-            //loadFieldsList();
+            loadFieldsList();
             $("#div_loading,#no_category").hide();
         },
         "json"

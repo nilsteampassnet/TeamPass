@@ -1005,6 +1005,16 @@ global \$SETTINGS;
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
+                    } elseif ($task === "templates") {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."templates` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                            `item_id` int(12) NOT NULL,
+                            `category_id` int(12) NOT NULL,
+                            PRIMARY KEY (`increment_id`)
+                            ) CHARSET=utf8;"
+                        );
                     }
                 }
                 // answer back
