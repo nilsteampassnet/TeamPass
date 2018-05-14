@@ -887,6 +887,7 @@ global \$SETTINGS;
                             `order` int(12) NOT NULL default '0',
                             `encrypted_data` tinyint(1) NOT NULL default '1',
                             `role_visibility` varchar(255) NOT NULL DEFAULT 'all',
+                            `is_mandatory` tinyint(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );

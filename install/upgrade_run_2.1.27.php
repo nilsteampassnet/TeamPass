@@ -1110,7 +1110,7 @@ if ($res === false) {
 $res = addColumnIfNotExist(
     $pre."categories",
     "is_mandatory",
-    "tinyint(1)  NOT NULL DEFAULT '0'"
+    "tinyint(1) NOT NULL DEFAULT '0'"
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"An error appears when adding field is_mandatory to table CATEGORIES! '.mysqli_error($db_link).'!"}]';
