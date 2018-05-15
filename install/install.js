@@ -1,10 +1,10 @@
 /**
- * @file          install.js
- * @author        Nils Laumaillé
+ * @package       install.js
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
  * @copyright     (c) 2009-2011 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -83,7 +83,7 @@ function checkPage()
     } else if (step === "5") {
     // STEP 5
         data = "";
-        tasks = ["table*utf8", "table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens", "table*items_change"];
+        tasks = ["table*utf8", "table*items", "table*log_items", "table*misc", "table*nested_tree", "table*rights", "table*users", "table*tags", "table*log_system", "table*files", "table*cache", "table*roles_title", "table*roles_values", "table*kb", "table*kb_categories", "table*kb_items", "table*restriction_to_roles", "table*languages", "table*emails", "table*automatic_del", "table*items_edition", "table*categories", "table*categories_items", "table*categories_folders", "table*api", "table*otv", "table*suggestion", "table*tokens", "table*items_change", "table*templates"];
         multiple = true;
     } else if (step === "6") {
     // STEP 6

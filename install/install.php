@@ -269,6 +269,7 @@ echo '
     <li>Add table "suggestion"&nbsp;<span id="res5_check27"></span></li>
     <li>Add table "tokens"&nbsp;<span id="res5_check28"></span></li>
     <li>Add table "items_change"&nbsp;<span id="res5_check29"></span></li>
+    <li>Add table "templates"&nbsp;<span id="res5_check30"></span></li>
     </ul>-->
 </div>';
 

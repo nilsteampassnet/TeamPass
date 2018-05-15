@@ -1,12 +1,12 @@
 <?php
 /**
  *
- * @file          (api)functions.php
- * @author        Nils Laumaillé
+ * @package       (api)functions.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.0
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -330,7 +330,7 @@ function rest_get()
 
         // Load config
         if (file_exists('../includes/config/tp.config.php')) {
-            require_once '../includes/config/tp.config.php';
+            include_once '../includes/config/tp.config.php';
         } else {
             throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
         }
@@ -1702,7 +1702,7 @@ function rest_get()
             ** Example: https://127.0.0.1/teampass/api/index.php/auth/http/www.zadig-tge.adp.com/U1/test/76?apikey=chahthait5Aidood6johh6Avufieb6ohpaixain
             ** RESTRICTIONS:
             **              - <PROTOCOL>        ==> http|https|ftp|...
-            **              - <URL>             ==> encode URL without protocol (example: http://www.teampass.net becomes www.teampass.net)
+            **              - <URL>             ==> encode URL without protocol (example:  * @package        becomes www.teampass.net)
             **              - <login>           ==> user's login
             **              - <password>        ==> currently clear password
             **

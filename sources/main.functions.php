@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @file          main.functions.php
- * @author        Nils Laumaillé
+ * @package       main.functions.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
  * @link
  */
 
@@ -360,7 +360,7 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     global $SETTINGS;
 
     // load PhpEncryption library
-    if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
     } else {
         $path = $SETTINGS['cpassman_dir'].'/includes/libraries/Encryption/Encryption/';
@@ -902,7 +902,7 @@ function identifyUserRights(
  * Update the CACHE table
  * @param string $action
  */
-function updateCacheTable($action, $ident = "")
+function updateCacheTable($action, $ident = null)
 {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
@@ -990,7 +990,7 @@ function updateCacheTable($action, $ident = "")
             }
         }
         // UPDATE an item
-    } elseif ($action === "update_value") {
+    } elseif ($action === "update_value" && is_null($ident) === false) {
         // get new value from db
         $data = DB::queryfirstrow(
             "SELECT label, description, id_tree, perso, restricted_to, login, url
@@ -1038,7 +1038,7 @@ function updateCacheTable($action, $ident = "")
             $ident
         );
     // ADD an item
-    } elseif ($action === "add_value") {
+    } elseif ($action === "add_value" && is_null($ident) === false) {
         // get new value from db
         $data = DB::queryFirstRow(
             "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
@@ -1090,7 +1090,7 @@ function updateCacheTable($action, $ident = "")
         );
 
     // DELETE an item
-    } elseif ($action === "delete_value") {
+    } elseif ($action === "delete_value" && is_null($ident) === false) {
         DB::delete(prefix_table('cache'), "id = %i", $ident);
     }
 }
@@ -1214,7 +1214,7 @@ function getStatisticsData()
  * @param  array  $LANG        Language
  * @param  array  $SETTINGS    settings
  * @param  string $textMailAlt email message alt
- * @return  string  some json info
+ * @return string some json info
  */
 function sendEmail(
     $subject,
@@ -1222,7 +1222,7 @@ function sendEmail(
     $email,
     $LANG,
     $SETTINGS,
-    $textMailAlt = ""
+    $textMailAlt = null
 ) {
     // CAse where email not defined
     if ($email === "none") {
@@ -1233,13 +1233,13 @@ function sendEmail(
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
     // Load superglobal
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get user language
     $session_user_language = $superGlobal->get("user_language", "SESSION");
     $user_language = isset($session_user_language) ? $session_user_language : "english";
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
 
     // Load library
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -1258,8 +1258,8 @@ function sendEmail(
             $mail->SMTPSecure = $SETTINGS['email_security'];
             $SMTPAutoTLS = true;
         } else {
-            $SMTPAutoTLS = false;
             $mail->SMTPSecure = "";
+            $SMTPAutoTLS = false;
         }
         $mail->SMTPAutoTLS = $SMTPAutoTLS;
         $mail->isSmtp(); // send via SMTP
@@ -1271,9 +1271,10 @@ function sendEmail(
         $mail->FromName = $SETTINGS['email_from_name'];
 
         // Prepare for each person
-        $dests = explode(",", $email);
-        foreach ($dests as $dest) {
-            $mail->addAddress($dest);
+        foreach (explode(",", $email) as $dest) {
+            if (empty($dest) === false) {
+                $mail->addAddress($dest);
+            }
         }
 
         // Prepare HTML
@@ -1304,16 +1305,31 @@ function sendEmail(
         $mail->isHtml(true); // send as HTML
         $mail->Subject = $subject;
         $mail->Body = $text_html;
-        $mail->AltBody = $textMailAlt;
+        $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
+        
         // send email
-        if (!$mail->send()) {
-            return '"error":"error_mail_not_send" , "message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        if ($mail->send()) {
+            return json_encode(
+                array(
+                    "error" => "",
+                    "message" => $LANG['forgot_my_pw_email_sent']
+                )
+            );
         } else {
-            return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+            return json_encode(
+                array(
+                    "error" => "error_mail_not_send",
+                    "message" => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo)
+                )
+            );
         }
     } catch (Exception $e) {
-        return '"error":"error_mail_not_send" , '.
-        '"message":"'.str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo).'"';
+        return json_encode(
+            array(
+                "error" => "error_mail_not_send",
+                "message" => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo)
+            )
+        );
     }
 }
 
@@ -1473,7 +1489,7 @@ function prefix_table($table)
 /*
  * Creates a KEY using PasswordLib
  */
-function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capitalize = false, $symbols = false)
+function GenerateCryptKey($size = null, $secure = false, $numerals = false, $capitalize = false, $symbols = false)
 {
     global $SETTINGS;
     require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -1496,7 +1512,7 @@ function GenerateCryptKey($size = "", $secure = false, $numerals = false, $capit
     }
 
     // init
-    if (empty($size) === false) {
+    if (empty($size) === false && is_null($size) === false) {
         $generator->setLength(intval($size));
     }
     if (empty($numerals) === false) {
@@ -1536,7 +1552,7 @@ function send_syslog($message, $host, $port, $component = "teampass")
  * @param string $label
  * @param string $field_1
  */
-function logEvents($type, $label, $who, $login = "", $field_1 = null)
+function logEvents($type, $label, $who, $login = null, $field_1 = null)
 {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
@@ -1604,12 +1620,13 @@ function logItems(
     $item_label,
     $id_user,
     $action,
-    $login = "",
+    $login = null,
     $raison = null,
-    $encryption_type = ""
+    $encryption_type = null
 ) {
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
+    global $LANG;
     $dataItem = '';
 
     // include librairies & connect to DB
@@ -1635,7 +1652,7 @@ function logItems(
             'action' => $action,
             'raison' => $raison,
             'raison_iv' => '',
-            'encryption_type' => $encryption_type
+            'encryption_type' => is_null($encryption_type) === true ? '' : $encryption_type
         )
     );
 
@@ -1670,7 +1687,7 @@ function logItems(
         && $action === 'at_shown'
     ) {
         // Get info about item
-        if (empty($dataItem) === true && empty($item_label) === true) {
+        if (empty($dataItem) === true || empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
                 "SELECT id, id_tree, label
                 FROM ".prefix_table("items")."
@@ -2059,7 +2076,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
  * @param  string $target_file path to target file
  * @return string|boolean
  */
-function prepareFileWithDefuse($type, $source_file, $target_file, $password = '')
+function prepareFileWithDefuse($type, $source_file, $target_file, $password = null)
 {
     global $SETTINGS;
 
@@ -2088,7 +2105,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = ''
     require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
     require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
-    if (empty($password) === true) {
+    if (empty($password) === true || is_null($password) === true) {
         /*
         File encryption/decryption is done with the SALTKEY
          */
@@ -2208,7 +2225,7 @@ function fileDelete($file)
  * @param  string $file File name
  * @return string
  */
-function getFileExtension(string $file)
+function getFileExtension($file)
 {
     if (strpos($file, '.') === false) {
         return $file;
@@ -2223,7 +2240,7 @@ function getFileExtension(string $file)
  * @param  string $type What clean to perform
  * @return string
  */
-function cleanText(string $string, string $type = "")
+function cleanText($string, $type = null)
 {
     global $SETTINGS;
 
@@ -2234,7 +2251,7 @@ function cleanText(string $string, string $type = "")
     if ($type === "css") {
         // Escape text and quotes in UTF8 format
         return htmlentities($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    } elseif ($type === "html" || empty($type)) {
+    } elseif (empty($type) === true || is_null($type) === true || $type === "html") {
         // Html cleaner
         return $antiXss->xss_clean($string);
     }

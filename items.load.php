@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          items.load.php
- * @author        Nils Laumaillé
+ * @package       items.load.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,9 +18,9 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 // Load config
 if (file_exists('../includes/config/tp.config.php')) {
-    require_once '../includes/config/tp.config.php';
+    include_once '../includes/config/tp.config.php';
 } elseif (file_exists('./includes/config/tp.config.php')) {
-    require_once './includes/config/tp.config.php';
+    include_once './includes/config/tp.config.php';
 } else {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
@@ -796,8 +796,37 @@ function AjouterItem()
             var fields = "";
             $('.item_field').each(function(i){
                 id = $(this).attr('id').split('_');
+                
+                // Check if mandatory
+                if ($(this).data('field-is-mandatory') === 1
+                    && $(this).val() === ''
+                    && $(this).is(':visible') === true
+                ) {
+                    fields = false; 
+
+                    $('#new_show_error')
+                        .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
+                        .show();
+                    $("#div_formulaire_saisi_info").addClass("hidden").html("");
+
+                    return false;
+                }
+
+                // Store date
                 if (fields == "") fields = id[1] + '~~' + $(this).val() + '~~' + id[2];
                 else fields += '_|_' + id[1] + '~~' + $(this).val() + '~~' + id[2];
+            });            
+            if (fields === false) {
+                return false;
+            }
+
+            // get template
+            var template = "";
+            $('.item_template').each(function(i){
+                if ($(this).prop('checked') === true) {
+                    template = $(this).data('category-id');
+                    return false;
+                }
             });
 
             // check if a folder is selected
@@ -809,14 +838,28 @@ function AjouterItem()
             }
 
             //prepare data
-            var data = {"pw": sanitizeString($('#pw1').val()) , "label": sanitizeString($('#label').val()) ,
-                "login": sanitizeString($('#item_login').val()) , "is_pf": is_pf.toString() ,
-                "description": (description) , "email": $('#email').val() , "url": url , "categorie": selected_folder ,
-                "restricted_to": restriction , "restricted_to_roles": restriction_role ,
-                "salt_key_set": $('#personal_sk_set').val() , "diffusion": diffusion , "id": $('#id_item').val() ,
-                "anyone_can_modify": $('#anyone_can_modify:checked').val() , "tags": sanitizeString($('#item_tags').val()) ,
-                "random_id_from_files": $('#random_id').val() , "to_be_deleted": to_be_deleted ,
-                "fields": sanitizeString(fields) , "complexity_level": parseInt($("#mypassword_complex").val())};
+            var data = {
+                "pw": sanitizeString($('#pw1').val()),
+                "label": sanitizeString($('#label').val()) ,
+                "login": sanitizeString($('#item_login').val()),
+                "is_pf": is_pf.toString(),
+                "description": (description),
+                "email": $('#email').val(),
+                "url": url,
+                "categorie": selected_folder,
+                "restricted_to": restriction,
+                "restricted_to_roles": restriction_role,
+                "salt_key_set": $('#personal_sk_set').val(),
+                "diffusion": diffusion,
+                "id": $('#id_item').val(),
+                "anyone_can_modify": $('#anyone_can_modify:checked').val(),
+                "tags": sanitizeString($('#item_tags').val()),
+                "random_id_from_files": $('#random_id').val(),
+                "to_be_deleted": to_be_deleted,
+                "fields": sanitizeString(fields),
+                "complexity_level": parseInt($("#mypassword_complex").val()),
+                "template_id": template
+            };
 
             //Send query
             $.post(
@@ -900,7 +943,7 @@ function AjouterItem()
                         $("#item_tabs").tabs({selected: 0});
                         $('ul#full_items_list>li').tsort("",{order:"asc",attr:"name"});
                         $(".fields, .item_field, #categorie, #random_id").val("");
-                        $(".fields_div, #item_file_queue, #display_title, #visible_pw").html("");
+                        $(".fields_div, .fields, #item_file_queue, #display_title, #visible_pw").html("");
 
                         $("#div_formulaire_saisi").dialog('close');
                         $("#div_formulaire_saisi ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
@@ -1022,8 +1065,40 @@ function EditerItem()
             var fields = "";
             $('.edit_item_field').each(function(i){
                 id = $(this).attr('id').split('_');
+                
+                // Check if mandatory
+                if ($(this).data('field-is-mandatory') === 1
+                    && $(this).val() === ''
+                    && $(this).is(':visible') === true
+                ) {
+                    fields = false; 
+                    $('#edit_show_error')
+                        .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
+                        .show();
+                    $("#div_formulaire_edition_item_info")
+                        .addClass("hidden")
+                        .html("");
+                    $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
+                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+                        .prop("disabled", false);
+                    return false;
+                }
+
+                // Store data
                 if (fields == "") fields = id[2] + '~~' + $(this).val();
                 else fields += '_|_' + id[2] + '~~' + $(this).val();
+            });           
+            if (fields === false) {
+                return false;
+            }
+
+            // get template
+            var template = "";
+            $('.item_edit_template').each(function(i){
+                if ($(this).prop('checked') === true) {
+                    template = $(this).data('category-id');
+                    return false;
+                }
             });
 
               //prepare data
@@ -1047,7 +1122,8 @@ function EditerItem()
                 "tags": sanitizeString($('#edit_tags').val()),
                 "to_be_deleted": to_be_deleted,
                 "fields": sanitizeString(fields),
-                "complexity_level": parseInt($("#edit_mypassword_complex").val())
+                "complexity_level": parseInt($("#edit_mypassword_complex").val()),
+                "template_id": template
             };
 
             //send query
@@ -1129,7 +1205,7 @@ function EditerItem()
 
                         //Refresh hidden data
                         $("#hid_label").val($('#edit_label').val());
-                        $("#hid_pw").html($('#edit_pw1').val());
+                        $("#hid_pw").text($('#edit_pw1').val());
                         $("#hid_email").val($('#edit_email').val());
                         $("#hid_url").val($('#edit_url').val().escapeHTML());
                         $("#hid_desc").val(description);
@@ -1138,8 +1214,6 @@ function EditerItem()
                         $("#hid_restricted_to_roles").val(restriction_role);
                         $("#hid_tags").val($('#edit_tags').val());
                         $("#hid_files").val(data.files);
-                        /*$("#id_categorie").html(data.id_tree);
-                        $("#id_item").html(data.id);*/
 
                         // Refresh mini-icons if needed
                         if ($("#minipwd_" + data.id).length > 0) {
@@ -1154,21 +1228,28 @@ function EditerItem()
                             $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
                                 var input_id = $(this).attr('id');
+                                console.log(input_id);
                                 var id = $(this).attr('id').split('_');
                                 if ($('#'+input_id).val() !== "") {
                                     // copy data from form to Item Div
-                                    $('#hid_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val());
-                                    console.log("> "+input_id+" - "+$('#'+input_id).attr('data-field-masked'));
+                                    $('#hid_field_' + id[2] + '_' + id[3]).text($('#'+input_id).val());
                                     // Mange type of field
                                     if ($('#'+input_id).attr('data-field-masked') === '1') {
                                         $('#id_field_' + id[2] + '_' + id[3]).html('<?php echo $var['hidden_asterisk']; ?>');
-                                    } else {console.log($('#'+input_id).val());
-                                        $('#id_field_' + id[2] + '_' + id[3]).html($('#'+input_id).val().replace(/\n/g, "<br>"));
+                                    } else {
+                                        $('#id_field_' + id[2] + '_' + id[3]).text($('#'+input_id).val().replace(/\n/g, "<br>"));
                                     }
-
-                                    $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
+                                    
+                                    // In case of enabled template then only show the expected one
+                                    if ($('#template_selected_id').val() !== '') {
+                                        if ($('#template_selected_id').val() === id[3]) {
+                                            $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
+                                        }
+                                    } else {
+                                        $('#cf_tr_' + id[2] + ', .editItemCatName_' + id[3] + ', #tr_catfield_' + id[3]).removeClass('hidden');
+                                    }
                                 } else {
-                                    $('#hid_field_' + id[2] + '_' + id[3]).html('');
+                                    $('#hid_field_' + id[2] + '_' + id[3]).text('');
                                 }
                                 // clear form
                                 $(this).val("");
@@ -1488,7 +1569,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-
+                    
                     if (data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
@@ -1549,7 +1630,8 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         } else {
                             $("#id_pw").html('<?php echo $var['hidden_asterisk']; ?>');
                         }
-                        $("#hid_pw").html(unsanitizeString(data.pw));
+                        
+                        $("#hid_pw").text(unsanitizeString(data.pw));
                         if (data.url != "") {
                             $("#id_url").html(data.url+data.link);
                             $("#hid_url").val(data.url);
@@ -1601,7 +1683,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         // ---
                         // Show Field values
                         $(".fields").val("");
-                        $(".fields_div").html("");
+                        $(".fields_div, .fields").html("");
                         // If no CF then hide
                         if (data.fields === "") {
                             $(".tr_fields").addClass("hidden");
@@ -1610,17 +1692,34 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                             var liste = data.fields.split('_|_');
                             for (var i=0; i<liste.length; i++) {
                                 var field = liste[i].split('~~');
-                                $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
-                                $('#hid_field_' + field[0] + '_' + field[2]).html(field[1].replace(/<br ?\/?>/g,""));
+                                if (data.template_id !== '') {
+                                    if (data.template_id === field[2]) {
+                                        $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
+                                    }
+                                } else {
+                                    $("#cf_tr_" + field[0] + ", #tr_catfield_" + field[2]).removeClass("hidden");
+                                }
+                                
+                                $('#hid_field_' + field[0] + '_' + field[2]).text(field[1].replace(/<br ?\/?>/g,""));
                                 if (field[4] === "1") {
                                     $('#id_field_' + field[0] + '_' + field[2])
                                         .html('<?php echo $var['hidden_asterisk']; ?>');
                                 } else {
                                     $('#id_field_' + field[0] + '_' + field[2])
-                                        .html(field[1]);
+                                        .text(field[1]);
                                 }
                             }
                         }
+
+                        // 
+                        if (data.template_id !== '') {
+                            $('.default_item_field, .tr_fields_header').addClass('hidden');
+                        } else {
+                            $('.default_item_field, .tr_fields_header').removeClass('hidden');
+                        }
+
+                        // Template id
+                        $('#template_selected_id').val(data.template_id);
 
                         //Anyone can modify button
                         if (data.anyone_can_modify == "1") {
@@ -2229,8 +2328,8 @@ function open_edit_item_div(restricted_to_roles)
     $('#edit_display_title').html($('#hid_label').val());
     $('#edit_label').val($('#hid_label').val());
     $('#edit_desc').html($('#hid_desc').val());
-    $('#edit_pw1, #edit_pw2').val($('#hid_pw').html());
-    $("#edit_visible_pw").text($('#hid_pw').html());
+    $('#edit_pw1, #edit_pw2').val($('#hid_pw').text());
+    $("#edit_visible_pw").text($('#hid_pw').text());
     $('#edit_item_login').val(($('#hid_login').val()));
     $('#edit_email').val($('#hid_email').val());
     $('#edit_url').val($('#hid_url').val());
@@ -2322,7 +2421,11 @@ function open_edit_item_div(restricted_to_roles)
     }
 
     // Set password length in size spinner
-    $('#edit_pw_size').val($('#edit_pw1').val().length);
+    if ($('#edit_pw1').val().length === 0) {
+        $('#edit_pw_size').val(8);
+    } else {
+        $('#edit_pw_size').val($('#edit_pw1').val().length);
+    }
 
     //open dialog
     $("#div_formulaire_edition_item_info").addClass("hidden").html("");
@@ -3151,6 +3254,9 @@ $(function() {
         },
         open: function(event,ui) {
             $("#div_copy_folder ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
+            $('#copy_folder_destination_id, #copy_folder_source_id').select2({
+                language: "<?php echo $_SESSION['user_language_code']; ?>"
+            });
 
             // get list of folders
                 $.post(
@@ -3360,8 +3466,11 @@ $(function() {
             }
             $("#div_loading, #edit_show_error").addClass("hidden");
             $("#item_edit_upload_list").html("");
-            $(".edit_item_field").val("");  // clean values in Fields
-            //Unlock the Item
+            // Clean values in Fields
+            $(".edit_item_field").val('');
+            // Uncheck checkboxes
+            $('.item_edit_template').prop('checked', false);
+            // Unlock the Item
             $.post(
                 "sources/items.queries.php",
                 {
@@ -3382,6 +3491,9 @@ $(function() {
             $("#edit_pw1").first().focus();
             $("#item_edit_tabs").tabs( "option", "active",0  );
             $(".ui-tooltip").siblings(".tooltip").remove();
+            if ($('#template_selected_id').val() !== '') {
+                $('#template_edit_'+$('#template_selected_id').val()).prop('checked', true);
+            }
 
             // show tab fields ? Not if PersonalFolder
             if ($("#recherche_group_pf").val() == 1) {
@@ -4303,6 +4415,11 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         }
     };
 
+    // Ensure only one template is selected
+    $('input.template_for_items').on('change', function() {
+        $('input.template_for_items').not(this).prop('checked', false);  
+    });
+
     NProgress.done();
 });
 
@@ -4694,7 +4811,7 @@ function globalItemsSearch()
         $("#items_path_var").html('<i class="fa fa-filter"></i>&nbsp;<?php echo addslashes($LANG['searching']); ?>');
 
         // clean
-        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, #item_extra_info").html("");
+        $("#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, .fields, #item_extra_info").html("");
         $("#button_quick_login_copy, #button_quick_pw_copy").addClass("hidden");
         $("#full_items_list").html("");
         $("#selected_items").val("");

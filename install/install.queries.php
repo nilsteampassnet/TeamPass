@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          install.queries.php
- * @author        Nils Laumaillé
+ * @package       install.queries.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -887,6 +887,7 @@ global \$SETTINGS;
                             `order` int(12) NOT NULL default '0',
                             `encrypted_data` tinyint(1) NOT NULL default '1',
                             `role_visibility` varchar(255) NOT NULL DEFAULT 'all',
+                            `is_mandatory` tinyint(1) NOT NULL DEFAULT '0',
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -900,6 +901,7 @@ global \$SETTINGS;
                             `data` text NOT NULL,
                             `data_iv` text NOT NULL,
                             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
+                            `is_mandatory` BOOLEAN NOT NULL DEFAULT FALSE ,
                             PRIMARY KEY (`id`)
                             ) CHARSET=utf8;"
                         );
@@ -1002,6 +1004,16 @@ global \$SETTINGS;
                             `user_id` int(12) NOT NULL,
                             `timestamp` varchar(50) NOT NULL DEFAULT 'none',
                             PRIMARY KEY (`id`)
+                            ) CHARSET=utf8;"
+                        );
+                    } elseif ($task === "templates") {
+                        $mysqli_result = mysqli_query(
+                            $dbTmp,
+                            "CREATE TABLE IF NOT EXISTS `".$var['tbl_prefix']."templates` (
+                            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                            `item_id` int(12) NOT NULL,
+                            `category_id` int(12) NOT NULL,
+                            PRIMARY KEY (`increment_id`)
                             ) CHARSET=utf8;"
                         );
                     }

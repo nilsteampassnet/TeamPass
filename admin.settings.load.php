@@ -1,11 +1,11 @@
 <?php
 /**
- * @file          admin.settings.load.php
- * @author        Nils Laumaillé
+ * @package       admin.settings.load.php
+ * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
- * @copyright     (c) 2009-2018 Nils Laumaillé
- * @licensing     GNU GPL-3.0
- * @link          http://www.teampass.net
+ * @copyright     2009-2018 Nils Laumaillé
+ * @license       GNU GPL-3.0
+ * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -55,29 +55,11 @@ function categoryAdd() {
             title   : sanitizeString($("#new_category_label").val())
         },
         function(data) {
-            // build new row
-            $("#tbl_categories").append(
-                '<tr id="t_cat_'+data[0].id+'"><td colspan="2">'+
-                '<input type="text" id="catOrd_'+data[0].id+'" size="1" class="category_order" value="1" />&nbsp;&nbsp;'+
-                '<span class="fa-stack tip" title="<?php echo $LANG["field_add_in_category"]; ?>" onclick="fieldAdd('+
-                data[0].id+')" style="cursor:pointer;">'+
-                '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-plus fa-stack-1x fa-inverse"></i>'+
-                '</span>&nbsp;'+
-                '<input type="radio" name="sel_item" id="item_'+data[0].id+'_cat" />'+
-                '<label for="item_'+data[0].id+'_cat" id="item_'+data[0].id+'">'+
-                $("#new_category_label").val()+'</label>'+
-                '</td><td>'+
-                '<span class="fa-stack tip" title="<?php echo $LANG["category_in_folders"]; ?>" onclick="catInFolders('+data[0].id+')" style="cursor:pointer;">'+
-                '<i class="fa fa-square fa-stack-2x"></i><i class="fa fa-edit fa-stack-1x fa-inverse"></i>'+
-                '</span>&nbsp;'+
-                '<?php echo $LANG["category_in_folders_title"]; ?>:'+
-                '<span style="font-family:italic; margin-left:10px;" id="catFolders_'+data[0].id+'"></span>'+
-                '<input type="hidden" id="catFoldersList_'+data[0].id+'" value="'+data[0].id+'" /></td><td></td>');
             // Add new cat
             $("#moveItemTo").append('<option value="'+data[0].id+'">'+$("#new_category_label").val()+'</option>');
             // clean
             $("#new_category_label, #new_item_title").val("");
-            //loadFieldsList();
+            loadFieldsList();
             $("#div_loading,#no_category").hide();
         },
         "json"
@@ -120,6 +102,7 @@ function updateCategoryAndField(id) {
         "category" : $('#field_category').val() === '' ? '0' : $("#field_category").val(),
         "type" : $('#field_type').val() === '' ? '' : $("#field_type").val(),
         "masked" : $('#field_masked').val() === '' ? '' : $("#field_masked").val(),
+        "is_mandatory" : $('#is_mandatory').val() === '' ? '' : $("#is_mandatory").val(),
         "encrypted" : $('#field_encrypted').val() === '' ? '' : $("#field_encrypted").val(),
         "roles" : roles === '' ? 'all' : roles,
         "field_is_category" : $('#field_is_category').val(),
@@ -222,7 +205,7 @@ function loadFieldsList() {
                         '<input type="hidden" id="catFoldersList_'+val[1]+'" value="'+val[5]+'" /></td></tr>';
                     } else {
                         newList += '<tr id="t_field_'+val[1]+'" class="drag">'+
-                        '<td width="20px"><input type="hidden" class="field_info" value="' + current_category + ','+val[4]+','+val[6]+','+val[7]+'" /></td>'+
+                        '<td width="20px"><input type="hidden" class="field_info" value="' + current_category + ','+val[4]+','+val[6]+','+val[7]+','+val[10]+'" /></td>'+
                         '<td colspan="1" style="border-bottom:1px solid #a0a0a0; padding:3px 0 1px 0;">'+
                         '<input type="text" id="catOrd_'+val[1]+'" size="1" class="category_order" value="'+val[3]+'" />&nbsp;'+
                         '<input type="radio" name="sel_item" id="item_'+val[1]+'_cat" class="hidden" />'+
@@ -250,6 +233,10 @@ function loadFieldsList() {
 
                             if (val[7] === "1") {
                                 newList += '&nbsp;<span class="fa fa-eye-slash tip" title="<?php echo $LANG['data_is_masked']; ?>"></ispan>';
+                            }
+
+                            if (val[10] === "1") {
+                                newList += '&nbsp;<span class="fa fa-fire tip mi-red" title="<?php echo $LANG['is_mandatory']; ?>"></ispan>';
                             }
                             newList += '</span>'
                         }
@@ -281,7 +268,7 @@ function loadFieldsList() {
 //###########
 function LaunchAdminActions(action, option)
 {
-    var option;
+    var option = '';
 
     $("#div_loading").show();
     $("#email_testing_results, #result_admin_script_backup").hide();
@@ -304,7 +291,8 @@ function LaunchAdminActions(action, option)
     } else if (action === "admin_email_send_backlog") {
         $("#email_testing_results")
             .show().
-            html("<?php echo addslashes($LANG['please_wait']); ?>").attr("class","ui-corner-all ui-state-focus");
+            html("<?php echo addslashes($LANG['please_wait']); ?>")
+            .attr("class","ui-corner-all ui-state-focus");
     } else if (action === "admin_action_attachments_cryption") {
         option = $("input[name=attachments_cryption]:checked").val();
         if (option === "" || option === undefined) {
@@ -338,11 +326,11 @@ function LaunchAdminActions(action, option)
     $.post(
         "sources/admin.queries.php",
         {
-           type        : action,
-           option    : option
+           type   : action,
+           option : option
         },
         function(data) {
-            $("#div_loading").hide();
+            $("#div_loading").hide();console.log(data);
             if (data != null) {
                 if (data[0].result == "db_backup") {
                     $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download']; ?></a>").show();
@@ -375,8 +363,8 @@ function LaunchAdminActions(action, option)
                     $("#menu_action").val("deconnexion");
                     sessionStorage.clear();
                     window.location.href = "logout.php"
-                } else if (data[0].result == "email_test_conf" || data[0].result == "admin_email_send_backlog") {
-                    if (data[0].error != "") {
+                } else if (data[0].result == "email_test_conf" || data[0].result === "admin_email_send_backlog") {
+                    if (data[0].error !== "") {
                         $("#email_testing_results").html("<?php echo addslashes($LANG['admin_email_result_nok']); ?>&nbsp;"+data[0].message).show().attr("class","ui-state-error ui-corner-all");
                     } else {
                         $("#email_testing_results").html("<?php echo addslashes(str_replace("#email#", $_SESSION['user_email'], $LANG['admin_email_result_ok'])); ?>").show().attr("class","ui-corner-all ui-state-focus");
@@ -731,7 +719,7 @@ $(function() {
         bgiframe: true,
         autoOpen: false,
         width: 700,
-        height: 330,
+        height: 350,
         title: "<?php echo $LANG['at_modification']; ?>",
         buttons: {
             "<?php echo $LANG['save_button']; ?>": function() {
@@ -765,13 +753,14 @@ $(function() {
             $("#field_order").val($("#catOrd_"+data[1]).val());
 
             if ($("#t_field_" + data[1]).find(".field_info").length > 0) {
-                $("#item_dialog").dialog("option", "height", 330);
+                $("#item_dialog").dialog("option", "height", 350);
                 $(".not_category").removeClass("hidden");
                 field_info = $("#t_field_" + data[1]).find(".field_info").val().split(',');
                 $("#field_is_category").val('0');
                 $("#field_category").val(field_info[0]);
                 $("#field_type").val(field_info[2]);
                 $("#field_masked").val(field_info[3]);
+                $("#field_is_mandatory").val(field_info[4]);
                 $("#field_encrypted").val(field_info[1]);
                 
                 if ($("#roleVisibilityList_" + data[1]).val() !== 'all' && $("#roleVisibilityList_" + data[1]).val() !== '') {
@@ -798,7 +787,7 @@ $(function() {
         modal: true,
         autoOpen: false,
         width: 700,
-        height: 310,
+        height: 330,
         title: "<?php echo $LANG['define_new_field']; ?>",
         buttons: {
             "<?php echo $LANG['confirm']; ?>": function() {
@@ -833,6 +822,7 @@ $(function() {
                         "type" : $("#new_field_type").val(),
                         "encrypted" : $("#new_field_encrypted").val(),
                         "masked" : $("#new_field_masked").val(),
+                        "is_mandatory" : $("#new_field_is_mandatory").val(),
                         "id" : $("#post_id").val(),
                         "field_visibility" : roles,
                         "order" : $("#new_field_order").val()
