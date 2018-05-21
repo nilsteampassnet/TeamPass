@@ -1,4 +1,7 @@
 2.1.27
+15/
+ #2266 Google 2FA mail for temporary code is blank
+
 14/
  Fix for missing install/upgrade instructions
 

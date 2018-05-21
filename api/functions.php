@@ -3,7 +3,7 @@
  *
  * @package       (api)functions.php
  * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.0
+ * @version       2.1.1
  * @copyright     2009-2018 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$api_version = "2.1";
+$api_version = "2.1.1";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -1668,145 +1668,144 @@ function rest_get()
             **
             */
             // get user credentials
-            if (isset($GLOBALS['request'][1])) {
+            if (isset($GLOBALS['request'][1]) === true
+                && isset($GLOBALS['request'][2]) === true
+                && isset($GLOBALS['request'][3]) === true
+                && isset($GLOBALS['request'][4]) === true
+            ) {
                 // Get passed variables
-                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
-                if (count($passedData) === 4) {
-                    $tpc_url = $passedData[0];
-                    $user_login = $passedData[1];
-                    $user_pwd = $passedData[2];
-                    $user_saltkey = $passedData[3];
+                $tpc_url = Urlsafe_b64decode($GLOBALS['request'][1]);
+                $user_login = Urlsafe_b64decode($GLOBALS['request'][2]);
+                $user_pwd = Urlsafe_b64decode($GLOBALS['request'][3]);
+                $user_saltkey = Urlsafe_b64decode($GLOBALS['request'][4]);
 
-                    // get url
-                    if (isset($tpc_url)) {
-                        // is user granted?
-                        $userData = DB::queryFirstRow(
-                            "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
-                            FROM ".prefix_table("users")."
-                            WHERE login = %s",
-                            $user_login
+                // get url
+                if (isset($tpc_url) === true) {
+                    // is user granted?
+                    $userData = DB::queryFirstRow(
+                        "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
+                        FROM ".prefix_table("users")."
+                        WHERE login = %s",
+                        $user_login
+                    );
+
+                    // Check if user exists
+                    if (empty($userData['id']) === true) {
+                        rest_error('AUTH_NOT_GRANTED');
+                    }
+
+                    // check if psk is correct.
+                    if (empty($user_saltkey) === false) {
+                        $user_saltkey = defuse_validate_personal_key(
+                            $user_saltkey,
+                            $userData['encrypted_psk']
                         );
+                        if (strpos($user_saltkey, "Error ") !== false) {
+                            // error
+                            rest_error('AUTH_PSK_ERROR');
+                        }
+                    }
 
-                        // Check if user exists
-                        if (empty($userData['id']) === true) {
-                            rest_error('AUTH_NOT_GRANTED');
+                    // load passwordLib library
+                    include_once '../sources/SplClassLoader.php';
+                    $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                    $pwdlib->register();
+                    $pwdlib = new PasswordLib\PasswordLib();
+
+                    if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
+                        // Manage the case TPC asks for user identification
+                        if ($tpc_url === 'identify_user') {
+                            echo json_encode(array('err' => '', 'status' => 'USER_GRANTED'));
+                            return false;
                         }
 
-                        // check if psk is correct.
-                        if (empty($user_saltkey) === false) {
-                            $user_saltkey = defuse_validate_personal_key(
-                                $user_saltkey,
-                                $userData['encrypted_psk']
-                            );
-                            if (strpos($user_saltkey, "Error ") !== false) {
-                                // error
-                                rest_error('AUTH_PSK_ERROR');
-                            }
+                        // define the restriction of "id_tree" of this user
+                        //db::debugMode(true);
+                        $userDef = DB::queryOneColumn(
+                            'folder_id',
+                            "SELECT DISTINCT folder_id
+                            FROM ".prefix_table("roles_values")."
+                            WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ",
+                            empty($userData['groupes_interdits']) ? "" : "AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")",
+                            "AND role_id IN %ls
+                            GROUP BY folder_id",
+                            explode(";", $userData['groupes_interdits'])
+                        );
+                        // complete with "groupes_visibles"
+                        foreach (explode(";", $userData['groupes_visibles']) as $v) {
+                            array_push($userDef, $v);
                         }
 
-                        // load passwordLib library
-                        require_once '../sources/SplClassLoader.php';
-                        $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
-                        $pwdlib->register();
-                        $pwdlib = new PasswordLib\PasswordLib();
+                        // add PF
+                        $userpf = DB::queryFirstRow(
+                            "SELECT `id` FROM ".prefix_table("nested_tree")." WHERE title = %s",
+                            $userData['id']
+                        );
+                        array_push($userDef, $userpf['id']);
 
-                        if ($pwdlib->verifyPasswordHash($user_pwd, $userData['pw']) === true) {
-                            // Manage the case TPC asks for user identification
-                            if ($tpc_url === 'identify_user') {
-                                echo json_encode(array('err' => '', 'status' => 'USER_GRANTED'));
-                                return false;
-                            }
+                        // Parse provided URL
+                        $url_scheme = parse_url($tpc_url, PHP_URL_SCHEME);
+                        $url_post = parse_url($tpc_url, PHP_URL_HOST);
 
-                            // define the restriction of "id_tree" of this user
-                            //db::debugMode(true);
-                            $userDef = DB::queryOneColumn(
-                                'folder_id',
-                                "SELECT DISTINCT folder_id
-                                FROM ".prefix_table("roles_values")."
-                                WHERE type IN ('R', 'W', 'ND', 'NE', 'NDNE', 'NEND') ",
-                                empty($userData['groupes_interdits']) ? "" : "AND folder_id NOT IN (".str_replace(";", ",", $userData['groupes_interdits']).")",
-                                "AND role_id IN %ls
-                                GROUP BY folder_id",
-                                explode(";", $userData['groupes_interdits'])
-                            );
-                            // complete with "groupes_visibles"
-                            foreach (explode(";", $userData['groupes_visibles']) as $v) {
-                                array_push($userDef, $v);
-                            }
+                        // find the item associated to the url
+                        //db::debugmode(true);
+                        $response = DB::query(
+                            "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
+                            FROM ".prefix_table("items")."
+                            WHERE url LIKE %s
+                            AND id_tree IN (".implode(",", array_filter($userDef)).")
+                            AND inactif = %i
+                            ORDER BY id DESC",
+                            $url_scheme.'://'.$url_post.'%',
+                            0
+                        );
+                        $counter = DB::count();
 
-                            // add PF
-                            $userpf = DB::queryFirstRow(
-                                "SELECT `id` FROM ".prefix_table("nested_tree")." WHERE title = %s",
-                                $userData['id']
-                            );
-                            array_push($userDef, $userpf['id']);
-
-                            // Parse provided URL
-                            $url_scheme = parse_url($tpc_url, PHP_URL_SCHEME);
-                            $url_post = parse_url($tpc_url, PHP_URL_HOST);
-
-                            // find the item associated to the url
-                            //db::debugmode(true);
-                            $response = DB::query(
-                                "SELECT id, label, login, pw, pw_iv, id_tree, restricted_to, perso
-                                FROM ".prefix_table("items")."
-                                WHERE url LIKE %s
-                                AND id_tree IN (".implode(",", array_filter($userDef)).")
-                                AND inactif = %i
-                                ORDER BY id DESC",
-                                $url_scheme.'://'.$url_post.'%',
-                                0
-                            );
-                            $counter = DB::count();
-
-                            if ($counter > 0) {
-                                $json = [];
-                                foreach ($response as $data) {
-                                    // check if item visible
-                                    if (empty($data['restricted_to']) ||
-                                        ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
-                                    ) {
-                                        // prepare export
-                                        $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
-                                        $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
-                                        if ($data['perso'] === "0") {
-                                            $crypt_pw = cryption(
-                                                $data['pw'],
-                                                "",
-                                                "decrypt"
-                                            );
-                                        } elseif (empty($user_saltkey)) {
-                                            $crypt_pw['string'] = "no_psk";
-                                        } else {
-                                            $crypt_pw = cryption(
-                                                $data['pw'],
-                                                $user_saltkey,
-                                                "decrypt"
-                                            );
-                                        }
-                                        $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
-                                        $json[$data['id']]['perso'] = $data['perso'];
-                                        $json[$data['id']]['domain'] = $url_scheme.'://'.$url_post;
-                                        $json[$data['id']]['id'] = $data['id'];
+                        if ($counter > 0) {
+                            $json = [];
+                            foreach ($response as $data) {
+                                // check if item visible
+                                if (empty($data['restricted_to']) ||
+                                    ($data['restricted_to'] != "" && in_array($userData['id'], explode(";", $data['restricted_to'])))
+                                ) {
+                                    // prepare export
+                                    $json[$data['id']]['label'] = mb_convert_encoding($data['label'], mb_detect_encoding($data['label']), 'UTF-8');
+                                    $json[$data['id']]['login'] = mb_convert_encoding($data['login'], mb_detect_encoding($data['login']), 'UTF-8');
+                                    if ($data['perso'] === "0") {
+                                        $crypt_pw = cryption(
+                                            $data['pw'],
+                                            "",
+                                            "decrypt"
+                                        );
+                                    } elseif (empty($user_saltkey)) {
+                                        $crypt_pw['string'] = "no_psk";
+                                    } else {
+                                        $crypt_pw = cryption(
+                                            $data['pw'],
+                                            $user_saltkey,
+                                            "decrypt"
+                                        );
                                     }
+                                    $json[$data['id']]['pw'] = mb_detect_encoding($crypt_pw['string'], 'UTF-8', true) ? $crypt_pw['string'] : "not_utf8";
+                                    $json[$data['id']]['perso'] = $data['perso'];
+                                    $json[$data['id']]['domain'] = $url_scheme.'://'.$url_post;
+                                    $json[$data['id']]['id'] = $data['id'];
                                 }
-                                // prepare answer. If no access then inform
-                                if (empty($json)) {
-                                    rest_error('AUTH_NO_DATA');
-                                } else {
-                                    echo json_encode($json);
-                                }
+                            }
+                            // prepare answer. If no access then inform
+                            if (empty($json)) {
+                                rest_error('AUTH_NO_DATA');
                             } else {
-                                rest_error('NO_DATA_EXIST');
+                                echo json_encode($json);
                             }
                         } else {
-                            rest_error('AUTH_NOT_GRANTED');
+                            rest_error('NO_DATA_EXIST');
                         }
                     } else {
-                        rest_error('AUTH_NO_URL');
+                        rest_error('AUTH_NOT_GRANTED');
                     }
                 } else {
-                    rest_error('AUTH_NO_IDENTIFIER');
+                    rest_error('AUTH_NO_URL');
                 }
             } else {
                 rest_error('AUTH_NO_IDENTIFIER');
@@ -1815,16 +1814,14 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1])) {
                 // Get passed variables
-                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
-                $tpc_phrase = $passedData[0];
-                $user_login = $passedData[1];
-                $user_pwd = $passedData[2];
-                $user_saltkey = $passedData[3];
+                $tpc_phrase = Urlsafe_b64decode($GLOBALS['request'][1]);
+                $user_login = Urlsafe_b64decode($GLOBALS['request'][2]);
+                $user_pwd = Urlsafe_b64decode($GLOBALS['request'][3]);
+                $user_saltkey = Urlsafe_b64decode($GLOBALS['request'][4]);
 
                 // get url
-                if (isset($tpc_phrase)) {
+                if (isset($tpc_phrase) === true) {
                     // is user granted?
-                    //db::debugMode(true);
                     $userData = DB::queryFirstRow(
                         "SELECT `id`, `pw`, `groupes_interdits`, `groupes_visibles`, `fonction_id`, `encrypted_psk`
                         FROM ".prefix_table("users")."
@@ -1845,7 +1842,7 @@ function rest_get()
                     }
 
                     // load passwordLib library
-                    require_once '../sources/SplClassLoader.php';
+                    include_once '../sources/SplClassLoader.php';
                     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
@@ -1957,10 +1954,9 @@ function rest_get()
             // get user credentials
             if (isset($GLOBALS['request'][1])) {
                 // Get passed variables
-                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
-                $user_login = $passedData[0];
-                $user_pwd = $passedData[1];
-                $user_saltkey = $passedData[2];
+                $user_login = Urlsafe_b64decode($GLOBALS['request'][1]);
+                $user_pwd = Urlsafe_b64decode($GLOBALS['request'][2]);
+                $user_saltkey = Urlsafe_b64decode($GLOBALS['request'][3]);
 
                 $json = [];
                 $inc = 0;
@@ -1982,7 +1978,7 @@ function rest_get()
                 }
 
                 // Build tree
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                 $tree->register();
                 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -2046,34 +2042,12 @@ function rest_get()
                             );
 
                             if (empty($response2['title']) === false) {
-                                // get all descendants
-                                $ids = $tree->getDescendants($folder_id, true, false);
-                                foreach ($ids as $ident) {
-                                    if (array_key_exists($ident->id, $folder_arr) === false) {
-                                        array_push($folder_arr, $ident->id);
-                                        // Do query to get folder info
-                                        $fldInfo = DB::queryfirstrow(
-                                            "SELECT title, nlevel
-                                            FROM ".prefix_table("nested_tree")."
-                                            WHERE id = %i",
-                                            $ident->id
-                                        );
-
-                                        // Store info
-                                        $json[$inc]['id'] = $ident->id;
-                                        $json[$inc]['title'] = $fldInfo['title'];
-                                        $json[$inc]['level'] = $fldInfo['nlevel'];
-                                        $json[$inc]['personal'] = "0";
-                                        $json[$inc]['access_type'] = "W";
-                                        $inc++;
-                                    }
-                                }
-                                /*$json[$inc]['id'] = $folder_id;
+                                $json[$inc]['id'] = $folder_id;
                                 $json[$inc]['title'] = $response2['title'];
                                 $json[$inc]['level'] = $response2['nlevel'];
                                 $json[$inc]['access_type'] = $data['type'];
                                 $json[$inc]['personal'] = "0";
-                                $inc++;*/
+                                $inc++;
                             }
                         }
                     }
@@ -2108,7 +2082,7 @@ function rest_get()
                     }
 
                     // load passwordLib library
-                    require_once '../sources/SplClassLoader.php';
+                    include_once '../sources/SplClassLoader.php';
                     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
@@ -2228,13 +2202,17 @@ function rest_get()
              * TO BE USED ONLY BY TEAMPASS-CONNECT
              */
             // get user credentials
-            if (isset($GLOBALS['request'][1]) === true && isset($GLOBALS['request'][2]) === true && isset($GLOBALS['request'][3]) === true) {
+            if (isset($GLOBALS['request'][1]) === true
+                && isset($GLOBALS['request'][2]) === true
+                && isset($GLOBALS['request'][3]) === true
+                && isset($GLOBALS['request'][4]) === true
+                && isset($GLOBALS['request'][5]) === true
+            ) {
                 // Get passed variables
                 $item_definition = json_decode(Urlsafe_b64decode($GLOBALS['request'][2]), true);
-                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][3]));
-                $user_login = $passedData[0];
-                $user_pwd = $passedData[1];
-                $user_saltkey = $passedData[2];
+                $user_login = Urlsafe_b64decode($GLOBALS['request'][3]);
+                $user_pwd = Urlsafe_b64decode($GLOBALS['request'][4]);
+                $user_saltkey = Urlsafe_b64decode($GLOBALS['request'][5]);
 
                 // is user granted?
                 $userData = DB::queryFirstRow(
@@ -2248,7 +2226,7 @@ function rest_get()
                 }
 
                 // load passwordLib library
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                 $pwdlib->register();
                 $pwdlib = new PasswordLib\PasswordLib();
@@ -2383,13 +2361,17 @@ function rest_get()
              * TO BE USED ONLY BY TEAMPASS-CONNECT
              */
             // get user credentials
-            if (isset($GLOBALS['request'][1]) === true) {
+            if (isset($GLOBALS['request'][1]) === true
+                && isset($GLOBALS['request'][2]) === true
+                && isset($GLOBALS['request'][3]) === true
+                && isset($GLOBALS['request'][4]) === true
+            ) {
                 // Get passed variables
-                $passedData = explode(';', Urlsafe_b64decode($GLOBALS['request'][1]));
-                $item_id = $passedData[0];
-                $user_login = $passedData[1];
-                $user_pwd = $passedData[2];
-                $user_saltkey = $passedData[3];
+                $item_id = Urlsafe_b64decode($GLOBALS['request'][1]);
+                $user_login = Urlsafe_b64decode($GLOBALS['request'][2]);
+                $user_pwd = Urlsafe_b64decode($GLOBALS['request'][3]);
+                $user_saltkey = Urlsafe_b64decode($GLOBALS['request'][4]);
+                
 
                 // is user granted?
                 $userData = DB::queryFirstRow(
@@ -2403,7 +2385,7 @@ function rest_get()
                 }
 
                 // load passwordLib library
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                 $pwdlib->register();
                 $pwdlib = new PasswordLib\PasswordLib();
