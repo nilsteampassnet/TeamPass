@@ -306,6 +306,7 @@ if (null !== $post_type) {
                 if (isset($SETTINGS['item_creation_templates']) === true
                     && $SETTINGS['item_creation_templates'] === '1'
                     && isset($post_template_id) === true
+                    && empty($post_template_id) == false
                 ) {
                     DB::queryFirstRow(
                         "SELECT *
