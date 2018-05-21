@@ -15,6 +15,7 @@
 global $LANG;
 $LANG = array(
     'log_in' => 'Connexion',
+    '2fa_authentication_selector' => 'Sélectionner une méthode d\'authentification double',
     'create_item_based_upon_template' => 'Activer le Modèle par Objet',
     'create_item_based_upon_template_tip' => 'Quand activée, cette fonction permet à l\'auteur de choisir un modèle réalisé à partir des Champs Spéciaux. A noter que cela ne fonctionnera que si l\'option Champs Spéciaux est activée.',
     'main_template' => 'Utiliser comme Modèle',
