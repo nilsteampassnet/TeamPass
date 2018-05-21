@@ -2042,28 +2042,6 @@ function rest_get()
                             );
 
                             if (empty($response2['title']) === false) {
-                                // get all descendants
-                                /*$ids = $tree->getDescendants($folder_id, true, false);
-                                foreach ($ids as $ident) {
-                                    if (array_key_exists($ident->id, $folder_arr) === false) {
-                                        array_push($folder_arr, $ident->id);
-                                        // Do query to get folder info
-                                        $fldInfo = DB::queryfirstrow(
-                                            "SELECT title, nlevel
-                                            FROM ".prefix_table("nested_tree")."
-                                            WHERE id = %i",
-                                            $ident->id
-                                        );
-
-                                        // Store info
-                                        $json[$inc]['id'] = $ident->id;
-                                        $json[$inc]['title'] = $fldInfo['title'];
-                                        $json[$inc]['level'] = $fldInfo['nlevel'];
-                                        $json[$inc]['personal'] = "0";
-                                        $json[$inc]['access_type'] = "W";
-                                        $inc++;
-                                    }
-                                }*/
                                 $json[$inc]['id'] = $folder_id;
                                 $json[$inc]['title'] = $response2['title'];
                                 $json[$inc]['level'] = $response2['nlevel'];
