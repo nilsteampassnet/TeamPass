@@ -365,11 +365,13 @@ foreach ($folders as $t) {
                 folder_id   : $("#folder_id_selected").val()
             },
             function(data) {
-                if (data[0].error == "bad_structure") {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                
+                if (data.error == "bad_structure") {
                     $("#import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['import_error_no_read_possible']; ?>").show();
                 } else {
                     $("#div_import_csv_selection").show();
-                    $("#import_selection").html(data[0].output+'<div style="text-align:center;margin-top:8px; display:none;" id="csv_import_information"></div><div style=""><button id="but_csv_start"><?php echo $LANG['import_button']; ?></button></div>');
+                    $("#import_selection").html(data.output+'<div style="text-align:center;margin-top:8px; display:none;" id="csv_import_information"></div><div style=""><button id="but_csv_start"><?php echo $LANG['import_button']; ?></button></div>');
                     $("#item_all_selection").click(function() {
                         if ($("#item_all_selection").prop("checked")) {
                             $("input[class='item_checkbox']:not([disabled='disabled'])").attr("checked", true);
@@ -396,8 +398,7 @@ foreach ($folders as $t) {
                         $(this).dequeue();
                     });
                 }
-            },
-            "json"
+            }
         );
     }
 
@@ -405,17 +406,27 @@ foreach ($folders as $t) {
     function launchCSVItemsImport()
     {
         $("#csv_import_information").html('<i class="fa fa-cog fa-spin"></i>&nbsp;<?php echo $LANG['please_wait']; ?>').attr("class","").show();
-        var items = "";
+        var items = "",
+        arrItems = [];
 
         //Get data checked
         $("input[class=item_checkbox]:checked").each(function() {
             var elem = $(this).attr("id").split("-");
-            if (items == "") items = $("#item_to_import_values-"+elem[1]).val();
-            else items = items + "@_#sep#_@" + $("#item_to_import_values-"+elem[1]).val();
-
+            // Exclude previously imported items
+            if ($("#item_to_import-"+elem[1]).prop("disabled") !== true) {
+        
+                arrItems.push({
+                    label:       $(this).data('label'),
+                    login:       sanitizeString($(this).data('login')),
+                    pwd:         $(this).data('pwd'),
+                    url:         $(this).data('url'),
+                    description: $(this).data('comment'),
+                    line:        $(this).data('line'),
+                })
+            }
         });
 
-        if (items == "") {
+        if (arrItems.length === 0) {
             $("#csv_import_information").html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['error_no_selected_folder']; ?>").attr("class","ui-state-error");
             // Fade out
             $(this).delay(1000).queue(function() {
@@ -424,14 +435,14 @@ foreach ($folders as $t) {
             });
             return;
         }
-
+        
         //Lauchn ajax query that will insert items into DB
         $.post(
             "sources/import.queries.php",
             {
                 type        : "import_items",
                 folder      : $("#import_items_to").val(),
-                data        : prepareExchangedData(items , "encode", "<?php echo $_SESSION['key']; ?>"),
+                data        : prepareExchangedData(JSON.stringify(arrItems), "encode", "<?php echo $_SESSION['key']; ?>"),
                 import_csv_anyone_can_modify    : $("#import_csv_anyone_can_modify").prop("checked"),
                 import_csv_anyone_can_modify_in_role    : $("#import_csv_anyone_can_modify_in_role").prop("checked")
             },
@@ -439,7 +450,7 @@ foreach ($folders as $t) {
                 //after inserted, disable the checkbox in order to prevent against new insert
                 var elem = data[0].items.split(";");
                 for (var i=0; i<elem.length; i++) {
-                    $("#item_to_import-"+elem[i]).attr("disabled", true);
+                    $("#item_to_import-"+elem[i]).prop("disabled", true);
                     $("#item_text-"+elem[i]).css("textDecoration", "line-through");
                 }
 

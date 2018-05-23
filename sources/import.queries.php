@@ -150,7 +150,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $config->setIgnoreHeaderLine("true");
             // extract data from CSV file
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
                     'Label'     => $row[0],
                     'Login'     => $row[1],
@@ -182,10 +182,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     $comment .= addslashes($row['Label']);
                 } else {
                     // Store in variable values from previous line
-                    if (!empty($account)) {
+                    if (empty($account) === false) {
                         if ($continue_on_next_line === false) {
                             // Prepare listing that will be shown to user
-                            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.$pwd.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+                            $display .= '<tr><td><input type="checkbox" class="item_checkbox" id="item_to_import-'.$line_number.'" data-label="'.$account.'" data-login="'.$login.'" data-pwd="'.$pwd.'" data-url="'.$url.'" data-comment="'.$comment.'" data-line="'.$line_number.'" /></td><td><span id="item_text-'.$line_number.'">'.$account.'</span><input type="hidden" value="'.$account.'@|@'.$login.'@|@'.$pwd.'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'" id="item_to_import_values-'.$line_number.'" /></td></tr>';
 
                             // Initialize this variable in order to restart from scratch
                             $account = "";
@@ -195,13 +195,17 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
                 // Get values of current line
                 if ($account == "" && $continue_on_next_line === false) {
-                    $account = htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8');
-                    $login = htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8');
-                    $pwd = str_replace('"', "&quot;", $row['Password']);
-                    $url = addslashes($row['url']);
+                    $account = trim(htmlspecialchars($row['Label'], ENT_QUOTES, 'UTF-8'));
+                    $login = trim(htmlspecialchars($row['Login'], ENT_QUOTES, 'UTF-8'));
+                    $pwd = trim(str_replace('"', "&quot;", $row['Password']));
+                    $url = trim($row['url']);
                     $to_find = array("\"", "'");
                     $to_ins = array("&quot", "&#39;");
-                    $comment = htmlentities(addslashes(str_replace($to_find, $to_ins, $row['Comments'])), ENT_QUOTES, 'UTF-8');
+                    $comment = htmlentities(
+                        addslashes(str_replace($to_find, $to_ins, $row['Comments'])),
+                        ENT_QUOTES,
+                        'UTF-8'
+                    );
 
                     $continue_on_next_line = false;
                 }
@@ -221,13 +225,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         if ($line_number > 0) {
             //add last line
-            $display .= '<tr><td><input type=\"checkbox\" class=\"item_checkbox\" id=\"item_to_import-'.$line_number.'\" /></td><td><span id=\"item_text-'.$line_number.'\">'.$account.'</span><input type=\"hidden\" value=\"'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pwd).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'\" id=\"item_to_import_values-'.$line_number.'\" /></td></tr>';
+            $display .= '<tr><td><input type="checkbox" class="item_checkbox" id="item_to_import-'.$line_number.'" data-label="'.$account.'" data-login="'.$login.'" data-pwd="'.$pwd.'" data-url="'.$url.'" data-comment="'.$comment.'" data-line="'.$line_number.'" /></td><td><span id="item_text-'.$line_number.'">'.$account.'</span><input type="hidden" value="'.$account.'@|@'.$login.'@|@'.str_replace('"', "&quote;", $pwd).'@|@'.$url.'@|@'.$comment.'@|@'.$line_number.'" id="item_to_import_values-'.$line_number.'" id="item_to_import_values-'.$line_number.'" /></td></tr>';
 
             // Add a checkbox for select/unselect all others
-            $display .= '<tr><td colspan=\"2\"><br><input type=\"checkbox\" id=\"item_all_selection\" />&nbsp;'.$LANG['all'].'</td></tr>';
+            $display .= '<tr><td colspan="2"><br><input type="checkbox" id="item_all_selection" />&nbsp;'.$LANG['all'].'</td></tr>';
 
             // Prepare a list of all folders that the user can choose
-            $display .= '</table><div style=\"margin:10px 0 10px 0;\"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id=\"import_items_to\" style=\"width:87%;\">';
+            $display .= '</table><div style="margin:10px 0 10px 0;"><label><b>'.$LANG['import_to_folder'].'</b></label>&nbsp;<select id="import_items_to" style="width:87%;">';
             foreach ($tree as $t) {
                 if (($_SESSION['user_read_only'] === '0' && in_array($t->id, $_SESSION['groupes_visibles']))
                     || ($_SESSION['user_read_only'] === '1' && in_array($t->id, $_SESSION['personal_visible_groups']))
@@ -246,11 +250,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         $t->title = $_SESSION['login'];
                     }
                     if ($prev_level != null && $prev_level < $t->nlevel) {
-                        $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
+                        $display .= '<option value="'.$t->id.'"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
                     } elseif ($prev_level != null && $prev_level == $t->nlevel) {
-                        $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
+                        $display .= '<option value="'.$t->id.'"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
                     } else {
-                        $display .= '<option value=\"'.$t->id.'\"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
+                        $display .= '<option value="'.$t->id.'"'.$selected.'>'.$ident.str_replace(array("&", '"'), array("&amp;", "&quot;"), $t->title).'</option>';
                     }
                     $prev_level = $t->nlevel;
                 }
@@ -258,7 +262,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $display .= '</select></div>';
 
             // Show results to user.
-            echo '[{"error":"no" , "output" : "'.$display.'"}]';
+            echo prepareExchangedData(
+                array(
+                    "error" => "no",
+                    "output" => $display
+                ),
+                "encode"
+            );
         }
 
         //delete file
@@ -294,22 +304,20 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         //Prepare variables
         $listItems = htmlspecialchars_decode($dataReceived);
-        $list = "";
-
-        foreach (explode('@_#sep#_@', stripslashes($listItems)) as $item) {
+        
+        foreach (json_decode($listItems, true) as $item) {
             //For each item, insert into DB
-            $item = explode('@|@', $item); //explode item to get all fields
-
+            
             //Encryption key
             if ($personalFolder == 1) {
                 $encrypt = cryption(
-                    $item[2],
+                    $item['pwd'],
                     $_SESSION['user_settings']['session_psk'],
                     "encrypt"
                 );
             } else {
                 $encrypt = cryption(
-                    $item[2],
+                    $item['pwd'],
                     "",
                     "encrypt"
                 );
@@ -319,13 +327,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             DB::insert(
                 prefix_table("items"),
                 array(
-                    'label' => substr($item[0], 0, 500),
-                    'description' => empty($item[4]) ? '' : $item[4],
+                    'label' => substr($item['label'], 0, 500),
+                    'description' => empty($item['description']) === true ? '' : $item['description'],
                     'pw' => $encrypt['string'],
-                    'pw_iv' => $encrypt['iv'],
-                    'url' => empty($item[3]) ? '' : substr($item[3], 0, 500),
+                    'pw_iv' => '',
+                    'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
                     'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
-                    'login' => empty($item[1]) ? '' : substr($item[1], 0, 200),
+                    'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
                     'anyone_can_modify' => filter_input(INPUT_POST, 'import_csv_anyone_can_modify', FILTER_SANITIZE_STRING) === "true" ? 1 : 0
                 )
             );
@@ -357,10 +365,10 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 )
             );
 
-            if (empty($list)) {
-                $list = $item[5];
+            if (empty($list) === true) {
+                $list = $item['line'];
             } else {
-                $list .= ";".$item[5];
+                $list .= ";".$item['line'];
             }
 
             //Add entry to cache table
@@ -368,12 +376,12 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 prefix_table("cache"),
                 array(
                     'id' => $newId,
-                    'label' => substr($item[0], 0, 500),
-                    'description' => empty($item[4]) ? '' : $item[4],
+                    'label' => substr($item['label'], 0, 500),
+                    'description' => empty($item['description']) ? '' : $item['description'],
                     'id_tree' => filter_input(INPUT_POST, 'folder', FILTER_SANITIZE_NUMBER_INT),
                     'url' => "0",
                     'perso' => $personalFolder == 0 ? 0 : 1,
-                    'login' => empty($item[1]) ? '' : substr($item[1], 0, 500),
+                    'login' => empty($item['login']) ? '' : substr($item['login'], 0, 500),
                     'folder' => $data_fld['title'],
                     'author' => $_SESSION['user_id'],
                     'timestamp' => time(),

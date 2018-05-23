@@ -338,7 +338,7 @@ if (null !== ($post_type_upload)
         $filePath,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName
     );
-
+    
     // Add in DB
     DB::insert(
         prefix_table("misc"),

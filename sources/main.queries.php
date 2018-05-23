@@ -371,6 +371,7 @@ function mainQuery()
             } else if (isset($pwd) === true
                 && isset($data['pw']) === true
                 && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
+                && filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING) !== "users_management_list"
             ) {
                 // checked the given password
                 logEvents('failed_auth', 'user_password_not_correct', "", stripslashes($login), stripslashes($login));
