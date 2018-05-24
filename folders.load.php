@@ -19,6 +19,26 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 
 <script type="text/javascript">
 //<![CDATA[
+    
+
+$.extend($.expr[":"], {
+    "containsIN": function(elem, i, match, array) {
+        return (elem.textContent || elem.innerText || "").toLowerCase().indexOf((match[3] || "").toLowerCase()) >= 0;
+    }
+});
+
+// prepare Alphabet
+var _alphabetSearch = '';
+$.fn.dataTable.ext.search.push( function ( settings, searchData ) {
+    if ( ! _alphabetSearch ) {
+        return true;
+    }
+    if ( searchData[0].charAt(0) === _alphabetSearch ) {
+        return true;
+    }
+    return false;
+} );
+
 $(function() {
     $("#span_new_rep_roles").hide();
 
@@ -31,7 +51,10 @@ $(function() {
         "processing": true,
         "serverSide": true,
         "ajax": {
-            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.folders.php"
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.folders.php",
+            data: function(d) {
+                d.letter = _alphabetSearch
+            }
         },
         "language": {
             "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -49,6 +72,30 @@ $(function() {
             {"width": "5%"}
         ]
     });
+    
+    // manage the Alphabet
+    var alphabet = $('<div class="alphabet"/>').append( 'Search: ' );
+    $('<span class="clear active"/>')
+        .data( 'letter', '' )
+        .html( 'None' )
+        .appendTo( alphabet );
+    for ( var i=0 ; i<26 ; i++ ) {
+        var letter = String.fromCharCode( 65 + i );
+
+        $('<span/>')
+            .data( 'letter', letter )
+            .html( letter )
+            .appendTo( alphabet );
+    }
+    alphabet.insertBefore( "#t_folders_alphabet" );
+    alphabet.on( 'click', 'span', function () {
+        alphabet.find( '.active' ).removeClass( 'active' );
+        $(this).addClass( 'active' );
+
+        _alphabetSearch = $(this).data('letter');
+
+        tableFolders.api().ajax.reload();
+    } );
 
 
     $("#div_add_group").dialog({

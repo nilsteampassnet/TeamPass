@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array(
+    'filter' => 'Filtre',
+    'upload_empty_file' => 'Téléverser des fichiers vides',
+    'upload_any_extension_file' => 'Téléverser tout type d\'extension de fichier',
+    'upload_any_extension_file_tip' => 'Quand activé, cette option permet aux utilisateurs d\'attacher tout type de fichier aux objets.',
     'log_in' => 'Connexion',
     '2fa_authentication_selector' => 'Sélectionner une méthode d\'authentification double',
     'create_item_based_upon_template' => 'Activer le Modèle par Objet',
@@ -44,7 +48,7 @@ $LANG = array(
     'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',
     'error_no_user' => 'Aucun utilisateur trouvé !',
     'email_ga_subject' => 'Votre code Google Authenticator pour Teampass',
-    'email_ga_text' => 'Bonjour,<br><br>Merci de cliquer ce <a href=\'#link#\'>lien</a> et de flasher le code avec l\'application Google Authenticator de façon à recevoir vos codes d\'identification pour Teampass.<br /><br />Salutations',
+    'email_ga_text' => 'Bonjour,<br><br>Cet email a été généré depuis votre gestionnaire de mots de passe Teampass.<br><br>Votre administrateur vous demande d\'utiliser une double authentification pour vous connecter à Teampass.<br>Lors de votre première connexion à Teampass, merci de bien vouloir recopier le code suivant dans le champ "Code d\'identification" : <br><br>----------------------<br>#2FACode#<br>----------------------<br><br>Vous aurez ensuite la possibilité de paramètrer votre application Google Authenticator pour obtenir vos codes temporaire d\'identification.<br /><br />Salutations',
     'settings_attachments_encryption' => 'Activer le chiffrement des fichiers joints aux Éléments',
     'settings_attachments_encryption_tip' => 'CETTE OPTION PEUT CORROMPRE LES FICHIERS JOINTS EXISTANTS. Merci de lire la suite avec attention. Si activée, cette option chiffrera les fichiers joints aux Éléments sur le serveur. L\'algorithme de chiffrement utilise le sel défini pour Teampass. Cela requiert également un peu de ressource supplémentaire de la part du serveur. ATTENTION : en cas de changement de stratégie, il est nécessaire de faire tourner le script permettant d\'adapter les fichiers joints existants. Pour cela, voir l\'onglet "Actions spécifiques".',
     'admin_action_attachments_cryption' => 'Déchiffrer ou chiffrer les fichiers joints aux Éléments',
@@ -200,7 +204,7 @@ $LANG = array(
     'admin_email_test_configuration_tip' => 'Ce test va envoyer un e-mail à l\'adresse indiquée. Si vous ne le recevez pas, merci de vérifier le paramétrage.',
     'admin_email_test_subject' => '[TeamPass] E-mail de test',
     'admin_email_test_body' => 'Bonjour,<br /><br />E-mail envoyé avec succès.<br / ><br />Salutations',
-    'admin_email_result_ok' => 'E-mail envoyé ... vérifiez votre boite de réception',
+    'admin_email_result_ok' => 'E-mail envoyé à #email# ... vérifiez votre boite de réception',
     'admin_email_result_nok' => 'E-mail non envoyé… Vérifiez votre configuration. Erreur retournée : ',
     'email_subject_item_updated' => 'Mot de passe mis à jour',
     'email_body_item_updated' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>Le mot de passe de l\\\'élément \\\'#item_label#\\\' a été mis à jour.<br /><br />Vous pouvez le vérifier <a href=\\\'#url#/index.php?page=items&group=#item_category#&id=#item_id#\\\'>ICI</a><br /><br />Salutation',

@@ -14,6 +14,10 @@
  */
 global $LANG;
 $LANG = array(
+    'filter' => 'Filter',
+    'upload_empty_file' => 'Upload empty file',
+    'upload_any_extension_file' => 'Upload any extension file',
+    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
     'log_in' => 'Log In',
     '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'create_item_based_upon_template' => 'Use of template for Item',

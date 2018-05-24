@@ -303,9 +303,24 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
         }
 
         //Prepare variables
-        $listItems = htmlspecialchars_decode($dataReceived);
-        
-        foreach (json_decode($listItems, true) as $item) {
+        $listItems = json_decode($dataReceived, true);
+
+        /**
+         * Clean array values
+         *
+         * @param [string] $value
+         * @return void
+         */
+        function cleanOutput(&$value)
+        {
+            return htmlspecialchars_decode($value);
+        }
+
+        // Clean each array entry
+        array_walk_recursive($listItems, "cleanOutput");
+
+        // Loop on array
+        foreach ($listItems as $item) {
             //For each item, insert into DB
             
             //Encryption key

@@ -291,7 +291,9 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_filter = filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING);
 
             $tree = $tree->getDescendants();
-            $texte = '<table><thead><tr><th>'.$LANG['groups'].'</th>';
+            $texte = '<table><thead><tr><th><div>'.addslashes($LANG['groups']).'</div><div>' .
+                '<input type="text" placeholder="'.addslashes($LANG['filter']).'" id="filter_folders" />'.
+                '&nbsp<span class="fa fa-eraser mi-red pointer eraser"></span></div></th>';
             $gpes_ok = array();
             $gpes_nok = array();
             $arrRolesTitle = array();
@@ -379,7 +381,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                     }
 
                     //display 1st cell of the line
-                    $texte .= '<tr><td style=\'font-size:10px; font-family:arial;\' title=\'ID='.$node->id.'\'>'.$ident." ".$node->title.'</td>';
+                    $texte .= '<tr><td style=\'font-size:10px; font-family:arial;\' class="folder-name" title=\'ID='.$node->id.'\'>'.$ident." ".$node->title.'</td>';
 
                     foreach ($arrRoles as $role) {
                         //check if this role has access or not

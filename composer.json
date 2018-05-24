@@ -5,7 +5,7 @@
     "version": "2.1.27",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
-    "license": "GNU GPL-3.0",
+    "license": "GPL-3.0-only",
     "authors": [
         {"name": "Nils Laumaillé", "email": "nils@teampass.net"}
     ],

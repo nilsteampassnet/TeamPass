@@ -518,7 +518,9 @@ global \$SETTINGS;
                             array('admin', 'offline_key_level', '0'),
                             array('admin', 'enable_http_request_login', '0'),
                             array('admin', 'ldap_and_local_authentication', '0'),
-                            array('admin', 'secure_display_image', '1')
+                            array('admin', 'secure_display_image', '1'),
+                            array('admin', 'upload_zero_byte_file', '0'),
+                            array('admin', 'upload_all_extensions_file', '0')
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting

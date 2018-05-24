@@ -965,6 +965,26 @@ if (intval($tmp) === 0) {
 }
 
 
+// add new admin setting "upload_zero_byte_file"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'upload_zero_byte_file'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upload_zero_byte_file', '0')"
+    );
+}
+
+
+// add new admin setting "upload_all_extensions_file"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'upload_all_extensions_file'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upload_all_extensions_file', '0')"
+    );
+}
+
+
 
 // alter table NESTEED_TREE to INT(5) on field "renewal_period"
 mysqli_query(

@@ -416,9 +416,9 @@ foreach ($folders as $t) {
             if ($("#item_to_import-"+elem[1]).prop("disabled") !== true) {
         
                 arrItems.push({
-                    label:       $(this).data('label'),
+                    label:       sanitizeString($(this).data('label')),
                     login:       sanitizeString($(this).data('login')),
-                    pwd:         $(this).data('pwd'),
+                    pwd:         sanitizeString($(this).data('pwd')),
                     url:         $(this).data('url'),
                     description: $(this).data('comment'),
                     line:        $(this).data('line'),
@@ -435,7 +435,7 @@ foreach ($folders as $t) {
             });
             return;
         }
-        
+        console.log(arrItems);
         //Lauchn ajax query that will insert items into DB
         $.post(
             "sources/import.queries.php",
@@ -489,7 +489,12 @@ foreach ($folders as $t) {
                     // Reload page
                     $(this).delay(2000).queue(function() {
                         $("#import_information").effect( "fade", "slow" );
-                        //document.location = "index.php?page=items";
+
+                        // Reload page in 5 secs
+                        $(this).delay(4000).queue(function() {
+                            document.location = "index.php?page=items";
+                        });
+                            
                         $(this).dequeue();
                     });
                 }

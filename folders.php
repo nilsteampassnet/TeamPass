@@ -93,6 +93,7 @@ echo '
 //Show the KB in a table view
 echo '
 <div style="margin:10px auto 25px auto;min-height:250px;" id="folders_page">
+<div id="t_folders_alphabet" style="margin-top:25px;"></div>
 <table id="t_folders" class="hover" width="100%">
     <thead><tr>
         <th></th>

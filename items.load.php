@@ -1569,7 +1569,7 @@ function AfficherDetailsItem(id, salt_key_required, expired_item, restricted, di
                         $("#div_dialog_message").show();
                         return;
                     }
-                    console.log(data);
+                    
                     if (data.error != "") {
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />"+data.error);
                         $("#div_dialog_message").show();
@@ -3021,6 +3021,10 @@ $(function() {
             $("#new_rep_show_error").addClass("hidden");
             $("#new_rep_show_error").html("");
             $(".ui-tooltip").siblings(".tooltip").remove();
+            
+            $('#new_rep_groupe').select2({
+                language: "<?php echo $_SESSION['user_language_code']; ?>"
+            });
         }
     });
     //<=
@@ -3098,6 +3102,9 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+            $('#edit_folder_folder').select2({
+                language: "<?php echo $_SESSION['user_language_code']; ?>"
+            });
         }
     });
     //<=
@@ -3232,6 +3239,9 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+            $('#move_folder_id').select2({
+                language: "<?php echo $_SESSION['user_language_code']; ?>"
+            });
         }
     });
     //<=
@@ -3363,6 +3373,9 @@ $(function() {
         },
         open: function(event,ui) {
             $(".ui-tooltip").siblings(".tooltip").remove();
+            $('#delete_rep_groupe').select2({
+                language: "<?php echo $_SESSION['user_language_code']; ?>"
+            });
         },
         close: function() {
             $("#delete_rep_groupe_validate").prop("checked", false);
@@ -3923,12 +3936,21 @@ if (strrpos($SETTINGS['upload_maxfilesize'], "mb") === false) {
         url : "sources/upload/upload.attachments.php",
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
-        filters : [
-            {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
-            {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
-            {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
-            {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
-        ],<?php
+        filters : {
+            mime_types : [
+<?php if (isset($SETTINGS['upload_all_extensions_file']) === false
+    || (isset($SETTINGS['upload_all_extensions_file']) === true && $SETTINGS['upload_all_extensions_file'] === '0')
+) {?>
+                {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
+                {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
+                {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
+                {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
+<?php } ?>
+            ],
+<?php if (isset($SETTINGS['upload_zero_byte_file']) === true && $SETTINGS['upload_zero_byte_file'] === '1') {?>
+            prevent_empty : false
+<?php } ?>
+        },<?php
 if ($SETTINGS['upload_imageresize_options'] == 1) {
 ?>
         resize : {
@@ -4033,12 +4055,21 @@ if (strrpos($SETTINGS['upload_maxfilesize'], "mb") === false) {
         url : "sources/upload/upload.attachments.php",
         flash_swf_url : "includes/libraries/Plupload/Moxie.swf",
         silverlight_xap_url : "includes/libraries/Plupload/Moxie.xap",
-        filters : [
-            {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
-            {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
-            {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
-            {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
-        ],<?php
+        filters : {
+            mime_types : [
+<?php if (isset($SETTINGS['upload_all_extensions_file']) === false
+    || (isset($SETTINGS['upload_all_extensions_file']) === true && $SETTINGS['upload_all_extensions_file'] === '0')
+) {?>
+                {title : "Image files", extensions : "<?php echo $SETTINGS['upload_imagesext']; ?>"},
+                {title : "Package files", extensions : "<?php echo $SETTINGS['upload_pkgext']; ?>"},
+                {title : "Documents files", extensions : "<?php echo $SETTINGS['upload_docext']; ?>"},
+                {title : "Other files", extensions : "<?php echo $SETTINGS['upload_otherext']; ?>"}
+<?php } ?>
+            ],
+<?php if (isset($SETTINGS['upload_zero_byte_file']) === true && $SETTINGS['upload_zero_byte_file'] === '1') {?>
+            prevent_empty : false
+<?php } ?>
+        },<?php
 if ($SETTINGS['upload_imageresize_options'] == 1) {
         ?>
         resize : {
@@ -4781,12 +4812,11 @@ function prepareOneTimeView()
                 // prepare clipboard
                 var clipboard = new Clipboard("#button_copy_otv_link", {
                     text: function() {
-                        return unsanitizeString($('#otv_link').text());
+                        return $('#otv_link').text();
                     }
                 });
                 clipboard.on('success', function(e) {
                     $("#show_otv_copied").html("<?php echo addslashes($LANG['link_is_copied']); ?>").show().fadeOut(2000);
-
                     e.clearSelection();
                 });
 
