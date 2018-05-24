@@ -43,13 +43,12 @@ define('KP_URL', 5);
 define('KP_UUID', 6);
 define('KP_NOTES', 7);
 
-/*
- * sanitiseString
- *
- * Used to format the string ready for insertion in to the database
- */
 /**
- * @param string $crLFReplacement
+ * Used to format the string ready for insertion in to the database
+ *
+ * @param  string $str             String to clean
+ * @param  string $crLFReplacement Replacement
+ * @return string
  */
 function sanitiseString($str, $crLFReplacement)
 {
@@ -60,6 +59,17 @@ function sanitiseString($str, $crLFReplacement)
         addslashes($str);
     }
     return $str;
+}
+
+/**
+ * Clean array values
+ *
+ * @param  string $value String to clean
+ * @return string
+ */
+function cleanOutput(&$value)
+{
+    return htmlspecialchars_decode($value);
 }
 
 global $k, $settings;
@@ -140,9 +150,9 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             // data from CSV
             $valuesToImport = array();
             // load libraries
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php';
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php';
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Lexer.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/Interpreter.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Goodby/CSV/Import/Standard/LexerConfig.php';
 
             // Lexer configuration
             $config = new LexerConfig();
@@ -150,7 +160,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $config->setIgnoreHeaderLine("true");
             // extract data from CSV file
             $interpreter = new Interpreter();
-            $interpreter->addObserver(function (array $row) use (&$valuesToImport) {
+            $interpreter->addObserver(function(array $row) use (&$valuesToImport) {
                 $valuesToImport[] = array(
                     'Label'     => $row[0],
                     'Login'     => $row[1],
@@ -304,17 +314,6 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
         //Prepare variables
         $listItems = json_decode($dataReceived, true);
-
-        /**
-         * Clean array values
-         *
-         * @param [string] $value
-         * @return void
-         */
-        function cleanOutput(&$value)
-        {
-            return htmlspecialchars_decode($value);
-        }
 
         // Clean each array entry
         array_walk_recursive($listItems, "cleanOutput");

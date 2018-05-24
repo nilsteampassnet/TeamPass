@@ -291,7 +291,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_filter = filter_input(INPUT_POST, 'filter', FILTER_SANITIZE_STRING);
 
             $tree = $tree->getDescendants();
-            $texte = '<table><thead><tr><th><div>'.addslashes($LANG['groups']).'</div><div>' .
+            $texte = '<table><thead><tr><th><div>'.addslashes($LANG['groups']).'</div><div>'.
                 '<input type="text" placeholder="'.addslashes($LANG['filter']).'" id="filter_folders" />'.
                 '&nbsp<span class="fa fa-eraser mi-red pointer eraser"></span></div></th>';
             $gpes_ok = array();
