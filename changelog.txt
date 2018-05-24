@@ -1,4 +1,12 @@
 2.1.27
+16/
+ New - Added folders filter in Manage Roles page
+ New - Added folders alphabet filter in Manage Folders page
+ #2279 Google Authentication no link
+ #2277 Import fails when Login: / Account: has a backslash inside of it
+ #2274 Import from csv-list includes items that are marked as already imported
+ #2263 New upload settings to permit empty files and/or any extensions to be uploaded
+
 15/
  #2266 Google 2FA mail for temporary code is blank
 

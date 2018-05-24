@@ -58,6 +58,18 @@ if (isset($SETTINGS_EXT['pwComplexity']) === false) {
     );
 }
 
+//init SQL variables
+$filterLetter = '';
+
+// Filter
+if (isset($_GET['letter']) === true
+    && $_GET['letter'] !== ""
+    && $_GET['letter'] !== "None"
+) {
+    $filterLetter = filter_var($_GET['letter'], FILTER_SANITIZE_STRING);
+}
+
+
 //Build tree
 $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
 $tree->register();
@@ -78,7 +90,10 @@ if (count($treeDesc) > 0) {
 $x = 0;
 $arr_ids = array();
 foreach ($treeDesc as $t) {
-    if (in_array($t->id, $_SESSION['groupes_visibles']) && !in_array($t->id, $_SESSION['personal_visible_groups']) && $t->personal_folder == 0) {
+    if (in_array($t->id, $_SESSION['groupes_visibles']) === true
+        && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+        && $t->personal_folder == 0
+    ) {
         // get $t->parent_id
         $data = DB::queryFirstRow("SELECT title FROM ".$pre."nested_tree WHERE id = %i", $t->parent_id);
         if ($t->nlevel == 1) {
@@ -108,86 +123,97 @@ foreach ($treeDesc as $t) {
             $t->id
         );
 
-        // start the line
-        $sOutput .= "[";
+        // If filter on letter
+        if (empty($filterLetter) === true
+            || strtoupper(substr($t->title, 0, 1)) === $filterLetter
+            ) {
 
-        //col1
-        if (($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
-            ||
-            $t->parent_id != 0
-        ) {
-            $sOutput .= '"<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"open_edit_folder_dialog(\''.$t->id.'\')\" title=\"'.$LANG['edit'].' ['.$t->id.']'.'\"></i>&nbsp;<input type=\"checkbox\" class=\"cb_selected_folder\" id=\"cb_selected-'.$t->id.'\" />"';
-        } else {
-            $sOutput .= '""';
+            // start the line
+            $sOutput .= "[";
+
+            //col1
+            if (($t->parent_id == 0 && ($_SESSION['is_admin'] == 1 || $_SESSION['can_create_root_folder'] == 1))
+                ||
+                $t->parent_id != 0
+            ) {
+                $sOutput .= '"<i class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"open_edit_folder_dialog(\''.$t->id.'\')\" title=\"'.$LANG['edit'].' ['.$t->id.']'.'\"></i>&nbsp;<input type=\"checkbox\" class=\"cb_selected_folder\" id=\"cb_selected-'.$t->id.'\" />"';
+            } else {
+                $sOutput .= '""';
+            }
+            $sOutput .= ',';
+
+            //col5
+            $sOutput .= '"'.$t->id.'"';
+            $sOutput .= ',';
+
+            //col2
+            $sOutput .= '"'.$ident.'<span id=\"title_'.$t->id.'\">'.addslashes(str_replace("'", "&lsquo;", $t->title)).'</span>"';
+            $sOutput .= ',';
+
+            // col3 - get number of items in folder
+            $data_items = DB::query(
+                "SELECT id
+                FROM ".$pre."items
+                WHERE id_tree = %i",
+                $t->id
+            );
+            $sOutput .= '"'.DB::count().'"';
+            $sOutput .= ',';
+
+            //col3
+            if (isset($SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1]) === true) {
+                $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.$SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1].'</span>"';
+            } else {
+                $sOutput .= '""';
+            }
+            $sOutput .= ',';
+
+            //col4 - PARENT
+            $data4 = DB::queryFirstRow(
+                "SELECT title
+                FROM ".$pre."nested_tree
+                WHERE id = %i",
+                intval($t->parent_id)
+            );
+            $sOutput .= '"<span id=\"parent_'.$t->id.'\">'.$data4['title'].' ('.$t->parent_id.')</span>"';
+            $sOutput .= ',';
+
+            //col5
+            $sOutput .= '"'.$t->nlevel.'"';
+            $sOutput .= ',';
+
+            //col6
+            $sOutput .= '"<span id=\"renewal_'.$t->id.'\">'.$node_data['renewal_period'].'</span>"';
+            $sOutput .= ',';
+
+            //col7
+            $data7 = DB::queryFirstRow(
+                "SELECT bloquer_creation,bloquer_modification
+                FROM ".$pre."nested_tree
+                WHERE id = %i",
+                intval($t->id)
+            );
+            if (isset($data7['bloquer_creation']) && $data7['bloquer_creation'] == 1) {
+                        $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-0\"></i>"';
+            } else {
+                        $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-1\"></i>"';
+            }
+            $sOutput .= ',';
+
+            //col8
+            if (isset($data7['bloquer_modification']) && $data7['bloquer_modification'] == 1) {
+                        $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
+            } else {
+                        $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
+            }
+            $sOutput .= '<input type=\"hidden\" id=\"parent_id_'.$t->id.'\" value=\"'.$t->parent_id.'\" /><input type=\"hidden\"  id=\"renewal_id_'.$t->id.'\" value=\"'.$node_data['valeur'].'\" /><input type=\"hidden\"  id=\"block_creation_'.$t->id.'\" value=\"'.$node_data['bloquer_creation'].'\" /><input type=\"hidden\"  id=\"block_modif_'.$t->id.'\" value=\"'.$node_data['bloquer_modification'].'\" />"';
+
+            //Finish the line
+            $sOutput .= '],';
+
+            array_push($arr_ids, $t->id);
+            $x++;
         }
-        $sOutput .= ',';
-
-        //col5
-        $sOutput .= '"'.$t->id.'"';
-        $sOutput .= ',';
-
-        //col2
-        $sOutput .= '"'.$ident.'<span id=\"title_'.$t->id.'\">'.addslashes(str_replace("'", "&lsquo;", $t->title)).'</span>"';
-        $sOutput .= ',';
-
-        // col3 - get number of items in folder
-        $data_items = DB::query(
-            "SELECT id
-            FROM ".$pre."items
-            WHERE id_tree = %i",
-            $t->id
-        );
-        $sOutput .= '"'.DB::count().'"';
-        $sOutput .= ',';
-
-        //col3
-        if (isset($SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1]) === true) {
-            $sOutput .= '"<span id=\"complexite_'.$t->id.'\">'.$SETTINGS_EXT['pwComplexity'][$node_data['valeur']][1].'</span>"';
-        } else {
-            $sOutput .= '""';
-        }
-        $sOutput .= ',';
-
-        //col4
-        $sOutput .= '"<span id=\"parent_'.$t->id.'\">'.$t->parent_id.'</span>"';
-        $sOutput .= ',';
-
-        //col5
-        $sOutput .= '"'.$t->nlevel.'"';
-        $sOutput .= ',';
-
-        //col6
-        $sOutput .= '"<span id=\"renewal_'.$t->id.'\">'.$node_data['renewal_period'].'</span>"';
-        $sOutput .= ',';
-
-        $data3 = DB::queryFirstRow(
-            "SELECT bloquer_creation,bloquer_modification
-            FROM ".$pre."nested_tree
-            WHERE id = %i",
-            intval($t->id)
-        );
-
-        //col7
-        if (isset($data3['bloquer_creation']) && $data3['bloquer_creation'] == 1) {
-                    $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-0\"></i>"';
-        } else {
-                    $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_autorisation_sans_complexite-1\"></i>"';
-        }
-        $sOutput .= ',';
-
-        //col8
-        if (isset($data3['bloquer_modification']) && $data3['bloquer_modification'] == 1) {
-                    $sOutput .= '"<i class=\"fa fa-toggle-on mi-green\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-0\"></i>';
-        } else {
-                    $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$t->id.'-modif_droit_modification_sans_complexite-1\"></i>';
-        }
-        $sOutput .= '<input type=\"hidden\" id=\"parent_id_'.$t->id.'\" value=\"'.$t->parent_id.'\" /><input type=\"hidden\"  id=\"renewal_id_'.$t->id.'\" value=\"'.$node_data['valeur'].'\" /><input type=\"hidden\"  id=\"block_creation_'.$t->id.'\" value=\"'.$node_data['bloquer_creation'].'\" /><input type=\"hidden\"  id=\"block_modif_'.$t->id.'\" value=\"'.$node_data['bloquer_modification'].'\" />"';
-
-        //Finish the line
-        $sOutput .= '],';
-
-        array_push($arr_ids, $t->id);
-        $x++;
     }
 }
 

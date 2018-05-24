@@ -3174,9 +3174,13 @@ if (null !== $post_type) {
             );
 
             // check if user can perform this action
-            if (null !== $post_context && empty($post_context) === false) {
-                if ($post_context === "create_folder" || $post_context === "edit_folder"
-                    || $post_context === "delete_folder" || $post_context === "copy_folder"
+            if (null !== $post_context
+                && empty($post_context) === false
+            ) {
+                if ($post_context === "create_folder"
+                    || $post_context === "edit_folder"
+                    || $post_context === "delete_folder"
+                    || $post_context === "copy_folder"
                 ) {
                     if ($_SESSION['is_admin'] !== '1'
                         && ($_SESSION['user_manager'] !== '1')

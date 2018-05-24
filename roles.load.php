@@ -320,7 +320,6 @@ function refresh_roles_matrix(order)
             }
 
             // Prepare autocomplete for filterbox
-            //Prepare autocomplete for filter
             $("#filter_roles")
                 .autocomplete({
                     source: data.list_of_roles,
@@ -330,6 +329,28 @@ function refresh_roles_matrix(order)
                     }
                 }
             );
+
+
+            // Filter folders
+            $('#filter_folders').keypress(function(e) {
+                if (e.which === 13) {
+                    var criteria = $(this).val().trim().toLowerCase();
+
+                    $('.folder-name').each(function(i, obj) {
+                        if ($(this).text().trim().toLowerCase().indexOf(criteria) > -1) {
+                            $(this).closest('tr').removeClass('hidden');
+                        } else {
+                            $(this).closest('tr').addClass('hidden');
+                        }
+                    });
+                }
+            });
+            
+            // Clear folders filter
+            $('.eraser').click(function() {
+                $('#filter_folders').val('');
+                refresh_roles_matrix("reload");
+            });
 
             $("#div_loading").hide();
         }

@@ -536,7 +536,7 @@ if (null !== $post_type) {
                             $data['user_id'],
                             'at_modification',
                             $author['login'],
-                            'at_'.$field.' : '.$oldPwClear
+                            'at_'.$field.' : '.$oldPwClear['string']
                         );
                     }
                 }
