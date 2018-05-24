@@ -14,9 +14,9 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
-    !isset($_SESSION['user_id']) || empty($_SESSION['user_id']) ||
-    !isset($_SESSION['key']) || empty($_SESSION['key'])
+if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1
+    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
+    || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
 ) {
     die('Hacking attempt...');
 }
@@ -1092,7 +1092,7 @@ if (null !== $post_newtitle) {
                 // Then use the creator ones
                 if ($nodeInfo->personal_folder !== 1
                     && isset($SETTINGS['subfolder_rights_as_parent']) === true
-                    && $SETTINGS['subfolder_rights_as_parent'] === "0"
+                    && $SETTINGS['subfolder_rights_as_parent'] === "1"
                     && $_SESSION['is_admin'] !== 0
                 ) {
                     //add access to this new folder
