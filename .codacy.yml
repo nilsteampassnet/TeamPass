@@ -1,0 +1,6 @@
+---
+exclude_paths:
+  - '*.min.js'
+  - includes/libraries/*
+  - includes/js/*
+  - includes/font-awesome/*
