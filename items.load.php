@@ -3705,41 +3705,50 @@ $(function() {
                 $("#div_item_share_status").removeClass("hidden");
 
                 // Check if email format is ok
-                if (IsValidEmail($("#item_share_email").val())) {
-                    $("#div_item_share_status").show();
-                    $.post(
-                        "sources/items.queries.php",
-                        {
-                            type    : "send_email",
-                            id      : $("#id_item").val(),
-                            receipt    : $("#item_share_email").val(),
-                            cat      : "share_this_item",
-                            key        : "<?php echo $_SESSION['key']; ?>"
-                        },
-                        function(data) {
-                            $("#div_item_share_status").addClass("hidden");
-                            if (data[0].error === "") {
-                                $("#div_item_share_init").addClass("hidden");
-                                $("#div_item_share_error").removeClass("ui-state-error").addClass("ui-state-highlight");
-                                $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']); ?>").show();
+                var verimail = new Comfirm.AlphaMail.Verimail();
+                verimail.verify(
+                    $("#item_share_email").val(),
+                    function(status, message, suggestion){
+                        if (status < 0) {
+                            // Incorrect syntax!
+                            $("#div_item_share_error")
+                                .html("<?php echo addslashes($LANG['bad_email_format']); ?>")
+                                .removeClass("hidden");
+                            $('#div_item_share_status').addClass('hidden');
+                        } else {
+                            // Coorect
+                            $("#div_item_share_status").show();
+                            $.post(
+                                "sources/items.queries.php",
+                                {
+                                    type    : "send_email",
+                                    id      : $("#id_item").val(),
+                                    receipt    : $("#item_share_email").val(),
+                                    cat      : "share_this_item",
+                                    key        : "<?php echo $_SESSION['key']; ?>"
+                                },
+                                function(data) {
+                                    $("#div_item_share_status").addClass("hidden");
+                                    if (data[0].error === "") {
+                                        $("#div_item_share_init").addClass("hidden");
+                                        $("#div_item_share_error").removeClass("ui-state-error").addClass("ui-state-highlight");
+                                        $("#div_item_share_error").html("<?php echo addslashes($LANG['share_sent_ok']); ?>").show();
 
-                                // close dialog
-                                $(this).delay(1500).queue(function() {
-                                    $("#div_item_share").dialog('close');
-                                    $(this).dequeue();
-                                });
-                            } else {
-                                $("#div_item_share_error").removeClass("ui-state-highlight").addClass("ui-state-error");
-                                $("#div_item_share_error").html(data[0].message).show();
-                            }
-                        },
-                        "json"
-                   );
-                } else {
-                    $("#div_item_share_error")
-                        .html("<?php echo addslashes($LANG['bad_email_format']); ?>")
-                        .removeClass("hidden");
-                }
+                                        // close dialog
+                                        $(this).delay(1500).queue(function() {
+                                            $("#div_item_share").dialog('close');
+                                            $(this).dequeue();
+                                        });
+                                    } else {
+                                        $("#div_item_share_error").removeClass("ui-state-highlight").addClass("ui-state-error");
+                                        $("#div_item_share_error").html(data[0].message).show();
+                                    }
+                                },
+                                "json"
+                        );
+                        }
+                    }
+                );
             },
             "<?php echo addslashes($LANG['close']); ?>": function() {
                 $(this).dialog('close');
@@ -3784,10 +3793,22 @@ $(function() {
                 $("#div_suggest_change_wait").html('<i class="fa fa-cog fa-spin fa-2x"></i>').show().removeClass("ui-state-error");
 
                 // do checks
-                if (!IsValidEmail($("#email_change").val()) && $("#email_change").val() !== "") {
-                    $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['email_format_is_not_correct']); ?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
-                    return false;
+                // Check if email format is ok
+                if ($("#email_change").val() !== '') {
+                    var verimail = new Comfirm.AlphaMail.Verimail();
+                    verimail.verify(
+                        $("#email_change").val(),
+                        function(status, message, suggestion){
+                            if (status < 0) {
+                                // Incorrect syntax!
+                                $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['email_format_is_not_correct']); ?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
+                                return false;
+                            }
+                        }
+                    );
                 }
+
+                // Check URL
                 if (!validateURL($("#url_change").val()) && $("#url_change").val() !== "") {
                     $("#div_suggest_change_wait").html('<i class="fa fa-warning fa-lg"></i>&nbsp;<?php echo addslashes($LANG['url_format_is_not_correct']); ?>').show(1).delay(2000).fadeOut(1000).addClass("ui-state-error");
                     return false;

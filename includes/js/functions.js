@@ -210,21 +210,14 @@ function SendMail(category, contentEmail, keySent, message){
     );
 }
 
-/**
-*   Checks if email has expected format (xxx@yyy.zzz)
-**/
-function IsValidEmail(email) {
-    var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
-    return filter.test(email);
-}
 
 /**
 *   Checks if URL has expected format
 **/
-function validateURL(textval) {
+function validateURL(url) {
     //var urlregex = new RegExp("^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
     var urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-    return urlregex.test(textval);
+    return urlregex.test(url);
 }
 
 
