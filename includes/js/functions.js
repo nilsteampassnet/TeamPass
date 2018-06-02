@@ -11,29 +11,12 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-/**
-*   Show or hide Loading animation GIF
-**/
-function LoadingPage(){
-    if ($("#div_loading").is(":visible")) {
-        $("#div_loading").addClass("hidden");
-    } else {
-        $("#div_loading").removeClass("hidden");
-    }
-}
-
 
 /**
 *   Add 1 hour to session duration
 **/
-function IncreaseSessionTime(messageEnd, messageWait, duration){
+function IncreaseSessionTime(messageEnd, duration){
     duration = duration || 60;
-    $("#main_info_box_text").html(messageWait);
-    $("#main_info_box").show().position({
-        my: "center",
-        at: "center top+75",
-        of: "#top"
-    });
     $.post(
         "sources/main.queries.php",
         {
@@ -42,12 +25,10 @@ function IncreaseSessionTime(messageEnd, messageWait, duration){
         },
         function(data){
             if (data[0].new_value !== "expired") {
-                $("#main_info_box_text").html(messageEnd);
-                $("#main_info_box").show(1).delay(3000).fadeOut(1000);
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
                 $("#countdown").css("color","white");
-                $("#div_increase_session_time").dialog("close");
+                alertify.success(messageWait, 2);
             } else {
                 $(location).attr("href","index.php?session=expired");
             }
@@ -112,21 +93,6 @@ function OpenDialog(id){
     $("#"+id).dialog("open");
 }
 
-/**
-*   Toggle a DIV
-**/
-function toggleDiv(id){
-    $("#"+id).slideToggle("slow");
-    //specific case to not show upgrade alert
-    if(id === "div_maintenance"){
-        $.post(
-            "sources/main.queries.php",
-            {
-                type    : "hide_maintenance"
-            }
-        );
-    }
-}
 
 /**
 *   Checks if value is an integer
@@ -210,21 +176,13 @@ function SendMail(category, contentEmail, keySent, message){
     );
 }
 
-/**
-*   Checks if email has expected format (xxx@yyy.zzz)
-**/
-function IsValidEmail(email) {
-    var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
-    return filter.test(email);
-}
 
 /**
 *   Checks if URL has expected format
 **/
-function validateURL(textval) {
-    //var urlregex = new RegExp("^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
+function validateURL(url) {
     var urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-    return urlregex.test(textval);
+    return urlregex.test(url);
 }
 
 
@@ -370,4 +328,44 @@ function blink(elem, times, speed, klass)
         });
         times-= .5;
     }
+}
+
+function showAlertify(msg, delay = '', position = '', type = '')
+{
+    alertify.set(
+        'notifier',
+        'position',
+        position === '' ? 'top-center' : position
+    );
+
+    if (type === 'warning' || type === '') {
+        alertify
+            .warning(
+                msg,
+                delay === '' ? 5 : delay
+            )
+            .dismissOthers();
+    } else if (type === 'success') {
+        alertify
+            .success(
+                msg,
+                delay === '' ? 5 : delay
+            )
+            .dismissOthers();
+    } else if (type === 'message') {
+        alertify
+            .message(
+                msg,
+                delay === '' ? 5 : delay
+            )
+            .dismissOthers();
+    } else if (type === 'notify') {
+        alertify
+            .notify(
+                msg,
+                delay === '' ? 5 : delay
+            )
+            .dismissOthers();
+    }
+    
 }

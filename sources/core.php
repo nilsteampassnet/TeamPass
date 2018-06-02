@@ -1,15 +1,18 @@
 <?php
 /**
- * @package       core.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ * Teampass - a collaborative passwords manager
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @category  Teampass
+ * @package   Core.php
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2018 Nils Laumaillé
+ * @license   GNU GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      http://www.teampass.net
  */
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
@@ -69,32 +72,32 @@ if (isset($_SERVER['HTTPS']) === true
 
 
 // Load pwComplexity
-if (isset($SETTINGS_EXT['pwComplexity']) === false) {
+if (defined('TP_PW_COMPLEXITY') === false) {
     // Pw complexity levels
     if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== "0") {
-        if (file_exists($SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php') === true) {
-            require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-        }
-        $SETTINGS_EXT['pwComplexity'] = array(
-            0=>array(0, $LANG['complex_level0']),
-            25=>array(25, $LANG['complex_level1']),
-            50=>array(50, $LANG['complex_level2']),
-            60=>array(60, $LANG['complex_level3']),
-            70=>array(70, $LANG['complex_level4']),
-            80=>array(80, $LANG['complex_level5']),
-            90=>array(90, $LANG['complex_level6'])
+        define(
+            'TP_PW_COMPLEXITY',
+            array(
+            0=>array(0, langHdl('complex_level0')),
+            25=>array(25, langHdl('complex_level1')),
+            50=>array(50, langHdl('complex_level2')),
+            60=>array(60, langHdl('complex_level3')),
+            70=>array(70, langHdl('complex_level4')),
+            80=>array(80, langHdl('complex_level5')),
+            90=>array(90, langHdl('complex_level6'))
+            )
         );
     }
 }
 
 
 // LOAD CPASSMAN SETTINGS
-if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1") {
-    $SETTINGS_EXT['loaded'] = 1;
-
+if (isset($SETTINGS['cpassman_dir']) === true
+    && is_dir($SETTINGS['cpassman_dir'].'/install') === true
+) {
     // Should we delete folder INSTALL?
     $row = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s AND intitule=%s",
+        "SELECT valeur FROM ".prefixTable("misc")." WHERE type=%s AND intitule=%s",
         "install",
         "clear_install_folder"
     );
@@ -139,6 +142,21 @@ if (isset($SETTINGS_EXT['loaded']) === false || $SETTINGS_EXT['loaded'] !== "1")
     }
 }
 
+// Load Languages stuff
+if (isset($languagesList) === false) {
+    $languagesList = array();
+    $rows = DB::query("SELECT * FROM ".prefixTable("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
+    foreach ($rows as $record) {
+        array_push($languagesList, $record['name']);
+        if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
+            $_SESSION['user_language_flag'] = $record['flag'];
+            $_SESSION['user_language_code'] = $record['code'];
+            $_SESSION['user_language_label'] = $record['label'];
+            $_SESSION['user_language_id'] = $record['id'];
+        }
+    }
+}
+
 
 if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['user_settings']['usertimezone'] !== "not_defined") {
     // use user timezone
@@ -153,29 +171,16 @@ if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['use
 }
 
 
-// Load Languages stuff
-if (empty($languagesDropmenu) === true) {
-    $languagesList = array();
-    $rows = DB::query("SELECT * FROM ".prefix_table("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
-    foreach ($rows as $record) {
-        array_push($languagesList, $record['name']);
-        if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
-            $_SESSION['user_language_flag'] = $record['flag'];
-            $_SESSION['user_language_code'] = $record['code'];
-            $_SESSION['user_language_label'] = $record['label'];
-            $_SESSION['user_language_id'] = $record['id'];
-        }
-    }
-}
-
 // CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED
-if ((isset($_GET['session']) === true && $_GET['session'] == "expired")
-    || (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired")
+if ((isset($_GET['session']) === true
+    && $_GET['session'] == "expired")
+    || (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
+    && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired")
 ) {
     // Clear User tempo key
     if (isset($_SESSION['user_id']) === true) {
         DB::update(
-            prefix_table("users"),
+            prefixTable("users"),
             array(
                 'key_tempo' => '',
                 'timestamp' => '',
@@ -200,22 +205,32 @@ if ((isset($_GET['session']) === true && $_GET['session'] == "expired")
 // CHECK IF SESSION EXISTS AND IF SESSION IS VALID
 if (empty($_SESSION['fin_session']) === false) {
     $dataSession = DB::queryFirstRow(
-        "SELECT key_tempo FROM ".prefix_table("users")." WHERE id=%i",
+        "SELECT key_tempo FROM ".prefixTable("users")." WHERE id=%i",
         $_SESSION['user_id']
     );
 } else {
     $dataSession['key_tempo'] = "";
 }
 
-if (isset($_SESSION['user_id']) === true && isset($_GET['type']) === false && isset($_GET['action']) === false && $_SESSION['user_id'] !== "0" && (
-        empty($_SESSION['fin_session']) === true
-        || $_SESSION['fin_session'] < time() || empty($_SESSION['key'])
-        || empty($dataSession['key_tempo']) === true
-    )
+// get some init
+if (isset($_SESSION["user_id"]) === false) {
+    $_SESSION["key"] = mt_rand();
+    $_SESSION["user_id"] = "0";
+    $_SESSION['user_settings']['clear_psk'] = "";
+}
+
+if (isset($_SESSION['user_id']) === true
+    && isset($_GET['type']) === false
+    && isset($_GET['action']) === false
+    && $_SESSION['user_id'] !== "0"
+    && (empty($_SESSION['fin_session']) === true
+    || $_SESSION['fin_session'] < time()
+    || empty($_SESSION['key']) === true
+    || empty($dataSession['key_tempo']) === true)
 ) {
     // Update table by deleting ID
     DB::update(
-        prefix_table("users"),
+        prefixTable("users"),
         array(
             'key_tempo' => '',
             'timestamp' => '',
@@ -254,7 +269,7 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
     && (isset($_SESSION['user_admin']) === true && $_SESSION['user_admin'] == 1)
 ) {
     $row = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefix_table("misc")." WHERE type=%s_type AND intitule=%s_intitule",
+        "SELECT valeur FROM ".prefixTable("misc")." WHERE type=%s_type AND intitule=%s_intitule",
         array(
             "type" => "admin",
             "intitule" => "cpassman_version"
@@ -294,7 +309,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
         // Update table by deleting ID
         if (isset($_SESSION['user_id']) === true) {
             DB::update(
-                prefix_table("users"),
+                prefixTable("users"),
                 array(
                     'key_tempo' => '',
                     'timestamp' => '',
@@ -360,7 +375,7 @@ if (isset($SETTINGS['enable_sts']) === true
 if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
     // query on user
     $data = DB::queryfirstrow(
-        "SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ".prefix_table("users")." WHERE id=%i",
+        "SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ".prefixTable("users")." WHERE id=%i",
         $_SESSION['user_id']
     );
 
@@ -395,7 +410,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 
         if (isset($_SESSION['fin_session']) === false) {
             DB::update(
-                prefix_table("users"),
+                prefixTable("users"),
                 array(
                     'timestamp'=>time()
                 ),
@@ -410,12 +425,6 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $data['groupes_interdits'],
             $data['admin'],
             $data['fonction_id'],
-            $server,
-            $user,
-            $pass,
-            $database,
-            $port,
-            $encoding,
             $SETTINGS
         );
 
@@ -447,7 +456,7 @@ if (isset($SETTINGS['item_extra_fields']) === true
     $_SESSION['item_fields'] = array();
     $rows = DB::query(
         "SELECT *
-        FROM ".prefix_table("categories")."
+        FROM ".prefixTable("categories")."
         WHERE level=%i",
         "0"
     );
@@ -457,7 +466,7 @@ if (isset($SETTINGS['item_extra_fields']) === true
         // get each field
         $rows2 = DB::query(
             "SELECT *
-            FROM ".prefix_table("categories")."
+            FROM ".prefixTable("categories")."
             WHERE parent_id=%i
             ORDER BY `order` ASC",
             $record['id']
@@ -546,5 +555,5 @@ if (isset($SETTINGS['roles_allowed_to_print']) === true
 
 
 /* CHECK NUMBER OF USER ONLINE */
-DB::query("SELECT * FROM ".prefix_table("users")." WHERE timestamp>=%i", time() - 600);
+DB::query("SELECT * FROM ".prefixTable("users")." WHERE timestamp>=%i", time() - 600);
 $_SESSION['nb_users_online'] = DB::count();

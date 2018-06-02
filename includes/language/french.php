@@ -12,14 +12,13 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-global $LANG;
-$LANG = array(
+return array(
     'filter' => 'Filtre',
     'upload_empty_file' => 'Téléverser des fichiers vides',
     'upload_any_extension_file' => 'Téléverser tout type d\'extension de fichier',
     'upload_any_extension_file_tip' => 'Quand activé, cette option permet aux utilisateurs d\'attacher tout type de fichier aux objets.',
     'log_in' => 'Connexion',
-    '2fa_authentication_selector' => 'Sélectionner une méthode d\'authentification double',
+    '2fa_authentication_selector' => 'Authentification double',
     'create_item_based_upon_template' => 'Activer le Modèle par Objet',
     'create_item_based_upon_template_tip' => 'Quand activée, cette fonction permet à l\'auteur de choisir un modèle réalisé à partir des Champs Spéciaux. A noter que cela ne fonctionnera que si l\'option Champs Spéciaux est activée.',
     'main_template' => 'Utiliser comme Modèle',

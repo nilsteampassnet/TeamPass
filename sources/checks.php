@@ -1,16 +1,18 @@
 <?php
 /**
- *
- * @package       checks.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ * Teampass - a collaborative passwords manager
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @category  Teampass
+ * @package   Checks.php
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2018 Nils Laumaillé
+ * @license   GNU GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      http://www.teampass.net
  */
 
 require_once 'SecureHandler.php';
@@ -42,7 +44,7 @@ $pagesRights = array(
     ),
     "admin" => array(
         "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
-        "manage_views", "manage_users", "manage_settings", "manage_main"
+        "manage_views", "manage_users", "manage_settings", "manage_main", "admin", 'options'
     )
 );
 
@@ -105,7 +107,7 @@ function checkUser($userId, $userKey, $pageVisited)
     global $server, $user, $pass, $database, $port, $encoding;
 
     // Load libraries
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     if (empty($userId) === true || empty($pageVisited) === true || empty($userKey) === true) {
@@ -123,26 +125,24 @@ function checkUser($userId, $userKey, $pageVisited)
         $superGlobal->put("user_language", "english", "SESSION");
     }
 
-    require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get("user_language", "SESSION").'.php';
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
-    require_once 'main.functions.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get("user_language", "SESSION").'.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once 'main.functions.php';
 
     // Connect to mysql server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     // load user's data
     $data = DB::queryfirstrow(
-        "SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ".prefix_table("users")." WHERE id = %i",
+        "SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ".prefixTable("users")." WHERE id = %i",
         $userId
     );
 

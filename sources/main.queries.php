@@ -1,24 +1,26 @@
 <?php
 /**
- * Teampass file 
- * @package       main.queries.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ * Teampass - a collaborative passwords manager
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @category  Teampass
+ * @package   Mais.Queries.php
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2018 Nils Laumaillé
+ * @license   GNU GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      http://www.teampass.net
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 
-require_once 'SecureHandler.php';
-session_start();
+//require_once 'SecureHandler.php';
+//session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
-    $_SESSION['error']['code'] = "1004"; //Hacking attempt
+    $_SESSION['error']['code'] = "1004";
     include '../error.php';
     exit();
 }
@@ -45,8 +47,8 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
-} elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key'])) ||
-    (isset($post_type) && $post_type === "change_user_language"
+} elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key']))
+    || (isset($post_type) && $post_type === "change_user_language"
     && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
@@ -62,10 +64,6 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
 */
 function mainQuery()
 {
-    global $server, $user, $pass, $database, $port, $encoding, $pre, $LANG;
-    global $SETTINGS, $SETTINGS_EXT;
-
-    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     header("Content-type: text/html; charset=utf-8");
     header("Cache-Control: no-cache, must-revalidate");
     error_reporting(E_ERROR);
@@ -74,16 +72,14 @@ function mainQuery()
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -110,14 +106,14 @@ function mainQuery()
                 && $_SESSION['user_admin'] !== "1"
             ) {
                 // check if expected security level is reached
-                $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
+                $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefixTable("users")." WHERE id = %i", $_SESSION['user_id']);
 
                 // check if badly written
                 $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
                 if ($data_roles['fonction_id'][0] === "") {
                     $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                     DB::update(
-                        prefix_table("users"),
+                        prefixTable("users"),
                         array(
                             'fonction_id' => $data_roles['fonction_id']
                             ),
@@ -128,7 +124,7 @@ function mainQuery()
 
                 $data = DB::query(
                     "SELECT complexity
-                    FROM ".prefix_table("roles_title")."
+                    FROM ".prefixTable("roles_title")."
                     WHERE id IN (".implode(',', $data_roles['fonction_id']).")
                     ORDER BY complexity DESC"
                 );
@@ -187,7 +183,7 @@ function mainQuery()
                 if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
                     // update DB
                     DB::update(
-                        prefix_table("users"),
+                        prefixTable("users"),
                         array(
                             'pw' => $newPw,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
@@ -215,7 +211,7 @@ function mainQuery()
                 // check if user is admin / Manager
                 $userInfo = DB::queryFirstRow(
                     "SELECT admin, gestionnaire
-                    FROM ".prefix_table("users")."
+                    FROM ".prefixTable("users")."
                     WHERE id = %i",
                     $_SESSION['user_id']
                 );
@@ -233,7 +229,7 @@ function mainQuery()
 
                     // update DB
                     DB::update(
-                        prefix_table("users"),
+                        prefixTable("users"),
                         array(
                             'pw' => $newPw,
                             'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
@@ -248,7 +244,7 @@ function mainQuery()
                     //Send email to user
                     if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) !== "admin_change") {
                         $row = DB::queryFirstRow(
-                            "SELECT email FROM ".prefix_table("users")."
+                            "SELECT email FROM ".prefixTable("users")."
                             WHERE id = %i",
                             $dataReceived['user_id']
                         );
@@ -276,7 +272,7 @@ function mainQuery()
             ) {
                 // update DB
                 DB::update(
-                    prefix_table("users"),
+                    prefixTable("users"),
                     array(
                         'pw' => $newPw,
                         'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))
@@ -331,14 +327,14 @@ function mainQuery()
                 // Get data about user
                 $data = DB::queryfirstrow(
                     "SELECT id, email, pw
-                    FROM ".prefix_table("users")."
+                    FROM ".prefixTable("users")."
                     WHERE login = %s",
                     $login
                 );
             } else {
                 $data = DB::queryfirstrow(
                     "SELECT id, login, email, pw
-                    FROM ".prefix_table("users")."
+                    FROM ".prefixTable("users")."
                     WHERE id = %i",
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
@@ -389,7 +385,7 @@ function mainQuery()
                     // save the code
                     if ($ldap_user_never_auth === false) {
                         DB::update(
-                            prefix_table("users"),
+                            prefixTable("users"),
                             array(
                                 'ga' => $gaSecretKey,
                                 'ga_temporary_code' => $gaTemporaryCode
@@ -400,7 +396,7 @@ function mainQuery()
                     } else {
                         // save the code but also create an account in database
                         DB::insert(
-                            prefix_table('users'),
+                            prefixTable('users'),
                             array(
                                 'login' => $login,
                                 'pw' => $pwdlib->createPasswordHash($pwd),
@@ -426,7 +422,7 @@ function mainQuery()
                         // Create personnal folder
                         if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
                             DB::insert(
-                                prefix_table("nested_tree"),
+                                prefixTable("nested_tree"),
                                 array(
                                     'parent_id' => '0',
                                     'title' => $newUserId,
@@ -471,7 +467,7 @@ function mainQuery()
                 $_SESSION['fin_session'] = (integer) ($_SESSION['fin_session'] + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT));
                 // Update table
                 DB::update(
-                    prefix_table("users"),
+                    prefixTable("users"),
                     array(
                         'session_end' => $_SESSION['fin_session']
                     ),
@@ -503,13 +499,13 @@ function mainQuery()
 
             // Get account and pw associated to email
             DB::query(
-                "SELECT * FROM ".prefix_table("users")." WHERE email = %s",
+                "SELECT * FROM ".prefixTable("users")." WHERE email = %s",
                 $post_email
             );
             $counter = DB::count();
             if ($counter != 0) {
                 $data = DB::query(
-                    "SELECT login,pw FROM ".prefix_table("users")." WHERE email = %s",
+                    "SELECT login,pw FROM ".prefixTable("users")." WHERE email = %s",
                     $post_email
                 );
                 $textMail = $LANG['forgot_pw_email_body_1']." <a href=\"".
@@ -521,14 +517,14 @@ function mainQuery()
 
                 // Check if email has already a key in DB
                 DB::query(
-                    "SELECT * FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
+                    "SELECT * FROM ".prefixTable("misc")." WHERE intitule = %s AND type = %s",
                     $post_login,
                     "password_recovery"
                 );
                 $counter = DB::count();
                 if ($counter != 0) {
                     DB::update(
-                        prefix_table("misc"),
+                        prefixTable("misc"),
                         array(
                             'valeur' => $key
                         ),
@@ -539,7 +535,7 @@ function mainQuery()
                 } else {
                     // store in DB the password recovery informations
                     DB::insert(
-                        prefix_table("misc"),
+                        prefixTable("misc"),
                         array(
                             'type' => 'password_recovery',
                             'intitule' => $post_login,
@@ -563,7 +559,7 @@ function mainQuery()
                 echo '[{"error":"'.$ret['error'].'" , "message":"'.$ret['message'].'"}]';
             } else {
                 // no one has this email ... alert
-                echo '[{"error":"error_email" , "message":"'.$LANG['forgot_my_pw_error_email_not_exist'].'"}]';
+                echo '[{"error":"error_email" , "message":"'.langHdl('forgot_my_pw_error_email_not_exist').'"}]';
             }
             break;
 
@@ -581,7 +577,7 @@ function mainQuery()
 
             // check if key is okay
             $data = DB::queryFirstRow(
-                "SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
+                "SELECT valeur FROM ".prefixTable("misc")." WHERE intitule = %s AND type = %s",
                 mysqli_escape_string($link, $login),
                 "password_recovery"
             );
@@ -599,7 +595,7 @@ function mainQuery()
 
                 // update DB
                 DB::update(
-                    prefix_table("users"),
+                    prefixTable("users"),
                     array(
                         'pw' => $newPw
                         ),
@@ -608,7 +604,7 @@ function mainQuery()
                 );
                 // Delete recovery in DB
                 DB::delete(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     "type = %s AND intitule = %s AND valeur = %s",
                     "password_recovery",
                     mysqli_escape_string($link, $login),
@@ -616,7 +612,7 @@ function mainQuery()
                 );
                 // Get email
                 $dataUser = DB::queryFirstRow(
-                    "SELECT email FROM ".prefix_table("users")." WHERE login = %s",
+                    "SELECT email FROM ".prefixTable("users")." WHERE login = %s",
                     mysqli_escape_string($link, $login)
                 );
 
@@ -679,7 +675,7 @@ function mainQuery()
 
                     // store it in DB
                     DB::update(
-                        prefix_table("users"),
+                        prefixTable("users"),
                         array(
                             'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
                             ),
@@ -773,7 +769,7 @@ function mainQuery()
 
             // store it in DB
             DB::update(
-                prefix_table("users"),
+                prefixTable("users"),
                 array(
                     'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk']
                     ),
@@ -791,8 +787,8 @@ function mainQuery()
             // Build list of items to be re-encrypted
             $rows = DB::query(
                 "SELECT i.id as id, i.pw as pw
-                FROM ".prefix_table("items")." as i
-                INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
+                FROM ".prefixTable("items")." as i
+                INNER JOIN ".prefixTable("log_items")." as l ON (i.id=l.id_item)
                 WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
                 "1",
                 $_SESSION['user_id'],
@@ -839,8 +835,8 @@ function mainQuery()
                 // delete all previous items of this user
                 $rows = DB::query(
                     "SELECT i.id as id
-                    FROM ".prefix_table("items")." as i
-                    INNER JOIN ".prefix_table("log_items")." as l ON (i.id=l.id_item)
+                    FROM ".prefixTable("items")." as i
+                    INNER JOIN ".prefixTable("log_items")." as l ON (i.id=l.id_item)
                     WHERE i.perso = %i AND l.id_user= %i AND l.action = %s",
                     "1",
                     $_SESSION['user_id'],
@@ -848,16 +844,16 @@ function mainQuery()
                 );
                 foreach ($rows as $record) {
                     // delete in ITEMS table
-                    DB::delete(prefix_table("items"), "id = %i", $record['id']);
+                    DB::delete(prefixTable("items"), "id = %i", $record['id']);
                     // delete in LOGS table
-                    DB::delete(prefix_table("log_items"), "id_item = %i", $record['id']);
+                    DB::delete(prefixTable("log_items"), "id_item = %i", $record['id']);
                     // delete from CACHE table
                     updateCacheTable("delete_value", $record['id']);
                 }
 
                 // remove from DB
                 DB::update(
-                    prefix_table("users"),
+                    prefixTable("users"),
                     array(
                         'encrypted_psk' => ""
                         ),
@@ -882,7 +878,7 @@ function mainQuery()
                 $language = $dataReceived['lang'];
                 // update DB
                 DB::update(
-                    prefix_table("users"),
+                    prefixTable("users"),
                     array(
                         'user_language' => $language
                         ),
@@ -909,12 +905,12 @@ function mainQuery()
                 && $SETTINGS['enable_send_email_on_user_login'] === "1"
             ) {
                 $row = DB::queryFirstRow(
-                    "SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s",
+                    "SELECT valeur FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s",
                     "cron",
                     "sending_emails"
                 );
                 if ((time() - $row['valeur']) >= 300 || $row['valeur'] == 0) {
-                    $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status != %s", "sent");
+                    $rows = DB::query("SELECT * FROM ".prefixTable("emails")." WHERE status != %s", "sent");
                     foreach ($rows as $record) {
                         // Send email
                         $ret = json_decode(
@@ -936,7 +932,7 @@ function mainQuery()
 
                         // update item_id in files table
                         DB::update(
-                            prefix_table("emails"),
+                            prefixTable("emails"),
                             array(
                                 'status' => $status
                                 ),
@@ -947,7 +943,7 @@ function mainQuery()
                 }
                 // update cron time
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => time()
                         ),
@@ -1028,7 +1024,7 @@ function mainQuery()
          */
         case "check_login_exists":
             $data = DB::query(
-                "SELECT login, psk FROM ".prefix_table("users")."
+                "SELECT login, psk FROM ".prefixTable("users")."
                 WHERE login = %i",
                 mysqli_escape_string($link, stripslashes(filter_input(INPUT_POST, 'userId', FILTER_SANITIZE_NUMBER_INT)))
             );
@@ -1048,14 +1044,14 @@ function mainQuery()
                 && filter_input(INPUT_POST, 'scope', FILTER_SANITIZE_STRING) === "item"
             ) {
                 $data = DB::queryfirstrow(
-                    "SELECT view FROM ".prefix_table("statistics")." WHERE scope = %s AND item_id = %i",
+                    "SELECT view FROM ".prefixTable("statistics")." WHERE scope = %s AND item_id = %i",
                     'item',
                     filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
                 );
                 $counter = DB::count();
                 if ($counter == 0) {
                     DB::insert(
-                        prefix_table("statistics"),
+                        prefixTable("statistics"),
                         array(
                             'scope' => 'item',
                             'view' => '1',
@@ -1064,7 +1060,7 @@ function mainQuery()
                     );
                 } else {
                     DB::update(
-                        prefix_table("statistics"),
+                        prefixTable("statistics"),
                         array(
                             'scope' => 'item',
                             'view' => $data['view'] + 1
@@ -1091,8 +1087,8 @@ function mainQuery()
             $arr_html = array();
             $rows = DB::query(
                 "SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
-                FROM ".prefix_table("log_items")." AS l
-                RIGHT JOIN ".prefix_table("items")." AS i ON (l.id_item = i.id)
+                FROM ".prefixTable("log_items")." AS l
+                RIGHT JOIN ".prefixTable("items")." AS i ON (l.id_item = i.id)
                 WHERE l.action = %s AND l.id_user = %i
                 ORDER BY l.date DESC
                 LIMIT 0, 100",
@@ -1124,7 +1120,7 @@ function mainQuery()
             if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] == 1
                 && ($_SESSION['user_admin'] == 1 || $_SESSION['user_manager'] == 1)
             ) {
-                DB::query("SELECT * FROM ".prefix_table("suggestion"));
+                DB::query("SELECT * FROM ".prefixTable("suggestion"));
                 $nb_suggestions_waiting = DB::count();
             }
 
@@ -1165,7 +1161,7 @@ function mainQuery()
 
             // store in DB
             DB::insert(
-                prefix_table("tokens"),
+                prefixTable("tokens"),
                 array(
                     'user_id' => $_SESSION['user_id'],
                     'token' => $token,
@@ -1279,7 +1275,7 @@ function mainQuery()
 
                 // update table misc with current timestamp
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => time()
                         ),
@@ -1366,7 +1362,7 @@ function mainQuery()
             $teampass_errors = '';
             $rows = DB::query(
                 "SELECT label, date AS error_date
-                FROM ".prefix_table("log_system")."
+                FROM ".prefixTable("log_system")."
                 WHERE `type` LIKE 'error'
                 ORDER BY `date` DESC
                 LIMIT 0, 10"
@@ -1404,7 +1400,7 @@ Tell us what happens instead
 
 **PHP version:** ".PHP_VERSION."
 
-**Teampass version:** ".$SETTINGS_EXT['version_full']."
+**Teampass version:** ".TP_VERSION_FULL."
 
 **Teampass configuration file:**
 ```
@@ -1466,7 +1462,7 @@ Insert the log here and especially the answer of the query that failed.
                 $user_id = (htmlspecialchars_decode($dataReceived['user_id']));
 
                 DB::update(
-                    prefix_table("users"),
+                    prefixTable("users"),
                     array(
                         $field => $new_value
                         ),

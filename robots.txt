@@ -1,7 +1,0 @@
-User-agent: *
-Disallow: /backups/
-Disallow: /files/
-Disallow: /includes/
-Disallow: /install/
-Disallow: /sources/
-Disallow: /upload/

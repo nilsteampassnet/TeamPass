@@ -12,8 +12,19 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
-global $LANG;
-$LANG = array(
+
+return array(
+    'saved' => 'Saved',
+    'success' => 'Success',
+    'server_answer_error' => 'An error appears. Answer from Server cannot be parsed!',
+    'server_returned_data' => 'Returned data',
+    'version_alone' => 'version',
+    'statistics' => 'Statistics',
+    'options' => 'Options',
+    'statistics' => 'Statistics',
+    'users' => 'Users',
+    'folders' => 'Folders',
+    'roles' => 'Roles',
     'filter' => 'Filter',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',
@@ -543,7 +554,7 @@ $LANG = array(
     'index_change_pw_button' => 'Change',
     'index_change_pw_confirmation' => 'Confirm',
     'index_expiration_in' => 'session expiration in',
-    'index_get_identified' => 'Please identify yourself',
+    'index_get_identified' => 'Sign in to start your session',
     'index_identify_button' => 'Enter',
     'index_identify_you' => 'Please identify yourself',
     'index_last_pw_change' => 'Password changed',
@@ -1013,7 +1024,7 @@ $LANG = array(
     'country_statistics' => 'Worldmap usage',
     'country' => 'Country',
     'users_statistics' => 'Average number of users by instance',
-    '﻿users_statistics' => 'Average number of users by instance',
+    'users_statistics' => 'Average number of users by instance',
     'items_all' => 'All items',
     'folders_all' => 'All folders',
     'items_shared' => 'All shared items (not including personal ones)',

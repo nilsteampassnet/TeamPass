@@ -1,18 +1,19 @@
 <?php
 /**
- *
- * @package       identify.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ * Teampass - a collaborative passwords manager
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @category  Teampass
+ * @package   Identify.php
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2018 Nils Laumaillé
+ * @license   GNU GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      http://www.teampass.net
  */
-
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
 
@@ -78,7 +79,7 @@ if ($post_type === "identify_duo_user") {
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
-// DUO Identification
+    // DUO Identification
 } elseif ($post_type === "identify_duo_user_check") {
     //--------
     // DUO AUTHENTICATION
@@ -110,21 +111,21 @@ if ($post_type === "identify_duo_user") {
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             // connect to the server
             require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-            $pass = defuse_return_decrypted($pass);
-            DB::$host = $server;
-            DB::$user = $user;
-            DB::$password = $pass;
-            DB::$dbName = $database;
-            DB::$port = $port;
-            DB::$encoding = $encoding;
-            DB::$error_handler = true;
-            $link = mysqli_connect($server, $user, $pass, $database, $port);
-            $link->set_charset($encoding);
+            DB::$host         = DB_HOST;
+            DB::$user         = DB_USER;
+            DB::$password     = defuse_return_decrypted(DB_PASSWD);
+            DB::$dbName       = DB_NAME;
+            DB::$port         = DB_PORT;
+            DB::$encoding     = DB_ENCODING;
+            //DB::$errorHandler = true;
+
+            $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+            $link->set_charset(DB_ENCODING);
             
             // is user in Teampass?
             $data = DB::queryfirstrow(
                 "SELECT id
-                FROM ".prefix_table("users")."
+                FROM ".prefixTable("users")."
                 WHERE login = %s",
                 $post_login
             );
@@ -142,7 +143,7 @@ if ($post_type === "identify_duo_user") {
 
                     // save an account in database
                     DB::insert(
-                        prefix_table('users'),
+                        prefixTable('users'),
                         array(
                             'login' => $post_login,
                             'pw' => $pwdlib->createPasswordHash($post_pwd),
@@ -166,7 +167,7 @@ if ($post_type === "identify_duo_user") {
                     // Create personnal folder
                     if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
                         DB::insert(
-                            prefix_table("nested_tree"),
+                            prefixTable("nested_tree"),
                             array(
                                 'parent_id' => '0',
                                 'title' => $newUserId,
@@ -209,7 +210,7 @@ if ($post_type === "identify_duo_user") {
         // no card id is given
         // check if it is DB
         $row = DB::queryFirstRow(
-            "SELECT `agses-usercardid` FROM ".prefix_table("users")."
+            "SELECT `agses-usercardid` FROM ".prefixTable("users")."
             WHERE login = %s",
             $post_login
         );
@@ -217,7 +218,7 @@ if ($post_type === "identify_duo_user") {
         // card id is given
         // save it in DB
         DB::update(
-            prefix_table('users'),
+            prefixTable('users'),
             array(
                 'agses-usercardid' => $post_cardid
                 ),
@@ -233,21 +234,21 @@ if ($post_type === "identify_duo_user") {
 
     //-- get AGSES hosted information
     $ret_agses_url = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefix_table("misc")."
+        "SELECT valeur FROM ".prefixTable("misc")."
         WHERE type = %s AND intitule = %s",
         'admin',
         'agses_hosted_url'
     );
 
     $ret_agses_id = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefix_table("misc")."
+        "SELECT valeur FROM ".prefixTable("misc")."
         WHERE type = %s AND intitule = %s",
         'admin',
         'agses_hosted_id'
     );
 
     $ret_agses_apikey = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefix_table("misc")."
+        "SELECT valeur FROM ".prefixTable("misc")."
         WHERE type = %s AND intitule = %s",
         'admin',
         'agses_hosted_apikey'
@@ -374,9 +375,15 @@ if ($post_type === "identify_duo_user") {
     return false;
 }
 
-/*
-* Complete authentication of user through Teampass
-*/
+/**
+ * Complete authentication of user through Teampass
+ *
+ * @param [type] $sentData
+ * @param [type] $debugLdap
+ * @param [type] $debugDuo
+ * @param [type] $SETTINGS
+ * @return void
+ */
 function identifyUser(
     $sentData,
     $debugLdap,
@@ -421,15 +428,16 @@ function identifyUser(
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     // load passwordLib library
     $pwdlib = new SplClassLoader('PasswordLib', $SETTINGS['cpassman_dir'].'/includes/libraries');
@@ -524,7 +532,7 @@ function identifyUser(
 
     // Check if user exists
     $data = DB::queryFirstRow(
-        "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
+        "SELECT * FROM ".prefixTable("users")." WHERE login=%s_login",
         array(
             'login' => $username
         )
@@ -583,7 +591,7 @@ function identifyUser(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
                         $filter,
-                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
+                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire')
                     );
                     if ($debugLdap == 1) {
                         fputs(
@@ -592,7 +600,7 @@ function identifyUser(
                             'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
                         );
                     }
-
+                    
                     // Check if user was found in AD
                     if (ldap_count_entries($ldapconn, $result) > 0) {
                         // Get user's info and especially the DN
@@ -603,6 +611,12 @@ function identifyUser(
                             $dbgLdap,
                             'User was found. '.$user_dn.'\n'
                         );
+
+                        // Check shadowexpire attribute - if === 1 then user disabled
+                        if (isset($result[0]['shadowexpire'][0]) === true && $result[0]['shadowexpire'][0] === '1') {
+                            echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
+                            exit();
+                        }
 
                         // Should we restrain the search in specified user groups
                         $GroupRestrictionEnabled = false;
@@ -666,7 +680,7 @@ function identifyUser(
                                 if ($counter > 0) {
                                     // Update pwd in TP database
                                     DB::update(
-                                        prefix_table('users'),
+                                        prefixTable('users'),
                                         array(
                                             'pw' => $data['pw']
                                         ),
@@ -674,7 +688,6 @@ function identifyUser(
                                         $data['id']
                                     );
 
-                                    // No user creation is requested
                                     $proceedIdentification = true;
                                 }
                             } else {
@@ -756,6 +769,12 @@ function identifyUser(
                     $ldapConnection = true;
                 }
 
+                // Is user expired?
+                if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
+                    echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
+                    exit();
+                }
+
                 // Update user's password
                 if ($ldapConnection === true) {
                     $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
@@ -764,7 +783,7 @@ function identifyUser(
                     if ($counter > 0) {
                         // Update pwd in TP database
                         DB::update(
-                            prefix_table('users'),
+                            prefixTable('users'),
                             array(
                                 'pw' => $data['pw']
                             ),
@@ -810,7 +829,7 @@ function identifyUser(
         if (empty($yubico_user_key) === false && empty($yubico_user_id) === false) {
             // save the new yubico in user's account
             DB::update(
-                prefix_table('users'),
+                prefixTable('users'),
                 array(
                     'yubico_user_key' => $yubico_user_key,
                     'yubico_user_id' => $yubico_user_id
@@ -859,7 +878,7 @@ function identifyUser(
         }
 
         DB::insert(
-            prefix_table('users'),
+            prefixTable('users'),
             array(
                 'login' => $username,
                 'pw' => $data['pw'],
@@ -883,7 +902,7 @@ function identifyUser(
         // Create personnal folder
         if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
             DB::insert(
-                prefix_table("nested_tree"),
+                prefixTable("nested_tree"),
                 array(
                     'parent_id' => '0',
                     'title' => $newUserId,
@@ -899,7 +918,7 @@ function identifyUser(
 
     // Check if user exists (and has been created in case of new LDAP user)
     $data = DB::queryFirstRow(
-        "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
+        "SELECT * FROM ".prefixTable("users")." WHERE login=%s_login",
         array(
             'login' => $username
         )
@@ -938,7 +957,7 @@ function identifyUser(
 
                     // clear temporary code from DB
                     DB::update(
-                        prefix_table('users'),
+                        prefixTable('users'),
                         array(
                             'ga_temporary_code' => 'done'
                         ),
@@ -1071,7 +1090,7 @@ function identifyUser(
             //update user's password
             $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
             DB::update(
-                prefix_table('users'),
+                prefixTable('users'),
                 array(
                     'pw' => $data['pw']
                 ),
@@ -1137,7 +1156,7 @@ function identifyUser(
             $arrAttempts = array();
             $rows = DB::query(
                 "SELECT date
-                FROM ".prefix_table("log_system")."
+                FROM ".prefixTable("log_system")."
                 WHERE field_1 = %s
                 AND type = 'failed_auth'
                 AND label = 'user_password_not_correct'
@@ -1250,7 +1269,7 @@ function identifyUser(
             $_SESSION['user_pw_complexity'] = 0;
             $_SESSION['arr_roles'] = array();
             foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".prefix_table("roles_title")." WHERE id=%i", $role);
+                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".prefixTable("roles_title")." WHERE id=%i", $role);
                 $_SESSION['arr_roles'][$role] = array(
                         'id' => $role,
                         'title' => $resRoles['title']
@@ -1262,7 +1281,7 @@ function identifyUser(
             }
             // build complete array of roles
             $_SESSION['arr_roles_full'] = array();
-            $rows = DB::query("SELECT id, title FROM ".prefix_table("roles_title")." ORDER BY title ASC");
+            $rows = DB::query("SELECT id, title FROM ".prefixTable("roles_title")." ORDER BY title ASC");
             foreach ($rows as $record) {
                 $_SESSION['arr_roles_full'][$record['id']] = array(
                         'id' => $record['id'],
@@ -1274,7 +1293,7 @@ function identifyUser(
             $SETTINGS['update_needed'] = "";
             // Update table
             DB::update(
-                prefix_table('users'),
+                prefixTable('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'last_connexion' => time(),
@@ -1302,12 +1321,6 @@ function identifyUser(
                     $_SESSION['groupes_interdits'],
                     $data['admin'],
                     $data['fonction_id'],
-                    $server,
-                    $user,
-                    $pass,
-                    $database,
-                    $port,
-                    $encoding,
                     $SETTINGS
                 );
             } else {
@@ -1335,7 +1348,7 @@ function identifyUser(
             $_SESSION['latest_items_tab'][] = "";
             foreach ($_SESSION['latest_items'] as $item) {
                 if (!empty($item)) {
-                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".prefix_table("items")." WHERE id=%i", $item);
+                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".prefixTable("items")." WHERE id=%i", $item);
                     $_SESSION['latest_items_tab'][$item] = array(
                         'id' => $item,
                         'label' => $data['label'],
@@ -1352,7 +1365,7 @@ function identifyUser(
             ) {
                 // get all Admin users
                 $receivers = "";
-                $rows = DB::query("SELECT email FROM ".prefix_table("users")." WHERE admin = %i and email != ''", 1);
+                $rows = DB::query("SELECT email FROM ".prefixTable("users")." WHERE admin = %i and email != ''", 1);
                 foreach ($rows as $record) {
                     if (empty($receivers)) {
                         $receivers = $record['email'];
@@ -1362,7 +1375,7 @@ function identifyUser(
                 }
                 // Add email to table
                 DB::insert(
-                    prefix_table("emails"),
+                    prefixTable("emails"),
                     array(
                         'timestamp' => time(),
                         'subject' => $LANG['email_subject_on_user_login'],
@@ -1404,7 +1417,7 @@ function identifyUser(
                 }
             }
             DB::update(
-                prefix_table('users'),
+                prefixTable('users'),
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'disabled' => $userIsLocked,

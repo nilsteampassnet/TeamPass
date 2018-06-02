@@ -1,16 +1,18 @@
 <?php
-
 /**
- * @package       admin.queries.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ * Teampass - a collaborative passwords manager
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @category  Teampass
+ * @package   Admin.queries.php
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2018 Nils Laumaillé
+ * @license   GNU GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      http://www.teampass.net
  */
 
 require_once 'SecureHandler.php';
@@ -22,19 +24,23 @@ if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1 ||
     die('Hacking attempt...');
 }
 
-// Load config
-if (file_exists('../includes/config/tp.config.php')) {
-    include_once '../includes/config/tp.config.php';
-} elseif (file_exists('./includes/config/tp.config.php')) {
-    include_once './includes/config/tp.config.php';
-} else {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+// Load config if $SETTINGS not defined
+if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
+    if (file_exists('../includes/config/tp.config.php')) {
+        include_once '../includes/config/tp.config.php';
+    } elseif (file_exists('./includes/config/tp.config.php')) {
+        include_once './includes/config/tp.config.php';
+    } elseif (file_exists('../../includes/config/tp.config.php')) {
+        include_once '../../includes/config/tp.config.php';
+    } else {
+        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    }
 }
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_settings")) {
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "options")) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -51,21 +57,19 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // connect to the server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$pass = defuse_return_decrypted($pass);
-DB::$host = $server;
-DB::$user = $user;
-DB::$password = $pass;
-DB::$dbName = $database;
-DB::$port = $port;
-DB::$encoding = $encoding;
-DB::$error_handler = true;
-$link = mysqli_connect($server, $user, $pass, $database, $port);
-$link->set_charset($encoding);
+DB::$host         = DB_HOST;
+DB::$user         = DB_USER;
+DB::$password     = defuse_return_decrypted(DB_PASSWD);
+DB::$dbName       = DB_NAME;
+DB::$port         = DB_PORT;
+DB::$encoding     = DB_ENCODING;
+$link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+$link->set_charset(DB_ENCODING);
 
 //Load Tree
 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
-$tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+$tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
 
 //Load AES
 $aes = new SplClassLoader('Encryption\Crypt', '../includes/libraries');
@@ -155,13 +159,13 @@ switch ($post_type) {
         //get through all users
         $rows = DB::query(
             "SELECT id, login, email
-            FROM ".prefix_table("users")."
+            FROM ".prefixTable("users")."
             ORDER BY login ASC"
         );
         foreach ($rows as $record) {
             //update PF field for user
             DB::update(
-                prefix_table("users"),
+                prefixTable("users"),
                 array(
                     'personal_folder' => '1'
                 ),
@@ -172,7 +176,7 @@ switch ($post_type) {
             //if folder doesn't exist then create it
             $data = DB::queryfirstrow(
                 "SELECT id
-                FROM ".prefix_table("nested_tree")."
+                FROM ".prefixTable("nested_tree")."
                 WHERE title = %s AND parent_id = %i",
                 $record['id'],
                 0
@@ -181,7 +185,7 @@ switch ($post_type) {
             if ($counter == 0) {
                 //If not exist then add it
                 DB::insert(
-                    prefix_table("nested_tree"),
+                    prefixTable("nested_tree"),
                     array(
                         'parent_id' => '0',
                         'title' => $record['id'],
@@ -194,7 +198,7 @@ switch ($post_type) {
             } else {
                 //If exists then update it
                 DB::update(
-                    prefix_table("nested_tree"),
+                    prefixTable("nested_tree"),
                     array(
                         'personal_folder' => '1'
                     ),
@@ -210,7 +214,7 @@ switch ($post_type) {
                 foreach ($folders as $folder) {
                     //update PF field for user
                     DB::update(
-                        prefix_table("nested_tree"),
+                        prefixTable("nested_tree"),
                         array(
                             'personal_folder' => '1'
                         ),
@@ -244,11 +248,11 @@ switch ($post_type) {
             }
         }
 
-        $items = DB::query("SELECT id,label FROM ".prefix_table("items")." WHERE id_tree NOT IN %li", $foldersIds);
+        $items = DB::query("SELECT id,label FROM ".prefixTable("items")." WHERE id_tree NOT IN %li", $foldersIds);
         foreach ($items as $item) {
             $text .= $item['label']."[".$item['id']."] - ";
             //Delete item
-            DB::DELETE(prefix_table("items"), "id = %i", $item['id']);
+            DB::DELETE(prefixTable("items"), "id = %i", $item['id']);
 
             // Delete if template related to item
             DB::delete(
@@ -258,7 +262,7 @@ switch ($post_type) {
             );
 
             //log
-            DB::DELETE(prefix_table("log_items"), "id_item = %i", $item['id']);
+            DB::DELETE(prefixTable("log_items"), "id_item = %i", $item['id']);
 
             $nbItemsDeleted++;
         }
@@ -266,20 +270,20 @@ switch ($post_type) {
         // delete orphan items
         $rows = DB::query(
             "SELECT id
-            FROM ".prefix_table("items")."
+            FROM ".prefixTable("items")."
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
             DB::query(
-                "SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s",
+                "SELECT * FROM ".prefixTable("log_items")." WHERE id_item = %i AND action = %s",
                 $item['id'],
                 "at_creation"
             );
             $counter = DB::count();
             if ($counter == 0) {
-                DB::DELETE(prefix_table("items"), "id = %i", $item['id']);
-                DB::DELETE(prefix_table("categories_items"), "item_id = %i", $item['id']);
-                DB::DELETE(prefix_table("log_items"), "id_item = %i", $item['id']);
+                DB::DELETE(prefixTable("items"), "id = %i", $item['id']);
+                DB::DELETE(prefixTable("categories_items"), "item_id = %i", $item['id']);
+                DB::DELETE(prefixTable("log_items"), "id_item = %i", $item['id']);
                 $nbItemsDeleted++;
             }
         }
@@ -409,7 +413,7 @@ switch ($post_type) {
 
         // Delete operation id
         DB::delete(
-            prefix_table('misc'),
+            prefixTable('misc'),
             "increment_id = %i",
             $file
         );
@@ -475,12 +479,12 @@ switch ($post_type) {
         //Clean up LOG_ITEMS table
         $rows = DB::query(
             "SELECT id
-            FROM ".prefix_table("items")."
+            FROM ".prefixTable("items")."
             ORDER BY id ASC"
         );
         foreach ($rows as $item) {
             DB::query(
-                "SELECT * FROM ".prefix_table("log_items")." WHERE id_item = %i AND action = %s",
+                "SELECT * FROM ".prefixTable("log_items")." WHERE id_item = %i AND action = %s",
                 $item['id'],
                 "at_creation"
             );
@@ -488,11 +492,11 @@ switch ($post_type) {
             if ($counter == 0) {
                 //Create new at_creation entry
                 $rowTmp = DB::queryFirstRow(
-                    "SELECT date FROM ".prefix_table("log_items")." WHERE id_item=%i ORDER BY date ASC",
+                    "SELECT date FROM ".prefixTable("log_items")." WHERE id_item=%i ORDER BY date ASC",
                     $item['id']
                 );
                 DB::insert(
-                    prefix_table("log_items"),
+                    prefixTable("log_items"),
                     array(
                         'id_item'     => $item['id'],
                         'date'         => $rowTmp['date'] - 1,
@@ -590,14 +594,14 @@ switch ($post_type) {
         $result = "";
         $filename = $post_option;
         //get backups infos
-        $rows = DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s", "admin");
+        $rows = DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s", "admin");
         foreach ($rows as $record) {
             $tp_settings[$record['intitule']] = $record['valeur'];
         }
 
         // check if backup file is in DB.
         // If YES then it is encrypted with DEFUSE
-        $bck = DB::queryFirstRow("SELECT valeur FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "backup", "filename");
+        $bck = DB::queryFirstRow("SELECT valeur FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "backup", "filename");
 
         //read file
         $return = "";
@@ -689,7 +693,7 @@ switch ($post_type) {
 
         //put tool in maintenance.
         DB::update(
-            prefix_table("misc"),
+            prefixTable("misc"),
             array(
                 'valeur' => '1',
             ),
@@ -701,13 +705,13 @@ switch ($post_type) {
         logEvents('system', 'change_salt_key', $_SESSION['user_id'], $_SESSION['login']);
 
         // get number of items to change
-        DB::query("SELECT id FROM ".prefix_table("items")." WHERE perso = %i", 0);
+        DB::query("SELECT id FROM ".prefixTable("items")." WHERE perso = %i", 0);
         $nb_of_items = DB::count();
 
         // create backup table
-        DB::query("DROP TABLE IF EXISTS ".prefix_table("sk_reencrypt_backup"));
+        DB::query("DROP TABLE IF EXISTS ".prefixTable("sk_reencrypt_backup"));
         DB::query(
-            "CREATE TABLE `".prefix_table("sk_reencrypt_backup")."` (
+            "CREATE TABLE `".prefixTable("sk_reencrypt_backup")."` (
             `id` int(12) NOT null AUTO_INCREMENT,
             `current_table` varchar(100) NOT NULL,
             `current_field` varchar(500) NOT NULL,
@@ -722,7 +726,7 @@ switch ($post_type) {
 
         // store old SK in backup table
         DB::insert(
-            prefix_table("sk_reencrypt_backup"),
+            prefixTable("sk_reencrypt_backup"),
             array(
                 'current_table' => 'old_sk',
                 'current_field' => 'old_sk',
@@ -786,7 +790,7 @@ switch ($post_type) {
                 //change all encrypted data in Items (passwords)
                 $rows = DB::query(
                     "SELECT id, pw, pw_iv
-                    FROM ".prefix_table("items")."
+                    FROM ".prefixTable("items")."
                     WHERE perso = %s
                     LIMIT ".$post_start.", ".$post_length,
                     "0"
@@ -794,13 +798,13 @@ switch ($post_type) {
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("sk_reencrypt_backup"),
+                        prefixTable("sk_reencrypt_backup"),
                         array(
                             'current_table' => 'items',
                             'current_field' => 'pw',
                             'value_id' => $record['id'],
                             'value' => $record['pw'],
-                            'current_sql' => "UPDATE ".prefix_table("items")." SET pw = '".$record['pw']."' WHERE id = '".$record['id']."';",
+                            'current_sql' => "UPDATE ".prefixTable("items")." SET pw = '".$record['pw']."' WHERE id = '".$record['id']."';",
                             'value2' => "none",
                             'result' => "none"
                         )
@@ -821,7 +825,7 @@ switch ($post_type) {
 
                     //save in DB
                     DB::update(
-                        prefix_table("items"),
+                        prefixTable("items"),
                         array(
                             'pw' => $encrypt['string'],
                             'pw_iv' => ""
@@ -832,7 +836,7 @@ switch ($post_type) {
 
                     // update backup table
                     DB::update(
-                        prefix_table('sk_reencrypt_backup'),
+                        prefixTable('sk_reencrypt_backup'),
                         array(
                             'result' => "ok"
                             ),
@@ -847,7 +851,7 @@ switch ($post_type) {
                 //change all encrypted data in Logs (passwords)
                 $rows = DB::query(
                     "SELECT raison, increment_id
-                    FROM ".prefix_table("log_items")."
+                    FROM ".prefixTable("log_items")."
                     WHERE action = %s AND raison LIKE 'at_pw :%'
                     LIMIT ".$post_start.", ".$post_length,
                     "at_modification"
@@ -855,13 +859,13 @@ switch ($post_type) {
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("sk_reencrypt_backup"),
+                        prefixTable("sk_reencrypt_backup"),
                         array(
                             'current_table' => 'log_items',
                             'current_field' => 'raison',
                             'value_id' => $record['increment_id'],
                             'value' => $record['raison'],
-                            'current_sql' => "UPDATE ".prefix_table("log_items")." SET raison = '".$record['raison']."' WHERE increment_id = '".$record['increment_id']."';",
+                            'current_sql' => "UPDATE ".prefixTable("log_items")." SET raison = '".$record['raison']."' WHERE increment_id = '".$record['increment_id']."';",
                             'value2' => "none",
                             'result' => "none"
                         )
@@ -885,7 +889,7 @@ switch ($post_type) {
 
                         // save in DB
                         DB::update(
-                            prefix_table("log_items"),
+                            prefixTable("log_items"),
                             array(
                                 'raison' => 'at_pw :'.$encrypt['string'],
                                 'encryption_type' => 'defuse'
@@ -896,7 +900,7 @@ switch ($post_type) {
 
                         // update backup table
                         DB::update(
-                            prefix_table('sk_reencrypt_backup'),
+                            prefixTable('sk_reencrypt_backup'),
                             array(
                                 'result' => "ok"
                                 ),
@@ -912,19 +916,19 @@ switch ($post_type) {
                 //change all encrypted data in CATEGORIES (passwords)
                 $rows = DB::query(
                     "SELECT id, data
-                    FROM ".prefix_table("categories_items")."
+                    FROM ".prefixTable("categories_items")."
                     LIMIT ".$post_start.", ".$post_length
                 );
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("sk_reencrypt_backup"),
+                        prefixTable("sk_reencrypt_backup"),
                         array(
                             'current_table' => 'categories_items',
                             'current_field' => 'data',
                             'value_id' => $record['id'],
                             'value' => $record['data'],
-                            'current_sql' => "UPDATE ".prefix_table("categories_items")." SET data = '".$record['data']."' WHERE id = '".$record['id']."';",
+                            'current_sql' => "UPDATE ".prefixTable("categories_items")." SET data = '".$record['data']."' WHERE id = '".$record['id']."';",
                             'value2' => "none",
                             'result' => "none"
                         )
@@ -945,7 +949,7 @@ switch ($post_type) {
                     );
                     // save in DB
                     DB::update(
-                        prefix_table("categories_items"),
+                        prefixTable("categories_items"),
                         array(
                             'data' => $encrypt['string'],
                             'encryption_type' => 'defuse'
@@ -956,7 +960,7 @@ switch ($post_type) {
 
                     // update backup table
                     DB::update(
-                        prefix_table('sk_reencrypt_backup'),
+                        prefixTable('sk_reencrypt_backup'),
                         array(
                             'result' => "ok"
                             ),
@@ -971,14 +975,14 @@ switch ($post_type) {
                 // Change all encrypted data in FILES (passwords)
                 $rows = DB::query(
                     "SELECT id, file, status
-                    FROM ".prefix_table("files")."
+                    FROM ".prefixTable("files")."
                     WHERE status = 'encrypted'
                     LIMIT ".$post_start.", ".$post_length
                 );
                 foreach ($rows as $record) {
                     // backup data
                     DB::insert(
-                        prefix_table("sk_reencrypt_backup"),
+                        prefixTable("sk_reencrypt_backup"),
                         array(
                             'current_table' => 'files',
                             'current_field' => 'file',
@@ -1033,7 +1037,7 @@ switch ($post_type) {
 
                         // Update backup table
                         DB::update(
-                            prefix_table('sk_reencrypt_backup'),
+                            prefixTable('sk_reencrypt_backup'),
                             array(
                                 'value2' => $backup_filename,
                                 'result' => "ok"
@@ -1055,13 +1059,13 @@ switch ($post_type) {
                 // do some things for new object
                 if (isset($objects[0])) {
                     if ($objects[0] === "logs") {
-                        DB::query("SELECT increment_id FROM ".prefix_table("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
+                        DB::query("SELECT increment_id FROM ".prefixTable("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
                     } elseif ($objects[0] === "files") {
-                        DB::query("SELECT id FROM ".prefix_table("files"));
+                        DB::query("SELECT id FROM ".prefixTable("files"));
                     } elseif ($objects[0] === "categories") {
-                        DB::query("SELECT id FROM ".prefix_table("categories_items"));
+                        DB::query("SELECT id FROM ".prefixTable("categories_items"));
                     } elseif ($objects[0] === "custfields") {
-                        DB::query("SELECT raison FROM ".prefix_table("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
+                        DB::query("SELECT raison FROM ".prefixTable("log_items")." WHERE action = %s AND raison LIKE 'at_pw :%'", "at_modification");
                     }
                     $nb_of_items = DB::count();
                 } else {
@@ -1092,7 +1096,7 @@ switch ($post_type) {
 
         // quit maintenance mode.
         DB::update(
-            prefix_table("misc"),
+            prefixTable("misc"),
             array(
                 'valeur' => '0',
             ),
@@ -1117,7 +1121,7 @@ switch ($post_type) {
         // delete files
         $rows = DB::query(
             "SELECT current_table, value, value2, current_sql
-            FROM ".prefix_table("sk_reencrypt_backup")
+            FROM ".prefixTable("sk_reencrypt_backup")
         );
         foreach ($rows as $record) {
             if ($record['current_table'] === "items" || $record['current_table'] === "logs" || $record['current_table'] === "categories") {
@@ -1151,7 +1155,7 @@ switch ($post_type) {
         }
 
         // drop table
-        DB::query("DROP TABLE IF EXISTS ".prefix_table("sk_reencrypt_backup"));
+        DB::query("DROP TABLE IF EXISTS ".prefixTable("sk_reencrypt_backup"));
 
         echo '[{"status":"done"}]';
         break;
@@ -1169,7 +1173,7 @@ switch ($post_type) {
         // delete files
         $rows = DB::query(
             "SELECT value, value2
-            FROM ".prefix_table("sk_reencrypt_backup")."
+            FROM ".prefixTable("sk_reencrypt_backup")."
             WHERE current_table = 'files'"
         );
         foreach ($rows as $record) {
@@ -1179,7 +1183,7 @@ switch ($post_type) {
         }
 
         // drop table
-        DB::query("DROP TABLE IF EXISTS ".prefix_table("sk_reencrypt_backup"));
+        DB::query("DROP TABLE IF EXISTS ".prefixTable("sk_reencrypt_backup"));
 
         echo '[{"status":"done"}]';
         break;
@@ -1214,7 +1218,7 @@ switch ($post_type) {
     case "admin_email_send_backlog":
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
-        $rows = DB::query("SELECT * FROM ".prefix_table("emails")." WHERE status = %s OR status = %s", "not_sent", "");
+        $rows = DB::query("SELECT * FROM ".prefixTable("emails")." WHERE status = %s OR status = %s", "not_sent", "");
         foreach ($rows as $record) {
             //send email
             $ret = json_decode(
@@ -1231,7 +1235,7 @@ switch ($post_type) {
             if (empty($ret['error']) === false) {
                 //update item_id in files table
                 DB::update(
-                    prefix_table("emails"),
+                    prefixTable("emails"),
                     array(
                         'status' => "not_sent"
                     ),
@@ -1240,7 +1244,7 @@ switch ($post_type) {
                 );
             } else {
                 //delete from DB
-                DB::delete(prefix_table("emails"), "timestamp = %s", $record['timestamp']);
+                DB::delete(prefixTable("emails"), "timestamp = %s", $record['timestamp']);
             }
         }
 
@@ -1268,7 +1272,7 @@ switch ($post_type) {
             // Loop on files
             $rows = DB::query(
                 "SELECT id, file, status
-                FROM ".prefix_table("files")
+                FROM ".prefixTable("files")
             );
             foreach ($rows as $record) {
                 if (is_file($SETTINGS['path_to_upload_folder'].'/'.$record['file'])) {
@@ -1328,7 +1332,7 @@ switch ($post_type) {
                 // Get file name
                 $file_info = DB::queryfirstrow(
                     "SELECT file
-                    FROM ".prefix_table("files")."
+                    FROM ".prefixTable("files")."
                     WHERE id = %i",
                     $file
                 );
@@ -1359,7 +1363,7 @@ switch ($post_type) {
 
                     // store in DB
                         DB::update(
-                            prefix_table('files'),
+                            prefixTable('files'),
                             array(
                                 'status' => $post_option === "decrypt" ? "clear" : "encrypted"
                                 ),
@@ -1402,7 +1406,7 @@ switch ($post_type) {
         // add new key
         if (null !== $post_action && $post_action === "add") {
             DB::insert(
-                prefix_table("api"),
+                prefixTable("api"),
                 array(
                     'id'        => null,
                     'type'      => 'key',
@@ -1414,7 +1418,7 @@ switch ($post_type) {
         // Update existing key
         } elseif (null !== $post_action && $post_action === "update") {
             DB::update(
-                prefix_table("api"),
+                prefixTable("api"),
                 array(
                     'label'     => $post_label,
                     'timestamp' => time()
@@ -1425,7 +1429,7 @@ switch ($post_type) {
         // Delete existing key
         } elseif (null !== $post_action && $post_action === "delete") {
             DB::query(
-                "DELETE FROM ".prefix_table("api")." WHERE id = %i",
+                "DELETE FROM ".prefixTable("api")." WHERE id = %i",
                 $post_id
             );
         }
@@ -1448,7 +1452,7 @@ switch ($post_type) {
         // add new key
         if (null !== $post_action && $post_action === "add") {
             DB::insert(
-                prefix_table("api"),
+                prefixTable("api"),
                 array(
                     'id'        => null,
                     'type'      => 'ip',
@@ -1460,7 +1464,7 @@ switch ($post_type) {
         // Update existing key
         } elseif (null !== $post_action && $post_action === "update") {
                 DB::update(
-                    prefix_table("api"),
+                    prefixTable("api"),
                     array(
                         'label'     => $post_label,
                         'value'     => $post_key,
@@ -1471,18 +1475,18 @@ switch ($post_type) {
                 );
         // Delete existing key
         } elseif (null !== $post_action && $post_action === "delete") {
-            DB::query("DELETE FROM ".prefix_table("api")." WHERE id=%i", $post_id);
+            DB::query("DELETE FROM ".prefixTable("api")." WHERE id=%i", $post_id);
         }
         echo '[{"error":"'.$error.'"}]';
         break;
 
     case "save_api_status":
         // Do query
-        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "api");
+        DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "api");
         $counter = DB::count();
         if ($counter == 0) {
             DB::insert(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'type' => "admin",
                     "intitule" => "api",
@@ -1491,7 +1495,7 @@ switch ($post_type) {
             );
         } else {
             DB::update(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'valeur' => $post_status
                     ),
@@ -1504,11 +1508,11 @@ switch ($post_type) {
         break;
 
     case "save_duo_status":
-        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "duo");
+        DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "duo");
         $counter = DB::count();
         if ($counter == 0) {
             DB::insert(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'type' => "admin",
                     "intitule" => "duo",
@@ -1517,7 +1521,7 @@ switch ($post_type) {
             );
         } else {
             DB::update(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'valeur' => $post_status
                     ),
@@ -1622,11 +1626,11 @@ switch ($post_type) {
         } else {
             $tmp = 1;
         }
-        DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "google_authentication");
+        DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "google_authentication");
         $counter = DB::count();
         if ($counter == 0) {
             DB::insert(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'type' => "admin",
                     "intitule" => "google_authentication",
@@ -1635,7 +1639,7 @@ switch ($post_type) {
             );
         } else {
             DB::update(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'valeur' => $tmp
                 ),
@@ -1648,11 +1652,11 @@ switch ($post_type) {
 
         // ga_website_name
         if (is_null($dataReceived['ga_website_name']) === false) {
-            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
+            DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "ga_website_name");
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'type' => "admin",
                         "intitule" => "ga_website_name",
@@ -1661,7 +1665,7 @@ switch ($post_type) {
                 );
             } else {
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name'])
                     ),
@@ -1697,11 +1701,11 @@ switch ($post_type) {
 
         // agses_hosted_url
         if (!is_null($dataReceived['agses_hosted_url'])) {
-            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_url");
+            DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_url");
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'type' => "admin",
                         "intitule" => "agses_hosted_url",
@@ -1710,7 +1714,7 @@ switch ($post_type) {
                 );
             } else {
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url'])
                     ),
@@ -1726,11 +1730,11 @@ switch ($post_type) {
 
         // agses_hosted_id
         if (!is_null($dataReceived['agses_hosted_id'])) {
-            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_id");
+            DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_id");
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'type' => "admin",
                         "intitule" => "agses_hosted_id",
@@ -1739,7 +1743,7 @@ switch ($post_type) {
                 );
             } else {
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id'])
                     ),
@@ -1755,11 +1759,11 @@ switch ($post_type) {
 
         // agses_hosted_apikey
         if (!is_null($dataReceived['agses_hosted_apikey'])) {
-            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_apikey");
+            DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "agses_hosted_apikey");
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'type' => "admin",
                         "intitule" => "agses_hosted_apikey",
@@ -1768,7 +1772,7 @@ switch ($post_type) {
                 );
             } else {
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey'])
                     ),
@@ -1812,7 +1816,7 @@ switch ($post_type) {
 
         // Check if setting is already in DB. If NO then insert, if YES then update.
         $data = DB::query(
-            "SELECT * FROM ".prefix_table("misc")."
+            "SELECT * FROM ".prefixTable("misc")."
             WHERE type = %s AND intitule = %s",
             $type,
             $dataReceived['field']
@@ -1820,7 +1824,7 @@ switch ($post_type) {
         $counter = DB::count();
         if ($counter === 0) {
             DB::insert(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'valeur' => $dataReceived['value'],
                     'type' => $type,
@@ -1830,7 +1834,7 @@ switch ($post_type) {
             // in case of stats enabled, add the actual time
             if ($dataReceived['field'] === 'send_stats') {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => time(),
                         'type' => $type,
@@ -1840,7 +1844,7 @@ switch ($post_type) {
             }
         } else {
             DB::update(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'valeur' => $dataReceived['value']
                     ),
@@ -1852,7 +1856,7 @@ switch ($post_type) {
             if ($dataReceived['field'] === 'send_stats') {
                 // Check if previous time exists, if not them insert this value in DB
                 $data_time = DB::query(
-                    "SELECT * FROM ".prefix_table("misc")."
+                    "SELECT * FROM ".prefixTable("misc")."
                     WHERE type = %s AND intitule = %s",
                     $type,
                     $dataReceived['field'].'_time'
@@ -1860,7 +1864,7 @@ switch ($post_type) {
                 $counter = DB::count();
                 if ($counter === 0) {
                     DB::insert(
-                        prefix_table("misc"),
+                        prefixTable("misc"),
                         array(
                             'valeur' => 0,
                             'type' => $type,
@@ -1869,7 +1873,7 @@ switch ($post_type) {
                     );
                 } else {
                     DB::update(
-                        prefix_table("misc"),
+                        prefixTable("misc"),
                         array(
                             'valeur' => 0
                             ),
@@ -1894,7 +1898,7 @@ switch ($post_type) {
             file_put_contents($csrfp_file, $newdata);
         } elseif ($dataReceived['field'] === "restricted_to_input" && $dataReceived['value'] === "0") {
             DB::update(
-                prefix_table("misc"),
+                prefixTable("misc"),
                 array(
                     'valeur' => 0
                     ),
@@ -1944,11 +1948,11 @@ switch ($post_type) {
 
         // send statistics
         if (null !== $post_status) {
-            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_stats");
+            DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "send_stats");
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'type' => "admin",
                         "intitule" => "send_stats",
@@ -1957,7 +1961,7 @@ switch ($post_type) {
                 );
             } else {
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => $post_status
                     ),
@@ -1976,11 +1980,11 @@ switch ($post_type) {
 
         // send statistics items
         if (null !== $post_list) {
-            DB::query("SELECT * FROM ".prefix_table("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
+            DB::query("SELECT * FROM ".prefixTable("misc")." WHERE type = %s AND intitule = %s", "admin", "send_statistics_items");
             $counter = DB::count();
             if ($counter == 0) {
                 DB::insert(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'type' => "admin",
                         "intitule" => "send_statistics_items",
@@ -1989,7 +1993,7 @@ switch ($post_type) {
                 );
             } else {
                 DB::update(
-                    prefix_table("misc"),
+                    prefixTable("misc"),
                     array(
                         'valeur' => $post_list
                     ),
@@ -2183,7 +2187,7 @@ switch ($post_type) {
             break;
         }
 
-        if ($result = DB::query("SHOW TABLES LIKE '".prefix_table("sk_reencrypt_backup")."'")) {
+        if ($result = DB::query("SHOW TABLES LIKE '".prefixTable("sk_reencrypt_backup")."'")) {
             if (DB::count() === 1) {
                 echo "1";
             } else {
@@ -2216,7 +2220,7 @@ switch ($post_type) {
 
         $rows = DB::query(
             "SELECT id, title
-            FROM ".prefix_table("roles_title")."
+            FROM ".prefixTable("roles_title")."
             ORDER BY title ASC"
         );
         foreach ($rows as $record) {

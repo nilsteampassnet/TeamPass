@@ -45,6 +45,25 @@ use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 use \Defuse\Crypto\Crypto;
 use \Defuse\Crypto\Exception as Ex;
 
+/**
+ * Undocumented function
+ *
+ * @param [type] $string
+ * @return void
+ */
+function langHdl($string)
+{
+    if (empty($string) === true || isset($_SESSION['teampass']['lang'][$string]) === false) {
+        // Manage error
+    } else {
+        return str_replace(
+            array("\"", "'"),
+            array("&quot;", "&apos;"),
+            $_SESSION['teampass']['lang'][$string]
+        );
+    }
+}
+
 //Generate N# of random bits for use as salt
 /**
  * @param integer $size
@@ -574,12 +593,6 @@ function identifyUserRights(
     $groupesInterditsUser,
     $isAdmin,
     $idFonctions,
-    $server,
-    $user,
-    $pass,
-    $database,
-    $port,
-    $encoding,
     $SETTINGS
 ) {
     //load ClassLoader
@@ -587,21 +600,21 @@ function identifyUserRights(
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
     if ($isAdmin === '1') {
@@ -616,7 +629,7 @@ function identifyUserRights(
         $_SESSION['list_folders_limited'] = array();
         $_SESSION['no_access_folders'] = array();
         $_SESSION['groupes_visibles_list'] = "";
-        $rows = DB::query("SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i", 0);
+        $rows = DB::query("SELECT id FROM ".prefixTable("nested_tree")." WHERE personal_folder = %i", 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
         }
@@ -632,7 +645,7 @@ function identifyUserRights(
         }
         // Get ID of personal folder
         $persfld = DB::queryfirstrow(
-            "SELECT id FROM ".prefix_table("nested_tree")." WHERE title = %s",
+            "SELECT id FROM ".prefixTable("nested_tree")." WHERE title = %s",
             $_SESSION['user_id']
         );
         if (!empty($persfld['id'])) {
@@ -640,7 +653,7 @@ function identifyUserRights(
                 array_push($_SESSION['groupes_visibles'], $persfld['id']);
                 array_push($_SESSION['personal_visible_groups'], $persfld['id']);
                 // get all descendants
-                $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($persfld['id']);
                 foreach ($tst as $t) {
@@ -653,7 +666,7 @@ function identifyUserRights(
         // get complete list of ROLES
         $tmp = explode(";", $idFonctions);
         $rows = DB::query(
-            "SELECT * FROM ".prefix_table("roles_title")."
+            "SELECT * FROM ".prefixTable("roles_title")."
             ORDER BY title ASC"
         );
         foreach ($rows as $record) {
@@ -666,9 +679,9 @@ function identifyUserRights(
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
-        DB::query("SELECT * FROM ".prefix_table("nested_tree")."");
+        DB::query("SELECT * FROM ".prefixTable("nested_tree")."");
         $_SESSION['nb_folders'] = DB::count();
-        DB::query("SELECT * FROM ".prefix_table("roles_title"));
+        DB::query("SELECT * FROM ".prefixTable("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     } else {
         // init
@@ -695,13 +708,13 @@ function identifyUserRights(
             if (empty($roleId) === false) {
                 // Get allowed folders for each Role
                 $rows = DB::query(
-                    "SELECT folder_id FROM ".prefix_table("roles_values")." WHERE role_id=%i",
+                    "SELECT folder_id FROM ".prefixTable("roles_values")." WHERE role_id=%i",
                     $roleId
                 );
 
                 if (DB::count() > 0) {
                     $tmp = DB::queryfirstrow(
-                        "SELECT allow_pw_change FROM ".prefix_table("roles_title")." WHERE id = %i",
+                        "SELECT allow_pw_change FROM ".prefixTable("roles_title")." WHERE id = %i",
                         $roleId
                     );
                     foreach ($rows as $record) {
@@ -716,8 +729,8 @@ function identifyUserRights(
                     // Check for the users roles if some specific rights exist on items
                     $rows = DB::query(
                         "SELECT i.id_tree, r.item_id
-                        FROM ".prefix_table("items")." as i
-                        INNER JOIN ".prefix_table("restriction_to_roles")." as r ON (r.item_id=i.id)
+                        FROM ".prefixTable("items")." as i
+                        INNER JOIN ".prefixTable("restriction_to_roles")." as r ON (r.item_id=i.id)
                         WHERE r.role_id=%i
                         ORDER BY i.id_tree ASC",
                         $roleId
@@ -740,7 +753,7 @@ function identifyUserRights(
         // Does this user is allowed to see other items
         $inc = 0;
         $rows = DB::query(
-            "SELECT id, id_tree FROM ".prefix_table("items")."
+            "SELECT id, id_tree FROM ".prefixTable("items")."
             WHERE restricted_to LIKE %ss AND inactif=%s",
             $_SESSION['user_id'].';',
             '0'
@@ -783,7 +796,7 @@ function identifyUserRights(
 
         $persoFlds = DB::query(
             "SELECT id
-            FROM ".prefix_table("nested_tree")."
+            FROM ".prefixTable("nested_tree")."
             WHERE %l",
             $where
         );
@@ -796,7 +809,7 @@ function identifyUserRights(
         ) {
             $persoFld = DB::queryfirstrow(
                 "SELECT id
-                FROM ".prefix_table("nested_tree")."
+                FROM ".prefixTable("nested_tree")."
                 WHERE title = %s AND personal_folder = %i",
                 $_SESSION['user_id'],
                 1
@@ -822,7 +835,7 @@ function identifyUserRights(
                 if (in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))) === false) {
                     DB::query(
                         "SELECT *
-                        FROM ".prefix_table("roles_values")."
+                        FROM ".prefixTable("roles_values")."
                         WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
@@ -840,7 +853,7 @@ function identifyUserRights(
                 if (in_array($folderId, $listReadOnlyFolders) === false) {
                     DB::query(
                         "SELECT *
-                        FROM ".prefix_table("roles_values")."
+                        FROM ".prefixTable("roles_values")."
                         WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
                         $folderId,
                         $fonctionsAssociees,
@@ -857,8 +870,8 @@ function identifyUserRights(
         if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] === '1') {
             DB::query(
                 "SELECT *
-                FROM ".prefix_table("items_change")." AS c
-                LEFT JOIN ".prefix_table("log_items")." AS i ON (c.item_id = i.id_item)
+                FROM ".prefixTable("items_change")." AS c
+                LEFT JOIN ".prefixTable("log_items")." AS i ON (c.item_id = i.id_item)
                 WHERE i.action = %s AND i.id_user = %i",
                 "at_creation",
                 $_SESSION['user_id']
@@ -879,15 +892,15 @@ function identifyUserRights(
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT id FROM ".prefix_table("nested_tree")."");
+        DB::queryfirstrow("SELECT id FROM ".prefixTable("nested_tree")."");
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT id FROM ".prefix_table("roles_title"));
+        DB::queryfirstrow("SELECT id FROM ".prefixTable("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
 
     // update user's timestamp
     DB::update(
-        prefix_table('users'),
+        prefixTable('users'),
         array(
             'timestamp' => time()
         ),
@@ -911,32 +924,32 @@ function updateCacheTable($action, $ident = null)
 
     //Connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
 
     // Rebuild full cache table
     if ($action === "reload") {
         // truncate table
-        DB::query("TRUNCATE TABLE ".prefix_table("cache"));
+        DB::query("TRUNCATE TABLE ".prefixTable("cache"));
 
         // reload date
         $rows = DB::query(
             "SELECT *
-            FROM ".prefix_table('items')." as i
-            INNER JOIN ".prefix_table('log_items')." as l ON (l.id_item = i.id)
+            FROM ".prefixTable('items')." as i
+            INNER JOIN ".prefixTable('log_items')." as l ON (l.id_item = i.id)
             AND l.action = %s
             AND i.inactif = %i",
             'at_creation',
@@ -946,14 +959,14 @@ function updateCacheTable($action, $ident = null)
             if (empty($record['id_tree']) === false) {
                 // Get all TAGS
                 $tags = "";
-                $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $record['id']);
+                $itemTags = DB::query("SELECT tag FROM ".prefixTable('tags')." WHERE item_id=%i", $record['id']);
                 foreach ($itemTags as $itemTag) {
                     if (!empty($itemTag['tag'])) {
                         $tags .= $itemTag['tag']." ";
                     }
                 }
                 // Get renewal period
-                $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".prefix_table('nested_tree')." WHERE id=%i", $record['id_tree']);
+                $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".prefixTable('nested_tree')." WHERE id=%i", $record['id_tree']);
 
                 // form id_tree to full foldername
                 $folder = "";
@@ -970,7 +983,7 @@ function updateCacheTable($action, $ident = null)
                 }
                 // store data
                 DB::insert(
-                    prefix_table('cache'),
+                    prefixTable('cache'),
                     array(
                         'id' => $record['id'],
                         'label' => $record['label'],
@@ -994,13 +1007,13 @@ function updateCacheTable($action, $ident = null)
         // get new value from db
         $data = DB::queryfirstrow(
             "SELECT label, description, id_tree, perso, restricted_to, login, url
-            FROM ".prefix_table('items')."
+            FROM ".prefixTable('items')."
             WHERE id=%i",
             $ident
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id=%i", $ident);
+        $itemTags = DB::query("SELECT tag FROM ".prefixTable('tags')." WHERE item_id=%i", $ident);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -1021,7 +1034,7 @@ function updateCacheTable($action, $ident = null)
         }
         // finaly update
         DB::update(
-            prefix_table('cache'),
+            prefixTable('cache'),
             array(
                 'label' => $data['label'],
                 'description' => $data['description'],
@@ -1042,8 +1055,8 @@ function updateCacheTable($action, $ident = null)
         // get new value from db
         $data = DB::queryFirstRow(
             "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
-            FROM ".prefix_table('items')." as i
-            INNER JOIN ".prefix_table('log_items')." as l ON (l.id_item = i.id)
+            FROM ".prefixTable('items')." as i
+            INNER JOIN ".prefixTable('log_items')." as l ON (l.id_item = i.id)
             WHERE i.id = %i
             AND l.action = %s",
             $ident,
@@ -1051,7 +1064,7 @@ function updateCacheTable($action, $ident = null)
         );
         // Get all TAGS
         $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".prefix_table('tags')." WHERE item_id = %i", $ident);
+        $itemTags = DB::query("SELECT tag FROM ".prefixTable('tags')." WHERE item_id = %i", $ident);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
                 $tags .= $itemTag['tag']." ";
@@ -1072,7 +1085,7 @@ function updateCacheTable($action, $ident = null)
         }
         // finaly update
         DB::insert(
-            prefix_table('cache'),
+            prefixTable('cache'),
             array(
                 'id' => $data['id'],
                 'label' => $data['label'],
@@ -1091,7 +1104,7 @@ function updateCacheTable($action, $ident = null)
 
     // DELETE an item
     } elseif ($action === "delete_value" && is_null($ident) === false) {
-        DB::delete(prefix_table('cache'), "id = %i", $ident);
+        DB::delete(prefixTable('cache'), "id = %i", $ident);
     }
 }
 
@@ -1103,48 +1116,48 @@ function getStatisticsData()
     global $SETTINGS;
 
     DB::query(
-        "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
+        "SELECT id FROM ".prefixTable("nested_tree")." WHERE personal_folder = %i",
         0
     );
     $counter_folders = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("nested_tree")." WHERE personal_folder = %i",
+        "SELECT id FROM ".prefixTable("nested_tree")." WHERE personal_folder = %i",
         1
     );
     $counter_folders_perso = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("items")." WHERE perso = %i",
+        "SELECT id FROM ".prefixTable("items")." WHERE perso = %i",
         0
     );
     $counter_items = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("items")." WHERE perso = %i",
+        "SELECT id FROM ".prefixTable("items")." WHERE perso = %i",
         1
     );
     $counter_items_perso = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("users").""
+        "SELECT id FROM ".prefixTable("users").""
     );
     $counter_users = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("users")." WHERE admin = %i",
+        "SELECT id FROM ".prefixTable("users")." WHERE admin = %i",
         1
     );
     $admins = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("users")." WHERE gestionnaire = %i",
+        "SELECT id FROM ".prefixTable("users")." WHERE gestionnaire = %i",
         1
     );
     $managers = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefix_table("users")." WHERE read_only = %i",
+        "SELECT id FROM ".prefixTable("users")." WHERE read_only = %i",
         1
     );
     $readOnly = DB::count();
@@ -1152,11 +1165,11 @@ function getStatisticsData()
     // list the languages
     $usedLang = [];
     $tp_languages = DB::query(
-        "SELECT name FROM ".prefix_table("languages")
+        "SELECT name FROM ".prefixTable("languages")
     );
     foreach ($tp_languages as $tp_language) {
         DB::query(
-            "SELECT * FROM ".prefix_table("users")." WHERE user_language = %s",
+            "SELECT * FROM ".prefixTable("users")." WHERE user_language = %s",
             $tp_language['name']
         );
         $usedLang[$tp_language['name']] = round((DB::count() * 100 / $counter_users), 0);
@@ -1165,7 +1178,7 @@ function getStatisticsData()
     // get list of ips
     $usedIp = [];
     $tp_ips = DB::query(
-        "SELECT user_ip FROM ".prefix_table("users")
+        "SELECT user_ip FROM ".prefixTable("users")
     );
     foreach ($tp_ips as $ip) {
         if (array_key_exists($ip['user_ip'], $usedIp)) {
@@ -1467,16 +1480,16 @@ function make_thumb($src, $dest, $desired_width)
     imagejpeg($virtual_image, $dest);
 }
 
-/*
-** check table prefix in SQL query
-*/
+
 /**
- * @param string $table
+ * Check table prefix in SQL query
+ *
+ * @param  string $table Table name
+ * @return string
  */
-function prefix_table($table)
+function prefixTable($table)
 {
-    global $pre;
-    $safeTable = htmlspecialchars($pre.$table);
+    $safeTable = htmlspecialchars(DB_PREFIX.$table);
     if (!empty($safeTable)) {
         // sanitize string
         return $safeTable;
@@ -1563,19 +1576,19 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     DB::insert(
-        prefix_table("log_system"),
+        prefixTable("log_system"),
         array(
             'type' => $type,
             'date' => time(),
@@ -1631,20 +1644,20 @@ function logItems(
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     // Insert log in DB
     DB::insert(
-        prefix_table("log_items"),
+        prefixTable("log_items"),
         array(
             'id_item' => $item_id,
             'date' => time(),
@@ -1665,7 +1678,7 @@ function logItems(
         if (empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
                 "SELECT id, id_tree, label
-                FROM ".prefix_table("items")."
+                FROM ".prefixTable("items")."
                 WHERE id = %i",
                 $item_id
             );
@@ -1690,7 +1703,7 @@ function logItems(
         if (empty($dataItem) === true || empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
                 "SELECT id, id_tree, label
-                FROM ".prefix_table("items")."
+                FROM ".prefixTable("items")."
                 WHERE id = %i",
                 $item_id
             );
@@ -1699,7 +1712,7 @@ function logItems(
 
         // send back infos
         DB::insert(
-            prefix_table('emails'),
+            prefixTable('emails'),
             array(
                 'timestamp' => time(),
                 'subject' => $LANG['email_on_open_notification_subject'],
@@ -1770,16 +1783,16 @@ function handleConfigFile($action, $field = null, $value = null)
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     if (!file_exists($tp_config_file) || $action == "rebuild") {
         // perform a copy
@@ -1795,7 +1808,7 @@ function handleConfigFile($action, $field = null, $value = null)
         $data[1] = "global \$SETTINGS;\n";
         $data[2] = "\$SETTINGS = array (\n";
         $rows = DB::query(
-            "SELECT * FROM ".prefix_table("misc")." WHERE type=%s",
+            "SELECT * FROM ".prefixTable("misc")." WHERE type=%s",
             "admin"
         );
         foreach ($rows as $record) {
@@ -1857,7 +1870,7 @@ function loadSettings()
         $settings = array();
 
         $rows = DB::query(
-            "SELECT * FROM ".prefix_table("misc")." WHERE type=%s_type OR type=%s_type2",
+            "SELECT * FROM ".prefixTable("misc")." WHERE type=%s_type OR type=%s_type2",
             array(
                 'type' => "admin",
                 'type2' => "settings"
@@ -1884,7 +1897,7 @@ function checkCFconsistency($source_id, $target_id)
     $source_cf = array();
     $rows = DB::QUERY(
         "SELECT id_category
-        FROM ".prefix_table("categories_folders")."
+        FROM ".prefixTable("categories_folders")."
         WHERE id_folder = %i",
         $source_id
     );
@@ -1895,7 +1908,7 @@ function checkCFconsistency($source_id, $target_id)
     $target_cf = array();
     $rows = DB::QUERY(
         "SELECT id_category
-        FROM ".prefix_table("categories_folders")."
+        FROM ".prefixTable("categories_folders")."
         WHERE id_folder = %i",
         $target_id
     );
@@ -1921,20 +1934,20 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 
     // Include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    DB::$host         = DB_HOST;
+    DB::$user         = DB_USER;
+    DB::$password     = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName       = DB_NAME;
+    DB::$port         = DB_PORT;
+    DB::$encoding     = DB_ENCODING;
+    //DB::$errorHandler = true;
+
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     // Get file info in DB
     $fileInfo = DB::queryfirstrow(
-        "SELECT id FROM ".prefix_table("files")." WHERE file = %s",
+        "SELECT id FROM ".prefixTable("files")." WHERE file = %s",
         filter_var($filename_to_rework, FILTER_SANITIZE_STRING)
     );
     if (empty($fileInfo['id']) === false) {
@@ -2000,7 +2013,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 
                 // update table
                 DB::update(
-                    prefix_table('files'),
+                    prefixTable('files'),
                     array(
                         'status' => 'encrypted'
                         ),
@@ -2054,7 +2067,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 
                 // update table
                 DB::update(
-                    prefix_table('files'),
+                    prefixTable('files'),
                     array(
                         'status' => 'clear'
                         ),
@@ -2313,7 +2326,7 @@ function accessToItemIsGranted($item_id)
     // Load item data
     $data = DB::queryFirstRow(
         "SELECT id_tree
-        FROM ".prefix_table("items")."
+        FROM ".prefixTable("items")."
         WHERE id = %i",
         $item_id
     );

@@ -1,31 +1,26 @@
 {
-    "name": "nilsteampassnet/TeamPass",
-    "type": "project",
-    "description": "TeamPass is a Passwords Manager dedicated for managing passwords in a collaborative way",
-    "version": "2.1.27",
-    "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
-    "homepage": "https://www.teampass.net",
-    "license": "GPL-3.0-only",
-    "authors": [
-        {"name": "Nils Laumaillé", "email": "nils@teampass.net"}
-    ],
-    "support": {
-        "email": "nils@teampass.net",
-        "issues": "https://github.com/nilsteampassnet/TeamPass/issues",
-        "source": "https://github.com/nilsteampassnet/TeamPass",
-        "wiki": "https://www.teampass.net",
-        "docs": "https://teampass.readthedocs.io/en/latest/",
-        "forum": "https://www.reddit.com/r/TeamPass/"
-    },
-    "require": {
-        "php": ">=5.5.0",
-        "ext-mysqli": ">=5.1.0",
-        "ext-mcrypt": "*",
-        "ext-mbstring": "*",
-        "ext-openssl": "*",
-        "ext-bcmath": "*",
-        "ext-iconv": "*",
-        "ext-xml": "*",
-        "ext-gd": "*"
+  "name": "almasaeed2010/adminlte",
+  "description": "AdminLTE - admin control panel and dashboard that's based on Bootstrap 3",
+  "homepage": "http://adminlte.io/",
+  "keywords": [
+    "css",
+    "js",
+    "less",
+    "responsive",
+    "back-end",
+    "template",
+    "theme",
+    "web",
+    "admin"
+  ],
+  "authors": [
+    {
+      "name": "Abdullah Almsaeed",
+      "email": "support@adminlte.io"
     }
+  ],
+  "license": "MIT",
+  "support": {
+    "issues": "https://github.com/almasaeed2010/AdminLTE/issues"
+  }
 }
