@@ -1,0 +1,42 @@
+/*
+ * Component: Table
+ * ----------------
+ */
+
+.table.no-border {
+  &,
+  td,
+  th {
+    border: 0;
+  }
+}
+
+// .text-center in tables
+.table.text-center {
+  &, td, th {
+    text-align: center;
+  }
+}
+
+.table-valign-middle {
+  thead > tr > th,
+  thead > tr > td,
+  tbody > tr > th,
+  tbody > tr > td {
+    vertical-align: middle;
+  }
+}
+
+.card-body.p-0 .table {
+  thead > tr > th,
+  thead > tr > td,
+  tbody > tr > th,
+  tbody > tr > td {
+    &:first-of-type {
+      @extend .pl-4;
+    }
+    &:last-of-type {
+      @extend .pr-4;
+    }
+  }
+}

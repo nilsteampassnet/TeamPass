@@ -1,0 +1,79 @@
+/*
+ * Component: Info Box
+ * -------------------
+ */
+.info-box {
+  @extend .d-flex;
+  @extend .mb-3;
+  @include box-shadow($card-shadow);
+  @include border-radius($border-radius);
+
+  padding: .5rem;
+  min-height: 80px;
+  background: $white;
+
+  .progress {
+    background-color: rgba(0, 0, 0, 0.125);
+    margin: 5px 0;
+    height: 2px;
+    .progress-bar {
+      background-color: $white;
+    }
+  }
+}
+
+.info-box-icon {
+  @extend .d-flex;
+  @extend .align-items-center;
+  @extend .justify-content-center;
+
+  @if $enable-rounded {
+    border-radius: $border-radius;
+  }
+
+  display: block;
+  width: 70px;
+  text-align: center;
+  font-size: 30px;
+
+  > img {
+    max-width: 100%;
+  }
+}
+
+.info-box-content {
+  padding: 5px 10px;
+  flex: 1;
+}
+
+.info-box-number {
+  display: block;
+  font-weight: $font-weight-bold;
+}
+
+.progress-description,
+.info-box-text {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@each $name, $color in $theme-colors {
+  .info-box.bg-#{$name},
+  .info-box.bg-#{$name}-gradient {
+    color: color-yiq($color);
+
+    .progress-bar {
+      background-color: color-yiq($color);
+    }
+  }
+}
+
+.info-box-more {
+  display: block;
+}
+
+.progress-description {
+  margin: 0;
+}

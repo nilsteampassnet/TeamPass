@@ -1,0 +1,45 @@
+/*
+ * Component: Products List
+ * ------------------------
+ */
+.products-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  > .item {
+    @if $enable-rounded {
+      @include border-radius($border-radius);
+    }
+    @include clearfix();
+    padding: 10px 0;
+    background: $white;
+  }
+  .product-img {
+    float: left;
+    img {
+      width: 50px;
+      height: 50px;
+    }
+  }
+  .product-info {
+    margin-left: 60px;
+  }
+  .product-title {
+    font-weight: 600;
+  }
+  .product-description {
+    display: block;
+    color: $gray-600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+.product-list-in-card > .item {
+  @include border-radius(0);
+  border-bottom: 1px solid $card-border-color;
+  &:last-of-type {
+    border-bottom-width: 0;
+  }
+}

@@ -1,0 +1,132 @@
+/*
+ * Component: Dropdown menus
+ * -------------------------
+ */
+
+// General Dropdown Rules
+//.dropdown-item {
+//  &:first-of-type {
+//    @include border-top-radius($border-radius);
+//  }
+//  &:last-of-type {
+//    @include border-bottom-radius($border-radius);
+//  }
+//}
+
+.dropdown-item-title {
+  font-size: $font-size-base;
+  margin: 0;
+}
+
+// Dropdown Sizes
+.dropdown-menu-lg {
+  min-width: 280px;
+  max-width: 300px;
+  padding: 0;
+  .dropdown-divider {
+    margin: 0;
+  }
+  .dropdown-item {
+    padding: $dropdown-padding-y $dropdown-item-padding-x;
+  }
+  p {
+    white-space: normal;
+    margin: 0;
+  }
+}
+
+// Dropdown header and footer
+.dropdown-footer,
+.dropdown-header {
+  text-align: center;
+  display: block;
+  padding: .5rem $dropdown-item-padding-x;
+  font-size: $font-size-sm;
+}
+
+/* Add fade animation to dropdown menus by appending
+ the class .animated-dropdown-menu to the .dropdown-menu ul (or ol)*/
+.open:not(.dropup) > .animated-dropdown-menu {
+  backface-visibility: visible !important;
+  @include animation(flipInX .7s both);
+}
+
+@keyframes flipInX {
+  0% {
+    transform: perspective(400px) rotate3d(1, 0, 0, 90deg);
+    transition-timing-function: ease-in;
+    opacity: 0;
+  }
+
+  40% {
+    transform: perspective(400px) rotate3d(1, 0, 0, -20deg);
+    transition-timing-function: ease-in;
+  }
+
+  60% {
+    transform: perspective(400px) rotate3d(1, 0, 0, 10deg);
+    opacity: 1;
+  }
+
+  80% {
+    transform: perspective(400px) rotate3d(1, 0, 0, -5deg);
+  }
+
+  100% {
+    transform: perspective(400px);
+  }
+}
+
+@-webkit-keyframes flipInX {
+  0% {
+    -webkit-transform: perspective(400px) rotate3d(1, 0, 0, 90deg);
+    -webkit-transition-timing-function: ease-in;
+    opacity: 0;
+  }
+
+  40% {
+    -webkit-transform: perspective(400px) rotate3d(1, 0, 0, -20deg);
+    -webkit-transition-timing-function: ease-in;
+  }
+
+  60% {
+    -webkit-transform: perspective(400px) rotate3d(1, 0, 0, 10deg);
+    opacity: 1;
+  }
+
+  80% {
+    -webkit-transform: perspective(400px) rotate3d(1, 0, 0, -5deg);
+  }
+
+  100% {
+    -webkit-transform: perspective(400px);
+  }
+}
+
+/* Fix dropdown menu in navbars */
+.navbar-custom-menu > .navbar-nav {
+  > li {
+    position: relative;
+    > .dropdown-menu {
+      position: absolute;
+      right: 0;
+      left: auto;
+    }
+  }
+}
+
+@include media-breakpoint-down(sm) {
+  .navbar-custom-menu > .navbar-nav {
+    float: right;
+    > li {
+      position: static;
+      > .dropdown-menu {
+        position: absolute;
+        right: 5%;
+        left: auto;
+        border: 1px solid #ddd;
+        background: $white;
+      }
+    }
+  }
+}

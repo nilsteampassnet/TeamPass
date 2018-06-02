@@ -1,0 +1,306 @@
+// AdminLTE mixins
+// ===============
+
+// Changes the color and the hovering properties of the navbar
+@mixin navbar-variant($color, $font-color: rgba(255, 255, 255, 0.8), $hover-color: #f6f6f6, $hover-bg: rgba(0, 0, 0, 0.1)) {
+  background-color: $color;
+  // Navbar links
+  .nav > li > a {
+    color: $font-color;
+  }
+
+  .nav > li > a:hover,
+  .nav > li > a:active,
+  .nav > li > a:focus,
+  .nav .open > a,
+  .nav .open > a:hover,
+  .nav .open > a:focus,
+  .nav > .active > a {
+    background: $hover-bg;
+    color: $hover-color;
+  }
+
+  // Add color to the sidebar toggle button
+  .sidebar-toggle {
+    color: $font-color;
+    &:hover {
+      color: $hover-color;
+      background: $hover-bg;
+    }
+  }
+}
+
+// Logo color variation
+@mixin logo-variant($bg-color, $color: #fff, $border-bottom-color: transparent, $border-bottom-width: 0) {
+  background-color: $bg-color;
+  color: $color;
+  border-bottom: $border-bottom-width solid $border-bottom-color;
+
+  &:hover {
+    background-color: darken($bg-color, 1%);
+  }
+}
+
+// Box solid color variantion creator
+@mixin box-solid-variant($color, $text-color: #fff) {
+  border: 1px solid $color;
+  > .card-header {
+    color: $text-color;
+    background: $color;
+    background-color: $color;
+    a,
+    .btn {
+      color: $text-color;
+    }
+  }
+}
+
+// Direct Chat Variant
+@mixin direct-chat-variant($bg-color, $color: #fff) {
+  .right > .direct-chat-text {
+    background: $bg-color;
+    border-color: $bg-color;
+    color: color-yiq($bg-color);
+    &:after,
+    &:before {
+      border-left-color: $bg-color;
+    }
+  }
+}
+
+@mixin translate($x, $y) {
+  -webkit-transform: translate($x, $y);
+  -ms-transform: translate($x, $y); // IE9 only
+  transform: translate($x, $y);
+}
+
+// Different radius each side
+@mixin border-radius-sides($top-left, $top-right, $bottom-left, $bottom-right) {
+  border-radius: $top-left $top-right $bottom-left $bottom-right;
+}
+
+@mixin calc($property, $expression) {
+  #{$property}: -webkit-calc(#{$expression});
+  #{$property}: calc(#{$expression});
+}
+
+@mixin rotate($value) {
+  -ms-transform: rotate($value);
+  transform: rotate($value);
+}
+
+@mixin animation($animation) {
+  animation: $animation;
+}
+
+// Gradient background
+@mixin gradient($color: #F5F5F5, $start: #EEE, $stop: #FFF) {
+  background: $color;
+  background: -webkit-gradient(linear, left bottom, left top, color-stop(0, $start), color-stop(1, $stop));
+  background: -ms-linear-gradient(bottom, $start, $stop);
+  background: -moz-linear-gradient(center bottom, $start 0%, $stop 100%);
+  background: -o-linear-gradient($stop, $start);
+}
+
+// Skins Mixins
+
+// Dark Sidebar Mixin
+@mixin skin-dark-sidebar($link-hover-border-color) {
+  // Sidebar background color
+  background-color: $sidebar-dark-bg;
+
+  // User Panel (resides in the sidebar)
+  .user-panel {
+    a:hover {
+      color: $sidebar-dark-hover-color;
+    }
+
+    .status {
+      color: $sidebar-dark-color;
+      background: $sidebar-dark-hover-bg;
+      &:hover,
+      &:focus,
+      &:active {
+        color: $sidebar-dark-hover-color;
+        background: darken($sidebar-dark-hover-bg, 3%);
+      }
+    }
+
+    .dropdown-menu {
+      border-color: darken($sidebar-dark-hover-bg, 5%);
+      @include box-shadow(0 2px 4px rgba(0, 0, 0, .4));
+    }
+
+    .dropdown-item {
+      color: $body-color;
+    }
+  }
+
+  // Sidebar Menu. First level links
+  .nav-sidebar > .nav-item {
+    // links
+    > .nav-link {
+      // border-left: 3px solid transparent;
+      &:active,
+      &:focus {
+        color: $sidebar-dark-color;
+      }
+    }
+
+    // Hover and active states
+    &.menu-open > .nav-link,
+    &:hover > .nav-link {
+      color: $sidebar-dark-hover-color;
+      background-color: $sidebar-dark-hover-bg;
+    }
+
+    > .nav-link.active {
+      color: $sidebar-dark-hover-color;
+      background-color: $link-hover-border-color;
+      @if $enable-shadows {
+        @extend .elevation-1;
+      }
+    }
+
+    // First Level Submenu
+    > .nav-treeview {
+      background: $sidebar-dark-submenu-bg;
+    }
+  }
+
+  // Section Heading
+  .nav-header {
+    color: lighten($sidebar-dark-color, 5%);
+    background: inherit; //darken($sidebar-dark-bg, 3%);
+  }
+
+  // All links within the sidebar menu
+  .sidebar a {
+    color: $sidebar-dark-color;
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  // All submenus
+  .nav-treeview {
+    > .nav-item {
+      > .nav-link {
+        color: $sidebar-dark-submenu-color;
+
+        &:hover {
+          color: $sidebar-dark-submenu-hover-color;
+          background-color: $sidebar-dark-submenu-hover-bg
+        }
+      }
+
+      > .nav-link.active {
+        &,
+        &:hover {
+          color: $sidebar-dark-submenu-active-color;
+          background-color: $sidebar-dark-submenu-active-bg;
+        }
+      }
+    }
+  }
+}
+
+// Light Sidebar Mixin
+@mixin skin-light-sidebar($link-hover-border-color) {
+  // Sidebar background color
+  background-color: $sidebar-light-bg;
+
+  // User Panel (resides in the sidebar)
+  .user-panel {
+    a:hover {
+      color: $sidebar-light-hover-color;
+    }
+
+    .status {
+      color: $sidebar-light-color;
+      background: $sidebar-light-hover-bg;
+      &:hover,
+      &:focus,
+      &:active {
+        color: $sidebar-light-hover-color;
+        background: darken($sidebar-light-hover-bg, 3%);
+      }
+    }
+
+    .dropdown-menu {
+      border-color: darken($sidebar-light-hover-bg, 5%);
+      @include box-shadow(0 2px 4px rgba(0, 0, 0, .4));
+    }
+
+    .dropdown-item {
+      color: $body-color;
+    }
+  }
+
+  // Sidebar Menu. First level links
+  .nav-sidebar > .nav-item {
+    // links
+    > .nav-link {
+      // border-left: 3px solid transparent;
+      &:active,
+      &:focus {
+        color: $sidebar-light-color;
+      }
+    }
+
+    // Hover and active states
+    &.menu-open > .nav-link,
+    &:hover > .nav-link {
+      color: $sidebar-light-hover-color;
+      background-color: $sidebar-light-hover-bg;
+    }
+
+    > .nav-link.active {
+      color: $sidebar-light-active-color;
+      background-color: $link-hover-border-color;
+      @if $enable-shadows {
+        @extend .elevation-1;
+      }
+    }
+
+    // First Level Submenu
+    > .nav-treeview {
+      background: $sidebar-light-submenu-bg;
+    }
+  }
+
+  // Section Heading
+  .nav-header {
+    color: darken($sidebar-light-color, 5%);
+    background: inherit;
+  }
+
+  // All links within the sidebar menu
+  .sidebar a {
+    color: $sidebar-light-color;
+    &:hover {
+      text-decoration: none;
+    }
+  }
+
+  // All submenus
+  .nav-treeview {
+    > .nav-item {
+      > .nav-link {
+        color: $sidebar-light-submenu-color;
+      }
+
+      > .nav-link.active {
+        &,
+        &:hover {
+          color: $sidebar-light-submenu-active-color;
+          background-color: $sidebar-light-submenu-active-bg;
+        }
+      }
+
+      > .nav-link:hover {
+        background-color: $sidebar-light-submenu-hover-bg;
+      }
+    }
+  }
+}

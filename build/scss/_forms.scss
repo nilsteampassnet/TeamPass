@@ -1,0 +1,53 @@
+/*
+ * Component: Form
+ * ---------------
+ */
+.form-group {
+  &.has-icon {
+    position: relative;
+    .form-control {
+      padding-right: 35px;
+    }
+    .form-icon {
+      cursor: pointer;
+      position: absolute;
+      right: 3px;
+      top: 0;
+      padding: $input-btn-padding-y $input-btn-padding-x;
+      // margin-top: -3px;
+      border: 0;
+      background-color: transparent;
+      font-size: 1rem;
+    }
+  }
+}
+
+/* button groups */
+.btn-group-vertical {
+  .btn {
+    &.btn-flat:first-of-type, &.btn-flat:last-of-type {
+      @include border-radius(0);
+    }
+  }
+}
+
+/* Support Font Awesome icons in form-control */
+.form-control-feedback.fa {
+  line-height: $input-height;
+}
+
+.input-lg + .form-control-feedback.fa,
+.input-group-lg + .form-control-feedback.fa,
+.form-group-lg .form-control + .form-control-feedback.fa {
+  line-height: $input-height-lg;
+}
+
+.input-sm + .form-control-feedback.fa,
+.input-group-sm + .form-control-feedback.fa,
+.form-group-sm .form-control + .form-control-feedback.fa {
+  line-height: $input-height-sm;
+}
+
+label:not(.form-check-label, .custom-file-label) {
+  font-weight: $font-weight-bold;
+}

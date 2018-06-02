@@ -1,0 +1,153 @@
+// AdminLTE 3 Variables.less
+// =========================
+
+// COLORS
+// --------------------------------------------------------
+$blue: #0073b7 !default;
+$navy: #001F3F !default;
+$teal: #39CCCC !default;
+$olive: #3D9970 !default;
+$lime: #01FF70 !default;
+$orange: #FF851B !default;
+$fuchsia: #F012BE !default;
+$purple: #605ca8 !default;
+$maroon: #D81B60 !default;
+$black: #111 !default;
+$gray-x-light: #d2d6de !default;
+
+// LAYOUT
+// --------------------------------------------------------
+
+$font-size-root: 1rem !default;
+
+// Sidebar
+$sidebar-width: 250px !default;
+$sidebar-padding-x: 0.5rem !default;
+$sidebar-padding-y: 0 !default;
+
+// Boxed layout maximum width
+$boxed-layout-max-width: 1250px !default;
+
+// When to show the smaller logo
+$screen-header-collapse: map-get($grid-breakpoints, md) !default;
+
+// Body background (Affects main content background only)
+$main-bg: #f4f6f9 !default;
+
+// Content padding
+$content-padding-y: 0 !default;
+$content-padding-x: $navbar-padding-x !default;
+
+// MAIN HEADER
+// --------------------------------------------------------
+$main-header-link-padding-y: $navbar-padding-y !default;
+$main-header-link-padding-x: $navbar-padding-x !default;
+$main-header-brand-padding-y: $navbar-brand-padding-y !default;
+$main-header-brand-padding-x: $navbar-padding-x !default;
+$main-header-height: (($font-size-root * $line-height-base) + ($main-header-link-padding-y * 2)) !default;
+
+// Main header skins
+$main-header-dark-form-control-bg: hsla(100, 100%, 100%, 0.2) !default;
+$main-header-dark-form-control-focused-bg: hsla(100, 100%, 100%, 0.6) !default;
+$main-header-dark-form-control-focused-color: $gray-800 !default;
+$main-header-dark-form-control-border: 0 !default;
+$main-header-dark-form-control-focused-border: 0 !default;
+$main-header-dark-placeholder-color: hsla(100, 100%, 100%, 0.6) !default;
+
+$main-header-light-form-control-bg: darken($gray-100, 2%) !default;
+$main-header-light-form-control-focused-bg: $gray-200 !default;
+$main-header-light-form-control-focused-color: $gray-800 !default;
+$main-header-light-form-control-border: 0 !default;
+$main-header-light-form-control-focused-border: 0 !default;
+$main-header-light-placeholder-color: hsla(0, 0%, 0%, 0.6) !default;
+
+// MAIN FOOTER
+// --------------------------------------------------------
+$main-footer-padding: 15px !default;
+$main-footer-border-top-width: 1px !default;
+$main-footer-border-top-color: $gray-300 !default;
+$main-footer-border-top: $main-footer-border-top-width solid $main-footer-border-top-color !default;
+$main-footer-height: 30px; //(($font-size-root * $line-height-base) + ($main-footer-padding * 2)) + $main-footer-border-top-width !default;
+$main-footer-bg: $white;
+
+// SIDEBAR SKINS
+// --------------------------------------------------------
+
+// Dark sidebar
+$sidebar-dark-bg: $dark !default;
+$sidebar-dark-hover-bg: hsla(100, 100%, 100%, 0.1) !default;
+$sidebar-dark-color: #C2C7D0 !default;
+$sidebar-dark-hover-color: $white !default;
+$sidebar-dark-active-color: $white !default;
+$sidebar-dark-submenu-bg: transparent !default;
+$sidebar-dark-submenu-color: #C2C7D0 !default;
+$sidebar-dark-submenu-hover-color: $white !default;
+$sidebar-dark-submenu-hover-bg: $sidebar-dark-hover-bg !default;
+$sidebar-dark-submenu-active-color: $sidebar-dark-bg !default;
+$sidebar-dark-submenu-active-bg: hsla(100, 100%, 100%, 0.9) !default;
+$sidebar-dark-header-color: $white !default;
+
+// Light sidebar
+$sidebar-light-bg: $white !default;
+$sidebar-light-hover-bg: lighten(#f0f0f1, 1.5%) !default;
+$sidebar-light-color: $gray-800 !default;
+$sidebar-light-hover-color: $gray-900 !default;
+$sidebar-light-active-color: $white !default;
+$sidebar-light-submenu-bg: transparent !default;
+$sidebar-light-submenu-color: #777 !default;
+$sidebar-light-submenu-hover-color: #000 !default;
+$sidebar-light-submenu-hover-bg: $sidebar-light-hover-bg !default;
+$sidebar-light-submenu-active-color: $sidebar-light-hover-color !default;
+$sidebar-light-submenu-active-bg: $sidebar-light-submenu-hover-bg !default;
+$sidebar-light-header-color: $gray-800 !default;
+
+// SIDEBAR MINI
+// --------------------------------------------------------
+$sidebar-mini-width: ($nav-link-padding-x + $sidebar-padding-x + .8rem) * 2 !default;
+$sidebar-nav-icon-width: $sidebar-mini-width - (($sidebar-padding-x + $nav-link-padding-x) * 2);
+$sidebar-user-image-width: $sidebar-nav-icon-width + ($nav-link-padding-x / 2);
+
+// CONTROL SIDEBAR
+// --------------------------------------------------------
+$control-sidebar-width: $sidebar-width !default;
+
+// Cards
+// --------------------------------------------------------
+$card-border-color: #f4f4f4 !default;
+$card-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .2) !default;
+$card-title-font-size: $font-size-lg;
+$card-title-font-weight: $font-weight-normal;
+
+// PROGRESS BARS
+// --------------------------------------------------------
+$progress-bar-border-radius: 1px !default;
+$progress-bar-sm-border-radius: 1px !default;
+$progress-bar-xs-border-radius: 1px !default;
+
+// DIRECT CHAT
+// --------------------------------------------------------
+$direct-chat-height: 250px !default;
+$direct-chat-default-msg-bg: $gray-x-light !default;
+$direct-chat-default-font-color: #444 !default;
+$direct-chat-default-msg-border-color: $gray-x-light !default;
+
+// CHAT WIDGET
+// --------------------------------------------------------
+$attachment-border-radius: 3px !default;
+
+// Z-INDEX
+// --------------------------------------------------------
+$zindex-main-header: 1000 !default;
+$zindex-main-sidebar: 1100 !default;
+$zindex-sidebar-mini-links: 010 !default;
+
+// TRANSITIONS SETTINGS
+// --------------------------------------------------------
+
+// Transition global options
+$transition-speed: 0.3s !default;
+$transition-fn: ease-in-out !default;
+
+// TEXT
+// --------------------------------------------------------
+$font-size-xl: ($font-size-base * 2);

@@ -1,0 +1,120 @@
+/*
+ * Core: General Layout Style
+ * -------------------------
+ */
+html,
+body,
+.wrapper {
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+.wrapper {
+  position: relative;
+
+  .layout-boxed & {
+    @include box-shadow(0 0 10px rgba(0, 0, 0, .3));
+
+    &,
+    &:before {
+      margin: 0 auto;
+      max-width: $boxed-layout-max-width;
+    }
+  }
+}
+
+.content-wrapper,
+.main-footer,
+.main-header {
+  @include media-breakpoint-up(md) {
+    @include transition(margin-left $transition-speed $transition-fn);
+
+    margin-left: $sidebar-width;
+    z-index: 3000;
+
+    .sidebar-collapse & {
+      margin-left: 0;
+    }
+  }
+
+  @include media-breakpoint-down(md) {
+    &,
+    &:before {
+      margin-left: 0;
+    }
+  }
+}
+
+.content-wrapper {
+  background: $main-bg;
+
+  > .content {
+    padding: $content-padding-y $content-padding-x;
+  }
+}
+
+.main-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  &,
+  &:before {
+    $local-sidebar-transition: margin-left $transition-speed $transition-fn, width $transition-speed $transition-fn;
+    @include transition($local-sidebar-transition);
+    width: $sidebar-width;
+  }
+
+  .sidebar-collapse & {
+    &,
+    &:before {
+      margin-left: -$sidebar-width;
+    }
+  }
+
+  @include media-breakpoint-down(md) {
+    &,
+    &:before {
+      box-shadow: none!important;
+      margin-left: -$sidebar-width;
+    }
+
+    .sidebar-open & {
+      &,
+      &:before {
+        margin-left: 0;
+      }
+    }
+  }
+}
+
+.main-footer {
+  padding: $main-footer-padding;
+  color: #555;
+  border-top: $main-footer-border-top;
+  background: $main-footer-bg;
+}
+
+.content-header {
+  padding: 15px $content-padding-x;
+
+  h1 {
+    font-size: 1.8rem;
+    margin: 0;
+  }
+  .breadcrumb {
+    margin-bottom: 0;
+    padding: 0;
+    background: transparent;
+    line-height: 1.8rem;
+  }
+}
+
+.hold-transition {
+  .content-wrapper,
+  .main-header,
+  .main-footer {
+    transition: none!important;
+  }
+}
