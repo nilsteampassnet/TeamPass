@@ -10,16 +10,19 @@
  * @package   Mais.Queries.php
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
- * @license   GNU GPL-3.0
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * @version   GIT: <git_id>
  * @link      http://www.teampass.net
  */
 
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 
-//require_once 'SecureHandler.php';
-//session_start();
-if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
+if (isset($_SESSION) === false) {
+    include_once 'SecureHandler.php';
+    session_start();
+}
+
+if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1) {
     $_SESSION['error']['code'] = "1004";
     include '../error.php';
     exit();
@@ -43,12 +46,15 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
 ) {
     // continue
     mainQuery();
-} elseif (isset($_SESSION['user_id']) && !checkUser($_SESSION['user_id'], $_SESSION['key'], "home")) {
+} elseif (isset($_SESSION['user_id'])
+    && checkUser($_SESSION['user_id'], $_SESSION['key'], "home") === false
+) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
-} elseif ((isset($_SESSION['user_id']) && isset($_SESSION['key']))
-    || (isset($post_type) && $post_type === "change_user_language"
+} elseif ((isset($_SESSION['user_id']) === true
+    && isset($_SESSION['key']))
+    || (isset($post_type) === true && $post_type === "change_user_language"
     && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
@@ -59,9 +65,11 @@ if (isset($post_type) && ($post_type === "ga_generate_qr"
     exit();
 }
 
-/*
-** Executes expected queries
-*/
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
 function mainQuery()
 {
     header("Content-type: text/html; charset=utf-8");

@@ -332,7 +332,7 @@ if (($session_validite_pw === null
             <li class="nav-item dropdown">
 
                 <div class="dropdown show">
-                    <a class="btn btn-secondary btn-sm  dropdown-toggle" href="#" role="button" data-toggle="dropdown">
+                    <a class="btn btn-secondary btn-sm  dropdown-toggle" href="#" data-toggle="dropdown">
                         <?php
                         echo $session_name.'&nbsp;'.$session_lastname;
                         ?>
@@ -341,13 +341,13 @@ if (($session_validite_pw === null
                     <div class="dropdown-menu dropdown-menu-right">
                         <?php
                         echo ($session_user_admin === '1' && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
-                        <a class="dropdown-item user-menu" href="#" id="set_psk">
+                        <a class="dropdown-item user-menu" href="#" data-name="set_psk">
                             <span class="fa fa-key fa-fw"></span>&nbsp;'.langHdl('home_personal_saltkey_button').'
                         </a>' : '', '
-                        <a class="dropdown-item user-menu" href="#" id="increase_session">
+                        <a class="dropdown-item user-menu" href="#" data-name="increase_session">
                             <span class="fa fa-clock-o fa-fw"></span>&nbsp;'.langHdl('index_add_one_hour').'
                         </a>
-                        <a class="dropdown-item user-menu" href="#" id="profile">
+                        <a class="dropdown-item user-menu" href="#" data-name="profile">
                             <span class="fa fa-user fa-fw"></span>&nbsp;'.langHdl('my_profile').'
                         </a>
                         <a class="dropdown-item user-menu" href="#" data-name="logout">
@@ -498,7 +498,7 @@ if (($session_validite_pw === null
                         // ITEMS & SEARCH
                         echo '
                     <li class="nav-item">
-                        <a href="#" class="nav-link', $pageSel === 'items' ? ' active' : '' ,'"">
+                        <a href="#" data-name="items" class="nav-link', $pageSel === 'items' ? ' active' : '' ,'"">
                         <i class="nav-icon fa fa-key"></i>
                         <p>
                             '.langHdl('pw').'
@@ -506,7 +506,7 @@ if (($session_validite_pw === null
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
+                        <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
                         <i class="nav-icon fa fa-binoculars"></i>
                         <p>
                             '.langHdl('find').'
@@ -524,7 +524,7 @@ if (($session_validite_pw === null
                     ) {
                         echo '
                     <li class="nav-item">
-                        <a href="#" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
+                        <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
                         <i class="nav-icon fa fa-star"></i>
                         <p>
                             '.langHdl('my_favourites').'
@@ -538,7 +538,7 @@ if (($session_validite_pw === null
                     ) {
                         echo '
                     <li class="nav-item">
-                        <a href="#" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
+                        <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
                         <i class="nav-icon fa fa-map-signs"></i>
                         <p>
                             '.langHdl('kb_menu').'
@@ -553,7 +553,7 @@ if (($session_validite_pw === null
                     ) {
                         echo '
                     <li class="nav-item">
-                        <a href="#" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
+                        <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
                         <i class="nav-icon fa fa-lightbulb-o"></i>
                         <p>
                             '.langHdl('suggestion_menu').'
@@ -652,10 +652,10 @@ if (($session_validite_pw === null
     } elseif ($_GET['page'] == "items") {
         // SHow page with Items
         if (($session_user_admin !== '1')
-            ||
-            ($session_user_admin === '1' && $SETTINGS_EXT['admin_full_right'] === false)
+            ||($session_user_admin === '1'
+            && $SETTINGS_EXT['admin_full_right'] === false)
         ) {
-            include 'items.php';
+            include $SETTINGS['cpassman_dir'].'/pages/items.php';
         } else {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $SETTINGS['cpassman_dir'].'/error.php';
@@ -675,8 +675,8 @@ if (($session_validite_pw === null
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $SETTINGS['cpassman_dir'].'/error.php';
         }
-    } elseif ($_GET['page'] == "profile") {
-        include $SETTINGS['cpassman_dir'].'./pages/profile.php';
+    } elseif (isset($_GET['page']) === true) {
+        include $SETTINGS['cpassman_dir'].'./pages/'.$_GET['page'].'.php';
     } else {
         $_SESSION['error']['code'] = ERR_NOT_EXIST; //page doesn't exist
         include $SETTINGS['cpassman_dir'].'/error.php';
@@ -721,7 +721,7 @@ if (($session_validite_pw === null
     <?php
     // SENDING STATISTICS?
     if (isset($SETTINGS['send_stats']) && $SETTINGS['send_stats'] === "1"
-    && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
+        && (!isset($_SESSION['temporary']['send_stats_done']) || $_SESSION['temporary']['send_stats_done'] !== "1")
     ) {
         echo '
 <input type="hidden" name="send_statistics" id="send_statistics" value="1" />';
@@ -743,7 +743,7 @@ if (($session_validite_pw === null
     }
 
     /* MAIN PAGE */
-echo '
+    echo '
 <input type="hidden" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
 <input type="hidden" name="language" id="language" value="" />
 <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
@@ -807,6 +807,22 @@ echo '
 <!-- nprogress -->
 <link rel="stylesheet" href="plugins/nprogress/nprogress.css" type="text/css" />
 <script type="text/javascript" src="plugins/nprogress/nprogress.js"></script>
+<!-- clipboardjs -->
+<script type="text/javascript" src="plugins/clipboard/clipboard.min.js"></script>
+<?php
+if ($menuAdmin === true) {
+?>
+<link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
+<link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
+<script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
+<?php
+} elseif ($pageSel === 'items') {
+?>
+<link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
+<script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
+<?php
+}
+?>
 
 </body>
 </html>
@@ -831,5 +847,7 @@ if (isset($_SESSION['CPM']) === true
 
     if ($menuAdmin === true) {
         include_once $SETTINGS['cpassman_dir'].'/pages/admin.js.php';
+    } elseif ($pageSel === 'items') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';
     }
 }

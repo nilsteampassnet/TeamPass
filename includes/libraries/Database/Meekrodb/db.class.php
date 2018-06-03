@@ -25,6 +25,7 @@ class DB {
     public static $host = 'localhost';
     public static $port = null;
     public static $encoding = 'utf8';
+    public static $prefix = '';
 
     // configure workings
     public static $param_char = '%';
@@ -138,6 +139,7 @@ class MeekroDB {
     public $host = 'localhost';
     public $port = null;
     public $encoding = 'latin1';
+    public $prefix = '';
 
     // configure workings
     public $param_char = '%';
@@ -168,7 +170,7 @@ class MeekroDB {
      * @param string $port
      * @param string $encoding
      */
-    public function __construct($host = null, $user = null, $password = null, $dbName = null, $port = null, $encoding = null) {
+    public function __construct($host = null, $user = null, $password = null, $dbName = null, $port = null, $encoding = null, $prefix = null) {
     if ($host === null) {
         $host = DB::$host;
     }
@@ -187,6 +189,9 @@ class MeekroDB {
     if ($encoding === null) {
         $encoding = DB::$encoding;
     }
+    if ($prefix === null) {
+        $prefix = DB::$prefix;
+    }
 
     $this->host = $host;
     $this->user = $user;
@@ -194,6 +199,7 @@ class MeekroDB {
     $this->dbName = $dbName;
     $this->port = $port;
     $this->encoding = $encoding;
+    $this->prefix = $prefix;
     }
 
     public function get() {
@@ -739,7 +745,7 @@ class MeekroDB {
 
         if (isset($_SESSION['user_id'])) {
             $database->query(
-                "INSERT INTO ".$GLOBALS['pre']."log_system SET
+                "INSERT INTO ".$this->prefix."log_system SET
               date=".time().",
               qui=".$_SESSION['user_id'].",
               label='Query: ".addslashes($sql)."<br />Error: ".addslashes($db_error)."<br />@ ".addslashes(filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_STRING))."',

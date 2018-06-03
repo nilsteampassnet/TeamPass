@@ -10,7 +10,7 @@
  * @package   Load.js
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * @version   GIT: <git_id>
  * @link      http://www.teampass.net
  */
@@ -40,6 +40,8 @@ if (isset($SETTINGS['maintenance_mode']) === true
 <script type="text/javascript">
 // On page load
 $(function() {
+    // Init
+
     // Countdown
     countdown();
 
@@ -65,14 +67,23 @@ $(function() {
             if ($(this).data('name') === 'set_psk') {
                 //div_set_personal_saltkey
             } else if ($(this).data('name') === 'increase_session') {
-                //div_increase_session_time
-            } else if ($(this).data('name') === 'my_profile') {
-                //loadProfileDialog
-            } else if ($(this).data('name') === 'deconnexion') {
-                //div_set_personal_saltkey
+                showExtendSession();
+            } else if ($(this).data('name') === 'profile') {
+                NProgress.start();
+                document.location.href="index.php?page=" + $(this).data('name');
+            } else if ($(this).data('name') === 'logout') {
+                alertify.confirm(
+                    '<?php echo TP_TOOL_NAME;?>',
+                    '<?php echo langHdl('logout_confirm');?>',
+                    function(){
+                        alertify.success('<?php echo langHdl('ok');?>');
+                        window.location.href = "logout.php?user_id=" + <?php echo $_SESSION["user_id"];?>
+                    },
+                    function(){
+                        alertify.error('<?php echo langHdl('cancel');?>');
+                    }
+                );
             }
-            NProgress.start();
-            document.location.href="index.php?page=" + $(this).data('name');
         }
     });
 

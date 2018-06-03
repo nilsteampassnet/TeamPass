@@ -20,15 +20,17 @@ function IncreaseSessionTime(messageEnd, duration){
     $.post(
         "sources/main.queries.php",
         {
-        type    : "increase_session_time",
-        duration: parseInt(duration) * 60
+        type     : "increase_session_time",
+        duration : parseInt(duration) * 60
         },
         function(data){
             if (data[0].new_value !== "expired") {
                 $("#temps_restant").val(data[0].new_value);
                 $("#date_end_session").val(data[0].new_value);
                 $("#countdown").css("color","white");
-                alertify.success(messageWait, 2);
+                alertify
+                    .success(messageEnd, 2)
+                    .dismissOthers();
             } else {
                 $(location).attr("href","index.php?session=expired");
             }
@@ -64,7 +66,7 @@ function countdown()
 
     // Session will soon be closed
     if (DayTill === "00:00:50") {
-        $("#div_increase_session_time").dialog("open");
+        showExtendSession();
         $("#countdown").css("color","red");
     }
 
@@ -195,7 +197,8 @@ function extractLast( term ) {
 }
 
 
-function storeError(messageError, dialogDiv, textDiv){
+function storeError(messageError, dialogDiv, textDiv)
+{
     //Store error in DB
     $.post(
         "sources/main.queries.php",
@@ -204,9 +207,19 @@ function storeError(messageError, dialogDiv, textDiv){
             error   : escape(messageError)
         }
     );
-    //Display
-    $("#"+textDiv).html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+messageError);
-    $("#"+dialogDiv).dialog("open");
+    //Display    
+    var pre = document.createElement('pre');
+    //custom style.
+    pre.style.maxHeight = "400px";
+    pre.style.margin = "0";
+    pre.style.padding = "24px";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.textAlign = "justify";
+    pre.appendChild(document.createTextNode(
+        "An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+messageError
+    ));
+    //show as confirm
+    alertify.alert().set({labels:{ok:'Accept', cancel: 'Decline'}, padding: false});
 }
 
 /**
@@ -238,10 +251,19 @@ function aesDecrypt(text, key)
  */
 function jsonErrorHdl(message)
 {
-    $("#div_dialog_message_text").html(message);
-    $("#div_dialog_message").dialog("open");
-    $("#items_path_var").html('<i class="fa fa-folder-open-o"></i>&nbsp;Error');
-    $("#items_list_loader").addClass("hidden");
+    //Display    
+    var pre = document.createElement('pre');
+    //custom style.
+    pre.style.maxHeight = "400px";
+    pre.style.margin = "0";
+    pre.style.padding = "24px";
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.textAlign = "justify";
+    pre.appendChild(document.createTextNode(
+        message
+    ));
+    //show as confirm
+    alertify.alert().set({labels:{ok:'Accept', cancel: 'Decline'}, padding: false});
     return false;
 }
 

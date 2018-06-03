@@ -897,7 +897,7 @@ function identifyUserRights(
         DB::queryfirstrow("SELECT id FROM ".prefixTable("roles_title"));
         $_SESSION['nb_roles'] = DB::count();
     }
-
+    
     // update user's timestamp
     DB::update(
         prefixTable('users'),

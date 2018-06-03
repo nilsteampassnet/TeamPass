@@ -10,7 +10,7 @@
  * @package   Load
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
- * @license   GNU GPL-3.0
+* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * @version   Release: @package_version@
  * @link      http://www.teampass.net
  */

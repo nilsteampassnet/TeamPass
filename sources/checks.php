@@ -10,7 +10,7 @@
  * @package   Checks.php
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
- * @license   GNU GPL-3.0
+* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * @version   GIT: <git_id>
  * @link      http://www.teampass.net
  */
@@ -32,18 +32,18 @@ require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 
 $pagesRights = array(
     "user" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "profile"
+        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "profile"
     ),
     "manager" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users"
     ),
     "human_resources" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users"
     ),
     "admin" => array(
-        "home", "items", "find", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
+        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
         "manage_views", "manage_users", "manage_settings", "manage_main", "admin", 'options'
     )
 );

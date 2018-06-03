@@ -14,6 +14,7 @@
  */
 
 return array(
+    'logout_confirm' => 'Logout? Please confirm.',
     'saved' => 'Saved',
     'success' => 'Success',
     'server_answer_error' => 'An error appears. Answer from Server cannot be parsed!',
