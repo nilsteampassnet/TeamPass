@@ -80,12 +80,12 @@ function mainQuery()
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
+    /*DB::$host         = DB_HOST;
     DB::$user         = DB_USER;
     DB::$password     = defuse_return_decrypted(DB_PASSWD);
     DB::$dbName       = DB_NAME;
     DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$encoding     = DB_ENCODING;*/
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 

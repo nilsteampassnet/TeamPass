@@ -11,6 +11,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
+
 require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -29,7 +30,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 // Do checks
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'home') === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items') === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
@@ -70,13 +71,13 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 $pass = defuse_return_decrypted($pass);
-DB::$host = $server;
+/*DB::$host = $server;
 DB::$user = $user;
 DB::$password = $pass;
 DB::$dbName = $database;
 DB::$port = $port;
 DB::$encoding = $encoding;
-DB::$error_handler = true;
+DB::$error_handler = true;*/
 $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
@@ -2776,9 +2777,9 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['label'] = strip_tags(cleanString($record['label']));
+                        $html_json[$record['id']]['label'] = strip_tags(utf8_encode($record['label']));
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
-                            $html_json[$record['id']]['desc'] = strip_tags(cleanString(explode("<br>", $record['description'])[0]));
+                            $html_json[$record['id']]['desc'] = strip_tags(utf8_encode(explode("<br>", $record['description'])[0]));
                         } else {
                             $html_json[$record['id']]['desc'] = "";
                         }
@@ -3072,6 +3073,7 @@ if (null !== $post_type) {
             if (count($rights) > 0) {
                 $returnValues = array_merge($returnValues, $rights);
             }
+            
             // Encrypt data to return
             echo prepareExchangedData($returnValues, "encode");
 
@@ -4333,7 +4335,7 @@ if (null !== $post_type) {
             $data = array(
                 'error' => "",
                 'html_json' => $arr_data
-            );print_r($data);
+            );
             // send data
             echo prepareExchangedData($data, "encode");
 

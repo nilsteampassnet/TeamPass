@@ -156,35 +156,194 @@ echo '
 
     <!-- Content Header (Page header) -->
     <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark"><?php echo langHdl('items'); ?></h1>
-          </div><!-- /.col -->
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right" id="items_path_var">
-                    <!--<li class="breadcrumb-item"><a href="index.php?page=admin"><?php echo langHdl('admin');?></a></li>
-                    <li class="breadcrumb-item active"><?php echo langHdl('admin_main');?></li>-->
-                </ol>
-            </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
+        <div class="container-fluid">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0 text-dark"><?php echo langHdl('items'); ?></h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right" id="items_folder_path"></ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
     </div>
     <!-- /.content-header -->
 
 
     <!-- Main content -->
     <section class="content">
-        <div class="row h-25">
-            <div class="col-md-3">
-                <a href="compose.html" class="btn btn-primary btn-block mb-3">Compose</a>
+        <!-- ITEM DETAILS -->
+        <div class="row hidden item-details-card">
+            <div class="col-12">
+                <div class="callout callout-info align-middle">
+                    <button type="button" class="btn btn-gray btn-lg but-back-to-list float-left">
+                        <i class="fa fa-arrow-left"></i>
+                    </button>
+                    <div class="btn-group float-left">
+                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                            <i class="fa fa-bars"></i>
+                            <span class="caret"></span>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item tp-action" href="#" data-item-action="add"><i class="fa fa-plus"></i>&nbsp;<?php echo langHdl('item_menu_add_elem');?></a>
+                            <a class="dropdown-item tp-action" href="#" data-item-action="edit"><i class="fa fa-pencil"></i>&nbsp;<?php echo langHdl('item_menu_edi_elem');?></a>
+                            <a class="dropdown-item tp-action" href="#" data-item-action="delete"><i class="fa fa-trash"></i>&nbsp;<?php echo langHdl('item_menu_del_elem');?></a>
+                            <a class="dropdown-item tp-action" href="#" data-item-action="copy"><i class="fa fa-copy"></i>&nbsp;<?php echo langHdl('item_menu_copy_elem');?></a>
+                        </div>
+                    </div>
+                    <h1 class="ml-1 align-middle" id="card-item-label"></h1>
+                </div>
+            </div>
+        </div>
+        <div class="row hidden item-details-card">
+            <div class="col-md-5">
+                <div class="card card-primary card-outline">
+                    <div class="card-body">
+                        <ul class="list-group list-group-unbordered mb-3">
+                            <li class="list-group-item">
+                                <b>Followers</b> <a class="float-right">1,322</a>
+                            </li>
+                            <li class="list-group-item">
+                                <b>Following</b> <a class="float-right">543</a>
+                            </li>
+                            <li class="list-group-item">
+                                <b>Friends</b> <a class="float-right">13,287</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
                 <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Folders</h3>
+                    <div class="card-body">
+                        <ul class="list-group list-group-unbordered mb-3">
+                            <li class="list-group-item">
+                                <b>Followers</b> <a class="float-right">1,322</a>
+                            </li>
+                            <li class="list-group-item">
+                                <b>Following</b> <a class="float-right">543</a>
+                            </li>
+                            <li class="list-group-item">
+                                <b>Friends</b> <a class="float-right">13,287</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row hidden item-details-card">
+            <div class="col-12">                
+                <div class="card card-default">
+                    <div class="card-header bg-secondary-gradient">
+                        
+<h1 class="card-title"></h1>
+                        <!-- tools box -->
                         <div class="card-tools">
-                          <button type="button" class="btn btn-tool" data-folder-action="refresh"><i class="fa fa-refresh"></i></button>
-                          <button type="button" class="btn btn-tool" data-folder-action="expand"><i class="fa fa-expand"></i></button>
-                          <button type="button" class="btn btn-tool" data-folder-action="collapse"><i class="fa fa-compress"></i></button>
+                            <button type="button" class="btn btn-tool btn-sm but-back-to-list">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <!-- /. tools -->
+                    </div>
+
+                    <div class="card-body">
+                        <div class="callout callout-info visible" id="item-card-description">
+                        </div>
+                        
+                        <p>
+                            <div class="card card-default">
+                                <div class="card-header bg-gray">
+                                    <h3 class="card-title" id="card-item-label">Generalities</h3>
+
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool bg-gray" data-widget="collapse"><i class="fa fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <!-- /.card-tools -->
+                                </div>
+                                <!-- /.card-header -->
+                                <div class="card-body">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><i class="fa fa-envelope"></i></span>
+                                        </div>
+                                        <input type="email" class="form-control" placeholder="Email">
+                                    </div>
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                        </p>
+                        
+                        <p>
+                            <div class="card card-default collapsed-card">
+                                <div class="card-header bg-gray">
+                                    <h3 class="card-title" id="card-item-label">History</h3>
+
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool bg-gray" data-widget="collapse"><i class="fa fa-minus"></i>
+                                        </button>
+                                    </div>
+                                    <!-- /.card-tools -->
+                                </div>
+                                <!-- /.card-header -->
+                                <div class="card-body">
+                                    The body of the card
+                                </div>
+                                <!-- /.card-body -->
+                            </div>
+                        </p>
+
+                        <p>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <button type="button" class="btn btn-warning">Copy</button>
+                                </div>
+                                <!-- /btn-group -->
+                                <input type="text" class="form-control" placeholder="OTV link">
+                            </div>
+                        </p>
+                    </div>
+
+                    <div class="card-footer">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                        
+
+        <div class="row h-25" id="folders-tree-card">
+            <div class="col-md-3">
+                <div class="card card-info card-outline">
+                    <div class="card-header">
+                        <div class="row justify-content-end">
+                            <div class="col-6">
+                                <h3 class="card-title">Folders
+                            </div>
+                            <div class="col-6">
+                                <div class="btn-group float-right">
+                                    <button type="button" class="btn btn-info btn-sm dropdown-toggle" data-toggle="dropdown">
+                                        <i class="fa fa-bars"></i>
+                                        <span class="caret"></span>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="refresh"><i class="fa fa-refresh"></i>&nbsp;<?php echo langHdl('refresh');?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="add"><i class="fa fa-plus"></i>&nbsp;<?php echo langHdl('refresh');?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="expand"><i class="fa fa-expand"></i>&nbsp;<?php echo langHdl('expand');?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="collapse"><i class="fa fa-compress"></i>&nbsp;<?php echo langHdl('collapse');?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="">
+                                            <div class="input-group input-group-sm">
+                                                <input type="text" class="form-control" placeholder="<?php echo langHdl('find');?>" id="jstree_search">
+                                                <div class="input-group-append">
+                                                    <div class="btn btn-primary">
+                                                        <i class="fa fa-search"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0" style="">
@@ -195,16 +354,26 @@ echo '
             </div>
             <!-- /.col-md-6 -->
             <div class="col-md-9">
-            <div class="card card-primary card-outline">
+            <div class="card card-primary card-outline" id="items-list-card">
                 <div class="card-header">
-                    <h3 class="card-title">Inbox</h3>
-
-                    <div class="card-tools">
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control" placeholder="Search Mail">
-                            <div class="input-group-append">
-                                <div class="btn btn-primary">
-                                    <i class="fa fa-search"></i>
+                    <div class="card-title">
+                        <div class="row justify-content-start">
+                            <div class="col">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-primary btn-sm tp-action"
+                                        data-folder-action="refresh">
+                                        <i class="fa fa-plus"></i>&nbsp;<?php echo langHdl('refresh');?>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="input-group input-group-sm">
+                                    <input type="text" class="form-control" placeholder="<?php echo langHdl('find');?>" id="find_items">
+                                    <div class="input-group-append">
+                                        <div class="btn btn-primary" id="find_items_button">
+                                            <i class="fa fa-search"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -213,65 +382,27 @@ echo '
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body p-0">
-                    <div class="mailbox-controls">
-                        <!-- Check all button -->
-                        <button type="button" class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i>
-                        </button>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
-                            <button type="button" class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
-                            <button type="button" class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
-                        </div>
-                        <!-- /.btn-group -->
-                        <button type="button" class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
-                        <div class="float-right">
-                            1-50/200
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
-                                <button type="button" class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
-                            </div>
-                            <!-- /.btn-group -->
-                        </div>
-                        <!-- /.float-right -->
-                    </div>
-                    <div class="table-responsive mailbox-messages">
-                        <table class="table table-hover table-striped">
-                        <tbody id="teampass_items_list">        
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped" id="table_teampass_items_list">
+                        <tbody id="teampass_items_list">
+                            <!-- ITEMS come here -->
                         </tbody>
                         </table>
                         <!-- /.table -->
                     </div>
+                    
+                    <div class="form-group row justify-content-md-center hidden" id="info_teampass_items_list"></div>
                 <!-- /.mail-box-messages -->
                 </div>
                 <!-- /.card-body -->
                 <div class="card-footer p-0">
-                    <div class="mailbox-controls">
-                        <!-- Check all button -->
-                        <button type="button" class="btn btn-default btn-sm checkbox-toggle"><i class="fa fa-square-o"></i>
-                        </button>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-default btn-sm"><i class="fa fa-trash-o"></i></button>
-                            <button type="button" class="btn btn-default btn-sm"><i class="fa fa-reply"></i></button>
-                            <button type="button" class="btn btn-default btn-sm"><i class="fa fa-share"></i></button>
-                        </div>
-                        <!-- /.btn-group -->
-                        <button type="button" class="btn btn-default btn-sm"><i class="fa fa-refresh"></i></button>
-                        <div class="float-right">
-                            1-50/200
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default btn-sm"><i class="fa fa-chevron-left"></i></button>
-                                <button type="button" class="btn btn-default btn-sm"><i class="fa fa-chevron-right"></i></button>
-                            </div>
-                            <!-- /.btn-group -->
-                        </div>
-                        <!-- /.float-right -->
-                    </div>
                 </div>
             </div>
             <!-- /. box -->
         </div>
         <!-- /.col -->
-          <!-- /.row -->
+        
+        
     </section>
     <!-- /.content -->
 

@@ -231,7 +231,7 @@ if (array_key_exists($pageSel, $mngPages) === true) {
     <!-- IonIcons -->
     <link rel="stylesheet" href="includes/css/ionicons.min.css">
     <!-- Theme style -->
-    <link rel="stylesheet" href="dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="includes/css/adminlte.css">
     <!-- Theme style -->
     <link rel="stylesheet" href="includes/css/teampass.css">
     <!-- Google Font: Source Sans Pro -->
@@ -747,10 +747,10 @@ if (($session_validite_pw === null
 <input type="hidden" id="temps_restant" value="', isset($_SESSION['fin_session']) ? $_SESSION['fin_session'] : '', '" />
 <input type="hidden" name="language" id="language" value="" />
 <input type="hidden" name="user_pw_complexity" id="user_pw_complexity" value="', isset($_SESSION['user_pw_complexity']) ? $_SESSION['user_pw_complexity'] : '', '" />
-<input type="hidden" name="user_session" id="user_session" value=""/>
-<input type="hidden" name="encryptClientServer" id="encryptClientServer" value="', isset($SETTINGS['encryptClientServer']) ? $SETTINGS['encryptClientServer'] : '1', '" />
-<input type="hidden" name="please_login" id="please_login" value="" />
-<input type="hidden" name="disabled_action_on_going" id="disabled_action_on_going" value="" />
+<input type="hidden" id="user_session" value=""/>
+<input type="hidden" id="encryptClientServer" value="', isset($SETTINGS['encryptClientServer']) ? $SETTINGS['encryptClientServer'] : '1', '" />
+<input type="hidden" id="please_login" value="" />
+<input type="hidden" id="disabled_action_on_going" value="" />
 <input type="hidden" id="duo_sig_response" value="', null !== $post_sig_response ? $post_sig_response : '', '" />';
 } elseif ((empty($session_user_id) === false
     && $session_user_id !== null)
@@ -809,18 +809,21 @@ if (($session_validite_pw === null
 <script type="text/javascript" src="plugins/nprogress/nprogress.js"></script>
 <!-- clipboardjs -->
 <script type="text/javascript" src="plugins/clipboard/clipboard.min.js"></script>
+<!-- select2 -->
+<link rel="stylesheet" href="plugins/select2/select2.min.css" type="text/css" />
+<script type="text/javascript" src="plugins/select2/select2.full.min.js"></script>
 <?php
 if ($menuAdmin === true) {
-?>
+    ?>
 <link rel="stylesheet" href="./plugins/toggles/css/toggles.css" />
 <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css" />
 <script src="./plugins/toggles/toggles.min.js" type="text/javascript"></script>
-<?php
+    <?php
 } elseif ($pageSel === 'items') {
-?>
+    ?>
 <link rel="stylesheet" href="./plugins/jstree/themes/default/style.min.css" />
 <script src="./plugins/jstree/jstree.min.js" type="text/javascript"></script>
-<?php
+    <?php
 }
 ?>
 

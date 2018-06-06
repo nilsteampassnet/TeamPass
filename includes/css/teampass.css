@@ -11,10 +11,27 @@
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
  */
 
-.hidden {
-    display: none;
+.login-page {
+    background: url("../images/login_wall_5.jpg") no-repeat center center fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    background-size: cover;
+    -o-background-size: cover;
+    height: 100%;
+    background-position: center center;
+    background-size: cover; 
 }
 
-.hand {
+.hidden {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+.pointer {
     cursor: pointer;
+}
+
+
+.invisible {
+    visibility: hidden !important;
 }

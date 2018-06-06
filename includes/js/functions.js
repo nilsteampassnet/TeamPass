@@ -304,24 +304,6 @@ function prepareExchangedData(data, type, key)
     }
 }
 
-/**
- * Show a message to the user on top of the screen
- * @param  {[type]} textToDisplay [description]
- * @return {[type]}               [description]
- */
-function displayMessage(textToDisplay)
-{
-    $("#main_info_box_text").html(textToDisplay);
-    $("#main_info_box").show().position({
-        my: "center",
-        at: "center top+20",
-        of: "#main_simple"
-    });
-    $(this).delay(2000).queue(function() {
-        $("#main_info_box").effect( "fade", "slow");
-        $(this).dequeue();
-    });
-}
 
 /**
  * Make blinking an HMLT element

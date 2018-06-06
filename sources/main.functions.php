@@ -38,6 +38,9 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 }
 
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, must-revalidate');
+
 // Prepare PHPCrypt class calls
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
 
@@ -1413,10 +1416,10 @@ function isUTF8($string)
  */
 function prepareExchangedData($data, $type)
 {
-    global $SETTINGS;
+    include '../includes/config/tp.config.php';
 
     //load ClassLoader
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     //Load AES
     $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $aes->register();
