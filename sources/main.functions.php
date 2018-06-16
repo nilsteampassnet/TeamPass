@@ -1629,6 +1629,11 @@ function logItems(
     global $LANG;
     $dataItem = '';
 
+    // Exit if no item ID
+    if (empty($item_id) === true) {
+        return false;
+    }
+
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
@@ -1685,6 +1690,7 @@ function logItems(
     if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
         && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
         && $action === 'at_shown'
+        && isset($_SESSION['listNotificationEmails']) === true
     ) {
         // Get info about item
         if (empty($dataItem) === true || empty($item_label) === true) {
@@ -1706,7 +1712,7 @@ function logItems(
                 'body' => str_replace(
                     array('#tp_user#', '#tp_item#', '#tp_link#'),
                     array(
-                        addslashes($_SESSION['login']),
+                        isset($_SESSION['login']) === true ? addslashes($_SESSION['login']) : 'OTV',
                         addslashes($item_label),
                         $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
                     ),

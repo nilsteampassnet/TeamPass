@@ -1,4 +1,8 @@
 2.1.27
+17/
+ #2290 Protection of OTV page errors
+ #2298 support for login through http header
+ 
 16/
  New - Added folders filter in Manage Roles page
  New - Added folders alphabet filter in Manage Folders page

@@ -215,7 +215,6 @@ function SendMail(category, contentEmail, keySent, message){
 *   Checks if URL has expected format
 **/
 function validateURL(url) {
-    //var urlregex = new RegExp("^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
     var urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
     return urlregex.test(url);
 }

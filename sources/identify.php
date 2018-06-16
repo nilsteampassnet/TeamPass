@@ -583,7 +583,7 @@ function identifyUser(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
                         $filter,
-                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname')
+                        array('dn', 'mail', 'givenname', 'sn', 'samaccountname', 'shadowexpire')
                     );
                     if ($debugLdap == 1) {
                         fputs(
@@ -592,7 +592,7 @@ function identifyUser(
                             'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
                         );
                     }
-
+                    
                     // Check if user was found in AD
                     if (ldap_count_entries($ldapconn, $result) > 0) {
                         // Get user's info and especially the DN
@@ -603,6 +603,12 @@ function identifyUser(
                             $dbgLdap,
                             'User was found. '.$user_dn.'\n'
                         );
+
+                        // Check shadowexpire attribute - if === 1 then user disabled
+                        if (isset($result[0]['shadowexpire'][0]) === true && $result[0]['shadowexpire'][0] === '1') {
+                            echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
+                            exit();
+                        }
 
                         // Should we restrain the search in specified user groups
                         $GroupRestrictionEnabled = false;
@@ -674,7 +680,6 @@ function identifyUser(
                                         $data['id']
                                     );
 
-                                    // No user creation is requested
                                     $proceedIdentification = true;
                                 }
                             } else {
@@ -754,6 +759,12 @@ function identifyUser(
                     }
                 } else {
                     $ldapConnection = true;
+                }
+
+                // Is user expired?
+                if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
+                    echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
+                    exit();
                 }
 
                 // Update user's password

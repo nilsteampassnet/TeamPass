@@ -721,7 +721,11 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                            </div>';
     }
 
-    if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))) {
+    if (!(isset($SETTINGS['enable_http_request_login']) === true
+        && $SETTINGS['enable_http_request_login'] === '1'
+        && isset($_SERVER['PHP_AUTH_USER']) === true
+        && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))
+    ) {
         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">' . $LANG['index_password'].'</label>
@@ -811,7 +815,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     if (isset($SETTINGS['enable_http_request_login']) === true
         && $SETTINGS['enable_http_request_login'] === '1'
         && isset($_SERVER['PHP_AUTH_USER']) === true
-        && (isset($SETTINGS['maintenance_mode']) === false
+        && !(isset($SETTINGS['maintenance_mode']) === true
             && $SETTINGS['maintenance_mode'] === '1')
     ) {
         echo '
