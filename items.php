@@ -627,7 +627,7 @@ echo '
     <form method="post" name="form_edit" action="">
     <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
     <div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
-    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>';
+    <div id="edit_show_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all hidden"></div>';
 // Prepare TABS
 echo '
     <div id="item_edit_tabs">
