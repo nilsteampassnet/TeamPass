@@ -102,7 +102,7 @@ function updateCategoryAndField(id) {
         "category" : $('#field_category').val() === '' ? '0' : $("#field_category").val(),
         "type" : $('#field_type').val() === '' ? '' : $("#field_type").val(),
         "masked" : $('#field_masked').val() === '' ? '' : $("#field_masked").val(),
-        "is_mandatory" : $('#is_mandatory').val() === '' ? '' : $("#is_mandatory").val(),
+        "is_mandatory" : $('#field_is_mandatory').val() === '' ? '' : $("#field_is_mandatory").val(),
         "encrypted" : $('#field_encrypted').val() === '' ? '' : $("#field_encrypted").val(),
         "roles" : roles === '' ? 'all' : roles,
         "field_is_category" : $('#field_is_category').val(),
@@ -330,7 +330,7 @@ function LaunchAdminActions(action, option)
            option : option
         },
         function(data) {
-            $("#div_loading").hide();console.log(data);
+            $("#div_loading").hide();
             if (data != null) {
                 if (data[0].result == "db_backup") {
                     $("#result_admin_action_db_backup").html("<span class='fa fa-file-code-o'></span>&nbsp;<a href='"+data[0].href+"'><?php echo $LANG['pdf_download']; ?></a>").show();
@@ -497,7 +497,6 @@ function changeMainSaltKey(start, object)
             },
             function(data) {
                 if (data[0].nextAction === "done") {
-                    console.log("done");
                     $("#changeMainSaltKey_message").html("<i class=\"fa fa-info fa-lg\"></i>&nbsp;<?php echo addslashes($LANG['alert_message_done'])." ".$LANG['number_of_items_treated']; ?> : " + $("#changeMainSaltKey_itemsCountTotal").val() + '<p><?php echo addslashes($LANG['check_data_after_reencryption']); ?><p><div style=\"margin-top:5px;\"><a href=\"#\" onclick=\"encryption_show_revert()\"><?php echo addslashes($LANG['revert']); ?></a></div>');
                 } else {
                     // error mngt

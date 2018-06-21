@@ -1074,7 +1074,7 @@ function EditerItem()
                     fields = false; 
                     $('#edit_show_error')
                         .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
-                        .show();
+                        .removeClass('hidden');
                     $("#div_formulaire_edition_item_info")
                         .addClass("hidden")
                         .html("");
@@ -1154,24 +1154,24 @@ function EditerItem()
                         $("#div_loading").addClass("hidden");
                         $("#edit_show_error")
                             .html(data.error + ' ERROR (JSON is broken)!!!!!')
-                            .show();
+                            .removeClass('hidden');
                     } else if (data.error === "ERR_KEY_NOT_CORRECT") {
                         $("#div_loading").addClass("hidden");
                         $("#edit_show_error")
                             .html('Key verification for Query is not correct!')
-                            .show();
+                            .removeClass('hidden');
                         LoadingPage();
                     }else if (data.error === "ERR_ENCRYPTION_NOT_CORRECT") {
                         $("#div_loading").addClass("hidden");
                         $("#edit_show_error")
                             .html('Item password could not be correctly encrypted!')
-                            .show();
+                            .removeClass('hidden');
                         LoadingPage();
                     } else if (data.error === "ERR_PWD_TOO_LONG") {
                         $("#div_loading").addClass("hidden");
                         $("#edit_show_error")
                             .html('<?php echo addslashes($LANG['error_pw_too_long']); ?>')
-                            .show();
+                            .removeClass('hidden');
                         LoadingPage();
                     } else if (data.error === "ERR_NOT_ALLOWED_TO_EDIT") {
                         $("#div_formulaire_saisi").dialog("open");
@@ -1183,7 +1183,7 @@ function EditerItem()
                         $("#div_loading").addClass("hidden");
                         $("#edit_show_error")
                             .html('<?php echo addslashes($LANG['error_not_allowed_to']); ?>')
-                            .show();
+                            .removeClass('hidden');
                         LoadingPage();
                     } else {
                         //refresh item in list
@@ -1333,7 +1333,7 @@ function EditerItem()
         } else {
             $('#edit_show_error')
                 .html("<?php echo addslashes($LANG['error_complex_not_enought']); ?>")
-                .show();
+                .removeClass('hidden');
             $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane").find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')").prop("disabled", false);
             $("#div_formulaire_edition_item_info")
                 .addClass("hidden")
@@ -1342,7 +1342,7 @@ function EditerItem()
     }
 
     if (erreur != "") {
-        $('#edit_show_error').html(erreur).show();
+        $('#edit_show_error').html(erreur).removeClass('hidden');
         $("#div_formulaire_edition_item_info")
             .addClass("hidden")
             .html("");
