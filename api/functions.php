@@ -415,7 +415,7 @@ function rest_get()
                 $response = DB::query(
                     "SELECT fonction_id
                     FROM ".prefix_table("users")."
-                    WHERE login = %s'",
+                    WHERE login = %s",
                     $username
                 );
                 if (count($response) === 0) {
