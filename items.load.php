@@ -1061,45 +1061,61 @@ function EditerItem()
                 //var to_be_deleted_after_date = "";
             }
 
+            // get the mandatory Template
+            var mandatoryTemplateId = '';
+            $('.item_edit_template').each(function(i){
+                if ($(this).is(':checked') === true) {
+                    mandatoryTemplateId = $(this).data('category-id');
+                    return true;
+                }
+            });
+
             // get item field values
             var fields = "";
             $('.edit_item_field').each(function(i){
                 id = $(this).attr('id').split('_');
-                
-                // Check if mandatory
-                if ($(this).data('field-is-mandatory') === 1
-                    && $(this).val() === ''
-                    && $(this).is(':visible') === true
-                ) {
-                    fields = false; 
-                    $('#edit_show_error')
-                        .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
-                        .removeClass('hidden');
-                    $("#div_formulaire_edition_item_info")
-                        .addClass("hidden")
-                        .html("");
-                    $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
-                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
-                        .prop("disabled", false);
-                    return false;
+
+                if (mandatoryTemplateId !== '') {
+                    // Case where we need to check only if mandatory field is inside a 'template' category
+                    // Check if part of 'template' selected
+                    if ($(this).data('template-id') === mandatoryTemplateId
+                        && $(this).data('field-is-mandatory') === 1
+                        && $(this).val() === ''
+                        && $(this).is(':visible') === true
+                    ) {
+                        fields = false; 
+                        return false;
+                    }
+                } else {
+                    // Case where we need to check if one of all mandatory fields is empty
+                    // Check if mandatory
+                    if ($(this).data('field-is-mandatory') === 1
+                        && $(this).val() === ''
+                        && $(this).is(':visible') === true
+                    ) {
+                        fields = false; 
+                        return false;
+                    }
                 }
 
                 // Store data
                 if (fields == "") fields = id[2] + '~~' + $(this).val();
                 else fields += '_|_' + id[2] + '~~' + $(this).val();
-            });           
+            });
+            
+            // Exit if error
             if (fields === false) {
+                $('#edit_show_error')
+                    .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
+                    .removeClass('hidden');
+                $("#div_formulaire_edition_item_info")
+                    .addClass("hidden")
+                    .html("");
+                $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
+                    .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+                    .prop("disabled", false);
                 return false;
             }
-
-            // get template
-            var template = "";
-            $('.item_edit_template').each(function(i){
-                if ($(this).prop('checked') === true) {
-                    template = $(this).data('category-id');
-                    return false;
-                }
-            });
 
               //prepare data
             var data = {
@@ -1123,9 +1139,9 @@ function EditerItem()
                 "to_be_deleted": to_be_deleted,
                 "fields": sanitizeString(fields),
                 "complexity_level": parseInt($("#edit_mypassword_complex").val()),
-                "template_id": template
+                "template_id": mandatoryTemplateId
             };
-
+            
             //send query
             $.post(
                 "sources/items.queries.php",
@@ -1228,7 +1244,6 @@ function EditerItem()
                             $('.tr_fields').addClass("hidden");
                             $('.edit_item_field').each(function(i){
                                 var input_id = $(this).attr('id');
-                                console.log(input_id);
                                 var id = $(this).attr('id').split('_');
                                 if ($('#'+input_id).val() !== "") {
                                     // copy data from form to Item Div

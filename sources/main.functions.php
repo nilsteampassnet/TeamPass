@@ -25,7 +25,7 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
     } elseif (file_exists('../../includes/config/tp.config.php')) {
         include_once '../../includes/config/tp.config.php';
     } else {
-        throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+        //throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
 }
 

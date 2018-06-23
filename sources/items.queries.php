@@ -813,7 +813,7 @@ if (null !== $post_type) {
                                     }
                                 }
                             } else {
-                                if (empty($field_data[1])) {
+                                if (empty($field_data[1]) === true) {
                                     DB::delete(
                                         $pre."categories_items",
                                         "item_id = %i AND field_id = %s",
