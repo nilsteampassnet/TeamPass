@@ -25,26 +25,27 @@ if (file_exists('../includes/config/tp.config.php')) {
 } elseif (file_exists('../../includes/config/tp.config.php')) {
     include_once '../../includes/config/tp.config.php';
 } else {
-    throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+    throw new Exception('Error file "/includes/config/tp.config.php" not exists', 1);
 }
 
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 
 $pagesRights = array(
-    "user" => array(
-        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "profile"
+    'user' => array(
+        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'profile'
     ),
-    "manager" => array(
-        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
-        "manage_views", "manage_users"
+    'manager' => array(
+        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+        'manage_views', 'manage_users', 'profile'
     ),
-    "human_resources" => array(
-        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
-        "manage_views", "manage_users"
+    'human_resources' => array(
+        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+        'manage_views', 'manage_users', 'profile'
     ),
-    "admin" => array(
-        "home", "items", "search", "kb", "favourites", "suggestion", "folders", "manage_roles", "manage_folders",
-        "manage_views", "manage_users", "manage_settings", "manage_main", "admin", 'options'
+    'admin' => array(
+        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+        'manage_views', 'manage_users', 'manage_settings', 'manage_main',
+        'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special', 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users'
     )
 );
 
@@ -52,11 +53,11 @@ $pagesRights = array(
 Handle CASES
  */
 switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
-    case "checkSessionExists":
+    case 'checkSessionExists':
         // Case permit to check if SESSION is still valid
         session_start();
         if (isset($_SESSION['CPM']) === true) {
-            echo "1";
+            echo '1';
         } else {
             // In case that no session is available
             // Force the page to be reloaded and attach the CSRFP info
@@ -65,7 +66,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $csrfp_array = include '../includes/libraries/csrfp/libs/csrfp.config.php';
 
             // Send back CSRFP info
-            echo $csrfp_array['CSRFP_TOKEN'].";".filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
+            echo $csrfp_array['CSRFP_TOKEN'].';'.filter_input(INPUT_POST, $csrfp_array['CSRFP_TOKEN'], FILTER_SANITIZE_STRING);
         }
 
         break;
@@ -86,8 +87,8 @@ function curPage()
     // Parse the url
     parse_str(
         substr(
-            (string) $superGlobal->get("REQUEST_URI", "SERVER"),
-            strpos((string) $superGlobal->get("REQUEST_URI", "SERVER"), "?") + 1
+            (string) $superGlobal->get('REQUEST_URI', 'SERVER'),
+            strpos((string) $superGlobal->get('REQUEST_URI', 'SERVER'), '?') + 1
         ),
         $result
     );
@@ -119,13 +120,13 @@ function checkUser($userId, $userKey, $pageVisited)
     }
 
     // Securize language
-    if (null === $superGlobal->get("user_language", "SESSION")
-        || empty($superGlobal->get("user_language", "SESSION")) === true
+    if (null === $superGlobal->get('user_language', 'SESSION')
+        || empty($superGlobal->get('user_language', 'SESSION')) === true
     ) {
-        $superGlobal->put("user_language", "english", "SESSION");
+        $superGlobal->put('user_language', 'english', 'SESSION');
     }
 
-    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get("user_language", "SESSION").'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$superGlobal->get('user_language', 'SESSION').'.php';
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
     include_once 'main.functions.php';
 
@@ -142,7 +143,7 @@ function checkUser($userId, $userKey, $pageVisited)
 
     // load user's data
     $data = DB::queryfirstrow(
-        "SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM ".prefixTable("users")." WHERE id = %i",
+        'SELECT login, key_tempo, admin, gestionnaire, can_manage_all_users FROM '.prefixTable('users').' WHERE id = %i',
         $userId
     );
 

@@ -39,8 +39,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], "admin") === false) {
     exit();
 }
 
-// Load template
-require_once $SETTINGS['cpassman_dir'].'/template.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>

@@ -1,12 +1,13 @@
 <?php
 /**
- *
- * @package       main.functions.php
  * @author        Nils Laumaillé <nils@teampass.net>
+ *
  * @version       2.1.27
+ *
  * @copyright     2009-2018 Nils Laumaillé
  * @license       GNU GPL-3.0
- * @link
+ *
+ * @see
  */
 
 //define pbkdf2 iteration count
@@ -43,16 +44,13 @@ header('Cache-Control: no-cache, must-revalidate');
 
 // Prepare PHPCrypt class calls
 use PHP_Crypt\PHP_Crypt as PHP_Crypt;
-
 // Prepare Encryption class calls
-use \Defuse\Crypto\Crypto;
-use \Defuse\Crypto\Exception as Ex;
+use Defuse\Crypto\Crypto;
 
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param [type] $string
- * @return void
  */
 function langHdl($string)
 {
@@ -60,8 +58,8 @@ function langHdl($string)
         // Manage error
     } else {
         return str_replace(
-            array("\"", "'"),
-            array("&quot;", "&apos;"),
+            array('"', "'"),
+            array('&quot;', '&apos;'),
             $_SESSION['teampass']['lang'][$string]
         );
     }
@@ -69,15 +67,16 @@ function langHdl($string)
 
 //Generate N# of random bits for use as salt
 /**
- * @param integer $size
+ * @param int $size
  */
 function getBits($size)
 {
     $str = '';
     $var_x = $size + 10;
-    for ($var_i = 0; $var_i < $var_x; $var_i++) {
+    for ($var_i = 0; $var_i < $var_x; ++$var_i) {
         $str .= base_convert(mt_rand(1, 36), 10, 36);
     }
+
     return substr($str, 0, $size);
 }
 
@@ -87,33 +86,35 @@ function strHashPbkdf2($var_p, $var_s, $var_c, $var_kl, $var_a = 'sha256', $var_
     $var_kb = $var_st + $var_kl; // Key blocks to compute
     $var_dk = ''; // Derived key
 
-    for ($block = 1; $block <= $var_kb; $block++) { // Create key
+    for ($block = 1; $block <= $var_kb; ++$block) { // Create key
         $var_ib = $var_h = hash_hmac($var_a, $var_s.pack('N', $block), $var_p, true); // Initial hash for this block
-        for ($var_i = 1; $var_i < $var_c; $var_i++) { // Perform block iterations
+        for ($var_i = 1; $var_i < $var_c; ++$var_i) { // Perform block iterations
             $var_ib ^= ($var_h = hash_hmac($var_a, $var_h, $var_p, true)); // XOR each iterate
         }
         $var_dk .= $var_ib; // Append iterated block
     }
+
     return substr($var_dk, $var_st, $var_kl); // Return derived key of correct length
 }
 
 /**
- * stringUtf8Decode()
+ * stringUtf8Decode().
  *
  * utf8_decode
  */
 function stringUtf8Decode($string)
 {
-    return str_replace(" ", "+", utf8_decode($string));
+    return str_replace(' ', '+', utf8_decode($string));
 }
 
 /**
- * encryptOld()
+ * encryptOld().
  *
  * crypt a string
+ *
  * @param string $text
  */
-function encryptOld($text, $personalSalt = "")
+function encryptOld($text, $personalSalt = '')
 {
     if (empty($personalSalt) === false) {
         return trim(
@@ -150,11 +151,11 @@ function encryptOld($text, $personalSalt = "")
 }
 
 /**
- * decryptOld()
+ * decryptOld().
  *
  * decrypt a crypted string
  */
-function decryptOld($text, $personalSalt = "")
+function decryptOld($text, $personalSalt = '')
 {
     if (!empty($personalSalt)) {
         return trim(
@@ -187,12 +188,13 @@ function decryptOld($text, $personalSalt = "")
 }
 
 /**
- * encrypt()
+ * encrypt().
  *
  * crypt a string
+ *
  * @param string $decrypted
  */
-function encrypt($decrypted, $personalSalt = "")
+function encrypt($decrypted, $personalSalt = '')
 {
     global $SETTINGS;
 
@@ -230,11 +232,11 @@ function encrypt($decrypted, $personalSalt = "")
 }
 
 /**
- * decrypt()
+ * decrypt().
  *
  * decrypt a crypted string
  */
-function decrypt($encrypted, $personalSalt = "")
+function decrypt($encrypted, $personalSalt = '')
 {
     global $SETTINGS;
 
@@ -247,7 +249,7 @@ function decrypt($encrypted, $personalSalt = "")
     if (!empty($personalSalt)) {
         $staticSalt = $personalSalt;
     } else {
-        $staticSalt = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        $staticSalt = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
     //base64 decode the entire payload
     $encrypted = base64_decode($encrypted);
@@ -274,11 +276,11 @@ function decrypt($encrypted, $personalSalt = "")
     return $decrypted;
 }
 
-
 /**
- * genHash()
+ * genHash().
  *
  * Generate a hash for user login
+ *
  * @param string $password
  */
 function bCrypt($password, $cost)
@@ -288,10 +290,11 @@ function bCrypt($password, $cost)
         $salt .= bin2hex(openssl_random_pseudo_bytes(11));
     } else {
         $chars = './ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for ($i = 0; $i < 22; $i++) {
+        for ($i = 0; $i < 22; ++$i) {
             $salt .= $chars[mt_rand(0, 63)];
         }
     }
+
     return crypt($password, $salt);
 }
 
@@ -308,7 +311,7 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
     if (null != SALT && $key != SALT) {
         // check key (AES-128 requires a 16 bytes length key)
         if (strlen($key) < 16) {
-            for ($inc = strlen($key) + 1; $inc <= 16; $inc++) {
+            for ($inc = strlen($key) + 1; $inc <= 16; ++$inc) {
                 $key .= chr(0);
             }
         } elseif (strlen($key) > 16) {
@@ -319,22 +322,22 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
     // load crypt
     $crypt = new PHP_Crypt($key, PHP_Crypt::CIPHER_AES_128, PHP_Crypt::MODE_CBC);
 
-    if ($type == "encrypt") {
+    if ($type == 'encrypt') {
         // generate IV and encrypt
         $init_vect = $crypt->createIV();
         $encrypt = $crypt->encrypt($string);
         // return
         return array(
-            "string" => bin2hex($encrypt),
-            "iv" => bin2hex($init_vect),
-            "error" => empty($encrypt) ? "ERR_ENCRYPTION_NOT_CORRECT" : ""
+            'string' => bin2hex($encrypt),
+            'iv' => bin2hex($init_vect),
+            'error' => empty($encrypt) ? 'ERR_ENCRYPTION_NOT_CORRECT' : '',
         );
-    } elseif ($type == "decrypt") {
+    } elseif ($type == 'decrypt') {
         // case if IV is empty
         if (empty($init_vect)) {
             return array(
-                'string' => "",
-                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+                'string' => '',
+                'error' => 'ERR_ENCRYPTION_NOT_CORRECT',
             );
         }
 
@@ -344,8 +347,8 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
             $init_vect = testHex2Bin($init_vect);
         } catch (Exception $e) {
             return array(
-                'string' => "",
-                'error' => "ERR_ENCRYPTION_NOT_CORRECT"
+                'string' => '',
+                'error' => 'ERR_ENCRYPTION_NOT_CORRECT',
             );
         }
 
@@ -355,8 +358,8 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
         $decrypt = $crypt->decrypt($string);
         // return
         return array(
-            'string' => str_replace(chr(0), "", $decrypt),
-            'error' => ""
+            'string' => str_replace(chr(0), '', $decrypt),
+            'error' => '',
         );
     }
 }
@@ -364,17 +367,19 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
 function testHex2Bin($val)
 {
     if (!@hex2bin($val)) {
-        throw new Exception("ERROR");
+        throw new Exception('ERROR');
     }
+
     return hex2bin($val);
 }
 
 /**
- * Defuse cryption function
+ * Defuse cryption function.
  *
- * @param  string $message   what to de/crypt
- * @param  string $ascii_key key to use
- * @param  string $type      operation to perform
+ * @param string $message   what to de/crypt
+ * @param string $ascii_key key to use
+ * @param string $type      operation to perform
+ *
  * @return array
  */
 function cryption($message, $ascii_key, $type) //defuse_crypto
@@ -401,20 +406,20 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     // init
     $err = '';
     if (empty($ascii_key)) {
-        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
 
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
     try {
-        if ($type === "encrypt") {
+        if ($type === 'encrypt') {
             $text = \Defuse\Crypto\Crypto::encrypt($message, $key);
-        } elseif ($type === "decrypt") {
+        } elseif ($type === 'decrypt') {
             $text = \Defuse\Crypto\Crypto::decrypt($message, $key);
         }
     } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = "an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+        $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
     } catch (Defuse\Crypto\Exception\BadFormatException $ex) {
         $err = $ex;
     } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
@@ -426,13 +431,13 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
     }
 
     return array(
-        'string' => isset($text) ? $text : "",
-        'error' => $err
+        'string' => isset($text) ? $text : '',
+        'error' => $err,
     );
 }
 
 /**
- * Generating a defuse key
+ * Generating a defuse key.
  *
  * @return string
  */
@@ -450,13 +455,15 @@ function defuse_generate_key()
 
     $key = \Defuse\Crypto\Key::createNewRandomKey();
     $key = $key->saveToAsciiSafeString();
+
     return $key;
 }
 
 /**
- * Generate a Defuse personal key
+ * Generate a Defuse personal key.
  *
- * @param  string $psk psk used
+ * @param string $psk psk used
+ *
  * @return string
  */
 function defuse_generate_personal_key($psk)
@@ -478,10 +485,11 @@ function defuse_generate_personal_key($psk)
 }
 
 /**
- * Validate persoanl key with defuse
+ * Validate persoanl key with defuse.
  *
- * @param  string $psk                   the user's psk
- * @param  string $protected_key_encoded special key
+ * @param string $psk                   the user's psk
+ * @param string $protected_key_encoded special key
+ *
  * @return string
  */
 function defuse_validate_personal_key($psk, $protected_key_encoded)
@@ -501,41 +509,45 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
         $user_key = $protected_key->unlockKey($psk);
         $user_key_encoded = $user_key->saveToAsciiSafeString();
     } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
-        return "Error - Major issue as the encryption is broken.";
+        return 'Error - Major issue as the encryption is broken.';
     } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-        return "Error - The saltkey is not the correct one.";
+        return 'Error - The saltkey is not the correct one.';
     }
 
     return $user_key_encoded; // store it in session once user has entered his psk
 }
 
 /**
- * Decrypt a defuse string if encrypted
+ * Decrypt a defuse string if encrypted.
  *
- * @param  string $value Encrypted string
- * @return string        Decrypted string
+ * @param string $value Encrypted string
+ *
+ * @return string Decrypted string
  */
 function defuse_return_decrypted($value)
 {
-    if (substr($value, 0, 3) === "def") {
-        $value = cryption($value, "", "decrypt")['string'];
+    if (substr($value, 0, 3) === 'def') {
+        $value = cryption($value, '', 'decrypt')['string'];
     }
+
     return $value;
 }
 
 /**
- * trimElement()
+ * trimElement().
  *
  * trim a string depending on a specific string
- * @param  string $chaine  what to trim
- * @param  string $element trim on what
+ *
+ * @param string $chaine  what to trim
+ * @param string $element trim on what
+ *
  * @return string
  */
 function trimElement($chaine, $element)
 {
     if (!empty($chaine)) {
         if (is_array($chaine) === true) {
-            $chaine = implode(";", $chaine);
+            $chaine = implode(';', $chaine);
         }
         $chaine = trim($chaine);
         if (substr($chaine, 0, 1) == $element) {
@@ -545,51 +557,54 @@ function trimElement($chaine, $element)
             $chaine = substr($chaine, 0, strlen($chaine) - 1);
         }
     }
+
     return $chaine;
 }
 
 /**
- * Permits to suppress all "special" characters from string
+ * Permits to suppress all "special" characters from string.
  *
- * @param  string  $string  what to clean
- * @param  boolean $special use of special chars?
+ * @param string $string  what to clean
+ * @param bool   $special use of special chars?
+ *
  * @return string
  */
 function cleanString($string, $special = false)
 {
     // Create temporary table for special characters escape
     $tabSpecialChar = array();
-    for ($i = 0; $i <= 31; $i++) {
+    for ($i = 0; $i <= 31; ++$i) {
         $tabSpecialChar[] = chr($i);
     }
-    array_push($tabSpecialChar, "<br />");
-    if ($special == "1") {
-        $tabSpecialChar = array_merge($tabSpecialChar, array("</li>", "<ul>", "<ol>"));
+    array_push($tabSpecialChar, '<br />');
+    if ($special == '1') {
+        $tabSpecialChar = array_merge($tabSpecialChar, array('</li>', '<ul>', '<ol>'));
     }
 
     return str_replace($tabSpecialChar, "\n", $string);
 }
 
 /**
- * Erro manager for DB
+ * Erro manager for DB.
  *
- * @param  array $params output from query
- * @return void
+ * @param array $params output from query
  */
 function db_error_handler($params)
 {
-    echo "Error: ".$params['error']."<br>\n";
-    echo "Query: ".$params['query']."<br>\n";
-    throw new Exception("Error - Query", 1);
+    echo 'Error: '.$params['error']."<br>\n";
+    echo 'Query: '.$params['query']."<br>\n";
+    throw new Exception('Error - Query', 1);
 }
 
 /**
- * [identifyUserRights description]
- * @param  string $groupesVisiblesUser  [description]
- * @param  string $groupesInterditsUser [description]
- * @param  string $isAdmin              [description]
- * @param  string $idFonctions          [description]
- * @return string                       [description]
+ * [identifyUserRights description].
+ *
+ * @param string $groupesVisiblesUser  [description]
+ * @param string $groupesInterditsUser [description]
+ * @param string $isAdmin              [description]
+ * @param string $idFonctions          [description]
+ *
+ * @return string [description]
  */
 function identifyUserRights(
     $groupesVisiblesUser,
@@ -603,12 +618,12 @@ function identifyUserRights(
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
@@ -617,7 +632,7 @@ function identifyUserRights(
     //Build tree
     $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Check if user is ADMINISTRATOR
     if ($isAdmin === '1') {
@@ -631,8 +646,8 @@ function identifyUserRights(
         $_SESSION['list_folders_editable_by_role'] = array();
         $_SESSION['list_folders_limited'] = array();
         $_SESSION['no_access_folders'] = array();
-        $_SESSION['groupes_visibles_list'] = "";
-        $rows = DB::query("SELECT id FROM ".prefixTable("nested_tree")." WHERE personal_folder = %i", 0);
+        $_SESSION['groupes_visibles_list'] = '';
+        $rows = DB::query('SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i', 0);
         foreach ($rows as $record) {
             array_push($groupesVisibles, $record['id']);
         }
@@ -648,7 +663,7 @@ function identifyUserRights(
         }
         // Get ID of personal folder
         $persfld = DB::queryfirstrow(
-            "SELECT id FROM ".prefixTable("nested_tree")." WHERE title = %s",
+            'SELECT id FROM '.prefixTable('nested_tree').' WHERE title = %s',
             $_SESSION['user_id']
         );
         if (!empty($persfld['id'])) {
@@ -656,7 +671,7 @@ function identifyUserRights(
                 array_push($_SESSION['groupes_visibles'], $persfld['id']);
                 array_push($_SESSION['personal_visible_groups'], $persfld['id']);
                 // get all descendants
-                $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
+                $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                 $tree->rebuild();
                 $tst = $tree->getDescendants($persfld['id']);
                 foreach ($tst as $t) {
@@ -667,24 +682,24 @@ function identifyUserRights(
         }
 
         // get complete list of ROLES
-        $tmp = explode(";", $idFonctions);
+        $tmp = explode(';', $idFonctions);
         $rows = DB::query(
-            "SELECT * FROM ".prefixTable("roles_title")."
-            ORDER BY title ASC"
+            'SELECT * FROM '.prefixTable('roles_title').'
+            ORDER BY title ASC'
         );
         foreach ($rows as $record) {
             if (!empty($record['id']) && !in_array($record['id'], $tmp)) {
                 array_push($tmp, $record['id']);
             }
         }
-        $_SESSION['fonction_id'] = implode(";", $tmp);
+        $_SESSION['fonction_id'] = implode(';', $tmp);
 
         $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
         $_SESSION['is_admin'] = $isAdmin;
         // Check if admin has created Folders and Roles
-        DB::query("SELECT * FROM ".prefixTable("nested_tree")."");
+        DB::query('SELECT * FROM '.prefixTable('nested_tree').'');
         $_SESSION['nb_folders'] = DB::count();
-        DB::query("SELECT * FROM ".prefixTable("roles_title"));
+        DB::query('SELECT * FROM '.prefixTable('roles_title'));
         $_SESSION['nb_roles'] = DB::count();
     } else {
         // init
@@ -696,13 +711,13 @@ function identifyUserRights(
         $_SESSION['fonction_id'] = $idFonctions;
         $groupesInterdits = array();
         if (is_array($groupesInterditsUser) === false) {
-            $groupesInterditsUser = explode(';', trimElement(/** @scrutinizer ignore-type */ $groupesInterditsUser, ";"));
+            $groupesInterditsUser = explode(';', trimElement(/* @scrutinizer ignore-type */ $groupesInterditsUser, ';'));
         }
         if (empty($groupesInterditsUser) === false && count($groupesInterditsUser) > 0) {
             $groupesInterdits = $groupesInterditsUser;
         }
         $_SESSION['is_admin'] = $isAdmin;
-        $fonctionsAssociees = explode(';', trimElement($idFonctions, ";"));
+        $fonctionsAssociees = explode(';', trimElement($idFonctions, ';'));
 
         $listAllowedFolders = $listFoldersLimited = $listFoldersEditableByRole = $listRestrictedFoldersForItems = $listReadOnlyFolders = array();
 
@@ -711,13 +726,13 @@ function identifyUserRights(
             if (empty($roleId) === false) {
                 // Get allowed folders for each Role
                 $rows = DB::query(
-                    "SELECT folder_id FROM ".prefixTable("roles_values")." WHERE role_id=%i",
+                    'SELECT folder_id FROM '.prefixTable('roles_values').' WHERE role_id=%i',
                     $roleId
                 );
 
                 if (DB::count() > 0) {
                     $tmp = DB::queryfirstrow(
-                        "SELECT allow_pw_change FROM ".prefixTable("roles_title")." WHERE id = %i",
+                        'SELECT allow_pw_change FROM '.prefixTable('roles_title').' WHERE id = %i',
                         $roleId
                     );
                     foreach ($rows as $record) {
@@ -731,33 +746,33 @@ function identifyUserRights(
                     }
                     // Check for the users roles if some specific rights exist on items
                     $rows = DB::query(
-                        "SELECT i.id_tree, r.item_id
-                        FROM ".prefixTable("items")." as i
-                        INNER JOIN ".prefixTable("restriction_to_roles")." as r ON (r.item_id=i.id)
+                        'SELECT i.id_tree, r.item_id
+                        FROM '.prefixTable('items').' as i
+                        INNER JOIN '.prefixTable('restriction_to_roles').' as r ON (r.item_id=i.id)
                         WHERE r.role_id=%i
-                        ORDER BY i.id_tree ASC",
+                        ORDER BY i.id_tree ASC',
                         $roleId
                     );
                     $inc = 0;
                     foreach ($rows as $record) {
                         if (isset($record['id_tree'])) {
                             $listFoldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-                            $inc++;
+                            ++$inc;
                         }
                     }
                 }
             }
         }
-        
+
         // Clean arrays
         $listAllowedFolders = array_unique($listAllowedFolders);
-        $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
-        
+        $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ';'));
+
         // Does this user is allowed to see other items
         $inc = 0;
         $rows = DB::query(
-            "SELECT id, id_tree FROM ".prefixTable("items")."
-            WHERE restricted_to LIKE %ss AND inactif=%s",
+            'SELECT id, id_tree FROM '.prefixTable('items').'
+            WHERE restricted_to LIKE %ss AND inactif=%s',
             $_SESSION['user_id'].';',
             '0'
         );
@@ -765,10 +780,10 @@ function identifyUserRights(
             // Exclude restriction on item if folder is fully accessible
             if (in_array($record['id_tree'], $listAllowedFolders) === false) {
                 $listRestrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
-                $inc++;
+                ++$inc;
             }
         }
-        
+
         // => Build final lists
         // Add user allowed folders
         $allowedFoldersTmp = array_unique(
@@ -798,9 +813,9 @@ function identifyUserRights(
         }
 
         $persoFlds = DB::query(
-            "SELECT id
-            FROM ".prefixTable("nested_tree")."
-            WHERE %l",
+            'SELECT id
+            FROM '.prefixTable('nested_tree').'
+            WHERE %l',
             $where
         );
         foreach ($persoFlds as $persoFldId) {
@@ -811,9 +826,9 @@ function identifyUserRights(
             && isset($_SESSION['personal_folder']) === true && $_SESSION['personal_folder'] === '1'
         ) {
             $persoFld = DB::queryfirstrow(
-                "SELECT id
-                FROM ".prefixTable("nested_tree")."
-                WHERE title = %s AND personal_folder = %i",
+                'SELECT id
+                FROM '.prefixTable('nested_tree').'
+                WHERE title = %s AND personal_folder = %i',
                 $_SESSION['user_id'],
                 1
             );
@@ -837,12 +852,12 @@ function identifyUserRights(
             foreach ($listAllowedFolders as $folderId) {
                 if (in_array($folderId, array_unique(array_merge($listReadOnlyFolders, $_SESSION['personal_folders']))) === false) {
                     DB::query(
-                        "SELECT *
-                        FROM ".prefixTable("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
+                        'SELECT *
+                        FROM '.prefixTable('roles_values').'
+                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls',
                         $folderId,
                         $fonctionsAssociees,
-                        array("W", "ND", "NE", "NDNE")
+                        array('W', 'ND', 'NE', 'NDNE')
                     );
                     if (DB::count() === 0 && in_array($folderId, $groupesVisiblesUser) === false) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -855,12 +870,12 @@ function identifyUserRights(
             foreach ($listAllowedFolders as $folderId) {
                 if (in_array($folderId, $listReadOnlyFolders) === false) {
                     DB::query(
-                        "SELECT *
-                        FROM ".prefixTable("roles_values")."
-                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls",
+                        'SELECT *
+                        FROM '.prefixTable('roles_values').'
+                        WHERE folder_id = %i AND role_id IN %li AND type IN %ls',
                         $folderId,
                         $fonctionsAssociees,
-                        array("W", "ND", "NE", "NDNE")
+                        array('W', 'ND', 'NE', 'NDNE')
                     );
                     if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
                         array_push($listReadOnlyFolders, $folderId);
@@ -872,11 +887,11 @@ function identifyUserRights(
         // check if change proposals on User's items
         if (isset($SETTINGS['enable_suggestion']) === true && $SETTINGS['enable_suggestion'] === '1') {
             DB::query(
-                "SELECT *
-                FROM ".prefixTable("items_change")." AS c
-                LEFT JOIN ".prefixTable("log_items")." AS i ON (c.item_id = i.id_item)
-                WHERE i.action = %s AND i.id_user = %i",
-                "at_creation",
+                'SELECT *
+                FROM '.prefixTable('items_change').' AS c
+                LEFT JOIN '.prefixTable('log_items').' AS i ON (c.item_id = i.id_item)
+                WHERE i.action = %s AND i.id_user = %i',
+                'at_creation',
                 $_SESSION['user_id']
             );
             $_SESSION['nb_item_change_proposals'] = DB::count();
@@ -895,27 +910,28 @@ function identifyUserRights(
         $_SESSION['list_folders_editable_by_role'] = $listFoldersEditableByRole;
         $_SESSION['list_restricted_folders_for_items'] = $listRestrictedFoldersForItems;
         // Folders and Roles numbers
-        DB::queryfirstrow("SELECT id FROM ".prefixTable("nested_tree")."");
+        DB::queryfirstrow('SELECT id FROM '.prefixTable('nested_tree').'');
         $_SESSION['nb_folders'] = DB::count();
-        DB::queryfirstrow("SELECT id FROM ".prefixTable("roles_title"));
+        DB::queryfirstrow('SELECT id FROM '.prefixTable('roles_title'));
         $_SESSION['nb_roles'] = DB::count();
     }
-    
+
     // update user's timestamp
     DB::update(
         prefixTable('users'),
         array(
-            'timestamp' => time()
+            'timestamp' => time(),
         ),
-        "id=%i",
+        'id=%i',
         $_SESSION['user_id']
     );
 }
 
 /**
- * updateCacheTable()
+ * updateCacheTable().
  *
  * Update the CACHE table
+ *
  * @param string $action
  */
 function updateCacheTable($action, $ident = null)
@@ -927,12 +943,12 @@ function updateCacheTable($action, $ident = null)
 
     //Connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
@@ -941,38 +957,38 @@ function updateCacheTable($action, $ident = null)
     //Load Tree
     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
     $tree->register();
-    $tree = new Tree\NestedTree\NestedTree(prefixTable("nested_tree"), 'id', 'parent_id', 'title');
+    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
     // Rebuild full cache table
-    if ($action === "reload") {
+    if ($action === 'reload') {
         // truncate table
-        DB::query("TRUNCATE TABLE ".prefixTable("cache"));
+        DB::query('TRUNCATE TABLE '.prefixTable('cache'));
 
         // reload date
         $rows = DB::query(
-            "SELECT *
-            FROM ".prefixTable('items')." as i
-            INNER JOIN ".prefixTable('log_items')." as l ON (l.id_item = i.id)
+            'SELECT *
+            FROM '.prefixTable('items').' as i
+            INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
             AND l.action = %s
-            AND i.inactif = %i",
+            AND i.inactif = %i',
             'at_creation',
             0
         );
         foreach ($rows as $record) {
             if (empty($record['id_tree']) === false) {
                 // Get all TAGS
-                $tags = "";
-                $itemTags = DB::query("SELECT tag FROM ".prefixTable('tags')." WHERE item_id=%i", $record['id']);
+                $tags = '';
+                $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $record['id']);
                 foreach ($itemTags as $itemTag) {
                     if (!empty($itemTag['tag'])) {
-                        $tags .= $itemTag['tag']." ";
+                        $tags .= $itemTag['tag'].' ';
                     }
                 }
                 // Get renewal period
-                $resNT = DB::queryfirstrow("SELECT renewal_period FROM ".prefixTable('nested_tree')." WHERE id=%i", $record['id_tree']);
+                $resNT = DB::queryfirstrow('SELECT renewal_period FROM '.prefixTable('nested_tree').' WHERE id=%i', $record['id_tree']);
 
                 // form id_tree to full foldername
-                $folder = "";
+                $folder = '';
                 $arbo = $tree->getPath($record['id_tree'], true);
                 foreach ($arbo as $elem) {
                     if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
@@ -981,7 +997,7 @@ function updateCacheTable($action, $ident = null)
                     if (empty($folder)) {
                         $folder = stripslashes($elem->title);
                     } else {
-                        $folder .= " » ".stripslashes($elem->title);
+                        $folder .= ' » '.stripslashes($elem->title);
                     }
                 }
                 // store data
@@ -990,40 +1006,40 @@ function updateCacheTable($action, $ident = null)
                     array(
                         'id' => $record['id'],
                         'label' => $record['label'],
-                        'description' => isset($record['description']) ? $record['description'] : "",
-                        'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : "0",
+                        'description' => isset($record['description']) ? $record['description'] : '',
+                        'url' => (isset($record['url']) && !empty($record['url'])) ? $record['url'] : '0',
                         'tags' => $tags,
                         'id_tree' => $record['id_tree'],
                         'perso' => $record['perso'],
-                        'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : "0",
-                        'login' => isset($record['login']) ? $record['login'] : "",
+                        'restricted_to' => (isset($record['restricted_to']) && !empty($record['restricted_to'])) ? $record['restricted_to'] : '0',
+                        'login' => isset($record['login']) ? $record['login'] : '',
                         'folder' => $folder,
                         'author' => $record['id_user'],
-                        'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : "0",
-                        'timestamp' => $record['date']
+                        'renewal_period' => isset($resNT['renewal_period']) ? $resNT['renewal_period'] : '0',
+                        'timestamp' => $record['date'],
                         )
                 );
             }
         }
         // UPDATE an item
-    } elseif ($action === "update_value" && is_null($ident) === false) {
+    } elseif ($action === 'update_value' && is_null($ident) === false) {
         // get new value from db
         $data = DB::queryfirstrow(
-            "SELECT label, description, id_tree, perso, restricted_to, login, url
-            FROM ".prefixTable('items')."
-            WHERE id=%i",
+            'SELECT label, description, id_tree, perso, restricted_to, login, url
+            FROM '.prefixTable('items').'
+            WHERE id=%i',
             $ident
         );
         // Get all TAGS
-        $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".prefixTable('tags')." WHERE item_id=%i", $ident);
+        $tags = '';
+        $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id=%i', $ident);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag']." ";
+                $tags .= $itemTag['tag'].' ';
             }
         }
         // form id_tree to full foldername
-        $folder = "";
+        $folder = '';
         $arbo = $tree->getPath($data['id_tree'], true);
         foreach ($arbo as $elem) {
             if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
@@ -1032,7 +1048,7 @@ function updateCacheTable($action, $ident = null)
             if (empty($folder)) {
                 $folder = stripslashes($elem->title);
             } else {
-                $folder .= " » ".stripslashes($elem->title);
+                $folder .= ' » '.stripslashes($elem->title);
             }
         }
         // finaly update
@@ -1042,39 +1058,39 @@ function updateCacheTable($action, $ident = null)
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'tags' => $tags,
-                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
+                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
                 'id_tree' => $data['id_tree'],
                 'perso' => $data['perso'],
-                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : "0",
-                'login' => isset($data['login']) ? $data['login'] : "",
+                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
+                'login' => isset($data['login']) ? $data['login'] : '',
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
                 ),
-            "id = %i",
+            'id = %i',
             $ident
         );
     // ADD an item
-    } elseif ($action === "add_value" && is_null($ident) === false) {
+    } elseif ($action === 'add_value' && is_null($ident) === false) {
         // get new value from db
         $data = DB::queryFirstRow(
-            "SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
-            FROM ".prefixTable('items')." as i
-            INNER JOIN ".prefixTable('log_items')." as l ON (l.id_item = i.id)
+            'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
+            FROM '.prefixTable('items').' as i
+            INNER JOIN '.prefixTable('log_items').' as l ON (l.id_item = i.id)
             WHERE i.id = %i
-            AND l.action = %s",
+            AND l.action = %s',
             $ident,
             'at_creation'
         );
         // Get all TAGS
-        $tags = "";
-        $itemTags = DB::query("SELECT tag FROM ".prefixTable('tags')." WHERE item_id = %i", $ident);
+        $tags = '';
+        $itemTags = DB::query('SELECT tag FROM '.prefixTable('tags').' WHERE item_id = %i', $ident);
         foreach ($itemTags as $itemTag) {
             if (!empty($itemTag['tag'])) {
-                $tags .= $itemTag['tag']." ";
+                $tags .= $itemTag['tag'].' ';
             }
         }
         // form id_tree to full foldername
-        $folder = "";
+        $folder = '';
         $arbo = $tree->getPath($data['id_tree'], true);
         foreach ($arbo as $elem) {
             if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
@@ -1083,7 +1099,7 @@ function updateCacheTable($action, $ident = null)
             if (empty($folder)) {
                 $folder = stripslashes($elem->title);
             } else {
-                $folder .= " » ".stripslashes($elem->title);
+                $folder .= ' » '.stripslashes($elem->title);
             }
         }
         // finaly update
@@ -1093,21 +1109,21 @@ function updateCacheTable($action, $ident = null)
                 'id' => $data['id'],
                 'label' => $data['label'],
                 'description' => $data['description'],
-                'tags' => (isset($tags) && !empty($tags)) ? $tags : "None",
-                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : "0",
+                'tags' => (isset($tags) && !empty($tags)) ? $tags : 'None',
+                'url' => (isset($data['url']) && !empty($data['url'])) ? $data['url'] : '0',
                 'id_tree' => $data['id_tree'],
-                'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== "None") ? $data['perso'] : "0",
-                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : "0",
-                'login' => isset($data['login']) ? $data['login'] : "",
+                'perso' => (isset($data['perso']) && !empty($data['perso']) && $data['perso'] !== 'None') ? $data['perso'] : '0',
+                'restricted_to' => (isset($data['restricted_to']) && !empty($data['restricted_to'])) ? $data['restricted_to'] : '0',
+                'login' => isset($data['login']) ? $data['login'] : '',
                 'folder' => $folder,
                 'author' => $_SESSION['user_id'],
-                'timestamp' => $data['date']
+                'timestamp' => $data['date'],
             )
         );
 
     // DELETE an item
-    } elseif ($action === "delete_value" && is_null($ident) === false) {
-        DB::delete(prefixTable('cache'), "id = %i", $ident);
+    } elseif ($action === 'delete_value' && is_null($ident) === false) {
+        DB::delete(prefixTable('cache'), 'id = %i', $ident);
     }
 }
 
@@ -1116,51 +1132,49 @@ function updateCacheTable($action, $ident = null)
 */
 function getStatisticsData()
 {
-    global $SETTINGS;
-
     DB::query(
-        "SELECT id FROM ".prefixTable("nested_tree")." WHERE personal_folder = %i",
+        'SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i',
         0
     );
     $counter_folders = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("nested_tree")." WHERE personal_folder = %i",
+        'SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i',
         1
     );
     $counter_folders_perso = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("items")." WHERE perso = %i",
+        'SELECT id FROM '.prefixTable('items').' WHERE perso = %i',
         0
     );
     $counter_items = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("items")." WHERE perso = %i",
+        'SELECT id FROM '.prefixTable('items').' WHERE perso = %i',
         1
     );
     $counter_items_perso = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("users").""
+        'SELECT id FROM '.prefixTable('users').''
     );
     $counter_users = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("users")." WHERE admin = %i",
+        'SELECT id FROM '.prefixTable('users').' WHERE admin = %i',
         1
     );
     $admins = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("users")." WHERE gestionnaire = %i",
+        'SELECT id FROM '.prefixTable('users').' WHERE gestionnaire = %i',
         1
     );
     $managers = DB::count();
 
     DB::query(
-        "SELECT id FROM ".prefixTable("users")." WHERE read_only = %i",
+        'SELECT id FROM '.prefixTable('users').' WHERE read_only = %i',
         1
     );
     $readOnly = DB::count();
@@ -1168,11 +1182,11 @@ function getStatisticsData()
     // list the languages
     $usedLang = [];
     $tp_languages = DB::query(
-        "SELECT name FROM ".prefixTable("languages")
+        'SELECT name FROM '.prefixTable('languages')
     );
     foreach ($tp_languages as $tp_language) {
         DB::query(
-            "SELECT * FROM ".prefixTable("users")." WHERE user_language = %s",
+            'SELECT * FROM '.prefixTable('users').' WHERE user_language = %s',
             $tp_language['name']
         );
         $usedLang[$tp_language['name']] = round((DB::count() * 100 / $counter_users), 0);
@@ -1181,55 +1195,56 @@ function getStatisticsData()
     // get list of ips
     $usedIp = [];
     $tp_ips = DB::query(
-        "SELECT user_ip FROM ".prefixTable("users")
+        'SELECT user_ip FROM '.prefixTable('users')
     );
     foreach ($tp_ips as $ip) {
         if (array_key_exists($ip['user_ip'], $usedIp)) {
             $usedIp[$ip['user_ip']] = $usedIp[$ip['user_ip']] + 1;
-        } elseif (!empty($ip['user_ip']) && $ip['user_ip'] !== "none") {
+        } elseif (!empty($ip['user_ip']) && $ip['user_ip'] !== 'none') {
             $usedIp[$ip['user_ip']] = 1;
         }
     }
 
     return array(
-        "error" => "",
-        "stat_phpversion" => phpversion(),
-        "stat_folders" => $counter_folders,
-        "stat_folders_shared" => intval($counter_folders) - intval($counter_folders_perso),
-        "stat_items" => $counter_items,
-        "stat_items_shared" => intval($counter_items) - intval($counter_items_perso),
-        "stat_users" => $counter_users,
-        "stat_admins" => $admins,
-        "stat_managers" => $managers,
-        "stat_ro" => $readOnly,
-        "stat_kb" => $SETTINGS['enable_kb'],
-        "stat_pf" => $SETTINGS['enable_pf_feature'],
-        "stat_fav" => $SETTINGS['enable_favourites'],
-        "stat_teampassversion" => $SETTINGS['cpassman_version'],
-        "stat_ldap" => $SETTINGS['ldap_mode'],
-        "stat_agses" => $SETTINGS['agses_authentication_enabled'],
-        "stat_duo" => $SETTINGS['duo'],
-        "stat_suggestion" => $SETTINGS['enable_suggestion'],
-        "stat_api" => $SETTINGS['api'],
-        "stat_customfields" => $SETTINGS['item_extra_fields'],
-        "stat_syslog" => $SETTINGS['syslog_enable'],
-        "stat_2fa" => $SETTINGS['google_authentication'],
-        "stat_stricthttps" => $SETTINGS['enable_sts'],
-        "stat_mysqlversion" => DB::serverVersion(),
-        "stat_languages" => $usedLang,
-        "stat_country" => $usedIp
+        'error' => '',
+        'stat_phpversion' => phpversion(),
+        'stat_folders' => $counter_folders,
+        'stat_folders_shared' => intval($counter_folders) - intval($counter_folders_perso),
+        'stat_items' => $counter_items,
+        'stat_items_shared' => intval($counter_items) - intval($counter_items_perso),
+        'stat_users' => $counter_users,
+        'stat_admins' => $admins,
+        'stat_managers' => $managers,
+        'stat_ro' => $readOnly,
+        'stat_kb' => $SETTINGS['enable_kb'],
+        'stat_pf' => $SETTINGS['enable_pf_feature'],
+        'stat_fav' => $SETTINGS['enable_favourites'],
+        'stat_teampassversion' => $SETTINGS['cpassman_version'],
+        'stat_ldap' => $SETTINGS['ldap_mode'],
+        'stat_agses' => $SETTINGS['agses_authentication_enabled'],
+        'stat_duo' => $SETTINGS['duo'],
+        'stat_suggestion' => $SETTINGS['enable_suggestion'],
+        'stat_api' => $SETTINGS['api'],
+        'stat_customfields' => $SETTINGS['item_extra_fields'],
+        'stat_syslog' => $SETTINGS['syslog_enable'],
+        'stat_2fa' => $SETTINGS['google_authentication'],
+        'stat_stricthttps' => $SETTINGS['enable_sts'],
+        'stat_mysqlversion' => DB::serverVersion(),
+        'stat_languages' => $usedLang,
+        'stat_country' => $usedIp,
     );
 }
 
 /**
- * Permits to send an email
+ * Permits to send an email.
  *
- * @param  string $subject     email subject
- * @param  string $textMail    email message
- * @param  string $email       email
- * @param  array  $LANG        Language
- * @param  array  $SETTINGS    settings
- * @param  string $textMailAlt email message alt
+ * @param string $subject     email subject
+ * @param string $textMail    email message
+ * @param string $email       email
+ * @param array  $LANG        Language
+ * @param array  $SETTINGS    settings
+ * @param string $textMailAlt email message alt
+ *
  * @return string some json info
  */
 function sendEmail(
@@ -1241,20 +1256,20 @@ function sendEmail(
     $textMailAlt = null
 ) {
     // CAse where email not defined
-    if ($email === "none") {
+    if ($email === 'none') {
         return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
     }
 
     // Load settings
-    include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
     // Load superglobal
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Get user language
-    $session_user_language = $superGlobal->get("user_language", "SESSION");
-    $user_language = isset($session_user_language) ? $session_user_language : "english";
+    $session_user_language = $superGlobal->get('user_language', 'SESSION');
+    $user_language = isset($session_user_language) ? $session_user_language : 'english';
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$user_language.'.php';
 
     // Load library
@@ -1266,15 +1281,15 @@ function sendEmail(
     $mail = new Email\PHPMailer\PHPMailer(true);
     try {
         // send to user
-        $mail->setLanguage("en", $SETTINGS['cpassman_dir']."/includes/libraries/Email/PHPMailer/language/");
+        $mail->setLanguage('en', $SETTINGS['cpassman_dir'].'/includes/libraries/Email/PHPMailer/language/');
         $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
         $mail->Port = $SETTINGS['email_port']; //COULD BE USED
-        $mail->CharSet = "utf-8";
-        if ($SETTINGS['email_security'] === "tls" || $SETTINGS['email_security'] === "ssl") {
+        $mail->CharSet = 'utf-8';
+        if ($SETTINGS['email_security'] === 'tls' || $SETTINGS['email_security'] === 'ssl') {
             $mail->SMTPSecure = $SETTINGS['email_security'];
             $SMTPAutoTLS = true;
         } else {
-            $mail->SMTPSecure = "";
+            $mail->SMTPSecure = '';
             $SMTPAutoTLS = false;
         }
         $mail->SMTPAutoTLS = $SMTPAutoTLS;
@@ -1287,7 +1302,7 @@ function sendEmail(
         $mail->FromName = $SETTINGS['email_from_name'];
 
         // Prepare for each person
-        foreach (explode(",", $email) as $dest) {
+        foreach (explode(',', $email) as $dest) {
             if (empty($dest) === false) {
                 $mail->addAddress($dest);
             }
@@ -1322,35 +1337,35 @@ function sendEmail(
         $mail->Subject = $subject;
         $mail->Body = $text_html;
         $mail->AltBody = (is_null($textMailAlt) === false) ? $textMailAlt : '';
-        
+
         // send email
         if ($mail->send()) {
             return json_encode(
                 array(
-                    "error" => "",
-                    "message" => $LANG['forgot_my_pw_email_sent']
+                    'error' => '',
+                    'message' => $LANG['forgot_my_pw_email_sent'],
                 )
             );
         } else {
             return json_encode(
                 array(
-                    "error" => "error_mail_not_send",
-                    "message" => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo)
+                    'error' => 'error_mail_not_send',
+                    'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
                 )
             );
         }
     } catch (Exception $e) {
         return json_encode(
             array(
-                "error" => "error_mail_not_send",
-                "message" => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo)
+                'error' => 'error_mail_not_send',
+                'message' => str_replace(array("\n", "\t", "\r"), '', $mail->ErrorInfo),
             )
         );
     }
 }
 
 /**
- * generateKey()
+ * generateKey().
  *
  * @return
  */
@@ -1360,7 +1375,7 @@ function generateKey()
 }
 
 /**
- * dateToStamp()
+ * dateToStamp().
  *
  * @return
  */
@@ -1378,20 +1393,20 @@ function dateToStamp($date)
 
 function isDate($date)
 {
-    return (strtotime($date) !== false);
+    return strtotime($date) !== false;
 }
 
 /**
- * isUTF8()
+ * isUTF8().
  *
- * @return integer is the string in UTF8 format.
+ * @return int is the string in UTF8 format
  */
-
 function isUTF8($string)
 {
     if (is_array($string) === true) {
         $string = $string['string'];
     }
+
     return preg_match(
         '%^(?:
         [\x09\x0A\x0D\x20-\x7E] # ASCII
@@ -1424,9 +1439,9 @@ function prepareExchangedData($data, $type)
     $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $aes->register();
 
-    if ($type == "encode") {
+    if ($type == 'encode') {
         if (isset($SETTINGS['encryptClientServer'])
-            && $SETTINGS['encryptClientServer'] === "0"
+            && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_encode(
                 $data,
@@ -1442,9 +1457,9 @@ function prepareExchangedData($data, $type)
                 256
             );
         }
-    } elseif ($type == "decode") {
+    } elseif ($type == 'decode') {
         if (isset($SETTINGS['encryptClientServer'])
-            && $SETTINGS['encryptClientServer'] === "0"
+            && $SETTINGS['encryptClientServer'] === '0'
         ) {
             return json_decode(
                 $data,
@@ -1483,11 +1498,11 @@ function make_thumb($src, $dest, $desired_width)
     imagejpeg($virtual_image, $dest);
 }
 
-
 /**
- * Check table prefix in SQL query
+ * Check table prefix in SQL query.
  *
- * @param  string $table Table name
+ * @param string $table Table name
+ *
  * @return string
  */
 function prefixTable($table)
@@ -1498,7 +1513,7 @@ function prefixTable($table)
         return $safeTable;
     } else {
         // stop error no table
-        return "table_not_exists";
+        return 'table_not_exists';
     }
 }
 
@@ -1550,20 +1565,19 @@ function GenerateCryptKey($size = null, $secure = false, $numerals = false, $cap
 * @param string $message
 * @param string $host
 */
-function send_syslog($message, $host, $port, $component = "teampass")
+function send_syslog($message, $host, $port, $component = 'teampass')
 {
     $sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-    $syslog_message = "<123>".date('M d H:i:s ').$component.": ".$message;
+    $syslog_message = '<123>'.date('M d H:i:s ').$component.': '.$message;
     socket_sendto($sock, $syslog_message, strlen($syslog_message), 0, $host, $port);
     socket_close($sock);
 }
 
-
-
 /**
- * logEvents()
+ * logEvents().
  *
  * permits to log events into DB
+ *
  * @param string $type
  * @param string $label
  * @param string $field_1
@@ -1579,48 +1593,50 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     DB::insert(
-        prefixTable("log_system"),
+        prefixTable('log_system'),
         array(
             'type' => $type,
             'date' => time(),
             'label' => $label,
             'qui' => $who,
-            'field_1' => $field_1 === null ? "" : $field_1
+            'field_1' => $field_1 === null ? '' : $field_1,
         )
     );
+
+    // If SYSLOG
     if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
-        if ($type == "user_mngt") {
+        if ($type == 'user_mngt') {
             send_syslog(
                 'action='.str_replace('at_', '', $label).' attribute=user user='.$who.' userid="'.$login.'" change="'.$field_1.'" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
-                "teampass"
+                'teampass'
             );
         } else {
             send_syslog(
                 'action='.$type.' attribute='.$label.' user='.$who.' userid="'.$login.'" ',
                 $SETTINGS['syslog_host'],
                 $SETTINGS['syslog_port'],
-                "teampass"
+                'teampass'
             );
         }
     }
 }
 
 /**
- * Logs sent events
+ * Logs sent events.
  *
  * @param string $ident
  * @param string $item
@@ -1629,7 +1645,6 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
  * @param string $login
  * @param string $raison
  * @param string $encryption_type
- * @return void
  */
 function logItems(
     $item_id,
@@ -1647,12 +1662,12 @@ function logItems(
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
@@ -1660,7 +1675,7 @@ function logItems(
 
     // Insert log in DB
     DB::insert(
-        prefixTable("log_items"),
+        prefixTable('log_items'),
         array(
             'id_item' => $item_id,
             'date' => time(),
@@ -1668,9 +1683,22 @@ function logItems(
             'action' => $action,
             'raison' => $raison,
             'raison_iv' => '',
-            'encryption_type' => is_null($encryption_type) === true ? '' : $encryption_type
+            'encryption_type' => is_null($encryption_type) === true ? '' : $encryption_type,
         )
     );
+
+    // Timestamp the last change
+    if ($action === 'at_creation' || $action === 'at_modifiation' || $action === 'at_delete' || $action === 'at_import') {
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => time(),
+                ),
+            'type = %s AND intitule = %s',
+            'timestamp',
+            'last_item_change'
+        );
+    }
 
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && $SETTINGS['syslog_enable'] === '1') {
@@ -1680,9 +1708,9 @@ function logItems(
         // Get item info if not known
         if (empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
-                "SELECT id, id_tree, label
-                FROM ".prefixTable("items")."
-                WHERE id = %i",
+                'SELECT id, id_tree, label
+                FROM '.prefixTable('items').'
+                WHERE id = %i',
                 $item_id
             );
 
@@ -1693,7 +1721,7 @@ function logItems(
             'action='.str_replace('at_', '', $action).' attribute='.str_replace('at_', '', $attribute[0]).' itemno='.$item_id.' user='.addslashes($login).' itemname="'.addslashes($item_label).'"',
             $SETTINGS['syslog_host'],
             $SETTINGS['syslog_port'],
-            "teampass"
+            'teampass'
         );
     }
 
@@ -1705,9 +1733,9 @@ function logItems(
         // Get info about item
         if (empty($dataItem) === true || empty($item_label) === true) {
             $dataItem = DB::queryfirstrow(
-                "SELECT id, id_tree, label
-                FROM ".prefixTable("items")."
-                WHERE id = %i",
+                'SELECT id, id_tree, label
+                FROM '.prefixTable('items').'
+                WHERE id = %i',
                 $item_id
             );
             $item_label = $dataItem['label'];
@@ -1724,12 +1752,12 @@ function logItems(
                     array(
                         addslashes($_SESSION['login']),
                         addslashes($item_label),
-                        $SETTINGS['cpassman_url']."/index.php?page=items&group=".$dataItem['id_tree']."&id=".$dataItem['id']
+                        $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$dataItem['id'],
                     ),
                     $LANG['email_on_open_notification_mail']
                 ),
                 'receivers' => $_SESSION['listNotificationEmails'],
-                'status' => ''
+                'status' => '',
             )
         );
     }
@@ -1760,10 +1788,11 @@ function get_client_ip_server()
 }
 
 /**
- * Escape all HTML, JavaScript, and CSS
+ * Escape all HTML, JavaScript, and CSS.
  *
- * @param string $input The input string
+ * @param string $input    The input string
  * @param string $encoding Which character encoding are we using?
+ *
  * @return string
  */
 function noHTML($input, $encoding = 'UTF-8')
@@ -1772,7 +1801,7 @@ function noHTML($input, $encoding = 'UTF-8')
 }
 
 /**
- * handleConfigFile()
+ * handleConfigFile().
  *
  * permits to handle the Teampass config file
  * $action accepts "rebuild" and "update"
@@ -1782,25 +1811,25 @@ function handleConfigFile($action, $field = null, $value = null)
     global $server, $user, $pass, $database, $port, $encoding;
     global $SETTINGS;
 
-    $tp_config_file = "../includes/config/tp.config.php";
+    $tp_config_file = '../includes/config/tp.config.php';
 
     // include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
-    if (!file_exists($tp_config_file) || $action == "rebuild") {
+    if (!file_exists($tp_config_file) || $action == 'rebuild') {
         // perform a copy
         if (file_exists($tp_config_file)) {
-            if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d_His", time()))) {
+            if (!copy($tp_config_file, $tp_config_file.'.'.date('Y_m_d_His', time()))) {
                 return "ERROR: Could not copy file '".$tp_config_file."'";
             }
         }
@@ -1811,30 +1840,29 @@ function handleConfigFile($action, $field = null, $value = null)
         $data[1] = "global \$SETTINGS;\n";
         $data[2] = "\$SETTINGS = array (\n";
         $rows = DB::query(
-            "SELECT * FROM ".prefixTable("misc")." WHERE type=%s",
-            "admin"
+            'SELECT * FROM '.prefixTable('misc').' WHERE type=%s',
+            'admin'
         );
         foreach ($rows as $record) {
             array_push($data, "    '".$record['intitule']."' => '".$record['valeur']."',\n");
         }
         array_push($data, ");\n");
         $data = array_unique($data);
-    } elseif ($action == "update" && empty($field) === false) {
+    } elseif ($action == 'update' && empty($field) === false) {
         $data = file($tp_config_file);
         $inc = 0;
         $bFound = false;
         foreach ($data as $line) {
-            if (stristr($line, ");")) {
+            if (stristr($line, ');')) {
                 break;
             }
 
-            //
             if (stristr($line, "'".$field."' => '")) {
                 $data[$inc] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n";
                 $bFound = true;
                 break;
             }
-            $inc++;
+            ++$inc;
         }
         if ($bFound === false) {
             $data[($inc)] = "    '".$field."' => '".filter_var($value, FILTER_SANITIZE_STRING)."',\n);\n";
@@ -1855,7 +1883,7 @@ function handleConfigFile($action, $field = null, $value = null)
  */
 function handleBackslash($input)
 {
-    return str_replace("&amp;#92;", "&#92;", $input);
+    return str_replace('&amp;#92;', '&#92;', $input);
 }
 
 /*
@@ -1873,10 +1901,10 @@ function loadSettings()
         $settings = array();
 
         $rows = DB::query(
-            "SELECT * FROM ".prefixTable("misc")." WHERE type=%s_type OR type=%s_type2",
+            'SELECT * FROM '.prefixTable('misc').' WHERE type=%s_type OR type=%s_type2',
             array(
-                'type' => "admin",
-                'type2' => "settings"
+                'type' => 'admin',
+                'type2' => 'settings',
             )
         );
         foreach ($rows as $record) {
@@ -1899,9 +1927,9 @@ function checkCFconsistency($source_id, $target_id)
 {
     $source_cf = array();
     $rows = DB::QUERY(
-        "SELECT id_category
-        FROM ".prefixTable("categories_folders")."
-        WHERE id_folder = %i",
+        'SELECT id_category
+        FROM '.prefixTable('categories_folders').'
+        WHERE id_folder = %i',
         $source_id
     );
     foreach ($rows as $record) {
@@ -1910,9 +1938,9 @@ function checkCFconsistency($source_id, $target_id)
 
     $target_cf = array();
     $rows = DB::QUERY(
-        "SELECT id_category
-        FROM ".prefixTable("categories_folders")."
-        WHERE id_folder = %i",
+        'SELECT id_category
+        FROM '.prefixTable('categories_folders').'
+        WHERE id_folder = %i',
         $target_id
     );
     foreach ($rows as $record) {
@@ -1937,12 +1965,12 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 
     // Include librairies & connect to DB
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
@@ -1950,7 +1978,7 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 
     // Get file info in DB
     $fileInfo = DB::queryfirstrow(
-        "SELECT id FROM ".prefixTable("files")." WHERE file = %s",
+        'SELECT id FROM '.prefixTable('files').' WHERE file = %s',
         filter_var($filename_to_rework, FILTER_SANITIZE_STRING)
     );
     if (empty($fileInfo['id']) === false) {
@@ -1967,27 +1995,27 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
         require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
         // Get KEY
-        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
 
         if (isset($SETTINGS['enable_attachment_encryption'])
-            && $SETTINGS['enable_attachment_encryption'] === "1" &&
+            && $SETTINGS['enable_attachment_encryption'] === '1' &&
             isset($filename_status)
-            && ($filename_status === "clear"
-                || $filename_status === "0")
+            && ($filename_status === 'clear'
+                || $filename_status === '0')
         ) {
             // File needs to be encrypted
             if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework)) {
                 // Make a copy of file
                 if (!copy(
                     $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
+                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy'
                 )) {
                     exit;
                 } else {
                     // Do a bck
                     copy(
                         $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".bck"
+                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.bck'
                     );
                 }
 
@@ -1997,12 +2025,12 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
                 $err = '';
                 try {
                     \Defuse\Crypto\File::encryptFile(
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".copy",
+                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy',
                         $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
                         \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                    $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+                    $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
                 } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                     $err = $ex;
                 } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -2012,36 +2040,36 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
                     echo $err;
                 }
 
-                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".copy");
+                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy');
 
                 // update table
                 DB::update(
                     prefixTable('files'),
                     array(
-                        'status' => 'encrypted'
+                        'status' => 'encrypted',
                         ),
-                    "id = %i",
+                    'id = %i',
                     $fileInfo['id']
                 );
             }
         } elseif (isset($SETTINGS['enable_attachment_encryption'])
-            && $SETTINGS['enable_attachment_encryption'] === "0"
+            && $SETTINGS['enable_attachment_encryption'] === '0'
             && isset($filename_status)
-            && $filename_status === "encrypted"
+            && $filename_status === 'encrypted'
         ) {
             // file needs to be decrypted
             if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework)) {
                 // make a copy of file
                 if (!copy(
                     $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".copy"
+                    $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy'
                 )) {
                     exit;
                 } else {
                     // do a bck
                     copy(
                         $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".bck"
+                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.bck'
                     );
                 }
 
@@ -2051,12 +2079,12 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
                 $err = '';
                 try {
                     \Defuse\Crypto\File::decryptFile(
-                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".copy",
+                        $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy',
                         $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
                         \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                    $err = "An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.";
+                    $err = 'An attack! Either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
                 } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                     $err = $ex;
                 } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -2066,15 +2094,15 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
                     echo $err;
                 }
 
-                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.".copy");
+                unlink($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy');
 
                 // update table
                 DB::update(
                     prefixTable('files'),
                     array(
-                        'status' => 'clear'
+                        'status' => 'clear',
                         ),
-                    "id = %i",
+                    'id = %i',
                     $fileInfo['id']
                 );
             }
@@ -2086,10 +2114,12 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
 }
 
 /**
- * Will encrypte/decrypt a fil eusing Defuse
- * @param  string $type        can be either encrypt or decrypt
- * @param  string $source_file path to source file
- * @param  string $target_file path to target file
+ * Will encrypte/decrypt a fil eusing Defuse.
+ *
+ * @param string $type        can be either encrypt or decrypt
+ * @param string $source_file path to source file
+ * @param string $target_file path to target file
+ *
  * @return string|boolean
  */
 function prepareFileWithDefuse($type, $source_file, $target_file, $password = null)
@@ -2127,7 +2157,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = nu
          */
 
         // get KEY
-        $ascii_key = file_get_contents(SECUREPATH."/teampass-seckey.txt");
+        $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
 
         // Now perform action on the file
         $err = '';
@@ -2139,7 +2169,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = nu
                     \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
                 );
             } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = "decryption_not_possible";
+                $err = 'decryption_not_possible';
             } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
             } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -2153,7 +2183,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = nu
                     \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key)
                 );
             } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = "encryption_not_possible";
+                $err = 'encryption_not_possible';
             } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
             } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -2174,7 +2204,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = nu
                     $password
                 );
             } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = "wrong_key";
+                $err = 'wrong_key';
             } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
             } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -2188,7 +2218,7 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = nu
                     $password
                 );
             } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
-                $err = "wrong_key";
+                $err = 'wrong_key';
             } catch (Defuse\Crypto\Exception\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
             } catch (Defuse\Crypto\Exception\IOException $ex) {
@@ -2215,11 +2245,12 @@ function debugTeampass($text)
     fclose($debugFile);
 }
 
-
 /**
- * DELETE the file with expected command depending on server type
- * @param  string $file Path to file
- * @return              Nothing
+ * DELETE the file with expected command depending on server type.
+ *
+ * @param string $file Path to file
+ *
+ * @return Nothing
  */
 function fileDelete($file)
 {
@@ -2236,9 +2267,10 @@ function fileDelete($file)
 }
 
 /**
- * Permits to extract the file extension
+ * Permits to extract the file extension.
  *
- * @param  string $file File name
+ * @param string $file File name
+ *
  * @return string
  */
 function getFileExtension($file)
@@ -2251,9 +2283,11 @@ function getFileExtension($file)
 }
 
 /**
- * Permits to clean and sanitize text to be displayed
- * @param  string $text Text to clean
- * @param  string $type What clean to perform
+ * Permits to clean and sanitize text to be displayed.
+ *
+ * @param string $text Text to clean
+ * @param string $type What clean to perform
+ *
  * @return string
  */
 function cleanText($string, $type = null)
@@ -2264,20 +2298,22 @@ function cleanText($string, $type = null)
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
-    if ($type === "css") {
+    if ($type === 'css') {
         // Escape text and quotes in UTF8 format
         return htmlentities($string, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    } elseif (empty($type) === true || is_null($type) === true || $type === "html") {
+    } elseif (empty($type) === true || is_null($type) === true || $type === 'html') {
         // Html cleaner
         return $antiXss->xss_clean($string);
     }
 }
 
 /**
- * Performs chmod operation on subfolders
- * @param  string  $dir             Parent folder
- * @param  integer $dirPermissions  New permission on folders
- * @param  integer $filePermissions New permission on files
+ * Performs chmod operation on subfolders.
+ *
+ * @param string $dir             Parent folder
+ * @param int    $dirPermissions  New permission on folders
+ * @param int    $filePermissions New permission on files
+ *
  * @return boolean
  */
 function chmodRecursive($dir, $dirPermissions, $filePermissions)
@@ -2285,11 +2321,11 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
     $pointer_dir = opendir($dir);
     $res = true;
     while ($file = readdir($pointer_dir)) {
-        if (($file == ".") || ($file == "..")) {
+        if (($file == '.') || ($file == '..')) {
             continue;
         }
 
-        $fullPath = $dir."/".$file;
+        $fullPath = $dir.'/'.$file;
 
         if (is_dir($fullPath)) {
             if ($res = @chmod($fullPath, $dirPermissions)) {
@@ -2300,6 +2336,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
         }
         if (!$res) {
             closedir($pointer_dir);
+
             return false;
         }
     }
@@ -2312,8 +2349,9 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
 }
 
 /**
- * Check if user can access to this item
- * @param integer $item_id ID of item
+ * Check if user can access to this item.
+ *
+ * @param int $item_id ID of item
  */
 function accessToItemIsGranted($item_id)
 {
@@ -2323,14 +2361,14 @@ function accessToItemIsGranted($item_id)
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare superGlobal variables
-    $session_groupes_visibles = $superGlobal->get("groupes_visibles", "SESSION");
-    $session_list_restricted_folders_for_items = $superGlobal->get("list_restricted_folders_for_items", "SESSION");
+    $session_groupes_visibles = $superGlobal->get('groupes_visibles', 'SESSION');
+    $session_list_restricted_folders_for_items = $superGlobal->get('list_restricted_folders_for_items', 'SESSION');
 
     // Load item data
     $data = DB::queryFirstRow(
-        "SELECT id_tree
-        FROM ".prefixTable("items")."
-        WHERE id = %i",
+        'SELECT id_tree
+        FROM '.prefixTable('items').'
+        WHERE id = %i',
         $item_id
     );
 
@@ -2340,9 +2378,9 @@ function accessToItemIsGranted($item_id)
         if (isset($session_list_restricted_folders_for_items[$data['id_tree']])
             && !in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']])
         ) {
-            return "ERR_FOLDER_NOT_ALLOWED";
+            return 'ERR_FOLDER_NOT_ALLOWED';
         } else {
-            return "ERR_FOLDER_NOT_ALLOWED";
+            return 'ERR_FOLDER_NOT_ALLOWED';
         }
     }
 
@@ -2350,25 +2388,29 @@ function accessToItemIsGranted($item_id)
 }
 
 /**
- * Creates a unique key
+ * Creates a unique key.
+ *
  * @lenght  integer $lenght Key lenght
+ *
  * @return string
  */
 function uniqidReal($lenght = 13)
 {
     // uniqid gives 13 chars, but you could adjust it to your needs.
-    if (function_exists("random_bytes")) {
+    if (function_exists('random_bytes')) {
         $bytes = random_bytes(ceil($lenght / 2));
-    } elseif (function_exists("openssl_random_pseudo_bytes")) {
+    } elseif (function_exists('openssl_random_pseudo_bytes')) {
         $bytes = openssl_random_pseudo_bytes(ceil($lenght / 2));
     } else {
-        throw new Exception("no cryptographically secure random function available");
+        throw new Exception('no cryptographically secure random function available');
     }
+
     return substr(bin2hex($bytes), 0, $lenght);
 }
 
 /**
- * Obfuscate an email address
+ * Obfuscate an email address.
+ *
  * @email {string}  email address
  */
 function obfuscate_email($email)
@@ -2376,15 +2418,15 @@ function obfuscate_email($email)
     $prop = 2;
     $start = '';
     $end = '';
-    $domain = substr(strrchr($email, "@"), 1);
+    $domain = substr(strrchr($email, '@'), 1);
     $mailname = str_replace($domain, '', $email);
     $name_l = strlen($mailname);
     $domain_l = strlen($domain);
-    for ($i = 0; $i <= $name_l / $prop - 1; $i++) {
+    for ($i = 0; $i <= $name_l / $prop - 1; ++$i) {
         $start .= 'x';
     }
 
-    for ($i = 0; $i <= $domain_l / $prop - 1; $i++) {
+    for ($i = 0; $i <= $domain_l / $prop - 1; ++$i) {
         $end .= 'x';
     }
 
@@ -2393,10 +2435,11 @@ function obfuscate_email($email)
 }
 
 /**
- * Permits to get LDAP information about a user
+ * Permits to get LDAP information about a user.
  *
- * @param string $username  User name
- * @param string $password  User password
+ * @param string $username User name
+ * @param string $password User password
+ *
  * @return string
  */
 function connectLDAP($username, $password, $SETTINGS)
@@ -2410,16 +2453,16 @@ function connectLDAP($username, $password, $SETTINGS)
     // Prepare LDAP connection if set up
     //Multiple Domain Names
     if (strpos(html_entity_decode($username), '\\') === true) {
-        $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+        $ldap_suffix = '@'.substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
         $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
     }
     if ($SETTINGS['ldap_type'] === 'posix-search') {
-        $ldapURIs = "";
-        foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
+        $ldapURIs = '';
+        foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
             if ($SETTINGS['ldap_ssl'] == 1) {
-                $ldapURIs .= "ldaps://".$domainControler.":".$SETTINGS['ldap_port']." ";
+                $ldapURIs .= 'ldaps://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
             } else {
-                $ldapURIs .= "ldap://".$domainControler.":".$SETTINGS['ldap_port']." ";
+                $ldapURIs .= 'ldap://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
             }
         }
         $ldapconn = ldap_connect($ldapURIs);
@@ -2433,13 +2476,13 @@ function connectLDAP($username, $password, $SETTINGS)
         // Is LDAP connection ready?
         if ($ldapconn !== false) {
             // Should we bind the connection?
-            if ($SETTINGS['ldap_bind_dn'] !== "" && $SETTINGS['ldap_bind_passwd'] !== "") {
+            if ($SETTINGS['ldap_bind_dn'] !== '' && $SETTINGS['ldap_bind_passwd'] !== '') {
                 $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
             } else {
                 $ldapbind = false;
             }
-            if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
-                $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+            if (($SETTINGS['ldap_bind_dn'] === '' && $SETTINGS['ldap_bind_passwd'] === '') || $ldapbind === true) {
+                $filter = '(&('.$SETTINGS['ldap_user_attribute'].'='.$username.')(objectClass='.$SETTINGS['ldap_object_class'].'))';
                 $result = ldap_search(
                     $ldapconn,
                     $SETTINGS['ldap_search_base'],
@@ -2461,7 +2504,7 @@ function connectLDAP($username, $password, $SETTINGS)
                     $GroupRestrictionEnabled = false;
                     if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
                         // New way to check User's group membership
-                        $filter_group = "memberUid=".$username;
+                        $filter_group = 'memberUid='.$username;
                         $result_group = ldap_search(
                             $ldapconn,
                             $SETTINGS['ldap_search_base'],
@@ -2474,7 +2517,7 @@ function connectLDAP($username, $password, $SETTINGS)
 
                             if ($entries['count'] > 0) {
                                 // Now check if group fits
-                                for ($i = 0; $i < $entries['count']; $i++) {
+                                for ($i = 0; $i < $entries['count']; ++$i) {
                                     $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
                                     if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                         $GroupRestrictionEnabled = true;
@@ -2533,10 +2576,10 @@ function connectLDAP($username, $password, $SETTINGS)
             array(
                 'base_dn' => $SETTINGS['ldap_domain_dn'],
                 'account_suffix' => $ldap_suffix,
-                'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
+                'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
                 'ad_port' => $SETTINGS['ldap_port'],
                 'use_ssl' => $SETTINGS['ldap_ssl'],
-                'use_tls' => $SETTINGS['ldap_tls']
+                'use_tls' => $SETTINGS['ldap_tls'],
             )
         );
 
@@ -2579,7 +2622,32 @@ function connectLDAP($username, $password, $SETTINGS)
             'name' => $user_name,
             'email' => $user_email,
             'auth_success' => $ldapConnection,
-            'user_found' => $user_found
+            'user_found' => $user_found,
         )
+    );
+}
+
+//--------------------------------
+
+/**
+ * Undocumented function
+ *
+ * @param array  $SETTINGS
+ * @param string $fields
+ * @param string $table
+ * @return void
+ */
+function performDBQuery($SETTINGS, $fields, $table)
+{
+    // include librairies & connect to DB
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
+
+    // Insert log in DB
+    return DB::query(
+        'SELECT '.$fields.'
+        FROM '.prefixTable($table)
     );
 }

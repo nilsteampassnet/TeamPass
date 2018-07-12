@@ -33,14 +33,13 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], "admin") === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], "profile") === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
 // Load template
-require_once $SETTINGS['cpassman_dir'].'/template.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>

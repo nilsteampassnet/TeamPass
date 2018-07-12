@@ -21,6 +21,10 @@
 <script type="text/javascript">
 var requestRunning = false;
 
+/**
+ * ADMIN
+ */
+// <- PREPARE TOGGLES
 $('.toggle').toggles({
     drag: true,
     click: true,
@@ -38,15 +42,46 @@ $('.toggle').toggles({
 $('.toggle').on('toggle', function(e, active) {
     if (active) {
         $("#"+e.target.id+"_input").val(1);
-        if (e.target.id == "ldap_mode") {$("#div_ldap_configuration").show();}
+        if (e.target.id == "allow_print") {
+            $("#roles_allowed_to_print_select").prop("disabled", false);
+        }
+        if (e.target.id == "anyone_can_modify") {
+            $("#form-item-row-modify").removeClass('hidden');
+        }
+        if (e.target.id == "restricted_to") {
+            $("#form-item-row-restricted").removeClass('hidden');
+        }
+        if (e.target.id == "ldap_mode") {
+            $("#div_ldap_configuration").show();
+        }
     } else {
         $("#"+e.target.id+"_input").val(0);
-        if (e.target.id == "ldap_mode") {$("#div_ldap_configuration").hide();}
+        if (e.target.id == "allow_print") {
+            $("#roles_allowed_to_print_select").prop("disabled", true);
+        }
+        if (e.target.id == "anyone_can_modify") {
+            $("#form-item-row-modify").addClass('hidden');
+        }
+        if (e.target.id == "restricted_to") {
+            $("#form-item-row-restricted").addClass('hidden');
+        }
+        if (e.target.id == "ldap_mode") {
+            $("#div_ldap_configuration").hide();
+        }
     }
 
     // store in DB
     updateSetting(e.target.id, $("#"+e.target.id+"_input").val());
 });
+// .-> END. TOGGLES
+
+// <- PREPARE SELECT2
+$('.select2').select2({
+    language: '<?php echo $_SESSION['user_language_code']; ?>'
+});
+if ($('#allow_print_input').val() === '0') {
+    $("#roles_allowed_to_print_select").prop("disabled", true);
+}
 
 /**
  */
@@ -103,4 +138,17 @@ function updateSetting(field, value = '')
         }
     );
 }
+
+
+
+/**
+* LDAP
+*/
+// On click on LDAP type
+$('#ldap_type').change(function() {
+    updateSetting($(this).attr("id"), $(this).val());
+    $(".setting-ldap").addClass('hidden');
+    $(".ldap-" + $(this).val()).removeClass('hidden');
+    console.log(".ldap-" + $(this).val())
+});
 </script>

@@ -265,7 +265,7 @@ if (isset($_GET['type']) === false) {
         // Expiration
         if ($SETTINGS['activate_expiration'] === "1") {
             if ($record['renewal_period'] > 0
-                && ($record['timestamp'] + ($record['renewal_period'] * $SETTINGS_EXT['one_month_seconds'])) < time()
+                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
                 $expired = 1;
             } else {

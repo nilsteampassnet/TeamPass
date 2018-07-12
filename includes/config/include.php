@@ -43,5 +43,11 @@ $mngPages = array(
     'options' => 'options.php',
     'statistics' => 'statistics.php',
     '2fa' => '2fa.php',
-    'manage_settings' => 'admin.settings.php'
+    'special' => 'special.php',
+    'ldap' => 'ldap.php',
+    'emails' => 'emails.php',
+    'backups' => 'backups.php',
+    'api' => 'api.php',
+    'profile' => 'profile.php',
+    'fields' => 'fields.php',
 );

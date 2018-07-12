@@ -38,6 +38,8 @@ if (isset($SETTINGS['maintenance_mode']) === true
 ?>
 
 <script type="text/javascript">
+var userScrollPosition = 0;
+
 // On page load
 $(function() {
     // Init
@@ -65,12 +67,12 @@ $(function() {
     $('.user-menu').click(function () {
         if ($(this).data('name') !== undefined) {
             if ($(this).data('name') === 'set_psk') {
-                //div_set_personal_saltkey
+                showPersonalSKDialog();
             } else if ($(this).data('name') === 'increase_session') {
                 showExtendSession();
             } else if ($(this).data('name') === 'profile') {
                 NProgress.start();
-                document.location.href="index.php?page=" + $(this).data('name');
+                document.location.href="index.php?page=profile";
             } else if ($(this).data('name') === 'logout') {
                 alertify.confirm(
                     '<?php echo TP_TOOL_NAME;?>',
@@ -86,6 +88,109 @@ $(function() {
             }
         }
     });
+
+    $('.close-element').click(function() {
+        $(this).closest('.card').addClass('hidden');
+    });
+
+    /**
+     * When clicking save Personal saltkey
+     */
+    $('#button_save_user_psk').click(function() {
+        alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
+
+        // Prepare data
+        var data = '{"psk":"'+sanitizeString($("#user_personal_saltkey").val())+'" , "score":"'+$("#psk_strength_value").val()+'"}';
+        
+        //
+        $.post(
+            "sources/main.queries.php",
+            {
+                type    : "store_personal_saltkey",
+                data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                // Is there an error?
+                if (data[0].error !== "") {
+                    var error = "";
+                    if (data[0].error === "key_not_conform") {
+                        error = '<?php echo langHdl('error_unknown');?>';
+                    } else if (data[0].error === "security_level_not_reached") {
+                        error = '<?php echo langHdl('error_security_level_not_reached');?>';
+                    } else if (data[0].error === "psk_is_empty") {
+                        error = '<?php echo langHdl('psk_required');?>';
+                    } else if (data[0].error === "psk_not_correct") {
+                        error = '<?php echo langHdl('bad_psk');?>';
+                    }
+                    // display error
+                    alertify.alert().set({onshow:function(){ alertify.message('',0.1).dismissOthers()}});
+                    alertify.alert(
+                        '<?php echo langHdl('warning');?>',
+                        error
+                    );
+                } else if (data[0].status === "security_level_not_reached_but_psk_correct") {
+                    alertify.alert(
+                        '<?php echo langHdl('warning');?>',
+                        '<?php echo langHdl('error_security_level_not_reached');?>'
+                    );
+                } else {
+                    alertify
+                        .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
+                        .dismissOthers();
+                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
+                    location.reload();
+                }
+            },
+            "json"
+        );
+    });
+
+    // For Personal Saltkey
+    $("#user_personal_saltkey").simplePassMeter({
+            "requirements": {},
+            "container": "#psk_strength",
+            "defaultText" : "<?php echo langHdl('index_pw_level_txt');?>",
+            "ratings": [
+                {"minScore": 0,
+                    "className": "meterFail",
+                    "text": "<?php echo langHdl('complex_level0');?>"
+                },
+                {"minScore": 25,
+                    "className": "meterWarn",
+                    "text": "<?php echo langHdl('complex_level1');?>"
+                },
+                {"minScore": 50,
+                    "className": "meterWarn",
+                    "text": "<?php echo langHdl('complex_level2');?>"
+                },
+                {"minScore": 60,
+                    "className": "meterGood",
+                    "text": "<?php echo langHdl('complex_level3');?>"
+                },
+                {"minScore": 70,
+                    "className": "meterGood",
+                    "text": "<?php echo langHdl('complex_level4');?>"
+                },
+                {"minScore": 80,
+                    "className": "meterExcel",
+                    "text": "<?php echo langHdl('complex_level5');?>"
+                },
+                {"minScore": 90,
+                    "className": "meterExcel",
+                    "text": "<?php echo langHdl('complex_level6');?>"
+                }
+            ]
+        });
+        $("#user_personal_saltkey").bind({
+            "score.simplePassMeter" : function(jQEvent, score) {
+                $("#psk_strength_value").val(score);
+            }
+        }).change({
+            "score.simplePassMeter" : function(jQEvent, score) {
+                $("#psk_strength_value").val(score);
+            }
+        });
 
     // Progress bar
     setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
@@ -110,5 +215,17 @@ function showExtendSession() {
             alertify.error('<?php echo langHdl('cancel');?>');
         }
     );
+}
+
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
+function showPersonalSKDialog()
+{
+    $('#dialog_request_psk').removeClass('hidden');
+
+    $('#user_personal_saltkey').focus();
 }
 </script>
