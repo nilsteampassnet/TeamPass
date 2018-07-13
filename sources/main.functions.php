@@ -1422,12 +1422,35 @@ function isUTF8($string)
     );
 }
 
-/*
-* FUNCTION
-* permits to prepare data to be exchanged
-*/
 /**
- * @param string $type
+ * Prepare an array to UTF8 format before JSON_encode
+ *
+ * @param array $array Array of values
+ *
+ * @return array
+ */
+function utf8Converter($array)
+{
+    array_walk_recursive(
+        $array,
+        function (&$item, $key) {
+            if (mb_detect_encoding($item, 'utf-8', true) === false) {
+                    $item = utf8_encode($item);
+            }
+        }
+    );
+ 
+    return $array;
+}
+
+
+/**
+ * Permits to prepare data to be exchanged
+ *
+ * @param array  $data Text
+ * @param string $type Parameter
+ *
+ * @return string
  */
 function prepareExchangedData($data, $type)
 {
@@ -1439,7 +1462,10 @@ function prepareExchangedData($data, $type)
     $aes = new SplClassLoader('Encryption\Crypt', $SETTINGS['cpassman_dir'].'/includes/libraries');
     $aes->register();
 
-    if ($type == 'encode') {
+    if ($type === 'encode') {
+        // Ensure UTF8 format
+        $data = utf8Converter($data);
+        // Now encode
         if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {
@@ -1457,7 +1483,7 @@ function prepareExchangedData($data, $type)
                 256
             );
         }
-    } elseif ($type == 'decode') {
+    } elseif ($type === 'decode') {
         if (isset($SETTINGS['encryptClientServer'])
             && $SETTINGS['encryptClientServer'] === '0'
         ) {

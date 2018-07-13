@@ -1492,13 +1492,13 @@ console.log(arrayQuery)
                 ) {
                     fields = false; 
                     $('#edit_show_error')
-                        .html("<?php echo addslashes($LANG['error_field_is_mandatory']); ?>")
+                        .html("<?php echo langHdl('error_field_is_mandatory'); ?>")
                         .show();
                     $("#div_formulaire_edition_item_info")
                         .addClass("hidden")
                         .html("");
                     $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
-                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+                        .find("button:contains('<?php echo langHdl('save_button'); ?>')")
                         .prop("disabled", false);
                     return false;
                 }

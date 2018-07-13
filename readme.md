@@ -1,6 +1,6 @@
 # Teampass
 
-**NOT TO BE USED IN PRODUCTION**
+**NOT TO BE USED IN PRODUCTION -- ONLY FOR TESTING PURPOSE**
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/c1709641128d42d1ac6ec7fad3cb921c)](https://www.codacy.com/app/nilsteampassnet/TeamPass?utm_source=github.com&utm_medium=referral&utm_content=nilsteampassnet/TeamPass&utm_campaign=badger)
 

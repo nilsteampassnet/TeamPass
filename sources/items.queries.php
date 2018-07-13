@@ -2406,6 +2406,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData($returnValues, 'encode');
                 break;
             }
+            $returnArray = array();
 
             // Load item data
             $dataItem = DB::queryFirstRow(
@@ -2445,7 +2446,7 @@ if (null !== $post_type) {
                 && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
                 || null == TP_ADMIN_FULL_RIGHT
             ) {
-                $arrData['show_details'] = 0;
+                $returnArray['show_details'] = 0;
             // Check if actual USER can see this ITEM
             } elseif ((
                 (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) || $_SESSION['is_admin'] === '1') && ($dataItem['perso'] === '0' || ($dataItem['perso'] === '1' && in_array($dataItem['id_tree'], $_SESSION['personal_folders']) === true)) && $restrictionActive === false)
@@ -2463,7 +2464,6 @@ if (null !== $post_type) {
                 )
             ) {
                 // GET Audit trail
-                $returnArray = array();
                 $history = array();
                 $historyOfPws = array();
                 $rows = DB::query(
@@ -2606,6 +2606,7 @@ if (null !== $post_type) {
                         }
                     }
                 }
+                //print_r($listOptionsForUsers);
                 $returnArray['users_list'] = $listOptionsForUsers;
                 $returnArray['roles_list'] = $listOptionsForRoles;
 
@@ -2660,15 +2661,6 @@ if (null !== $post_type) {
                 $_SESSION['user_settings']['show_step2'] = false;
 
                 echo prepareExchangedData(
-                    /*array(
-                        'history' => htmlspecialchars($history, ENT_QUOTES, 'UTF-8'),
-                        'history_of_pwds' => htmlspecialchars($historyOfPws, ENT_QUOTES, 'UTF-8'),
-                        'favourite' => $favourite,
-                        'files_edit' => $filesEdit,
-                        'files_id' => $files_id,
-                        'has_change_proposal' => DB::count(),
-                        'error' => '',
-                    ),*/
                     $returnArray,
                     'encode'
                 );
