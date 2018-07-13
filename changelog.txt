@@ -1,7 +1,11 @@
 2.1.27
 17/
+ #2334 error adding entry with the same name then another entry in a different folder
+ #2314 SQL error in API near user name
+ #2312 API Issue adding folder on root
  #2290 Protection of OTV page errors
  #2298 support for login through http header
+ #2265 API - Add item - comma separated base64 encoded string
  
 16/
  New - Added folders filter in Manage Roles page
@@ -21,7 +25,7 @@
  New - Templating system based upon Custom Fields
  #2256 User can select his 2FA methods if several selected
  #2253 Google Authenticator not working
- #2248 Item suggestion is not available from Regular User
+   Item suggestion is not available from Regular User
  #2246 Copy folder does not copy rights structure
  #2245 TeamPass 2FA QR Code won't show after providing activiation code
  #2244 html entities get interpreted inside passwords

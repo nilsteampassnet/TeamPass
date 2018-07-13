@@ -561,6 +561,43 @@ if (null !== $post_type) {
                     break;
                 }
 
+                // check if element doesn't already exist
+                DB::queryfirstrow(
+                    "SELECT * FROM ".prefix_table("items")."
+                    WHERE label = %s AND inactif = %i",
+                    $label,
+                    0
+                );
+                $counter = DB::count();
+                $itemExists = 0;
+                $counter = DB::count();
+                if ($counter > 0) {
+                    $itemExists = 1;
+                } else {
+                    $itemExists = 0;
+                }
+
+                // Manage case where item is personal.
+                // In this case, duplication is allowed
+                if (isset($SETTINGS['duplicate_item']) === true
+                    && $SETTINGS['duplicate_item'] === '0'
+                    && $dataReceived['salt_key_set'] === '1'
+                    && isset($dataReceived['salt_key_set']) === true
+                    && $dataReceived['is_pf'] === '1'
+                    && isset($dataReceived['is_pf']) === true
+                ) {
+                    $itemExists = 0;
+                }
+
+                if (isset($SETTINGS['duplicate_item']) === true
+                    && $SETTINGS['duplicate_item'] === '0'
+                    && (int) $itemExists === 1
+                ) {
+                    // Encrypt data to return
+                    echo prepareExchangedData(array("error" => "item_exists"), "encode");
+                    break;
+                }
+
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -570,6 +607,7 @@ if (null !== $post_type) {
                     $dataReceived['id'],
                     "at_creation"
                 );
+
                 // check that actual user can access this item
                 $restrictionActive = true;
                 $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));

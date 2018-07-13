@@ -3,7 +3,7 @@
  *
  * @package       (api)functions.php
  * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.1
+ * @version       2.1.2
  * @copyright     2009-2018 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$api_version = "2.1.1";
+$api_version = "2.1.2";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -395,7 +395,7 @@ function restGet()
                 */
 
                 // load library
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 //Load Tree
                 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                 $tree->register();
@@ -454,7 +454,7 @@ function restGet()
                 */
 
                 // load library
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 //Load Tree
                 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                 $tree->register();
@@ -468,7 +468,7 @@ function restGet()
                 $response = DB::query(
                     "SELECT fonction_id
                     FROM ".prefix_table("users")."
-                    WHERE login = %s'",
+                    WHERE login = %s",
                     $username
                 );
                 if (count($response) === 0) {
@@ -600,7 +600,7 @@ function restGet()
                 */
 
                 // load library
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 //Load Tree
                 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                 $tree->register();
@@ -664,7 +664,7 @@ function restGet()
                 // get parameters
                 if (isset($GLOBALS['request'][2]) === true && isset($GLOBALS['request'][3]) === true) {
                     // load library
-                    require_once '../sources/SplClassLoader.php';
+                    include_once '../sources/SplClassLoader.php';
                     //Load Tree
                     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                     $tree->register();
@@ -733,7 +733,7 @@ function restGet()
                 */
 
                 // load library
-                require_once '../sources/SplClassLoader.php';
+                include_once '../sources/SplClassLoader.php';
                 //Load Tree
                 $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                 $tree->register();
@@ -806,144 +806,151 @@ function restGet()
             }
         } elseif ($GLOBALS['request'][0] == "add") {
             if ($GLOBALS['request'][1] == "item") {
-                // get sent parameters
-                $params = explode(';', urlSafeB64Decode($GLOBALS['request'][2]));
-                if (count($params) != 9) {
-                    restError('ITEMBADDEFINITION');
-                }
-
-                $item_label = $params[0];
-                $item_pwd = $params[1];
-                $item_desc = $params[2];
-                $item_folder_id = $params[3];
-                $item_login = $params[4];
-                $item_email = $params[5];
-                $item_url = $params[6];
-                $item_tags = $params[7];
-                $item_anyonecanmodify = $params[8];
-
-                // do some checks
-                if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
-                    // Check length
-                    if (strlen($item_pwd) > 50) {
-                        restError('PASSWORDTOOLONG');
+                /*
+                * Expected call format: .../api/index.php/update/item/<item_id>/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
+                */
+                if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
+                    // get sent parameters
+                    $params = explode(';', $GLOBALS['request'][3]);
+                    if (count($params) != 9) {
+                        rest_error('ITEMBADDEFINITION');
                     }
 
-                    // Check Folder ID
-                    DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
-                    $counter = DB::count();
-                    if ($counter == 0) {
-                        restError('NOSUCHFOLDER');
-                    }
+                    $item_label = Urlsafe_b64decode($params[0]);
+                    $item_pwd = Urlsafe_b64decode($params[1]);
+                    $item_desc = Urlsafe_b64decode($params[2]);
+                    $item_folder_id = Urlsafe_b64decode($params[3]);
+                    $item_login = Urlsafe_b64decode($params[4]);
+                    $item_email = Urlsafe_b64decode($params[5]);
+                    $item_url = Urlsafe_b64decode($params[6]);
+                    $item_tags = Urlsafe_b64decode($params[7]);
+                    $item_anyonecanmodify = Urlsafe_b64decode($params[8]); 
 
-                    // check if element doesn't already exist
-                    $item_duplicate_allowed = getSettingValue("duplicate_item");
-                    if ($item_duplicate_allowed !== "1") {
-                        DB::query(
-                            "SELECT *
-                            FROM ".prefix_table("items")."
-                            WHERE label = %s AND inactif = %i",
-                            addslashes($item_label),
-                            "0"
-                        );
+                    // do some checks
+                    if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
+                        // Check length
+                        if (strlen($item_pwd) > 50) {
+                            restError('PASSWORDTOOLONG');
+                        }
+
+                        // Check Folder ID
+                        DB::query("SELECT * FROM ".prefix_table("nested_tree")." WHERE id = %i", $item_folder_id);
                         $counter = DB::count();
-                        if ($counter != 0) {
-                            $itemExists = 1;
-                            // prevent the error if the label already exists
-                            // so lets just add the time() as a random factor
-                            $item_label .= " (".time().")";
+                        if ($counter == 0) {
+                            restError('NOSUCHFOLDER');
+                        }
+
+                        // check if element doesn't already exist
+                        $item_duplicate_allowed = getSettingValue("duplicate_item");
+                        if ($item_duplicate_allowed !== "1") {
+                            DB::query(
+                                "SELECT *
+                                FROM ".prefix_table("items")."
+                                WHERE label = %s AND inactif = %i",
+                                addslashes($item_label),
+                                "0"
+                            );
+                            $counter = DB::count();
+                            if ($counter != 0) {
+                                $itemExists = 1;
+                                // prevent the error if the label already exists
+                                // so lets just add the time() as a random factor
+                                $item_label .= " (".time().")";
+                            } else {
+                                $itemExists = 0;
+                            }
                         } else {
                             $itemExists = 0;
                         }
-                    } else {
-                        $itemExists = 0;
-                    }
-                    if ($itemExists === 0) {
-                        $encrypt = cryption(
-                            $item_pwd,
-                            "",
-                            "encrypt"
-                        );
-                        if (empty($encrypt['string'])) {
-                            restError('PASSWORDEMPTY');
-                        }
-
-                        // ADD item
-                        try {
-                            DB::insert(
-                                prefix_table("items"),
-                                array(
-                                    "label" => $item_label,
-                                    "description" => $item_desc,
-                                    'pw' => $encrypt['string'],
-                                    'pw_iv' => '',
-                                    "email" => $item_email,
-                                    "url" => $item_url,
-                                    "id_tree" => intval($item_folder_id),
-                                    "login" => $item_login,
-                                    "inactif" => 0,
-                                    "restricted_to" => "",
-                                    "perso" => 0,
-                                    "anyone_can_modify" => intval($item_anyonecanmodify)
-                                )
+                        if ($itemExists === 0) {
+                            $encrypt = cryption(
+                                $item_pwd,
+                                "",
+                                "encrypt"
                             );
-                            $newID = DB::InsertId();
-
-                            // log
-                            DB::insert(
-                                prefix_table("log_items"),
-                                array(
-                                    "id_item" => $newID,
-                                    "date" => time(),
-                                    "id_user" => API_USER_ID,
-                                    "action" => "at_creation",
-                                    "raison" => $api_info['label']
-                                )
-                            );
-
-                            // Add tags
-                            $tags = explode(' ', $item_tags);
-                            foreach ((array) $tags as $tag) {
-                                if (!empty($tag)) {
-                                    DB::insert(
-                                        prefix_table("tags"),
-                                        array(
-                                            "item_id" => $newID,
-                                            "tag" => strtolower($tag)
-                                        )
-                                    );
-                                }
+                            if (empty($encrypt['string'])) {
+                                restError('PASSWORDEMPTY');
                             }
 
-                            // Update CACHE table
-                            DB::insert(
-                                prefix_table("cache"),
-                                array(
-                                    "id" => $newID,
-                                    "label" => $item_label,
-                                    "description" => $item_desc,
-                                    "tags" => $item_tags,
-                                    "id_tree" => $item_folder_id,
-                                    "perso" => "0",
-                                    "restricted_to" => "",
-                                    "login" => $item_login,
-                                    "folder" => "",
-                                    "author" => API_USER_ID,
-                                    "renewal_period" => "0",
-                                    "timestamp" => time(),
-                                    "url" => "0"
-                                )
-                            );
+                            // ADD item
+                            try {
+                                DB::insert(
+                                    prefix_table("items"),
+                                    array(
+                                        "label" => $item_label,
+                                        "description" => $item_desc,
+                                        'pw' => $encrypt['string'],
+                                        'pw_iv' => '',
+                                        "email" => $item_email,
+                                        "url" => $item_url,
+                                        "id_tree" => intval($item_folder_id),
+                                        "login" => $item_login,
+                                        "inactif" => 0,
+                                        "restricted_to" => "",
+                                        "perso" => 0,
+                                        "anyone_can_modify" => intval($item_anyonecanmodify)
+                                    )
+                                );
+                                $newID = DB::InsertId();
 
-                            echo '{"status":"item added" , "new_item_id" : "'.$newID.'"}';
-                        } catch (PDOException $ex) {
-                            echo '<br />'.$ex->getMessage();
+                                // log
+                                DB::insert(
+                                    prefix_table("log_items"),
+                                    array(
+                                        "id_item" => $newID,
+                                        "date" => time(),
+                                        "id_user" => API_USER_ID,
+                                        "action" => "at_creation",
+                                        "raison" => $api_info['label']
+                                    )
+                                );
+
+                                // Add tags
+                                $tags = explode(' ', $item_tags);
+                                foreach ((array) $tags as $tag) {
+                                    if (!empty($tag)) {
+                                        DB::insert(
+                                            prefix_table("tags"),
+                                            array(
+                                                "item_id" => $newID,
+                                                "tag" => strtolower($tag)
+                                            )
+                                        );
+                                    }
+                                }
+
+                                // Update CACHE table
+                                DB::insert(
+                                    prefix_table("cache"),
+                                    array(
+                                        "id" => $newID,
+                                        "label" => $item_label,
+                                        "description" => $item_desc,
+                                        "tags" => $item_tags,
+                                        "id_tree" => $item_folder_id,
+                                        "perso" => "0",
+                                        "restricted_to" => "",
+                                        "login" => $item_login,
+                                        "folder" => "",
+                                        "author" => API_USER_ID,
+                                        "renewal_period" => "0",
+                                        "timestamp" => time(),
+                                        "url" => "0"
+                                    )
+                                );
+
+                                echo '{"status":"item added" , "new_item_id" : "'.$newID.'"}';
+                            } catch (PDOException $ex) {
+                                echo '<br />'.$ex->getMessage();
+                            }
+                        } else {
+                            restError('ITEMEXISTS');
                         }
                     } else {
-                        restError('ITEMEXISTS');
+                        restError('ITEMMISSINGDATA');
                     }
                 } else {
-                    restError('ITEMMISSINGDATA');
+                    restError('NO_ITEM');
                 }
             } elseif ($GLOBALS['request'][1] == "user") {
             /*
@@ -1107,7 +1114,7 @@ function restGet()
                         if (empty($params[4])) {
                             $params[4] = 0;
                         }
-                        if (empty($params[2])) {
+                        if ($params[2] === '') {
                             restError('NO_DESTINATION_FOLDER');
                         }
                         if ($params[2] < 0) {
@@ -1201,7 +1208,7 @@ function restGet()
                             );
 
                             // Run nested tree update
-                            require_once '../sources/SplClassLoader.php';
+                            include_once '../sources/SplClassLoader.php';
                             $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                             $tree->register();
                             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -1453,7 +1460,7 @@ function restGet()
                             );
 
                             // Run nested tree update
-                            require_once '../sources/SplClassLoader.php';
+                            include_once '../sources/SplClassLoader.php';
                             $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                             $tree->register();
                             $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
@@ -1644,7 +1651,7 @@ function restGet()
                     );
 
                     // load passwordLib library
-                    require_once '../sources/SplClassLoader.php';
+                    include_once '../sources/SplClassLoader.php';
                     $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
                     $pwdlib->register();
                     $pwdlib = new PasswordLib\PasswordLib();
@@ -2501,7 +2508,7 @@ function restGet()
 
                 if (count($array_category) > 0 && count($array_category) < 5) {
                     // load passwordLib library
-                    require_once '../sources/SplClassLoader.php';
+                    include_once '../sources/SplClassLoader.php';
 
                     // prepare tree
                     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
@@ -2694,7 +2701,7 @@ function restGet()
                     }
 
                     // form id_tree to full foldername
-                    require_once '../sources/SplClassLoader.php';
+                    include_once '../sources/SplClassLoader.php';
                     //Load Tree
                     $tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
                     $tree->register();

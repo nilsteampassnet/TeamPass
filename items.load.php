@@ -1190,10 +1190,15 @@ function EditerItem()
                             .removeClass('hidden');
                         LoadingPage();
                     } else if (data.error === "ERR_NOT_ALLOWED_TO_EDIT") {
-                        $("#div_formulaire_saisi").dialog("open");
-                        $("#new_show_error")
+                        $("#edit_show_error")
                             .html('User not allowed to edit this Item!')
-                            .show();
+                            .removeClass('hidden');
+                        LoadingPage();
+                    } else if (data.error === "item_exists") {
+                        $("#div_loading").addClass("hidden");
+                        $("#edit_show_error")
+                            .html('<?php echo addslashes($LANG['error_item_exists']); ?>')
+                            .removeClass('hidden');
                         LoadingPage();
                     } else if (data.error !== "") {
                         $("#div_loading").addClass("hidden");
@@ -1329,6 +1334,13 @@ function EditerItem()
                         //hide loader
                         $("#div_loading").addClass("hidden");
                     }
+                    // Hide elements
+                    $("#div_formulaire_edition_item_info")
+                        .addClass("hidden")
+                        .html("");
+                    $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
+                        .find("button:contains('<?php echo addslashes($LANG['save_button']); ?>')")
+                        .prop("disabled", false);
                 }
            );
 
