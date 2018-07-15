@@ -48,7 +48,7 @@ if (isset($post_type) && ($post_type === 'ga_generate_qr'
     // continue
     mainQuery();
 } elseif (isset($_SESSION['user_id'])
-    && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home') === false
+    && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
 ) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';

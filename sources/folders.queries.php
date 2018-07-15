@@ -31,7 +31,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 // Do checks
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders') === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
@@ -159,7 +159,7 @@ if (null !== $post_newtitle) {
 } elseif (null !== $post_changer_complexite) {
     /* do checks */
     require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-    if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders')) {
+    if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders', $SETTINGS)) {
         $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
         include $SETTINGS['cpassman_dir'].'/error.php';
         exit();
@@ -941,7 +941,7 @@ if (null !== $post_newtitle) {
         case 'fonction':
             /* do checks */
             require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders')) {
+            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders', $SETTINGS)) {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                 include $SETTINGS['cpassman_dir'].'/error.php';
                 exit();
@@ -992,7 +992,7 @@ if (null !== $post_newtitle) {
         case 'modif_droit_autorisation_sans_complexite':
             /* do checks */
             require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders')) {
+            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders', $SETTINGS)) {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                 include $SETTINGS['cpassman_dir'].'/error.php';
                 exit();
@@ -1019,7 +1019,7 @@ if (null !== $post_newtitle) {
         case 'modif_droit_modification_sans_complexite':
             /* do checks */
             require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders')) {
+            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders', $SETTINGS)) {
                 $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
                 include $SETTINGS['cpassman_dir'].'/error.php';
                 exit();

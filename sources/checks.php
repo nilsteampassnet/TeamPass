@@ -10,7 +10,7 @@
  * @package   Checks.php
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
-* @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * @version   GIT: <git_id>
  * @link      http://www.teampass.net
  */
@@ -30,24 +30,6 @@ if (file_exists('../includes/config/tp.config.php')) {
 
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 
-$pagesRights = array(
-    'user' => array(
-        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'profile'
-    ),
-    'manager' => array(
-        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
-        'manage_views', 'manage_users', 'profile'
-    ),
-    'human_resources' => array(
-        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
-        'manage_views', 'manage_users', 'profile'
-    ),
-    'admin' => array(
-        'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
-        'manage_views', 'manage_users', 'manage_settings', 'manage_main',
-        'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special', 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users'
-    )
-);
 
 /*
 Handle CASES
@@ -74,12 +56,11 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 
 /**
  * Returns the page the user is visiting
+ *
  * @return string The page name
  */
-function curPage()
+function curPage($SETTINGS)
 {
-    global $SETTINGS;
-
     // Load libraries
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
@@ -95,17 +76,38 @@ function curPage()
     return $result['page'];
 }
 
+
 /**
  * Checks if user is allowed to open the page
- * @param  integer $userId      User's ID
- * @param  integer $userKey     User's temporary key
- * @param  String $pageVisited  Page visited
- * @return Boolean              False/True
+ *
+ * @param integer $userId      User's ID
+ * @param integer $userKey     User's temporary key
+ * @param string  $pageVisited Page visited
+ * @param array   $SETTINGS    Settings
+ *
+ * @return void
  */
-function checkUser($userId, $userKey, $pageVisited)
+function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 {
-    global $pagesRights, $SETTINGS;
-    global $server, $user, $pass, $database, $port, $encoding;
+    // Definition
+    $pagesRights = array(
+        'user' => array(
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'profile'
+        ),
+        'manager' => array(
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+            'manage_views', 'manage_users', 'profile'
+        ),
+        'human_resources' => array(
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+            'manage_views', 'manage_users', 'profile'
+        ),
+        'admin' => array(
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
+            'manage_views', 'manage_users', 'manage_settings', 'manage_main',
+            'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special', 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users'
+        )
+    );
 
     // Load libraries
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
@@ -115,9 +117,8 @@ function checkUser($userId, $userKey, $pageVisited)
         return false;
     }
 
-    if (is_array($pageVisited) === false) {
-        $pageVisited = array($pageVisited);
-    }
+    // Convert to array
+    $pageVisited = array($pageVisited);
 
     // Securize language
     if (null === $superGlobal->get('user_language', 'SESSION')
@@ -132,12 +133,12 @@ function checkUser($userId, $userKey, $pageVisited)
 
     // Connect to mysql server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 

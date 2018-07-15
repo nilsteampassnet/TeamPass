@@ -31,7 +31,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 // Do checks
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items') === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'items', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
@@ -71,7 +71,6 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$pass = defuse_return_decrypted($pass);
 $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 

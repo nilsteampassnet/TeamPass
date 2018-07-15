@@ -1285,14 +1285,10 @@ function sendEmail(
         $mail->SMTPDebug = 0; //value 1 can be used to debug - 4 for debuging connections
         $mail->Port = $SETTINGS['email_port']; //COULD BE USED
         $mail->CharSet = 'utf-8';
-        if ($SETTINGS['email_security'] === 'tls' || $SETTINGS['email_security'] === 'ssl') {
-            $mail->SMTPSecure = $SETTINGS['email_security'];
-            $SMTPAutoTLS = true;
-        } else {
-            $mail->SMTPSecure = '';
-            $SMTPAutoTLS = false;
-        }
-        $mail->SMTPAutoTLS = $SMTPAutoTLS;
+        $mail->SMTPSecure = $SETTINGS['email_security'] === 'tls'
+        || $SETTINGS['email_security'] === 'ssl' ? $SETTINGS['email_security'] : '';
+        $mail->SMTPAutoTLS = $SETTINGS['email_security'] === 'tls'
+            || $SETTINGS['email_security'] === 'ssl' ? true : false;
         $mail->isSmtp(); // send via SMTP
         $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
         $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
@@ -1302,10 +1298,8 @@ function sendEmail(
         $mail->FromName = $SETTINGS['email_from_name'];
 
         // Prepare for each person
-        foreach (explode(',', $email) as $dest) {
-            if (empty($dest) === false) {
-                $mail->addAddress($dest);
-            }
+        foreach (array_filter(explode(',', $email)) as $dest) {
+            $mail->addAddress($dest);
         }
 
         // Prepare HTML

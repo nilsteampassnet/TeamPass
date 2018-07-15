@@ -40,7 +40,7 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir'])) {
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "options")) {
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "options", $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();

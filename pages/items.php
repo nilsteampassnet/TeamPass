@@ -34,7 +34,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage())) {
+if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -147,7 +147,7 @@ echo '
 <input type="hidden" id="form-item-hidden-last-folder-selected" value="',
     isset($_COOKIE['jstree_select']) &&
     empty($_COOKIE['jstree_select']) === false ? $_COOKIE['jstree_select'] : '', '">';
-
+//$superGlobal->get('user_language', 'SESSION')
 ?>
 
     <!-- Content Header (Page header) -->

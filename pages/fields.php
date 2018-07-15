@@ -33,7 +33,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], "fields") === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], "fields", $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
