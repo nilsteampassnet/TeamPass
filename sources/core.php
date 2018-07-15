@@ -486,12 +486,12 @@ if (isset($SETTINGS['item_extra_fields']) === true
                     array_push(
                         $arrFields,
                         array(
-                            $field['id'],
-                            addslashes($field['title']),
-                            $field['encrypted_data'],
-                            $field['type'],
-                            $field['masked'],
-                            $field['is_mandatory']
+                            'id' => $field['id'],
+                            'title' => addslashes($field['title']),
+                            'encrypted_data' => $field['encrypted_data'],
+                            'type' => $field['type'],
+                            'masked' => $field['masked'],
+                            'is_mandatory' => $field['is_mandatory']
                         )
                     );
                 }
@@ -502,9 +502,9 @@ if (isset($SETTINGS['item_extra_fields']) === true
         array_push(
             $_SESSION['item_fields'],
             array(
-                $record['id'],
-                addslashes($record['title']),
-                $arrFields
+                'id' => $record['id'],
+                'title' => addslashes($record['title']),
+                'fields' => $arrFields
             )
         );
     }

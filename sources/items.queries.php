@@ -2227,7 +2227,7 @@ if (null !== $post_type) {
                 // get fields
                 $fieldsTmp = array();
                 $arrCatList = $template_id = '';
-                if (null !== $post_page && $post_page === 'items') {
+                //if (null !== $post_page && $post_page === 'items') {
                     if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
                         // get list of associated Categories
                         $arrCatList = array();
@@ -2275,11 +2275,11 @@ if (null !== $post_type) {
                                 array_push(
                                     $fieldsTmp,
                                     array(
-                                        'field_id' => $row['field_id'],
+                                        'id' => $row['field_id'],
                                         'value' => $fieldText,
                                         'parent_id' => $row['parent_id'],
-                                        'field_type' => $row['field_type'],
-                                        'field_masked' => $row['field_masked'],
+                                        'type' => $row['field_type'],
+                                        'masked' => $row['field_masked'],
                                     )
                                 );
                             }
@@ -2298,7 +2298,7 @@ if (null !== $post_type) {
                             $template_id = $rows_tmp['category_id'];
                         }
                     }
-                }
+                //}
                 $arrData['fields'] = $fieldsTmp;
                 $arrData['categories'] = $arrCatList;
                 $arrData['template_id'] = $template_id;
@@ -3106,23 +3106,82 @@ if (null !== $post_type) {
                 $uniqueLoadData['folderComplexity'] = $folderComplexity;
 
                 // Has this folder some categories to be displayed?
-                $displayCategories = '';
+                $categoriesStructure = array();
                 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
-                    $catRow = DB::query(
-                        'SELECT id_category FROM '.prefixTable('categories_folders').' WHERE id_folder = %i',
+                    $folderRow = DB::query(
+                        'SELECT id_category
+                        FROM '.prefixTable('categories_folders').'
+                        WHERE id_folder = %i',
                         $post_id
                     );
-                    if (count($catRow) > 0) {
-                        foreach ($catRow as $cat) {
-                            if (empty($displayCategories)) {
-                                $displayCategories = $cat['id_category'];
-                            } else {
-                                $displayCategories .= ';'.$cat['id_category'];
-                            }
-                        }
+                    foreach ($folderRow as $category) {
+                        array_push(
+                            $categoriesStructure,
+                            $category['id_category']
+                        );
                     }
                 }
-                $uniqueLoadData['displayCategories'] = $displayCategories;
+                $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
+
+                /*$categoriesStructure = array();
+                if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                    $folderRow = DB::query(
+                        'SELECT f.id_category, c.title AS title
+                        FROM '.prefixTable('categories_folders').' AS f
+                        INNER JOIN '.prefixTable('categories').' AS c ON (c.id = f.id_category)
+                        WHERE f.id_folder = %i',
+                        $post_id
+                    );
+                    foreach ($folderRow as $category) {
+                        $arrFields = array();
+                        // Get each category definition with fields
+                        $categoryRow = DB::query(
+                            "SELECT *
+                            FROM ".prefixTable("categories")."
+                            WHERE parent_id=%i
+                            ORDER BY `order` ASC",
+                            $category['id_category']
+                        );
+                        
+                        if (DB::count() > 0) {
+                            foreach ($categoryRow as $field) {
+                                // Is this Field visibile by user?
+                                if ($field['role_visibility'] === 'all'
+                                    || count(
+                                        array_intersect(
+                                            explode(';', $_SESSION['fonction_id']),
+                                            explode(',', $field['role_visibility'])
+                                        )
+                                    ) > 0
+                                ) {
+                                    array_push(
+                                        $arrFields,
+                                        array(
+                                            $field['id'],
+                                            $field['title'],
+                                            $field['encrypted_data'],
+                                            $field['type'],
+                                            $field['masked'],
+                                            $field['is_mandatory']
+                                        )
+                                    );
+                                }
+                            }
+                        }
+
+                        // store the categories
+                        array_push(
+                            $categoriesStructure,
+                            array(
+                                $category['id_category'],
+                                $category['title'],
+                                $arrFields
+                            )
+                        );
+                    }
+                }
+                $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
+                */
 
                 // is this folder a personal one
                 $folder_is_personal = in_array($post_id, $_SESSION['personal_folders']);
@@ -3150,7 +3209,7 @@ if (null !== $post_type) {
                 $counter = $uniqueLoadData['counter'];
                 $findPfGroup = $uniqueLoadData['findPfGroup'];
                 $counter_full = $uniqueLoadData['counter_full'];
-                $displayCategories = $uniqueLoadData['displayCategories'];
+                $categoriesStructure = $uniqueLoadData['categoriesStructure'];
                 $folderComplexity = $uniqueLoadData['folderComplexity'];
                 //$arboHtml = $uniqueLoadData['arboHtml'];
                 $folder_is_personal = $uniqueLoadData['folder_is_personal'];
@@ -3517,7 +3576,7 @@ if (null !== $post_type) {
                 'items_count' => $counter,
                 'counter_full' => $counter_full,
                 'folder_complexity' => $folderComplexity,
-                'displayCategories' => $displayCategories,
+                'categoriesStructure' => $categoriesStructure,
                 'access_level' => $accessLevel,
                 'IsPersonalFolder' => $folderIsPf === true ? 1 : 0,
                 'uniqueLoadData' => json_encode($uniqueLoadData),

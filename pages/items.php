@@ -586,7 +586,28 @@ echo '
                         <!-- /.card-tools -->
                     </div>
                     <!-- /.card-header -->
-                    <div class="card-body clear-me-html" id="card-item-fields">
+                    <div class="card-body" id="card-item-fields">
+                    <?php
+                    foreach ($_SESSION['item_fields'] as $elem) {
+                        echo '
+                        <div class="callout callout-info card-item-category hidden" id="card-item-category-'.$elem['id'].'">
+                            <h5>'.$elem['title'].'</h5>
+                            <p>
+                                <ul class="list-group list-group-unbordered mb-3">';
+                        foreach ($elem['fields'] as $field) {
+                            echo '
+                                    <li class="list-group-item card-item-field hidden" id="card-item-field-'.$field['id'].'">
+                                        <b>'.$field['title'].'</b>
+                                        <span class="card-item-field-value float-right ml-1"></span>
+                                    </li>';
+                        }
+                        echo '
+                                </ul>
+                            </p>
+                        </div>';
+                    }
+                    ?>
+                    <div id="card-item-fields-none" class="hidden"><?php echo langHdl('no_custom_fields'); ?></div>
                     </div>
                     <!-- /.card-body -->
                 </div>

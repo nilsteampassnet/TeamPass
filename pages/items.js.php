@@ -348,6 +348,8 @@ $('#item-button-password-showOptions').click(function() {
 });
 
 
+
+
 /**
  * SHARE - validate the email
  */
@@ -1098,6 +1100,31 @@ var showPwdContinuous = function(){
         $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
     }
 };
+
+// Fields - show masked field
+var selectedElement;
+$('.item-details-card').on('mousedown', '.replace-asterisk', function(event) {
+    mouseStillDown = true;
+    selectedElement = $(this);
+    showContinuousMasked();
+})
+.on('mouseup', '.replace-asterisk', function(event) {
+     mouseStillDown = false;
+})
+.on('mouseleave', '.replace-asterisk', function(event) {
+     mouseStillDown = false;
+});
+var showContinuousMasked = function() {
+    if(mouseStillDown){
+        $(selectedElement)
+            .text($('#hidden-card-item-field-value-' + selectedElement.data('field-id')).val());
+        
+        setTimeout('showContinuousMasked()', 50);
+    } else {
+        $(selectedElement).html('<?php echo $var['hidden_asterisk']; ?>');
+    }
+};
+
 
 /**
  * Launch the items search
@@ -1974,8 +2001,11 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     }
 
                     // store the categories to be displayed
-                    if (data.displayCategories !== undefined) {
-                        $('#form-item-hidden-hasCustomCategories').val(data.displayCategories);
+                    if (data.categoriesStructure !== undefined) {
+                        $('#form-item-hidden-hasCustomCategories').val(data.categoriesStructure);
+
+                        // Show categories
+                        console.log(data.categoriesStructure)
                     }
 
                     // store type of access on folder
@@ -2088,8 +2118,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $('#query_next_start').val(data.list_to_be_continued);
 
                         // display Categories if needed
-                        if ($('.tr_fields') !== undefined && data.displayCategories !== undefined && data.displayCategories !== '') {
-                            var liste = data.displayCategories.split(';');
+                        if ($('.tr_fields') !== undefined && data.categoriesStructure !== undefined && data.categoriesStructure !== '') {
+                            var liste = data.categoriesStructure.split(';');
                             for (var i=0; i<liste.length; i++) {
                                 $('.itemCatName_'+liste[i]+', #newItemCatName_'+liste[i]+', #editItemCatName_'+liste[i]).removeClass('hidden');
                             }
@@ -2121,8 +2151,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $('#query_next_start').val(data.list_to_be_continued);
 
                         // display Categories if needed
-                        if ($('.tr_fields') != undefined && data.displayCategories !== undefined && data.displayCategories != '') {
-                            var liste = data.displayCategories.split(';');
+                        if ($('.tr_fields') != undefined && data.categoriesStructure !== undefined && data.categoriesStructure != '') {
+                            var liste = data.categoriesStructure.split(';');
                             for (var i=0; i<liste.length; i++) {
                                 $('.itemCatName_'+liste[i]+', #newItemCatName_'+liste[i]+', #editItemCatName_'+liste[i]).removeClass('hidden');
                             }
@@ -2646,9 +2676,34 @@ function Details(itemDefinition, actionType)
 
 
                     if (data.categories.length === 0) {
-                        $('#card-item-fields').html("<?php echo langHdl('no_custom_fields'); ?>");
+                        $('.card-item-category, .card-item-field').addClass('hidden');
+                        $('#card-item-fields-none').removeClass('hidden');
                     } else {
-                        $('#card-item-fields').html('');
+                        // Show expected categories
+                        $('#card-item-fields-none').addClass('hidden');
+
+                        // Now show expected fields and values
+                        $(data.fields).each(function(index, field) {
+                            // Show cateogry
+                            $('#card-item-category-'+field.parent_id).removeClass('hidden');
+                            
+                            // Show field
+                            if (field.masked === '1') {
+                            console.log(field.value);
+                                $('#card-item-field-'+field.id)
+                                    .removeClass('hidden')
+                                    .children(".card-item-field-value")
+                                    .html(
+                                        '<span data-field-id="'+field.id+'" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
+                                        '<input type="text" class="hidden" id="hidden-card-item-field-value-'+field.id+'" value="'+field.value+'">'
+                                    );
+                            } else {
+                                $('#card-item-field-'+field.id)
+                                    .removeClass('hidden')
+                                    .children(".card-item-field-value").text(field.value);
+                            }
+                            
+                        });
                     }
                     
                     // Waiting
@@ -2923,18 +2978,6 @@ function Details(itemDefinition, actionType)
 
                         //Prepare clipboard copies
                         if (data.pw != '') {
-                            /*var clipboard_copy= new Clipboard('.btn-copy-clipboard');
-                            clipboard_copy.on('success', function(e) {
-                                console.log('coucou')
-                                itemLog(
-                                    'at_password_copied',
-                                    e.trigger.dataset.clipboardId,
-                                    $('#item_label_'+e.trigger.dataset.clipboardId).text()
-                                );
-
-                                e.clearSelection();
-                            });*/
-
                             $('#button_quick_pw_copy').removeClass('hidden');
                         } else {
                             $('#button_quick_pw_copy').addClass('hidden');
