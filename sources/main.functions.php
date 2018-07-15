@@ -1359,9 +1359,9 @@ function sendEmail(
 }
 
 /**
- * generateKey().
+ * Generate a Key.
  *
- * @return
+ * @return string
  */
 function generateKey()
 {
@@ -1371,7 +1371,7 @@ function generateKey()
 /**
  * dateToStamp().
  *
- * @return
+ * @return string
  */
 function dateToStamp($date)
 {
@@ -1385,6 +1385,13 @@ function dateToStamp($date)
     }
 }
 
+/**
+ * Is this a date
+ *
+ * @param string $date Date
+ *
+ * @return boolean
+ */
 function isDate($date)
 {
     return strtotime($date) !== false;
@@ -1975,24 +1982,28 @@ function checkCFconsistency($source_id, $target_id)
     return true;
 }
 
-/*
-*
-*/
-function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
-{
-    global $server, $user, $pass, $database, $port, $encoding;
-    global $SETTINGS;
-
+/**
+ * Shall we crypt/decrypt
+ *
+ * @param string $filename_to_rework File name
+ * @param string $filename_status    Its status
+ * @param array  $SETTINGS           Settings
+ *
+ * @return void
+ */
+function encryptOrDecryptFile(
+    $filename_to_rework,
+    $filename_status,
+    $SETTINGS
+) {
     // Include librairies & connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defuse_return_decrypted(DB_PASSWD);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //DB::$errorHandler = true;
-
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
@@ -2004,32 +2015,33 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
     if (empty($fileInfo['id']) === false) {
         // Load PhpEncryption library
         $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
-        require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
+        include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
         // Get KEY
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
 
         if (isset($SETTINGS['enable_attachment_encryption'])
-            && $SETTINGS['enable_attachment_encryption'] === '1' &&
-            isset($filename_status)
-            && ($filename_status === 'clear'
-                || $filename_status === '0')
+            && $SETTINGS['enable_attachment_encryption'] === '1'
+            && isset($filename_status) === true
+            && ($filename_status === 'clear' || $filename_status === '0')
         ) {
             // File needs to be encrypted
-            if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework)) {
+            if (file_exists($SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework) === true) {
                 // Make a copy of file
-                if (!copy(
+                if (copy(
                     $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
                     $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy'
-                )) {
+                )
+                    === false
+                ) {
                     exit;
                 } else {
                     // Do a bck
@@ -2139,19 +2151,24 @@ function encrypt_or_decrypt_file($filename_to_rework, $filename_status)
  * @param string $type        can be either encrypt or decrypt
  * @param string $source_file path to source file
  * @param string $target_file path to target file
+ * @param array  $SETTINGS    Settings
+ * @param string $password    A password
  *
  * @return string|boolean
  */
-function prepareFileWithDefuse($type, $source_file, $target_file, $password = null)
-{
-    global $SETTINGS;
-
+function prepareFileWithDefuse(
+    $type,
+    $source_file,
+    $target_file,
+    $SETTINGS,
+    $password = null
+) {
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     // Protect against bad inputs
-    if (is_array($source_file) || is_array($target_file)) {
+    if (is_array($source_file) === true || is_array($target_file) === true) {
         return 'error_cannot_be_array';
     }
 
@@ -2161,15 +2178,15 @@ function prepareFileWithDefuse($type, $source_file, $target_file, $password = nu
 
     // load PhpEncryption library
     $path_to_encryption = '/includes/libraries/Encryption/Encryption/';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
-    require_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Crypto.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Encoding.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'DerivedKeys.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Key.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyOrPassword.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'File.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'RuntimeTests.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'KeyProtectedByPassword.php';
+    include_once $SETTINGS['cpassman_dir'].$path_to_encryption.'Core.php';
 
     if (empty($password) === true || is_null($password) === true) {
         /*
@@ -2277,7 +2294,7 @@ function fileDelete($file)
     global $SETTINGS;
 
     // Load AntiXSS
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
     $antiXss = new protect\AntiXSS\AntiXSS();
 
     $file = $antiXss->xss_clean($file);

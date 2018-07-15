@@ -85,7 +85,7 @@ function curPage($SETTINGS)
  * @param string  $pageVisited Page visited
  * @param array   $SETTINGS    Settings
  *
- * @return void
+ * @return boolean
  */
 function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 {
@@ -176,8 +176,11 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 
 /**
  * Permits to check if at least one input is in array
- * @param array $pages  Input
- * @param array $table  Checked against this array
+ *
+ * @param array $pages Input
+ * @param array $table Checked against this array
+ *
+ * @return void
  */
 function IsInArray($pages, $table)
 {

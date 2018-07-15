@@ -4023,7 +4023,11 @@ if (null !== $post_type) {
             $file_suffix = "";
 
             // should we encrypt/decrypt the file
-            encrypt_or_decrypt_file($file_info['file'], $file_info['status']);
+            encryptOrDecryptFile(
+                $file_info['file'],
+                $file_info['status'],
+                $SETTINGS
+            );
 
             // should we decrypt the attachment?
             if (isset($file_info['status']) && $file_info['status'] === "encrypted") {
@@ -4036,7 +4040,8 @@ if (null !== $post_type) {
                     prepareFileWithDefuse(
                         'decrypt',
                         $SETTINGS['path_to_upload_folder'].'/'.$image_code,
-                        $SETTINGS['path_to_upload_folder'].'/'.$image_code."_delete.".$extension
+                        $SETTINGS['path_to_upload_folder'].'/'.$image_code."_delete.".$extension,
+                        $SETTINGS
                     );
 
                     // prepare variable

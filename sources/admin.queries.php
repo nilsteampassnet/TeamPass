@@ -371,6 +371,7 @@ switch ($post_type) {
                     'encrypt',
                     $SETTINGS['path_to_files_folder']."/".$filename,
                     $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
+                    $SETTINGS
                     $post_option
                 );
 
@@ -425,6 +426,7 @@ switch ($post_type) {
                 'decrypt',
                 $SETTINGS['path_to_files_folder']."/".$file,
                 $SETTINGS['path_to_files_folder']."/defuse_temp_".$file,
+                $SETTINGS
                 $key
             );
 
@@ -1018,7 +1020,8 @@ switch ($post_type) {
                             prepareFileWithDefuse(
                                 'decrypt',
                                 $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
-                                $SETTINGS['path_to_upload_folder'].'/'.$record['file']."_encrypted"
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file']."_encrypted",
+                                $SETTINGS
                             );
 
                             // Do cleanup of files
@@ -1028,7 +1031,8 @@ switch ($post_type) {
                             prepareFileWithDefuse(
                                 'encryp',
                                 $SETTINGS['path_to_upload_folder'].'/'.$record['file']."_encrypted",
-                                $SETTINGS['path_to_upload_folder'].'/'.$record['file']
+                                $SETTINGS['path_to_upload_folder'].'/'.$record['file'],
+                                $SETTINGS
                             );
 
                             // Do cleanup of files
@@ -1344,14 +1348,16 @@ switch ($post_type) {
                         prepareFileWithDefuse(
                             'decrypt',
                             $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
-                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file']
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file'],
+                            $SETTINGS
                         );
                     // Case where we want to encrypt
                     } elseif ($post_option === "encrypt") {
                         prepareFileWithDefuse(
                             'encrypt',
                             $SETTINGS['path_to_upload_folder'].'/'.$file_info['file'],
-                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file']
+                            $SETTINGS['path_to_upload_folder'].'/defuse_temp_'.$file_info['file'],
+                            $SETTINGS
                         );
                     }
                     // Do file cleanup
