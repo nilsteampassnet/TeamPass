@@ -120,7 +120,7 @@ function updateSetting(field, value = '')
             catch (e) {
                 // error
                 showAlertify(
-                    '<?php echo langHdl('server_answer_error').'<br />'.langHdl('server_returned_data').':<br />';?>' + data.error,
+                    '<?php echo langHdl('server_answer_error').'<br />'.langHdl('server_returned_data').':<br />'; ?>' + data.error,
                     0,
                     'top-right',
                     'error'
@@ -129,7 +129,7 @@ function updateSetting(field, value = '')
             }
             if (data.error == "") {
                 showAlertify(
-                    '<?php echo langHdl('saved');?>',
+                    '<?php echo langHdl('saved'); ?>',
                     2,
                     'top-bottom',
                     'success'

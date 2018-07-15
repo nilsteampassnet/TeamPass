@@ -29,12 +29,12 @@ echo '
 <body class="hold-transition login-page">
 <div class="login-box">
   <div class="login-logo">',
-  (isset($SETTINGS['custom_logo']) === true
+    (isset($SETTINGS['custom_logo']) === true
   && empty($SETTINGS['custom_logo']) === false) ?
   '
     <img src="'.(string) $SETTINGS['custom_logo'].'" alt="" style="margin-bottom:40px;" />' :
   '',
-  '
+    '
     <a href="../../index2.html"><b>'.TP_TOOL_NAME.'</b></a>
   </div>
   <!-- /.login-logo -->
@@ -245,19 +245,19 @@ $(function() {
 
     // Click on log in button
     $('#but_identify_user').click(function() {
-        launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : '';?>');
+        launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
     });
 
     // Click on forgot password button
     $('#link_forgot_user_pwd').click(function() {
         alertify.prompt(
-            '<?php echo langHdl('forgot_my_pw');?>',
-            '<?php echo langHdl('forgot_my_pw_text');?>',
-            '<?php echo langHdl('email');?>'
+            '<?php echo langHdl('forgot_my_pw'); ?>',
+            '<?php echo langHdl('forgot_my_pw_text'); ?>',
+            '<?php echo langHdl('email'); ?>'
             , function(evt, value) {
                 alertify
                     .message(
-                        '<?php echo '<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;'.langHdl('please_wait');?>',
+                        '<?php echo '<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;'.langHdl('please_wait'); ?>',
                         0
                     )
                     .dismissOthers();
@@ -494,7 +494,7 @@ function identifyUser(redirect, psk, data, randomstring)
                     "sources/identify.php",
                     {
                         type : "identify_user",
-                        data : prepareExchangedData(data, 'encode', '<?php echo $_SESSION["key"];?>')
+                        data : prepareExchangedData(data, 'encode', '<?php echo $_SESSION["key"]; ?>')
                     },
                     function(data) {
                         if (data[0].value === randomstring) {
@@ -508,39 +508,39 @@ function identifyUser(redirect, psk, data, randomstring)
                                 window.location.href = "index.php?page=items";
                             }
                         } else if (data[0].value === "user_is_locked") {
-                            showAlertify('<?php echo langHdl('account_is_locked');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('account_is_locked'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "bad_psk") {
-                            showAlertify('<?php echo langHdl('bad_psk');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('bad_psk'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "bad_psk_confirmation") {
-                            showAlertify('<?php echo langHdl('bad_psk_confirmation');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('bad_psk_confirmation'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "psk_required") {
                             $("#connect_psk_confirm").show();
-                            showAlertify('<?php echo langHdl('psk_required');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('psk_required'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "user_not_exists") {
-                            showAlertify('<?php echo langHdl('error_bad_credentials');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right', 'warning');
                         } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                            showAlertify('<?php echo langHdl('login_attempts_on')."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1);?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('login_attempts_on')."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "error") {
                             $("#mysql_error_warning").html(data[0].text).show();
                             $("#div_mysql_error").show().dialog("open");
-                            showAlertify('<?php echo langHdl('account_is_locked');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('account_is_locked'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "false_onetimepw") {
-                            showAlertify('<?php echo langHdl('bad_onetime_password');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('bad_onetime_password'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].pwd_attempts >= 3 || data[0].error === "bruteforce_wait") {
                             // now user needs to wait 10 secs before new passwd
-                            showAlertify('<?php echo langHdl('error_bad_credentials_more_than_3_times');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('error_bad_credentials_more_than_3_times'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].error === "bad_credentials") {
-                            showAlertify('<?php echo langHdl('error_bad_credentials');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].error === "ga_code_wrong") {
-                            showAlertify('<?php echo langHdl('ga_bad_code');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('ga_bad_code'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "agses_error") {
                             showAlertify(data[0].error, 5, 'top-right', 'warning');
                         } else if (data[0].error === "ga_temporary_code_wrong") {
-                            showAlertify('<?php echo langHdl('ga_bad_code');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('ga_bad_code'); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].error === "ga_temporary_code_correct") {
                             $("#ga_code").val("").focus();
                             showAlertify(
-                                data[0].value + '<br /><?php echo langHdl('ga_flash_qr_and_login');?>',
+                                data[0].value + '<br /><?php echo langHdl('ga_flash_qr_and_login'); ?>',
                                 5,
                                 'top-right',
                                 'warning'
@@ -551,7 +551,7 @@ function identifyUser(redirect, psk, data, randomstring)
                             $("#yubico_credentials_div").removeClass("hidden");
                             $("#yubico_user_id").focus();
                         } else if (data[0].value === "bad_user_yubico_credentials") {
-                            showAlertify('<?php echo langHdl('account_is_loyubico_bad_codecked');?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('account_is_loyubico_bad_codecked'); ?>', 5, 'top-right', 'warning');
                             if ($("#yubico_credentials_div").hasClass("hidden")) {
                                 $("#show_yubico_credentials").removeClass("hidden");
                                 $("#yubico_link").click(function() {
@@ -560,7 +560,7 @@ function identifyUser(redirect, psk, data, randomstring)
                                 });
                             }
                         } else {
-                            showAlertify('<?php echo langHdl('error_bad_credentials');?>', 5, 'top-right');
+                            showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right');
                         }
 
                         // Clear Yubico
@@ -612,23 +612,23 @@ function getGASynchronization()
             "sources/main.queries.php",
             {
                 type : "ga_generate_qr",
-                data : prepareExchangedData(data, "encode", "<?php echo $_SESSION["key"];?>"),
+                data : prepareExchangedData(data, "encode", "<?php echo $_SESSION["key"]; ?>"),
                 send_email : "1"
             },
             function(data) {
                 if (data[0].error === "0") {
                     $("#div_ga_url").show();
                 } else if (data[0].error === "not_allowed") {
-                    $("#connection_error").html("<?php echo langHdl('2FA_new_code_by_user_not_allowed');?>").show();
+                    $("#connection_error").html("<?php echo langHdl('2FA_new_code_by_user_not_allowed'); ?>").show();
                     $("#div_ga_url").hide();
                 } else if (data[0].error === "no_user") {
-                    $("#connection_error").html("<?php echo langHdl('error_bad_credentials');?>").show();
+                    $("#connection_error").html("<?php echo langHdl('error_bad_credentials'); ?>").show();
                     $("#div_ga_url").hide();
                 } else if (data[0].error === "no_email") {
-                    $("#connection_error").html("<?php echo langHdl('error_no_email');?>").show();
+                    $("#connection_error").html("<?php echo langHdl('error_no_email'); ?>").show();
                     $("#div_ga_url").hide();
                 } else {
-                    $("#connection_error").html("<?php echo langHdl('index_bas_pw');?>").show();
+                    $("#connection_error").html("<?php echo langHdl('index_bas_pw'); ?>").show();
                     $("#div_ga_url").hide();
                 }
                 $("#ajax_loader_connexion").hide();
@@ -636,14 +636,14 @@ function getGASynchronization()
             "json"
         );
     } else {
-        $("#connection_error").html("<?php echo langHdl('ga_enter_credentials');?>").show();
+        $("#connection_error").html("<?php echo langHdl('ga_enter_credentials'); ?>").show();
     }
 }
 
 function send_user_new_temporary_ga_code() {
     // Check login and password
     if ($("#login").val() === "" || $("#pw").val() === "") {
-        $("#connection_error").html("<?php echo langHdl('ga_enter_credentials');?>").show();
+        $("#connection_error").html("<?php echo langHdl('ga_enter_credentials'); ?>").show();
         return false;
     }
     $("#div_loading").show();
@@ -656,20 +656,20 @@ function send_user_new_temporary_ga_code() {
         "sources/main.queries.php",
         {
             type : "ga_generate_qr",
-            data : prepareExchangedData(data, "encode", "<?php echo $_SESSION["key"];?>"),
+            data : prepareExchangedData(data, "encode", "<?php echo $_SESSION["key"]; ?>"),
             send_email : "1"
         },
         function(data) {
             if (data[0].error === "0") {
                 $("#div_dialog_message").html(data[0].msg).dialog("open");
             } else if (data[0].error === "no_user") {
-                $("#connection_error").html("<?php echo langHdl('error_bad_credentials');?>")
+                $("#connection_error").html("<?php echo langHdl('error_bad_credentials'); ?>")
                     .show().delay(3000).fadeOut(500);
             } else if (data[0].error === "not_allowed") {
-                $("#connection_error").html("<?php echo langHdl('setting_disabled_by_admin');?>")
+                $("#connection_error").html("<?php echo langHdl('setting_disabled_by_admin'); ?>")
                     .show().delay(3000).fadeOut(500);
             } else if (data[0].error === "no_email") {
-                $("#connection_error").html("<?php echo langHdl('error_no_email');?>").show();
+                $("#connection_error").html("<?php echo langHdl('error_no_email'); ?>").show();
                 $("#div_ga_url").hide();
             } else {
 

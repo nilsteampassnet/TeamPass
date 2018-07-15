@@ -498,7 +498,7 @@ if (($session_validite_pw === null
                         // ITEMS & SEARCH
                         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="items" class="nav-link', $pageSel === 'items' ? ' active' : '' ,'"">
+                        <a href="#" data-name="items" class="nav-link', $pageSel === 'items' ? ' active' : '', '"">
                         <i class="nav-icon fa fa-key"></i>
                         <p>
                             '.langHdl('pw').'
@@ -506,7 +506,7 @@ if (($session_validite_pw === null
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
+                        <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '', '"">
                         <i class="nav-icon fa fa-binoculars"></i>
                         <p>
                             '.langHdl('find').'
@@ -524,7 +524,7 @@ if (($session_validite_pw === null
                     ) {
                         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
+                        <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '', '"">
                         <i class="nav-icon fa fa-star"></i>
                         <p>
                             '.langHdl('my_favourites').'
@@ -538,7 +538,7 @@ if (($session_validite_pw === null
                     ) {
                         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '' ,'"">
+                        <a href="#" data-name="kb" class="nav-link', $pageSel === 'kb' ? ' active' : '', '"">
                         <i class="nav-icon fa fa-map-signs"></i>
                         <p>
                             '.langHdl('kb_menu').'
@@ -553,7 +553,7 @@ if (($session_validite_pw === null
                     ) {
                         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '' ,'"">
+                        <a href="#" data-name="suggestion" class="nav-link', $pageSel === 'suggestion' ? ' active' : '', '"">
                         <i class="nav-icon fa fa-lightbulb-o"></i>
                         <p>
                             '.langHdl('suggestion_menu').'
@@ -566,7 +566,7 @@ if (($session_validite_pw === null
                     if ($session_user_admin === '1') {
                         echo '
                         <li class="nav-item">
-                            <a href="#" data-name="admin" class="nav-link', $pageSel === 'admin' ? ' active' : '' ,'">
+                            <a href="#" data-name="admin" class="nav-link', $pageSel === 'admin' ? ' active' : '', '">
                             <i class="nav-icon fa fa-info"></i>
                             <p>
                                 '.langHdl('admin_main').'
@@ -583,13 +583,13 @@ if (($session_validite_pw === null
                             </a>
                             <ul class="nav-item nav-treeview">
                                 <li class="nav-item">
-                                    <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
+                                    <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '', '">
                                         <i class="fa fa-check-square-o nav-icon"></i>
                                         <p>'.langHdl('options').'</p>
                                     </a>
                                 </li>
                                 <li class="nav-item">
-                                    <a href="#" data-name="statistics" class="nav-link', $pageSel === 'statistics' ? ' active' : '' ,'">
+                                    <a href="#" data-name="statistics" class="nav-link', $pageSel === 'statistics' ? ' active' : '', '">
                                         <i class="fa fa-area-chart nav-icon"></i>
                                         <p>'.langHdl('statistics').'</p>
                                     </a>
@@ -603,7 +603,7 @@ if (($session_validite_pw === null
                         ) {
                             echo '
                         <li class="nav-item">
-                            <a href="#" class="nav-link', $pageSel === 'folders' ? ' active' : '' ,'"">
+                            <a href="#" class="nav-link', $pageSel === 'folders' ? ' active' : '', '"">
                             <i class="nav-icon fa fa-folder-open"></i>
                             <p>
                                 '.langHdl('folders').'
@@ -611,7 +611,7 @@ if (($session_validite_pw === null
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link', $pageSel === 'functions' ? ' active' : '' ,'"">
+                            <a href="#" class="nav-link', $pageSel === 'functions' ? ' active' : '', '"">
                             <i class="nav-icon fa fa-graduation-cap"></i>
                             <p>
                                 '.langHdl('roles').'
@@ -619,7 +619,7 @@ if (($session_validite_pw === null
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link', $pageSel === 'users' ? ' active' : '' ,'"">
+                            <a href="#" class="nav-link', $pageSel === 'users' ? ' active' : '', '"">
                             <i class="nav-icon fa fa-users"></i>
                             <p>
                                 '.langHdl('users').'
@@ -627,7 +627,7 @@ if (($session_validite_pw === null
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a href="#" class="nav-link', $pageSel === 'views' ? ' active' : '' ,'"">
+                            <a href="#" class="nav-link', $pageSel === 'views' ? ' active' : '', '"">
                             <i class="nav-icon fa fa-cubes"></i>
                             <p>
                                 '.langHdl('admin_views').'
@@ -705,15 +705,15 @@ if (($session_validite_pw === null
     <footer class="main-footer">
         <!-- To the right -->
         <div class="float-right d-none d-sm-inline">
-            <?php echo langHdl('version_alone');?>&nbsp;<?php echo TP_VERSION_FULL;?>&nbsp;
-            <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="infotip" title="<?php echo langHdl('documentation_canal');?> ReadTheDocs"><i class="fa fa-book"></i></a>
+            <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION_FULL; ?>&nbsp;
+            <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"><i class="fa fa-book"></i></a>
             &nbsp;
-            <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="infotip" title="<?php echo langHdl('admin_help');?>"><i class="fa fa-reddit-alien"></i></a>
+            <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="infotip" title="<?php echo langHdl('admin_help'); ?>"><i class="fa fa-reddit-alien"></i></a>
             &nbsp;
-            <a href="#" class="infotip" title="<?php echo langHdl('bugs_page');?>" onclick="generateBugReport()"><i class="fa fa-bug"></i></a>
+            <a href="#" class="infotip" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"><i class="fa fa-bug"></i></a>
         </div>
         <!-- Default to the left -->
-        <strong>Copyright &copy; <?php echo TP_COPYRIGHT;?> <a href="https://teampass.net"><?php echo TP_TOOL_NAME;?></a>.</strong> All rights reserved.
+        <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="https://teampass.net"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
     </footer>
 </div>
 <!-- ./wrapper -->

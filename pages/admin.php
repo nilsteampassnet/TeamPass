@@ -55,12 +55,12 @@ if (isset($SETTINGS['send_statistics_items'])) {
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1 class="m-0 text-dark"><?php echo langHdl('admin');?></h1>
+                    <h1 class="m-0 text-dark"><?php echo langHdl('admin'); ?></h1>
                 </div><!-- /.col -->
                 <div class="col-sm-6">
                     <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="index.php?page=admin"><?php echo langHdl('admin');?></a></li>
-                        <li class="breadcrumb-item active"><?php echo langHdl('admin_main');?></li>
+                        <li class="breadcrumb-item"><a href="index.php?page=admin"><?php echo langHdl('admin'); ?></a></li>
+                        <li class="breadcrumb-item active"><?php echo langHdl('admin_main'); ?></li>
                     </ol>
                 </div><!-- /.col -->
             </div><!-- /.row -->
@@ -78,7 +78,7 @@ if (isset($SETTINGS['send_statistics_items'])) {
                         <div class="card-header">
                             <h3 class="card-title">
                                 <i class="fa fa-bullhorn"></i>
-                                <?php echo langHdl('communication_means');?>
+                                <?php echo langHdl('communication_means'); ?>
                             </h3>
                         </div>
                         <!-- /.card-header -->
@@ -86,32 +86,32 @@ if (isset($SETTINGS['send_statistics_items'])) {
                             <div class="callout callout-info">
                                 <h5><i class="fa fa-globe fa-lg"></i>&nbsp;</h5>
 
-                                <p><a target="_blank" href="#" class="link"><?php echo langHdl('website_canal');?></a></p>
+                                <p><a target="_blank" href="#" class="link"><?php echo langHdl('website_canal'); ?></a></p>
                             </div>
                             <div class="callout callout-info">
-                                <h5><i class="fa fa-book fa-lg"></i>&nbsp;<?php echo langHdl('documentation_canal');?></h5>
+                                <h5><i class="fa fa-book fa-lg"></i>&nbsp;<?php echo langHdl('documentation_canal'); ?></h5>
 
                                 <p><a target="_blank" href="https://teampass.readthedocs.org">ReadTheDoc</a></p>
                             </div>
                             <div class="callout callout-info">
-                                <h5><i class="fa fa-github fa-lg"></i>&nbsp;<?php echo langHdl('bug_canal');?></h5>
+                                <h5><i class="fa fa-github fa-lg"></i>&nbsp;<?php echo langHdl('bug_canal'); ?></h5>
 
                                 <p><a target="_blank" href="https://github.com/nilsteampassnet/TeamPass/issues">Github</a></p>
                             </div>
                             <div class="callout callout-info">
-                                <h5><i class="fa fa-lightbulb-o fa-lg"></i>&nbsp;<?php echo langHdl('feature_request_canal');?></h5>
+                                <h5><i class="fa fa-lightbulb-o fa-lg"></i>&nbsp;<?php echo langHdl('feature_request_canal'); ?></h5>
 
                                 <p><a target="_blank" href="https://teampass.userecho.com">User>Echo</a></p>
                             </div>
                             <div class="callout callout-info">
-                                <h5><i class="fa fa-reddit-alien fa-lg"></i>&nbsp;<?php echo langHdl('feature_support_canal');?></h5>
+                                <h5><i class="fa fa-reddit-alien fa-lg"></i>&nbsp;<?php echo langHdl('feature_support_canal'); ?></h5>
 
                                 <p><a target="_blank" href="https://www.reddit.com/r/TeamPass">Reddit</a></p>
                             </div>
                             <div class="callout callout-info">
-                                <h5><i class="fa fa-beer fa-lg"></i>&nbsp;<?php echo langHdl('consider_a_donation');?></h5>
+                                <h5><i class="fa fa-beer fa-lg"></i>&nbsp;<?php echo langHdl('consider_a_donation'); ?></h5>
 
-                                <p><a target="_blank" href="https://teampass.net/donation"><?php echo langHdl('more_information');?></a></p>
+                                <p><a target="_blank" href="https://teampass.net/donation"><?php echo langHdl('more_information'); ?></a></p>
                             </div>
                         </div>
                         <!-- /.card-body -->
@@ -124,7 +124,7 @@ if (isset($SETTINGS['send_statistics_items'])) {
                         <div class="card-header">
                             <h3 class="card-title">
                                 <i class="fa fa-warning"></i>
-                                <?php echo langHdl('changelog');?>
+                                <?php echo langHdl('changelog'); ?>
                             </h3>
                         </div>
                         <!-- /.card-header -->
