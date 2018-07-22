@@ -3,7 +3,7 @@
  *
  * @package       (api)functions.php
  * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.2
+ * @version       2.1.3
  * @copyright     2009-2018 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$api_version = "2.1.2";
+$api_version = "2.1.3";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -824,7 +824,7 @@ function restGet()
                     $item_email = Urlsafe_b64decode($params[5]);
                     $item_url = Urlsafe_b64decode($params[6]);
                     $item_tags = Urlsafe_b64decode($params[7]);
-                    $item_anyonecanmodify = Urlsafe_b64decode($params[8]); 
+                    $item_anyonecanmodify = Urlsafe_b64decode($params[8]);
 
                     // do some checks
                     if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
@@ -1254,7 +1254,10 @@ function restGet()
                 */
                 if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
                     // get sent parameters
-                    $params = explode(';', urlSafeB64Decode($GLOBALS['request'][3]));
+                    $params = explode(';', $GLOBALS['request'][3]);
+                    foreach ($params as $idx => $value) {
+                        $params[$idx]=Urlsafe_b64decode($value);
+                    }
 
                     if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
                         // Check length

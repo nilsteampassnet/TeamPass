@@ -805,7 +805,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     }
 
     // Google Authenticator code
-    if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['google_authentication'] !== "1") {
+    if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['disable_show_forgot_pwd_link'] !== "1") {
         echo '
                         <div style="text-align:center;margin-top:10px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">' . $LANG['forgot_my_pw'].'</span>

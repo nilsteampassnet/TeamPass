@@ -68,6 +68,9 @@ if (empty($settings['bck_script_passkey']) === false) {
         echo '[{"error":"not_allowed"}]';
         return false;
     }
+} else {
+    echo '[{"error":"not_allowed"}]';
+    return false;
 }
 
 // Now can we start backup?

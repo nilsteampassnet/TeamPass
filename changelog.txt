@@ -1,5 +1,10 @@
 2.1.27
 17/
+ #2349 Folder with flag "allow empty password" says "Insufficient password strenght" on item edition
+ #2347 Disable "Forgot Password?" link feature not working
+ #2346 [CSV-Import] convert field to string bevore using replace()
+ #2345 restore, enter decrypt key then system logs out
+ #2341 API - Incorrect update item parameters decoding
  #2334 error adding entry with the same name then another entry in a different folder
  #2314 SQL error in API near user name
  #2312 API Issue adding folder on root

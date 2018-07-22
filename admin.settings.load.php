@@ -268,7 +268,7 @@ function loadFieldsList() {
 //###########
 function LaunchAdminActions(action, option)
 {
-    var option = '';
+    option = option || '';
 
     $("#div_loading").show();
     $("#email_testing_results, #result_admin_script_backup").hide();

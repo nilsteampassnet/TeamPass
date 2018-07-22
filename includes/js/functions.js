@@ -181,8 +181,8 @@ function unsanitizeString(string){
 **/
 function sanitizeString(string){
     if(string !== "" && string !== null && string !== undefined) {
-        string = string.replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
-        string = string.replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
+        string = string.toString().replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
+        string = string.toString().replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
     }
     return string;
 }

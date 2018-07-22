@@ -4015,15 +4015,17 @@ if (null !== $post_type) {
             }
             $url = $SETTINGS['cpassman_url']."/index.php?otv=true&".http_build_query($otv_session);
             $exp_date = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time() + (intval($SETTINGS['otv_expiration_period']) * 86400));
+            $element_id = "clipboard-button-".mt_rand(0, 1000);
 
             echo json_encode(
                 array(
                     "error" => "",
                     "url" => str_replace(
                         array("#URL#", "#DAY#"),
-                        array('<span id=\'otv_link\'>'.$url.'</span>&nbsp;<span class=\'fa-stack tip" title=\''.addslashes($LANG['copy']).'\' style=\'cursor:pointer;\' id=\'button_copy_otv_link\'><span class=\'fa fa-square fa-stack-2x\'></span><span class=\'fa fa-clipboard fa-stack-1x fa-inverse\'></span></span>', $exp_date),
+                        array('<span id="otv_link">'.$url.'</span>&nbsp;<i class="fa-stack tip clipboard-icon" title="'.addslashes($LANG['copy']).'" style="cursor:pointer;" id="'.$element_id.'" data-clipboard-text="'.$url.'"><span class="fa fa-square fa-stack-2x"></span><span class="fa fa-clipboard fa-stack-1x fa-inverse"></span></i>', $exp_date),
                         $LANG['one_time_view_item_url_box']
-                    )
+                    ),
+                    'element_id' => $element_id
                 )
             );
             break;

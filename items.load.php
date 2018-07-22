@@ -985,7 +985,7 @@ function EditerItem()
     else if ($("#edit_pw1").val() != $("#edit_pw2").val()) erreur = "<?php echo addslashes($LANG['error_confirm']); ?>";
     else if ($("#edit_tags").val() != "" && reg.test($("#edit_tags").val())) erreur = "<?php echo addslashes($LANG['error_tags']); ?>";
     else if ($("#edit_categorie option:selected").val() == "" || typeof  $("#edit_categorie option:selected").val() === "undefined")  erreur = "<?php echo addslashes($LANG['error_no_selected_folder']); ?>";
-    else{
+    else {
         //Check pw complexity level
         if ((
                 $("#bloquer_modification_complexite").val() == 0 &&
@@ -996,7 +996,7 @@ function EditerItem()
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
             ||
-            ($("#create_item_without_password").val() === "1" && $("#pw1").val === "")
+            ($("#create_item_without_password").val() === "1" && $("#pw1").val !== "")
       ) {
             LoadingPage();  //afficher image de chargement
             var annonce = 0;
@@ -4851,16 +4851,22 @@ function prepareOneTimeView()
         function(data) {
             //check if format error
             if (data.error == "") {
-                $("#div_dialog_message").dialog({height:300,minWidth:750});
+                $("#div_dialog_message").dialog({
+                    height:300,
+                    minWidth:750,
+                    close: function(event,ui) {
+                        $("#div_dialog_message_text").html('');
+                        $(this).dialog('close');
+                    }
+                });
                 $("#div_dialog_message").dialog('open');
                 $("#div_dialog_message_text").html(data.url+
                     '<div style="margin-top:30px;font-size:13px;text-align:center;"><span id="show_otv_copied" class="ui-state-focus ui-corner-all" style="padding:10px;display:none;"></span></div>'
                 );
-
-                // prepare clipboard
-                var clipboard = new Clipboard("#button_copy_otv_link", {
-                    text: function() {
-                        return $('#otv_link').text();
+                
+                var clipboard = new Clipboard("#" + data.element_id, {
+                    text: function(trigger) {
+                        return $('#' + data.element_id).data('clipboard-text');
                     }
                 });
                 clipboard.on('success', function(e) {
