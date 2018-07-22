@@ -1434,7 +1434,7 @@ function utf8Converter($array)
 {
     array_walk_recursive(
         $array,
-        function (&$item, $key) {
+        function(&$item, $key) {
             if (mb_detect_encoding($item, 'utf-8', true) === false) {
                     $item = utf8_encode($item);
             }

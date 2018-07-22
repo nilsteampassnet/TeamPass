@@ -32,15 +32,15 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 }
 
 /* do checks */
-require_once $SETTINGS['cpassman_dir'] . '/sources/checks.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS)) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 }
 
 // Load
-require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>
 

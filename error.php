@@ -42,12 +42,12 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired"
 ) {
     //Include files
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
-    include_once $SETTINGS['cpassman_dir'] . '/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     // connect to DB
-    include_once $SETTINGS['cpassman_dir'] . '/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defuse_return_decrypted(DB_PASSWD);
@@ -77,7 +77,7 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
         logEvents('user_connection', 'disconnection', $_SESSION['user_id'], $_SESSION['login']);
     }
 } else {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/main.queries.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.queries.php';
     $errorCode = '';
     if (@$_SESSION['error']['code'] === ERR_NOT_ALLOWED) {
         $errorCode = langHdl('error_not_authorized');

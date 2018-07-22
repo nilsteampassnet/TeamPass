@@ -28,7 +28,7 @@ if (isset($SETTINGS['maintenance_mode']) === true
     ?>
 <script type="text/javascript">
     showAlertify(
-        '<?php echo langHdl('index_maintenance_mode_admin');?>',
+        '<?php echo langHdl('index_maintenance_mode_admin'); ?>',
         0,
         'top-right'
     )
@@ -75,14 +75,14 @@ $(function() {
                 document.location.href="index.php?page=profile";
             } else if ($(this).data('name') === 'logout') {
                 alertify.confirm(
-                    '<?php echo TP_TOOL_NAME;?>',
-                    '<?php echo langHdl('logout_confirm');?>',
+                    '<?php echo TP_TOOL_NAME; ?>',
+                    '<?php echo langHdl('logout_confirm'); ?>',
                     function(){
-                        alertify.success('<?php echo langHdl('ok');?>');
-                        window.location.href = "logout.php?user_id=" + <?php echo $_SESSION["user_id"];?>
+                        alertify.success('<?php echo langHdl('ok'); ?>');
+                        window.location.href = "logout.php?user_id=" + <?php echo $_SESSION["user_id"]; ?>
                     },
                     function(){
-                        alertify.error('<?php echo langHdl('cancel');?>');
+                        alertify.error('<?php echo langHdl('cancel'); ?>');
                     }
                 );
             }
@@ -115,24 +115,24 @@ $(function() {
                 if (data[0].error !== "") {
                     var error = "";
                     if (data[0].error === "key_not_conform") {
-                        error = '<?php echo langHdl('error_unknown');?>';
+                        error = '<?php echo langHdl('error_unknown'); ?>';
                     } else if (data[0].error === "security_level_not_reached") {
-                        error = '<?php echo langHdl('error_security_level_not_reached');?>';
+                        error = '<?php echo langHdl('error_security_level_not_reached'); ?>';
                     } else if (data[0].error === "psk_is_empty") {
-                        error = '<?php echo langHdl('psk_required');?>';
+                        error = '<?php echo langHdl('psk_required'); ?>';
                     } else if (data[0].error === "psk_not_correct") {
-                        error = '<?php echo langHdl('bad_psk');?>';
+                        error = '<?php echo langHdl('bad_psk'); ?>';
                     }
                     // display error
                     alertify.alert().set({onshow:function(){ alertify.message('',0.1).dismissOthers()}});
                     alertify.alert(
-                        '<?php echo langHdl('warning');?>',
+                        '<?php echo langHdl('warning'); ?>',
                         error
                     );
                 } else if (data[0].status === "security_level_not_reached_but_psk_correct") {
                     alertify.alert(
-                        '<?php echo langHdl('warning');?>',
-                        '<?php echo langHdl('error_security_level_not_reached');?>'
+                        '<?php echo langHdl('warning'); ?>',
+                        '<?php echo langHdl('error_security_level_not_reached'); ?>'
                     );
                 } else {
                     alertify
@@ -150,35 +150,35 @@ $(function() {
     $("#user_personal_saltkey").simplePassMeter({
             "requirements": {},
             "container": "#psk_strength",
-            "defaultText" : "<?php echo langHdl('index_pw_level_txt');?>",
+            "defaultText" : "<?php echo langHdl('index_pw_level_txt'); ?>",
             "ratings": [
                 {"minScore": 0,
                     "className": "meterFail",
-                    "text": "<?php echo langHdl('complex_level0');?>"
+                    "text": "<?php echo langHdl('complex_level0'); ?>"
                 },
                 {"minScore": 25,
                     "className": "meterWarn",
-                    "text": "<?php echo langHdl('complex_level1');?>"
+                    "text": "<?php echo langHdl('complex_level1'); ?>"
                 },
                 {"minScore": 50,
                     "className": "meterWarn",
-                    "text": "<?php echo langHdl('complex_level2');?>"
+                    "text": "<?php echo langHdl('complex_level2'); ?>"
                 },
                 {"minScore": 60,
                     "className": "meterGood",
-                    "text": "<?php echo langHdl('complex_level3');?>"
+                    "text": "<?php echo langHdl('complex_level3'); ?>"
                 },
                 {"minScore": 70,
                     "className": "meterGood",
-                    "text": "<?php echo langHdl('complex_level4');?>"
+                    "text": "<?php echo langHdl('complex_level4'); ?>"
                 },
                 {"minScore": 80,
                     "className": "meterExcel",
-                    "text": "<?php echo langHdl('complex_level5');?>"
+                    "text": "<?php echo langHdl('complex_level5'); ?>"
                 },
                 {"minScore": 90,
                     "className": "meterExcel",
-                    "text": "<?php echo langHdl('complex_level6');?>"
+                    "text": "<?php echo langHdl('complex_level6'); ?>"
                 }
             ]
         });
@@ -204,15 +204,15 @@ $(function() {
  */
 function showExtendSession() {
     alertify.prompt(
-        '<?php echo langHdl('index_add_one_hour');?>',
-        '<?php echo langHdl('index_session_duration').' ('.langHdl('minutes').')';?>',
-        '<?php echo isset($_SESSION['user_settings']['session_duration']) === true ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60;?>',
+        '<?php echo langHdl('index_add_one_hour'); ?>',
+        '<?php echo langHdl('index_session_duration').' ('.langHdl('minutes').')'; ?>',
+        '<?php echo isset($_SESSION['user_settings']['session_duration']) === true ? (int) $_SESSION['user_settings']['session_duration'] / 60 : 60; ?>',
         function(evt, value) {
-            IncreaseSessionTime('<?php echo langHdl('success');?>', value);
+            IncreaseSessionTime('<?php echo langHdl('success'); ?>', value);
             alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
         },
         function() {
-            alertify.error('<?php echo langHdl('cancel');?>');
+            alertify.error('<?php echo langHdl('cancel'); ?>');
         }
     );
 }

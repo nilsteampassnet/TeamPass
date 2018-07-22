@@ -1,6 +1,6 @@
 <?php
 //global $SETTINGS;
-$SETTINGS = array (
+$SETTINGS = array(
     'max_latest_items' => '10',
     'enable_favourites' => '1',
     'show_last_items' => '1',

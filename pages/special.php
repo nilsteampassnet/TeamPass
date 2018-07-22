@@ -49,7 +49,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
       <div class="container-fluid">
         <div class="row mb-2">
           <div class="col-sm-6">
-            <h1 class="m-0 text-dark"><?php echo langHdl('special');?></h1>
+            <h1 class="m-0 text-dark"><?php echo langHdl('special'); ?></h1>
           </div><!-- /.col -->
         </div><!-- /.row -->
       </div><!-- /.container-fluid -->
