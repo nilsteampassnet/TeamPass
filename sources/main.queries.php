@@ -1180,7 +1180,7 @@ function mainQuery()
                     'token' => $token,
                     'reason' => filter_input(INPUT_POST, 'reason', FILTER_SANITIZE_STRING),
                     'creation_timestamp' => time(),
-                    'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT),    // in secs
+                    'end_timestamp' => time() + filter_input(INPUT_POST, 'duration', FILTER_SANITIZE_NUMBER_INT), // in secs
                 )
             );
 
