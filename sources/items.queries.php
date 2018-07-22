@@ -515,7 +515,7 @@ if (null !== $post_type) {
                         && $SETTINGS['enable_delete_after_consultation'] === '1'
                     ) {
                         if (empty($post_to_be_deleted_after_date) === false
-                            && $post_to_be_deleted_after_x_views > 0
+                            || $post_to_be_deleted_after_x_views > 0
                         ) {
                             // Automatic deletion to be added
                             DB::insert(
@@ -787,6 +787,12 @@ if (null !== $post_type) {
                     $dataReceived['to_be_deleted_after_date'],
                     FILTER_SANITIZE_STRING
                 );
+                $post_fields = (
+                    filter_var_array(
+                        $dataReceived['fields'],
+                        FILTER_SANITIZE_STRING
+                    )
+                );
                 $post_description = ($dataReceived['description']);
 
                 //-> DO A SET OF CHECKS
@@ -905,7 +911,7 @@ if (null !== $post_type) {
                 if (empty($dataItem['restricted_to']) === true) {
                     $restrictionActive = false;
                 }
-
+                print_r($dataItem);
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
                     && ($dataItem['perso'] === '0'
                     || ($dataItem['perso'] === '1'
@@ -925,7 +931,7 @@ if (null !== $post_type) {
                     (null !== $post_folder_id
                     && isset($_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
                     && in_array($post_id, $_SESSION['list_restricted_folders_for_items'][$post_folder_id]) === true
-                    && $post_restricted === '1'
+                    //&& $post_restricted === '1'
                     && $restrictionActive === false)
                 ) {
                     // Get existing values
@@ -965,7 +971,13 @@ if (null !== $post_type) {
                         }
 
                         if (empty($passwd['error']) === false) {
-                            echo prepareExchangedData(array('error' => $passwd['error']), 'encode');
+                            echo prepareExchangedData(
+                                array(
+                                    'error' => true,
+                                    'message' => $passwd['error'],
+                                ),
+                                'encode'
+                            );
                             break;
                         }
                     } else {
@@ -1015,11 +1027,15 @@ if (null !== $post_type) {
                         'id=%i',
                         $post_item_id
                     );
+
                     // update fields
-                    if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
-                        foreach (explode('_|_', $dataReceived['fields']) as $field) {
-                            $field_data = explode('~~', $field);
-                            if (count($field_data) > 1 && empty($field_data[1]) === false) {
+                    if (isset($SETTINGS['item_extra_fields']) === true
+                        && $SETTINGS['item_extra_fields'] === '1'
+                        && empty($post_fields) === false
+                    ) {
+                        foreach ($post_fields as $field) {
+                            if (empty($field['value']) === false) {
+                                echo $field['id'].' -- '.$field['value'];
                                 $dataTmpCat = DB::queryFirstRow(
                                     'SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv,
                                     i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
@@ -1027,7 +1043,7 @@ if (null !== $post_type) {
                                     FROM '.prefixTable('categories_items').' AS i
                                     INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id=c.id)
                                     WHERE i.field_id = %i AND i.item_id = %i',
-                                    $field_data[0],
+                                    $field['id'],
                                     $post_item_id
                                 );
                                 // store Field text in DB
@@ -1037,19 +1053,19 @@ if (null !== $post_type) {
                                         'SELECT title, encrypted_data
                                         FROM '.prefixTable('categories').'
                                         WHERE id = %i',
-                                        $field_data[0]
+                                        $field['id']
                                     );
 
                                     // should we encrypt the data
                                     if ($dataTmpCat['encrypted_data'] === '1') {
                                         $encrypt = cryption(
-                                            $field_data[1],
+                                            $field['value'],
                                             '',
                                             'encrypt'
                                         );
                                         $enc_type = 'defuse';
                                     } else {
-                                        $encrypt['string'] = $field_data[1];
+                                        $encrypt['string'] = $field['value'];
                                         $enc_type = 'not_set';
                                     }
 
@@ -1058,7 +1074,7 @@ if (null !== $post_type) {
                                         prefixTable('categories_items'),
                                         array(
                                             'item_id' => $post_item_id,
-                                            'field_id' => $field_data[0],
+                                            'field_id' => $field['id'],
                                             'data' => $encrypt['string'],
                                             'data_iv' => '',
                                             'encryption_type' => $enc_type,
@@ -1072,7 +1088,7 @@ if (null !== $post_type) {
                                         $_SESSION['user_id'],
                                         'at_modification',
                                         $_SESSION['login'],
-                                        'at_field : '.$dataTmpCat['title'].' : '.$field_data[1]
+                                        'at_field : '.$dataTmpCat['title'].' : '.$field['value']
                                     );
                                 } else {
                                     // compare the old and new value
@@ -1086,17 +1102,17 @@ if (null !== $post_type) {
                                         $oldVal['string'] = $dataTmpCat['data'];
                                     }
 
-                                    if ($field_data[1] !== $oldVal['string']) {
+                                    if ($field['value'] !== $oldVal['string']) {
                                         // should we encrypt the data
                                         if ($dataTmpCat['encrypted_data'] === '1') {
                                             $encrypt = cryption(
-                                                $field_data[1],
+                                                $field['value'],
                                                 '',
                                                 'encrypt'
                                             );
                                             $enc_type = 'defuse';
                                         } else {
-                                            $encrypt['string'] = $field_data[1];
+                                            $encrypt['string'] = $field['value'];
                                             $enc_type = 'not_set';
                                         }
 
@@ -1110,7 +1126,7 @@ if (null !== $post_type) {
                                             ),
                                             'item_id = %i AND field_id = %i',
                                             $post_item_id,
-                                            $field_data[0]
+                                            $field['id']
                                         );
 
                                         // update LOG
@@ -1130,7 +1146,7 @@ if (null !== $post_type) {
                                         prefixTable('categories_items'),
                                         'item_id = %i AND field_id = %s',
                                         $post_item_id,
-                                        $field_data[0]
+                                        $field['id']
                                     );
                                 }
                             }
@@ -1178,7 +1194,7 @@ if (null !== $post_type) {
                             }
                         }
                     }
-
+                    echo $post_to_be_deleted_after_x_views.' -- '.$post_to_be_deleted_after_date.' ; ';
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($SETTINGS['enable_delete_after_consultation']) === true
                         && $SETTINGS['enable_delete_after_consultation'] === '1'
@@ -1190,10 +1206,11 @@ if (null !== $post_type) {
                             WHERE item_id = %i',
                             $post_item_id
                         );
+                        echo DB::count().' ; ';
                         if (DB::count() === 0) {
                             // No automatic deletion for this item
                             if (empty($post_to_be_deleted_after_date) === false
-                                && $post_to_be_deleted_after_x_views > 0
+                                || $post_to_be_deleted_after_x_views > 0
                             ) {
                                 // Automatic deletion to be added
                                 DB::insert(
@@ -1594,7 +1611,13 @@ if (null !== $post_type) {
                         'error' => '',
                         );
                 } else {
-                    echo prepareExchangedData(array('error' => langHdl('error_not_allowed_to_edit_item')), 'encode');
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_not_allowed_to_edit_item'),
+                        ),
+                        'encode'
+                    );
                     break;
                 }
             } else {
@@ -1971,9 +1994,9 @@ if (null !== $post_type) {
             // LEFT JOIN ".TP_PREFIX."categories_items as c ON (c.id_item = i.id)
             // INNER JOIN ".TP_PREFIX."automatic_del as d ON (d.item_id = i.id)
             // Get all USERS infos
-            $listNotif = array_filter(explode(';', $dataItem['notification']));
+            $arrData['notification_list'] = array_filter(explode(';', $dataItem['notification']));
             $listRest = array_filter(explode(';', $dataItem['restricted_to']));
-            $listNotification = $_SESSION['listNotificationEmails'] = '';
+            $_SESSION['listNotificationEmails'] = '';
             $listeRestriction = array();
 
             $user_in_restricted_list_of_item = false;
@@ -1981,38 +2004,32 @@ if (null !== $post_type) {
                 'SELECT id, login, email, admin, name, lastname
                 FROM '.prefixTable('users')
             );
-            foreach ($rows as $record) {
+            foreach ($rows as $user) {
                 // Get auhtor
-                if ($record['id'] === $dataItem['id_user']) {
-                    $arrData['author'] = $record['login'];
-                    $arrData['author_email'] = $record['email'];
+                if ($user['id'] === $dataItem['id_user']) {
+                    $arrData['author'] = $user['login'];
+                    $arrData['author_email'] = $user['email'];
                     $arrData['id_user'] = $dataItem['id_user'];
-                    if (in_array($record['id'], $listNotif)) {
-                        $arrData['notification_status'] = true;
-                    } else {
-                        $arrData['notification_status'] = false;
-                    }
                 }
 
                 // Get restriction list for users
-                if (in_array($record['id'], $listRest)) {
-                    array_push($listeRestriction, $record['id']);
-                    if ($_SESSION['user_id'] === $record['id']) {
+                if (in_array($user['id'], $listRest) === true) {
+                    array_push($listeRestriction, $user['id']);
+                    if ($_SESSION['user_id'] === $user['id']) {
                         $user_in_restricted_list_of_item = true;
                     }
                 }
                 // Get notification list for users
-                if (in_array($record['id'], $listNotif)) {
-                    $listNotification .= $record['id'].';';
-                    $_SESSION['listNotificationEmails'] .= $record['email'].',';
+                if (in_array($user['id'], $arrData['notification_list']) === true) {
+                    $_SESSION['listNotificationEmails'] .= $user['email'].',';
                 }
 
                 // Add Admins to notification list if expected
-                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
-                    && $record['admin'] === '1'
+                if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
+                    && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
+                    && $user['admin'] === '1'
                 ) {
-                    $listNotification .= $record['login'].';';
-                    $_SESSION['listNotificationEmails'] .= $record['email'].',';
+                    $_SESSION['listNotificationEmails'] .= $user['email'].',';
                 }
             }
             // manage case of API user
@@ -2020,6 +2037,13 @@ if (null !== $post_type) {
                 $arrData['author'] = 'API ['.$dataItem['description'].']';
                 $arrData['id_user'] = API_USER_ID;
                 $arrData['author_email'] = '';
+                $arrData['notification_status'] = false;
+            }
+
+            // Get if current user is notified on this item
+            if (in_array($_SESSION['user_id'], $arrData['notification_list']) === true) {
+                $arrData['notification_status'] = true;
+            } else {
                 $arrData['notification_status'] = false;
             }
 
@@ -2227,76 +2251,76 @@ if (null !== $post_type) {
                 $fieldsTmp = array();
                 $arrCatList = $template_id = '';
                 //if (null !== $post_page && $post_page === 'items') {
-                    if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
-                        // get list of associated Categories
-                        $arrCatList = array();
+                if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                    // get list of associated Categories
+                    $arrCatList = array();
+                    $rows_tmp = DB::query(
+                        'SELECT id_category
+                        FROM '.prefixTable('categories_folders').'
+                        WHERE id_folder=%i',
+                        $post_folder_id
+                    );
+                    if (DB::count() > 0) {
+                        foreach ($rows_tmp as $row) {
+                            array_push($arrCatList, $row['id_category']);
+                        }
+
+                        // get fields for this Item
                         $rows_tmp = DB::query(
-                            'SELECT id_category
-                            FROM '.prefixTable('categories_folders').'
-                            WHERE id_folder=%i',
-                            $post_folder_id
+                            'SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
+                            i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
+                            c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
+                            FROM '.prefixTable('categories_items').' AS i
+                            INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id=c.id)
+                            WHERE i.item_id=%i AND c.parent_id IN %ls',
+                            $post_id,
+                            $arrCatList
                         );
-                        if (DB::count() > 0) {
-                            foreach ($rows_tmp as $row) {
-                                array_push($arrCatList, $row['id_category']);
-                            }
-
-                            // get fields for this Item
-                            $rows_tmp = DB::query(
-                                'SELECT i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
-                                i.encryption_type AS encryption_type, c.encrypted_data, c.parent_id AS parent_id,
-                                c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
-                                FROM '.prefixTable('categories_items').' AS i
-                                INNER JOIN '.prefixTable('categories').' AS c ON (i.field_id=c.id)
-                                WHERE i.item_id=%i AND c.parent_id IN %ls',
-                                $post_id,
-                                $arrCatList
-                            );
-                            foreach ($rows_tmp as $row) {
-                                // Uncrypt data
-                                if ($row['encryption_type'] === 'defuse') {
-                                    $fieldText = cryption(
-                                        $row['data'],
-                                        '',
-                                        'decrypt'
-                                    );
-                                    $fieldText = $fieldText['string'];
-                                } else {
-                                    $fieldText = $row['data'];
-                                }
-
-                                // Manage textarea string
-                                if ($row['field_type'] === 'textarea') {
-                                    $fieldText = nl2br($fieldText);
-                                }
-
-                                // build returned list of Fields text
-                                array_push(
-                                    $fieldsTmp,
-                                    array(
-                                        'id' => $row['field_id'],
-                                        'value' => $fieldText,
-                                        'parent_id' => $row['parent_id'],
-                                        'type' => $row['field_type'],
-                                        'masked' => $row['field_masked'],
-                                    )
+                        foreach ($rows_tmp as $row) {
+                            // Uncrypt data
+                            if ($row['encryption_type'] === 'defuse') {
+                                $fieldText = cryption(
+                                    $row['data'],
+                                    '',
+                                    'decrypt'
                                 );
+                                $fieldText = $fieldText['string'];
+                            } else {
+                                $fieldText = $row['data'];
                             }
-                        }
-                    }
 
-                    // Now get the selected template (if exists)
-                    if (isset($SETTINGS['item_creation_templates']) && $SETTINGS['item_creation_templates'] === '1') {
-                        $rows_tmp = DB::queryfirstrow(
-                            'SELECT category_id
-                            FROM '.prefixTable('templates').'
-                            WHERE item_id = %i',
-                            $post_id
-                        );
-                        if (DB::count() > 0) {
-                            $template_id = $rows_tmp['category_id'];
+                            // Manage textarea string
+                            if ($row['field_type'] === 'textarea') {
+                                $fieldText = nl2br($fieldText);
+                            }
+
+                            // build returned list of Fields text
+                            array_push(
+                                $fieldsTmp,
+                                array(
+                                    'id' => $row['field_id'],
+                                    'value' => $fieldText,
+                                    'parent_id' => $row['parent_id'],
+                                    'type' => $row['field_type'],
+                                    'masked' => $row['field_masked'],
+                                )
+                            );
                         }
                     }
+                }
+
+                // Now get the selected template (if exists)
+                if (isset($SETTINGS['item_creation_templates']) && $SETTINGS['item_creation_templates'] === '1') {
+                    $rows_tmp = DB::queryfirstrow(
+                        'SELECT category_id
+                        FROM '.prefixTable('templates').'
+                        WHERE item_id = %i',
+                        $post_id
+                    );
+                    if (DB::count() > 0) {
+                        $template_id = $rows_tmp['category_id'];
+                    }
+                }
                 //}
                 $arrData['fields'] = $fieldsTmp;
                 $arrData['categories'] = $arrCatList;
@@ -2362,9 +2386,6 @@ if (null !== $post_type) {
                 } else {
                     $arrData['to_be_deleted'] = 'not_enabled';
                 }
-
-                $arrData['notification_list'] = '';
-                $arrData['notification_status'] = '';
             } else {
                 $arrData['show_details'] = 0;
                 // get readable list of restriction
@@ -2382,6 +2403,8 @@ if (null !== $post_type) {
                     }
                 }
                 $arrData['restricted_to'] = $listOfRestricted;
+                $arrData['notification_list'] = '';
+                $arrData['notification_status'] = '';
             }
 
             // Set a timestamp
@@ -3141,7 +3164,7 @@ if (null !== $post_type) {
                             ORDER BY `order` ASC",
                             $category['id_category']
                         );
-                        
+
                         if (DB::count() > 0) {
                             foreach ($categoryRow as $field) {
                                 // Is this Field visibile by user?

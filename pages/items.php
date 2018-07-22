@@ -144,6 +144,7 @@ echo '
 <input type="hidden" id="form-item-hidden-id">
 <input type="hidden" id="form-item-hidden-jstree-force-refresh">
 <input type="hidden" id="form-item-hidden-uploaded-file-id">
+<input type="hidden" id="form-item-hidden-timestamp">
 <input type="hidden" id="form-item-hidden-last-folder-selected" value="',
     isset($_COOKIE['jstree_select']) &&
     empty($_COOKIE['jstree_select']) === false ? $_COOKIE['jstree_select'] : '', '">';
@@ -435,7 +436,41 @@ echo '
 
 
                             <div class="tab-pane" id="tab_4">
-
+                                <div id="form-item-field" class="hidden">
+                                <?php
+                                foreach ($_SESSION['item_fields'] as $category) {
+                                    echo '
+                                    <div class="callout callout-info form-item-category hidden" id="form-item-category-'.$category['id'].'">
+                                        <h5>'.$category['title'].'</h5>
+                                        <p>';
+                                    foreach ($category['fields'] as $field) {
+                                        echo '
+                                            <div class="input-group mb-3 form-item-field" id="form-item-field-'.$field['id'].'" data-field-id="'.$field['id'].'">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">'.$field['title'].'</span>
+                                                </div>
+                                                <input type="'.$field['type'].'" class="form-control form-item-control form-item-field-custom track-change" data-field-name="'.$field['id'].'">
+                                            </div>';
+                                    }
+                                    // Manage template
+                                    if (isset($SETTINGS['item_creation_templates']) === true
+                                        && $SETTINGS['item_creation_templates'] === '1'
+                                    ) {
+                                        echo '
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input form-check-input-template" data-category-id="'.$category['id'].'" id="template_'.$category['id'].'">
+                                                <label class="form-check-label ml-3" for="template_'.$category['id'].'">'.langHdl('main_template').'</label>
+                                            </div>';
+                                    }
+                                    echo '
+                                        </p>
+                                    </div>';
+                                } ?>
+                                </div>
+                                <div class="alert alert-info hidden no-item-fields">
+                                    <h5><i class="icon fa fa-info mr-3"></i><?php echo langHdl('information'); ?></h5>
+                                    <?php echo langHdl('no_fields'); ?>
+                                </div>
                             </div>
                         </div>
                         </form>
@@ -508,31 +543,31 @@ echo '
         <div class="row hidden item-details-card">
             <div class="col-md-7">
                 <div class="card card-primary card-outline">
-                    <div class="card-body">
+                    <div class="card-body" id="list-group-item-main">
                         <ul class="list-group list-group-unbordered mb-3">
                             <li class="list-group-item">
                                 <b><?php echo langHdl('pw'); ?></b>
-                                <button type="button" class="float-right btn btn-outline-secondary btn-sm btn-copy-clipboard" id="card-item-pwd-button">
+                                <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard" id="card-item-pwd-button">
                                     <i class="fa fa-copy"></i>
                                 </button>
-                                <a id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></a>
+                                <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
                                 <input id="hidden-item-pwd" type="hidden">
                                 <input type="hidden" id="hid_pw_old" value="" />
                                 <input type="hidden" id="pw_shown" value="0" />
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo langHdl('index_login'); ?></b>
-                                <button type="button" class="float-right btn btn-outline-secondary btn-sm ml-1 btn-copy-clipboard" id="card-item-login-button">
+                                <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-login" id="card-item-login-btn">
                                     <i class="fa fa-copy"></i>
                                 </button>
-                                <a id="card-item-login" class="float-right"></a>
+                                <span id="card-item-login" class="float-right"></span>
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo langHdl('email'); ?></b>
-                                <button type="button" class="float-right btn btn-outline-secondary btn-sm ml-1 btn-copy-clipboard" id="card-item-email-button">
+                                <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
                                     <i class="fa fa-copy"></i>
                                 </button>
-                                <a id="card-item-email" class="float-right ml-1"></a>
+                                <span id="card-item-email" class="float-right ml-1"></span>
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo langHdl('url'); ?></b>
@@ -558,6 +593,8 @@ echo '
                                 <b><?php echo langHdl('kbs'); ?></b>
                                 <a id="card-item-kbs" class="float-right ml-1"></a>
                             </li>
+                            <li class="list-group-item" id="card-item-misc">
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -576,7 +613,7 @@ echo '
             && $SETTINGS['item_extra_fields'] === '1'
         ) {
             ?>
-        <div class="row hidden item-details-card">
+        <div class="row hidden item-details-card" id="item-details-card-categories">
             <div class="col-12">
                 <div class="card card-default">
                     <div class="card-header bg-gray">
@@ -598,16 +635,18 @@ echo '
                             echo '
                                     <li class="list-group-item card-item-field hidden" id="card-item-field-'.$field['id'].'">
                                         <b>'.$field['title'].'</b>
-                                        <span class="card-item-field-value float-right ml-1"></span>
+                                        <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear"  data-clipboard-target="#card-item-field-value-'.$field['id'].'">
+                                            <i class="fa fa-copy"></i>
+                                        </button>
+                                        <span class="card-item-field-value float-right ml-1" id="card-item-field-value-'.$field['id'].'"></span>
                                     </li>';
                         }
                         echo '
                                 </ul>
                             </p>
                         </div>';
-                    }
-                    ?>
-                    <div id="card-item-fields-none" class="hidden"><?php echo langHdl('no_custom_fields'); ?></div>
+                    } ?>
+                    <div class="hidden no-item-fields"><?php echo langHdl('no_custom_fields'); ?></div>
                     </div>
                     <!-- /.card-body -->
                 </div>

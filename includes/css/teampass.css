@@ -117,3 +117,22 @@
       }
     }
   }
+
+.icon-badge{
+    position:relative;
+    float:left;
+}
+
+.icon-badge-text{
+    margin: 0;
+    position:absolute;
+    top: -8px;
+    right: -9px;
+    font-size: .7rem;
+    font-weight: 300;
+    padding: 2px 4px;
+}
+
+.icon-badge-far {
+    right: -16px;
+}

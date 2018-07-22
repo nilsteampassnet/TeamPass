@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Core.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+*
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Please login...');
 }
@@ -29,10 +30,11 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 /**
- * Redirection management
- * 
- * @param  string $url new url
- * @return string  refresh page to url
+ * Redirection management.
+ *
+ * @param string $url new url
+ *
+ * @return string refresh page to url
  */
 function redirect($url)
 {
@@ -59,37 +61,35 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
 // Prepare GET variables
-$get_group = $superGlobal->get("group", "GET");
+$get_group = $superGlobal->get('group', 'GET');
 
 // Redirect needed?
 if (isset($_SERVER['HTTPS']) === true
     && $_SERVER['HTTPS'] !== 'on'
     && isset($SETTINGS['enable_sts']) === true
-    && $SETTINGS['enable_sts'] === "1"
+    && $SETTINGS['enable_sts'] === '1'
 ) {
-    redirect("https://".$superGlobal->get("HTTP_HOST", "SERVER").$superGlobal->get("REQUEST_URI", "SERVER"));
+    redirect('https://'.$superGlobal->get('HTTP_HOST', 'SERVER').$superGlobal->get('REQUEST_URI', 'SERVER'));
 }
-
 
 // Load pwComplexity
 if (defined('TP_PW_COMPLEXITY') === false) {
     // Pw complexity levels
-    if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== "0") {
+    if (isset($_SESSION['user_language']) === true && $_SESSION['user_language'] !== '0') {
         define(
             'TP_PW_COMPLEXITY',
             array(
-            0=>array(0, langHdl('complex_level0')),
-            25=>array(25, langHdl('complex_level1')),
-            50=>array(50, langHdl('complex_level2')),
-            60=>array(60, langHdl('complex_level3')),
-            70=>array(70, langHdl('complex_level4')),
-            80=>array(80, langHdl('complex_level5')),
-            90=>array(90, langHdl('complex_level6'))
+            0 => array(0, langHdl('complex_level0')),
+            25 => array(25, langHdl('complex_level1')),
+            50 => array(50, langHdl('complex_level2')),
+            60 => array(60, langHdl('complex_level3')),
+            70 => array(70, langHdl('complex_level4')),
+            80 => array(80, langHdl('complex_level5')),
+            90 => array(90, langHdl('complex_level6')),
             )
         );
     }
 }
-
 
 // LOAD CPASSMAN SETTINGS
 if (isset($SETTINGS['cpassman_dir']) === true
@@ -97,13 +97,13 @@ if (isset($SETTINGS['cpassman_dir']) === true
 ) {
     // Should we delete folder INSTALL?
     $row = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefixTable("misc")." WHERE type=%s AND intitule=%s",
-        "install",
-        "clear_install_folder"
+        'SELECT valeur FROM '.prefixTable('misc').' WHERE type=%s AND intitule=%s',
+        'install',
+        'clear_install_folder'
     );
-    if ($row['valeur'] === "true") {
+    if ($row['valeur'] === 'true') {
         /**
-         * Permits to delete files and folders recursively
+         * Permits to delete files and folders recursively.
          */
         function delTree($dir)
         {
@@ -116,6 +116,7 @@ if (isset($SETTINGS['cpassman_dir']) === true
                     @unlink($dir.'/'.$file);
                 }
             }
+
             return @rmdir($dir);
         }
 
@@ -130,14 +131,14 @@ if (isset($SETTINGS['cpassman_dir']) === true
         }
 
         // Delete temporary install table
-        DB::query("DROP TABLE IF EXISTS `_install`");
+        DB::query('DROP TABLE IF EXISTS `_install`');
 
         // Delete tag
         DB::delete(
-            $pre."misc",
-            "type=%s AND intitule=%s",
-            "install",
-            "clear_install_folder"
+            $pre.'misc',
+            'type=%s AND intitule=%s',
+            'install',
+            'clear_install_folder'
         );
     }
 }
@@ -145,7 +146,7 @@ if (isset($SETTINGS['cpassman_dir']) === true
 // Load Languages stuff
 if (isset($languagesList) === false) {
     $languagesList = array();
-    $rows = DB::query("SELECT * FROM ".prefixTable("languages")." GROUP BY name, label, code, flag, id ORDER BY name ASC");
+    $rows = DB::query('SELECT * FROM '.prefixTable('languages').' GROUP BY name, label, code, flag, id ORDER BY name ASC');
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
         if (isset($_SESSION['user_language']) && $record['name'] == $_SESSION['user_language']) {
@@ -157,36 +158,34 @@ if (isset($languagesList) === false) {
     }
 }
 
-
-if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['user_settings']['usertimezone'] !== "not_defined") {
+if (isset($_SESSION['user_settings']['usertimezone']) === true && $_SESSION['user_settings']['usertimezone'] !== 'not_defined') {
     // use user timezone
     date_default_timezone_set($_SESSION['user_settings']['usertimezone']);
 } elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
     // use server timezone
     date_default_timezone_set('UTC');
-    $SETTINGS['timezone'] = "UTC";
+    $SETTINGS['timezone'] = 'UTC';
 } else {
     // use server timezone
     date_default_timezone_set($SETTINGS['timezone']);
 }
 
-
 // CHECK IF LOGOUT IS ASKED OR IF SESSION IS EXPIRED
 if ((isset($_GET['session']) === true
-    && $_GET['session'] == "expired")
+    && $_GET['session'] == 'expired')
     || (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
-    && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired")
+    && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired')
 ) {
     // Clear User tempo key
     if (isset($_SESSION['user_id']) === true) {
         DB::update(
-            prefixTable("users"),
+            prefixTable('users'),
             array(
                 'key_tempo' => '',
                 'timestamp' => '',
-                'session_end' => ''
+                'session_end' => '',
             ),
-            "id=%i",
+            'id=%i',
             $_SESSION['user_id']
         );
     }
@@ -205,24 +204,24 @@ if ((isset($_GET['session']) === true
 // CHECK IF SESSION EXISTS AND IF SESSION IS VALID
 if (empty($_SESSION['fin_session']) === false) {
     $dataSession = DB::queryFirstRow(
-        "SELECT key_tempo FROM ".prefixTable("users")." WHERE id=%i",
+        'SELECT key_tempo FROM '.prefixTable('users').' WHERE id=%i',
         $_SESSION['user_id']
     );
 } else {
-    $dataSession['key_tempo'] = "";
+    $dataSession['key_tempo'] = '';
 }
 
 // get some init
-if (isset($_SESSION["user_id"]) === false) {
-    $_SESSION["key"] = mt_rand();
-    $_SESSION["user_id"] = "0";
-    $_SESSION['user_settings']['clear_psk'] = "";
+if (isset($_SESSION['user_id']) === false) {
+    $_SESSION['key'] = mt_rand();
+    $_SESSION['user_id'] = '0';
+    $_SESSION['user_settings']['clear_psk'] = '';
 }
 
 if (isset($_SESSION['user_id']) === true
     && isset($_GET['type']) === false
     && isset($_GET['action']) === false
-    && $_SESSION['user_id'] !== "0"
+    && $_SESSION['user_id'] !== '0'
     && (empty($_SESSION['fin_session']) === true
     || $_SESSION['fin_session'] < time()
     || empty($_SESSION['key']) === true
@@ -230,13 +229,13 @@ if (isset($_SESSION['user_id']) === true
 ) {
     // Update table by deleting ID
     DB::update(
-        prefixTable("users"),
+        prefixTable('users'),
         array(
             'key_tempo' => '',
             'timestamp' => '',
-            'session_end' => ''
+            'session_end' => '',
         ),
-        "id=%i",
+        'id=%i',
         $_SESSION['user_id']
     );
 
@@ -269,10 +268,10 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
     && (isset($_SESSION['user_admin']) === true && $_SESSION['user_admin'] == 1)
 ) {
     $row = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefixTable("misc")." WHERE type=%s_type AND intitule=%s_intitule",
+        'SELECT valeur FROM '.prefixTable('misc').' WHERE type=%s_type AND intitule=%s_intitule',
         array(
-            "type" => "admin",
-            "intitule" => "cpassman_version"
+            'type' => 'admin',
+            'intitule' => 'cpassman_version',
         )
     );
     if ($row['valeur'] != $SETTINGS_EXT['version']) {
@@ -282,7 +281,7 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
     }
 }
 
-/**
+/*
  * Set the personal SaltKey if authorized
  */
 if (isset($SETTINGS['enable_personal_saltkey_cookie']) === true
@@ -309,13 +308,13 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
         // Update table by deleting ID
         if (isset($_SESSION['user_id']) === true) {
             DB::update(
-                prefixTable("users"),
+                prefixTable('users'),
                 array(
                     'key_tempo' => '',
                     'timestamp' => '',
-                    'session_end' => ''
+                    'session_end' => '',
                 ),
-                "id=%i",
+                'id=%i',
                 $_SESSION['user_id']
             );
         }
@@ -327,7 +326,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode
 
         syslog(
             LOG_WARNING,
-            "Unlog user: ".date("Y/m/d H:i:s")." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
+            'Unlog user: '.date('Y/m/d H:i:s')." {$_SERVER['REMOTE_ADDR']} ({$_SERVER['HTTP_USER_AGENT']})"
         );
 
         // erase session table
@@ -355,7 +354,7 @@ if (isset($SETTINGS['enable_sts']) === true
     // In apache's SSL configuration make sure "SSLOptions +ExportCertData" in enabled
     $server_cert = openssl_x509_parse($_SERVER['SSL_SERVER_CERT']);
     $cert_name = $server_cert['name'];
-    $cert_issuer = "";
+    $cert_issuer = '';
     foreach ($server_cert['issuer'] as $key => $value) {
         if (is_array($value) === false) {
             $cert_issuer .= "/$key=$value";
@@ -375,7 +374,7 @@ if (isset($SETTINGS['enable_sts']) === true
 if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === false) {
     // query on user
     $data = DB::queryfirstrow(
-        "SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM ".prefixTable("users")." WHERE id=%i",
+        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion FROM '.prefixTable('users').' WHERE id=%i',
         $_SESSION['user_id']
     );
 
@@ -410,11 +409,11 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
 
         if (isset($_SESSION['fin_session']) === false) {
             DB::update(
-                prefixTable("users"),
+                prefixTable('users'),
                 array(
-                    'timestamp'=>time()
+                    'timestamp' => time(),
                 ),
-                "id=%i",
+                'id=%i',
                 $_SESSION['user_id']
             );
         }
@@ -443,35 +442,34 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
     }
 }
 
-
 /*
 * LOAD CATEGORIES
 */
 if (isset($SETTINGS['item_extra_fields']) === true
-    && $SETTINGS['item_extra_fields'] == 1
+    && $SETTINGS['item_extra_fields'] === '1'
     && isset($_GET['page']) === true
     && $_GET['page'] === 'items'
     && isset($_SESSION['fonction_id']) === true
 ) {
     $_SESSION['item_fields'] = array();
     $rows = DB::query(
-        "SELECT *
-        FROM ".prefixTable("categories")."
-        WHERE level=%i",
-        "0"
+        'SELECT *
+        FROM '.prefixTable('categories').'
+        WHERE level=%i',
+        '0'
     );
     foreach ($rows as $record) {
         $arrFields = array();
 
         // get each field
         $rows2 = DB::query(
-            "SELECT *
-            FROM ".prefixTable("categories")."
+            'SELECT *
+            FROM '.prefixTable('categories').'
             WHERE parent_id=%i
-            ORDER BY `order` ASC",
+            ORDER BY `order` ASC',
             $record['id']
         );
-        
+
         if (DB::count() > 0) {
             foreach ($rows2 as $field) {
                 // Is this Field visibile by user?
@@ -491,7 +489,7 @@ if (isset($SETTINGS['item_extra_fields']) === true
                             'encrypted_data' => $field['encrypted_data'],
                             'type' => $field['type'],
                             'masked' => $field['masked'],
-                            'is_mandatory' => $field['is_mandatory']
+                            'is_mandatory' => $field['is_mandatory'],
                         )
                     );
                 }
@@ -504,7 +502,7 @@ if (isset($SETTINGS['item_extra_fields']) === true
             array(
                 'id' => $record['id'],
                 'title' => addslashes($record['title']),
-                'fields' => $arrFields
+                'fields' => $arrFields,
             )
         );
     }
@@ -514,14 +512,14 @@ if (isset($SETTINGS['item_extra_fields']) === true
 * CHECK PASSWORD VALIDITY
 * Don't take into consideration if LDAP in use
 */
-$_SESSION['numDaysBeforePwExpiration'] = ""; //initiliaze variable
-if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === "1") {
+$_SESSION['numDaysBeforePwExpiration'] = ''; //initiliaze variable
+if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
     $_SESSION['validite_pw'] = true;
     $_SESSION['last_pw_change'] = true;
 } else {
     if (isset($_SESSION['last_pw_change']) === true) {
-        if ($SETTINGS['pw_life_duration'] === "0") {
-            $_SESSION['numDaysBeforePwExpiration'] = "infinite";
+        if ($SETTINGS['pw_life_duration'] === '0') {
+            $_SESSION['numDaysBeforePwExpiration'] = 'infinite';
             $_SESSION['validite_pw'] = true;
         } else {
             $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
@@ -546,14 +544,13 @@ if (isset($SETTINGS['roles_allowed_to_print']) === true
     && isset($_SESSION['user_roles']) === true
     && (!isset($_SESSION['temporary']['user_can_printout']) || empty($_SESSION['temporary']['user_can_printout']))
 ) {
-    foreach (explode(";", $SETTINGS['roles_allowed_to_print']) as $role) {
+    foreach (explode(';', $SETTINGS['roles_allowed_to_print']) as $role) {
         if (in_array($role, $_SESSION['user_roles']) === true) {
             $_SESSION['temporary']['user_can_printout'] = true;
         }
     }
 }
 
-
 /* CHECK NUMBER OF USER ONLINE */
-DB::query("SELECT * FROM ".prefixTable("users")." WHERE timestamp>=%i", time() - 600);
+DB::query('SELECT * FROM '.prefixTable('users').' WHERE timestamp>=%i', time() - 600);
 $_SESSION['nb_users_online'] = DB::count();

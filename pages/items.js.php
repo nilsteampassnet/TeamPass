@@ -61,7 +61,8 @@ var requestRunning = false,
     itemEditorSuggestion,
     userDidAChange = false,
     selectedFolder = '',
-    selectedFolderId = '';
+    selectedFolderId = '',
+    itemClipboard;
 
 
 //Evaluate number of items to display - depends on screen height
@@ -157,6 +158,7 @@ $(this).delay(500).queue(function() {
 // Ensure correct height of folders tree
 $('#jstree').height(screenHeight - 200);
 
+// Prepare iCheck format for checkboxes
 $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
     checkboxClass: 'icheckbox_flat-blue',
     radioClass   : 'iradio_flat-blue'
@@ -902,7 +904,7 @@ function closeItemDetailsCard()
     } else {
         // Do some form cleaning
         $('#items-list-card, #folders-tree-card').removeClass('hidden');
-        $('.item-details-card, .form-item-copy, .form-item, .form-folder-action').addClass('hidden');
+        $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
         $('#form-item-hidden-id, #request_lastItem, .clear-me-val').val('');
         $('.item-details-card').find('.form-control').val('');
         $('.clear-me-html').html('');
@@ -993,6 +995,11 @@ $(document)
     })
     .on('mouseleave', '.list-item-row', function() {
         $(this).find(".list-item-actions").addClass('hidden');
+    });
+
+$(document)
+    .on('change', '.form-check-input-template', function() {
+        $('.form-check-input-template').not(this).prop('checked', false);  
     });
 
 /**
@@ -1437,11 +1444,11 @@ $('#form-item-button-save').click(function() {
 
             arrayQuery.push({
                 'field' : $(this).data('field-name'),
-                'value' : $(this).val()
+                'value' : $(this).val(),
             });
         }
     });
-console.log(arrayQuery)
+
     if (arrayQuery.length > 0) {
         var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
 
@@ -1508,46 +1515,15 @@ console.log(arrayQuery)
             });
 
             // get item field values
-            var fields = "";
-            $('.edit_item_field').each(function(i){
-                id = $(this).attr('id').split('_');
-                
-                // Check if mandatory
-                if ($(this).data('field-is-mandatory') === 1
-                    && $(this).val() === ''
-                    && $(this).is(':visible') === true
-                ) {
-                    fields = false; 
-                    $('#edit_show_error')
-                        .html("<?php echo langHdl('error_field_is_mandatory'); ?>")
-                        .show();
-                    $("#div_formulaire_edition_item_info")
-                        .addClass("hidden")
-                        .html("");
-                    $("#div_formulaire_edition_item ~ .ui-dialog-buttonpane")
-                        .find("button:contains('<?php echo langHdl('save_button'); ?>')")
-                        .prop("disabled", false);
-                    return false;
-                }
-
-                // Store data
-                if (fields == "") fields = id[2] + '~~' + $(this).val();
-                else fields += '_|_' + id[2] + '~~' + $(this).val();
-            });           
-            if (fields === false) {
-                return false;
-            }
-
-            // get template
-            var template = "";
-            $('.item_edit_template').each(function(i){
-                if ($(this).prop('checked') === true) {
-                    template = $(this).data('category-id');
-                    return false;
-                }
+            var fields = [];
+            $('.form-item-field-custom').each(function(key, data){
+                fields.push({
+                    'id' : $(this).data('field-name'),
+                    'value' : $(this).val(),
+                });
             });
 
-              //prepare data
+            //prepare data
             var data = {
                 'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
                 'complexity_level': parseInt($('#form-item-password-complex').val()),
@@ -1566,7 +1542,7 @@ console.log(arrayQuery)
                 'restricted_to_roles': restrictionRole,
                 'salt_key_set': parseInt($('#form-item-hidden-psk').val()),
                 'tags': $('#form-item-tags').val(),
-                'template_id': template === '' ? '' : parseInt(template),
+                'template_id': parseInt($('input.form-check-input-template:checkbox:checked').data('category-id')),
                 'to_be_deleted_after_date': ($('#form-item-deleteAfterDate') !== undefined
                     && $('#form-item-deleteAfterDate').val() !== '') ? $('#form-item-deleteAfterDate').val() : '',
                 'to_be_deleted_after_x_views': ($('#form-item-deleteAfterShown') !== undefined
@@ -1641,6 +1617,8 @@ console.log(data)
                 }
             );
         }
+    } else {
+        console.info('NOTHING TO SAVE');
     }
 });
 //->
@@ -2116,17 +2094,8 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $('#query_next_start').val(data.next_start);
                     } else {
                         $('#query_next_start').val(data.list_to_be_continued);
-
-                        // display Categories if needed
-                        if ($('.tr_fields') !== undefined && data.categoriesStructure !== undefined && data.categoriesStructure !== '') {
-                            var liste = data.categoriesStructure.split(';');
-                            for (var i=0; i<liste.length; i++) {
-                                $('.itemCatName_'+liste[i]+', #newItemCatName_'+liste[i]+', #editItemCatName_'+liste[i]).removeClass('hidden');
-                            }
-                        }
-                        if (data.saltkey_is_required == 1) {
-                            if ($('.tr_fields') != undefined) $('.tr_fields').addClass('hidden');
-                        }
+                        $('.card-item-category').addClass('hidden');
+                        console.log('ici1')
                     }
 
                     proceed_list_update(stop_listing_current_folder);
@@ -2149,17 +2118,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         $('#query_next_start').val(data.next_start);
                     } else {
                         $('#query_next_start').val(data.list_to_be_continued);
-
-                        // display Categories if needed
-                        if ($('.tr_fields') != undefined && data.categoriesStructure !== undefined && data.categoriesStructure != '') {
-                            var liste = data.categoriesStructure.split(';');
-                            for (var i=0; i<liste.length; i++) {
-                                $('.itemCatName_'+liste[i]+', #newItemCatName_'+liste[i]+', #editItemCatName_'+liste[i]).removeClass('hidden');
-                            }
-                        }
-                        if (data.saltkey_is_required == 1) {
-                            if ($('.tr_fields') != undefined) $('.tr_fields').addClass('hidden');
-                        }
+                        $('.card-item-category').addClass('hidden');
                     }
 
                     proceed_list_update(stop_listing_current_folder);
@@ -2435,6 +2394,7 @@ function proceed_list_update(stop_proceeding)
  */
 function Details(itemDefinition, actionType)
 {
+    console.info('EXPECTED ACTION '+actionType)
     $('#request_ongoing').val('');
     // If a request is already launched, then kill new.
     if ($('#request_ongoing').val() !== '') {
@@ -2550,7 +2510,7 @@ function Details(itemDefinition, actionType)
                     console.log("RECEIVED");
                     console.log(data);
                     
-                    if (data.error != '') {
+                    if (data.error !== '') {
                         $('#div_dialog_message_text').html('An error appears. Answer from Server cannot be parsed!<br /><br />Returned data:<br />'+data.error);
                         $('#div_dialog_message').show();
                     }
@@ -2585,18 +2545,28 @@ function Details(itemDefinition, actionType)
                     // Prepare forms
                     $('#items-list-card, #folders-tree-card').addClass('hidden');
                     if (actionType === 'show') {
-                        $('.item-details-card').removeClass('hidden');
+                        $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
                         $('#form-item-suggestion-password').focus();
+                        // If Description empty then remove it
+                        if (data.description === '<p>&nbsp;</p>') {
+                            $('#card-item-description')
+                                .parents('.item-details-card')
+                                .addClass('hidden');
+                        } else {
+                            $('#card-item-description')
+                                .parents('.item-details-card')
+                                .removeClass('hidden');
+                        }
                     } else {
                         $('.form-item').removeClass('hidden');
-                        $('.item-details-card').addClass('hidden');
+                        $('.item-details-card, #item-details-card-categories').addClass('hidden');
                         $('#pwd-definition-size').val(data.pw.length);
                         userDidAChange = false;
                     }
                     
                     // Prepare card
-                    $('#form-item-hidden-id').html(data.id);
+                    $('#form-item-hidden-id').val(data.id);
                     $('#card-item-label, #form-item-title').html(data.label);
                     $('#form-item-label, #form-item-suggestion-label').val(data.label);
                     $('#card-item-description, #form-item-suggestion-description').html(data.description);
@@ -2670,53 +2640,97 @@ function Details(itemDefinition, actionType)
                         $('#card-item-kbs').html('<?php echo langHdl('none'); ?>');
                     } else {
                         $('#card-item-kbs').html(html_kbs);
-                    } 
-
-
-
-
-                    if (data.categories.length === 0) {
-                        $('.card-item-category, .card-item-field').addClass('hidden');
-                        $('#card-item-fields-none').removeClass('hidden');
-                    } else {
-                        // Show expected categories
-                        $('#card-item-fields-none').addClass('hidden');
-
-                        // Now show expected fields and values
-                        $(data.fields).each(function(index, field) {
-                            // Show cateogry
-                            $('#card-item-category-'+field.parent_id).removeClass('hidden');
-                            
-                            // Show field
-                            if (field.masked === '1') {
-                            console.log(field.value);
-                                $('#card-item-field-'+field.id)
-                                    .removeClass('hidden')
-                                    .children(".card-item-field-value")
-                                    .html(
-                                        '<span data-field-id="'+field.id+'" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                        '<input type="text" class="hidden" id="hidden-card-item-field-value-'+field.id+'" value="'+field.value+'">'
-                                    );
-                            } else {
-                                $('#card-item-field-'+field.id)
-                                    .removeClass('hidden')
-                                    .children(".card-item-field-value").text(field.value);
-                            }
-                            
-                        });
                     }
+
+
+                    // Manage CATEGORIES / CUSTOM FIELDS
+                    if (data.categories.length === 0) {
+                        $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
+                            .addClass('hidden');
+                        $('.no-item-fields').removeClass('hidden');
+                    } else {
+                        // 
+                        if (data.template_id === '') {                                
+                            $('#list-group-item-main')
+                                .children('.list-group')
+                                .removeClass('hidden');
+                            $('#card-item-category').removeClass('hidden');
+                            $('.to_be_deleted').remove();
+                        }
+
+                        if (data.fields.length === 0) {
+                            if (actionType === 'show') {
+                                $('#item-details-card-categories').addClass('hidden');
+                            } else {
+                                // Show the inputs for EDITION
+                                $(data.categories).each(function(index, category) {
+                                    $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
+                                });
+                            }
+                        } else {
+                            // Show expected categories
+                            $('.no-item-fields, .form-item-category').addClass('hidden');
+
+                            // In edition mode, show all fields in expected Categories
+                            $(data.categories).each(function(index, category) {
+                                $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
+                            });
+
+                            // Now show expected fields and values
+                            $(data.fields).each(function(index, field) {
+                                // Show cateogry
+                                $('#card-item-category-' + field.parent_id).removeClass('hidden');
+                                // Show field
+                                if (field.masked === '1') {
+                                    // Item card
+                                    $('#card-item-field-' + field.id)
+                                        .removeClass('hidden')
+                                        .children(".card-item-field-value")
+                                        .html(
+                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
+                                            '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + field.value + '">'
+                                        )
+                                    $('#card-item-field-' + field.id)
+                                        .children(".btn-copy-clipboard-clear")
+                                        .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
+                                } else {
+                                    // Show Field
+                                    $('#card-item-field-'+field.id)
+                                        .removeClass('hidden')
+                                        .children(".card-item-field-value")
+                                        .text(field.value);
+                                }
+                                // Item edit form
+                                $('#form-item-field-' + field.id)
+                                    .children(".form-item-field-custom")
+                                    .val(field.value);
+                            });
+
+                            // Manage template to show
+                            if (data.template_id !== '') {
+                                // Tick the box in edit mode
+                                $('#template_' + data.template_id).attr('checked', true);
+
+                                // Move the template in place of item main                                
+                                $('#list-group-item-main')
+                                    .children('.list-group')
+                                    .addClass('hidden');                                    
+                                $('#list-group-item-main')
+                                    .append('<div class="to_be_deleted">' +
+                                        $('#card-item-category-' + data.template_id).html() +
+                                        '</div>');
+                                $('#card-item-category-' + data.template_id).addClass('hidden');
+                            }
+                        }
+                    }
+
                     
                     // Waiting
                     $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
 
-
-                    // Prepare clipboard - COPY LOGIN
-                    if (data.login !== '') {
-                        new Clipboard('#card-item-login-button', {
-                            text: function() {
-                                return (data.login);
-                            }
-                        })
+                    // Manage clipboard button
+                    if (itemClipboard) itemClipboard.destroy();
+                    itemClipboard = new Clipboard('.btn-copy-clipboard-clear')
                         .on('success', function(e) {
                             showAlertify(
                                 '<?php echo langHdl('copy_to_clipboard'); ?>',
@@ -2724,12 +2738,14 @@ function Details(itemDefinition, actionType)
                                 'top-right',
                                 'message'
                             );
-
                             e.clearSelection();
                         });
-                        $('#card-item-login-button').removeClass('hidden');
+
+                    // Prepare clipboard - COPY LOGIN
+                    if (data.login !== '') {
+                        $('#card-item-login-btn').removeClass('hidden');
                     } else {
-                        $('#card-item-login-button').addClass('hidden');
+                        $('#card-item-login-btn').addClass('hidden');
                     }
 
                     // Prepare clipboard - COPY PASSWORD
@@ -2762,266 +2778,74 @@ function Details(itemDefinition, actionType)
 
                     // Prepare clipboard - COPY EMAIL
                     if (data.email !== '') {
-                        new Clipboard('#card-item-email-button', {
-                            text: function() {
-                                return (data.email);
-                            }
-                        })
-                        .on('success', function(e) {
-                            showAlertify(
-                                '<?php echo langHdl('copy_to_clipboard'); ?>',
-                                1,
-                                'top-right',
-                                'message'
-                            );
-
-                            e.clearSelection();
-                        });
-                        $('#card-item-email-button').removeClass('hidden');
+                        $('#card-item-email-btn').removeClass('hidden');
                     } else {
-                        $('#card-item-email-button').addClass('hidden');
-                    }
-                    
-                    // Manage Fields
-                    if (data.fields.length === 0) {
-                        $('#tab_4').html(
-                            '<div class="alert alert-info">' +
-                            '<h5><i class="icon fa fa-info mr-3"></i><?php echo langHdl('information'); ?></h5>' +
-                            '<?php echo langHdl('no_fields'); ?>' +
-                            '</div>'
-                        );
-                    } else {
-
+                        $('#card-item-email-btn').addClass('hidden');
                     }
 
+                    // Prepare auto_update info
+                    $('#card-item-misc').html('');
+                    if (data.auto_update_pwd_frequency !== '0') {
+                        $('#card-item-misc')
+                            .append('<span class="fa fa-shield infotip mr-4" title="<?php
+                                echo langHdl('auto_update_enabled');
+                            ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+                    }
 
-                    // --------
+                    // Prepare counter
+                    $('#card-item-misc')
+                        .append('<span class="icon-badge mr-5"><span class="fa fa-bullseye infotip" title="<?php
+                            echo langHdl('viewed_number');
+                        ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+
+                    // Show timestamp
+                    $('#form-item-hidden-timestamp').val(data.timestamp);
+
+                    //Anyone can modify button
+                    if (data.anyone_can_modify === '1') {console.log($('#form-item-anyoneCanModify'))
+                        $('#form-item-anyoneCanModify').iCheck('check');
+                    } else {
+                        $('#form-item-anyoneCanModify').iCheck('uncheck');
+                    }
+
+                    // Delete after X views
+                    if (data.to_be_deleted !== '') {
+                        if (data.to_be_deleted_type === '1') {
+                            $('#form-item-deleteAfterShown').val(data.to_be_deleted);
+                            $('#form-item-deleteAfterDate').val('');
+                        } else {
+                            $('#form-item-deleteAfterShown').val('');
+                            $('#form-item-deleteAfterDate').val(data.to_be_deleted);
+                        }
+                        // Show icon
+                        $('#card-item-misc')
+                            .append('<span class="icon-badge mr-6"><span class="fa fa-trash-o infotip" title="<?php
+                                echo langHdl('automatic_deletion_engaged');
+                            ?>"></span><span class="badge badge-danger icon-badge-text">' + data.to_be_deleted + '</span></span>');
+                    }
+
+                    // Show Notification engaged
+                    if (data.notification_status === true) {
+                        $('#card-item-misc')
+                            .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-o infotip text-warning" title="<?php
+                                echo langHdl('notification_engaged');
+                            ?>"></span></span>');
+                    } else {
+                        $('#card-item-misc')
+                            .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-slash-o infotip text-warning" title="<?php
+                                echo langHdl('notification_not_engaged');
+                            ?>"></span></span>');
+                    }
 
                     // reset password shown info
                     $('#pw_shown').val('0');
-
-                    // show some info on top
-                    if (data.auto_update_pwd_frequency != '0') var auto_update_pwd = '<i class="fa fa-shield tip" title="<?php echo langHdl('server_auto_update_password_enabled_tip'); ?>"></i>&nbsp;<b>'+data.auto_update_pwd_frequency+'</b>&nbsp;|&nbsp;';
-                    else var auto_update_pwd = '';
-                    $('#item_viewed_x_times').html(auto_update_pwd+'&nbsp;<i class="fa fa-sticky-note-o tip" title="Number of times item was displayed"></i>&nbsp;<b>'+data.viewed_no+'</b>');
-
-                    // Show timestamp
-                    $('#timestamp_item_displayed').val(data.timestamp);
-
-                    //Change the class of this selected item
-                    $('#form-item-hidden-id').val(data.id);
                     
                     
-                    $('#item_details_nok').addClass('hidden');
-                    $('#fileclass'+data.id).addClass('fileselected');
-                    $('item_editable').val(0);
 
                     if (data.show_details == '1' && data.show_detail_option != '2') {
-                        //unprotect data
-                        data.login = unsanitizeString(data.login);
-
-                        $('#id_files').html('');
-
-                        //Display details
-                        $('#id_label').html(data.label);
-                        $('#hid_label').val(unsanitizeString(data.label));
-                        if (data.pw === '') {
-                            $('#id_pw').html('');
-                        } else {
-                            $('#id_pw').html('<?php echo $var['hidden_asterisk']; ?>');
-                        }
                         
-                        $('#hid_pw').text(unsanitizeString(data.pw));
-                        if (data.url != '') {
-                            $('#id_url').html(data.url+data.link);
-                            $('#hid_url').val(data.url);
-                        } else {
-                            $('#id_url').html('');
-                            $('#hid_url').val('');
-                        }
-                        $('#id_desc').html(data.description);
-                        $('#hid_desc').val(data.description);
-                        $('#id_login').html(data.login);
-                        $('#hid_login').val(data.login);
-                        $('#id_email').html(data.email);
-                        $('#hid_email').val(data.email);
-
-                        
-
-                        //$('#hid_tags').val(item_tag);
-                        $('#hid_anyone_can_modify').val(data.anyone_can_modify);
-                        $('#id_categorie').val(data.folder);
-                        $('#id_item').val(data.id);
-                        $('#id_kbs').html(data.links_to_kbs);
-                        $('.infotip').tooltip();
-
                         // ---
-                        // Show Field values
-                        /*$('.fields').val('');
-                        $('.fields_div, .fields').html('');
-                        // If no CF then hide
-                        if (data.fields === '') {
-                            $('.tr_fields').addClass('hidden');
-                        } else {
-                            $('.tr_cf, .tr_fields').addClass('hidden');
-                            var liste = data.fields.split('_|_');
-                            for (var i=0; i<liste.length; i++) {
-                                var field = liste[i].split('~~');
-                                if (data.template_id !== '') {
-                                    if (data.template_id === field[2]) {
-                                        $('#cf_tr_' + field[0] + ', #tr_catfield_' + field[2]).removeClass('hidden');
-                                    }
-                                } else {
-                                    $('#cf_tr_' + field[0] + ', #tr_catfield_' + field[2]).removeClass('hidden');
-                                }
-                                
-                                $('#hid_field_' + field[0] + '_' + field[2]).text(field[1].replace(/<br ?\/?>/g,''));
-                                if (field[4] === '1') {
-                                    $('#id_field_' + field[0] + '_' + field[2])
-                                        .html('<?php echo $var['hidden_asterisk']; ?>');
-                                } else {
-                                    $('#id_field_' + field[0] + '_' + field[2])
-                                        .text(field[1]);
-                                }
-                            }
-                        }
-
-                        // 
-                        if (data.template_id !== '') {
-                            $('.default_item_field, .tr_fields_header').addClass('hidden');
-                        } else {
-                            $('.default_item_field, .tr_fields_header').removeClass('hidden');
-                        }
-
-                        // Template id
-                        $('#template_selected_id').val(data.template_id);
-
-                        //Anyone can modify button
-                        if (data.anyone_can_modify == '1') {
-                            $('#edit_anyone_can_modify').attr('checked', true);
-                            $('#new_history_entry_form').show();
-                        } else {
-                            $('#edit_anyone_can_modify').attr('checked', false);
-                            $('#new_history_entry_form').addClass('hidden');
-                        }
-*/
-                        //Show to be deleted in case activated
-                        if (data.to_be_deleted == 'not_enabled') {
-                            $('#edit_to_be_deleted').addClass('hidden');
-                        } else {
-                            $('#edit_to_be_deleted').show();
-                            if (data.to_be_deleted != '') {
-                                $('#edit_enable_delete_after_consultation').attr('checked',true);
-                                if (data.to_be_deleted_type == 2) {
-                                    $('#edit_times_before_deletion').val('');
-                                    $('#edit_deletion_after_date').val(data.to_be_deleted);
-                                } else {
-                                    $('#edit_times_before_deletion').val(data.to_be_deleted);
-                                    $('#edit_deletion_after_date').val('');
-                                }
-                            } else {
-                                $('#edit_enable_delete_after_consultation').attr('checked',false);
-                                $('#edit_times_before_deletion, #edit_deletion_after_date').val('');
-                            }
-                        }
-
-                        //manage buttons
-                        if ($('#user_is_read_only').val() == 1) {
-                            $('#menu_button_add_item, #menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
-                        } else if (data.user_can_modify == 0) {
-                            $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').attr('disabled', 'disabled');
-                        } else if (data.restricted == '1' || data.user_can_modify == '1') {
-                            //$('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item').prop('disabled', false);
-                            var param = '#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item';
-                            $('#new_history_entry_form').show();
-                        } else {
-                            //$('#menu_button_add_item, #menu_button_copy_item').prop('disabled', false);
-                            var param = '#menu_button_del_item, #menu_button_copy_item';
-                            $('#new_history_entry_form').show();
-                        }
-                        //$('#menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link, #menu_button_history').prop('disabled', false);
-
-                        // disable share button for personal folder
-                        if ($('#folder_requests_psk').val() == 1) {
-                            $('#menu_button_share, #menu_button_otv').attr('disabled', 'disabled');
-                        } else {
-                            $('#menu_button_share, #menu_button_otv').prop('disabled', false);
-                        }
-
-                        //Manage to deleted information
-                        if (data.to_be_deleted != 0 && data.to_be_deleted != null && data.to_be_deleted != 'not_enabled') {
-                            $('#item_extra_info')
-                                .html('<b><i class="fa fa-bell-o mi-red"></i></b>&nbsp;')
-                                .attr('title', '<?php echo langHdl('automatic_deletion_activated'); ?>');
-                            $('#item_extra_info').tooltip();
-                        } else {
-                            $('#item_extra_info').html('');
-                        }
-
-                        if (data.notification_status == 0 && data.id_user == <?php echo $_SESSION['user_id']; ?>) {
-                            $('#menu_button_notify')
-                                .prop('disabled', false)
-                                .attr('title','<?php echo langHdl('enable_notify'); ?>')
-                                .attr('onclick','notify_click(\'true\')');
-                            $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
-                        } else if (data.notification_status == 1 && data.id_user == <?php echo $_SESSION['user_id']; ?>) {
-                            $('#menu_button_notify')
-                                .prop('disabled', false)
-                                .attr('title','<?php echo langHdl('disable_notify'); ?>')
-                                .attr('onclick','notify_click(\'false\')');
-                            $('#div_notify').attr('class', '<i class="fa fa-bell-slash mi-red"></i>&nbsp;');
-                            $('#item_extra_info').html('<i><i class=\'fa fa-bell mi-green\"></i>&nbsp;<?php echo langHdl('notify_activated'); ?></i>');
-                        } else {
-                            $('#menu_button_notify').attr('disabled', 'disabled');
-                            $('#div_notify').attr('class', '<i class="fa fa-bell mi-green"></i>&nbsp;');
-                        }
-
-                        //Prepare clipboard copies
-                        if (data.pw != '') {
-                            $('#button_quick_pw_copy').removeClass('hidden');
-                        } else {
-                            $('#button_quick_pw_copy').addClass('hidden');
-                        }
-                        if (data.login != '') {
-                            var clipboard_login = new Clipboard('#menu_button_copy_login, #button_quick_login_copy', {
-                                text: function() {
-                                    return (data.login);
-                                }
-                            });
-                            clipboard_login.on('success', function(e) {
-                                $('#message_box').html('<?php echo langHdl('login_copied_clipboard'); ?>').show().fadeOut(1000);
-
-                                e.clearSelection();
-                            });
-                            $('#button_quick_login_copy').removeClass('hidden');
-                        } else {
-                            $('#button_quick_login_copy').addClass('hidden');
-                        }
-                        // #525
-                        if (data.url != '') {
-                            var clipboard_url = new Clipboard('#menu_button_copy_url', {
-                                text: function() {
-                                    return unsanitizeString(data.url);
-                                }
-                            });
-                            clipboard_url.on('success', function(e) {
-                                $('#message_box').html('<?php echo langHdl('url_copied_clipboard'); ?>').show().fadeOut(1000);
-
-                                e.clearSelection();
-                            });
-                        }
-
-                        //prepare link to clipboard
-                        var clipboard_link = new Clipboard('#menu_button_copy_link', {
-                            text: function() {
-                                return '<?php echo $SETTINGS['cpassman_url']; ?>'+'/index.php?page=items&group='+data.folder+'&id='+data.id;
-                            }
-                        });
-                        clipboard_link.on('success', function(e) {
-                            $('#message_box').html('<?php echo langHdl('url_copied'); ?>').show().fadeOut(1000);
-
-                            e.clearSelection();
-                        });
+                        /*
 
 
                         //set if user can edit
@@ -3030,20 +2854,19 @@ function Details(itemDefinition, actionType)
                         }
                         
                         //Manage double click
-
-                        // tags
-                        $('.round-grey').addClass('ui-state-highlight ui-corner-all');
-
+*/
                         // continue loading data
-                        showDetailsStep2(itemId, param, actionType);
+                        showDetailsStep2(itemId, actionType);
                     } else if (data.show_details === '1' && data.show_detail_option === '2') {
                         $('#item_details_nok').addClass('hidden');
                         $('#item_details_ok').addClass('hidden');
                         $('#item_details_expired_full').show();
                         $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
                         $('#div_loading').addClass('hidden');
+                        $('item_editable').val(0);
                     } else {
                         //Dont show details
+                        $('item_editable').val(0);
                         $('#item_details_nok').removeClass('hidden');
                         $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo langHdl('author'); ?>: </b>' + data.author + '<br /><b><?php echo langHdl('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo langHdl('request_access_ot_item'); ?></a></u></div>');
 
@@ -3074,7 +2897,7 @@ function Details(itemDefinition, actionType)
 /*
 * Loading Item details step 2
 */
-function showDetailsStep2(id, param, actionType)
+function showDetailsStep2(id, actionType)
 {
     $('#div_loading').removeClass('hidden');
     $.post(

@@ -15,6 +15,11 @@
  */
 
 return array(
+    'notification_engaged' => 'You are receiving notifications on Item change',
+    'notification_not_engaged' => 'You are not receiving notifications on Item change',
+    'viewed_number' => 'Number of Views',
+    'automatic_deletion_engaged' => 'Automatic deletion',
+    'auto_update_enabled' => 'Automatic user password change enabled. Next change planned',
     'copy_folder' => 'Copy folder',
     'select_source_folder' => 'Select folder to copy',
     'select_destination_folder' => 'Select destination folder',
@@ -642,7 +647,7 @@ return array(
     'index_password' => 'Password',
     'index_pw_error_identical' => 'The passwords have to be identical!',
     'index_pw_expiration' => 'Actual password expiration in',
-    'index_pw_level_txt' => 'Password Strength',
+    'index_pw_level_txt' => 'Strength',
     'index_refresh_page' => 'Refresh page',
     'index_session_duration' => 'Session duration',
     'index_session_ending' => 'Your session will end in less than 1 minute.',
@@ -1009,7 +1014,6 @@ return array(
     'ssh_scheduled_change' => 'Scheduled change',
     'ssh_one_shot_change' => 'One-time change',
     'month' => 'month',
-    'server_auto_update_password_enabled_tip' => 'Automatic user password change enabled',
     'server_password_change_enable_tip' => 'This setting adds an option in the password item to automatically change the user password on a server address listed in the url. This requires the remote UNIX server to allow username and password login via SSH. Automatic scheduled password changes can be performed after adding <i>/files/script.ssh.php</i> to crontab to run once a day on the password manager webserver.',
     'can_manage_all_users' => 'Human Resources - User can manage all other users (except administrators) regardless of group membership. HR user will also have manager rights added to their account.',
     'error_bad_credentials_more_than_3_times' => 'Login credentials incorrect!<br>Please wait 10 seconds before next attempt',
