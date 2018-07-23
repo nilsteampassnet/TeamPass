@@ -2291,7 +2291,7 @@ if (null !== $post_type) {
 
                             // Manage textarea string
                             if ($row['field_type'] === 'textarea') {
-                                $fieldText = nl2br($fieldText);
+                                $fieldText = $fieldText;
                             }
 
                             // build returned list of Fields text

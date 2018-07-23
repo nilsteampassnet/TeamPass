@@ -15,6 +15,7 @@
  */
 
 return array(
+    'nothing_to_save' => 'Nothing to save',
     'notification_engaged' => 'You are receiving notifications on Item change',
     'notification_not_engaged' => 'You are not receiving notifications on Item change',
     'viewed_number' => 'Number of Views',

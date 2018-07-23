@@ -1514,15 +1514,28 @@ $('#form-item-button-save').click(function() {
                 diffusion.push($(this).val());
             });
 
-            // get item field values
+            // Get item field values
+            // Ensure that mandatory ones are filled in too
             var fields = [];
+            var errorExit = false;
             $('.form-item-field-custom').each(function(key, data){
                 fields.push({
                     'id' : $(this).data('field-name'),
                     'value' : $(this).val(),
                 });
+                // Mandatory?
+                if ($(this).data('field-mandatory') === 1 && $(this).val() === '') {
+                    errorExit = true;
+                    return false;
+                }
             });
-
+            if (errorExit === true) {
+                alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>', 5)
+                    .dismissOthers();
+                return false;
+            }
+            
             //prepare data
             var data = {
                 'anyone_can_modify': $('#form-item-anyoneCanModify').is(':checked') ? 1 : 0,
@@ -1619,6 +1632,9 @@ console.log(data)
         }
     } else {
         console.info('NOTHING TO SAVE');
+        alertify
+            .warning('<?php echo langHdl('nothing_to_save'); ?>', 2)
+            .dismissOthers();
     }
 });
 //->

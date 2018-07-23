@@ -252,7 +252,7 @@ echo '
                                 </div>
                                 <input type="hidden" id="form-item-password-complex" value="0">
                                 <div class="mt-1 hidden" id="form-item-password-options">
-                                    <form class="form-inline">
+                                    <div class="btn-toolbar justify-content-center" role="toolbar" aria-label="Toolbar with button groups">
                                         <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons">
                                             <label class="btn btn-outline-secondary btn-sm">
                                                 <input type="checkbox" class="password-definition" id="pwd-definition-lcl">abc</label>
@@ -279,7 +279,7 @@ echo '
                                             ?>
                                             </select>
                                         </div>
-                                    </form>
+                                    </div>
                                 </div>
                                 <!-- EMAIL -->
                                 <div class="input-group mb-3 mt-3">
@@ -434,7 +434,7 @@ echo '
                                 </div>
                             </div>
 
-
+                            <!-- CUSTOM FIELDS -->
                             <div class="tab-pane" id="tab_4">
                                 <div id="form-item-field" class="hidden">
                                 <?php
@@ -444,13 +444,27 @@ echo '
                                         <h5>'.$category['title'].'</h5>
                                         <p>';
                                     foreach ($category['fields'] as $field) {
-                                        echo '
+                                        if ($field['type'] === 'textarea') {
+                                            echo '
+                                            <div class="form-group mb-3 form-item-field" id="form-item-field-'.$field['id'].'" data-field-id="'.$field['id'].'">
+                                                <label>'.$field['title']
+                                                , $field['is_mandatory'] === '1' ?
+                                                '<span class="fa fa-fire text-danger ml-1 infotip" title="'.langHdl('is_mandatory').'"></span>' : ''
+                                                , '</label>
+                                                <textarea class="form-control form-item-control form-item-field-custom track-change" rows="2" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'"></textarea>
+                                            </div>';
+                                        } else {
+                                            echo '
                                             <div class="input-group mb-3 form-item-field" id="form-item-field-'.$field['id'].'" data-field-id="'.$field['id'].'">
                                                 <div class="input-group-prepend">
-                                                    <span class="input-group-text">'.$field['title'].'</span>
+                                                    <span class="input-group-text">'.$field['title']
+                                                    , $field['is_mandatory'] === '1' ?
+                                                    '<span class="fa fa-fire text-danger ml-1 infotip" title="'.langHdl('is_mandatory').'"></span>' : ''
+                                                    , '</span>
                                                 </div>
-                                                <input type="'.$field['type'].'" class="form-control form-item-control form-item-field-custom track-change" data-field-name="'.$field['id'].'">
+                                                <input type="'.$field['type'].'" class="form-control form-item-control form-item-field-custom track-change" data-field-name="'.$field['id'].'" data-field-mandatory="'.$field['is_mandatory'].'">
                                             </div>';
+                                        }
                                     }
                                     // Manage template
                                     if (isset($SETTINGS['item_creation_templates']) === true
