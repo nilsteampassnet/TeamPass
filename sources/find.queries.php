@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Find.Queries.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 require_once 'SecureHandler.php';
 session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] === false || !isset($_SESSION['key']) || empty($_SESSION['key'])) {
@@ -72,23 +73,23 @@ $aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'lo
 $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
-$sOrder = $sLimit = "";
-$sWhere = "id_tree IN %ls_idtree"; //limit search to the visible folders
+$sOrder = $sLimit = '';
+$sWhere = 'id_tree IN %ls_idtree'; //limit search to the visible folders
 
 //Get current user "personal folder" ID
 $row = DB::query(
-    "SELECT id FROM ".prefixTable("nested_tree")." WHERE title = %i",
+    'SELECT id FROM '.prefixTable('nested_tree').' WHERE title = %i',
     intval($_SESSION['user_id'])
 );
 
 //get list of personal folders
 $arrayPf = $crit = array();
-$listPf = "";
+$listPf = '';
 if (empty($row['id']) === false) {
     $rows = DB::query(
-        "SELECT id FROM ".prefixTable("nested_tree")."
-        WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i",
-        "1",
+        'SELECT id FROM '.prefixTable('nested_tree').'
+        WHERE personal_folder=1 AND NOT parent_id = %i AND NOT title = %i',
+        '1',
         filter_var($row['id'], FILTER_SANITIZE_NUMBER_INT),
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
     );
@@ -106,35 +107,34 @@ if (empty($row['id']) === false) {
     }
 }
 
-
 /* BUILD QUERY */
 //Paging
-$sLimit = "";
+$sLimit = '';
 if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = "LIMIT ".filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT).", ".filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT)."";
+    $sLimit = 'LIMIT '.filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT).'';
 }
 
 //Ordering
-$sOrder = "";
+$sOrder = '';
 if (isset($_GET['iSortCol_0'])) {
     if (!in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
         // possible attack - stop
         echo '[{}]';
         exit;
     } else {
-        $sOrder = "ORDER BY  ";
-        for ($i = 0; $i < intval($_GET['iSortingCols']); $i++) {
-            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == "true"
-                && preg_match("#^(asc|desc)\$#i", $_GET['sSortDir_'.$i])
+        $sOrder = 'ORDER BY  ';
+        for ($i = 0; $i < intval($_GET['iSortingCols']); ++$i) {
+            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == 'true'
+                && preg_match('#^(asc|desc)$#i', $_GET['sSortDir_'.$i])
             ) {
-                $sOrder .= "".$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)]." "
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).", ";
+                $sOrder .= ''.$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)].' '
+                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).', ';
             }
         }
 
-        $sOrder = substr_replace($sOrder, "", -2);
-        if ($sOrder == "ORDER BY") {
-            $sOrder = "";
+        $sOrder = substr_replace($sOrder, '', -2);
+        if ($sOrder == 'ORDER BY') {
+            $sOrder = '';
         }
     }
 }
@@ -146,11 +146,11 @@ if (isset($_GET['iSortCol_0'])) {
  * on very large tables, and MySQL's regex functionality is very limited
  */
 if (isset($_GET['sSearch']) === true && empty($_GET['sSearch']) === false) {
-    $sWhere .= " AND (";
-    for ($i = 0; $i < count($aColumns); $i++) {
-        $sWhere .= $aColumns[$i]." LIKE %ss_".$i." OR ";
+    $sWhere .= ' AND (';
+    for ($i = 0; $i < count($aColumns); ++$i) {
+        $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
     }
-    $sWhere = substr_replace($sWhere, "", -3).") ";
+    $sWhere = substr_replace($sWhere, '', -3).') ';
 
     $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
@@ -162,17 +162,17 @@ if (isset($_GET['sSearch']) === true && empty($_GET['sSearch']) === false) {
         '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        'pf' => $arrayPf
+        'pf' => $arrayPf,
     );
 }
 
-if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != "") {
-    $sWhere .= " AND tags LIKE %ss_0";
+if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != '') {
+    $sWhere .= ' AND tags LIKE %ss_0';
 
     $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
         '0' => filter_var($_GET['tagSearch'], FILTER_SANITIZE_STRING),
-        'pf' => $arrayPf
+        'pf' => $arrayPf,
     );
 }
 
@@ -187,22 +187,22 @@ if (count($crit) === 0) {
         '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
         '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        'pf' => $arrayPf
+        'pf' => $arrayPf,
     );
 }
 
 // Do NOT show the items in PERSONAL FOLDERS
 if (empty($listPf) === false) {
     if (!empty($sWhere)) {
-        $sWhere .= " AND ";
+        $sWhere .= ' AND ';
     }
-    $sWhere = "WHERE ".$sWhere."id_tree NOT IN %ls_pf ";
+    $sWhere = 'WHERE '.$sWhere.'id_tree NOT IN %ls_pf ';
 } else {
-    $sWhere = "WHERE ".$sWhere;
+    $sWhere = 'WHERE '.$sWhere;
 }
 
 DB::query(
-    "SELECT id FROM ".prefixTable("cache")."
+    'SELECT id FROM '.prefixTable('cache')."
     $sWhere
     $sOrder",
     $crit
@@ -210,8 +210,8 @@ DB::query(
 $iTotal = DB::count();
 
 $rows = DB::query(
-    "SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
-    FROM ".prefixTable("cache")."
+    'SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
+    FROM '.prefixTable('cache')."
     $sWhere
     $sOrder
     $sLimit",
@@ -228,29 +228,28 @@ if (isset($_GET['type']) === false) {
         $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
     }
     $sOutput .= '"aaData": [ ';
-    $sOutputConst = "";
-
+    $sOutputConst = '';
 
     foreach ($rows as $record) {
         $getItemInList = true;
-        $sOutputItem = "[";
+        $sOutputItem = '[';
 
         // massive move/delete enabled?
         $checkbox = '';
-        if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === "1") {
+        if (isset($SETTINGS['enable_massive_move_delete']) && $SETTINGS['enable_massive_move_delete'] === '1') {
             // check role access on this folder (get the most restrictive) (2.1.23)
             $accessLevel = 2;
             $arrTmp = [];
 
             foreach (explode(';', $_SESSION['fonction_id']) as $role) {
                 $access = DB::queryFirstRow(
-                    "SELECT type FROM ".prefixTable("roles_values")." WHERE role_id = %i AND folder_id = %i",
+                    'SELECT type FROM '.prefixTable('roles_values').' WHERE role_id = %i AND folder_id = %i',
                     $role,
                     $record['id_tree']
                 );
-                if ($access['type'] == "R") {
+                if ($access['type'] == 'R') {
                     array_push($arrTmp, 1);
-                } elseif ($access['type'] == "W") {
+                } elseif ($access['type'] == 'W') {
                     array_push($arrTmp, 0);
                 } else {
                     array_push($arrTmp, 2);
@@ -263,7 +262,7 @@ if (isset($_GET['type']) === false) {
         }
 
         // Expiration
-        if ($SETTINGS['activate_expiration'] === "1") {
+        if ($SETTINGS['activate_expiration'] === '1') {
             if ($record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
@@ -279,7 +278,7 @@ if (isset($_GET['type']) === false) {
         if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
             $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
         } else {
-            $restrictedTo = "";
+            $restrictedTo = '';
         }
 
         if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
@@ -298,13 +297,13 @@ if (isset($_GET['type']) === false) {
         $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.(stripslashes(utf8_encode($record['label']))).'</span>", ';
 
         //col3
-        $sOutputItem .= '"'.str_replace("&amp;", "&", htmlspecialchars(stripslashes(utf8_encode($record['login'])), ENT_QUOTES)).'", ';
+        $sOutputItem .= '"'.str_replace('&amp;', '&', htmlspecialchars(stripslashes(utf8_encode($record['login'])), ENT_QUOTES)).'", ';
 
         //col4
         //get restriction from ROles
         $restrictedToRole = false;
         $rTmp = DB::queryFirstColumn(
-            "SELECT role_id FROM ".prefixTable("restriction_to_roles")." WHERE item_id = %i",
+            'SELECT role_id FROM '.prefixTable('restriction_to_roles').' WHERE item_id = %i',
             $record['id']
         );
         // We considere here that if user has at least one group similar to the object ones
@@ -312,7 +311,7 @@ if (isset($_GET['type']) === false) {
         if (count(array_intersect($rTmp, $_SESSION['user_roles'])) === 0 && count($rTmp) > 0) {
             $restrictedToRole = true;
         }
-        
+
         if ((
             $record['perso'] == 1 && $record['author'] != $_SESSION['user_id'])
             ||
@@ -339,10 +338,10 @@ if (isset($_GET['type']) === false) {
         $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['tags']), ENT_QUOTES).'", ';
 
         // col6 - URL
-        if ($record['url'] != "0") {
-                    $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['url']), ENT_QUOTES).'", ';
+        if ($record['url'] != '0') {
+            $sOutputItem .= '"'.htmlspecialchars(stripslashes($record['url']), ENT_QUOTES).'", ';
         } else {
-                    $sOutputItem .= '"", ';
+            $sOutputItem .= '"", ';
         }
 
         //col7 - Prepare the Treegrid
@@ -354,36 +353,39 @@ if (isset($_GET['type']) === false) {
         if ($getItemInList === true) {
             $sOutputConst .= $sOutputItem;
         } else {
-            $iFilteredTotal--;
-            $iTotal--;
+            --$iFilteredTotal;
+            --$iTotal;
         }
     }
     if (!empty($sOutputConst)) {
-        $sOutput .= substr_replace($sOutputConst, "", -2);
+        $sOutput .= substr_replace($sOutputConst, '', -2);
     }
     $sOutput .= '], ';
-
 
     $sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.' }';
 
     echo $sOutput;
-} elseif (isset($_GET['type']) && ($_GET['type'] == "search_for_items" || $_GET['type'] == "search_for_items_with_tags")) {
+} elseif (isset($_GET['type']) && ($_GET['type'] == 'search_for_items' || $_GET['type'] == 'search_for_items_with_tags')) {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-    $sOutput = "";
+    $sOutput = '';
     $init_personal_folder = false;
     $arr_data = [];
 
     foreach ($rows as $record) {
+        $displayItem = false;
+
         $arr_data[$record['id']]['item_id'] = $record['id'];
         $arr_data[$record['id']]['tree_id'] = $record['id_tree'];
         $arr_data[$record['id']]['label'] = strip_tags((utf8_encode($record['label'])));
-        $arr_data[$record['id']]['desc'] = strip_tags((utf8_encode(explode("<br>", $record['description'])[0])));
+        $arr_data[$record['id']]['desc'] = strip_tags((utf8_encode(explode('<br>', $record['description'])[0])));
         $arr_data[$record['id']]['folder'] = strip_tags(stripslashes(mb_substr(utf8_encode($record['folder']), 0, 65)));
-        $arr_data[$record['id']]['login'] = strtr($record['login'], '"', "&quot;");
+        $arr_data[$record['id']]['login'] = strtr($record['login'], '"', '&quot;');
+        $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons'])
+            ? intval($SETTINGS['copy_to_clipboard_small_icons']) : 0;
 
-        if ($SETTINGS['activate_expiration'] === "1") {
+        if ($SETTINGS['activate_expiration'] === '1') {
             if ($record['renewal_period'] > 0
                 && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
             ) {
@@ -399,13 +401,13 @@ if (isset($_GET['type']) === false) {
         }
         // list of restricted users
         $restricted_users_array = explode(';', $record['restricted_to']);
-        $itemPw = $itemLogin = "";
+        $itemPw = $itemLogin = '';
         $displayItem = $need_sk = $canMove = $item_is_restricted_to_role = 0;
         // TODO: Element is restricted to a group. Check if element can be seen by user
         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
         $user_is_included_in_role = 0;
         $roles = DB::query(
-            "SELECT role_id FROM ".prefixTable("restriction_to_roles")." WHERE item_id=%i",
+            'SELECT role_id FROM '.prefixTable('restriction_to_roles').' WHERE item_id=%i',
             $record['id']
         );
         if (count($roles) > 0) {
@@ -421,7 +423,7 @@ if (isset($_GET['type']) === false) {
         if (null !== filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING)) {
             $restrictedTo = filter_input(INPUT_POST, 'restricted', FILTER_SANITIZE_STRING);
         } else {
-            $restrictedTo = "";
+            $restrictedTo = '';
         }
 
         if (isset($_SESSION['list_folders_editable_by_role']) && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role'])) {
@@ -442,21 +444,21 @@ if (isset($_GET['type']) === false) {
             && in_array($_SESSION['user_id'], $restricted_users_array) === false
         ) {
             // $perso = '<i class="fa fa-tag mi-red"></i>&nbsp;';
-            $arr_data[$record['id']]['perso'] = "fa-tag mi-red";
+            $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
             $arr_data[$record['id']]['sk'] = 0;
-            $arr_data[$record['id']]['display'] = "no_display";
+            $arr_data[$record['id']]['display'] = 'no_display';
             $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = "";
+            $arr_data[$record['id']]['reload'] = '';
 
         // Case where item is in own personal folder
         } elseif (in_array($record['id_tree'], $_SESSION['personal_visible_groups'])
             && $record['perso'] == 1
         ) {
-            $arr_data[$record['id']]['perso'] = "fa-warning mi-red";
+            $arr_data[$record['id']]['perso'] = 'fa-warning mi-red';
             $arr_data[$record['id']]['sk'] = 1;
-            $arr_data[$record['id']]['display'] = "";
+            $arr_data[$record['id']]['display'] = '';
             $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = "";
+            $arr_data[$record['id']]['reload'] = '';
 
         // CAse where item is restricted to a group of users included user
         } elseif (!empty($record['restricted_to'])
@@ -465,11 +467,11 @@ if (isset($_GET['type']) === false) {
             && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
             && in_array($_SESSION['user_id'], $restricted_users_array)
         ) {
-            $arr_data[$record['id']]['perso'] = "fa-tag mi-yellow";
+            $arr_data[$record['id']]['perso'] = 'fa-tag mi-yellow';
             $arr_data[$record['id']]['sk'] = 0;
-            $arr_data[$record['id']]['display'] = "";
+            $arr_data[$record['id']]['display'] = '';
             $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = "";
+            $arr_data[$record['id']]['reload'] = '';
 
         // CAse where item is restricted to a group of users not including user
         } elseif ($record['perso'] == 1
@@ -491,59 +493,62 @@ if (isset($_GET['type']) === false) {
                 && $user_is_included_in_role == 0
                 && $item_is_restricted_to_role == 1
             ) {
-                $arr_data[$record['id']]['perso'] = "fa-tag mi-red";
+                $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
                 $arr_data[$record['id']]['sk'] = 0;
-                $arr_data[$record['id']]['display'] = "no_display";
+                $arr_data[$record['id']]['display'] = 'no_display';
                 $arr_data[$record['id']]['open_edit'] = 1;
-                $arr_data[$record['id']]['reload'] = "";
+                $arr_data[$record['id']]['reload'] = '';
+                $displayItem = true;
             } else {
-                $arr_data[$record['id']]['perso'] = "fa-tag mi-yellow";
+                $arr_data[$record['id']]['perso'] = 'fa-tag mi-yellow';
                 $arr_data[$record['id']]['sk'] = 0;
-                $arr_data[$record['id']]['display'] = "";
+                $arr_data[$record['id']]['display'] = '';
                 $arr_data[$record['id']]['open_edit'] = 1;
-                $arr_data[$record['id']]['reload'] = "";
+                $arr_data[$record['id']]['reload'] = '';
+                $displayItem = true;
             }
         } else {
-            $arr_data[$record['id']]['perso'] = "fa-tag mi-green";
+            $arr_data[$record['id']]['perso'] = 'fa-tag mi-green';
             $arr_data[$record['id']]['sk'] = 0;
-            $arr_data[$record['id']]['display'] = "";
+            $arr_data[$record['id']]['display'] = '';
             $arr_data[$record['id']]['open_edit'] = 1;
-            $arr_data[$record['id']]['reload'] = "";
+            $arr_data[$record['id']]['reload'] = '';
+            $displayItem = true;
         }
 
         // prepare pwd copy if enabled
         $arr_data[$record['id']]['pw_status'] = '';
-        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true && $SETTINGS['copy_to_clipboard_small_icons'] === "1") {
+        if (isset($SETTINGS['copy_to_clipboard_small_icons']) === true && $SETTINGS['copy_to_clipboard_small_icons'] === '1') {
             $data_item = DB::queryFirstRow(
-                "SELECT pw
-                from ".prefixTable("items")." WHERE id=%i",
+                'SELECT pw
+                from '.prefixTable('items').' WHERE id=%i',
                 $record['id']
             );
 
-            if ($record['perso'] === "1" && isset($_SESSION['user_settings']['session_psk']) === true) {
+            if ($record['perso'] === '1' && isset($_SESSION['user_settings']['session_psk']) === true) {
                 $pw = cryption(
                     $data_item['pw'],
                     $_SESSION['user_settings']['session_psk'],
-                    "decrypt"
+                    'decrypt'
                 );
             } else {
                 $pw = cryption(
                     $data_item['pw'],
-                    "",
-                    "decrypt"
+                    '',
+                    'decrypt'
                 );
             }
 
             // test charset => may cause a json error if is not utf8
             $pw = $pw['string'];
             if (isUTF8($pw) === false) {
-                $pw = "";
-                $arr_data[$record['id']]['pw_status'] = "encryption_error";
+                $pw = '';
+                $arr_data[$record['id']]['pw_status'] = 'encryption_error';
             }
         } else {
-            $pw = "";
+            $pw = '';
         }
-        $arr_data[$record['id']]['pw'] = strtr($pw, '"', "&quot;");
+        $arr_data[$record['id']]['pw'] = strtr($pw, '"', '&quot;');
         $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) === true ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
         $arr_data[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) === true ? $SETTINGS['enable_favourites'] : '0';
         if (in_array($record['id'], $_SESSION['favourites'])) {
@@ -551,12 +556,14 @@ if (isset($_GET['type']) === false) {
         } else {
             $arr_data[$record['id']]['is_favorite'] = 0;
         }
+
+        $arr_data[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
     }
 
     $returnValues = array(
-        "html_json" => $arr_data,
-        "message" => str_replace("%X%", $iFilteredTotal, langHdl('find_message'))
+        'html_json' => $arr_data,
+        'message' => str_replace('%X%', $iFilteredTotal, langHdl('find_message')),
     );
 
-    echo prepareExchangedData($returnValues, "encode");
+    echo prepareExchangedData($returnValues, 'encode');
 }

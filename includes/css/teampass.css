@@ -136,3 +136,11 @@
 .icon-badge-far {
     right: -16px;
 }
+
+.sticky-footer {
+    position: fixed;
+    bottom: 40px;
+    background-color: rgb(255, 198, 198);
+    border: 1px solid rgb(243, 105, 105);
+    padding: 10px;
+}

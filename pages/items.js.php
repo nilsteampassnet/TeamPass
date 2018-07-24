@@ -334,6 +334,9 @@ $('#form-item .track-change').change(function() {
     if ($(this).val().length > 0) {
         userDidAChange = true;
         $(this).data('change-ongoing', true);
+
+        // SHow button in sticky footer
+        $('#form-item-buttons').addClass('sticky-footer');
     }
 });
 
@@ -911,6 +914,9 @@ function closeItemDetailsCard()
         $('.form-item-control').val('');
         $('.form-check-input').attr('checked', '');
         $('.card-item-extra').collapse();
+
+        // SHow save button in card
+        $('#form-item-buttons').removeClass('sticky-footer');
         
         // Destroy editor
         if (itemEditor) {
@@ -1714,7 +1720,9 @@ function searchItems(criteria)
                 data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
                 
                 $('#items_folder_path').html('<button class="btn btn-info btn-sm"><i class="fa fa-filter"></i>&nbsp;' + data.message + '</button>');
-                
+
+                sList(data.html_json);
+                /*
                 // Build HTML list
                 $.each(data.html_json, function(i, value) {
 
@@ -1770,7 +1778,8 @@ function searchItems(criteria)
                         '<td style="min-width: 50px;" class="text-right">' + pwd_error  + icon_login + icon_pwd + icon_favorite + '</td>' +
                         '</tr>'
                     );
-                })
+                });
+                */
 
                 alertify
                     .success('<?php echo langHdl('success'); ?>', 1)
@@ -2146,6 +2155,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
 function sList(data)
 {
+    console.log(data);
     var counter = 0;
     $.each((data), function(i, value) {
         var new_line = '',

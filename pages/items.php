@@ -200,7 +200,7 @@ echo '
                             </div>
                         </span>
 
-                        <ul class="nav nav-pills nav-justified ml-auto mr-3" id="form-item-nav-pills">
+                        <ul class="nav nav-pills ml-auto mr-3" id="form-item-nav-pills">
                             <li class="nav-item"><a class="nav-link active" href="#tab_1" data-toggle="tab"><?php echo langHdl('main'); ?></a></li>
                             <li class="nav-item"><a class="nav-link" href="#tab_2" data-toggle="tab"><?php echo langHdl('details'); ?></a></li>
                             <li class="nav-item"><a class="nav-link" href="#tab_3" data-toggle="tab"><?php echo langHdl('attachments'); ?></a></li>
@@ -489,9 +489,9 @@ echo '
                         </div>
                         </form>
                     </div>
-                    <div class="card-footer">
+                    <div class="card-footer" id="form-item-buttons">
                         <button type="button" class="btn btn-info" id="form-item-button-save" data-action=""><?php echo langHdl('save'); ?></button>
-                        <button type="button" class="btn btn-default float-right but-back-to-list"><?php echo langHdl('cancel'); ?></button>
+                        <button type="button" class="btn btn-default  but-back-to-list"><?php echo langHdl('cancel'); ?></button>
                     </div>
                     <!-- /.card-footer -->
                 </div>
