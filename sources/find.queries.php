@@ -57,14 +57,12 @@ if (isset($_SESSION['groupes_visibles']) === false
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$pass = defuse_return_decrypted($pass);
-DB::$host = $server;
-DB::$user = $user;
-DB::$password = $pass;
-DB::$dbName = $database;
-DB::$port = $port;
-DB::$encoding = $encoding;
-DB::$error_handler = true;
+DB::$host         = DB_HOST;
+DB::$user         = DB_USER;
+DB::$password     = defuse_return_decrypted(DB_PASSWD);
+DB::$dbName       = DB_NAME;
+DB::$port         = DB_PORT;
+DB::$encoding     = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
@@ -290,8 +288,8 @@ if (isset($_GET['type']) === false) {
         }
 
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.$LANG['open_url_link'].'\" onClick=\"window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
-            '<i class=\"fa fa-eye tip\" title=\"'.$LANG['see_item_title'].'\" onClick=\"see_item('.$record['id'].','.$record['perso'].','.$record['id_tree'].','.$expired.','.$restrictedTo.');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
+        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.langHdl('open_url_link').'\" onClick=\"window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
+            '<i class=\"fa fa-eye tip\" title=\"'.langHdl('see_item_title').'\" onClick=\"see_item('.$record['id'].','.$record['perso'].','.$record['id_tree'].','.$expired.','.$restrictedTo.');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
 
         //col2
         $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.(stripslashes(utf8_encode($record['label']))).'</span>", ';
@@ -362,7 +360,7 @@ if (isset($_GET['type']) === false) {
     }
     $sOutput .= '], ';
 
-    $sOutput .= '"iTotalRecords": '.$iFilteredTotal.', ';
+    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.' }';
 
     echo $sOutput;
@@ -378,12 +376,17 @@ if (isset($_GET['type']) === false) {
 
         $arr_data[$record['id']]['item_id'] = $record['id'];
         $arr_data[$record['id']]['tree_id'] = $record['id_tree'];
-        $arr_data[$record['id']]['label'] = strip_tags((utf8_encode($record['label'])));
-        $arr_data[$record['id']]['desc'] = strip_tags((utf8_encode(explode('<br>', $record['description'])[0])));
-        $arr_data[$record['id']]['folder'] = strip_tags(stripslashes(mb_substr(utf8_encode($record['folder']), 0, 65)));
+        $arr_data[$record['id']]['label'] = $record['label'];
+        $arr_data[$record['id']]['desc'] = strip_tags(explode('<br>', $record['description'])[0]);
+        $arr_data[$record['id']]['folder'] = $record['folder'];
         $arr_data[$record['id']]['login'] = strtr($record['login'], '"', '&quot;');
         $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons'])
             ? intval($SETTINGS['copy_to_clipboard_small_icons']) : 0;
+        $arr_data[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites'])
+            ? intval($SETTINGS['enable_favourites']) : 0;
+        $arr_data[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify'])
+            ? intval($SETTINGS['anyone_can_modify']) : 0;
+        $arr_data[$record['id']]['is_result_of_search'] = 1;
 
         if ($SETTINGS['activate_expiration'] === '1') {
             if ($record['renewal_period'] > 0
@@ -549,8 +552,6 @@ if (isset($_GET['type']) === false) {
             $pw = '';
         }
         $arr_data[$record['id']]['pw'] = strtr($pw, '"', '&quot;');
-        $arr_data[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) === true ? $SETTINGS['copy_to_clipboard_small_icons'] : '0';
-        $arr_data[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) === true ? $SETTINGS['enable_favourites'] : '0';
         if (in_array($record['id'], $_SESSION['favourites'])) {
             $arr_data[$record['id']]['is_favorite'] = 1;
         } else {

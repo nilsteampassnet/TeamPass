@@ -3319,7 +3319,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['expired'] = $expired_item;
                         $html_json[$record['id']]['item_id'] = $record['id'];
                         $html_json[$record['id']]['tree_id'] = $record['tree_id'];
-                        $html_json[$record['id']]['label'] = strip_tags(utf8_encode($record['label']));
+                        $html_json[$record['id']]['label'] = strip_tags($record['label']);
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags((explode('<br>', $record['description'])[0]));
                         } else {
@@ -3543,11 +3543,12 @@ if (null !== $post_type) {
 
                         $html_json[$record['id']]['pw'] = $pw['string'];
                         $html_json[$record['id']]['login'] = $record['login'];
-                        $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify']) ? $SETTINGS['anyone_can_modify'] : '0';
+                        $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify'])
+                            ? intval($SETTINGS['anyone_can_modify']) : 0;
                         $html_json[$record['id']]['copy_to_clipboard_small_icons'] = isset($SETTINGS['copy_to_clipboard_small_icons']) ? intval($SETTINGS['copy_to_clipboard_small_icons']) : 0;
                         $html_json[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
                         $html_json[$record['id']]['enable_favourites'] = isset($SETTINGS['enable_favourites']) ? intval($SETTINGS['enable_favourites']) : 0;
-
+                        $html_json[$record['id']]['is_result_of_search'] = 0;
                         $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $_SESSION['favourites']) === true ? 1 : 0;
 
                         // Build array with items

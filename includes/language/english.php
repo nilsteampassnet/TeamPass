@@ -15,6 +15,12 @@
  */
 
 return array(
+    'profile' => 'Profile',
+    'settings' => 'Settings',
+    'created_items' => 'Created items',
+    'modification_performed' => 'Modification performed',
+    'items_opened' => 'Opened items',
+    'passwords_seen' => 'Seen passwords',
     'nothing_to_save' => 'Nothing to save',
     'notification_engaged' => 'You are receiving notifications on Item change',
     'notification_not_engaged' => 'You are not receiving notifications on Item change',

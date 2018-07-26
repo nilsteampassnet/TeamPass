@@ -990,8 +990,13 @@ $(document)
  */
 $(document)
     .on('mouseenter', '.list-item-row', function() {
-        var thisWidth = $(this).find(".list-item-description").width(),
-            miniIcons = 65;
+        if ($(this).data('is-search-result') === 0) {
+            var thisWidth = $(this).find(".list-item-description").width(),
+                miniIcons = 80;
+        } else {
+            var thisWidth = $(this).find(".list-item-folder").width(),
+                miniIcons = 80;
+        }
         
         $(this).find(".list-item-actions")
             .css({
@@ -1718,72 +1723,17 @@ function searchItems(criteria)
                     icon_favorite;
 
                 data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
-                
-                $('#items_folder_path').html('<button class="btn btn-info btn-sm"><i class="fa fa-filter"></i>&nbsp;' + data.message + '</button>');
 
+                // Show Items list
                 sList(data.html_json);
-                /*
-                // Build HTML list
-                $.each(data.html_json, function(i, value) {
-
-                    // Prepare error message
-                    if (value.pw_status === 'encryption_error') {
-                        pwd_error = '<i class="fa fa-warning fa-sm text-danger infotip" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>&nbsp;';
-                    }
-
-                    // Prepare mini icons
-                    if (value.copy_to_clipboard_small_icons === '1' && value.display === '') {
-                        // Login icon
-                        if (value.login !== '') {
-                            icon_login = '<i class="fa fa-sm fa-user mini_login pointer infotip" data-clipboard-text="' + sanitizeString(value.login) + '" title="<?php echo langHdl('item_menu_copy_login'); ?>" id="minilogin_' + value.item_id + '"></i>&nbsp;';
-                        }
-                        // Pwd icon
-                        if (value.pw !== '') {
-                            icon_pwd = '<i class="fa fa-sm fa-lock mini_pw pointer infotip" data-clipboard-text="'+sanitizeString(value.pw)+'" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-clipboard-id="' + value.item_id + '" id="minipwd_'+value.item_id+'"></i>&nbsp;';
-                        }
-
-                        // Now check if pwd is empty. If it is then warn user
-                        if (value.pw === '') {
-                            pwd_error = '&nbsp;<i class="fa fa-exclamation-circle fa-sm text-warning infotip" title="<?php echo langHdl('password_is_empty'); ?>"></i>&nbsp;';
-                        }
-                    }
-
-                    // Prepare Favorite icon
-                    if (value.display === '' && value.enable_favourites === 1) {
-                        if (value.is_favorite === 1) {
-                            icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="1">' +
-                                '<i class="fa fa-sm fa-star text-warning"></i></span>';
-                        } else {
-                            icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="0">' +
-                                '<i class="fa fa-sm fa-star-o"></i></span>';
-                        }
-                    }
-
-                    // Prepare Description
-                    if (value.desc !== '') {
-                        value.desc = '[' + value.desc + ']';
-                    }
-
-                    // Prepare flag
-                    if (value.expiration_flag !== '') {
-                        item_flag = '<i class="fa fa-flag ' + value.expiration_flag + ' fa-sm"></i>&nbsp;';
-                    }
-                    
-                    $('#teampass_items_list').append(
-                        '<tr data-edition="' + value.open_edit + '">' +
-                        '<td><i class="fa fa-key"></i></td>' +
-                        '<td class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' + value.label + '</td>' +
-                        '<td style="max-width: 5%;">' + value.folder + '</td>' +
-                        '<td class="text-truncate small" style="max-width: 30%;">' + value.desc + '</td>' +
-                        '<td style="min-width: 50px;" class="text-right">' + pwd_error  + icon_login + icon_pwd + icon_favorite + '</td>' +
-                        '</tr>'
-                    );
-                });
-                */
 
                 alertify
-                    .success('<?php echo langHdl('success'); ?>', 1)
+                    .success(data.message, 5)
                     .dismissOthers();
+
+                // Do some post treatments
+                $('#form-folder-path').html('');
+                $('#find_items').val('');
 
                 adjustElemsSize();
             }
@@ -2180,10 +2130,10 @@ function sList(data)
         }
 
         // Prepare anyone can modify icon
-        if (value.anyone_can_modify === '1') {
+        if (value.anyone_can_modify === 1 || value.open_edit === 1) {
             icon_all_can_modify = '<i class="fa fa-pencil fa-lg fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('item_menu_collab_enable'); ?>"></i>';
         }
-
+        
         // Prepare mini icons
         if (value.copy_to_clipboard_small_icons === 1 && value.display_item === 1) {
             // Login icon
@@ -2223,16 +2173,28 @@ function sList(data)
         }
         
         $('#teampass_items_list').append(
-            '<tr class="row col-md-12 list-item-row" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'">' +
-            '<td class="col-md-1">' + item_grippy + '&nbsp;<i class="fa ' + value.perso + ' fa-sm"></i></td>' +
-            '<td class="col-md-11 list-item-description" id="">' +
+            '<tr class="row col-md-12 list-item-row" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
+            (value.is_result_of_search === 0 ?
+                '<td class="col-md-1">' + item_grippy + '<i class="fa ' + value.perso + ' fa-sm ml-1"></i></td>' +
+                '<td class="col-md-11 list-item-description" id="">' +
                 '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
                 value.label + value.desc + '</span>' +
                 '<div class="list-item-actions hidden text-right">' +
-                    '<span style="margin-top:-13px;">' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite +
+                '<span style="">' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite +
                 '</span></div>' +
-            '</td>' +
-            '</tr>'
+                '</td>'
+                :
+                '<td class="col-md-7 list-item-description" id="">' +
+                '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
+                value.label + value.desc + '</span>' +
+                '</td>' +
+                '<td class="col-md-5 list-item-folder"><span class="small">' + value.folder + '</span>' +
+                '<div class="list-item-actions hidden text-right">' +
+                '<span>' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite + '</span>' +
+                '</div>' +
+                '</td>'
+             )
+            + '</tr>'
         );
     });
     

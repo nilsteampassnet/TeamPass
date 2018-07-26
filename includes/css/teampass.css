@@ -49,11 +49,11 @@
 .list-item-actions {
     position: absolute;
     float: right;
-    width:75px;
+    width:100px;
     background-color:#ECECEC;
     height: 100%;
     top: 0px;
-    padding-top: 13px;
+    padding: 17px 2px 0 0;
 }
 
 .simplePassMeter {
