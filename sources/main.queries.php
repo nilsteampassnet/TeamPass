@@ -999,7 +999,7 @@ function mainQuery()
                 $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
             }
 
-            $generator->setLength((int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+            $generator->setLength((int) filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT));
 
             if (null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING) === "true"
