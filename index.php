@@ -923,6 +923,11 @@ if ($menuAdmin === true) {
 <!-- FastClick -->
 <script src="./plugins/fastclick/fastclick.js"></script>
     <?php
+    } elseif ($pageSel === 'profile') {
+        ?>
+<!-- PLUPLOAD -->
+<script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+        <?php
     }
 ?>
 
@@ -946,7 +951,7 @@ if (isset($_SESSION['CPM']) === true
     && isset($SETTINGS['cpassman_dir']) === true
 ) {
     include_once $SETTINGS['cpassman_dir'].'/load.js.php';
-
+    
     if ($menuAdmin === true) {
         include_once $SETTINGS['cpassman_dir'].'/pages/admin.js.php';
     } elseif ($pageSel === 'items') {
@@ -955,5 +960,6 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/search.js.php';
     } elseif ($pageSel === 'profile') {
         include_once $SETTINGS['cpassman_dir'].'/pages/profile.js.php';
+        echo 'ici';
     }
 }

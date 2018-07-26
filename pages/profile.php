@@ -44,12 +44,8 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // prepare avatar
-if (isset($_SESSION['user_avatar']) === true) {
-    if (file_exists('includes/avatars/'.$_SESSION['user_avatar'])) {
-        $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar'];
-    } else {
-        $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
-    }
+if (file_exists('includes/avatars/'.$_SESSION['user_avatar'])) {
+    $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar'];
 } else {
     $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
 }
@@ -122,7 +118,7 @@ $userSeenPasswordsNumber = DB::count();
                 <div class="card card-primary card-outline">
                     <div class="card-body box-profile">
                         <div class="text-center">
-                            <img class="profile-user-img img-fluid img-circle" src="<?php echo $avatar; ?>" alt="User profile picture">
+                            <img class="profile-user-img img-fluid img-circle" src="<?php echo $avatar; ?>" alt="User profile picture" id="profile-user-avatar">
                         </div>
 
                         <h3 class="profile-username text-center">
@@ -207,9 +203,9 @@ $userSeenPasswordsNumber = DB::count();
                                         }
 
                                         // Handle expiration for pw
-                                        if (isset($_SESSION['numDaysBeforePwExpiration']) === false ||
-                                            $_SESSION['numDaysBeforePwExpiration'] === '' ||
-                                            $_SESSION['numDaysBeforePwExpiration'] === 'infinite'
+                                        if (isset($_SESSION['numDaysBeforePwExpiration']) === false
+                                            || $_SESSION['numDaysBeforePwExpiration'] === ''
+                                            || $_SESSION['numDaysBeforePwExpiration'] === 'infinite'
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
@@ -225,10 +221,23 @@ $userSeenPasswordsNumber = DB::count();
                                     <li class="list-group-item">
                                         <b><i class="fa fa-cloud-upload fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_pw_change'); ?></b>
                                         <a class="float-right">
-                                            <span id="plupload_runtime2" class="text-danger"><?php echo langHdl('error_upload_runtime_not_found'); ?></span>
-                                            <input type="hidden" id="upload_enabled2" value="" />
+                                            <span id="profile-plupload-runtime" class="text-danger" data-enabled="0"><?php echo langHdl('error_upload_runtime_not_found'); ?></span>
                                         </a>
                                     </li>
+                                    <?php
+                                    if ((isset($_SESSION['user_settings']['usertimezone']) === true
+                                        && $_SESSION['user_settings']['usertimezone'] !== "not_defined")
+                                        || isset($SETTINGS['timezone']) === true
+                                    ) {
+                                        echo '
+                                        <li class="list-group-item">
+                                            <b><i class="fa fa-clock-o fa-fw fa-lg mr-2"></i>'.langHdl('timezone_selection').'</b>
+                                            <a class="float-right">
+                                                ', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $SETTINGS['timezone'], '
+                                            </a>
+                                        </li>';
+                                    }
+                                    ?>
                                 </ul>
                             </div>
 
@@ -266,6 +275,27 @@ $userSeenPasswordsNumber = DB::count();
                                         <label for="profile-email" class="col-sm-2 control-label"><?php echo langHdl('email'); ?></label>
                                         <div class="col-sm-10">
                                             <input type="email" class="form-control" id="profile-email" placeholder="name@domain.com" value="<?php echo $_SESSION['user_email']; ?>">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="exampleInputFile"><?php echo langHdl('avatar'); ?></label>
+                                        <div class="col-sm-10">
+                                            <button type="button" class="btn btn-info" id="profile-avatar-file"><?php echo langHdl('upload_new_avatar'); ?></button>
+                                            <div id="profile-avatar-file-container" class="hidden"></div>
+                                            <div id="profile-avatar-file-list" class=""></div>
+                                            <input type="hidden" id="profile-user-token">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label"><?php echo langHdl('timezone_selection'); ?></label>
+                                        <div class="col-sm-10">
+                                            <select class="form-control">
+                                                <?php
+                                                foreach ($arrayTimezones as $zone) {
+                                                    echo '<option value="'.$zone.'"', $_SESSION['user_settings']['usertimezone'] === $zone || $SETTINGS['timezone'] === $zone ? ' selected' : '', '>'.$zone.'</option>';
+                                                }
+                                                ?>
+                                            </select>
                                         </div>
                                     </div>
 

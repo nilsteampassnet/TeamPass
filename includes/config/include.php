@@ -48,6 +48,5 @@ $mngPages = array(
     'emails' => 'emails.php',
     'backups' => 'backups.php',
     'api' => 'api.php',
-    'profile' => 'profile.php',
     'fields' => 'fields.php',
 );

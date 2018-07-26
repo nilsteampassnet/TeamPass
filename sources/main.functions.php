@@ -1455,7 +1455,17 @@ function utf8Converter($array)
  */
 function prepareExchangedData($data, $type)
 {
-    include '../includes/config/tp.config.php';
+    if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir'])) {
+        if (file_exists('../includes/config/tp.config.php')) {
+            include '../includes/config/tp.config.php';
+        } elseif (file_exists('./includes/config/tp.config.php')) {
+            include './includes/config/tp.config.php';
+        } elseif (file_exists('../../includes/config/tp.config.php')) {
+            include '../../includes/config/tp.config.php';
+        } else {
+            throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
+        }
+    }
 
     //load ClassLoader
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';

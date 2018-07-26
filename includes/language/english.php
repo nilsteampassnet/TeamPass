@@ -16,6 +16,7 @@
 
 return array(
     'profile' => 'Profile',
+    'upload_new_avatar' => 'Upload new avatar',
     'settings' => 'Settings',
     'created_items' => 'Created items',
     'modification_performed' => 'Modification performed',
@@ -911,7 +912,6 @@ return array(
     'error_export_format_not_selected' => 'A format for export file is required',
     'select_file_format' => 'Select file format',
     'button_offline_generate' => 'Generate offline mode file',
-    'upload_new_avatar' => 'Select profile image file',
     'expand' => 'Expand',
     'collapse' => 'Collapse',
     'error_file_is_missing' => 'Error: The file is missing!',
