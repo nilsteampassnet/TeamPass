@@ -544,7 +544,7 @@ function restGet()
                 * READ USER FOLDERS
                 * Sends back a list of folders
                 */
-                $json = "";
+                $json = array();
                 $username = $GLOBALS['request'][2];
                 if (strcmp($username, "admin") == 0) {
                     // forbid admin access
