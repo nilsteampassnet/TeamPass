@@ -544,7 +544,7 @@ function restGet()
                 * READ USER FOLDERS
                 * Sends back a list of folders
                 */
-                $json = "";
+                $json = array();
                 $username = $GLOBALS['request'][2];
                 if (strcmp($username, "admin") == 0) {
                     // forbid admin access
@@ -578,7 +578,7 @@ function restGet()
                             array_push($folder_arr, $folder_id);
 
                             $response2 = DB::queryFirstRow(
-                                "SELECT title, nlevel
+                                "SELECT title, nlevel, parent_id
                                 FROM ".prefix_table("nested_tree")."
                                 WHERE id = %i",
                                 $folder_id
@@ -588,6 +588,7 @@ function restGet()
                                 $json[$folder_id]['id'] = $folder_id;
                                 $json[$folder_id]['title'] = $response2['title'];
                                 $json[$folder_id]['level'] = $response2['nlevel'];
+                                $json[$folder_id]['parent_id'] = $response2['parent_id'];
                                 $json[$folder_id]['access_type'] = $data['type'];
                                 $inc++;
                             }
