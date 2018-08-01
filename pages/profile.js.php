@@ -44,6 +44,18 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
 <script type='text/javascript'>
 
+// If user api is empty then generate one
+if ($('#profile-user-api-token').text().length !== 39) {
+    generateNewUserApiKey('profile-user-api-token', true);
+}
+
+
+$('#profile-button-api_token').click(function() {
+    generateNewUserApiKey('profile-user-api-token', false);
+});
+
+
+
 // AVATAR IMPORT
 var uploader_photo = new plupload.Uploader({
     runtimes : 'gears,html5,flash,silverlight,browserplus',
@@ -103,7 +115,7 @@ var uploader_photo = new plupload.Uploader({
 // Show runtime status
 uploader_photo.bind('Init', function(up, params) {
     $('#profile-plupload-runtime')
-        .html('<?php echo langHdl('runtime_upload'); ?> ' + params.runtime)
+        .html(params.runtime)
         .removeClass('text-danger')
         .addClass('text-info')
         .data('enabled', 1);
@@ -131,10 +143,220 @@ console.log(myData);
 
 uploader_photo.init();
 
-$('#profile_photo').click(function() {
-    $('#div_change_psk, #div_reset_psk, #div_change_password').hide();
-    $('#dialog_user_profil').dialog('option', 'height', 450);
+
+// Save user settings
+$('#profile-user-save-settings').click(function() {
+    var data = {
+        'email':            $('#profile-user-email').val(),
+        'timezone':         $('#profile-user-timezone').val(),
+        'language':         $('#profile-user-language').val().toLowerCase(),
+        'treeloadstrategy': $('#profile-user-treeloadstrategy').val().toLowerCase(),
+        'agsescardid':      $('#profile-user-agsescardid').length > 0 ? $('#profile-user-agsescardid').val() : '',
+    }
+    console.log(data)
+    // Inform user
+    alertify
+        .message('<i class="fa fa-cog fa-spin"></i>', 0)
+        .dismissOthers();
+        
+    //Send query
+    $.post(
+        "sources/users.queries.php",
+        {
+            type    :           'user_profile_update',
+            data    :           prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            isprofileupdate:    true,
+            key     :           "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            //decrypt data
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            } catch (e) {
+                // error
+                $("#div_loading").addClass("hidden");
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
+                    .dismissOthers();
+                return false;
+            }
+            console.log(data)
+
+            if (data.error === true) {
+                alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
+                    .dismissOthers();
+            } else {
+                alertify
+                    .success('<?php echo langHdl('donne'); ?>', 3)
+                    .dismissOthers();
+            }
+
+        }
+    );
 });
 
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
+function generateNewUserApiKey(target, silent) {
+    var newApiKey = "";
+
+    // Generate key
+    $.post(
+        "sources/main.queries.php",
+        {
+            type        : "generate_password",
+            size        : "39",
+            lowercase   : "true",
+            numerals    : "true",
+            capitalize  : "true",
+            symbols     : "false",
+            secure      : "false"
+        },
+        function(data) {
+            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+            
+            if (data.key !== "") {
+                newApiKey = data.key;
+
+                // Save key in session and database
+                var data = "{\"field\":\"user_api_key\" ,\"new_value\":\""+newApiKey+"\" ,\"user_id\":\"<?php echo $_SESSION['user_id']; ?>\"}";
+
+                $.post(
+                  "sources/main.queries.php",
+                    {
+                        type    : "update_user_field",
+                        data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key     : "<?php echo $_SESSION['key']; ?>"
+                    },
+                    function(data){
+                        $("#" + target).text(newApiKey);
+                        if (silent === false) {
+                            alertify
+                                .success('<?php echo langHdl('success'); ?>', 3)
+                                .dismissOthers();
+                        }
+                    }
+                );
+            }
+        }
+    );
+}
+
+
+//-------------------
+$("#profile-password").simplePassMeter({
+    "requirements": {},
+    "container": "#profile-password-strength",
+    "defaultText" : "<?php echo langHdl('index_pw_level_txt'); ?>",
+    "ratings": [
+        {"minScore": 0,
+            "className": "meterFail",
+            "text": "<?php echo langHdl('complex_level0'); ?>"
+        },
+        {"minScore": 25,
+            "className": "meterWarn",
+            "text": "<?php echo langHdl('complex_level1'); ?>"
+        },
+        {"minScore": 50,
+            "className": "meterWarn",
+            "text": "<?php echo langHdl('complex_level2'); ?>"
+        },
+        {"minScore": 60,
+            "className": "meterGood",
+            "text": "<?php echo langHdl('complex_level3'); ?>"
+        },
+        {"minScore": 70,
+            "className": "meterGood",
+            "text": "<?php echo langHdl('complex_level4'); ?>"
+        },
+        {"minScore": 80,
+            "className": "meterExcel",
+            "text": "<?php echo langHdl('complex_level5'); ?>"
+        },
+        {"minScore": 90,
+            "className": "meterExcel",
+            "text": "<?php echo langHdl('complex_level6'); ?>"
+        }
+    ]
+});
+$("#profile-password").bind({
+    "score.simplePassMeter" : function(jQEvent, score) {
+        $("#profile-password-complex").val(score);
+    }
+}).change({
+    "score.simplePassMeter" : function(jQEvent, score) {
+        $("#profile-password-complex").val(score);
+    }
+});
+
+$('#profile-save-password-change').click(function() {
+    // Check if passwords are the same
+    if ($('#profile-password').val() !== $('#profile-password-confirm').val()
+        || $('#profile-password').val() === ''
+        || $('#profile-password-confirm').val() === ''
+    ) {
+        alertify
+            .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('index_pw_error_identical'); ?>', 5)
+            .dismissOthers();
+        return false;
+    }
+    // Inform user
+    alertify
+        .message('<i class="fa fa-cog fa-spin"></i>', 0)
+        .dismissOthers();
+
+    var data = {
+        'password'      : $('#profile-password').val(),
+        'complexicity'  : $('#profile-password-complex').val(),
+    };
+
+    //Send query
+    $.post(
+        "sources/main.queries.php",
+        {
+            type                : "change_pw",
+            change_pw_origine   : "user_change",
+            data    :           prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     :           "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            //decrypt data
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            } catch (e) {
+                // error
+                $("#div_loading").addClass("hidden");
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
+                    .dismissOthers();
+                return false;
+            }
+            console.log(data)
+
+            if (data.error === true) {
+                alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
+                    .dismissOthers();
+            } else {
+                alertify
+                    .success('<?php echo langHdl('donne'); ?>', 3)
+                    .dismissOthers();
+            }
+
+        }
+    );
+});
 
 </script>

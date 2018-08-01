@@ -3517,6 +3517,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
                         }
 
+                        /*
                         // check if item is PF
                         if ($record['perso'] !== 1) {
                             $pw = cryption(
@@ -3542,6 +3543,7 @@ if (null !== $post_type) {
                         }
 
                         $html_json[$record['id']]['pw'] = $pw['string'];
+                        */
                         $html_json[$record['id']]['login'] = $record['login'];
                         $html_json[$record['id']]['anyone_can_modify'] = isset($SETTINGS['anyone_can_modify'])
                             ? intval($SETTINGS['anyone_can_modify']) : 0;
@@ -3613,6 +3615,69 @@ if (null !== $post_type) {
             echo prepareExchangedData($returnValues, 'encode');
 
             break;
+
+        /*
+        *
+        *
+        */
+        case 'show_item_password':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare POST variables
+            $post_item_id = filter_input(INPUT_POST, 'item_id', FILTER_SANITIZE_NUMBER_INT);
+
+            // Run query
+            db::debugmode(false);
+            $dataItem = DB::queryfirstrow(
+                'SELECT pw, perso
+                FROM '.prefixTable('items').'
+                WHERE id = %i',
+                $post_item_id
+            );
+
+            if ($dataItem['perso'] !== 1) {
+                $pw = cryption(
+                    $dataItem['pw'],
+                    '',
+                    'decrypt'
+                );
+            } else {
+                if (isset($_SESSION['user_settings']['session_psk']) === true) {
+                    $pw = cryption(
+                        $dataItem['pw'],
+                        $_SESSION['user_settings']['session_psk'],
+                        'decrypt'
+                    );
+                } else {
+                    $pw = '';
+                }
+            }
+
+            // if not UTF8 then cleanup and inform that something is wrong with encrytion/decryption
+            if (isUTF8($pw['string']) === false) {
+                $pw['string'] = '';
+            }
+
+            $returnValues = array(
+                'error' => false,
+                'password' => $pw['string'],
+                'password_error' => $pw['error'],
+            );
+            
+            // Encrypt data to return
+            echo prepareExchangedData($returnValues, 'encode');
+            break;
+
 
         /*
         * CASE

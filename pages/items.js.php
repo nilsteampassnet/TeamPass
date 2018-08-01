@@ -1580,7 +1580,7 @@ console.log('SAVING DATA');
 console.log(data);
             // Inform user
             alertify
-                .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fa fa-cog fa-spin"></i>', 0)
+                .message('<?php echo langHdl('opening_folder'); ?><i class="fa fa-cog fa-spin ml-2"></i>', 0)
                 .dismissOthers();
                 
             //Send query
@@ -1993,7 +1993,45 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                         e.clearSelection();
                     });
 
-                    clipboardForPassword = new Clipboard('.fa-clickable-password');
+                    clipboardForPassword = new Clipboard('.fa-clickable-password', {
+                        text: function(trigger) {
+                            // Send query and get password
+                            var result = '',
+                                error = false;
+                            $.ajax({
+                                type: "POST",
+                                async: false,
+                                url: 'sources/items.queries.php',
+                                data: 'type=show_item_password&item_id=' + trigger.getAttribute('data-item-id') + '&key=<?php echo $_SESSION['key']; ?>',
+                                dataType: "",
+                                success: function (data) {
+                                    //decrypt data
+                                    try {
+                                        data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                                    } catch (e) {
+                                        // error
+                                        alertify.alert()
+                                            .setting({
+                                                'label' : '<?php echo langHdl('ok'); ?>',
+                                                'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
+                                            })
+                                            .show(); 
+                                        return false;
+                                    }
+                                    if (data.error === true) {
+                                        error = true;
+                                    } else {
+                                        if (data.password_error !== '') {
+                                            error = true;
+                                        } else {
+                                            result = data.password;
+                                        }
+                                    }
+                                }
+                            });
+                            return result;
+                        }
+                    });
                     clipboardForPassword.on('success', function(e) {
                         itemLog(
                             'at_password_copied',
@@ -2142,7 +2180,7 @@ function sList(data)
             }
             // Pwd icon
             if (value.pw !== '') {
-                icon_pwd = '<i class="fa fa-lock fa-lg fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-clipboard-text="' + sanitizeString(value.pw) + '" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"></i>';
+                icon_pwd = '<i class="fa fa-lock fa-lg fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"></i>';
             }
 
             // Now check if pwd is empty. If it is then warn user

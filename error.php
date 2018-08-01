@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Error.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 if (file_exists('../sources/SecureHandler.php')) {
     include_once '../sources/SecureHandler.php';
 } elseif (file_exists('./sources/SecureHandler.php')) {
@@ -39,7 +40,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
-    && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === "expired"
+    && filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING) === 'expired'
 ) {
     //Include files
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
@@ -63,11 +64,11 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     // Update table by deleting ID
     if (isset($_SESSION['user_id'])) {
         DB::update(
-            DB_PREFIX."users",
+            DB_PREFIX.'users',
             array(
                 'key_tempo' => '',
             ),
-            "id=%i",
+            'id=%i',
             $_SESSION['user_id']
         );
     }
@@ -87,8 +88,7 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
         $errorCode = langHdl('index_session_expired');
     } elseif (@$_SESSION['error']['code'] === ERR_VALID_SESSION) {
         $errorCode = langHdl('error_not_authorized');
-    }
-    ?>
+    } ?>
 <!-- Main content -->
 <section class="content">
       <div class="error-page">
@@ -117,4 +117,5 @@ $_SESSION = array();
 // Kill session
 session_destroy();
 
+die();
 ?>

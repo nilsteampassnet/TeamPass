@@ -127,13 +127,13 @@ if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agse
     echo '
         <div id="div-2fa-agses" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '' : 'hidden', '">
             <div id="agses_cardid_div" style="text-align:center; padding:5px; width:454px; margin:5px 0 5px;" class="ui-state-active ui-corner-all">
-                ' . $LANG['user_profile_agses_card_id'].': &nbsp;
+                ' . langHdl('user_profile_agses_card_id').': &nbsp;
                 <input type="text" size="12" id="agses_cardid">
             </div>
             <div id="agses_flickercode_div" style="text-align:center; display:none;">
                 <canvas id="axs_canvas"></canvas>
             </div>
-            <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="' . addslashes($LANG['index_agses_key']).'" />
+            <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="' . langHdl('index_agses_key').'" />
         </div>';
 }
 

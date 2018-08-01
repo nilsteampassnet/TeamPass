@@ -17,9 +17,10 @@
 
 require_once 'SecureHandler.php';
 session_start();
-if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] != 1 ||
-    isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) ||
-    isset($_SESSION['key']) === false || empty($_SESSION['key'])
+if (isset($_SESSION['CPM']) === false
+    || $_SESSION['CPM'] != 1
+    || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id'])
+    || isset($_SESSION['key']) === false || empty($_SESSION['key'])
 ) {
     die('Hacking attempt...');
 }

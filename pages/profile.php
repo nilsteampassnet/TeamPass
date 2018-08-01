@@ -34,7 +34,7 @@ if (file_exists('../includes/config/tp.config.php') === true) {
 
 /* do checks */
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETTINGS) === false) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
@@ -44,8 +44,12 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 // prepare avatar
-if (file_exists('includes/avatars/'.$_SESSION['user_avatar'])) {
-    $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar'];
+if (isset($_SESSION['user_avatar']) === true) {
+    if (file_exists('includes/avatars/'.$_SESSION['user_avatar'])) {
+        $avatar = $SETTINGS['cpassman_url'].'/includes/avatars/'.$_SESSION['user_avatar'];
+    } else {
+        $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
+    }
 } else {
     $avatar = $SETTINGS['cpassman_url'].'/includes/images/photo.jpg';
 }
@@ -64,14 +68,22 @@ if ($_SESSION['user_admin'] === '1') {
 }
 
 // prepare list of timezones
+$zoneToPreSelect = $SETTINGS['timezone'];
 foreach (timezone_identifiers_list() as $zone) {
     $arrayTimezones[$zone] = $zone;
+    if ($_SESSION['user_settings']['usertimezone'] === $zone) {
+        $zoneToPreSelect = $_SESSION['user_settings']['usertimezone'];
+    }
 }
 
 // prepare lsit of flags
+$languageToPreSelect = $SETTINGS['default_language'];
 $rows = DB::query('SELECT label FROM '.prefixTable('languages').' ORDER BY label ASC');
 foreach ($rows as $record) {
-    $arraFlags[$record['label']] = $record['label'];
+    $arrayFlags[$record['label']] = $record['label'];
+    if ($_SESSION['user_settings']['user_language'] === $record['label']) {
+        $zoneToPreSelect = $_SESSION['user_language']['usertimezone'];
+    }
 }
 
 // Do some stats
@@ -164,6 +176,21 @@ $userSeenPasswordsNumber = DB::count();
                         <li class="nav-item"><a class="nav-link active" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a></li>
                         <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab">Timeline</a></li>
                         <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
+                            <?php echo langHdl('actions'); ?> <span class="caret"></span>
+                            </a>
+                            <div class="dropdown-menu">
+                                <?php
+                                if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
+                                    echo '
+                                <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">'.langHdl('index_change_pw').'</a>';
+                                }
+                                ?>
+                                <a class="dropdown-item" tabindex="-1" href="#tab_change_psk" data-toggle="tab"><?php echo langHdl('menu_title_new_personal_saltkey'); ?></a>
+                                <a class="dropdown-item" tabindex="-1" href="#tab_reset_psk" data-toggle="tab"><?php echo langHdl('personal_saltkey_lost'); ?></a>
+                            </div>
+                        </li>
                         </ul>
                     </div><!-- /.card-header -->
                     <div class="card-body">
@@ -219,23 +246,35 @@ $userSeenPasswordsNumber = DB::count();
                                     }
                                     ?>
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-cloud-upload fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_pw_change'); ?></b>
+                                        <b><i class="fa fa-cloud-upload fa-fw fa-lg mr-2"></i><?php echo langHdl('upload_feature'); ?></b>
                                         <a class="float-right">
                                             <span id="profile-plupload-runtime" class="text-danger" data-enabled="0"><?php echo langHdl('error_upload_runtime_not_found'); ?></span>
                                         </a>
                                     </li>
+                                    <li class="list-group-item">
+                                        <b><i class="fa fa-code-fork fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
+                                        <a class="float-right">
+                                            <span id="profile-plupload-runtime"><?php echo $_SESSION['user_settings']['treeloadstrategy']; ?></span>
+                                        </a>
+                                    </li>
                                     <?php
-                                    if ((isset($_SESSION['user_settings']['usertimezone']) === true
-                                        && $_SESSION['user_settings']['usertimezone'] !== "not_defined")
-                                        || isset($SETTINGS['timezone']) === true
+                                    if (isset($SETTINGS['api']) === true && $SETTINGS['api'] === '1') {
+                                        echo '
+                                    <li class="list-group-item">
+                                        <b><i class="fa fa-paper-plane fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_api_key').'</b>
+                                        <a class="float-right" id="profile-user-api-token">',
+                                        isset($_SESSION['user_settings']['api-key']) === true ? $_SESSION['user_settings']['api-key'] : '', '</a>
+                                    </li>';
+                                    }
+                                    if (isset($SETTINGS['agses_authentication_enabled']) === true
+                                        && $SETTINGS['agses_authentication_enabled'] == 1
                                     ) {
                                         echo '
-                                        <li class="list-group-item">
-                                            <b><i class="fa fa-clock-o fa-fw fa-lg mr-2"></i>'.langHdl('timezone_selection').'</b>
-                                            <a class="float-right">
-                                                ', (isset($_SESSION['user_settings']['usertimezone']) && $_SESSION['user_settings']['usertimezone'] !== "not_defined") ? $_SESSION['user_settings']['usertimezone'] : $SETTINGS['timezone'], '
-                                            </a>
-                                        </li>';
+                                    <li class="list-group-item">
+                                        <b><i class="fa fa-id-card-o fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_agses_card_id').'</b>
+                                        <a class="float-right">',
+                                        isset($_SESSION['user_settings']['agses-usercardid']) ? $_SESSION['user_settings']['agses-usercardid'] : '', '</a>
+                                    </li>';
                                     }
                                     ?>
                                 </ul>
@@ -274,25 +313,33 @@ $userSeenPasswordsNumber = DB::count();
                                     <div class="form-group">
                                         <label for="profile-email" class="col-sm-2 control-label"><?php echo langHdl('email'); ?></label>
                                         <div class="col-sm-10">
-                                            <input type="email" class="form-control" id="profile-email" placeholder="name@domain.com" value="<?php echo $_SESSION['user_email']; ?>">
+                                            <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $_SESSION['user_email']; ?>">
                                         </div>
                                     </div>
-                                    <div class="form-group">
-                                        <label for="exampleInputFile"><?php echo langHdl('avatar'); ?></label>
-                                        <div class="col-sm-10">
-                                            <button type="button" class="btn btn-info" id="profile-avatar-file"><?php echo langHdl('upload_new_avatar'); ?></button>
-                                            <div id="profile-avatar-file-container" class="hidden"></div>
-                                            <div id="profile-avatar-file-list" class=""></div>
-                                            <input type="hidden" id="profile-user-token">
-                                        </div>
-                                    </div>
+                                    
                                     <div class="form-group">
                                         <label class="col-sm-2 control-label"><?php echo langHdl('timezone_selection'); ?></label>
                                         <div class="col-sm-10">
-                                            <select class="form-control">
+                                            <select class="form-control" id="profile-user-timezone">
                                                 <?php
                                                 foreach ($arrayTimezones as $zone) {
-                                                    echo '<option value="'.$zone.'"', $_SESSION['user_settings']['usertimezone'] === $zone || $SETTINGS['timezone'] === $zone ? ' selected' : '', '>'.$zone.'</option>';
+                                                    echo '<option value="'.$zone.'"',
+                                                    strtolower($zoneToPreSelect) === strtolower($zone) ? ' selected="selected"' : '',
+                                                    '>'.$zone.'</option>';
+                                                }
+                                                ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="col-sm-2 control-label"><?php echo langHdl('language'); ?></label>
+                                        <div class="col-sm-10">
+                                            <select class="form-control" id="profile-user-language">
+                                                <?php
+                                                foreach ($arrayFlags as $flag) {
+                                                    echo '<option value="'.$flag.'"',
+                                                    strtolower($flag) === strtolower($languageToPreSelect) ? ' selected="selected"' : '',
+                                                    '>'.$flag.'</option>';
                                                 }
                                                 ?>
                                             </select>
@@ -300,18 +347,100 @@ $userSeenPasswordsNumber = DB::count();
                                     </div>
 
                                     <div class="form-group">
-                                        <div class="col-sm-offset-2 col-sm-10">
-                                            <button type="submit" class="btn btn-danger">Submit</button>
+                                        <label class="col-sm-2 control-label"><?php echo langHdl('tree_load_strategy'); ?></label>
+                                        <div class="col-sm-10">
+                                            <select class="form-control" id="profile-user-treeloadstrategy">
+                                                <option value="<?php echo langHdl('sequential'); ?>"<?php
+                                                if ($_SESSION['user_settings']['treeloadstrategy'] === 'sequential') {
+                                                    echo ' selected';
+                                                }?>><?php echo langHdl('sequential'); ?></option>
+                                                <option value="<?php echo langHdl('full'); ?>"<?php
+                                                if ($_SESSION['user_settings']['treeloadstrategy'] === 'full') {
+                                                    echo ' selected';
+                                                }?>><?php echo langHdl('full'); ?></option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <?php
+                                    if (isset($SETTINGS['agses_authentication_enabled']) === true
+                                        && $SETTINGS['agses_authentication_enabled'] === '1'
+                                    ) {
+                                        ?>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label"><?php echo langHdl('user_profile_agses_card_id'); ?></label>
+                                            <div class="col-sm-10">
+                                                <input type="numeric" class="form-control" id="profile-user-agsescardid" placeholder="name@domain.com" value="<?php
+                                                if (isset($_SESSION['user_settings']['agses-usercardid']) === true) {
+                                                    echo $_SESSION['user_settings']['agses-usercardid'];
+                                                } ?>">
+                                            </div>
+                                        </div>
+                                    <?php
+                                    }
+                                    ?>                                    
+
+                                    <div class="form-group">
+                                        <div class="row">
+                                            <div class="col-sm-offset-2 col-sm-2">
+                                                <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo langHdl('save'); ?></button>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo langHdl('upload_new_avatar'); ?></button>
+                                                <button type="button" class="btn btn-warning float-right" id="profile-button-api_token"><?php echo langHdl('generate_api_token'); ?></button>
+                                                <div id="profile-avatar-file-container" class="hidden"></div>
+                                                <div id="profile-avatar-file-list" class="hidden"></div>
+                                                <input type="hidden" id="profile-user-token">
+                                            </div>
                                         </div>
                                     </div>
                                 </form>
                                 
                             </div>
+
+                            
+                            <!-- CHANGE PW -->
+                            <div class="tab-pane" id="tab_change_pw">
+                                <h3 class="card-title mb-3"><?php echo langHdl('index_change_pw'); ?></h3>
+                                <form class="needs-validation" novalidate onsubmit="return false;">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('index_new_pw'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control" id="profile-password">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text" id="profile-password-strength"></span>
+                                            <input type="hidden" id="profile-password-complex" />
+                                        </div>
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('index_change_pw_confirmation'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control"  id="profile-password-confirm">
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-info" id="profile-save-password-change"><?php echo langHdl('save'); ?></button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            
+                            <!-- CHANGE PSK -->
+                            <div class="tab-pane" id="tab_change_psk">
+                                coucou1
+                            </div>
+
+                                                        
+                            <!-- RESET PSK -->
+                            <div class="tab-pane" id="tab_reset_psk">
+                                coucou2
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
+            
         </div>
         <!-- /.row -->
     </div>
