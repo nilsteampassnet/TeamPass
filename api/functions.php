@@ -807,24 +807,24 @@ function restGet()
         } elseif ($GLOBALS['request'][0] == "add") {
             if ($GLOBALS['request'][1] == "item") {
                 /*
-                * Expected call format: .../api/index.php/update/item/<item_id>/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
+                * Expected call format: .../api/index.php/add/item/<label>;<password>;<description>;<folder_id>;<login>;<email>;<url>;<tags>;<any one can modify>?apikey=<VALID API KEY>
                 */
-                if ($GLOBALS['request'][2] !== "" && is_numeric($GLOBALS['request'][2])) {
+                if ($GLOBALS['request'][2] !== "") {
                     // get sent parameters
-                    $params = explode(';', $GLOBALS['request'][3]);
+                    $params = explode(';', $GLOBALS['request'][2]);
                     if (count($params) != 9) {
                         rest_error('ITEMBADDEFINITION');
                     }
 
-                    $item_label = Urlsafe_b64decode($params[0]);
-                    $item_pwd = Urlsafe_b64decode($params[1]);
-                    $item_desc = Urlsafe_b64decode($params[2]);
-                    $item_folder_id = Urlsafe_b64decode($params[3]);
-                    $item_login = Urlsafe_b64decode($params[4]);
-                    $item_email = Urlsafe_b64decode($params[5]);
-                    $item_url = Urlsafe_b64decode($params[6]);
-                    $item_tags = Urlsafe_b64decode($params[7]);
-                    $item_anyonecanmodify = Urlsafe_b64decode($params[8]);
+                    $item_label = urlSafeB64Decode($params[0]);
+                    $item_pwd = urlSafeB64Decode($params[1]);
+                    $item_desc = urlSafeB64Decode($params[2]);
+                    $item_folder_id = urlSafeB64Decode($params[3]);
+                    $item_login = urlSafeB64Decode($params[4]);
+                    $item_email = urlSafeB64Decode($params[5]);
+                    $item_url = urlSafeB64Decode($params[6]);
+                    $item_tags = urlSafeB64Decode($params[7]);
+                    $item_anyonecanmodify = urlSafeB64Decode($params[8]);
 
                     // do some checks
                     if (!empty($item_label) && !empty($item_pwd) && !empty($item_folder_id)) {
@@ -1256,7 +1256,7 @@ function restGet()
                     // get sent parameters
                     $params = explode(';', $GLOBALS['request'][3]);
                     foreach ($params as $idx => $value) {
-                        $params[$idx]=Urlsafe_b64decode($value);
+                        $params[$idx]=urlSafeB64Decode($value);
                     }
 
                     if (!empty($params[0]) && !empty($params[1]) && !empty($params[3])) {
