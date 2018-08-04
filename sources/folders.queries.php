@@ -1410,6 +1410,7 @@ if (null !== $post_newtitle) {
                         }
                         // Add this duplicate in logs
                         logItems(
+                            $SETTINGS,
                             $newItemId,
                             $record['label'],
                             $_SESSION['user_id'],
@@ -1418,6 +1419,7 @@ if (null !== $post_newtitle) {
                         );
                         // Add the fact that item has been copied in logs
                         logItems(
+                            $SETTINGS,
                             $newItemId,
                             $record['label'],
                             $_SESSION['user_id'],

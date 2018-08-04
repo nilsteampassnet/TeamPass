@@ -1673,17 +1673,21 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
 }
 
 /**
- * Logs sent events.
+ * Log events
  *
- * @param string $ident
- * @param string $item
- * @param string $id_user
- * @param string $action
- * @param string $login
- * @param string $raison
- * @param string $encryption_type
+ * @param array   $SETTINGS        Teampass settings
+ * @param integer $item_id         Item id
+ * @param string  $item_label      Item label
+ * @param integer $id_user         User id
+ * @param string  $action          Code for reason
+ * @param string  $login           User login
+ * @param string  $raison          Code for reason
+ * @param string  $encryption_type Encryption on
+ *
+ * @return void
  */
 function logItems(
+    $SETTINGS,
     $item_id,
     $item_label,
     $id_user,
@@ -1692,10 +1696,7 @@ function logItems(
     $raison = null,
     $encryption_type = null
 ) {
-    global $server, $user, $pass, $database, $port, $encoding;
-    global $SETTINGS;
-    global $LANG;
-    $dataItem = '';
+     $dataItem = '';
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1705,8 +1706,6 @@ function logItems(
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    //DB::$errorHandler = true;
-
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
@@ -1723,7 +1722,6 @@ function logItems(
             'encryption_type' => is_null($encryption_type) === true ? '' : $encryption_type,
         )
     );
-
     // Timestamp the last change
     if ($action === 'at_creation' || $action === 'at_modifiation' || $action === 'at_delete' || $action === 'at_import') {
         DB::update(
@@ -1800,8 +1798,11 @@ function logItems(
     }
 }
 
-/*
-* Function to get the client ip address
+
+/**
+ * Get the client ip address
+ *
+ * @return void
  */
 function get_client_ip_server()
 {
@@ -1851,7 +1852,7 @@ function handleConfigFile($action, $field = null, $value = null)
     $tp_config_file = '../includes/config/tp.config.php';
 
     // include librairies & connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defuse_return_decrypted(DB_PASSWD);

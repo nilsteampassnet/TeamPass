@@ -1084,13 +1084,24 @@ $('.btn-no-click')
     });
 
 
-
+function unCryptData(data)
+{
+    if (data.substr(0, 7) === 'crypted') {
+        return prepareExchangedData(
+            data.substr(7),
+            'decode',
+            '<?php echo $_SESSION['key']; ?>'
+        )
+    }
+    return false;
+}
 
 
 // show password during longpress
 var mouseStillDown = false;
 $('.item-details-card').on('mousedown', '.unhide_masked_data', function(event) {
     mouseStillDown = true;
+
     showPwdContinuous();
 })
 .on('mouseup', '.unhide_masked_data', function(event) {
@@ -1100,9 +1111,22 @@ $('.item-details-card').on('mousedown', '.unhide_masked_data', function(event) {
      mouseStillDown = false;
 });
 var showPwdContinuous = function(){
-    if(mouseStillDown){
+    if(mouseStillDown === true) {
+        // Prepare data to show
+        // Is data crypted?
+        var data = unCryptData($('#hidden-item-pwd').val());
+        if (data !== false) {
+            $('#hidden-item-pwd').val(
+                data.password
+            );
+        }
+
         $('#card-item-pwd')
-            .html('<span style="cursor:none;">' + $('#hidden-item-pwd').val().replace(/\n/g,"<br>") + '</span>');
+            .html(
+                '<span style="cursor:none;">' +
+                $('#hidden-item-pwd').val().replace(/\n/g,"<br>") +
+                '</span>'
+            );
         
         setTimeout('showPwdContinuous("card-item-pwd")', 50);
         // log password is shown
@@ -3155,7 +3179,7 @@ function itemLog(logCase, itemId, itemLabel)
         "action" : logCase,
         "login" : "<?php echo $_SESSION['login']; ?>"
     };
-
+    
     $.post(
         "sources/items.logs.php",
         {

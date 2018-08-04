@@ -372,7 +372,7 @@ switch ($post_type) {
                     'encrypt',
                     $SETTINGS['path_to_files_folder']."/".$filename,
                     $SETTINGS['path_to_files_folder']."/defuse_temp_".$filename,
-                    $SETTINGS
+                    $SETTINGS,
                     $post_option
                 );
 
