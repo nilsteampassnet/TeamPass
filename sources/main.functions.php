@@ -1450,7 +1450,7 @@ function utf8Converter($array)
  * @param array  $data Text
  * @param string $type Parameter
  *
- * @return string|array
+ * @return string
  */
 function prepareExchangedData($data, $type)
 {
@@ -1514,7 +1514,16 @@ function prepareExchangedData($data, $type)
     }
 }
 
-function make_thumb($src, $dest, $desired_width)
+/**
+ * Create a thumbnail
+ *
+ * @param string  $src           Source
+ * @param string  $dest          Destination
+ * @param integer $desired_width Size of width
+ *
+ * @return void
+ */
+function makeThumbnail($src, $dest, $desired_width)
 {
     /* read the source image */
     $source_image = imagecreatefrompng($src);

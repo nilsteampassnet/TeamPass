@@ -58,10 +58,10 @@ if ($post_type === "identify_duo_user") {
     // This step creates the DUO request encrypted key
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once SECUREPATH."/sk.php";
+    include_once SECUREPATH."/sk.php";
 
     // load library
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
 
     if ($debugDuo == 1) {
@@ -75,7 +75,7 @@ if ($post_type === "identify_duo_user") {
     }
 
     // load csrfprotector
-    $csrfp_config = require_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+    $csrfp_config = include_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
@@ -87,10 +87,10 @@ if ($post_type === "identify_duo_user") {
     //--------
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once SECUREPATH."/sk.php";
+    include_once SECUREPATH."/sk.php";
 
     // load library
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
 
     if ($debugDuo == 1) {
@@ -107,10 +107,10 @@ if ($post_type === "identify_duo_user") {
     if ($resp === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
-            require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             // connect to the server
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
             DB::$host         = DB_HOST;
             DB::$user         = DB_USER;
             DB::$password     = defuse_return_decrypted(DB_PASSWD);
@@ -190,10 +190,10 @@ if ($post_type === "identify_duo_user") {
 //-- AUTHENTICATION WITH AGSES
 //--------
 
-    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -229,7 +229,7 @@ if ($post_type === "identify_duo_user") {
     } else {
         // error
         echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
-        return false;
+        exit();
     }
 
     //-- get AGSES hosted information
@@ -325,7 +325,7 @@ if ($post_type === "identify_duo_user") {
     } else {
         $_SESSION["next_possible_pwd_attempts"] = time() + 10;
         echo '[{"error" : "bruteforce_wait"}]';
-        return false;
+        exit();
     }
 } elseif ($post_type === "store_data_in_cookie") {
     //--------
@@ -335,7 +335,7 @@ if ($post_type === "identify_duo_user") {
     // not used any more (only development purpose)
     if ($post_key !== $_SESSION['key']) {
         echo '[{"error" : "something_wrong"}]';
-        return false;
+        exit();
     }
     // store some connection data in cookie
     setcookie(
@@ -372,7 +372,7 @@ if ($post_type === "identify_duo_user") {
         $nb++;
     }
     echo '[{"agses" : "'.$agses.'" , "google" : "'.$google.'" , "yubico" : "'.$yubico.'" , "duo" : "'.$duo.'" , "nb" : "'.$nb.'" , "method" : "'.$fa_method.'"}]';
-    return false;
+    exit();
 }
 
 /**
@@ -382,6 +382,7 @@ if ($post_type === "identify_duo_user") {
  * @param [type] $debugLdap
  * @param [type] $debugDuo
  * @param [type] $SETTINGS
+ *
  * @return void
  */
 function identifyUser(
@@ -486,7 +487,7 @@ function identifyUser(
             '", "initial_url" : "'.@$_SESSION['initial_url'].'",
             "error" : "2fa_not_set"}]';
 
-            exit();
+            return;
     }
 
     // Init
@@ -615,7 +616,7 @@ function identifyUser(
                         // Check shadowexpire attribute - if === 1 then user disabled
                         if (isset($result[0]['shadowexpire'][0]) === true && $result[0]['shadowexpire'][0] === '1') {
                             echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
-                            exit();
+                            return;
                         }
 
                         // Should we restrain the search in specified user groups
@@ -772,7 +773,7 @@ function identifyUser(
                 // Is user expired?
                 if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
                     echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
-                    exit();
+                    return;
                 }
 
                 // Update user's password
@@ -841,7 +842,7 @@ function identifyUser(
             // Check existing yubico credentials
             if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
                 echo '[{"value" : "no_user_yubico_credentials"}]';
-                exit();
+                return;
             } else {
                 $yubico_user_key = $data['yubico_user_key'];
                 $yubico_user_id = $data['yubico_user_id'];
@@ -855,7 +856,7 @@ function identifyUser(
         if (PEAR::isError($auth)) {
             $proceedIdentification = false;
             echo '[{"value" : "bad_user_yubico_credentials"}]';
-            exit();
+            return;
         } else {
             $proceedIdentification = true;
         }
@@ -927,7 +928,7 @@ function identifyUser(
     if ($counter === 0) {
         logEvents('failed_auth', 'user_not_exists', "", stripslashes($username), stripslashes($username));
         echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
-        exit();
+        return;
     }
 
     // check GA code
@@ -967,7 +968,7 @@ function identifyUser(
 
                     echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
-                    exit();
+                    return;
                 }
             } else {
                 // verify the user GA code
@@ -1052,7 +1053,7 @@ function identifyUser(
                 '", "initial_url" : "'.@$_SESSION['initial_url'].'",
                 "error" : "'.$logError.'"}]';
 
-                exit();
+                return;
             }
         } else {
             // We have an error here
@@ -1064,7 +1065,7 @@ function identifyUser(
             '", "initial_url" : "'.@$_SESSION['initial_url'].'",
             "error" : "'.$logError.'"}]';
 
-            exit();
+            return;
         }
     }
 
@@ -1079,7 +1080,7 @@ function identifyUser(
         '", "initial_url" : "'.@$_SESSION['initial_url'].'",
         "error" : "'.$logError.'"}]';
 
-        exit();
+        return;
     }
 
     if ($proceedIdentification === true) {

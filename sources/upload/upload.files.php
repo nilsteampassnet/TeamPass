@@ -412,7 +412,7 @@ if (null !== ($post_type_upload)
     );
 
     // make thumbnail
-    make_thumb(
+    makeThumbnail(
         $targetDir.DIRECTORY_SEPARATOR.$newFileName.'.'.$ext,
         $targetDir.DIRECTORY_SEPARATOR.$newFileName."_thumb".'.'.$ext,
         40
@@ -480,5 +480,5 @@ if (null !== ($post_type_upload)
 function handleUploadError($message)
 {
     echo htmlentities($message, ENT_QUOTES);
-    exit();
+    return;
 }

@@ -1676,7 +1676,7 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            if (count($dataReceived) > 0) {
+            if (empty($dataReceived) === false) {
                 // update user
                 DB::update(
                     prefixTable("users"),

@@ -464,11 +464,11 @@ if (isset($_GET['type']) === false) {
             $arr_data[$record['id']]['reload'] = '';
 
         // CAse where item is restricted to a group of users included user
-        } elseif (!empty($record['restricted_to'])
-            && in_array($_SESSION['user_id'], $restricted_users_array)
-            || (isset($_SESSION['list_folders_editable_by_role'])
-            && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']))
-            && in_array($_SESSION['user_id'], $restricted_users_array)
+        } elseif (empty($record['restricted_to']) === false
+            && in_array($_SESSION['user_id'], $restricted_users_array) === true
+            || (isset($_SESSION['list_folders_editable_by_role']) === true
+            && in_array($record['id_tree'], $_SESSION['list_folders_editable_by_role']) === true)
+            && in_array($_SESSION['user_id'], $restricted_users_array) === true
         ) {
             $arr_data[$record['id']]['perso'] = 'fa-tag mi-yellow';
             $arr_data[$record['id']]['sk'] = 0;

@@ -11,6 +11,11 @@ define('DB_NAME', 'test');
 define('DB_PREFIX', 'teampass_');
 define('DB_PORT', '3307');
 define('DB_ENCODING', '');
+define('SALT', '');
+define('IKEY', '');
+define('SKEY', '');
+define('AKEY', '');
+define('COST', '');
 
 @date_default_timezone_set($_SESSION['settings']['timezone']);
 @define('SECUREPATH', 'D:/wamp64/tmp/test');
