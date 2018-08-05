@@ -623,7 +623,7 @@ switch ($post_type) {
                 try {
                     \Defuse\Crypto\File::decryptFileWithPassword(
                         $SETTINGS['bck_script_path'].'/'.$post_option.'.sql',
-                        $SETTINGS['bck_script_path'].'/'.str_replace('encrypted', 'clear', filename).'.sql',
+                        $SETTINGS['bck_script_path'].'/'.str_replace('encrypted', 'clear', $filename).'.sql',
                         $SETTINGS['bck_script_key']
                     );
                 } catch (Defuse\Crypto\Exception\WrongKeyOrModifiedCiphertextException $ex) {
@@ -638,13 +638,17 @@ switch ($post_type) {
                     // file is bCrypt encrypted
                 $inF = fopen($Fnm, "r");
                 if ($inF !== false) {
-                    while (!feof($inF)) {
+                    while (feof($inF) === false) {
                         $return .= fgets($inF, 4096);
                     }
                     fclose($inF);
                 }
 
-                $return = Encryption\Crypt\aesctr::decrypt($return, $tp_settings['bck_script_key'], 256);
+                $return = Encryption\Crypt\aesctr::decrypt(
+                    /** @scrutinizer ignore-type */ $return,
+                    $tp_settings['bck_script_key'],
+                    256
+                );
 
                 //save the file
                 $handle = fopen($tp_settings['bck_script_path'].'/'.$filename.'.clear'.'.sql', 'w+');
@@ -1299,7 +1303,9 @@ switch ($post_type) {
             $error = "No option";
         }
 
-        echo '[{"result":"attachments_cryption", "error":"'.$error.'", "continu":"'.$continu.'", "list":"'.$filesList.'", "cpt":"0"}]';
+        echo '[{"result":"attachments_cryption", "error":"'.$error.'", "continu":"'.
+            /** @scrutinizer ignore-type */
+            $continu.'", "list":"'.$filesList.'", "cpt":"0"}]';
         break;
 
     /*

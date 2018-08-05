@@ -59,7 +59,7 @@ $session_user_upgrade_needed = $superGlobal->get('user_upgrade_needed', 'SESSION
 $cookie_jstree_select = $superGlobal->get('jstree_select', 'COOKIE');
 
 if ($session_user_admin === '1'
-    && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === '1')
+    && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
     || null === TP_ADMIN_FULL_RIGHT
 ) {
     $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];
@@ -330,7 +330,7 @@ echo '
                                     ?>
                                 <div class="form-check mb-3">
                                     <input type="checkbox" class="form-check-input form-item-control flat-blue track-change" id="form-item-anyoneCanModify"<?php
-                                    echo isset($SETTINGS['anyone_can_modify_bydefault']) === '1'
+                                    echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
                                         && $SETTINGS['anyone_can_modify_bydefault'] === '1' ? ' checked' : ''; ?>>
                                     <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
                                 </div>

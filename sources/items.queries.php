@@ -4901,7 +4901,7 @@ if (null !== $post_type) {
             }
 
             if ($_SESSION['user_admin'] === '1'
-                && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === '1')
+                && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === true)
                 || null === TP_ADMIN_FULL_RIGHT
             ) {
                 $_SESSION['groupes_visibles'] = $_SESSION['personal_visible_groups'];

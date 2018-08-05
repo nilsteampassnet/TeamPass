@@ -116,7 +116,7 @@ if (isset($SETTINGS['cpassman_dir']) === true
                     try {
                         unlink($dir.'/'.$file);
                     }
-                    catch (SomeException $e) {
+                    catch (Exception $e) {
                         // do nothing... php will ignore and continue
                     }
                 }

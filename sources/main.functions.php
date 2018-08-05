@@ -1450,7 +1450,7 @@ function utf8Converter($array)
  * @param array  $data Text
  * @param string $type Parameter
  *
- * @return string
+ * @return string|array
  */
 function prepareExchangedData($data, $type)
 {
@@ -2677,12 +2677,13 @@ function connectLDAP($username, $password, $SETTINGS)
 //--------------------------------
 
 /**
- * Undocumented function
+ * Perform a Query
  *
- * @param array  $SETTINGS
- * @param string $fields
- * @param string $table
- * @return void
+ * @param array  $SETTINGS Teamapss settings
+ * @param string $fields   Fields to use
+ * @param string $table    Table to use
+ *
+ * @return array
  */
 function performDBQuery($SETTINGS, $fields, $table)
 {
