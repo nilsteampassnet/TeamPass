@@ -230,7 +230,7 @@ if (null !== $post_type) {
                 );
 
                 // get links url
-                if (empty($SETTINGS['email_server_url'])) {
+                if (empty($SETTINGS['email_server_url']) === true) {
                     $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
                 }
                 // Send email to new user
@@ -238,7 +238,6 @@ if (null !== $post_type) {
                     langHdl('email_subject_new_user'),
                     str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(" ".addslashes($login), addslashes($pw), $SETTINGS['email_server_url']), langHdl('email_new_user_mail')),
                     $dataReceived['email'],
-                    $LANG,
                     $SETTINGS
                 );
                 // update LOG

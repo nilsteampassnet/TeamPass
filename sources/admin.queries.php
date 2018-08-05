@@ -427,7 +427,7 @@ switch ($post_type) {
                 'decrypt',
                 $SETTINGS['path_to_files_folder']."/".$file,
                 $SETTINGS['path_to_files_folder']."/defuse_temp_".$file,
-                $SETTINGS
+                $SETTINGS,
                 $key
             );
 
@@ -1208,7 +1208,6 @@ switch ($post_type) {
                     $LANG['admin_email_test_subject'],
                     $LANG['admin_email_test_body'],
                     $_SESSION['user_email'],
-                    $LANG,
                     $SETTINGS
                 ),
                 true
@@ -1231,7 +1230,6 @@ switch ($post_type) {
                     $record['subject'],
                     $record['body'],
                     $record['receivers'],
-                    $LANG,
                     $SETTINGS
                 ),
                 true

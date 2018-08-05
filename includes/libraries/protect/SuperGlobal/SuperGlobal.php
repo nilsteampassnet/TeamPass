@@ -1,17 +1,18 @@
 <?php
 /**
- * Manage global variables
- *
- * @package       SuperGlobal.php
- * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.27
- * @copyright     2009-2018 Nils Laumaillé
- * @license       GNU GPL-3.0
- * @link          https://www.teampass.net
+ * Teampass - a collaborative passwords manager
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * @category  Teampass
+ * @package   SuperGlobal.php
+ * @author    Nils Laumaillé <nils@teampass.net>
+ * @copyright 2009-2018 Nils Laumaillé
+ * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ * @version   GIT: <git_id>
+ * @link      http://www.teampass.net
  */
 
 namespace protect\SuperGlobal;
@@ -43,6 +44,8 @@ class SuperGlobal
             $_SERVER[$key] = $value;
         } elseif ($type === 'GET') {
             $_GET[$key] = $value;
+        } elseif ($type === 'COOKIE') {
+            $_COOKIE[$key] = $value;
         }
     }
 
@@ -61,6 +64,8 @@ class SuperGlobal
             return (isset($_SERVER[$key]) === true ? filter_var($_SERVER[$key], FILTER_SANITIZE_STRING) : null);
         } elseif ($type === 'GET') {
             return (isset($_GET[$key]) === true ? filter_var($_GET[$key], FILTER_SANITIZE_STRING) : null);
+        } elseif ($type === 'COOKIE') {
+            return (isset($_COOKIE[$key]) === true ? filter_var($_COOKIE[$key], FILTER_SANITIZE_STRING) : null);
         }
     }
 
@@ -79,6 +84,8 @@ class SuperGlobal
             unset($_SERVER[$key]);
         } elseif ($type === 'SERVER') {
             unset($_GET[$key]);
+        } elseif ($type === 'COOKIE') {
+            setcookie($_COOKIE[$key], "", time()-3600);
         }
     }
 }

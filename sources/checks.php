@@ -157,16 +157,16 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
     if ($data['admin'] !== '1'
         && $data['gestionnaire'] !== '1'
         && $data['can_manage_all_users'] !== '1'
-        && IsInArray($pageVisited, $pagesRights['user']) === true
+        && isInArray($pageVisited, $pagesRights['user']) === true
     ) {
         return true;
     } elseif ($data['admin'] !== '1'
         && ($data['gestionnaire'] === '1' || $data['can_manage_all_users'] === '1')
-        && IsInArray($pageVisited, $pagesRights['manager']) === true
+        && isInArray($pageVisited, $pagesRights['manager']) === true
     ) {
         return true;
     } elseif ($data['admin'] === '1'
-        && IsInArray($pageVisited, $pagesRights['admin']) === true
+        && isInArray($pageVisited, $pagesRights['admin']) === true
     ) {
         return true;
     }
@@ -180,9 +180,9 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
  * @param array $pages Input
  * @param array $table Checked against this array
  *
- * @return void
+ * @return boolean
  */
-function IsInArray($pages, $table)
+function isInArray($pages, $table)
 {
     foreach ($pages as $page) {
         if (in_array($page, $table) === true) {

@@ -1241,7 +1241,6 @@ function getStatisticsData()
  * @param string $subject     email subject
  * @param string $textMail    email message
  * @param string $email       email
- * @param array  $LANG        Language
  * @param array  $SETTINGS    settings
  * @param string $textMailAlt email message alt
  *
@@ -1251,13 +1250,12 @@ function sendEmail(
     $subject,
     $textMail,
     $email,
-    $LANG,
     $SETTINGS,
     $textMailAlt = null
 ) {
     // CAse where email not defined
     if ($email === 'none') {
-        return '"error":"" , "message":"'.$LANG['forgot_my_pw_email_sent'].'"';
+        return '"error":"" , "message":"'.langHdl('forgot_my_pw_email_sent').'"';
     }
 
     // Load settings
@@ -1337,7 +1335,7 @@ function sendEmail(
             return json_encode(
                 array(
                     'error' => '',
-                    'message' => $LANG['forgot_my_pw_email_sent'],
+                    'message' => langHdl('forgot_my_pw_email_sent'),
                 )
             );
         } else {
@@ -1369,19 +1367,20 @@ function generateKey()
 }
 
 /**
- * dateToStamp().
+ * Convert date to timestamp
+ *
+ * @param string $date     The date
+ * @param array  $SETTINGS Teampass settings
  *
  * @return string
  */
-function dateToStamp($date)
+function dateToStamp($date, $SETTINGS)
 {
-    global $SETTINGS;
-
     $date = date_parse_from_format($SETTINGS['date_format'], $date);
     if ($date['warning_count'] == 0 && $date['error_count'] == 0) {
         return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
     } else {
-        return false;
+        return '';
     }
 }
 
@@ -1625,7 +1624,7 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
     global $SETTINGS;
 
     if (empty($who)) {
-        $who = get_client_ip_server();
+        $who = getClientIpServer();
     }
 
     // include librairies & connect to DB
@@ -1781,7 +1780,7 @@ function logItems(
             prefixTable('emails'),
             array(
                 'timestamp' => time(),
-                'subject' => $LANG['email_on_open_notification_subject'],
+                'subject' => langHdl('email_on_open_notification_subject'),
                 'body' => str_replace(
                     array('#tp_user#', '#tp_item#', '#tp_link#'),
                     array(
@@ -1789,7 +1788,7 @@ function logItems(
                         addslashes($item_label),
                         $SETTINGS['cpassman_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$dataItem['id'],
                     ),
-                    $LANG['email_on_open_notification_mail']
+                    langHdl('email_on_open_notification_mail')
                 ),
                 'receivers' => $_SESSION['listNotificationEmails'],
                 'status' => '',
@@ -1802,9 +1801,9 @@ function logItems(
 /**
  * Get the client ip address
  *
- * @return void
+ * @return string IP address
  */
-function get_client_ip_server()
+function getClientIpServer()
 {
     if (getenv('HTTP_CLIENT_IP')) {
         $ipaddress = getenv('HTTP_CLIENT_IP');

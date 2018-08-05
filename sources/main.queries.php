@@ -267,7 +267,6 @@ function mainQuery()
                                 $LANG['forgot_pw_email_subject'],
                                 $LANG['forgot_pw_email_body'].' '.htmlspecialchars_decode($dataReceived['new_pw']),
                                 $row[0],
-                                $LANG,
                                 $SETTINGS,
                                 $LANG['forgot_pw_email_altbody_1'].' '.htmlspecialchars_decode($dataReceived['new_pw'])
                             );
@@ -460,7 +459,6 @@ function mainQuery()
                                 $LANG['email_ga_text']
                             ),
                             $data['email'],
-                            $LANG,
                             $SETTINGS
                         );
                     }
@@ -562,7 +560,6 @@ function mainQuery()
                         $LANG['forgot_pw_email_subject'],
                         $textMail,
                         $post_email,
-                        $LANG,
                         $SETTINGS,
                         $textMailAlt
                     ),
@@ -636,7 +633,6 @@ function mainQuery()
                         $LANG['forgot_pw_email_subject_confirm'],
                         $LANG['forgot_pw_email_body'].' '.$newPwNotCrypted,
                         $dataUser['email'],
-                        $LANG,
                         $SETTINGS,
                         strip_tags($LANG['forgot_pw_email_body']).' '.$newPwNotCrypted
                     ),
@@ -931,7 +927,6 @@ function mainQuery()
                                 $record['subject'],
                                 $record['body'],
                                 $record['receivers'],
-                                $LANG,
                                 $SETTINGS
                             ),
                             true
@@ -1166,10 +1161,10 @@ function mainQuery()
         case 'save_token':
             $token = GenerateCryptKey(
                 null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
-                null !== filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'secure', FILTER_SANITIZE_BOOLEAN) : false,
-                null !== filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'numeric', FILTER_SANITIZE_BOOLEAN) : false,
-                null !== filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'capital', FILTER_SANITIZE_BOOLEAN) : false,
-                null !== filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_BOOLEAN) ? filter_input(INPUT_POST, 'symbols', FILTER_SANITIZE_BOOLEAN) : false
+                null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false
             );
 
             // store in DB

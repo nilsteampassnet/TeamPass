@@ -1386,7 +1386,7 @@ function identifyUser(
                                 '#tp_time#'
                             ),
                             array(
-                                " ".$_SESSION['login']." (IP: ".get_client_ip_server().")",
+                                " ".$_SESSION['login']." (IP: ".getClientIpServer().")",
                                 date($SETTINGS['date_format'], $_SESSION['derniere_connexion']),
                                 date($SETTINGS['time_format'], $_SESSION['derniere_connexion'])
                             ),

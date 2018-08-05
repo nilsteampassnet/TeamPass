@@ -109,7 +109,7 @@ if (null !== $post_newtitle) {
 // CASE where RENEWAL PERIOD is changed
 } elseif (null !== $post_renewal_period && null === $post_type) {
     // Check if renewal period is an integer
-    if (parseInt($post_renewal_period)) {
+    if (is_int($post_renewal_period) === true) {
         $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
         //update DB
         DB::update(

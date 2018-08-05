@@ -113,7 +113,12 @@ if (isset($SETTINGS['cpassman_dir']) === true
                 if (is_dir($dir.'/'.$file)) {
                     delTree($dir.'/'.$file);
                 } else {
-                    @unlink($dir.'/'.$file);
+                    try {
+                        unlink($dir.'/'.$file);
+                    }
+                    catch (SomeException $e) {
+                        // do nothing... php will ignore and continue
+                    }
                 }
             }
 

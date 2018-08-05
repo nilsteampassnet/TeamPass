@@ -53,6 +53,10 @@ $get_id = $superGlobal->get('id', 'GET');
 
 // Prepare SESSION variables
 $session_user_admin = $superGlobal->get('user_admin', 'SESSION');
+$session_user_upgrade_needed = $superGlobal->get('user_upgrade_needed', 'SESSION');
+
+// Prepare COOKIE variables
+$cookie_jstree_select = $superGlobal->get('jstree_select', 'COOKIE');
 
 if ($session_user_admin === '1'
     && (null !== TP_ADMIN_FULL_RIGHT && TP_ADMIN_FULL_RIGHT === '1')
@@ -128,7 +132,7 @@ if ($get_group !== null && $get_id !== null) {
 }
 // Is personal SK available
 echo '
-<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && isset($_SESSION['user_upgrade_needed']) && $_SESSION['user_upgrade_needed'] == 1 ? '1' : '0', '" />';
+<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && $session_user_upgrade_needed == 1 ? '1' : '0', '" />';
 
 echo '
 <input type="hidden" id="items_listing_should_stop" value="">
@@ -147,8 +151,7 @@ echo '
 <input type="hidden" id="form-item-hidden-uploaded-file-id">
 <input type="hidden" id="form-item-hidden-timestamp">
 <input type="hidden" id="form-item-hidden-last-folder-selected" value="',
-    isset($_COOKIE['jstree_select']) &&
-    empty($_COOKIE['jstree_select']) === false ? $_COOKIE['jstree_select'] : '', '">';
+    empty($cookie_jstree_select) === false ? $cookie_jstree_select : '', '">';
 //$superGlobal->get('user_language', 'SESSION')
 ?>
 

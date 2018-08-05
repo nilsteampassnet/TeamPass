@@ -524,7 +524,7 @@ if (null !== $post_type) {
                                     'item_id' => $newID,
                                     'del_enabled' => 1,
                                     'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
-                                    'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date),
+                                    'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                     )
                             );
                         }
@@ -662,7 +662,6 @@ if (null !== $post_type) {
                                         langHdl('new_item_email_body')
                                     ),
                                     $emailAddress,
-                                    $LANG,
                                     $SETTINGS,
                                     str_replace(
                                         array('#label', '#link'),
@@ -1222,7 +1221,7 @@ if (null !== $post_type) {
                                         'item_id' => $post_item_id,
                                         'del_enabled' => 1,
                                         'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
-                                        'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date),
+                                        'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         )
                                 );
                                 // update LOG
@@ -1246,7 +1245,7 @@ if (null !== $post_type) {
                                     prefixTable('automatic_del'),
                                     array(
                                         'del_type' => $post_to_be_deleted_after_x_views > 0 ? 1 : 2, //1 = numeric : 2 = date
-                                        'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date),
+                                        'del_value' => $post_to_be_deleted_after_x_views > 0 ? $post_to_be_deleted_after_x_views : dateToStamp($post_to_be_deleted_after_date, $SETTINGS),
                                         ),
                                     'item_id = %i',
                                     $post_item_id
@@ -1563,7 +1562,6 @@ if (null !== $post_type) {
                                         langHdl('email_body_item_updated')
                                     ),
                                     $emailAddress,
-                                    $LANG,
                                     $SETTINGS,
                                     str_replace('#item_label#', $post_label, langHdl('email_bodyalt_item_updated'))
                                 );
@@ -4460,7 +4458,6 @@ if (null !== $post_type) {
                                 langHdl('email_request_access_mail')
                             ),
                             $dataAuthor['email'],
-                            $LANG,
                             $SETTINGS
                         ),
                         true
@@ -4490,7 +4487,6 @@ if (null !== $post_type) {
                                 langHdl('email_share_item_mail')
                             ),
                             $post_receipt,
-                            $LANG,
                             $SETTINGS
                         ),
                         true
@@ -5202,7 +5198,6 @@ if (null !== $post_type) {
                     langHdl('suggestion_notify_subject'),
                     str_replace(array('#tp_label#', '#tp_user#', '#tp_folder#'), array(addslashes($label), addslashes($resp_user['login']), addslashes($resp_folder['title'])), langHdl('suggestion_notify_body')),
                     $record['email'],
-                    $LANG,
                     $SETTINGS
                 );
             }
@@ -5288,7 +5283,6 @@ if (null !== $post_type) {
                     langHdl('email_request_access_mail')
                 ),
                 $dataAuthor['email'],
-                $LANG,
                 $SETTINGS
             );
 

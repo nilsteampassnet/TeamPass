@@ -154,13 +154,17 @@ set_time_limit(5 * 60);
 
 
 // Validate the upload
-if (!isset($_FILES['file'])) {
+if (isset($_FILES['file']) === false) {
     handleUploadError('No upload found in $_FILES for Filedata');
-} elseif (isset($_FILES['file']['error']) && $_FILES['file']['error'] != 0) {
+} elseif (isset($_FILES['file']['error']) === true
+    && $_FILES['file']['error'] != 0
+) {
     handleUploadError($uploadErrors[$_FILES['Filedata']['error']]);
-} elseif (!isset($_FILES['file']['tmp_name']) || !@is_uploaded_file($_FILES['file']['tmp_name'])) {
+} elseif (isset($_FILES['file']['tmp_name']) === false
+    || @is_uploaded_file($_FILES['file']['tmp_name']) === false
+) {
     handleUploadError('Upload failed is_uploaded_file test.');
-} elseif (!isset($_FILES['file']['name'])) {
+} elseif (isset($_FILES['file']['name']) === false) {
     handleUploadError('File has no name.');
 }
 
@@ -179,15 +183,20 @@ if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
 }
 
 // Validate file extension
-$ext = strtolower(getFileExtension($_REQUEST["name"]));
-if (!in_array(
+$ext = strtolower(
+    getFileExtension(
+        filter_var($_FILES['file']['name'], FILTER_SANITIZE_STRING)
+    )
+);
+if (in_array(
     $ext,
     explode(
         ',',
         $SETTINGS['upload_docext'].','.$SETTINGS['upload_imagesext'].
         ','.$SETTINGS['upload_pkgext'].','.$SETTINGS['upload_otherext']
     )
-)) {
+) === false
+) {
     handleUploadError('Invalid file extension.');
 }
 
