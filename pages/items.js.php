@@ -3225,7 +3225,7 @@ function prepareOneTimeView()
                     e.clearSelection();
                 });
 
-                 alertify
+                alertify
                     .success('<?php echo langHdl('success'); ?>', 0);
 
             } else {

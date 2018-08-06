@@ -651,7 +651,13 @@ function mainQuery()
          */
         case 'store_personal_saltkey':
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" , "status" : "nok" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -674,7 +680,13 @@ function mainQuery()
                         // Did we received the pass score
                         if (empty($filter_score) === false) {
                             if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
-                                echo '[ { "error" : "security_level_not_reached" , "status" : "" } ]';
+                                echo prepareExchangedData(
+                                    array(
+                                        'error' => true,
+                                        'message' => langHdl('security_level_not_reached_but_psk_correct'),
+                                    ),
+                                    'encode'
+                                );
                                 break;
                             }
                         }
@@ -700,15 +712,27 @@ function mainQuery()
                 );
 
                 if (strpos($user_key_encoded, 'Error ') !== false) {
-                    echo '[ { "error" : "psk_not_correct" , "status" : "" } ]';
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('bad_psk'),
+                        ),
+                        'encode'
+                    );
                     break;
                 } else {
                     // Check if security level is reach (if enabled)
                     if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
                         // Did we received the pass score
                         if (empty($filter_score) === false) {
-                            if (intval($SETTINGS['personal_saltkey_security_level']) > $filter_score) {
-                                echo '[ { "error" : "" , "status" : "security_level_not_reached_but_psk_correct" } ]';
+                            if (intval($SETTINGS['personal_saltkey_security_level']) > intval($filter_score)) {
+                                echo prepareExchangedData(
+                                    array(
+                                        'error' => true,
+                                        'message' => langHdl('security_level_not_reached_but_psk_correct'),
+                                    ),
+                                    'encode'
+                                );
                                 break;
                             }
                         }
@@ -723,11 +747,23 @@ function mainQuery()
                     );
                 }
             } else {
-                echo '[ { "error" : "psk_is_empty" , "status" : "" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('psk_required'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            echo '[ { "error" : "" , "status" : "ok" } ]';
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
 
             break;
         /*
@@ -735,7 +771,13 @@ function mainQuery()
          */
         case 'change_personal_saltkey':
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[{"error" : "something_wrong"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -745,25 +787,36 @@ function mainQuery()
 
             //decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data_to_share', FILTER_SANITIZE_STRING),
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 'decode'
             );
 
-            //Prepare variables
-            $newPersonalSaltkey = htmlspecialchars_decode($dataReceived['sk']);
-            $oldPersonalSaltkey = htmlspecialchars_decode($dataReceived['old_sk']);
+            if (count($dataReceived) > 0) {
+                // Prepare variables
+                $post_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
+                $post_old_psk = filter_var($dataReceived['old_psk'], FILTER_SANITIZE_STRING);
+                $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_STRING);
+            } else {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_empty_data'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             // check old psk
             $user_key_encoded = defuse_validate_personal_key(
-                $oldPersonalSaltkey,
+                $post_old_psk,
                 $_SESSION['user_settings']['encrypted_psk']
             );
             if (strpos($user_key_encoded, 'Error ') !== false) {
                 echo prepareExchangedData(
                     array(
-                        'list' => $list,
-                        'error' => $user_key_encoded,
-                        'nb_total' => $number,
+                        'error' => true,
+                        'message' => langHdl('bad_psk'),
                     ),
                     'encode'
                 );
@@ -773,8 +826,25 @@ function mainQuery()
                 $_SESSION['user_settings']['encrypted_oldpsk'] = $user_key_encoded;
             }
 
+            // Check if security level is reach (if enabled)
+            if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
+                // Did we received the pass score
+                if (empty($post_complexity) === false) {
+                    if (intval($SETTINGS['personal_saltkey_security_level']) > intval($post_complexity)) {
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'message' => langHdl('security_level_not_reached_but_psk_correct'),
+                            ),
+                            'encode'
+                        );
+                        break;
+                    }
+                }
+            }
+
             // generate the new encrypted psk based upon clear psk
-            $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($newPersonalSaltkey);
+            $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($post_psk);
 
             // store it in DB
             DB::update(
@@ -787,7 +857,7 @@ function mainQuery()
             );
 
             $user_key_encoded = defuse_validate_personal_key(
-                $newPersonalSaltkey,
+                $post_psk,
                 $_SESSION['user_settings']['encrypted_psk']
             );
             $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
@@ -821,11 +891,11 @@ function mainQuery()
                 time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
             );
-
+            
             echo prepareExchangedData(
                 array(
                     'list' => $list,
-                    'error' => 'no',
+                    'error' => false,
                     'nb_total' => $number,
                 ),
                 'encode'

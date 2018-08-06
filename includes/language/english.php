@@ -15,6 +15,8 @@
  */
 
 return array(
+    'security_level_not_reached_but_psk_correct' => 'Personal saltkey is correct but its complexity level is not reached. Please change it.',
+    'work_on_going' => 'Work on going',
     'actions' => 'Actions',
     'no_user' => 'Wrong user',
     'generate_api_token' => 'Generate new API token',

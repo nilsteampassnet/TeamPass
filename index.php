@@ -703,7 +703,7 @@ if (($session_validite_pw === null
                         ''; ?>
                         </h6>                        
 
-                        <input class="form-control form-control-lg" type="password" placeholder=".input-lg" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
+                        <input class="form-control form-control-lg" type="password" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
 
                         <div class="text-center" style="margin: 10px 0 0 40%;">
                         <?php

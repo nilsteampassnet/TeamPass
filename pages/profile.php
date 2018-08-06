@@ -428,7 +428,34 @@ $userSeenPasswordsNumber = DB::count();
                             
                             <!-- CHANGE PSK -->
                             <div class="tab-pane" id="tab_change_psk">
-                                coucou1
+                                <h3 class="card-title mb-3"><?php echo langHdl('menu_title_new_personal_saltkey'); ?></h3>
+                                <form class="needs-validation" novalidate onsubmit="return false;">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('old_saltkey'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control"  id="profile-psk-old">
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('new_saltkey'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control infotip text_without_symbols" id="profile-psk" title="<?php echo langHdl('text_without_symbols'); ?>">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text" id="profile-psk-strength"></span>
+                                            <input type="hidden" id="profile-psk-complex"" />
+                                        </div>
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('confirm'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control"  id="profile-psk-confirm">
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-info" id="profile-save-psk-change"><?php echo langHdl('save'); ?></button>
+                                    </div>
+                                </form>
                             </div>
 
                                                         

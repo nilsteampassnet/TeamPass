@@ -50,6 +50,40 @@ $(function() {
     // Show tooltips
     $('.infotip').tooltip();
 
+    // prevent usage of symbols in Personal saltkey
+    $(".text_without_symbols").bind("keydown", function (event) {
+        switch (event.keyCode) {
+            case 8:  // Backspace
+            case 9:  // Tab
+            case 13: // Enter
+            case 37: // Left
+            case 38: // Up
+            case 39: // Right
+            case 40: // Down
+            break;
+            default:
+            var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
+            var key = event.key;
+            if (regex.test(key) === false) {
+                alertify
+                    .error('<?php echo langHdl('character_not_allowed'); ?>', 3);
+                event.preventDefault();
+                return false;
+            }
+            if (key !== "Alt" && key !== "Control" && key !== "Shift") {
+                alertify.set('notifier','position', 'top-right');
+                alertify
+                    .message(key, 2)
+                    .dismissOthers();
+            }
+            break;
+        }
+    }).bind("paste",function(e) {
+        alertify
+            .error('<?php echo langHdl('error_not_allowed_to'); ?>', 3);
+        e.preventDefault();
+    });
+
     // Load user profiles
     $('.user-panel').click(function () {
         document.location.href="index.php?page=profile";
@@ -111,38 +145,30 @@ $(function() {
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
+                //decrypt data
+                try {
+                    data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+                } catch (e) {
+                    // error
+                    alertify
+                        .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
+                        .dismissOthers();
+                    return false;
+                }
+                console.log(data)
+
                 // Is there an error?
-                if (data[0].error !== "") {
-                    var error = "";
-                    if (data[0].error === "key_not_conform") {
-                        error = '<?php echo langHdl('error_unknown'); ?>';
-                    } else if (data[0].error === "security_level_not_reached") {
-                        error = '<?php echo langHdl('error_security_level_not_reached'); ?>';
-                    } else if (data[0].error === "psk_is_empty") {
-                        error = '<?php echo langHdl('psk_required'); ?>';
-                    } else if (data[0].error === "psk_not_correct") {
-                        error = '<?php echo langHdl('bad_psk'); ?>';
-                    }
-                    // display error
-                    alertify.alert().set({onshow:function(){ alertify.message('',0.1).dismissOthers()}});
-                    alertify.alert(
-                        '<?php echo langHdl('warning'); ?>',
-                        error
-                    );
-                } else if (data[0].status === "security_level_not_reached_but_psk_correct") {
-                    alertify.alert(
-                        '<?php echo langHdl('warning'); ?>',
-                        '<?php echo langHdl('error_security_level_not_reached'); ?>'
-                    );
+                if (data.error === true) {
+                    alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
+                    .dismissOthers();
                 } else {
                     alertify
                         .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
                         .dismissOthers();
-                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                     location.reload();
                 }
-            },
-            "json"
+            }
         );
     });
 
