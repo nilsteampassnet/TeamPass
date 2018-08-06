@@ -1349,6 +1349,21 @@ function mainQuery()
                         $line = str_replace($url_found, $anonym_url, $line);
                     }
 
+                    // Clear email password
+                    if (strpos($line, 'email_auth_pwd') > 0) {
+                        $line = "'email_auth_pwd' => '<removed>'\n";
+                    }
+
+                    // Clear agses_hosted_apikey
+                    if (strpos($line, 'agses_hosted_apikey') > 0) {
+                        $line = "'agses_hosted_apikey' => '<removed>'\n";
+                    }
+
+                    // Clear ldap_bind_passwd
+                    if (strpos($line, 'ldap_bind_passwd') > 0) {
+                        $line = "'ldap_bind_passwd' => '<removed>'\n";
+                    }
+
                     // Clear bck_script_passkey
                     if (strpos($line, 'bck_script_passkey') > 0) {
                         $line = "'bck_script_passkey' => '<removed>'\n";

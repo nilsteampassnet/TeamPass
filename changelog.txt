@@ -1,5 +1,7 @@
 2.1.27
 17/
+ #2364 Using another protocol than HTTP for the URL is not possible
+ #2360 Show logs without any auth
  #2349 Folder with flag "allow empty password" says "Insufficient password strenght" on item edition
  #2347 Disable "Forgot Password?" link feature not working
  #2346 [CSV-Import] convert field to string bevore using replace()
@@ -11,6 +13,7 @@
  #2290 Protection of OTV page errors
  #2298 support for login through http header
  #2265 API - Add item - comma separated base64 encoded string
+ Fix - in bur report, the email password is visible
  
 16/
  New - Added folders filter in Manage Roles page

@@ -716,8 +716,8 @@ function AjouterItem()
 
     //Complete url format
     var url = $("#url").val();
-    if (url.substring(0,7) != "http://" && url!="" && url.substring(0,8) != "https://" && url.substring(0,6) != "ftp://" && url.substring(0,6) != "ssh://") {
-        url = "http://"+url;
+    if (url.indexOf('://') === -1) {
+        url = "https://"+url;
     }
 
     // do checks
@@ -975,8 +975,8 @@ function EditerItem()
 
     //Complete url format
     var url = $("#edit_url").val();
-    if (url.substring(0,7) != "http://" && url!="" && url.substring(0,8) != "https://" && url.substring(0,6) != "ftp://" && url.substring(0,6) != "ssh://") {
-        url = "http://"+url;
+    if (url.indexOf('://') === -1) {
+        url = "https://"+url;
     }
 
     // do checks

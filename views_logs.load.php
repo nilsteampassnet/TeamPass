@@ -62,7 +62,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=connections",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=connections&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -79,7 +79,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=errors",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=errors&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -96,7 +96,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=access",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=access&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -113,7 +113,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=copy",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=copy&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -130,7 +130,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=admin",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=admin&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -147,7 +147,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=items",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=items&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -164,7 +164,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=failed_auth",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=failed_auth&token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"

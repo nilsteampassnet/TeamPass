@@ -83,7 +83,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.item_edition.php",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.item_edition.php?token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -99,7 +99,7 @@ function loadTable(table_id)
             "bProcessing": true,
             "bDestroy": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.users_logged.php",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.users_logged.php?token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
