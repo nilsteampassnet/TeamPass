@@ -117,7 +117,7 @@ if (null !== $post_type_upload && $post_type_upload === "upload_profile_photo") 
 
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
-$valid_chars_regex = 'A-Za-z0-9_@./#&+-'; //accept only those characters
+$valid_chars_regex = 'A-Za-z0-9_.'; //accept only those characters
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
 

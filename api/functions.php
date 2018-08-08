@@ -2022,7 +2022,7 @@ function restGet()
                 $user_pwd = urlSafeB64Decode($GLOBALS['request'][2]);
                 $user_saltkey = urlSafeB64Decode($GLOBALS['request'][3]);
 
-                $json = [];
+                $json = array();
                 $inc = 0;
                 if (strcmp($user_login, "admin") == 0) {
                     // forbid admin access

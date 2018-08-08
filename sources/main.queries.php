@@ -110,12 +110,17 @@ function mainQuery()
                 && $_SESSION['user_admin'] !== "1"
             ) {
                 // check if expected security level is reached
-                $data_roles = DB::queryfirstrow("SELECT fonction_id FROM ".prefix_table("users")." WHERE id = %i", $_SESSION['user_id']);
+                $data_roles = DB::queryfirstrow(
+                    "SELECT fonction_id
+                    FROM ".prefix_table("users")."
+                    WHERE id = %i",
+                    $_SESSION['user_id']
+                );
 
                 // check if badly written
                 $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
+                $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 if ($data_roles['fonction_id'][0] === "") {
-                    $data_roles['fonction_id'] = array_filter(implode(';', $data_roles['fonction_id']));
                     DB::update(
                         prefix_table("users"),
                         array(
@@ -129,7 +134,7 @@ function mainQuery()
                 $data = DB::query(
                     "SELECT complexity
                     FROM ".prefix_table("roles_title")."
-                    WHERE id IN (".array_filter(implode(',', $data_roles['fonction_id'])).")
+                    WHERE id IN (".$data_roles['fonction_id'].")
                     ORDER BY complexity DESC"
                 );
                 if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
@@ -999,7 +1004,7 @@ function mainQuery()
                 $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
             }
 
-            $generator->setLength((int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+            $generator->setLength((int) filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT));
 
             if (null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING) === "true"
