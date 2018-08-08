@@ -359,14 +359,26 @@ function restGet()
     global $api_version;
     global $SETTINGS;
     global $link;
+    global $body;
+    global $preg_res;
 
     if (!@count($GLOBALS['request']) == 0) {
         $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
-        if (count($matches) == 0) {
-            restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
-        }
-        $GLOBALS['request'] = explode('/', $matches[2]);
+        $preg_res = preg_match('/\/api(\/index.php|)\?apikey=(.*)/', $request_uri, $matches);
+	if ($preg_res == 1 ) {
+            $body = file_get_contents("php://input");
+	    if (strlen(body) == 0) {
+                restError('EMPTY');
+            } else {
+		$GLOBALS['request'] = explode('/', $body);
+            }
+	} else {
+	    preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
+            if (count($matches) == 0) {
+                restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
+            }
+            $GLOBALS['request'] = explode('/', $matches[2]);
+	}
     }
 
     if (apikeyChecker($GLOBALS['apikey'])) {
