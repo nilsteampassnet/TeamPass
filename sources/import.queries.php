@@ -756,12 +756,13 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             $post_destination = filter_input(INPUT_POST, 'destination', FILTER_SANITIZE_STRING);
 
             // If personal folder, then remove the suffix in ID
-            if (substr_count($post_destination, '-perso') > 0) {
+            /*if (substr_count($post_destination, '-perso') > 0) {
                 $post_destination = str_replace('-perso', '', $post_destination);
-            }
+            }*/
 
             // If destination is not ROOT then get the complexity level
             if (strpos($post_destination, "perso") !== false) {
+                $post_destination = str_replace('-perso', '', $post_destination);
                 $levelPwComplexity = 50;
                 $startPathLevel = 1;
                 $import_perso = true;
@@ -831,7 +832,8 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                             array(
                                 'parent_id' => $parent_id,
                                 'title' => stripslashes($fold),
-                                'nlevel' => $folderLevel
+                                'nlevel' => $folderLevel,
+                                'personal_folder' => $import_perso === true ? 1 : 0,
                             )
                         );
                         $id = DB::insertId();

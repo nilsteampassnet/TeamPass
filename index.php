@@ -721,7 +721,11 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                            </div>';
     }
 
-    if (!(isset($SETTINGS['enable_http_request_login']) === true && $SETTINGS['enable_http_request_login'] === '1' && isset($_SERVER['PHP_AUTH_USER']) === true && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))) {
+    if (!(isset($SETTINGS['enable_http_request_login']) === true
+        && $SETTINGS['enable_http_request_login'] === '1'
+        && isset($_SERVER['PHP_AUTH_USER']) === true
+        && !(isset($SETTINGS['maintenance_mode']) === true && $SETTINGS['maintenance_mode'] === '1'))
+    ) {
         echo '
                         <div id="connect_pw" style="margin-bottom:3px;">
                             <label for="pw" class="form_label" id="user_pwd">' . $LANG['index_password'].'</label>
@@ -801,7 +805,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     }
 
     // Google Authenticator code
-    if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['google_authentication'] !== "1") {
+    if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true && $SETTINGS['disable_show_forgot_pwd_link'] !== "1") {
         echo '
                         <div style="text-align:center;margin-top:10px;font-size:10pt;">
                             <span onclick="OpenDialog(\'div_forgot_pw\')" style="padding:3px;cursor:pointer;">' . $LANG['forgot_my_pw'].'</span>
@@ -811,7 +815,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
     if (isset($SETTINGS['enable_http_request_login']) === true
         && $SETTINGS['enable_http_request_login'] === '1'
         && isset($_SERVER['PHP_AUTH_USER']) === true
-        && (isset($SETTINGS['maintenance_mode']) === false
+        && !(isset($SETTINGS['maintenance_mode']) === true
             && $SETTINGS['maintenance_mode'] === '1')
     ) {
         echo '

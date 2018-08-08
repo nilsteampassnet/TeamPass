@@ -120,10 +120,20 @@ foreach ($folders as $t) {
     if (($_SESSION['user_read_only'] === '0' && in_array($t->id, $_SESSION['groupes_visibles']))
         || ($_SESSION['user_read_only'] === '1' && in_array($t->id, $_SESSION['personal_visible_groups']))
     ) {
-        if (is_numeric($t->title) === true && $t->title === $_SESSION['user_id']) {
-            $user = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id = %i", $t->title);
-            $t->title = $user['login'];
-            $t->id = $t->id."-perso";
+        // Manage if personal folder
+        $nodeDetails = $tree->getNode($t->id);
+        if (intval($nodeDetails->personal_folder) === 1) {
+            if (isset($_SESSION['user_settings']['session_psk']) === true) {
+                if (is_numeric($t->title) === true
+                    && $t->title === $_SESSION['user_id']
+                ) {
+                    $user = DB::queryfirstrow("SELECT login FROM ".prefix_table("users")." WHERE id = %i", $t->title);
+                    $t->title = $user['login'];
+                    $t->id = $t->id."-perso";
+                }
+            } else {
+                continue;
+            }
         }
         $ident = "&nbsp;&nbsp;";
         for ($x = 1; $x < $t->nlevel; $x++) {
@@ -483,9 +493,9 @@ foreach ($folders as $t) {
                 destination : $("#import_keepass_items_to").val()
             },
             function(data) {
-                $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");
-                $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
                 if (data[0].error === "") {
+                    $("#kp_import_information").html(data[0].message + "<?php echo '<br><br><b>'.$LANG['alert_page_will_reload'].'</b>'; ?>");
+                    $("#import_information").show().html("<i class='fa fa-exclamation-circle'></i>&nbsp;<?php echo $LANG['alert_message_done']; ?>").attr("class","ui-state-highlight");
                     // Reload page
                     $(this).delay(2000).queue(function() {
                         $("#import_information").effect( "fade", "slow" );
@@ -497,6 +507,10 @@ foreach ($folders as $t) {
                             
                         $(this).dequeue();
                     });
+                } else {
+                    $("#import_information")
+                        .html("<i class='fa fa-exclamation-circle'></i>&nbsp;" + data[0].message)
+                        .attr("class","ui-state-highlight");
                 }
             },
             "json"

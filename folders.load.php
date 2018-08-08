@@ -51,7 +51,7 @@ $(function() {
         "processing": true,
         "serverSide": true,
         "ajax": {
-            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.folders.php",
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.folders.php?token=<?php echo $_SESSION["key"]; ?>",
             data: function(d) {
                 d.letter = _alphabetSearch
             }

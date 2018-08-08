@@ -149,7 +149,7 @@ if (!isset($SETTINGS['enable_suggestion']) || $SETTINGS['enable_suggestion'] != 
                     "bProcessing": true,
                     "bDestroy": true,
                     "bServerSide": true,
-                    "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.suggestion.php",
+                    "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.suggestion.php?token=<?php echo $_SESSION["key"]; ?>",
                     "bJQueryUI": true,
                     "oLanguage": {
                         "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
@@ -197,7 +197,7 @@ if (!isset($SETTINGS['enable_suggestion']) || $SETTINGS['enable_suggestion'] != 
                         "bProcessing": true,
                         "bDestroy": true,
                         "bServerSide": true,
-                        "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.items_change.php",
+                        "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.items_change.php?token=<?php echo $_SESSION["key"]; ?>",
                         "bJQueryUI": true,
                         "oLanguage": {
                             "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"

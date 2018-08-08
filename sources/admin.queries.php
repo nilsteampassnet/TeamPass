@@ -391,7 +391,7 @@ switch ($post_type) {
     ###########################################################
     #CASE for restoring a DB backup
     case "admin_action_db_restore":
-        require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+        include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
         $dataPost = explode('&', $post_option);
         $file = htmlspecialchars($dataPost[0]);
@@ -451,7 +451,7 @@ switch ($post_type) {
         }
 
         //delete file
-        unlink($SETTINGS['path_to_files_folder']."/".$file);
+        unlink($file);
 
         //Show done
         echo '[{"result":"db_restore" , "message":""}]';
@@ -1589,10 +1589,10 @@ switch ($post_type) {
                     "<?php
     @define('COST', '13'); // Don't change this.
     // DUOSecurity credentials
-    @define('AKEY', '".(string) $akey."');
-    @define('IKEY', '".(string) $ikey."');
-    @define('SKEY', '".(string) $skey."');
-    @define('HOST', '".(string) $host."');
+    @define('AKEY', '".(string) strip_tags(htmlentities(addslashes($akey)))."');
+    @define('IKEY', '".(string) strip_tags(htmlentities(addslashes($ikey)))."');
+    @define('SKEY', '".(string) strip_tags(htmlentities(addslashes($skey)))."');
+    @define('HOST', '".(string) strip_tags(htmlentities(addslashes($host)))."');
     ?>"
                 )
             );

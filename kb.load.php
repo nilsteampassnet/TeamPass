@@ -72,7 +72,7 @@ if (file_exists('../includes/config/tp.config.php')) {
             "sPaginationType": "full_numbers",
             "bProcessing": true,
             "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.kb.php",
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.kb.php?token=<?php echo $_SESSION["key"]; ?>",
             "bJQueryUI": true,
             "oLanguage": {
                 "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"

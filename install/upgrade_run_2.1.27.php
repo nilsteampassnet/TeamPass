@@ -89,6 +89,30 @@ $superGlobal->put("abspath", $abspath, "SESSION");
 $session_tp_defuse_installed = $superGlobal->get("tp_defuse_installed", "SESSION");
 
 /**
+ * Generates a random key
+ *
+ * @return void
+ */
+function generateRandomKey()
+{
+    // load passwordLib library
+    $path = '../includes/libraries/PasswordGenerator/Generator/';
+    include_once $path.'ComputerPasswordGenerator.php';
+
+    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
+
+    $generator->setLength(40);
+    $generator->setSymbols(false);
+    $generator->setLowercase(true);
+    $generator->setUppercase(true);
+    $generator->setNumbers(true);
+
+	$key = $generator->generatePasswords();
+
+    return $key[0];
+}
+
+/**
  * Function permits to get the value from a line
  * @param  string $val [description]
  * @return string      [description]
@@ -983,6 +1007,15 @@ if (intval($tmp) === 0) {
         "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'upload_all_extensions_file', '0')"
     );
 }
+
+
+// generate new backup key
+mysqli_query(
+    $db_link,
+    "UPDATE `".$pre."misc`
+    SET valeur = '".generateRandomKey()."'
+    WHERE type = 'admin' AND intitule = 'bck_script_passkey'"
+);
 
 
 

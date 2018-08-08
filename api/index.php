@@ -14,19 +14,19 @@
  */
 
 //require_once('config.php');
-require_once('functions.php');
+require_once 'functions.php';
 
 header('Content-Type: application/json');
 
-if (teampass_api_enabled() != "1") {
+if (teampassApiEnabled() != "1") {
     echo '{"err":"API access not allowed."}';
     exit;
 }
 
-teampass_whitelist();
+teampassWhitelist();
 
-if (!isset($_GET['apikey'])) {
-    rest_error('UNKNOWN');
+if (isset($_GET['apikey']) === false) {
+    restError('UNKNOWN');
 } else {
     $GLOBALS['apikey'] = $_GET['apikey'];
 }
@@ -36,18 +36,18 @@ $request = explode("/", substr(@$_SERVER['PATH_INFO'], 1));
 
 switch ($method) {
     case 'GET':
-    rest_get();
-    break;
+        restGet();
+        break;
     case 'PUT':
-    rest_put();
-    break;
+        restPut();
+        break;
     case 'DELETE':
-    rest_delete();
-    break;
+        restDelete();
+        break;
     case 'HEAD':
-    rest_head();
-    break;
+        restHead();
+        break;
     default:
-    rest_error('UNKNOWN');
-    break;
+        restError('UNKNOWN');
+        break;
 }

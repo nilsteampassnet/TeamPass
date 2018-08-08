@@ -561,6 +561,43 @@ if (null !== $post_type) {
                     break;
                 }
 
+                // check if element doesn't already exist
+                DB::queryfirstrow(
+                    "SELECT * FROM ".prefix_table("items")."
+                    WHERE label = %s AND inactif = %i",
+                    $label,
+                    0
+                );
+                $counter = DB::count();
+                $itemExists = 0;
+                $counter = DB::count();
+                if ($counter > 0) {
+                    $itemExists = 1;
+                } else {
+                    $itemExists = 0;
+                }
+
+                // Manage case where item is personal.
+                // In this case, duplication is allowed
+                if (isset($SETTINGS['duplicate_item']) === true
+                    && $SETTINGS['duplicate_item'] === '0'
+                    && $dataReceived['salt_key_set'] === '1'
+                    && isset($dataReceived['salt_key_set']) === true
+                    && $dataReceived['is_pf'] === '1'
+                    && isset($dataReceived['is_pf']) === true
+                ) {
+                    $itemExists = 0;
+                }
+
+                if (isset($SETTINGS['duplicate_item']) === true
+                    && $SETTINGS['duplicate_item'] === '0'
+                    && (int) $itemExists === 1
+                ) {
+                    // Encrypt data to return
+                    echo prepareExchangedData(array("error" => "item_exists"), "encode");
+                    break;
+                }
+
                 // Get all informations for this item
                 $dataItem = DB::queryfirstrow(
                     "SELECT *
@@ -570,6 +607,7 @@ if (null !== $post_type) {
                     $dataReceived['id'],
                     "at_creation"
                 );
+
                 // check that actual user can access this item
                 $restrictionActive = true;
                 $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
@@ -813,7 +851,7 @@ if (null !== $post_type) {
                                     }
                                 }
                             } else {
-                                if (empty($field_data[1])) {
+                                if (empty($field_data[1]) === true) {
                                     DB::delete(
                                         $pre."categories_items",
                                         "item_id = %i AND field_id = %s",
@@ -3977,15 +4015,17 @@ if (null !== $post_type) {
             }
             $url = $SETTINGS['cpassman_url']."/index.php?otv=true&".http_build_query($otv_session);
             $exp_date = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], time() + (intval($SETTINGS['otv_expiration_period']) * 86400));
+            $element_id = "clipboard-button-".mt_rand(0, 1000);
 
             echo json_encode(
                 array(
                     "error" => "",
                     "url" => str_replace(
                         array("#URL#", "#DAY#"),
-                        array('<span id=\'otv_link\'>'.$url.'</span>&nbsp;<span class=\'fa-stack tip" title=\''.addslashes($LANG['copy']).'\' style=\'cursor:pointer;\' id=\'button_copy_otv_link\'><span class=\'fa fa-square fa-stack-2x\'></span><span class=\'fa fa-clipboard fa-stack-1x fa-inverse\'></span></span>', $exp_date),
+                        array('<span id="otv_link">'.$url.'</span>&nbsp;<i class="fa-stack tip clipboard-icon" title="'.addslashes($LANG['copy']).'" style="cursor:pointer;" id="'.$element_id.'" data-clipboard-text="'.$url.'"><span class="fa fa-square fa-stack-2x"></span><span class="fa fa-clipboard fa-stack-1x fa-inverse"></span></i>', $exp_date),
                         $LANG['one_time_view_item_url_box']
-                    )
+                    ),
+                    'element_id' => $element_id
                 )
             );
             break;

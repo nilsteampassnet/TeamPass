@@ -627,7 +627,7 @@ echo '
     <form method="post" name="form_edit" action="">
     <div id="edit_afficher_visibilite" style="text-align:center;margin-bottom:6px;height:25px;"></div>
     <div id="edit_display_title" style="text-align:center;margin-bottom:6px;font-size:17px;font-weight:bold;height:25px;"></div>
-    <div id="edit_show_error" style="text-align:center;margin:2px;display:none;" class="ui-state-error ui-corner-all"></div>';
+    <div id="edit_show_error" style="text-align:center;margin:2px;" class="ui-state-error ui-corner-all hidden"></div>';
 // Prepare TABS
 echo '
     <div id="item_edit_tabs">
@@ -781,6 +781,7 @@ echo '
         </div>';
 // Tabs EDIT N°4 -> Categories
 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1) {
+    $templateID = -1;
     echo '
         <div id="tabs-4">
             <div id="edit_item_more">';
@@ -798,6 +799,7 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
                         <input type="checkbox" id="template_edit_'.$elem[0].'" class="item_edit_template template_for_items" data-category-id="'.$elem[0].'"/>
                         <label for="template_edit_'.$elem[0].'" class="pointer">'.$LANG['main_template'].'</label>
                         </div>';
+            $templateID = $elem[0];
         }
         echo '
                     </div>';
@@ -812,10 +814,10 @@ if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1
             echo '</label>';
             if ($field[3] === 'text') {
                 echo '
-                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'" data-field-masked="'.$field[4].'" data-field-is-mandatory="'.$field[5].'">';
+                        <input type="text" id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" size="40" data-field-type="'.$field[3].'" data-field-masked="'.$field[4].'" data-field-is-mandatory="'.$field[5].'" data-template-id="'.$templateID.'">';
             } else if ($field[3] === 'textarea') {
                 echo '
-                        <textarea id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field["3"].'" data-field-masked="'.$field[4].'" data-field-is-mandatory="'.$field[5].'"></textarea>';
+                        <textarea id="edit_field_'.$field[0].'_'.$elem[0].'" class="edit_item_field input_text text ui-widget-content ui-corner-all" colums="40" rows="5" data-field-type="'.$field["3"].'" data-field-masked="'.$field[4].'" data-field-is-mandatory="'.$field[5].'" data-template-id="'.$templateID.'"></textarea>';
             }
             echo '
                     </div>';

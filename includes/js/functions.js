@@ -181,8 +181,8 @@ function unsanitizeString(string){
 **/
 function sanitizeString(string){
     if(string !== "" && string !== null && string !== undefined) {
-        string = string.replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
-        string = string.replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
+        string = string.toString().replace(/\\/g,"&#92;").replace(/"/g,"&quot;");
+        string = string.toString().replace(new RegExp("\\s*<script[^>]*>[\\s\\S]*?</script>\\s*","ig"), "");
     }
     return string;
 }
@@ -210,21 +210,13 @@ function SendMail(category, contentEmail, keySent, message){
     );
 }
 
-/**
-*   Checks if email has expected format (xxx@yyy.zzz)
-**/
-function IsValidEmail(email) {
-    var filter = /^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/;
-    return filter.test(email);
-}
 
 /**
 *   Checks if URL has expected format
 **/
-function validateURL(textval) {
-    //var urlregex = new RegExp("^(http:\/\/www.|https:\/\/www.|ftp:\/\/www.|www.){1}([0-9A-Za-z]+\.)");
+function validateURL(url) {
     var urlregex = /(ftp|http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-    return urlregex.test(textval);
+    return urlregex.test(url);
 }
 
 

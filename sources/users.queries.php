@@ -1636,61 +1636,97 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
     $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
     $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_STRING);
 
-    if ($value[0] === "userlanguage") {
-        $value[0] = "user_language";
-        $post_newValue = strtolower($post_newValue);
-    }
-    DB::update(
-        prefix_table("users"),
-        array(
-            $value[0] => $post_newValue
-            ),
-        "id = %i",
+    // Get info about user
+    $data_user = DB::queryfirstrow(
+        "SELECT admin, isAdministratedByRole FROM ".prefix_table("users")."
+        WHERE id = %i",
         $value[1]
     );
-    // update LOG
-    logEvents(
-        'user_mngt',
-        'at_user_new_'.$value[0].':'.$value[1],
-        $_SESSION['user_id'],
-        $_SESSION['login'],
-        filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
-    );
-    // refresh SESSION if requested
-    if ($value[0] === "treeloadstrategy") {
-        $_SESSION['user_settings']['treeloadstrategy'] = $post_newValue;
-    } elseif ($value[0] === "usertimezone") {
-    // special case for usertimezone where session needs to be updated
-        $_SESSION['user_settings']['usertimezone'] = $post_newValue;
-    } elseif ($value[0] === "userlanguage") {
-    // special case for user_language where session needs to be updated
-        $_SESSION['user_settings']['user_language'] = $post_newValue;
-        $_SESSION['user_language'] = $post_newValue;
-    } elseif ($value[0] === "agses-usercardid") {
-    // special case for agsescardid where session needs to be updated
-        $_SESSION['user_settings']['agses-usercardid'] = $post_newValue;
-    } elseif ($value[0] === "email") {
-    // store email change in session
-        $_SESSION['user_email'] = $post_newValue;
+
+    // Is this user allowed to do this?
+    if ($_SESSION['is_admin'] === "1"
+        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+        || ($_SESSION['user_can_manage_all_users'] === "1" && $data_user['admin'] !== "1")
+        || ($_SESSION['user_id'] === $value[1])
+    ) {
+        if ($value[0] === "userlanguage") {
+            $value[0] = "user_language";
+            $post_newValue = strtolower($post_newValue);
+        }
+        // Check that operation is allowed
+        if (in_array(
+            $value[0],
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'user_api_key', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk')
+        )
+        ) {
+            DB::update(
+                prefix_table("users"),
+                array(
+                    $value[0] => $post_newValue
+                    ),
+                "id = %i",
+                $value[1]
+            );
+            // update LOG
+            logEvents(
+                'user_mngt',
+                'at_user_new_'.$value[0].':'.$value[1],
+                $_SESSION['user_id'],
+                $_SESSION['login'],
+                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING)
+            );
+            // refresh SESSION if requested
+            if ($value[0] === "treeloadstrategy") {
+                $_SESSION['user_settings']['treeloadstrategy'] = $post_newValue;
+            } elseif ($value[0] === "usertimezone") {
+            // special case for usertimezone where session needs to be updated
+                $_SESSION['user_settings']['usertimezone'] = $post_newValue;
+            } elseif ($value[0] === "userlanguage") {
+            // special case for user_language where session needs to be updated
+                $_SESSION['user_settings']['user_language'] = $post_newValue;
+                $_SESSION['user_language'] = $post_newValue;
+            } elseif ($value[0] === "agses-usercardid") {
+            // special case for agsescardid where session needs to be updated
+                $_SESSION['user_settings']['agses-usercardid'] = $post_newValue;
+            } elseif ($value[0] === "email") {
+            // store email change in session
+                $_SESSION['user_email'] = $post_newValue;
+            }
+            // Display info
+            echo htmlentities($post_newValue, ENT_QUOTES);
+        }
     }
-    // Display info
-    echo htmlentities($post_newValue, ENT_QUOTES);
 // # ADMIN FOR USER HAS BEEN DEFINED ##
 } elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
     $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
-    DB::update(
-        prefix_table("users"),
-        array(
-            'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)
-            ),
-        "id = %i",
-        $id[1]
+
+    // Get info about user
+    $data_user = DB::queryfirstrow(
+        "SELECT admin, isAdministratedByRole FROM ".prefix_table("users")."
+        WHERE id = %i",
+        $value[1]
     );
-    // Display info
-    if (filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
-        echo "Oui";
-    } else {
-        echo "Non";
+
+    // Is this user allowed to do this?
+    if ($_SESSION['is_admin'] === "1"
+        || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
+        || ($_SESSION['user_can_manage_all_users'] === "1" && $data_user['admin'] !== "1")
+        || ($_SESSION['user_id'] === $value[1])
+    ) {
+        DB::update(
+            prefix_table("users"),
+            array(
+                'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)
+                ),
+            "id = %i",
+            $id[1]
+        );
+        // Display info
+        if (filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
+            echo "Oui";
+        } else {
+            echo "Non";
+        }
     }
 }
 

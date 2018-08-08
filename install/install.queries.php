@@ -69,6 +69,30 @@ function bCrypt($password, $cost)
 }
 
 /**
+ * Generates a random key
+ *
+ * @return void
+ */
+function generateRandomKey()
+{
+    // load passwordLib library
+    $path = '../includes/libraries/PasswordGenerator/Generator/';
+    include_once $path.'ComputerPasswordGenerator.php';
+
+    $generator = new PasswordGenerator\Generator\ComputerPasswordGenerator();
+
+    $generator->setLength(40);
+    $generator->setSymbols(false);
+    $generator->setLowercase(true);
+    $generator->setUppercase(true);
+    $generator->setNumbers(true);
+
+	$key = $generator->generatePasswords();
+
+    return $key[0];
+}
+
+/**
  * Permits to encrypt a message using Defuse
  * @param  string $message   Message to encrypt
  * @param  string $ascii_key Key to hash
@@ -520,7 +544,8 @@ global \$SETTINGS;
                             array('admin', 'ldap_and_local_authentication', '0'),
                             array('admin', 'secure_display_image', '1'),
                             array('admin', 'upload_zero_byte_file', '0'),
-                            array('admin', 'upload_all_extensions_file', '0')
+                            array('admin', 'upload_all_extensions_file', '0'),
+                            array('admin', 'bck_script_passkey', generateRandomKey())
                         );
                         foreach ($aMiscVal as $elem) {
                             //Check if exists before inserting
