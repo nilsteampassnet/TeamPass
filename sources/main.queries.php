@@ -130,12 +130,13 @@ function mainQuery()
                 // check if badly written
                 $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
+                if ($data_roles['fonction_id'][0] === "") {
                     DB::update(
-                        prefixTable('users'),
+                        prefix_table("users"),
                         array(
-                            'fonction_id' => $data_roles['fonction_id'],
+                            'fonction_id' => $data_roles['fonction_id']
                             ),
-                        'id = %i',
+                        "id = %i",
                         $_SESSION['user_id']
                     );
                 }
@@ -143,7 +144,7 @@ function mainQuery()
                 $data = DB::query(
                     "SELECT complexity
                     FROM ".prefix_table("roles_title")."
-                    WHERE id IN (".array_filter(implode(',', $data_roles['fonction_id'])).")
+                    WHERE id IN (".$data_roles['fonction_id'].")
                     ORDER BY complexity DESC"
                 );
                 if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
