@@ -380,12 +380,16 @@ function restGet()
                 $GLOBALS['request'] = explode('/', $matches[2]);
                 break;
             case 'POST':
-                $body = file_get_contents("php://input");
-                if (strlen($body) === 0) {
-                    restError('EMPTY');
-                } else {
-                    $GLOBALS['request'] = explode('/', $body);
-                }
+		if (isset($_POST['cmd']) ) {
+                    $command = $_POST['cmd'];
+                    if (strlen($cmd) === 0) {
+                        restError('EMPTY');
+                    } else {
+                        $GLOBALS['request'] = explode('/', $cmd);
+                    }
+		} else {
+                    restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
+		}
                 break;
             default:
                 restError('EMPTY');
