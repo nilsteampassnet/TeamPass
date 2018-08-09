@@ -1,0 +1,4 @@
+CHANGELOG for Teampass API
+
+2.1.4
+ #2370 API is a vulnerability issue writing passwords.
