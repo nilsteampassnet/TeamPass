@@ -41,9 +41,6 @@ switch ($method) {
     case 'GET':
         restGet();
         break;
-    case 'GET':
-        restGet();
-        break;
     case 'PUT':
         restPut();
         break;

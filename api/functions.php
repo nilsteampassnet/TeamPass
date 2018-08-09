@@ -366,14 +366,7 @@ function restGet()
     global $link;
 
     if (!@count($GLOBALS['request']) == 0) {
-        /*
-        $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
-        if (count($matches) == 0) {
-            restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
-        }
-        $GLOBALS['request'] = explode('/', $matches[2]);
-        */
+        // Manage type of request
         switch ($_SERVER['REQUEST_METHOD']) {
             case 'GET':
                 preg_match(
@@ -393,6 +386,9 @@ function restGet()
                 } else {
                     $GLOBALS['request'] = explode('/', $body);
                 }
+                break;
+            default:
+                restError('EMPTY');
                 break;
         }
     }
