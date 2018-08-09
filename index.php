@@ -720,6 +720,45 @@ if (($session_validite_pw === null
         </div>
 
 
+        <!-- UNSUCCESSFUL LOGIN ATTEMPTS -->
+        <?php
+        if (isset($_SESSION['unsuccessfull_login_attempts']) === true
+            && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
+            && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
+        ) {
+            $_SESSION['unsuccessfull_login_attempts']['shown'] = true;
+            ?>
+        <div class="card card-danger m-2" id="dialog_login_attempts">
+            <div class="card-header">
+                <h3 class="card-title">
+                <i class="fa fa-history"></i>
+                <?php echo langHdl('login_attempts'); ?>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-12 col-md-12">
+                        <h6 class="text-center">
+                        <?php
+                        foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
+                            echo '
+                            <p class="text-warning">
+                                <i class="fa fa-caret-right mr-2"></i>'.$entry.'
+                            </p>';
+                        }
+                        ?>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-default float-right close-element"><?php echo langHdl('ok'); ?></button>
+            </div>
+        </div>
+        <?php
+        }
+        ?>
+
+
     <?php
     if ($session_initial_url !== null && empty($session_initial_url) === false) {
         include $session_initial_url;

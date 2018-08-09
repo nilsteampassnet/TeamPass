@@ -667,10 +667,10 @@ function identifyUserRights(
 /**
  * Identify administrator
  *
- * @param string $idFonctions Roles of user
- * @param array  $SETTINGS    Teampass settings
- * @param array  $link        DB connection
- * @param array  $tree        Tree of folders
+ * @param string     $idFonctions Roles of user
+ * @param array      $SETTINGS    Teampass settings
+ * @param mysqli     $link        DB connection
+ * @param NestedTree $tree        Tree of folders
  *
  * @return void
  */
@@ -750,12 +750,12 @@ function identAdmin($idFonctions, $SETTINGS, $link, $tree)
 /**
  * Undocumented function
  *
- * @param string $groupesVisiblesUser  Allowed folders
- * @param string $groupesInterditsUser Not allowed folders
- * @param string $idFonctions          Roles of user
- * @param array  $SETTINGS             Teampass settings
- * @param array  $link                 DB connection
- * @param array  $tree                 Tree of folders
+ * @param string     $groupesVisiblesUser  Allowed folders
+ * @param string     $groupesInterditsUser Not allowed folders
+ * @param string     $idFonctions          Roles of user
+ * @param array      $SETTINGS             Teampass settings
+ * @param mysqli     $link                 DB connection
+ * @param NestedTree $tree                 Tree of folders
  *
  * @return void
  */
@@ -774,6 +774,7 @@ function identUser(
     $_SESSION['personal_visible_groups'] = array();
     $_SESSION['read_only_folders'] = array();
     $_SESSION['fonction_id'] = $idFonctions;
+
     $groupesInterdits = array();
     if (is_array($groupesInterditsUser) === false) {
         $groupesInterditsUser = explode(';', trimElement(/* @scrutinizer ignore-type */ $groupesInterditsUser, ';'));

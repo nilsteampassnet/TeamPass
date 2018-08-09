@@ -421,7 +421,16 @@ function recursiveTree(
                 || @in_array($node, $listFoldersLimitedKeys) === true
                 || @in_array($node, $listRestrictedFoldersForItemsKeys) === true
             ) {
-                $displayThisNode = true;
+                // Final check - is PF allowed?
+                $nodeDetails = $tree->getNode($node);
+                if ($nodeDetails->personal_folder === '1'
+                    && intval($SETTINGS['enable_pf_feature']) === 1
+                    && intval($_SESSION['personal_folder']) === 0
+                ) {
+                    $displayThisNode = false;
+                } else {
+                    $displayThisNode = true;
+                }
                 $hide_node = $show_but_block = false;
                 $text = $title = '';
             }

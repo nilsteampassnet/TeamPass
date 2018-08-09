@@ -120,12 +120,16 @@ function mainQuery()
                 && $_SESSION['user_admin'] !== '1'
             ) {
                 // check if expected security level is reached
-                $data_roles = DB::queryfirstrow('SELECT fonction_id FROM '.prefixTable('users').' WHERE id = %i', $_SESSION['user_id']);
+                $data_roles = DB::queryfirstrow(
+                    "SELECT fonction_id
+                    FROM ".prefix_table("users")."
+                    WHERE id = %i",
+                    $_SESSION['user_id']
+                );
 
                 // check if badly written
                 $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
-                if ($data_roles['fonction_id'][0] === '') {
-                    $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
+                $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                     DB::update(
                         prefixTable('users'),
                         array(
@@ -137,10 +141,10 @@ function mainQuery()
                 }
 
                 $data = DB::query(
-                    'SELECT complexity
-                    FROM '.prefixTable('roles_title').'
-                    WHERE id IN ('.implode(',', $data_roles['fonction_id']).')
-                    ORDER BY complexity DESC'
+                    "SELECT complexity
+                    FROM ".prefix_table("roles_title")."
+                    WHERE id IN (".array_filter(implode(',', $data_roles['fonction_id'])).")
+                    ORDER BY complexity DESC"
                 );
                 if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
                     echo '[ { "error" : "complexity_level_not_reached" } ]';
@@ -151,7 +155,7 @@ function mainQuery()
                 $lastPw = explode(';', $_SESSION['last_pw']);
                 // if size is bigger then clean the array
                 if (sizeof($lastPw) > $SETTINGS['number_of_used_pw']
-                        && $SETTINGS['number_of_used_pw'] > 0
+                    && $SETTINGS['number_of_used_pw'] > 0
                 ) {
                     for ($x_counter = 0; $x_counter < $SETTINGS['number_of_used_pw']; ++$x_counter) {
                         unset($lastPw[$x_counter]);
