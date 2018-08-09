@@ -3,7 +3,7 @@
  *
  * @package       (api)functions.php
  * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.3
+ * @version       2.1.4
  * @copyright     2009-2018 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$api_version = "2.1.3";
+$api_version = "2.1.4";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -78,8 +78,8 @@ function teampassWhitelist()
 function teampassConnect()
 {
     global $server, $user, $pass, $database, $link, $port, $encoding;
-    require_once("../includes/config/settings.php");
-    require_once('../includes/libraries/Database/Meekrodb/db.class.php');
+    include_once "../includes/config/settings.php";
+    include_once '../includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -117,10 +117,12 @@ function teampassGetIps()
 function teampassGetKeys()
 {
     teampassConnect();
-    $response = array_unique(array_merge(
-        DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key"),
-        DB::queryOneColumn("user_api_key", "select * from ".prefix_table("users")."")
-    ));
+    $response = array_unique(
+        array_merge(
+            DB::queryOneColumn("value", "select * from ".prefix_table("api")." WHERE type = %s", "key"),
+            DB::queryOneColumn("user_api_key", "select * from ".prefix_table("users")."")
+        )
+    );
 
     // remove none value
     if (($key = array_search('none', $response)) !== false) {
@@ -238,8 +240,11 @@ function urlSafeB64Decode($string)
 function restDelete()
 {
     if (!@count($GLOBALS['request']) == 0) {
-        $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
+        preg_match(
+            '/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',
+            $GLOBALS['_SERVER']['REQUEST_URI'],
+            $matches
+        );
         if (count($matches) == 0) {
             restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
@@ -361,16 +366,35 @@ function restGet()
     global $link;
 
     if (!@count($GLOBALS['request']) == 0) {
-        $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
-        if (count($matches) == 0) {
-            restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
+        // Manage type of request
+        switch ($_SERVER['REQUEST_METHOD']) {
+            case 'GET':
+                preg_match(
+                    '/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',
+                    $GLOBALS['_SERVER']['REQUEST_URI'],
+                    $matches
+                );
+                if (count($matches) === 0) {
+                    restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
+                }
+                $GLOBALS['request'] = explode('/', $matches[2]);
+                break;
+            case 'POST':
+                $body = file_get_contents("php://input");
+                if (strlen($body) === 0) {
+                    restError('EMPTY');
+                } else {
+                    $GLOBALS['request'] = explode('/', $body);
+                }
+                break;
+            default:
+                restError('EMPTY');
+                break;
         }
-        $GLOBALS['request'] = explode('/', $matches[2]);
     }
 
     if (apikeyChecker($GLOBALS['apikey'])) {
-
+        // Connect to Teampass
         teampassConnect();
 
         // define the API user through the LABEL of apikey
@@ -2753,8 +2777,11 @@ function restGet()
 function restPut()
 {
     if (!@count($GLOBALS['request']) == 0) {
-        $request_uri = $GLOBALS['_SERVER']['REQUEST_URI'];
-        preg_match('/\/api(\/index.php|)\/(.*)\?apikey=(.*)/', $request_uri, $matches);
+        preg_match(
+            '/\/api(\/index.php|)\/(.*)\?apikey=(.*)/',
+            $GLOBALS['_SERVER']['REQUEST_URI'],
+            $matches
+        );
         if (count($matches) == 0) {
             restError('REQUEST_SENT_NOT_UNDERSTANDABLE');
         }
