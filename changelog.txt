@@ -1,4 +1,8 @@
 2.1.27
+18/
+ #2378 Personal sub-subfolders do not appear
+ #2373 Internal Server Error 500 Profile Window
+
 17/
  #2367 Incorrect import into personal folder
  #2364 Using another protocol than HTTP for the URL is not possible

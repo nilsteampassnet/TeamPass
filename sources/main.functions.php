@@ -807,7 +807,8 @@ function identifyUserRights(
                     array_push($listAllowedFolders, $persoFld['id']);
                     array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
                     // get all descendants
-                    $ids = $tree->getChildren($persoFld['id']);
+                    //$ids = $tree->getChildren($persoFld['id']);
+                    $ids = $tree->getDescendants($persoFld['id'], true, false);
                     foreach ($ids as $ident) {
                         array_push($listAllowedFolders, $ident->id);
                         array_push($_SESSION['personal_visible_groups'], $ident->id);
