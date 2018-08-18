@@ -1,0 +1,88 @@
+body{
+width: 1000px;
+margin-left: auto;
+margin-right: auto;
+background-image: url(../includes/images/canevas/bg_home.jpg);
+font-family: sans-serif;
+font-size:12pt;
+}
+
+#top{
+width: 980px;
+height: 35px;
+margin-left: auto;
+margin-right: auto;
+padding: 10px;
+font-family: sans-serif;
+font-size: 10px;
+display:block;
+}
+
+#logo{
+    float:left;
+    margin-right: 5px;
+    margin-top: -5px;
+}
+
+#title {
+  font: bold 270%/100% "Lucida Grande";
+  color: #464646;
+  float:left;
+  margin-top:3px;
+}
+
+div#content {
+margin-top:15px;
+position: relative;
+}
+
+div#center {
+padding:20px;
+padding-bottom: 50px;
+background-color:white;
+display: block;
+color:#464646;
+}
+
+label{
+width:150px;
+display:block;
+float:left;
+font-size:12pt;
+font-weight:bold;
+}
+
+.step{
+font-size:14pt;
+padding:2px;
+width:400px;
+margin-bottom: 3px;
+margin-top: 3px;
+}
+
+fieldset{
+margin:15px;
+}
+
+legend{
+margin-bottom: 5px;
+}
+
+#buttons_bottom{
+float:right;
+width:200px;
+text-align:right;
+}
+
+#footer{
+width: 980px;
+height: 26px;
+line-height: 26px;
+valign: middle;
+margin: 10px auto 0 auto;
+padding: 10px;
+background-image: url(../includes/images/canevas/footer_all.png);
+font-family: sans-serif;
+font-size: 10px;
+color: #F0F0F0;
+}
