@@ -571,7 +571,7 @@ if (null !== $post_type) {
                 $counter = DB::count();
                 $itemExists = 0;
                 $counter = DB::count();
-                if ($counter > 0) {
+                if ($counter > 1) {
                     $itemExists = 1;
                 } else {
                     $itemExists = 0;
@@ -2771,7 +2771,7 @@ if (null !== $post_type) {
                         $where
                     );
                 } else {
-                    $post_nb_items_to_display_once = "max";
+                    $post_nb_items_to_display_once = -999;
                     $where->add('i.inactif=%i', 0);
 
                     $rows = DB::query(
@@ -3082,9 +3082,9 @@ if (null !== $post_type) {
                 $counter_full = DB::count();
                 $uniqueLoadData['counter_full'] = $counter_full;
             }
-
+            
             // Check list to be continued status
-            if ($post_nb_items_to_display_once !== 'max' && ($post_nb_items_to_display_once + $start) < $counter_full) {
+            if ((int) $post_nb_items_to_display_once !== -999 && ($post_nb_items_to_display_once + $start) < $counter_full) {
                 $listToBeContinued = "yes";
             } else {
                 $listToBeContinued = "end";

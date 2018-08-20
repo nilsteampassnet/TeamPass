@@ -229,7 +229,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 start       : start,
                 uniqueLoadData : $("#uniqueLoadData").val(),
                 key         : "<?php echo $_SESSION['key']; ?>",
-                nb_items_to_display_once : $("#nb_items_to_display_once").val()
+                nb_items_to_display_once : $("#nb_items_to_display_once").val() === 'max' ? -999 : $("#nb_items_to_display_once").val()
             },
             function(data) {
                 if (data == "Hacking attempt...") {

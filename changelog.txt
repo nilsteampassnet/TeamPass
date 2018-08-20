@@ -1,4 +1,9 @@
 2.1.27
+20/
+ #2372 Upload a file with dash in file name wil be renamed with underscore
+ Fix: loading folder information is wrong when using 'max'
+ Fix: error message `item already exits` culd appear on item edition
+
 19/
  #2379 Setting "Number of items to retrieve per query" to Max
 

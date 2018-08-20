@@ -160,6 +160,18 @@ header("Last-Modified: ".gmdate("D, d M Y H:i:s")." GMT");
 header("Cache-Control: no-store, no-cache, must-revalidate");
 header("Cache-Control: post-check=0, pre-check=0", false);
 
+function sanitaze_upload_file($data)
+{
+    $imgName   = $data;
+    $indexOFF  = strrpos($imgName, '.');
+    $nameFile  = substr($imgName, 0,$indexOFF);
+    $extension = substr($imgName, $indexOFF);
+    $clean     = preg_replace("([^\w\s\d\-_~,;\[\]\(\)])", "", 
+    $nameFile);
+    $NAMEFILE  = str_replace(' ', '', $clean).$extension;
+    return $NAMEFILE;
+}
+
 $targetDir = $SETTINGS['path_to_upload_folder'];
 
 $cleanupTargetDir = true; // Remove old files
@@ -201,7 +213,7 @@ if (!isset($_FILES['file'])) {
 }
 
 // Validate file name (for our purposes we'll just remove invalid characters)
-$file_name = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($_FILES['file']['name'])));
+$file_name = strtolower(basename($_FILES['file']['name']));
 if (strlen($file_name) == 0 || strlen($file_name) > $MAX_FILENAME_LENGTH) {
     handleAttachmentError('Invalid file name: '.$file_name.'.', 114);
 }
@@ -223,8 +235,7 @@ if (!in_array(
 set_time_limit(5 * 60);
 
 // Clean the fileName for security reasons
-$fileName = preg_replace('[^'.$valid_chars_regex.']', '', strtolower(basename($fileName)));
-$fileName = preg_replace('/[^\w\._]+/', '_', $fileName);
+$fileName = sanitaze_upload_file(basename($fileName));
 
 // Make sure the fileName is unique but only if chunking is disabled
 if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
@@ -239,7 +250,6 @@ if ($chunks < 2 && file_exists($targetDir.DIRECTORY_SEPARATOR.$fileName)) {
 
     $fileName = $fileNameA.'_'.$count.$fileNameB;
 }
-
 
 $filePath = $targetDir.DIRECTORY_SEPARATOR.$fileName;
 
