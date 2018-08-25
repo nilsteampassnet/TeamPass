@@ -318,6 +318,16 @@ while ($row = mysqli_fetch_assoc($result)) {
 mysqli_free_result($result);
 
 
+// alter table Users
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY groupes_visibles varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY fonction_id varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY groupes_interdits varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY favourites varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY latest_items varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY avatar varchar(1000) NOT NULL");
+mysqli_query($db_link, "ALTER TABLE `".$pre."users` MODIFY avatar_thumb varchar(1000) NOT NULL");
+
+
 // alter table KB_ITEMS
 mysqli_query($db_link, "ALTER TABLE `".$pre."kb_items` CHANGE `kb_id` `kb_id` INT(12) NOT NULL");
 mysqli_query($db_link, "ALTER TABLE `".$pre."kb_items` CHANGE `item_id` `item_id` INT(12) NOT NULL");

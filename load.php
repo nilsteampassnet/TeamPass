@@ -476,31 +476,6 @@ $htmlHeaders .= '
         );
     }
 
-    /*
-    * Manage generation of new password
-    */
-    function GenerateNewPassword(key, login)
-    {
-        $("#ajax_loader_send_mail").show();
-        // prepare data
-        data = \'{"login":"\'+sanitizeString(login)+\'" ,\'+
-            \'"key":"\'+sanitizeString(key)+\'"}\';
-        //send query
-        $.post("sources/main.queries.php", {
-                type : "generate_new_password",
-                data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
-            },
-            function(data) {
-                if (data === "done") {
-                    setTimeout(function(){document.location.href="logout.php"}, 10);
-                } else {
-                    $("#generate_new_pw_error").show().html(data);
-                }
-                $("#ajax_loader_send_mail").hide();
-            }
-       );
-    }
-
 
     function loadProfileDialog()
     {
@@ -1476,6 +1451,30 @@ $htmlHeaders .= '
         if ($("#force_show_dialog").val() === "1") {
             loadProfileDialog();
         }
+
+        // Send query for password geenration
+        $("#but_generate_new_password").click(function() {
+            $("#ajax_loader_send_mail").show();
+            // prepare data
+            var login = sanitizeString("'.htmlspecialchars($_GET['login'], ENT_QUOTES).'");
+            var key = sanitizeString("'.htmlspecialchars($_GET['key'], ENT_QUOTES).'");
+
+            data = {"login":login , "key":key};
+            //send query
+            $.post("sources/main.queries.php", {
+                    type : "generate_new_password",
+                    data : prepareExchangedData(JSON.stringify(data), "encode", "'.$_SESSION["key"].'")
+                },
+                function(data) {
+                    if (data === "done") {
+                        setTimeout(function(){document.location.href="logout.php"}, 10);
+                    } else {
+                        $("#generate_new_pw_error").show().html(data);
+                    }
+                    $("#ajax_loader_send_mail").hide();
+                }
+        );
+        });
 
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';

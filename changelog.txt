@@ -1,8 +1,10 @@
 2.1.27
 20/
+ #2380 Increase fields size to prevent errors
  #2372 Upload a file with dash in file name wil be renamed with underscore
  Fix: loading folder information is wrong when using 'max'
  Fix: error message `item already exits` culd appear on item edition
+ Security fix - Sanitized GET values in case of user password recovery (credit for Adam Roberts from http://www.nccgroup.trust/)
 
 19/
  #2379 Setting "Number of items to retrieve per query" to Max

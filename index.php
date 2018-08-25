@@ -613,7 +613,10 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
         include $SETTINGS['cpassman_dir'].'/error.php';
     }
     // Case of password recovery
-} elseif (isset($_GET['action']) && $_GET['action'] === "password_recovery") {
+} elseif (isset($_GET['action']) === true && $_GET['action'] === "password_recovery"
+    && isset($_GET['key']) === true
+    && isset($_GET['login']) === true
+) {
     // Case where user has asked new PW
     echo '
             <div style="width:400px;margin:50px auto 50px auto;padding:25px;" class="ui-state-highlight ui-corner-all">
@@ -625,7 +628,7 @@ if (($session_validite_pw === null || empty($session_validite_pw) === true || em
                     ' . $LANG['pw_recovery_info'].'
                 </div>
                 <div style="margin:15px; text-align:center;">
-                    <input type="button" id="but_generate_new_password" onclick="GenerateNewPassword(\'' . htmlspecialchars($_GET['key'], ENT_QUOTES).'\',\''.htmlspecialchars($_GET['login'], ENT_QUOTES).'\')" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
+                    <input type="button" id="but_generate_new_password" style="padding:3px;cursor:pointer;" class="ui-state-default ui-corner-all" value="'.$LANG['pw_recovery_button'].'" />
                     <br /><br />
                     <div id="ajax_loader_send_mail" style="display:none; margin: 20px;"><span class="fa fa-cog fa-spin fa-2x"></span></div>
                 </div>

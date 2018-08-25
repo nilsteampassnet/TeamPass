@@ -583,7 +583,7 @@ function mainQuery()
             // Prepare variables
             $login = htmlspecialchars_decode($dataReceived['login']);
             $key = htmlspecialchars_decode($dataReceived['key']);
-
+            
             // check if key is okay
             $data = DB::queryFirstRow(
                 "SELECT valeur FROM ".prefix_table("misc")." WHERE intitule = %s AND type = %s",
