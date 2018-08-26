@@ -1,5 +1,7 @@
 2.1.27
 20/
+ #2394 knowledge base page characters appear with "?"
+ #2393 After Deleting User, KB Is Blank
  #2380 Increase fields size to prevent errors
  #2372 Upload a file with dash in file name wil be renamed with underscore
  Fix: loading folder information is wrong when using 'max'

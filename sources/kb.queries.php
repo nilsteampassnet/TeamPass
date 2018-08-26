@@ -189,10 +189,9 @@ if (null !== $post_type) {
             $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
             $ret = DB::queryfirstrow(
-                "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, u.login AS login, c.category AS category
+                "SELECT k.id AS id, k.label AS label, k.description AS description, k.category_id AScategory_id, k.author_id AS author_id, k.anyone_can_modify AS anyone_can_modify, c.category AS category
                 FROM ".prefix_table("kb")." AS k
                 INNER JOIN ".prefix_table("kb_categories")." AS c ON (c.id = k.category_id)
-                INNER JOIN ".prefix_table("users")." AS u ON (u.id = k.author_id)
                 WHERE k.id = %i",
                 $post_id
             );

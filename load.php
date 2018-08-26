@@ -1450,8 +1450,10 @@ $htmlHeaders .= '
         // Show Profile dialog is expected
         if ($("#force_show_dialog").val() === "1") {
             loadProfileDialog();
-        }
+        }';
 
+if (isset($_GET['login']) === true && isset($_GET['key']) === true) {
+    $htmlHeaders .= '
         // Send query for password geenration
         $("#but_generate_new_password").click(function() {
             $("#ajax_loader_send_mail").show();
@@ -1473,9 +1475,12 @@ $htmlHeaders .= '
                     }
                     $("#ajax_loader_send_mail").hide();
                 }
-        );
+            );
         });
+        ';
+}
 
+$htmlHeaders .= '
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
 
