@@ -761,12 +761,6 @@ function identifyUser(
                     $ldapConnection = true;
                 }
 
-                // Is user expired?
-                if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
-                    echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
-                    exit();
-                }
-
                 // Update user's password
                 if ($ldapConnection === true) {
                     $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
