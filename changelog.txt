@@ -1,4 +1,10 @@
 2.1.27
+
+21/
+ #2398 User unable to change their own password from profile window
+ #2395 php warning in logs
+ #2376 fix link in readme
+
 20/
  #2394 knowledge base page characters appear with "?"
  #2393 After Deleting User, KB Is Blank

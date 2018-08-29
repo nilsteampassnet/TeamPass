@@ -134,7 +134,7 @@ function mainQuery()
                 $data = DB::query(
                     "SELECT complexity
                     FROM ".prefix_table("roles_title")."
-                    WHERE id IN (".$data_roles['fonction_id'].")
+                    WHERE id IN (".str_replace(';', ',', $data_roles['fonction_id']).")
                     ORDER BY complexity DESC"
                 );
                 if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
@@ -367,7 +367,7 @@ function mainQuery()
                     $ldap_user_never_auth = true;
                 }
             }
-
+            
             // Do treatment
             if ($counter === 0) {
                 // Not a registered user !

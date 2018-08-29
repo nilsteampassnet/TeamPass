@@ -942,7 +942,7 @@ echo '
 if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] === "1") {
     echo '
         <div id="div_set_personal_saltkey" style="display:none;padding:4px;">
-            <div style="text-align:center;margin:5px;padding:3px;" id="expected_psk_complexPw" class="ui-widget ui-state-active ui-corner-all hidden">', isset($SETTINGS['personal_saltkey_security_level']) === true && empty($SETTINGS['personal_saltkey_security_level']) === false ? $LANG['complex_asked']." : ".$SETTINGS_EXT['pwComplexity'][$SETTINGS['personal_saltkey_security_level']][1] : '', '</div>
+            <div style="text-align:center;margin:5px;padding:3px;" id="expected_psk_complexPw" class="ui-widget ui-state-active ui-corner-all hidden">', isset($SETTINGS['personal_saltkey_security_level']) === true && empty($SETTINGS['personal_saltkey_security_level']) === false && isset($SETTINGS_EXT['pwComplexity']) === true ? $LANG['complex_asked']." : ".$SETTINGS_EXT['pwComplexity'][$SETTINGS['personal_saltkey_security_level']][1] : '', '</div>
             <table border="0">
                 <tr>
                     <td>
