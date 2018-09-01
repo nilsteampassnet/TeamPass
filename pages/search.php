@@ -67,18 +67,17 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">
-                    <table id="search-results-items" class="table table-bordered table-striped">
+                    <table id="search-results-items" class="table table-bordered table-striped" style="width:100%">
                         <thead><tr>
                             <th></th>
-                            <th style="width:15%;"><?php echo langHdl('label'); ?></th>
-                            <th style="width:20%;"><?php echo langHdl('login'); ?></th>
-                            <th style="width:25%;"><?php echo langHdl('description'); ?></th>
-                            <th style="width:13%;"><?php echo langHdl('tags'); ?></th>
-                            <th style="width:13%;"><?php echo langHdl('url'); ?></th>
-                            <th style="width:20%;"><?php echo langHdl('group'); ?></th>
+                            <th><?php echo langHdl('label'); ?></th>
+                            <th><?php echo langHdl('login'); ?></th>
+                            <th><?php echo langHdl('description'); ?></th>
+                            <th><?php echo langHdl('tags'); ?></th>
+                            <th><?php echo langHdl('url'); ?></th>
+                            <th><?php echo langHdl('group'); ?></th>
                         </tr></thead>
                         <tbody>
-                            <tr><td></td></tr>
                         </tbody>
                     </table>
                 </div>

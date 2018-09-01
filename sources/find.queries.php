@@ -57,17 +57,17 @@ if (isset($_SESSION['groupes_visibles']) === false
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-DB::$host         = DB_HOST;
-DB::$user         = DB_USER;
-DB::$password     = defuse_return_decrypted(DB_PASSWD);
-DB::$dbName       = DB_NAME;
-DB::$port         = DB_PORT;
-DB::$encoding     = DB_ENCODING;
+DB::$host = DB_HOST;
+DB::$user = DB_USER;
+DB::$password = defuse_return_decrypted(DB_PASSWD);
+DB::$dbName = DB_NAME;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 //Columns name
-$aColumns = array('id', 'label', 'description', 'tags', 'id_tree', 'folder', 'login', 'url');
+$aColumns = array('id', 'label', 'login', 'description', 'tags', 'id_tree', 'folder', 'login', 'url');
 $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
@@ -108,26 +108,22 @@ if (empty($row['id']) === false) {
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
-if (isset($_GET['iDisplayStart']) && $_GET['iDisplayLength'] != '-1') {
-    $sLimit = 'LIMIT '.filter_var($_GET['iDisplayStart'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['iDisplayLength'], FILTER_SANITIZE_NUMBER_INT).'';
+if (isset($_GET['start']) === true && $_GET['length'] != '-1') {
+    $sLimit = 'LIMIT '.filter_var($_GET['start'], FILTER_SANITIZE_NUMBER_INT).', '.filter_var($_GET['length'], FILTER_SANITIZE_NUMBER_INT).'';
 }
 
 //Ordering
 $sOrder = '';
-if (isset($_GET['iSortCol_0'])) {
-    if (!in_array(strtoupper($_GET['sSortDir_0']), $aSortTypes)) {
+if (isset($_GET['order']) === true) {
+    if (in_array(strtoupper($_GET['order'][0]['dir']), $aSortTypes) === false) {
         // possible attack - stop
         echo '[{}]';
         exit;
     } else {
         $sOrder = 'ORDER BY  ';
-        for ($i = 0; $i < intval($_GET['iSortingCols']); ++$i) {
-            if ($_GET['bSortable_'.filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)] == 'true'
-                && preg_match('#^(asc|desc)$#i', $_GET['sSortDir_'.$i])
-            ) {
-                $sOrder .= ''.$aColumns[filter_var($_GET['iSortCol_'.$i], FILTER_SANITIZE_NUMBER_INT)].' '
-                .mysqli_escape_string($link, $_GET['sSortDir_'.$i]).', ';
-            }
+        if ($_GET['order'][0]['column'] >= 0) {
+            $sOrder .= ''.$aColumns[filter_var($_GET['order'][0]['column'], FILTER_SANITIZE_NUMBER_INT)].' '
+            .mysqli_escape_string($link, $_GET['order'][0]['dir']).', ';
         }
 
         $sOrder = substr_replace($sOrder, '', -2);
@@ -143,7 +139,7 @@ if (isset($_GET['iSortCol_0'])) {
  * word by word on any field. It's possible to do here, but concerned about efficiency
  * on very large tables, and MySQL's regex functionality is very limited
  */
-if (isset($_GET['sSearch']) === true && empty($_GET['sSearch']) === false) {
+if (isset($_GET['search']) === true && empty($_GET['search']['value']) === false) {
     $sWhere .= ' AND (';
     for ($i = 0; $i < count($aColumns); ++$i) {
         $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
@@ -152,39 +148,30 @@ if (isset($_GET['sSearch']) === true && empty($_GET['sSearch']) === false) {
 
     $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
-        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '0' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '6' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '7' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf,
     );
 }
 
-if (isset($_GET['tagSearch']) && $_GET['tagSearch'] != '') {
-    $sWhere .= ' AND tags LIKE %ss_0';
-
-    $crit = array(
-        'idtree' => $_SESSION['groupes_visibles'],
-        '0' => filter_var($_GET['tagSearch'], FILTER_SANITIZE_STRING),
-        'pf' => $arrayPf,
-    );
-}
-
+// Define default search criteria
 if (count($crit) === 0) {
     $crit = array(
         'idtree' => $_SESSION['groupes_visibles'],
-        '0' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '1' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '2' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '3' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '4' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '5' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '6' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
-        '7' => filter_var($_GET['sSearch'], FILTER_SANITIZE_STRING),
+        '0' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '1' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '2' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '3' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '4' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '5' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '6' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        '7' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf,
     );
 }
@@ -206,7 +193,7 @@ DB::query(
     $crit
 );
 $iTotal = DB::count();
-
+db::debugMode(false);
 $rows = DB::query(
     'SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
     FROM '.prefixTable('cache')."
@@ -214,7 +201,7 @@ $rows = DB::query(
     $sOrder
     $sLimit",
     $crit
-);
+); db::debugMode(false);
 $iFilteredTotal = DB::count();
 
 /*
@@ -222,10 +209,10 @@ $iFilteredTotal = DB::count();
  */
 if (isset($_GET['type']) === false) {
     $sOutput = '{';
-    if (isset($_GET['sEcho'])) {
-        $sOutput .= '"sEcho": '.intval($_GET['sEcho']).', ';
+    if (isset($_GET['draw']) === true) {
+        $sOutput .= '"draw": '.intval($_GET['draw']).', ';
     }
-    $sOutput .= '"aaData": [ ';
+    $sOutput .= '"data": [';
     $sOutputConst = '';
 
     foreach ($rows as $record) {
@@ -255,7 +242,7 @@ if (isset($_GET['type']) === false) {
             }
             $accessLevel = min($arrTmp);
             if ($accessLevel === 0) {
-                $checkbox = '&nbsp;<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
+                $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\">';
             }
         }
 
@@ -288,8 +275,8 @@ if (isset($_GET['type']) === false) {
         }
 
         //col1
-        $sOutputItem .= '"<i class=\"fa fa-external-link tip\" title=\"'.langHdl('open_url_link').'\" onClick=\"window.location.href = &#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;;\" style=\"cursor:pointer;\"></i>&nbsp;'.
-            '<i class=\"fa fa-eye tip\" title=\"'.langHdl('see_item_title').'\" onClick=\"see_item('.$record['id'].','.$record['perso'].','.$record['id_tree'].','.$expired.','.$restrictedTo.');\" style=\"cursor:pointer;\"></i>'.$checkbox.'", ';
+        $sOutputItem .= '"'.$checkbox.'<i class=\"fa fa-external-link infotip ml-2\" title=\"'.langHdl('open_url_link').'\" onClick=\"window.location.href=&#039;index.php?page=items&amp;group='.$record['id_tree'].'&amp;id='.$record['id'].'&#039;\" style=\"cursor:pointer;\"></i>'.
+            '<i class=\"fa fa-eye infotip ml-2 item-detail\" title=\"'.langHdl('see_item_title').'\" data-id=\"'.$record['id'].'\" data-perso=\"'.$record['perso'].'\" data-tree-id=\"'.$record['id_tree'].'\" data-expired=\"'.$expired.'\" data-restricted-to=\"'.$restrictedTo.'\" style=\"cursor:pointer;\"></i>", ';
 
         //col2
         $sOutputItem .= '"<span id=\"item_label-'.$record['id'].'\">'.(stripslashes(utf8_encode($record['label']))).'</span>", ';
@@ -360,8 +347,8 @@ if (isset($_GET['type']) === false) {
     }
     $sOutput .= '], ';
 
-    $sOutput .= '"iTotalRecords": '.$iTotal.', ';
-    $sOutput .= '"iTotalDisplayRecords": '.$iTotal.' }';
+    $sOutput .= '"recordsTotal": '.$iTotal.', ';
+    $sOutput .= '"recordsFiltered": '.$iTotal.' }';
 
     echo $sOutput;
 } elseif (isset($_GET['type']) && ($_GET['type'] == 'search_for_items' || $_GET['type'] == 'search_for_items_with_tags')) {

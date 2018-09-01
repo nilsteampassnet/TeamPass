@@ -23,30 +23,214 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
 
 <script type="text/javascript">
     //Launch the datatables pluggin
-    oTable = $("#search-results-items").dataTable({
-            "aaSorting": [[ 1, "asc" ]],
-            "sPaginationType": "full_numbers",
-            "bProcessing": true,
-            "bServerSide": true,
-            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
-            "bJQueryUI": true,
-            "oLanguage": {
-            "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+    var oTable = $("#search-results-items").DataTable({
+        "paging": true,
+        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
+        "pagingType": "full_numbers",
+        "searching": true,
+        "info": true,
+        "order": [[1, "asc"]],
+        "processing": true,
+        "serverSide": true,
+        "ajax": {
+            url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
+            type: 'GET'
         },
-        "fnInitComplete": function() {
-            $("#find_page input").focus();
+        "language": {
+            "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
         },
         "columns": [
-            {"width": "10%", className: "dt-body-left"},
+            {"width": "10%", class: "details-control", defaultContent: ""},
             {"width": "15%"},
             {"width": "10%"},
             {"width": "25%"},
             {"width": "10%"},
             {"width": "15%"},
             {"width": "15%"}
-        ]
+        ],
+        "responsive": true,
+        //"scroller": false,
+        "stateSave": true,
     });
 
+    var detailRows = [];
+
+    /*oTable.on( 'draw', function () {
+        $.each( detailRows, function ( i, id ) {
+            $('#'+id+' td.details-control').trigger( 'click' );
+        } );
+    } );*/
+
+    $("#search-results-items tbody").on( 'click', 'tr td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = oTable.row(tr);
+        var idx = $.inArray(tr.attr('id'), detailRows);
+        var itemGlobal = row.data();
+        var item = $(itemGlobal[0])[2];
+console.log($(item).data('id'))
+        console.log($(this).find("[data-id='" + $(item).data('id') + "']"))
+ 
+        if ( row.child.isShown() ) {
+            tr.removeClass( 'details' );
+            row.child.hide();
+
+            $(this)
+                .find("[data-id='" + $(item).data('id') + "']")
+                .removeClass('fa-eye-slash')
+                .addClass('fa-eye');
+ 
+            // Remove from the 'open' array
+            detailRows.splice( idx, 1 );
+        }
+        else {
+            tr.addClass( 'details' );
+            $(this)
+                .find("[data-id='" + $(item).data('id') + "']")
+                .removeClass('fa-eye')
+                .addClass('fa-eye-slash');
+
+            row.child(showItemInfo(itemGlobal, tr), 'new-row', item).show();
+ 
+            // Add to the 'open' array
+            if ( idx === -1 ) {
+                detailRows.push( tr.attr('id') );
+            }
+        }
+    } );
+
+    function showItemInfo (d, tr, item) {
+        // Prepare row data
+        var item = $(d[0])[2];
+        
+        // prepare data
+        var data = {
+            'id' : $(item).data('id'),
+            'folder_id' : $(item).data('tree-id'),
+            'salt_key_required' : $(item).data('perso'),
+            'salt_key_set' : $('#personal_saltkey_set').val(),
+            'expired_item' : $(item).data('expired'),
+            'restricted' : $(item).data('restricted-to'),
+            'page' : 'find'
+        };
+
+        // Launch query
+        $.post(
+            'sources/items.queries.php',
+            {
+                type :  'show_details_item',
+                data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key  :  '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.info(data);
+                var return_html = '';
+                if (data.show_detail_option !== 0 || data.show_details === 0) {
+                    //item expired
+                    return_html = '<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>';
+                } else if (data.show_details === '0') {
+                    //Admin cannot see Item
+                    return_html = '<?php echo langHdl('not_allowed_to_see_pw'); ?>';
+                } else {
+                    return_html = '<td colspan="7"><div class="alert bg-gray disabled">' +
+                        '<h5  id="pwd-label_'+data.id+'">'+data.label+'</h5><dl>' +
+                        '<dt><?php echo langHdl('description'); ?></dt><dd>'+data.description+'</dd>' +
+                        '<dt><?php echo langHdl('pw'); ?></dt><dd>' +
+                        '<div id="pwd-show_'+data.id+'" class="unhide_masked_data"><?php echo $var['hidden_asterisk']; ?></div>'+
+                        '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + unsanitizeString(data.pw) + '">' +
+                        '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0"></dd>' +
+                        '<dt><?php echo langHdl('index_login'); ?></dt><dd>'+data.login+'</dd>' +
+                        '<dt><?php echo langHdl('url'); ?></dt><dd>'+data.url+'</dd>' +
+                        '</dl></div></td>';
+                }
+                $(tr).next('tr').html(return_html);
+                $('.unhide_masked_data').css('cursor', 'pointer');
+
+                // show password during longpress
+                $('.unhide_masked_data').mousedown(function(event) {
+                    mouseStillDown = true;
+                    showPwdContinuous($(this).attr('id'));
+                }).mouseup(function(event) {
+                    mouseStillDown = false;
+                }).mouseleave(function(event) {
+                    mouseStillDown = false;
+                });
+            }
+        );
+        return data;
+    }
+
+    var mouseStillDown = false;
+    var showPwdContinuous = function(elem_id){
+        var itemId = elem_id.split('_')[1];
+        if(mouseStillDown === true) {
+            // Prepare data to show
+            // Is data crypted?
+            var data = unCryptData($('#pwd-hidden_' + itemId).val());
+            
+            if (data !== false) {
+                $('#pwd-hidden_' + itemId).val(
+                    data.password
+                );
+            }
+
+            $('#pwd-show_' + itemId)
+                .html(
+                    '<span style="cursor:none;">' +
+                    $('#pwd-hidden_' + itemId).val() +
+                    '</span>'
+                );
+            
+            setTimeout('showPwdContinuous("pwd-show_' + itemId + '")', 50);
+            // log password is shown
+            if ($("#pwd-is-shown_" + itemId).val() === "0") {
+                itemLog(
+                    'at_password_shown',
+                    itemId,
+                    $('#pwd-label_' + itemId).text()
+                );
+                $("#pwd-is-shown_" + itemId).val('1');
+            }
+        } else {
+            $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
+        }
+    };
+/*
+    var mouseStillDown = false;
+    var showPwdContinuous2 = function(elem_id){
+        if(mouseStillDown){console.log('ici2 ')
+            $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).html().replace(/\n/g,"<br>") + '</span>');
+            setTimeout("showPwdContinuous('"+elem_id+"')", 50);
+            // log password is shown
+            if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
+                // log passd show
+                var data = {
+                    "id" : $('#id_selected_item').val(),
+                    "label" : $('#item_label').text(),
+                    "user_id" : "<?php echo $_SESSION['user_id']; ?>",
+                    "action" : 'at_password_shown',
+                    "login" : "<?php echo $_SESSION['login']; ?>"
+                };
+
+                $.post(
+                    "sources/items.logs.php",
+                    {
+                        type    : "log_action_on_item",
+                        data :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                        key        : "<?php echo $_SESSION['key']; ?>"
+                    }
+                );
+
+                $("#pw_shown").val("1");
+            }
+        } else {
+            $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
+        }
+    };
+*/
+    
+/*
     $("#div_mass_op").dialog({
         bgiframe: true,
         modal: true,
@@ -284,8 +468,9 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                 $(this).dialog('close');
             }
         }
-  });
-
+    });
+*/
+/*
 function copy_item(item_id)
 {
     $('#id_selected_item').val(item_id);
@@ -344,59 +529,42 @@ $("#div_copy_item_to_folder").dialog({
           }
       }
   });
-
-/*
-* Open a dialogbox with item data
 */
-function see_item(item_id, personalItem, folder_id, expired_item, restricted)
+
+
+function unCryptData(data)
 {
-    $('#id_selected_item').val(item_id);
-    $("#personalItem").val(personalItem);
-    $("#expired_item").val(expired_item);
-    $("#restricted_item").val(restricted);
-    $("#folder_id_of_item").val(folder_id);
-    $('#div_item_data').dialog('open');
+    if (data.substr(0, 7) === 'crypted') {
+        return prepareExchangedData(
+            data.substr(7),
+            'decode',
+            '<?php echo $_SESSION['key']; ?>'
+        )
+    }
+    return false;
+}
+/**
+ */
+function itemLog(logCase, itemId, itemLabel)
+{
+    itemId = itemId || $('#id_item').val();
+
+    var data = {
+        "id" : itemId,
+        "label" : itemLabel,
+        "user_id" : "<?php echo $_SESSION['user_id']; ?>",
+        "action" : logCase,
+        "login" : "<?php echo $_SESSION['login']; ?>"
+    };
+    
+    $.post(
+        "sources/items.logs.php",
+        {
+            type    : "log_action_on_item",
+            data    :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : "<?php echo $_SESSION['key']; ?>"
+        }
+    );
 }
 
-// show password during longpress
-var mouseStillDown = false;
-$('#div_item_data_text').on('mousedown', '.unhide_masked_data', function(event) {
-    mouseStillDown = true;
-     showPwdContinuous($(this).attr('id'));
-}).on('mouseup', '.unhide_masked_data', function(event) {
-     mouseStillDown = false;
-}).on('mouseleave', '.unhide_masked_data', function(event) {
-     mouseStillDown = false;
-});
-var showPwdContinuous = function(elem_id){
-    if(mouseStillDown){
-        $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).html().replace(/\n/g,"<br>") + '</span>');
-        setTimeout("showPwdContinuous('"+elem_id+"')", 50);
-        // log password is shown
-        if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
-            // log passd show
-            var data = {
-                "id" : $('#id_selected_item').val(),
-                "label" : $('#item_label').text(),
-                "user_id" : "<?php echo $_SESSION['user_id']; ?>",
-                "action" : 'at_password_shown',
-                "login" : "<?php echo $_SESSION['login']; ?>"
-            };
-
-            $.post(
-                "sources/items.logs.php",
-                {
-                    type    : "log_action_on_item",
-                    data :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key        : "<?php echo $_SESSION['key']; ?>"
-                }
-            );
-
-            $("#pw_shown").val("1");
-        }
-    } else {
-        $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
-        $('.tip').tooltipster({multiple: true});
-    }
-};
 </script>

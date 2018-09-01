@@ -703,7 +703,7 @@ if (($session_validite_pw === null
                         ''; ?>
                         </h6>                        
 
-                        <input class="form-control form-control-lg" type="password" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
+                        <input class="form-control form-control-lg" type="password" placeholder=".input-lg" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
 
                         <div class="text-center" style="margin: 10px 0 0 40%;">
                         <?php
@@ -718,45 +718,6 @@ if (($session_validite_pw === null
                 <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
             </div>
         </div>
-
-
-        <!-- UNSUCCESSFUL LOGIN ATTEMPTS -->
-        <?php
-        if (isset($_SESSION['unsuccessfull_login_attempts']) === true
-            && $_SESSION['unsuccessfull_login_attempts']['nb'] !== 0
-            && $_SESSION['unsuccessfull_login_attempts']['shown'] === false
-        ) {
-            $_SESSION['unsuccessfull_login_attempts']['shown'] = true;
-            ?>
-        <div class="card card-danger m-2" id="dialog_login_attempts">
-            <div class="card-header">
-                <h3 class="card-title">
-                <i class="fa fa-history"></i>
-                <?php echo langHdl('login_attempts'); ?>
-                </h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-sm-12 col-md-12">
-                        <h6 class="text-center">
-                        <?php
-                        foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
-                            echo '
-                            <p class="text-warning">
-                                <i class="fa fa-caret-right mr-2"></i>'.$entry.'
-                            </p>';
-                        }
-                        ?>
-                    </div>
-                </div>
-            </div>
-            <div class="card-footer">
-                <button class="btn btn-default float-right close-element"><?php echo langHdl('ok'); ?></button>
-            </div>
-        </div>
-        <?php
-        }
-        ?>
 
 
     <?php
@@ -849,7 +810,7 @@ if (($session_validite_pw === null
     <input type="hidden" name="changer_pw" id="changer_pw" value="" />
     <input type="hidden" name="form_user_id" id="form_user_id" value="', $session_user_id !== null ? $session_user_id : '', '" />
     <input type="hidden" name="is_admin" id="is_admin" value="', $session_is_admin !== null ? $session_is_admin : '', '" />
-    <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['user_settings']['clear_psk']) ? true : false, '" />
+    <input type="hidden" name="personal_saltkey_set" id="personal_saltkey_set" value="', isset($_SESSION['user_settings']['clear_psk']) ? 1 : 0, '" />
 </form>';
     }
 
@@ -955,8 +916,14 @@ if ($menuAdmin === true) {
     } elseif ($pageSel === 'search') {
         ?>
 <!-- DataTables -->
-<script type="text/javascript" src="./plugins/datatables/jquery.dataTables.min.js"></script>
-<script type="text/javascript" src="./plugins/datatables/dataTables.bootstrap4.min.js"></script>
+<link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
+<link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
+<!--<link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
+<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>-->
 <!-- SlimScroll -->
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->
