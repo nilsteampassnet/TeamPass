@@ -144,3 +144,7 @@
     border: 1px solid rgb(243, 105, 105);
     padding: 10px;
 }
+
+.row-selected {
+    background-color: #026fcc;
+}

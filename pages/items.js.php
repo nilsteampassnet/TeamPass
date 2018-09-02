@@ -1084,18 +1084,6 @@ $('.btn-no-click')
     });
 
 
-function unCryptData(data)
-{
-    if (data.substr(0, 7) === 'crypted') {
-        return prepareExchangedData(
-            data.substr(7),
-            'decode',
-            '<?php echo $_SESSION['key']; ?>'
-        )
-    }
-    return false;
-}
-
 
 // show password during longpress
 var mouseStillDown = false;
@@ -1114,7 +1102,7 @@ var showPwdContinuous = function(){
     if(mouseStillDown === true) {
         // Prepare data to show
         // Is data crypted?
-        var data = unCryptData($('#hidden-item-pwd').val());
+        var data = unCryptData($('#hidden-item-pwd').val(), '<?php echo $_SESSION['key']; ?>');
         if (data !== false) {
             $('#hidden-item-pwd').val(
                 data.password
@@ -2591,6 +2579,9 @@ function Details(itemDefinition, actionType)
 
                         return false;
                     }
+                    
+                    // Uncrypt the pwd
+                    data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
                     
                     // Prepare forms
                     $('#items-list-card, #folders-tree-card').addClass('hidden');

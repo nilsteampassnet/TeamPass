@@ -1947,7 +1947,7 @@ if (null !== $post_type) {
             }
 
             // Decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($post_data, 'decode');
+            $dataReceived = prepareExchangedData($post_data, 'decode');//print_r($dataReceived);
             // Init post variables
             $post_id = filter_var(htmlspecialchars_decode($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
@@ -2125,6 +2125,9 @@ if (null !== $post_type) {
             } else {
                 $item_is_expired = false;
             }
+
+           // echo $dataItem['id_tree']." ;; ";
+            //print_r($_SESSION['groupes_visibles']);
 
             // check user is admin
             if ($_SESSION['user_admin'] === '1'

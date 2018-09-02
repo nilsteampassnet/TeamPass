@@ -373,3 +373,24 @@ function showAlertify(msg, delay = '', position = '', type = '')
     }
     
 }
+
+/**
+ * 
+ * @param string data Crypted string
+ */
+function unCryptData(data, key)
+{
+    if (data.substr(0, 7) === 'crypted') {
+        var uncryptedData = prepareExchangedData(
+            data.substr(7),
+            'decode',
+            key
+        )
+
+        if (uncryptedData.password.length > 0)
+            return uncryptedData.password;
+        else
+            return false;
+    }
+    return false;
+}

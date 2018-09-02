@@ -920,9 +920,9 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
 <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
-<!--<link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
-<script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
-<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
+<link rel="stylesheet" src="./plugins/datatables/extensions/Select-1.2.6/css/select.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Select-1.2.6/js/dataTables.select.min.js"></script>
+<!--<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
 <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>-->
 <!-- SlimScroll -->
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>

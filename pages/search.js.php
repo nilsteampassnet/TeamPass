@@ -49,47 +49,42 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
             {"width": "15%"}
         ],
         "responsive": true,
-        //"scroller": false,
+        "select": false,
         "stateSave": true,
     });
 
     var detailRows = [];
 
-    /*oTable.on( 'draw', function () {
-        $.each( detailRows, function ( i, id ) {
-            $('#'+id+' td.details-control').trigger( 'click' );
-        } );
-    } );*/
-
-    $("#search-results-items tbody").on( 'click', 'tr td.details-control', function () {
+    $("#search-results-items tbody").on( 'click', '.item-detail', function () {
         var tr = $(this).closest('tr');
         var row = oTable.row(tr);
         var idx = $.inArray(tr.attr('id'), detailRows);
         var itemGlobal = row.data();
-        var item = $(itemGlobal[0])[2];
-console.log($(item).data('id'))
-        console.log($(this).find("[data-id='" + $(item).data('id') + "']"))
- 
+        var item = $(this);
+
         if ( row.child.isShown() ) {
-            tr.removeClass( 'details' );
             row.child.hide();
 
+            // Change eye icon
             $(this)
-                .find("[data-id='" + $(item).data('id') + "']")
-                .removeClass('fa-eye-slash')
+                .removeClass('fa-eye-slash text-warning')
                 .addClass('fa-eye');
  
             // Remove from the 'open' array
             detailRows.splice( idx, 1 );
         }
         else {
-            tr.addClass( 'details' );
+            // Change eye icon
             $(this)
-                .find("[data-id='" + $(item).data('id') + "']")
                 .removeClass('fa-eye')
-                .addClass('fa-eye-slash');
+                .addClass('fa-eye-slash text-warning');
 
-            row.child(showItemInfo(itemGlobal, tr), 'new-row', item).show();
+            // Add loader
+            $(this)
+                .after('<i class="fa fa-refresh fa-spin fa-fw" id="search-loader"></i>');
+
+            // Get content of item
+            row.child(showItemInfo(itemGlobal, tr, item), 'new-row').show();
  
             // Add to the 'open' array
             if ( idx === -1 ) {
@@ -99,9 +94,6 @@ console.log($(item).data('id'))
     } );
 
     function showItemInfo (d, tr, item) {
-        // Prepare row data
-        var item = $(d[0])[2];
-        
         // prepare data
         var data = {
             'id' : $(item).data('id'),
@@ -112,6 +104,7 @@ console.log($(item).data('id'))
             'restricted' : $(item).data('restricted-to'),
             'page' : 'find'
         };
+        console.log(data)
 
         // Launch query
         $.post(
@@ -137,7 +130,7 @@ console.log($(item).data('id'))
                         '<h5  id="pwd-label_'+data.id+'">'+data.label+'</h5><dl>' +
                         '<dt><?php echo langHdl('description'); ?></dt><dd>'+data.description+'</dd>' +
                         '<dt><?php echo langHdl('pw'); ?></dt><dd>' +
-                        '<div id="pwd-show_'+data.id+'" class="unhide_masked_data"><?php echo $var['hidden_asterisk']; ?></div>'+
+                        '<div id="pwd-show_'+data.id+'" class="unhide_masked_data" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></div>'+
                         '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + unsanitizeString(data.pw) + '">' +
                         '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0"></dd>' +
                         '<dt><?php echo langHdl('index_login'); ?></dt><dd>'+data.login+'</dd>' +
@@ -156,6 +149,10 @@ console.log($(item).data('id'))
                 }).mouseleave(function(event) {
                     mouseStillDown = false;
                 });
+
+                $('#search-loader').remove();
+
+                $('.infotip').tooltip();
             }
         );
         return data;
@@ -196,39 +193,28 @@ console.log($(item).data('id'))
             $('#pwd-show_' + itemId).html('<?php echo $var['hidden_asterisk']; ?>');
         }
     };
-/*
-    var mouseStillDown = false;
-    var showPwdContinuous2 = function(elem_id){
-        if(mouseStillDown){console.log('ici2 ')
-            $('#'+elem_id).html('<span style="cursor:none;">' + $('#h'+elem_id).html().replace(/\n/g,"<br>") + '</span>');
-            setTimeout("showPwdContinuous('"+elem_id+"')", 50);
-            // log password is shown
-            if (elem_id === "id_pw" && $("#pw_shown").val() == "0") {
-                // log passd show
-                var data = {
-                    "id" : $('#id_selected_item').val(),
-                    "label" : $('#item_label').text(),
-                    "user_id" : "<?php echo $_SESSION['user_id']; ?>",
-                    "action" : 'at_password_shown',
-                    "login" : "<?php echo $_SESSION['login']; ?>"
-                };
 
-                $.post(
-                    "sources/items.logs.php",
-                    {
-                        type    : "log_action_on_item",
-                        data :  prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                        key        : "<?php echo $_SESSION['key']; ?>"
-                    }
-                );
 
-                $("#pw_shown").val("1");
-            }
+    $("#search-results-items tbody").on( 'change', '.mass_op_cb', function () {
+        // Manage selection of row
+        //console.log($(oTable.row($($(this)).data('row-index')).node()))
+        //$(oTable.row($($(this)).data('row-index')).node()).addClass('row-selected');
+
+        /*var tr = $(this).closest('tr');console.log(tr)
+        if (tr.hasClass('row-selected')) {
+            tr.removeClass('row-selected');
         } else {
-            $('#'+elem_id).html('<?php echo $var['hidden_asterisk']; ?>');
+            tr.addClass('row-selected');
+        }*/
+        
+
+        // Check if at least one CB is checked
+        if ($("#search-results-items input[type=checkbox]:checked").length > 0) {
+            console.log('yeah')
+        } else {
+            console.log('none')
         }
-    };
-*/
+    });
     
 /*
     $("#div_mass_op").dialog({
