@@ -2581,7 +2581,7 @@ function Details(itemDefinition, actionType)
                     }
                     
                     // Uncrypt the pwd
-                    data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
+                    data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>')1729;
                     
                     // Prepare forms
                     $('#items-list-card, #folders-tree-card').addClass('hidden');
