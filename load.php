@@ -1481,6 +1481,23 @@ if (isset($_GET['login']) === true && isset($_GET['key']) === true) {
 }
 
 $htmlHeaders .= '
+
+        var clipboardOTV = new ClipboardJS(".otv-link", {
+            container: document.getElementById("dialog_otv"),
+            text: function(trigger) {
+                return $("#otv-url").val();
+            }
+        });
+
+        clipboardOTV.on("success", function(e) {
+            $("#dialog_otv").dialog("close");
+            $("#message_box")
+                .html("'.addslashes($LANG['url_copied_clipboard']).'")
+                .show()
+                .fadeOut(1000);
+            e.clearSelection();
+        });
+
         setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
     });';
 

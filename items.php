@@ -146,7 +146,8 @@ echo '
 <input type="hidden" id="item_user_token" value="" />
 <input type="hidden" id="items_listing_should_stop" value="" />
 <input type="hidden" id="new_listing_characteristics" value="" />
-<input type="hidden" id="uniqueLoadData" value="" />';
+<input type="hidden" id="uniqueLoadData" value="" />
+<input type="hidden" id="otv-url" value="" />';
 
 echo '
 <div id="div_items">';
@@ -1082,5 +1083,11 @@ echo '
         <div id="reason_to_access_info" style="margin-top:5px; padding:4px;"></div>
     </div>
 </div>';
+
+// Alert BOX
+echo '
+    <div id="dialog_otv" style="display:none;">
+        <div id="dialog_otv_text" style="text-align:center; padding:4px; font-size:12px; margin-top:10px;"></div>
+    </div>';
 
 require_once 'items.load.php';

@@ -208,7 +208,7 @@ function start_one_shot_change()
                 $('#edit_pw1').val($('#ausp_pwd').val());
                 $("#hid_pw").val($('#ausp_pwd').val());
                 // change quick password
-                new Clipboard("#menu_button_copy_pw, #button_quick_pw_copy", {
+                new ClipboardJS("#menu_button_copy_pw, #button_quick_pw_copy", {
                     text: function() {
                         return unsanitizeString($('#edit_pw1').val());
                     }

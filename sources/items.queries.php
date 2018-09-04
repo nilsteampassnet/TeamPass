@@ -4026,12 +4026,8 @@ if (null !== $post_type) {
             echo json_encode(
                 array(
                     "error" => "",
-                    "url" => str_replace(
-                        array("#URL#", "#DAY#"),
-                        array('<span id="otv_link">'.$url.'</span>&nbsp;<i class="fa-stack tip clipboard-icon" title="'.addslashes($LANG['copy']).'" style="cursor:pointer;" id="'.$element_id.'" data-clipboard-text="'.$url.'"><span class="fa fa-square fa-stack-2x"></span><span class="fa fa-clipboard fa-stack-1x fa-inverse"></span></i>', $exp_date),
-                        $LANG['one_time_view_item_url_box']
-                    ),
-                    'element_id' => $element_id
+                    'url' => $url,
+                    'date' => $exp_date,
                 )
             );
             break;

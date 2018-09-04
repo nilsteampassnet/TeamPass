@@ -1,4 +1,6 @@
 2.1.27
+22/
+ #2326 link copy doesn't work corectly
 
 21/
  #2398 User unable to change their own password from profile window
