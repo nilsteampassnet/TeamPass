@@ -73,6 +73,8 @@ body {
   color: #212529;
   text-align: left;
   background-color: #ffffff;
+  height: 100%;
+  width: 100%;
 }
 
 [tabindex="-1"]:focus {
@@ -5186,7 +5188,7 @@ button.close, button.mailbox-attachment-close {
 
 .tooltip {
   position: absolute;
-  z-index: 1070;
+  z-index: 99999;
   display: block;
   margin: 0;
   font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";

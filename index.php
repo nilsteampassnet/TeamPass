@@ -304,12 +304,14 @@ if (($session_validite_pw === null
             <li class="nav-item">
                 <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
             </li>
+            <!--
             <li class="nav-item d-none d-sm-inline-block">
                 <a href="index.html" class="nav-link">Home</a>
             </li>
             <li class="nav-item d-none d-sm-inline-block">
                 <a href="#" class="nav-link">Contact</a>
             </li>
+            -->
         </ul>
 
         <!-- SEARCH FORM -->
@@ -338,112 +340,27 @@ if (($session_validite_pw === null
                     </a>
 
                     <div class="dropdown-menu dropdown-menu-right">
+                        <span class="dropdown-item"><i class="fa fa-hourglass-end fa-fw"></i>&nbsp;<?php echo langHdl('index_expiration_in'); ?> <span id="countdown"></span></span>
+                        <a class="dropdown-item user-menu" href="#" data-name="increase_session">
+                            <i class="fa fa-clock-o fa-fw"></i>&nbsp;<?php echo langHdl('index_add_one_hour'); ?></a>
+                        <div class="dropdown-divider"></div>
                         <?php
                         echo ($session_user_admin === '1' && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
                         <a class="dropdown-item user-menu" href="#" data-name="set_psk">
-                            <span class="fa fa-key fa-fw"></span>&nbsp;'.langHdl('home_personal_saltkey_button').'
+                            <i class="fa fa-key fa-fw"></i>&nbsp;'.langHdl('home_personal_saltkey_button').'
                         </a>' : '', '
-                        <a class="dropdown-item user-menu" href="#" data-name="increase_session">
-                            <span class="fa fa-clock-o fa-fw"></span>&nbsp;'.langHdl('index_add_one_hour').'
-                        </a>
                         <a class="dropdown-item user-menu" href="#" data-name="profile">
-                            <span class="fa fa-user fa-fw"></span>&nbsp;'.langHdl('my_profile').'
+                            <i class="fa fa-user fa-fw"></i>&nbsp;'.langHdl('my_profile').'
                         </a>
+                        <div class="dropdown-divider"></div>
                         <a class="dropdown-item user-menu" href="#" data-name="logout">
-                            <span class="fa fa-sign-out fa-fw"></span>&nbsp;'.langHdl('disconnect').'
+                            <i class="fa fa-sign-out fa-fw"></i>&nbsp;'.langHdl('disconnect').'
                         </a>'; ?>
                     </div>
                 </div>
             </li>
-
-
-            <!-- Messages Dropdown Menu -->
-            <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <i class="fa fa-comments-o"></i>
-                    <span class="badge badge-danger navbar-badge">3</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                <a href="#" class="dropdown-item">
-                    <!-- Message Start -->
-                    <div class="media">
-                    <img src="dist/img/user1-128x128.jpg" alt="User Avatar" class="img-size-50 mr-3 img-circle">
-                    <div class="media-body">
-                        <h3 class="dropdown-item-title">
-                            Brad Diesel
-                            <span class="float-right text-sm text-danger"><i class="fa fa-star"></i></span>
-                        </h3>
-                        <p class="text-sm">Call me whenever you can...</p>
-                        <p class="text-sm text-muted"><i class="fa fa-clock-o mr-1"></i> 4 Hours Ago</p>
-                    </div>
-                    </div>
-                    <!-- Message End -->
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <!-- Message Start -->
-                    <div class="media">
-                    <img src="dist/img/user8-128x128.jpg" alt="User Avatar" class="img-size-50 img-circle mr-3">
-                    <div class="media-body">
-                        <h3 class="dropdown-item-title">
-                            coucou
-                        <span class="float-right text-sm text-muted"><i class="fa fa-star"></i></span>
-                        </h3>
-                        <p class="text-sm">I got your message bro</p>
-                        <p class="text-sm text-muted"><i class="fa fa-clock-o mr-1"></i> 4 Hours Ago</p>
-                    </div>
-                    </div>
-                    <!-- Message End -->
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <!-- Message Start -->
-                    <div class="media">
-                    <img src="dist/img/user3-128x128.jpg" alt="User Avatar" class="img-size-50 img-circle mr-3">
-                    <div class="media-body">
-                        <h3 class="dropdown-item-title">
-                        Nora Silvester
-                        <span class="float-right text-sm text-warning"><i class="fa fa-star"></i></span>
-                        </h3>
-                        <p class="text-sm">The subject goes here</p>
-                        <p class="text-sm text-muted"><i class="fa fa-clock-o mr-1"></i> 4 Hours Ago</p>
-                    </div>
-                    </div>
-                    <!-- Message End -->
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item dropdown-footer">See All Messages</a>
-                </div>
-            </li>
-            <!-- Notifications Dropdown Menu -->
-            <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                <i class="fa fa-bell-o"></i>
-                <span class="badge badge-warning navbar-badge">15</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                <span class="dropdown-header">15 Notifications</span>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fa fa-envelope mr-2"></i> 4 new messages
-                    <span class="float-right text-muted text-sm">3 mins</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fa fa-users mr-2"></i> 8 friend requests
-                    <span class="float-right text-muted text-sm">12 hours</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                    <i class="fa fa-file mr-2"></i> 3 new reports
-                    <span class="float-right text-muted text-sm">2 days</span>
-                </a>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item dropdown-footer">See All Notifications</a>
-                </div>
-            </li>
             <li class="nav-item">
-                <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#"><i
+                <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i
                     class="fa fa-th-large"></i></a>
             </li>
         </ul>
@@ -675,16 +592,27 @@ if (($session_validite_pw === null
             <!-- /.sidebar-menu -->
         </div>
         <!-- /.sidebar -->
+        <div class="footer" style="margin-top:-30px; color:white;">
+            <div class="ml-3" id="sidebar-footer">
+                <i class="fa fa-clock-o mr-2 infotip text-info" title="<?php echo langHdl('server_time').' '.
+                    @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']).' - '.
+                    @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']); ?>"></i>
+                <i class="fa fa-users mr-2 infotip text-info" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
+                <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="text-info"><i class="fa fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
+                <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fa fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
+                <i class="fa fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
+            </div>
+        </div>
     </aside>
 
     <!-- Content Wrapper. Contains page content -->
     <div class="content-wrapper">
 
         <!-- PERSONAL SALTKEY -->
-        <div class="card card-danger m-2 hidden" id="dialog_request_psk">
+        <div class="card card-danger m-2 hidden" id="dialog-request-psk">
             <div class="card-header">
                 <h3 class="card-title">
-                <i class="fa fa-key"></i>
+                <i class="fa fa-key mr-2"></i>
                 <?php echo langHdl('home_personal_saltkey_label'); ?>
                 </h3>
             </div>
@@ -695,20 +623,20 @@ if (($session_validite_pw === null
                         <?php
                         echo isset($SETTINGS['personal_saltkey_security_level']) === true
                             && empty($SETTINGS['personal_saltkey_security_level']) === false ?
-                        '<div class="text-info text-center"><i class="fa fa-info"></i>&nbsp;'.
-                        langHdl('complex_asked').' : '.
+                        '<div class="text-info text-center"><i class="fa fa-info mr-2"></i>&nbsp;'.
+                        langHdl('complex_asked').' : <b>'.
                         TP_PW_COMPLEXITY[$SETTINGS['personal_saltkey_security_level']][1].
-                        '</div>'
+                        '</b></div>'
                         :
                         ''; ?>
                         </h6>                        
 
-                        <input class="form-control form-control-lg" type="password" placeholder=".input-lg" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
+                        <input class="form-control form-control-lg" type="password" placeholder="<?php echo langHdl('personal_salt_key'); ?>" value="<?php echo isset($_SESSION['user_settings']['clear_psk']) ? (string) $_SESSION['user_settings']['clear_psk'] : ''; ?>" id="user_personal_saltkey">
 
                         <div class="text-center" style="margin: 10px 0 0 40%;">
-                        <?php
-                        echo '<div id="psk_strength"></div>'.
-                            '<input type="hidden" id="psk_strength_value" />'; ?>
+                            <?php
+                            echo '<div id="psk_strength"></div>'.
+                                '<input type="hidden" id="psk_strength_value" />'; ?>
                         </div>
                     </div>
                 </div>
@@ -718,6 +646,35 @@ if (($session_validite_pw === null
                 <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
             </div>
         </div>
+        <!-- /.PERSONAL SALTKEY -->
+
+
+        <!-- DEFECT REPORT -->
+        <div class="card card-danger m-2 hidden" id="dialog-bug-report">
+            <div class="card-header">
+                <h3 class="card-title">
+                <i class="fa fa-bug mr-2"></i>
+                <?php echo langHdl('defect_report'); ?>
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-12 col-md-12">
+                        <div class="mb-2 alert alert-info">
+                            <i class="icon fa fa-info mr-2"></i>
+                            <?php echo langHdl('bug_report_to_github'); ?>
+                        </div>
+                        <textarea class="form-control" style="min-height:300px;" id="dialog-bug-report-text" placeholder="<?php echo langHdl('please_wait_while_loading'); ?>"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <button class="btn btn-primary mr-2 clipboard-copy" data-clipboard-text="dialog-bug-report-text" id="dialog-bug-report-select-button"><?php echo langHdl('copy_to_clipboard'); ?></button>
+                <button class="btn btn-primary" id="dialog-bug-report-github-button"><?php echo langHdl('open_bug_report_in_github'); ?></button>
+                <button class="btn btn-default float-right close-element"><?php echo langHdl('close'); ?></button>
+            </div>
+        </div>
+        <!-- /.DEFECT REPORT -->
 
 
     <?php
@@ -762,13 +719,12 @@ if (($session_validite_pw === null
     <aside class="control-sidebar control-sidebar-dark">
         <!-- Control sidebar content goes here -->
         <div class="p-3">
-        <h5>Title</h5>
-        <?php
-        echo '<p><span class="fa fa-clock-o"></span>&nbsp;'.langHdl('server_time').':<br />'.
-            @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']).' - '.
-            @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']).'</p>'.
-            '<p><span class="fa fa-users"></span>&nbsp;'.$session_nb_users_online.'&nbsp;'.langHdl('users_online').'</p>'.
-            '<p><span class="fa fa-hourglass-end"></span>&nbsp;'.langHdl('index_expiration_in').'&nbsp;<span id="countdown"></span></p>'; ?>
+        <h5><?php echo langHdl('last_items_title'); ?></h5>
+        <div>
+            <ul class="list-unstyled" id="index-last-pwds">
+
+            </ul>
+        </div>
         </div>
     </aside>
     <!-- /.control-sidebar -->
@@ -777,12 +733,7 @@ if (($session_validite_pw === null
     <footer class="main-footer">
         <!-- To the right -->
         <div class="float-right d-none d-sm-inline">
-            <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION_FULL; ?>&nbsp;
-            <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"><i class="fa fa-book"></i></a>
-            &nbsp;
-            <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="infotip" title="<?php echo langHdl('admin_help'); ?>"><i class="fa fa-reddit-alien"></i></a>
-            &nbsp;
-            <a href="#" class="infotip" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"><i class="fa fa-bug"></i></a>
+            <?php echo langHdl('version_alone'); ?>&nbsp;<?php echo TP_VERSION_FULL; ?>
         </div>
         <!-- Default to the left -->
         <strong>Copyright &copy; <?php echo TP_COPYRIGHT; ?> <a href="https://teampass.net"><?php echo TP_TOOL_NAME; ?></a>.</strong> All rights reserved.
@@ -889,6 +840,8 @@ if (($session_validite_pw === null
 <!-- simplePassMeter -->
 <link rel="stylesheet" href="plugins/simplePassMeter/simplePassMeter.css" type="text/css" />
 <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js"></script>
+<!-- platform -->
+<script type="text/javascript" src="plugins/platform/platform.js"></script>
 <?php
 if ($menuAdmin === true) {
     ?>
@@ -920,10 +873,10 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css">
 <script type="text/javascript" src="./plugins/datatables/js/jquery.dataTables.min.js"></script>
 <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
-<link rel="stylesheet" src="./plugins/datatables/extensions/Select-1.2.6/css/select.bootstrap4.min.css">
-<script type="text/javascript" src="./plugins/datatables/extensions/Select-1.2.6/js/dataTables.select.min.js"></script>
-<!--<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
-<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>-->
+<link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
+<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
 <!-- SlimScroll -->
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->

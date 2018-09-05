@@ -1947,7 +1947,7 @@ if (null !== $post_type) {
             }
 
             // Decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($post_data, 'decode');//print_r($dataReceived);
+            $dataReceived = prepareExchangedData($post_data, 'decode'); //print_r($dataReceived);
             // Init post variables
             $post_id = filter_var(htmlspecialchars_decode($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
@@ -2071,7 +2071,7 @@ if (null !== $post_type) {
             // check that actual user can access this item
             $restrictionActive = true;
             $restrictedTo = array_filter(explode(';', $dataItem['restricted_to']));
-            if (in_array($_SESSION['user_id'], $restrictedTo)) {
+            if (in_array($_SESSION['user_id'], $restrictedTo) === true) {
                 $restrictionActive = false;
             }
             if (empty($dataItem['restricted_to'])) {
@@ -2154,14 +2154,15 @@ if (null !== $post_type) {
             ) {
                 // Allow show details
                 $arrData['show_details'] = 1;
+
                 // Display menu icon for deleting if user is allowed
                 if ($dataItem['id_user'] == $_SESSION['user_id']
                     || $_SESSION['is_admin'] === '1'
                     || ($_SESSION['user_manager'] === '1' && $SETTINGS['manager_edit'] === '1')
                     || $dataItem['anyone_can_modify'] === '1'
-                    || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role'])
-                    || in_array($_SESSION['user_id'], $restrictedTo)
-                    || count($restrictedTo) === 0
+                    || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
+                    || in_array($_SESSION['user_id'], $restrictedTo) === true
+                    //|| count($restrictedTo) === 0
                 ) {
                     $arrData['user_can_modify'] = 1;
                     $user_is_allowed_to_modify = true;
@@ -2220,7 +2221,7 @@ if (null !== $post_type) {
                 }
 
                 $arrData['label'] = htmlspecialchars_decode($dataItem['label'], ENT_QUOTES);
-                $arrData['pw'] = 'crypted'.prepareExchangedData(array("password" => $pw), "encode");//$pw;
+                $arrData['pw'] = 'crypted'.prepareExchangedData(array('password' => $pw), 'encode'); //$pw;
                 $arrData['email'] = (empty($dataItem['email']) === true || $dataItem['email'] === null) ? '' : $dataItem['email'];
                 $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
                 $arrData['folder'] = $dataItem['id_tree'];
@@ -2430,6 +2431,9 @@ if (null !== $post_type) {
 
             // Set temporary session variable to allow step2
             $_SESSION['user_settings']['show_step2'] = true;
+
+            // Error
+            $arrData['error'] = '';
 
             // Encrypt data to return
             echo prepareExchangedData($arrData, 'encode');
@@ -3064,6 +3068,7 @@ if (null !== $post_type) {
                         )
                     );
                 }
+                $uniqueLoadData['path'] = $arr_arbo;
 
                 // store last folder accessed in cookie
                 setcookie(
@@ -3692,11 +3697,10 @@ if (null !== $post_type) {
                 'password' => $pw['string'],
                 'password_error' => $pw['error'],
             );
-            
+
             // Encrypt data to return
             echo prepareExchangedData($returnValues, 'encode');
             break;
-
 
         /*
         * CASE
@@ -3782,7 +3786,7 @@ if (null !== $post_type) {
                 } else {
                     $returnValues = array(
                         'error' => 'no_edition_possible',
-                        'error_msg' => langHdl('error_no_edition_possible_locked'),
+                        'message' => langHdl('error_no_edition_possible_locked'),
                     );
                     echo prepareExchangedData($returnValues, 'encode');
                     break;
@@ -3818,7 +3822,7 @@ if (null !== $post_type) {
                     ) {
                         $returnValues = array(
                             'error' => 'no_folder_creation_possible',
-                            'error_msg' => langHdl('error_not_allowed_to'),
+                            'message' => langHdl('error_not_allowed_to'),
                         );
                         echo prepareExchangedData($returnValues, 'encode');
                         break;
@@ -5048,7 +5052,7 @@ if (null !== $post_type) {
             $history = array();
             $rows = DB::query(
                 'SELECT l.date as date, l.action as action, l.raison as raison, l.raison_iv AS raison_iv,
-                u.login as login, u.avatar_thumb as avatar_thumb
+                u.login as login, u.avatar_thumb as avatar_thumb, u.name as name, u.lastname as lastname
                 FROM '.prefixTable('log_items').' as l
                 LEFT JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
                 WHERE id_item=%i AND action <> %s
@@ -5111,6 +5115,7 @@ if (null !== $post_type) {
                         array(
                             'avatar' => $avatar,
                             'login' => $record['login'],
+                            'name' => $record['name'].' '.$record['lastname'],
                             'date' => date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date']),
                             'action' => langHdl($record['action']),
                             'detail' => empty($record['raison']) === false && $record['action'] !== 'at_creation' ? (count($reason) > 1 ? langHdl(trim($reason[0])).' : '.handleBackslash($reason[1]) : ($record['action'] === 'at_manual' ? $reason[0] : langHdl(trim($reason[0])))) : '',

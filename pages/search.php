@@ -57,13 +57,35 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 </div>
 <!-- /.content-header -->
 
+<!-- MASS OPERATION -->
+<div class="card card-warning m-2 hidden" id="dialog-mass-operation">
+    <div class="card-header">
+        <h3 class="card-title">
+        <i class="fa fa-bug mr-2"></i>
+        <?php echo langHdl('mass_operation'); ?>
+        </h3>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-sm-12 col-md-12" id="dialog-mass-operation-html">
+                
+            </div>
+        </div>
+    </div>
+    <div class="card-footer">
+        <button class="btn btn-primary mr-2" id="dialog-mass-operation-button"><?php echo langHdl('perform'); ?></button>
+        <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
+    </div>
+</div>
+<!-- /.MASS OPERATION -->
+
 <!-- Main content -->
 <section class="content">
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Data Table With Full Features</h3>
+                    <h3 class="card-title" id="search-select">&nbsp;</h3>
                 </div>
                 <!-- /.card-header -->
                 <div class="card-body">

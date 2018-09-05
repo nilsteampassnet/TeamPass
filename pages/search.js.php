@@ -194,27 +194,190 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
         }
     };
 
-
+    
+    var selectedItems = '',
+        selectedAction = '',
+        listOfFolders = '';
     $("#search-results-items tbody").on( 'change', '.mass_op_cb', function () {
-        // Manage selection of row
-        //console.log($(oTable.row($($(this)).data('row-index')).node()))
-        //$(oTable.row($($(this)).data('row-index')).node()).addClass('row-selected');
-
-        /*var tr = $(this).closest('tr');console.log(tr)
-        if (tr.hasClass('row-selected')) {
-            tr.removeClass('row-selected');
-        } else {
-            tr.addClass('row-selected');
-        }*/
-        
-
         // Check if at least one CB is checked
         if ($("#search-results-items input[type=checkbox]:checked").length > 0) {
-            console.log('yeah')
+            // Show selection menu
+            if ($('#search-select').hasClass('menuset') === false) {
+                $('#search-select')
+                    .addClass('menuset')
+                    .html(
+                        '<?php echo langHdl('actions'); ?>' +
+                        '<i class="fa fa-share ml-2 pointer infotip mass-operation" title="<?php echo langHdl('move_items'); ?>" data-action="move"></i>' +
+                        '<i class="fa fa-trash ml-2 pointer infotip mass-operation" title="<?php echo langHdl('delete_items'); ?>" data-action="delete"></i>'
+                    );
+
+                // Prepare tooltips
+                $('.infotip').tooltip();
+
+                // Now move or trash
+                $('.mass-operation').click(function() {
+                    $('#dialog-mass-operation').removeClass('hidden');
+
+                    // Define
+                    var item_id,
+                        sel_items_txt = '<ul>',
+                        testToShow = '';
+                    
+                    // Init
+                    selectedAction = $(this).data('action');
+                    selectedItems = '';
+
+                    // Selected items
+                    $('.mass_op_cb:checkbox:checked').each(function () {
+                        item_id = $(this).data('id') ;
+                        selectedItems += item_id + ';';
+                        sel_items_txt += '<li>' + $('#item_label-'+item_id).text() + '</li>';
+                    });
+                    sel_items_txt += '</ul>';
+
+                    if (selectedAction === 'move') {
+                        // get list of folders
+                        var htmlFolders = '';
+                        $.post(
+                            'sources/folders.queries.php',
+                            {
+                                type    : 'get_list_of_folders',
+                                key     : '<?php echo $_SESSION['key']; ?>'
+                            },
+                            function(data) {
+                                $('#div_loading').hide();
+                                // check/uncheck checkbox
+                                if (data[0].list_folders !== '') {
+                                    var tmp = data[0].list_folders.split(';');
+                                    for (var i = tmp.length - 1; i >= 0; i--) {
+                                        listOfFolders += tmp[i];
+                                    }
+                                }
+
+                                // destination folder
+                                htmlFolders += '<div><?php echo langHdl('import_keepass_to_folder'); ?>:&nbsp;&nbsp;' +
+                                '<select class="form-control form-item-control select2" style="width:100%;" id="mass_move_destination_folder_id">' +
+                                data[0].list_folders + '</select>'+
+                                '</div>';
+
+                                //display to user
+                                $('#dialog-mass-operation-html').html(
+                                    '<?php echo langHdl('you_decided_to_move_items'); ?>: ' +
+                                    '<div><ul>' + sel_items_txt + '</ul></div>' + htmlFolders +
+                                    '<div class="mt-3 alert alert-info"><i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_item_move'); ?></div>'
+                                );
+                            },
+                            'json'
+                        );
+                        
+                    } else if (selectedAction === 'delete') {
+                        $('#dialog-mass-operation-html').html(
+                            '<?php echo langHdl('you_decided_to_delete_items'); ?>: ' +
+                            '<div><ul>' + sel_items_txt + '</ul></div>' +
+                            '<div class="mt-3 alert alert-danger"><i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_deletion'); ?></div>'
+                        );
+                    }
+                });
+            }
         } else {
-            console.log('none')
+            $('#dialog-mass-operation').addClass('hidden');
+
+            $('#search-select')
+                .removeClass('menuset')
+                .html('&nbsp;');
+                
+            $('#dialog-mass-operation-html').html('');
         }
     });
+
+
+    // Perform action expected by user
+    $('#dialog-mass-operation-button').click(function() {
+        console.log(selectedItems);
+
+        if (selectedItems === "") {
+            alertify
+                .warning('<i class="fa fa-ban mr-2"></i><?php echo langHdl('none_selected_text'); ?>', 3000)
+                .dismissOthers();
+            return false;
+        }
+
+        // Show to user
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+        
+        if (selectedAction === 'delete') {
+            // Delete selected items
+            $.post(
+                'sources/items.queries.php',
+                {
+                    type        : 'mass_delete_items',
+                    item_ids    : selectedItems,
+                    key         : '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    //check if format error
+                    if (data[0].error !== '') {
+                        alertify
+                            .error('<i class="fa fa-warning fa-lg mr-2"></i>' + data[0].error, 3)
+                            .dismissOthers();
+                        return false;
+                    } else if (data[0].status === 'ok') {
+                        //reload search
+                        oTable.ajax.reload();
+
+                        alertify
+                            .success('<?php echo langHdl('success'); ?>', 1)
+                            .dismissOthers();
+
+                        // Finalize template
+                        $('#dialog-mass-operation').addClass('hidden');
+                        $('#search-select')
+                            .removeClass('menuset')
+                            .html('&nbsp;');                            
+                        $('#dialog-mass-operation-html').html('');
+                    }
+                },
+                'json'
+            );
+        } else if (selectedAction === 'move') {
+            $.post(
+                'sources/items.queries.php',
+                {
+                    type        : 'mass_move_items',
+                    item_ids    : selectedItems,
+                    folder_id   : $('#mass_move_destination_folder_id').val(),
+                    key         : '<?php echo $_SESSION['key']; ?>'
+                },
+                function(data) {
+                    //check if format error
+                    if (data[0].error !== '') {
+                        alertify
+                            .error('<i class="fa fa-warning fa-lg mr-2"></i>' + data[1].error_text, 3)
+                            .dismissOthers();
+                        return false;
+                    } else if (data[0].status === 'ok') {
+                        //reload search
+                        oTable.ajax.reload();
+
+                        alertify
+                            .success('<?php echo langHdl('success'); ?>', 1)
+                            .dismissOthers();
+
+                        // Finalize template
+                        $('#dialog-mass-operation').addClass('hidden');
+                        $('#search-select')
+                            .removeClass('menuset')
+                            .html('&nbsp;');                            
+                        $('#dialog-mass-operation-html').html('');
+                    }
+                },
+                'json'
+            );
+        }
+    });
+    
     
 /*
     $("#div_mass_op").dialog({

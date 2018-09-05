@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Load.js
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -50,40 +51,6 @@ $(function() {
     // Show tooltips
     $('.infotip').tooltip();
 
-    // prevent usage of symbols in Personal saltkey
-    $(".text_without_symbols").bind("keydown", function (event) {
-        switch (event.keyCode) {
-            case 8:  // Backspace
-            case 9:  // Tab
-            case 13: // Enter
-            case 37: // Left
-            case 38: // Up
-            case 39: // Right
-            case 40: // Down
-            break;
-            default:
-            var regex = new RegExp("^[a-zA-Z0-9.,/#&$@()%*]+$");
-            var key = event.key;
-            if (regex.test(key) === false) {
-                alertify
-                    .error('<?php echo langHdl('character_not_allowed'); ?>', 3);
-                event.preventDefault();
-                return false;
-            }
-            if (key !== "Alt" && key !== "Control" && key !== "Shift") {
-                alertify.set('notifier','position', 'top-right');
-                alertify
-                    .message(key, 2)
-                    .dismissOthers();
-            }
-            break;
-        }
-    }).bind("paste",function(e) {
-        alertify
-            .error('<?php echo langHdl('error_not_allowed_to'); ?>', 3);
-        e.preventDefault();
-    });
-
     // Load user profiles
     $('.user-panel').click(function () {
         document.location.href="index.php?page=profile";
@@ -113,7 +80,7 @@ $(function() {
                     '<?php echo langHdl('logout_confirm'); ?>',
                     function(){
                         alertify.success('<?php echo langHdl('ok'); ?>');
-                        window.location.href = "logout.php?user_id=" + <?php echo $_SESSION["user_id"]; ?>
+                        window.location.href = "logout.php?user_id=" + <?php echo $_SESSION['user_id']; ?>
                     },
                     function(){
                         alertify.error('<?php echo langHdl('cancel'); ?>');
@@ -145,30 +112,38 @@ $(function() {
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
-                //decrypt data
-                try {
-                    data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-                } catch (e) {
-                    // error
-                    alertify
-                        .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
-                        .dismissOthers();
-                    return false;
-                }
-                console.log(data)
-
                 // Is there an error?
-                if (data.error === true) {
-                    alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
-                    .dismissOthers();
+                if (data[0].error !== "") {
+                    var error = "";
+                    if (data[0].error === "key_not_conform") {
+                        error = '<?php echo langHdl('error_unknown'); ?>';
+                    } else if (data[0].error === "security_level_not_reached") {
+                        error = '<?php echo langHdl('error_security_level_not_reached'); ?>';
+                    } else if (data[0].error === "psk_is_empty") {
+                        error = '<?php echo langHdl('psk_required'); ?>';
+                    } else if (data[0].error === "psk_not_correct") {
+                        error = '<?php echo langHdl('bad_psk'); ?>';
+                    }
+                    // display error
+                    alertify.alert().set({onshow:function(){ alertify.message('',0.1).dismissOthers()}});
+                    alertify.alert(
+                        '<?php echo langHdl('warning'); ?>',
+                        error
+                    );
+                } else if (data[0].status === "security_level_not_reached_but_psk_correct") {
+                    alertify.alert(
+                        '<?php echo langHdl('warning'); ?>',
+                        '<?php echo langHdl('error_security_level_not_reached'); ?>'
+                    );
                 } else {
                     alertify
                         .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
                         .dismissOthers();
+                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                     location.reload();
                 }
-            }
+            },
+            "json"
         );
     });
 
@@ -218,6 +193,46 @@ $(function() {
             }
         });
 
+    // Start real time
+
+    // get list of last items
+    if ($('#form_user_id').val() !== '') {
+        setTimeout(
+            function() {
+                refreshListLastSeenItems();
+            },
+            500
+        );
+        
+    }
+    //-- end
+
+    // Hide sidebar footer icons when reducing sidebar
+    $('a[data-widget="pushmenu"]').click(function(event) {
+        if ($('#sidebar-footer').hasClass('hidden') === true) {
+            setTimeout(function() {$('#sidebar-footer').removeClass('hidden');}, 300);
+        } else {
+            $('#sidebar-footer').addClass('hidden');
+        }
+    });
+
+
+    var clipboardCopy = new Clipboard(".clipboard-copy", {
+        text: function(trigger) {
+            var elementId = $(trigger).data('clipboard-text');
+            return $('#' + elementId).val();
+        }
+    });
+
+    clipboardCopy.on('success', function(e) {
+        showAlertify(
+            '<?php echo langHdl('copy_to_clipboard'); ?>',
+            1,
+            'top-right',
+            'message'
+        );
+    });
+
     // Progress bar
     setTimeout(function() { NProgress.done(); $(".fade").removeClass("out"); }, 1000);
 });
@@ -250,8 +265,109 @@ function showExtendSession() {
  */
 function showPersonalSKDialog()
 {
-    $('#dialog_request_psk').removeClass('hidden');
+    $('#dialog-request-psk').removeClass('hidden');
 
     $('#user_personal_saltkey').focus();
+}
+
+/**
+ * Loads the last seen items
+ *
+ * @return void
+ */
+function refreshListLastSeenItems()
+{
+    $.post(
+        "sources/main.queries.php",
+        {
+            type : 'refresh_list_items_seen',
+            key  : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = $.parseJSON(data);
+            //check if format error
+            if (data.error === '') {
+                if (data.html_json === null) {
+                    $('#index-last-pwds').html('<li><?php echo langHdl('none'); ?></li>');
+                } else {
+                    // Prepare HTML
+                    var html_list = '';
+                    $.each(data.html_json, function(i, value) {
+                        html_list += '<li onclick="showItemCard($(this).closest(\'li\'))" class="pointer" data-item-edition="0" data-item-id="'+value.id+'" data-item-sk="'+value.perso+'" data-item-expired="0" data-item-restricted="'+value.restricted+'" data-item-display="1" data-item-open-edit="0" data-item-reload="0" data-item-tree-id="'+value.tree_id+'" data-is-search-result="0">' +
+                        '<i class="fa fa-caret-right mr-2"></i>'+value.label+'</li>';
+                    });
+                    $('#index-last-pwds').html(html_list);
+                }
+
+                // show notification
+                if (data.existing_suggestions !== 0) {
+                    blink('#menu_button_suggestion', -1, 500, 'ui-state-error');
+                }
+            } else {
+                alertify.message('<span class="fa fa-ban"></span>' + data.error, 0);
+            }
+        }
+    );
+}
+
+/**
+ * Show an item
+ *
+ * @return void
+ */
+function showItemCard(itemDefinition)
+{
+    if (window.location.href.indexOf('page=items') === -1) {
+        location.replace('<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=items&group='+itemDefinition.data().itemTreeId+'&id='+itemDefinition.data().itemId);
+    } else {
+        $('#items_list').html('<ul class="liste_items" id="full_items_list"></ul>');
+        Details(itemDefinition, 'show');
+        if (itemDefinition.data().itemTreeId !== $('#open_folder').val()) {
+            ListerItems(itemDefinition.data().itemTreeId, '', 0);
+        }
+
+        // Hide sidebar-mini
+        $('body')
+            .removeClass('control-sidebar-slide-open')
+    }
+}
+
+/**
+ * Open defect report page
+ *
+ * @return void
+ */
+function generateBugReport()
+{
+    $('#dialog-bug-report-text').html('');
+    $('#dialog-bug-report').removeClass('hidden');
+
+    var data = {
+        'browser_name': platform.name,
+        'browser_version': platform.version,
+        'os': platform.os.family,
+        'os_archi': platform.os.architecture,
+    }
+
+    $.post(
+        "sources/main.queries.php",
+        {
+            type : 'generate_bug_report',
+            data : JSON.stringify(data),
+            key  : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+
+            // Show data
+            $('#dialog-bug-report-text').html(data.html);
+
+            // Open Github
+            $('#dialog-bug-report-github-button').click(function() {
+                window.open('https://github.com/nilsteampassnet/TeamPass/issues/new','_blank');
+                return false;
+            });
+        }
+    );
 }
 </script>

@@ -121,31 +121,31 @@ function mainQuery()
             ) {
                 // check if expected security level is reached
                 $data_roles = DB::queryfirstrow(
-                    "SELECT fonction_id
-                    FROM ".prefix_table("users")."
-                    WHERE id = %i",
+                    'SELECT fonction_id
+                    FROM '.prefix_table('users').'
+                    WHERE id = %i',
                     $_SESSION['user_id']
                 );
 
                 // check if badly written
                 $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
-                if ($data_roles['fonction_id'][0] === "") {
+                if ($data_roles['fonction_id'][0] === '') {
                     DB::update(
-                        prefix_table("users"),
+                        prefix_table('users'),
                         array(
-                            'fonction_id' => $data_roles['fonction_id']
+                            'fonction_id' => $data_roles['fonction_id'],
                             ),
-                        "id = %i",
+                        'id = %i',
                         $_SESSION['user_id']
                     );
                 }
 
                 $data = DB::query(
-                    "SELECT complexity
-                    FROM ".prefix_table("roles_title")."
-                    WHERE id IN (".$data_roles['fonction_id'].")
-                    ORDER BY complexity DESC"
+                    'SELECT complexity
+                    FROM '.prefix_table('roles_title').'
+                    WHERE id IN ('.$data_roles['fonction_id'].')
+                    ORDER BY complexity DESC'
                 );
                 if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
                     echo '[ { "error" : "complexity_level_not_reached" } ]';
@@ -896,7 +896,7 @@ function mainQuery()
                 time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
             );
-            
+
             echo prepareExchangedData(
                 array(
                     'list' => $list,
@@ -1169,7 +1169,7 @@ function mainQuery()
             $arrTmp = array();
             $arr_html = array();
             $rows = DB::query(
-                'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date
+                'SELECT i.id AS id, i.label AS label, i.id_tree AS id_tree, l.date, i.perso AS perso, i.restricted_to AS restricted
                 FROM '.prefixTable('log_items').' AS l
                 RIGHT JOIN '.prefixTable('items').' AS i ON (l.id_item = i.id)
                 WHERE l.action = %s AND l.id_user = %i
@@ -1187,6 +1187,8 @@ function mainQuery()
                                 'id' => $record['id'],
                                 'label' => htmlspecialchars(stripslashes(htmlspecialchars_decode($record['label'], ENT_QUOTES)), ENT_QUOTES),
                                 'tree_id' => $record['id_tree'],
+                                'perso' => $record['perso'],
+                                'restricted' => $record['restricted'],
                             )
                         );
                         ++$x_counter;

@@ -16,7 +16,6 @@
  *
  * @see      http://www.teampass.net
  */
-
 if (isset($_SESSION['CPM']) === false || $_SESSION['CPM'] !== 1
     || isset($_SESSION['user_id']) === false || empty($_SESSION['user_id']) === true
     || isset($_SESSION['key']) === false || empty($_SESSION['key']) === true
@@ -185,11 +184,11 @@ echo '
                     <div class="card-body">
                         <div>
                             <label><i class="fa fa-users mr-2"></i><?php echo langHdl('visible_by'); ?></label>
-                            <span id="card-item-visibility" class="text-info"></span>
+                            <span id="card-item-visibility" class="text-info font-weight-bold ml-2"></span>
                         </div>
                         <div>
                             <label><i class="fa fa-key mr-2"></i><?php echo langHdl('complex_asked'); ?></label>
-                            <span id="card-item-minimum-complexity" class="text-info"></span>
+                            <span id="card-item-minimum-complexity" class="text-info font-weight-bold ml-2"></span>
                         </div>
                     </div>
                 </div>
@@ -1112,9 +1111,7 @@ echo '
                 <div class="card-body p-1">
                     <div class="table-responsive">
                         <table class="table table-hover table-striped" id="table_teampass_items_list">
-                            <tbody id="teampass_items_list">                                
-                                <!-- ITEMS come here -->
-                            </tbody>
+                            <tbody id="teampass_items_list"></tbody>
                         </table>
                         <!-- /.table -->
                     </div>

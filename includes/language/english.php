@@ -15,8 +15,10 @@
  */
 
 return array(
-    'security_level_not_reached_but_psk_correct' => 'Personal saltkey is correct but its complexity level is not reached. Please change it.',
-    'work_on_going' => 'Work on going',
+    'confirm_item_move' => 'You have selected "Moving"... are you sure?',
+    'copy_to_clipboard' => 'Copy to clipboard',
+    'please_wait_while_loading' => 'Please wait while data is loading',
+    'defect_report' => 'Bug report',
     'actions' => 'Actions',
     'no_user' => 'Wrong user',
     'generate_api_token' => 'Generate new API token',
@@ -648,7 +650,7 @@ return array(
     'import_keepass_to_folder' => 'Select the destination folder',
     'import_kp_finished' => 'Import from KeePass is now finished ! The required password strength for new folders has been set to Medium. You may wish to modify the password strength requirement.',
     'import_to_folder' => 'Select the items you wish to import to folder:',
-    'index_add_one_hour' => 'Extend session 1 hour',
+    'index_add_one_hour' => 'Extend session time',
     'index_alarm' => 'ALARM!!!',
     'index_bas_pw' => 'Bad password for this account!',
     'index_change_pw_button' => 'Change',

@@ -92,7 +92,7 @@ if (empty($row['id']) === false) {
         filter_var($_SESSION['user_id'], FILTER_SANITIZE_NUMBER_INT)
     );
     foreach ($rows as $record) {
-        if (in_array($record['id'], $arrayPf) === false) {
+        if (!in_array($record['id'], $arrayPf)) {
             //build an array of personal folders ids
             array_push($arrayPf, $record['id']);
             //build also a string with those ids
@@ -156,7 +156,6 @@ if (isset($_GET['search']) === true && empty($_GET['search']['value']) === false
         '5' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         '7' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '8' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf,
     );
 }
@@ -173,7 +172,6 @@ if (count($crit) === 0) {
         '5' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         '6' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         '7' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '8' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
         'pf' => $arrayPf,
     );
 }
@@ -203,8 +201,7 @@ $rows = DB::query(
     $sOrder
     $sLimit",
     $crit
-);
-db::debugMode(false);
+); db::debugMode(false);
 $iFilteredTotal = DB::count();
 
 /*
@@ -217,7 +214,6 @@ if (isset($_GET['type']) === false) {
     }
     $sOutput .= '"data": [';
     $sOutputConst = '';
-    $rowIndex = 0;
 
     foreach ($rows as $record) {
         $getItemInList = true;
@@ -246,7 +242,7 @@ if (isset($_GET['type']) === false) {
             }
             $accessLevel = min($arrTmp);
             if ($accessLevel === 0) {
-                $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" id=\"mass_op_cb-'.$record['id'].'\" data-row-index=\"'.$rowIndex.'\">';
+                $checkbox = '<input type=\"checkbox\" value=\"0\" class=\"mass_op_cb\" data-id=\"'.$record['id'].'\">';
             }
         }
 
@@ -345,8 +341,6 @@ if (isset($_GET['type']) === false) {
             --$iFilteredTotal;
             --$iTotal;
         }
-
-        $rowIndex++;
     }
     if (!empty($sOutputConst)) {
         $sOutput .= substr_replace($sOutputConst, '', -2);

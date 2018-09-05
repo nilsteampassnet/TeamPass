@@ -56,7 +56,6 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$pass = defuse_return_decrypted($pass);
 $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
@@ -109,7 +108,7 @@ if (null !== $post_newtitle) {
 // CASE where RENEWAL PERIOD is changed
 } elseif (null !== $post_renewal_period && null === $post_type) {
     // Check if renewal period is an integer
-    if (is_int($post_renewal_period) === true) {
+    if (parseInt($post_renewal_period)) {
         $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING));
         //update DB
         DB::update(
@@ -387,7 +386,7 @@ if (null !== $post_newtitle) {
                 if (!in_array($folderId, $folderForDel)) {
                     $foldersDeleted = '';
                     // Get through each subfolder
-                    $folders = $tree->getDescendants((int)$folderId, true);
+                    $folders = $tree->getDescendants($folderId, true);
                     foreach ($folders as $folder) {
                         if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
                             //Store the deleted folder (recycled bin)
@@ -1090,21 +1089,28 @@ if (null !== $post_newtitle) {
             //Load Tree
             $tree = new SplClassLoader('Tree\NestedTree', './includes/libraries');
             $tree->register();
-            $tree = new Tree\NestedTree\NestedTree($pre.'nested_tree', 'id', 'parent_id', 'title');
+            $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $folders = $tree->getDescendants();
             $prevLevel = 0;
 
             // show list of all folders
             $arrFolders = [];
             foreach ($folders as $t) {
-                if (in_array($t->id, $_SESSION['groupes_visibles'])) {
-                    if (!is_numeric($t->title)) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) === true) {
+                    if (is_numeric($t->title) === false) {
                         $ident = '&nbsp;&nbsp;';
                         for ($x = 1; $x < $t->nlevel; ++$x) {
                             $ident .= '&nbsp;&nbsp;';
                         }
 
-                        array_push($arrFolders, '<option value=\"'.$t->id.'\">'.$ident.addslashes($t->title).'</option>');
+                        // Is RO?
+                        if (in_array($t->id, $_SESSION['read_only_folders']) === true) {
+                            $disabled = ' disabled';
+                        } else {
+                            $disabled = ' ';
+                        }
+
+                        array_push($arrFolders, '<option value=\"'.$t->id.'\" '.$disabled.'>'.$ident.addslashes($t->title).'</option>');
                         $prevLevel = $t->nlevel;
                     }
                 }
@@ -1410,7 +1416,6 @@ if (null !== $post_newtitle) {
                         }
                         // Add this duplicate in logs
                         logItems(
-                            $SETTINGS,
                             $newItemId,
                             $record['label'],
                             $_SESSION['user_id'],
@@ -1419,7 +1424,6 @@ if (null !== $post_newtitle) {
                         );
                         // Add the fact that item has been copied in logs
                         logItems(
-                            $SETTINGS,
                             $newItemId,
                             $record['label'],
                             $_SESSION['user_id'],

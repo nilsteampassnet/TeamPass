@@ -1,26 +1,27 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Login.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+*
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
 
- 
 // Automatic redirection
 $nextUrl = '';
-if (strpos($server_request_uri, "?") > 0) {
+if (strpos($server_request_uri, '?') > 0) {
     $nextUrl = filter_var(
-        substr($server_request_uri, strpos($server_request_uri, "?")),
+        substr($server_request_uri, strpos($server_request_uri, '?')),
         FILTER_SANITIZE_URL
     );
 }
@@ -55,9 +56,9 @@ if (isset($SETTINGS['enable_http_request_login']) === true
     && $SETTINGS['maintenance_mode'] === '1')
 ) {
     if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-        $username = explode("@", $_SERVER['PHP_AUTH_USER'])[0];
+        $username = explode('@', $_SERVER['PHP_AUTH_USER'])[0];
     } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-        $username = explode("\\", $_SERVER['PHP_AUTH_USER'])[1];
+        $username = explode('\\', $_SERVER['PHP_AUTH_USER'])[1];
     } else {
         $username = $_SERVER['PHP_AUTH_USER'];
     }
@@ -81,7 +82,7 @@ if (!(isset($SETTINGS['enable_http_request_login']) === true
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="fa fa-lock"></i></span>
             </div>
-          <input type="password" id="pw" class="form-control" placeholder="'.langHdl('index_password').'">
+          <input type="password" id="pw" class="form-control submit-button" placeholder="'.langHdl('index_password').'">
         </div>';
 }
 
@@ -90,7 +91,7 @@ echo '
             <div class="input-group-prepend">
                 <span class="input-group-text"><i class="fa fa-clock-o"></i></span>
             </div>
-          <input type="text" id="session_duration" class="form-control" placeholder="'.langHdl('index_session_duration').'&nbsp;('.langHdl('minutes').')" value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
+          <input type="text" id="session_duration" class="form-control submit-button" placeholder="'.langHdl('index_session_duration').'&nbsp;('.langHdl('minutes').')" value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
 
     // 2FA auth selector
@@ -127,18 +128,18 @@ if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agse
     echo '
         <div id="div-2fa-agses" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-agses']) === true && $_SESSION['2famethod-agses'] === '1' ? '' : 'hidden', '">
             <div id="agses_cardid_div" style="text-align:center; padding:5px; width:454px; margin:5px 0 5px;" class="ui-state-active ui-corner-all">
-                ' . langHdl('user_profile_agses_card_id').': &nbsp;
+                '.langHdl('user_profile_agses_card_id').': &nbsp;
                 <input type="text" size="12" id="agses_cardid">
             </div>
             <div id="agses_flickercode_div" style="text-align:center; display:none;">
                 <canvas id="axs_canvas"></canvas>
             </div>
-            <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="' . langHdl('index_agses_key').'" />
+            <input type="text" id="agses_code" name="agses_code" style="margin-top:15px;" class="input_text text ui-widget-content ui-corner-all hidden submit-button" placeholder="'.langHdl('index_agses_key').'" />
         </div>';
 }
 
 // Google Authenticator code
-if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === "1") {
+if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
     echo '
         <div id="div-2fa-google" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-google']) === true && $_SESSION['2famethod-google'] === '1' ? '' : 'hidden', '">
           <div class="col-3">
@@ -183,7 +184,7 @@ setInterval(function() {
 }
 
 // Yubico authentication
-if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === "1") {
+if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1') {
     echo '
         <div id="div-2fa-yubico" class="row mb-3 div-2fa-method ', isset($_SESSION['2famethod-yubico']) === true && $_SESSION['2famethod-yubico'] === '1' ? '' : 'hidden', '">
             <div class="col-3">
@@ -222,7 +223,6 @@ if (isset($SETTINGS['disable_show_forgot_pwd_link']) === true) {
         </div>';
 }
 
-      
 echo '
     </div>
     <!-- /.login-card-body -->
@@ -494,7 +494,7 @@ function identifyUser(redirect, psk, data, randomstring)
                     "sources/identify.php",
                     {
                         type : "identify_user",
-                        data : prepareExchangedData(data, 'encode', '<?php echo $_SESSION["key"]; ?>')
+                        data : prepareExchangedData(data, 'encode', '<?php echo $_SESSION['key']; ?>')
                     },
                     function(data) {
                         if (data[0].value === randomstring) {
@@ -519,7 +519,7 @@ function identifyUser(redirect, psk, data, randomstring)
                         } else if (data[0].value === "user_not_exists") {
                             showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right', 'warning');
                         } else if (!isNaN(parseFloat(data[0].value)) && isFinite(data[0].value)) {
-                            showAlertify('<?php echo langHdl('login_attempts_on')."&nbsp;".(@$SETTINGS['nb_bad_authentication'] + 1); ?>', 5, 'top-right', 'warning');
+                            showAlertify('<?php echo langHdl('login_attempts_on').'&nbsp;'.(@$SETTINGS['nb_bad_authentication'] + 1); ?>', 5, 'top-right', 'warning');
                         } else if (data[0].value === "error") {
                             $("#mysql_error_warning").html(data[0].text).show();
                             $("#div_mysql_error").show().dialog("open");
@@ -612,7 +612,7 @@ function getGASynchronization()
             "sources/main.queries.php",
             {
                 type : "ga_generate_qr",
-                data : prepareExchangedData(data, "encode", "<?php echo $_SESSION["key"]; ?>"),
+                data : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
                 send_email : "1"
             },
             function(data) {
@@ -656,7 +656,7 @@ function send_user_new_temporary_ga_code() {
         "sources/main.queries.php",
         {
             type : "ga_generate_qr",
-            data : prepareExchangedData(data, "encode", "<?php echo $_SESSION["key"]; ?>"),
+            data : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
             send_email : "1"
         },
         function(data) {
