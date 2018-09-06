@@ -15,6 +15,8 @@
  */
 
 return array(
+    'currently_no_favorites' => 'You currently have no favorites',
+    'favorites' => 'Favorites',
     'confirm_item_move' => 'You have selected "Moving"... are you sure?',
     'copy_to_clipboard' => 'Copy to clipboard',
     'please_wait_while_loading' => 'Please wait while data is loading',

@@ -442,7 +442,8 @@ if (($session_validite_pw === null
                         <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
                         <i class="nav-icon fa fa-star"></i>
                         <p>
-                            '.langHdl('my_favourites').'
+                            '.langHdl('favorites').
+                            
                         </p>
                         </a>
                     </li>';
@@ -919,5 +920,7 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/search.js.php';
     } elseif ($pageSel === 'profile') {
         include_once $SETTINGS['cpassman_dir'].'/pages/profile.js.php';
+    } elseif ($pageSel === 'favourites') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/favorites.js.php';
     }
 }

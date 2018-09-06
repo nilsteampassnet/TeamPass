@@ -4014,10 +4014,10 @@ if (null !== $post_type) {
                 exit();
             }
 
-            if (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) === '1') {
+            if (intval(filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT)) === 0) {
                 // Add new favourite
                 array_push($_SESSION['favourites'], $post_item_id);
-                print_r($_SESSION['favourites']);
+                //print_r($_SESSION['favourites']);
                 DB::update(
                     prefixTable('users'),
                     array(
@@ -4036,7 +4036,7 @@ if (null !== $post_type) {
                     'label' => $data['label'],
                     'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$post_item_id,
                     );
-            } elseif (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) === '0') {
+            } elseif (intval(filter_input(INPUT_POST, 'action', FILTER_SANITIZE_NUMBER_INT)) === 1) {
                 // delete from session
                 foreach ($_SESSION['favourites'] as $key => $value) {
                     if ($_SESSION['favourites'][$key] === $post_item_id) {
