@@ -48,7 +48,7 @@ $htmlHeaders = '
         <link rel="stylesheet" href="includes/js/select2/css/select2.min.css" type="text/css" />
         <script type="text/javascript" src="includes/js/select2/js/select2.full.min.js"></script>
         <script type="text/javascript" src="includes/js/platform/platform.js"></script>
-
+        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
 
         <script type="text/javascript" src="includes/libraries/Authentication/agses/agses.jquery.js"></script>
         <link rel="stylesheet" href="includes/libraries/Authentication/agses/agses.css" type="text/css" />
@@ -69,7 +69,6 @@ if (isset($_GET['page']) && $_GET['page'] == "items") {
         <link rel="stylesheet" type="text/css" href="includes/js/multiselect/jquery.multiselect.filter.css" />
         <script type="text/javascript" src="includes/js/multiselect/jquery.multiselect.filter.js"></script>
         <script type="text/javascript" src="includes/js/tinysort/jquery.tinysort.min.js"></script>
-        <script type="text/javascript" src="includes/js/clipboard/clipboard.min.js"></script>
         <script type="text/javascript" src="includes/js/verimail/verimail.min.js"></script>
         <!--
         <link rel="stylesheet" href="includes/bootstrap/css/bootstrap.min.css" />

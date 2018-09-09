@@ -979,6 +979,9 @@ function EditerItem()
         url = "https://"+url;
     }
 
+    // Get complexity respected?
+    var complexityIsOk = parseInt($("#edit_mypassword_complex").val()) >= parseInt($("#complexite_groupe").val()) ? true : false;
+
     // do checks
     if ($('#edit_label').val() == "") erreur = "<?php echo addslashes($LANG['error_label']); ?>";
     else if ($("#edit_pw1").val() === "" && $("#create_item_without_password").val() !== "1") erreur = "<?php echo addslashes($LANG['error_pw']); ?>";
@@ -989,15 +992,16 @@ function EditerItem()
         //Check pw complexity level
         if ((
                 $("#bloquer_modification_complexite").val() == 0 &&
-                parseInt($("#edit_mypassword_complex").val()) >= parseInt($("#complexite_groupe").val())
+                complexityIsOk === true
            )
             ||
             ($("#bloquer_modification_complexite").val() == 1)
             ||
             ($('#recherche_group_pf').val() == 1 && $('#personal_sk_set').val() == 1)
             ||
-            ($("#create_item_without_password").val() === "1" && $("#pw1").val !== "")
-      ) {
+            ($("#create_item_without_password").val() === "1" && $("#pw1").val !== "" && ($("#edit_pw1").val() === '' || complexityIsOk === true))
+        ) {
+
             LoadingPage();  //afficher image de chargement
             var annonce = 0;
             if ($('#edit_annonce').attr('checked')) annonce = 1;
