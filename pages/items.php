@@ -304,7 +304,7 @@ echo '
                                 <!-- FOLDERS -->
                                 <div class="form-group mb-3">
                                     <label><?php echo langHdl('folder'); ?></label>
-                                    <select id="form-item-folder" class="form-control form-item-control select2" style="width:100%;"></select>
+                                    <select id="form-item-folder" class="form-control form-item-control select2 no-root" style="width:100%;"></select>
                                 </div>
 
                                 <!-- RESTRICTED TO -->
@@ -848,7 +848,7 @@ echo '
                     <div class="card-body">
                         <div class="form-group">
                             <label><?php echo langHdl('select_destination_folder'); ?></label>
-                            <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
+                            <select class="form-control form-item-control select2 no-root" style="width:100%;" id="form-item-copy-destination"></select>
                         </div>
                         <div class="form-group">
                             <label><?php echo langHdl('new_label'); ?></label>

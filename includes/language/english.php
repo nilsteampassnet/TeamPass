@@ -15,6 +15,14 @@
  */
 
 return array(
+    'security_level_not_reached_but_psk_correct' => 'Complexity level is not reached. You should change your current saltkey.',
+    'please_wait_now_converting_passwords' => 'Please wait. Now converting passwords',
+    'new_saltkey_confirm' => 'Confirm new saltkey',
+    'please_provide_current_psk' => 'Please provide your current saltkey',
+    'current_saltkey_confirm' => 'Confirm current saltkey',
+    'bad_current_saltkey_confirmation' => 'Current saltkey confirmation is not correct',
+    'empty_psk' => 'Saltkey is missing',
+    'current_saltkey' => 'Current saltkey',
     'currently_no_favorites' => 'You currently have no favorites',
     'favorites' => 'Favorites',
     'confirm_item_move' => 'You have selected "Moving"... are you sure?',
@@ -60,7 +68,7 @@ return array(
     'add_folder' => 'Add new folder',
     'select_folder_parent' => 'Select parent folder',
     'add' => 'Add',
-    'key_is_not_correct' => 'Provided internal key is not correct',
+    'key_is_not_correct' => 'Provided session key is not correct',
     'suggestion_information' => 'You can suggest any change on this item to the author. Use the above form to make your change proposals and click the Perform button to inform the author.',
     'email_address' => 'Email address',
     'enter_email' => 'Enter email',
@@ -729,7 +737,7 @@ return array(
     'nb_items_by_page' => 'Number of items by page',
     'new_label' => 'New label',
     'new_role_title' => 'New role title',
-    'new_saltkey' => 'New salt key',
+    'new_saltkey' => 'New saltkey',
     'new_saltkey_warning' => 'The original salt key must be displayed or input correctly, otherwise personal item passwords will be lost! Before pressing change, verify the accuracy of the salt key! Record your new salt key somewhere safe.',
     'new_user_title' => 'Add New User',
     'no' => 'No',

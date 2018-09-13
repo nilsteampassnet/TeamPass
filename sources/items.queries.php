@@ -2268,7 +2268,6 @@ if (null !== $post_type) {
                 // get fields
                 $fieldsTmp = array();
                 $arrCatList = $template_id = '';
-                //if (null !== $post_page && $post_page === 'items') {
                 if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
                     // get list of associated Categories
                     $arrCatList = array();
@@ -3720,7 +3719,9 @@ if (null !== $post_type) {
             );
             // is user allowed to access this folder - readonly
             if (null !== $post_groupe && empty($post_groupe) === false) {
-                if (in_array($post_groupe, $_SESSION['read_only_folders']) || !in_array($post_groupe, $_SESSION['groupes_visibles'])) {
+                if (in_array($post_groupe, $_SESSION['read_only_folders']) === true
+                    || in_array($post_groupe, $_SESSION['groupes_visibles']) === false
+                ) {
                     // check if this item can be modified by anyone
                     if (isset($SETTINGS['anyone_can_modify']) && $SETTINGS['anyone_can_modify'] === '1') {
                         if ($dataItem['anyone_can_modify'] != 1) {
@@ -3831,6 +3832,7 @@ if (null !== $post_type) {
             }
 
             // Get required Complexity for this Folder
+            $visibilite = '';
             $data = DB::queryFirstRow(
                 'SELECT m.valeur, n.personal_folder
                 FROM '.prefixTable('misc').' AS m
@@ -3843,24 +3845,8 @@ if (null !== $post_type) {
             if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
                 $complexity = TP_PW_COMPLEXITY[$data['valeur']][1];
                 $folder_is_personal = $data['personal_folder'];
-            } else {
-                $complexity = langHdl('not_defined');
 
-                // if not defined, then previous query failed and personal_folder is null
-                // do new query to know if current folder is pf
-                $data_pf = DB::queryFirstRow(
-                    'SELECT personal_folder
-                    FROM '.prefixTable('nested_tree').'
-                    WHERE id = %s',
-                    $post_groupe
-                );
-                $folder_is_personal = $data_pf['personal_folder'];
-            }
-            // Prepare Item actual visibility (what Users/Roles can see it)
-            $visibilite = '';
-            if (empty($dataPf[0]) === false) {
-                $visibilite = $_SESSION['login'];
-            } else {
+                // Prepare Item actual visibility (what Users/Roles can see it)
                 $rows = DB::query(
                     'SELECT t.title
                     FROM '.prefixTable('roles_values').' as v
@@ -3876,6 +3862,19 @@ if (null !== $post_type) {
                         $visibilite .= ' - '.$record['title'];
                     }
                 }
+            } else {
+                $complexity = langHdl('not_defined');
+
+                // if not defined, then previous query failed and personal_folder is null
+                // do new query to know if current folder is pf
+                $data_pf = DB::queryFirstRow(
+                    'SELECT personal_folder
+                    FROM '.prefixTable('nested_tree').'
+                    WHERE id = %s',
+                    $post_groupe
+                );
+                $folder_is_personal = $data_pf['personal_folder'];
+                $visibilite = $_SESSION['name'].' '.$_SESSION['lastname'].' ('.$_SESSION['login'].')';
             }
 
             recupDroitCreationSansComplexite($post_groupe);
@@ -4892,7 +4891,13 @@ if (null !== $post_type) {
         case 'refresh_visible_folders':
             // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo '[ { "error" : "key_not_conform" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
@@ -4971,14 +4976,6 @@ if (null !== $post_type) {
                     }
 
                     if ($displayThisNode === true) {
-                        /*// resize title if necessary
-                        $fldTitle = str_replace('&', '&amp;', $folder->title);
-
-                        // rename personal folder with user login
-                        if ($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1') {
-                            $fldTitle = $_SESSION['login'];
-                        }*/
-
                         // ALL FOLDERS
                         // Is this folder disabled?
                         $disabled = 0;
@@ -5001,11 +4998,12 @@ if (null !== $post_type) {
                         }
 
                         // Build array
-                        $arr_data['folders'][$inc]['id'] = $folder->id;
-                        $arr_data['folders'][$inc]['level'] = $folder->nlevel;
+                        $arr_data['folders'][$inc]['id'] = intval($folder->id);
+                        $arr_data['folders'][$inc]['level'] = intval($folder->nlevel);
                         $arr_data['folders'][$inc]['title'] = ($folder->title == $_SESSION['user_id'] && $folder->nlevel === '1') ? htmlspecialchars_decode($_SESSION['login']) : htmlspecialchars_decode($folder->title, ENT_QUOTES);
                         $arr_data['folders'][$inc]['disabled'] = $disabled;
-                        $arr_data['folders'][$inc]['parent_id'] = $folder->parent_id;
+                        $arr_data['folders'][$inc]['parent_id'] = intval($folder->parent_id);
+                        $arr_data['folders'][$inc]['perso'] = intval($folder->personal_folder);
 
                         // Is this folder an active folders? (where user can do something)
                         $is_visible_active = 0;
@@ -5021,13 +5019,123 @@ if (null !== $post_type) {
             }
 
             $data = array(
-                'error' => '',
+                'error' => 'false',
                 'html_json' => $arr_data,
             );
             // send data
             echo prepareExchangedData($data, 'encode');
 
             break;
+
+            /*
+            * CASE
+            * Get list of users that have access to the folder
+            */
+            case 'refresh_folders_other_info':
+                // Check KEY
+                if ($post_key !== $_SESSION['key']) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('key_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                $arr_data = array();
+
+                foreach (json_decode($post_data) as $folder) {
+                    // Do we have Categories
+                    if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                        // get list of associated Categories
+                        $arrCatList = array();
+                        $rows_tmp = DB::query(
+                            'SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
+                            f.id_category AS category_id
+                            FROM '.prefixTable('categories_folders').' AS f
+                            INNER JOIN '.prefixTable('categories').' AS c ON (f.id_category = c.parent_id)
+                            WHERE id_folder=%i',
+                            $folder
+                        );
+                        if (DB::count() > 0) {
+                            foreach ($rows_tmp as $row) {
+                                $arrCatList[$row['id']] = array(
+                                    'id' => $row['id'],
+                                    'title' => $row['title'],
+                                    'level' => $row['level'],
+                                    'type' => $row['type'],
+                                    'masked' => $row['masked'],
+                                    'order' => $row['order'],
+                                    'encrypted_data' => $row['encrypted_data'],
+                                    'role_visibility' => $row['role_visibility'],
+                                    'is_mandatory' => $row['is_mandatory'],
+                                    'category_id' => $row['category_id'],
+                                );
+                            }
+                        }
+                        $arr_data[$folder]['categories'] = $arrCatList;
+                    }
+
+
+                    // Now get complexity
+                    $valTemp = '';
+                    $rows_tmp = DB::queryFirstRow(
+                        'SELECT valeur
+                        FROM '.prefixTable('misc').'
+                        WHERE type = %s AND intitule=%i',
+                        'complex',
+                        $folder
+                    );
+                    if (DB::count() > 0) {
+                        $valTemp = $rows_tmp['valeur'];
+                    }
+                    $arr_data[$folder]['complexity'] = $valTemp;
+
+
+                    // Now get Roles
+                    $valTemp = '';
+                    $rows_tmp = DB::query(
+                        'SELECT t.title
+                        FROM '.prefixTable('roles_values').' as v
+                        INNER JOIN '.prefixTable('roles_title').' as t ON (v.role_id = t.id)
+                        WHERE v.folder_id = %i
+                        GROUP BY title',
+                        $folder
+                    );
+                    foreach ($rows_tmp as $record) {
+                        if (empty($valTemp) === true) {
+                            $valTemp = $record['title'];
+                        } else {
+                            $valTemp .= ' - '.$record['title'];
+                        }
+                    }
+                    $arr_data[$folder]['visibilityRoles'] = $valTemp;
+
+
+                    // Get complexity
+                    $data = DB::queryFirstRow(
+                        'SELECT m.valeur, n.personal_folder
+                        FROM '.prefixTable('misc').' AS m
+                        INNER JOIN '.prefixTable('nested_tree').' AS n ON (m.intitule = n.id)
+                        WHERE type=%s AND intitule = %s',
+                        'complex',
+                        $post_groupe
+                    );
+        
+                    if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
+                        $complexity = TP_PW_COMPLEXITY[$data['valeur']][1];
+                }
+
+                $data = array(
+                    'error' => '',
+                    'result' => $arr_data,
+                );
+                // send data
+                echo prepareExchangedData($data, 'encode');
+
+                break;
 
         /*
         * CASE

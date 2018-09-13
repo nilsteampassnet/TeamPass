@@ -101,49 +101,38 @@ $(function() {
         alertify.message('<span class="fa fa-cog fa-spin fa-2x"></span>', 0);
 
         // Prepare data
-        var data = '{"psk":"'+sanitizeString($("#user_personal_saltkey").val())+'" , "score":"'+$("#psk_strength_value").val()+'"}';
+        var data = {
+            "psk" : sanitizeString($("#user_personal_saltkey").val()),
+            "complexity" : $("#psk_strength_value").val()
+        };
         
         //
         $.post(
             "sources/main.queries.php",
             {
                 type    : "store_personal_saltkey",
-                data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
-            function(data) {
+            function(data) {console.log(data)
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
                 // Is there an error?
-                if (data[0].error !== "") {
-                    var error = "";
-                    if (data[0].error === "key_not_conform") {
-                        error = '<?php echo langHdl('error_unknown'); ?>';
-                    } else if (data[0].error === "security_level_not_reached") {
-                        error = '<?php echo langHdl('error_security_level_not_reached'); ?>';
-                    } else if (data[0].error === "psk_is_empty") {
-                        error = '<?php echo langHdl('psk_required'); ?>';
-                    } else if (data[0].error === "psk_not_correct") {
-                        error = '<?php echo langHdl('bad_psk'); ?>';
-                    }
-                    // display error
-                    alertify.alert().set({onshow:function(){ alertify.message('',0.1).dismissOthers()}});
-                    alertify.alert(
-                        '<?php echo langHdl('warning'); ?>',
-                        error
-                    );
-                } else if (data[0].status === "security_level_not_reached_but_psk_correct") {
-                    alertify.alert(
-                        '<?php echo langHdl('warning'); ?>',
-                        '<?php echo langHdl('error_security_level_not_reached'); ?>'
-                    );
+                if (data.error === true) {
+                    alertify.dismissAll();
+                    alertify
+                        .alert(
+                            '<?php echo langHdl('warning'); ?>',
+                            data.message
+                        )
+                        .dismissOthers();
                 } else {
                     alertify
                         .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
                         .dismissOthers();
-                    setTimeout(function(){$("#main_info_box").effect( "fade", "slow" );}, 1000);
                     location.reload();
                 }
-            },
-            "json"
+            }
         );
     });
 
@@ -196,7 +185,11 @@ $(function() {
     // Start real time
 
     // get list of last items
-    if ($('#form_user_id').val() !== '') {
+    if ($('#form_user_id').length > 0 && $('#form_user_id').val() !== '') {
+        // Load teampass settings
+        loadSettings();
+
+        // launch query
         setTimeout(
             function() {
                 refreshListLastSeenItems();
@@ -238,12 +231,52 @@ $(function() {
 });
 
 
+function loadSettings()
+{
+    // Clear memory
+    localStorage.setItem('teampass-settings', '');
+
+    // Teampass application - only init if not exists
+    if (localStorage.getItem("teampass-application") === null) {
+        localStorage.setItem('teampass-application', JSON.stringify([]));
+    }
+
+    return $.post(
+        "sources/main.queries.php",
+        {
+            type : "get_teampass_settings",
+            key  : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            } catch (e) {
+                // error
+                alertify
+                    .alert()
+                    .setting({
+                        'label' : '<?php echo langHdl('ok'); ?>',
+                        'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('error'); ?>'
+                    })
+                    .show(); 
+                return false;
+            };
+            
+            localStorage.setItem(
+                'teampass-settings',
+                JSON.stringify(data)
+            );
+        }
+    );
+}
+
 /**
  * Undocumented function
  *
  * @return void
  */
-function showExtendSession() {
+function showExtendSession()
+{
     alertify.prompt(
         '<?php echo langHdl('index_add_one_hour'); ?>',
         '<?php echo langHdl('index_session_duration').' ('.langHdl('minutes').')'; ?>',

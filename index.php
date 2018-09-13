@@ -370,8 +370,8 @@ if (($session_validite_pw === null
     <!-- Main Sidebar Container -->
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <!-- Brand Logo -->
-        <a href="index.php?page=admin" class="brand-link">
-            <img src="dist/img/AdminLTELogo.png" alt="AdminLTE Logo" class="brand-image img-circle elevation-3"
+        <a href="index.php" class="brand-link">
+            <img src="includes/images/logoTeampassHome.png" alt="Teampass Logo" class="brand-image img-circle elevation-3"
                 style="opacity: .8">
             <span class="brand-text font-weight-light">Teampass</span>
         </a>
@@ -442,8 +442,7 @@ if (($session_validite_pw === null
                         <a href="#" data-name="favourites" class="nav-link', $pageSel === 'admin' ? ' favourites' : '' ,'"">
                         <i class="nav-icon fa fa-star"></i>
                         <p>
-                            '.langHdl('favorites').
-                            
+                            '.langHdl('favorites').'
                         </p>
                         </a>
                     </li>';
@@ -624,7 +623,7 @@ if (($session_validite_pw === null
                         <?php
                         echo isset($SETTINGS['personal_saltkey_security_level']) === true
                             && empty($SETTINGS['personal_saltkey_security_level']) === false ?
-                        '<div class="text-info text-center"><i class="fa fa-info mr-2"></i>&nbsp;'.
+                        '<div class="text-info text-center"><i class="fa fa-info mr-3"></i>'.
                         langHdl('complex_asked').' : <b>'.
                         TP_PW_COMPLEXITY[$SETTINGS['personal_saltkey_security_level']][1].
                         '</b></div>'

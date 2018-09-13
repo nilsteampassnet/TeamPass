@@ -122,7 +122,7 @@ function mainQuery()
                 // check if expected security level is reached
                 $data_roles = DB::queryfirstrow(
                     'SELECT fonction_id
-                    FROM '.prefix_table('users').'
+                    FROM '.prefixTable('users').'
                     WHERE id = %i',
                     $_SESSION['user_id']
                 );
@@ -132,7 +132,7 @@ function mainQuery()
                 $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
                 if ($data_roles['fonction_id'][0] === '') {
                     DB::update(
-                        prefix_table('users'),
+                        prefixTable('users'),
                         array(
                             'fonction_id' => $data_roles['fonction_id'],
                             ),
@@ -143,7 +143,7 @@ function mainQuery()
 
                 $data = DB::query(
                     'SELECT complexity
-                    FROM '.prefix_table('roles_title').'
+                    FROM '.prefixTable('roles_title').'
                     WHERE id IN ('.$data_roles['fonction_id'].')
                     ORDER BY complexity DESC'
                 );
@@ -670,7 +670,7 @@ function mainQuery()
                 filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
                 'decode'
             );
-            $filter_score = filter_var($dataReceived['score'], FILTER_SANITIZE_NUMBER_INT);
+            $filter_score = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
             $filter_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
 
             // manage store
@@ -798,8 +798,8 @@ function mainQuery()
 
             if (count($dataReceived) > 0) {
                 // Prepare variables
-                $post_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
-                $post_old_psk = filter_var($dataReceived['old_psk'], FILTER_SANITIZE_STRING);
+                $post_psk = filter_var($dataReceived['new-saltkey'], FILTER_SANITIZE_STRING);
+                $post_old_psk = filter_var($dataReceived['current-saltkey'], FILTER_SANITIZE_STRING);
                 $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_STRING);
             } else {
                 echo prepareExchangedData(
@@ -812,7 +812,7 @@ function mainQuery()
                 break;
             }
 
-            // check old psk
+            /*// check old psk
             $user_key_encoded = defuse_validate_personal_key(
                 $post_old_psk,
                 $_SESSION['user_settings']['encrypted_psk']
@@ -829,7 +829,9 @@ function mainQuery()
             } else {
                 // Store PSK
                 $_SESSION['user_settings']['encrypted_oldpsk'] = $user_key_encoded;
-            }
+            }*/
+            // Store PSK
+            $_SESSION['user_settings']['encrypted_oldpsk'] = defuse_generate_personal_key($post_old_psk);
 
             // Check if security level is reach (if enabled)
             if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
@@ -849,23 +851,25 @@ function mainQuery()
             }
 
             // generate the new encrypted psk based upon clear psk
-            $_SESSION['user_settings']['encrypted_psk'] = defuse_generate_personal_key($post_psk);
+            $_SESSION['user_settings']['session_psk'] = defuse_generate_personal_key($post_psk);
 
             // store it in DB
             DB::update(
                 prefixTable('users'),
                 array(
-                    'encrypted_psk' => $_SESSION['user_settings']['encrypted_psk'],
+                    'encrypted_psk' => $_SESSION['user_settings']['session_psk'],
                     ),
                 'id = %i',
                 $_SESSION['user_id']
             );
 
+            /*
             $user_key_encoded = defuse_validate_personal_key(
                 $post_psk,
                 $_SESSION['user_settings']['encrypted_psk']
             );
             $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
+            */
 
             // Change encryption
             // Build list of items to be re-encrypted
@@ -892,7 +896,7 @@ function mainQuery()
             // change salt
             setcookie(
                 'TeamPass_PFSK_'.md5($_SESSION['user_id']),
-                $user_key_encoded,
+                $_SESSION['user_settings']['session_psk'],
                 time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                 '/'
             );
@@ -1558,5 +1562,25 @@ Insert the log here and especially the answer of the query that failed.
                     $_SESSION['user_settings']['api-key'] = $new_value;
                 }
             break;
+
+            /*
+             * get_teampass_settings
+             */
+            case 'get_teampass_settings':
+                if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('key_is_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                // Encrypt data to return
+                echo prepareExchangedData($SETTINGS, 'encode');
+
+                break;
     }
 }

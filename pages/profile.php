@@ -428,32 +428,54 @@ $userSeenPasswordsNumber = DB::count();
                             
                             <!-- CHANGE PSK -->
                             <div class="tab-pane" id="tab_change_psk">
-                                <h3 class="card-title mb-3"><?php echo langHdl('menu_title_new_personal_saltkey'); ?></h3>
+                                <h3 class="card-title mb-3">
+                                    <?php echo langHdl('menu_title_new_personal_saltkey'); ?>
+                                </h3>
+                                <div class="callout callout-info">
+                                    <h6>
+                                    <i class="fa fa-info mr-2"></i>
+                                    <?php echo langHdl('complex_asked').' : <b>'.TP_PW_COMPLEXITY[$SETTINGS['personal_saltkey_security_level']][1].'</b>'; ?>
+                                    </h6>
+                                </div>
                                 <form class="needs-validation" novalidate onsubmit="return false;">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><?php echo langHdl('old_saltkey'); ?></span>
+                                            <span class="input-group-text"><?php echo langHdl('current_saltkey'); ?></span>
                                         </div>
-                                        <input type="password" class="form-control"  id="profile-psk-old">
+                                        <input type="password" class="form-control"  id="profile-current-saltkey">
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('current_saltkey_confirm'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control"  id="profile-current-saltkey-confirm">
                                     </div>
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><?php echo langHdl('new_saltkey'); ?></span>
                                         </div>
-                                        <input type="password" class="form-control infotip text_without_symbols" id="profile-psk" title="<?php echo langHdl('text_without_symbols'); ?>">
+                                        <input type="password" class="form-control infotip" id="profile-saltkey" title="<?php echo langHdl('text_without_symbols'); ?>">
                                         <div class="input-group-append">
-                                            <span class="input-group-text" id="profile-psk-strength"></span>
-                                            <input type="hidden" id="profile-psk-complex"" />
+                                            <span class="input-group-text" id="profile-saltkey-strength"></span>
+                                            <input type="hidden" id="profile-saltkey-complex" />
                                         </div>
                                     </div>
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
-                                            <span class="input-group-text"><?php echo langHdl('confirm'); ?></span>
+                                            <span class="input-group-text"><?php echo langHdl('new_saltkey_confirm'); ?></span>
                                         </div>
-                                        <input type="password" class="form-control"  id="profile-psk-confirm">
+                                        <input type="password" class="form-control"  id="profile-saltkey-confirm">
+                                    </div>
+                                    <div class="input-group mb-3" style="min-height:50px;">
+                                        <div class="alert alert-warning hidden" id="profile-save-saltkey-alert">
+                                            <h5>
+                                                <i class="icon fa fa-cog fa-spin mr-2"></i>
+                                                <?php echo langHdl('please_wait_now_converting_passwords'); ?> ... <span id="profile-save-saltkey-progress">0%</span>
+                                            </h5>
+                                        </div>
                                     </div>
                                     <div class="form-group">
-                                        <button type="button" class="btn btn-info" id="profile-save-psk-change"><?php echo langHdl('save'); ?></button>
+                                        <button type="button" class="btn btn-info" id="profile-save-saltkey-change"><?php echo langHdl('perform'); ?></button>
                                     </div>
                                 </form>
                             </div>

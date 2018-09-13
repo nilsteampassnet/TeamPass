@@ -43,8 +43,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
 
 
 <script type='text/javascript'>
-// Clear form
-$('#form-control').val('');
 
 // If user api is empty then generate one
 if ($('#profile-user-api-token').text().length !== 39) {
@@ -335,6 +333,11 @@ $('#profile-save-password-change').click(function() {
                 data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
             } catch (e) {
                 // error
+                $("#div_loading").addClass("hidden");
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
                 alertify
                     .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
                     .dismissOthers();
@@ -348,7 +351,7 @@ $('#profile-save-password-change').click(function() {
                     .dismissOthers();
             } else {
                 alertify
-                    .success('<?php echo langHdl('done'); ?>', 3)
+                    .success('<?php echo langHdl('donne'); ?>', 3)
                     .dismissOthers();
             }
 
@@ -357,10 +360,10 @@ $('#profile-save-password-change').click(function() {
 });
 
 
-//-------------------
-$("#profile-psk").simplePassMeter({
+// ----
+$("#profile-saltkey").simplePassMeter({
     "requirements": {},
-    "container": "#profile-psk-strength",
+    "container": "#profile-saltkey-strength",
     "defaultText" : "<?php echo langHdl('index_pw_level_txt'); ?>",
     "ratings": [
         {"minScore": 0,
@@ -393,142 +396,152 @@ $("#profile-psk").simplePassMeter({
         }
     ]
 });
-$("#profile-psk").bind({
+$("#profile-saltkey").bind({
     "score.simplePassMeter" : function(jQEvent, score) {
-        $("#profile-psk-complex").val(score);
+        $("#profile-saltkey-complex").val(score);
     }
 }).change({
     "score.simplePassMeter" : function(jQEvent, score) {
-        $("#profile-psk-complex").val(score);
+        $("#profile-saltkey-complex").val(score);
     }
 });
 
-$('#profile-save-psk-change').click(function() {
+/**
+ * Happens when user clicks on performing a saltkey change
+ */
+$('#profile-save-saltkey-change').click(function() {
     // Check if passwords are the same
-    if ($('#profile-psk').val() !== $('#profile-psk-confirm').val()
-        || $('#profile-psk').val() === ''
-        || $('#profile-psk-confirm').val() === ''
-    ) {
+    if ($('#profile-saltkey').val() !== $('#profile-saltkey-confirm').val()) {
         alertify
             .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('bad_psk_confirmation'); ?>', 5)
             .dismissOthers();
         return false;
     }
-    // Inform user
-    alertify
-        .message('<i class="fa fa-cog fa-spin"></i>', 0)
-        .dismissOthers();
 
-    var sentData = {
-        'psk'           : $('#profile-psk').val(),
-        'old_psk'       : $('#profile-psk-old').val(),
-        'complexity'    : $('#profile-psk-complex').val(),
+    // Check if current saltkeys are the same
+    if ($('#profile-current-saltkey').val() !== $('#profile-current-saltkey-confirm').val()) {
+        alertify
+            .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('bad_current_saltkey_confirmation'); ?>', 5)
+            .dismissOthers();
+        return false;
+    }
+
+    // Current psk is set
+    if ($('#profile-current-saltkey').val() === '') {
+        alertify
+            .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('please_provide_current_psk'); ?>', 5)
+            .dismissOthers();
+        return false;
+    }
+
+    // New saltkey is set
+    if ($('#profile-saltkey').val() === ''
+        || $('#profile-saltkey-confirm').val() === ''
+    ) {
+        alertify
+            .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('empty_psk'); ?>', 5)
+            .dismissOthers();
+        return false;
+    }
+
+    // Check if minimum security level is reched
+    if (JSON.parse(localStorage.getItem('teampass-settings')).personal_saltkey_security_level !== undefined) {
+        var level = JSON.parse(localStorage.getItem('teampass-settings')).personal_saltkey_security_level;
+        if (parseInt($("#profile-saltkey-complex").val()) < parseInt(level)) {
+            alertify
+                .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('error_complex_not_enought'); ?>', 5)
+                .dismissOthers();
+            return false;
+        }
+    }
+    
+    // Inform user
+    $('#profile-save-saltkey-alert').removeClass('hidden');
+
+    var data = {
+        'current-saltkey' : $('#profile-current-saltkey').val(),
+        'new-saltkey'     : $('#profile-saltkey').val(),
+        'complexicity'    : $('#profile-saltkey-complex').val(),
     };
 
     //Send query
     $.post(
         "sources/main.queries.php",
         {
-            type    : "change_personal_saltkey",
-            data    : prepareExchangedData(JSON.stringify(sentData), "encode", "<?php echo $_SESSION['key']; ?>"),
-            key     : "<?php echo $_SESSION['key']; ?>"
+            type : "change_personal_saltkey",
+            data : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key  : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             //decrypt data
-            try {
-                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
-            } catch (e) {
-                // error
-                alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
-                    .dismissOthers();
-                return false;
-            }
-
-            if (data.error === true) {
+            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+            
+            if (data.error !== true) {
+                updatePersonalPasswords(
+                    data.list,
+                    data.nb_total
+                );
+            } else {
                 alertify
                     .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
                     .dismissOthers();
-            } else {
-                alertify
-                    .success('<?php echo langHdl('done'); ?>', 3)
-                    .dismissOthers();
-                console.log(data)
-                changePersonalSaltKey(sentData, data.list, data.nb_total);
+                $('#profile-save-saltkey-alert').addClass('hidden');
+                return false;
             }
         }
     );
 });
 
-
-
 /**
+ * Undocumented function
  *
+ * @return void
  */
-function changePersonalSaltKey(credentials, ids, nb_total)
+function updatePersonalPasswords(list, totalNb)
 {
     // extract current id and adapt list
-    var aIds = ids.split(",");
-    var currentID = aIds[0];
-    aIds.shift();
-    var nb = aIds.length;
-    aIds = aIds.toString();
+   var aIds = list.split(',');
+   var currentID = aIds[0];
+   aIds.shift();
+   var nb = aIds.length;
+   aIds = aIds.toString();
 
-    var msgToUser = alertify
-    .alert()
-    .set('frameless', true);
+    if (nb === 0) {
+        $('#profile-save-saltkey-progress').html('100%');
+        $('#profile-save-saltkey-alert').addClass('hidden');
+        alertify
+            .success('<?php echo langHdl('done'); ?>')
+            .dismissOthers();
+        return false;
+    } else {
+        $('#profile-save-saltkey-progress').html(Math.floor(((totalNb-nb) / totalNb) * 100)+'%');
+    }
+    
+    var data = {
+        'current-saltkey' : $('#profile-current-saltkey').val(),
+        'new-saltkey' : $('#profile-saltkey').val(),
+    };
 
-    if (parseInt(nb) === 0)
-        msgToUser.set('message', '100%').show(); 
-    else
-        msgToUser.set('message', Math.floor(((nb_total-nb) / nb_total) * 100) + '%').show(); 
-
-    return false;
-
-    var data = "{\"psk\":\""+sanitizeString($("#new_personal_saltkey").val())+"\"}";
     $.post(
-        "sources/main.queries.php",
+        'sources/utils.queries.php',
         {
-            type    : "store_personal_saltkey",
-            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-            debug   : true,
-            key     : "<?php echo $_SESSION['key']; ?>"
+            type      : 'reencrypt_personal_pwd',
+            data      : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+            currentId : currentID,
+            key       : '<?php echo $_SESSION['key']; ?>'
         },
         function(data){
-            if (data[0].error !== "") {
-                // display error
-                $("#psk_change_wait_info").html(data[0].error);
-                $(this).delay(4000).queue(function() {
-                    $("#main_info_box").effect( "fade", "slow" );
-                    $(this).dequeue();
-                });
+            if (data[0].error === '') {
+                updatePersonalPasswords(aIds, totalNb--);
             } else {
-                $.post(
-                    "sources/utils.queries.php",
-                    {
-                        type            : "reencrypt_personal_pwd",
-                        data_to_share   : prepareExchangedData(credentials, "encode", "<?php echo $_SESSION['key']; ?>"),
-                        currentId       : currentID,
-                        key             : "<?php echo $_SESSION['key']; ?>"
-                    },
-                    function(data){
-                        if (currentID === "") {
-                            $("#psk_change_wait_info").html("<?php echo langHdl('alert_message_done'); ?>");
-                            location.reload();
-                        } else {
-                            if (data[0].error === "") {
-                            changePersonalSaltKey(credentials, aIds, nb_total);
-                            } else {
-                                $("#psk_change_wait_info").html(data[0].error);
-                            }
-                        }
-                    },
-                    "json"
-                );
+                alertify
+                    .error(data[0].error)
+                    .dismissOthers();
             }
         },
-        "json"
+        'json'
     );
 }
+
 
 </script>

@@ -377,6 +377,7 @@ function showAlertify(msg, delay = '', position = '', type = '')
 /**
  * 
  * @param string data Crypted string
+ * @param string key  Session key
  */
 function unCryptData(data, key)
 {
@@ -393,4 +394,47 @@ function unCryptData(data, key)
             return false;
     }
     return false;
+}
+
+/**
+ * 
+ * @param string data Crypted string
+ * @param string key  Session key
+ */
+function decodeQueryReturn(data, key)
+{
+    try {
+        data = prepareExchangedData(data , "decode", key);
+    } catch (e) {
+        // error
+        alertify
+            .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
+            .dismissOthers();
+        return false;
+    }
+
+    return data;
+}
+
+/**
+ * 
+ */
+function teampassStorage(type, field, value)
+{
+    var storage = JSON.parse(localStorage.getItem('teampass-application'));
+    if (type === 'update') {
+        // Set value
+        if ($.inArray(field, storage) === -1) {
+            storage.push({field : value});
+        } else {
+            storage[field] = value;
+        }
+        // Update in storage
+        localStorage.setItem('teampass-application', JSON.stringify(storage));
+        return true;
+    } else if (type === 'get') {
+        return storage[field];
+    } else if (type === 'update') {
+        
+    }
 }
