@@ -177,7 +177,8 @@ if (null !== $post_type) {
                         FILTER_SANITIZE_STRING
                     )
                 );
-                $post_salt_key_set = filter_var($dataReceived['salt_key_set'], FILTER_SANITIZE_NUMBER_INT);
+                $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
+                    && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
                 $post_tags = htmlspecialchars_decode($dataReceived['tags']);
                 $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
                 $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -759,7 +760,8 @@ if (null !== $post_type) {
                 $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
                 $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
                 $post_folder_id = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
-                $post_salt_key_set = filter_var($dataReceived['salt_key_set'], FILTER_SANITIZE_NUMBER_INT);
+                $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
+                    && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
                 $post_restricted_to = json_decode(
                     filter_var(
@@ -1952,7 +1954,8 @@ if (null !== $post_type) {
             $post_id = filter_var(htmlspecialchars_decode($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
             $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
             $post_salt_key_required = filter_var(htmlspecialchars_decode($dataReceived['salt_key_required']), FILTER_SANITIZE_STRING);
-            $post_salt_key_set = filter_var(htmlspecialchars_decode($dataReceived['salt_key_set']), FILTER_SANITIZE_STRING);
+            $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
+                && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
             $post_expired_item = filter_var(htmlspecialchars_decode($dataReceived['expired_item']), FILTER_SANITIZE_STRING);
             $post_restricted = filter_var(htmlspecialchars_decode($dataReceived['restricted']), FILTER_SANITIZE_STRING);
             $post_page = filter_var(htmlspecialchars_decode($dataReceived['page']), FILTER_SANITIZE_STRING);
@@ -5027,115 +5030,102 @@ if (null !== $post_type) {
 
             break;
 
-            /*
-            * CASE
-            * Get list of users that have access to the folder
-            */
-            case 'refresh_folders_other_info':
-                // Check KEY
-                if ($post_key !== $_SESSION['key']) {
-                    echo prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => langHdl('key_is_not_correct'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
+        /*
+        * CASE
+        * Get list of users that have access to the folder
+        */
+        case 'refresh_folders_other_info':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
-                $arr_data = array();
+            $arr_data = array();
 
-                foreach (json_decode($post_data) as $folder) {
-                    // Do we have Categories
-                    if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
-                        // get list of associated Categories
-                        $arrCatList = array();
-                        $rows_tmp = DB::query(
-                            'SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
-                            f.id_category AS category_id
-                            FROM '.prefixTable('categories_folders').' AS f
-                            INNER JOIN '.prefixTable('categories').' AS c ON (f.id_category = c.parent_id)
-                            WHERE id_folder=%i',
-                            $folder
-                        );
-                        if (DB::count() > 0) {
-                            foreach ($rows_tmp as $row) {
-                                $arrCatList[$row['id']] = array(
-                                    'id' => $row['id'],
-                                    'title' => $row['title'],
-                                    'level' => $row['level'],
-                                    'type' => $row['type'],
-                                    'masked' => $row['masked'],
-                                    'order' => $row['order'],
-                                    'encrypted_data' => $row['encrypted_data'],
-                                    'role_visibility' => $row['role_visibility'],
-                                    'is_mandatory' => $row['is_mandatory'],
-                                    'category_id' => $row['category_id'],
-                                );
-                            }
-                        }
-                        $arr_data[$folder]['categories'] = $arrCatList;
-                    }
-
-
-                    // Now get complexity
-                    $valTemp = '';
-                    $rows_tmp = DB::queryFirstRow(
-                        'SELECT valeur
-                        FROM '.prefixTable('misc').'
-                        WHERE type = %s AND intitule=%i',
-                        'complex',
+            foreach (json_decode($post_data) as $folder) {
+                // Do we have Categories
+                if (isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] === '1') {
+                    // get list of associated Categories
+                    $arrCatList = array();
+                    $rows_tmp = DB::query(
+                        'SELECT c.id, c.title, c.level, c.type, c.masked, c.order, c.encrypted_data, c.role_visibility, c.is_mandatory,
+                        f.id_category AS category_id
+                        FROM '.prefixTable('categories_folders').' AS f
+                        INNER JOIN '.prefixTable('categories').' AS c ON (f.id_category = c.parent_id)
+                        WHERE id_folder=%i',
                         $folder
                     );
                     if (DB::count() > 0) {
-                        $valTemp = $rows_tmp['valeur'];
-                    }
-                    $arr_data[$folder]['complexity'] = $valTemp;
-
-
-                    // Now get Roles
-                    $valTemp = '';
-                    $rows_tmp = DB::query(
-                        'SELECT t.title
-                        FROM '.prefixTable('roles_values').' as v
-                        INNER JOIN '.prefixTable('roles_title').' as t ON (v.role_id = t.id)
-                        WHERE v.folder_id = %i
-                        GROUP BY title',
-                        $folder
-                    );
-                    foreach ($rows_tmp as $record) {
-                        if (empty($valTemp) === true) {
-                            $valTemp = $record['title'];
-                        } else {
-                            $valTemp .= ' - '.$record['title'];
+                        foreach ($rows_tmp as $row) {
+                            $arrCatList[$row['id']] = array(
+                                'id' => $row['id'],
+                                'title' => $row['title'],
+                                'level' => $row['level'],
+                                'type' => $row['type'],
+                                'masked' => $row['masked'],
+                                'order' => $row['order'],
+                                'encrypted_data' => $row['encrypted_data'],
+                                'role_visibility' => $row['role_visibility'],
+                                'is_mandatory' => $row['is_mandatory'],
+                                'category_id' => $row['category_id'],
+                            );
                         }
                     }
-                    $arr_data[$folder]['visibilityRoles'] = $valTemp;
-
-
-                    // Get complexity
-                    $data = DB::queryFirstRow(
-                        'SELECT m.valeur, n.personal_folder
-                        FROM '.prefixTable('misc').' AS m
-                        INNER JOIN '.prefixTable('nested_tree').' AS n ON (m.intitule = n.id)
-                        WHERE type=%s AND intitule = %s',
-                        'complex',
-                        $post_groupe
-                    );
-        
-                    if (isset($data['valeur']) === true && (empty($data['valeur']) === false || $data['valeur'] === '0')) {
-                        $complexity = TP_PW_COMPLEXITY[$data['valeur']][1];
+                    $arr_data[$folder]['categories'] = $arrCatList;
                 }
 
-                $data = array(
-                    'error' => '',
-                    'result' => $arr_data,
+                // Now get complexity
+                $valTemp = '';
+                $data = DB::queryFirstRow(
+                    'SELECT valeur
+                    FROM '.prefixTable('misc').'
+                    WHERE type = %s AND intitule=%i',
+                    'complex',
+                    $folder
                 );
-                // send data
-                echo prepareExchangedData($data, 'encode');
+                if (DB::count() > 0) {
+                    $valTemp = array(
+                        'value' => $data['valeur'],
+                        'text' => $complexity = TP_PW_COMPLEXITY[$data['valeur']][1],
+                    );
+                }
+                $arr_data[$folder]['complexity'] = $valTemp;
 
-                break;
+                // Now get Roles
+                $valTemp = '';
+                $rows_tmp = DB::query(
+                    'SELECT t.title
+                    FROM '.prefixTable('roles_values').' as v
+                    INNER JOIN '.prefixTable('roles_title').' as t ON (v.role_id = t.id)
+                    WHERE v.folder_id = %i
+                    GROUP BY title',
+                    $folder
+                );
+                foreach ($rows_tmp as $record) {
+                    if (empty($valTemp) === true) {
+                        $valTemp = $record['title'];
+                    } else {
+                        $valTemp .= ' - '.$record['title'];
+                    }
+                }
+                $arr_data[$folder]['visibilityRoles'] = $valTemp;
+            }
+
+            $data = array(
+                'error' => '',
+                'result' => $arr_data,
+            );
+            // send data
+            echo prepareExchangedData($data, 'encode');
+
+            break;
 
         /*
         * CASE

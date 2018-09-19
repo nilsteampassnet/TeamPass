@@ -134,20 +134,14 @@ echo '
 <input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && $session_user_upgrade_needed == 1 ? '1' : '0', '" />';
 
 echo '
-<input type="hidden" id="items_listing_should_stop" value="">
-<input type="hidden" id="new_listing_characteristics" value="">
-<input type="hidden" id="form-item-hidden-userToken" value="">
-<input type="hidden" id="uniqueLoadData" value="">
 <input type="hidden" id="form-item-hidden-psk" value="',
     isset($_SESSION['user_settings']['session_psk']) &&
-    empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0', '" />
+    empty($_SESSION['user_settings']['session_psk']) === false ? 1 : 0, '" />
 <input type="hidden" id="form-item-hidden-isForEdit" value="" class="clear-me-val">
 <input type="hidden" id="form-item-hidden-isPersonalFolder" value="">
 <input type="hidden" id="form-item-hidden-hasCustomCategories" value="">
 <input type="hidden" id="form-item-hidden-hasAccessLevel" value="">
 <input type="hidden" id="form-item-hidden-id">
-<input type="hidden" id="form-item-hidden-jstree-force-refresh">
-<input type="hidden" id="form-item-hidden-uploaded-file-id">
 <input type="hidden" id="form-item-hidden-timestamp">
 <input type="hidden" id="form-item-hidden-last-folder-selected" value="',
     empty($cookie_jstree_select) === false ? $cookie_jstree_select : '', '">';
@@ -1099,6 +1093,15 @@ echo '
                                     <div class="input-group-append">
                                         <div class="btn btn-primary" id="find_items_button">
                                             <i class="fa fa-search"></i>
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <span class="sr-only">Toggle Dropdown</span>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <div class="dropdown-item">   
+                                                <input type="checkbox" class=" mr-2" id="limited-search">
+                                                <label class="form-check-label" for="limited-search"><?php echo langHdl('limited_search'); ?></label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

@@ -15,6 +15,7 @@
  */
 
 return array(
+    'limited_search' => 'Limited search',
     'security_level_not_reached_but_psk_correct' => 'Complexity level is not reached. You should change your current saltkey.',
     'please_wait_now_converting_passwords' => 'Please wait. Now converting passwords',
     'new_saltkey_confirm' => 'Confirm new saltkey',

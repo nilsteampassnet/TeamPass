@@ -665,18 +665,15 @@ function identifyUserRights(
 }
 
 /**
- * Identify administrator
+ * Identify administrator.
  *
  * @param string     $idFonctions Roles of user
  * @param array      $SETTINGS    Teampass settings
  * @param mysqli     $link        DB connection
  * @param NestedTree $tree        Tree of folders
- *
- * @return void
  */
 function identAdmin($idFonctions, $SETTINGS, $link, $tree)
 {
-
     $groupesVisibles = array();
     $_SESSION['personal_folders'] = array();
     $_SESSION['groupes_visibles'] = array();
@@ -746,9 +743,8 @@ function identAdmin($idFonctions, $SETTINGS, $link, $tree)
     $_SESSION['nb_roles'] = DB::count();
 }
 
-
 /**
- * Undocumented function
+ * Undocumented function.
  *
  * @param string     $groupesVisiblesUser  Allowed folders
  * @param string     $groupesInterditsUser Not allowed folders
@@ -756,8 +752,6 @@ function identAdmin($idFonctions, $SETTINGS, $link, $tree)
  * @param array      $SETTINGS             Teampass settings
  * @param mysqli     $link                 DB connection
  * @param NestedTree $tree                 Tree of folders
- *
- * @return void
  */
 function identUser(
     $groupesVisiblesUser,
@@ -1422,7 +1416,7 @@ function generateKey()
 }
 
 /**
- * Convert date to timestamp
+ * Convert date to timestamp.
  *
  * @param string $date     The date
  * @param array  $SETTINGS Teampass settings
@@ -1440,11 +1434,11 @@ function dateToStamp($date, $SETTINGS)
 }
 
 /**
- * Is this a date
+ * Is this a date.
  *
  * @param string $date Date
  *
- * @return boolean
+ * @return bool
  */
 function isDate($date)
 {
@@ -1478,7 +1472,7 @@ function isUTF8($string)
 }
 
 /**
- * Prepare an array to UTF8 format before JSON_encode
+ * Prepare an array to UTF8 format before JSON_encode.
  *
  * @param array $array Array of values
  *
@@ -1488,19 +1482,18 @@ function utf8Converter($array)
 {
     array_walk_recursive(
         $array,
-        function(&$item, $key) {
+        function (&$item, $key) {
             if (mb_detect_encoding($item, 'utf-8', true) === false) {
-                    $item = utf8_encode($item);
+                $item = utf8_encode($item);
             }
         }
     );
- 
+
     return $array;
 }
 
-
 /**
- * Permits to prepare data to be exchanged
+ * Permits to prepare data to be exchanged.
  *
  * @param array  $data Text
  * @param string $type Parameter
@@ -1570,13 +1563,11 @@ function prepareExchangedData($data, $type)
 }
 
 /**
- * Create a thumbnail
+ * Create a thumbnail.
  *
- * @param string  $src           Source
- * @param string  $dest          Destination
- * @param integer $desired_width Size of width
- *
- * @return void
+ * @param string $src           Source
+ * @param string $dest          Destination
+ * @param int    $desired_width Size of width
  */
 function makeThumbnail($src, $dest, $desired_width)
 {
@@ -1736,18 +1727,16 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
 }
 
 /**
- * Log events
+ * Log events.
  *
- * @param array   $SETTINGS        Teampass settings
- * @param integer $item_id         Item id
- * @param string  $item_label      Item label
- * @param integer $id_user         User id
- * @param string  $action          Code for reason
- * @param string  $login           User login
- * @param string  $raison          Code for reason
- * @param string  $encryption_type Encryption on
- *
- * @return void
+ * @param array  $SETTINGS        Teampass settings
+ * @param int    $item_id         Item id
+ * @param string $item_label      Item label
+ * @param int    $id_user         User id
+ * @param string $action          Code for reason
+ * @param string $login           User login
+ * @param string $raison          Code for reason
+ * @param string $encryption_type Encryption on
  */
 function logItems(
     $SETTINGS,
@@ -1759,7 +1748,7 @@ function logItems(
     $raison = null,
     $encryption_type = null
 ) {
-     $dataItem = '';
+    $dataItem = '';
 
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
@@ -1861,9 +1850,8 @@ function logItems(
     }
 }
 
-
 /**
- * Get the client ip address
+ * Get the client ip address.
  *
  * @return string IP address
  */
@@ -2057,13 +2045,11 @@ function checkCFconsistency($source_id, $target_id)
 }
 
 /**
- * Shall we crypt/decrypt
+ * Shall we crypt/decrypt.
  *
  * @param string $filename_to_rework File name
  * @param string $filename_status    Its status
  * @param array  $SETTINGS           Settings
- *
- * @return void
  */
 function encryptOrDecryptFile(
     $filename_to_rework,
@@ -2228,7 +2214,7 @@ function encryptOrDecryptFile(
  * @param array  $SETTINGS    Settings
  * @param string $password    A password
  *
- * @return string|boolean
+ * @return string|bool
  */
 function prepareFileWithDefuse(
     $type,
@@ -2425,7 +2411,7 @@ function cleanText($string, $type = null)
  * @param int    $dirPermissions  New permission on folders
  * @param int    $filePermissions New permission on files
  *
- * @return boolean
+ * @return bool
  */
 function chmodRecursive($dir, $dirPermissions, $filePermissions)
 {
@@ -2741,7 +2727,7 @@ function connectLDAP($username, $password, $SETTINGS)
 //--------------------------------
 
 /**
- * Perform a Query
+ * Perform a Query.
  *
  * @param array  $SETTINGS Teamapss settings
  * @param string $fields   Fields to use

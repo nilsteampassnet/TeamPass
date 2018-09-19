@@ -57,12 +57,6 @@ if (isset($_SESSION['groupes_visibles']) === false
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-DB::$host = DB_HOST;
-DB::$user = DB_USER;
-DB::$password = defuse_return_decrypted(DB_PASSWD);
-DB::$dbName = DB_NAME;
-DB::$port = DB_PORT;
-DB::$encoding = DB_ENCODING;
 $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
@@ -71,8 +65,22 @@ $aColumns = array('id', 'label', 'login', 'description', 'tags', 'id_tree', 'fol
 $aSortTypes = array('ASC', 'DESC');
 
 //init SQL variables
-$sOrder = $sLimit = '';
+$sOrder = $sLimit = $sWhere = '';
 $sWhere = 'id_tree IN %ls_idtree'; //limit search to the visible folders
+
+if (isset($_GET['limited']) === false
+    || (isset($_GET['limited']) === true && $_GET['limited'] === 'false')
+) {
+    $folders = $_SESSION['groupes_visibles'];
+} else {
+    // Build tree
+    $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+    $tree->register();
+    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    $folders = $tree->getDescendants(filter_var($_GET['limited'], FILTER_SANITIZE_NUMBER_INT), true);
+    $folders = array_keys($folders);
+}
 
 //Get current user "personal folder" ID
 $row = DB::query(
@@ -133,13 +141,23 @@ if (isset($_GET['order']) === true) {
     }
 }
 
+// Define criteria
+$search_criteria = '';
+if (isset($_GET['search']) === true) {
+    if (empty($_GET['search']['value']) === false) {
+        $search_criteria = filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING);
+    } elseif (empty($_GET['search']) === false) {
+        $search_criteria = filter_var($_GET['search'], FILTER_SANITIZE_STRING);
+    }
+}
+
 /*
  * Filtering
  * NOTE this does not match the built-in DataTables filtering which does it
  * word by word on any field. It's possible to do here, but concerned about efficiency
  * on very large tables, and MySQL's regex functionality is very limited
  */
-if (isset($_GET['search']) === true && empty($_GET['search']['value']) === false) {
+if (empty($search_criteria) === false) {
     $sWhere .= ' AND (';
     for ($i = 0; $i < count($aColumns); ++$i) {
         $sWhere .= $aColumns[$i].' LIKE %ss_'.$i.' OR ';
@@ -147,15 +165,16 @@ if (isset($_GET['search']) === true && empty($_GET['search']['value']) === false
     $sWhere = substr_replace($sWhere, '', -3).') ';
 
     $crit = array(
-        'idtree' => $_SESSION['groupes_visibles'],
-        '0' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '1' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '2' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '3' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '4' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '5' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '6' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '7' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        'idtree' => $folders,
+        '0' => $search_criteria,
+        '1' => $search_criteria,
+        '2' => $search_criteria,
+        '3' => $search_criteria,
+        '4' => $search_criteria,
+        '5' => $search_criteria,
+        '6' => $search_criteria,
+        '7' => $search_criteria,
+        '8' => $search_criteria,
         'pf' => $arrayPf,
     );
 }
@@ -163,29 +182,30 @@ if (isset($_GET['search']) === true && empty($_GET['search']['value']) === false
 // Define default search criteria
 if (count($crit) === 0) {
     $crit = array(
-        'idtree' => $_SESSION['groupes_visibles'],
-        '0' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '1' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '2' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '3' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '4' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '5' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '6' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
-        '7' => filter_var($_GET['search']['value'], FILTER_SANITIZE_STRING),
+        'idtree' => $folders,
+        '0' => $search_criteria,
+        '1' => $search_criteria,
+        '2' => $search_criteria,
+        '3' => $search_criteria,
+        '4' => $search_criteria,
+        '5' => $search_criteria,
+        '6' => $search_criteria,
+        '7' => $search_criteria,
+        '8' => $search_criteria,
         'pf' => $arrayPf,
     );
 }
 
 // Do NOT show the items in PERSONAL FOLDERS
 if (empty($listPf) === false) {
-    if (!empty($sWhere)) {
+    if (empty($sWhere) === false) {
         $sWhere .= ' AND ';
     }
     $sWhere = 'WHERE '.$sWhere.'id_tree NOT IN %ls_pf ';
 } else {
     $sWhere = 'WHERE '.$sWhere;
 }
-
+db::debugmode(false);
 DB::query(
     'SELECT id FROM '.prefixTable('cache')."
     $sWhere
@@ -193,7 +213,7 @@ DB::query(
     $crit
 );
 $iTotal = DB::count();
-db::debugMode(false);
+
 $rows = DB::query(
     'SELECT id, label, description, tags, id_tree, perso, restricted_to, login, folder, author, renewal_period, url, timestamp
     FROM '.prefixTable('cache')."
@@ -201,7 +221,8 @@ $rows = DB::query(
     $sOrder
     $sLimit",
     $crit
-); db::debugMode(false);
+);
+db::debugmode(false);
 $iFilteredTotal = DB::count();
 
 /*

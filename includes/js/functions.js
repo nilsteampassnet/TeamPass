@@ -419,21 +419,39 @@ function decodeQueryReturn(data, key)
 /**
  * 
  */
-function teampassStorage(type, field, value)
-{
-    var storage = JSON.parse(localStorage.getItem('teampass-application'));
+function teampassStorage(storageName, type, fieldNames)
+{    
+    var storage = JSON.parse(localStorage.getItem(storageName));
+
     if (type === 'update') {
         // Set value
-        if ($.inArray(field, storage) === -1) {
-            storage.push({field : value});
-        } else {
-            storage[field] = value;
+        if (storage === null || storage.length === 0) {
+            storage = {}
         }
+
+        // Loop
+        $.each(fieldNames, function(key, value) {
+            storage[key] = value;
+        });
+              
         // Update in storage
-        localStorage.setItem('teampass-application', JSON.stringify(storage));
+        localStorage.setItem(
+            storageName,
+            JSON.stringify(storage)
+        );
         return true;
     } else if (type === 'get') {
-        return storage[field];
+        if (fieldNames.length === 1) {
+            var ret = storage[fieldNames]
+        } else {
+            var ret = [];
+            
+            // Loop
+            $.each(fieldNames, function(index, value) {
+                ret[value] = storage[value];
+            });
+        }
+        return ret;
     } else if (type === 'update') {
         
     }
