@@ -420,39 +420,50 @@ function decodeQueryReturn(data, key)
  * 
  */
 function teampassStorage(storageName, type, fieldNames)
-{    
-    var storage = JSON.parse(localStorage.getItem(storageName));
+{
+    // Create if not existing
+    if (localStorage.getItem(storageName)  === null) {
+        localStorage.setItem(storageName, JSON.stringify([]));
+    }
+    var storage = (localStorage.getItem(storageName) === '') ? {} : JSON.parse(localStorage.getItem(storageName));
 
     if (type === 'update') {
-        // Set value
-        if (storage === null || storage.length === 0) {
-            storage = {}
-        }
-
+        console.log('--- CONTENU DE STORAGE '+storageName)
+        console.log(storage)
         // Loop
         $.each(fieldNames, function(key, value) {
             storage[key] = value;
         });
+        console.log(storage)
               
         // Update in storage
         localStorage.setItem(
             storageName,
             JSON.stringify(storage)
         );
+        console.info('--- '+storageName+" was UPDATED")
         return true;
     } else if (type === 'get') {
-        if (fieldNames.length === 1) {
+        console.info('--- GET from'+storageName)
+        console.log(storage)
+        /*if (fieldNames.length === 1 && storage[fieldNames] !== undefined) {
             var ret = storage[fieldNames]
-        } else {
+        } else {*/
             var ret = [];
             
             // Loop
             $.each(fieldNames, function(index, value) {
-                ret[value] = storage[value];
+                console.log('>>'+storage[value]);
+                if (storage[value] !== undefined) {
+                    ret[value] = storage[value];
+                } else {
+                    ret[value] = '';
+                }
             });
-        }
+        //}
+        console.log(ret)
         return ret;
-    } else if (type === 'update') {
+    } else {
         
     }
 }

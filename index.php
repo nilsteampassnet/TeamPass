@@ -842,6 +842,8 @@ if (($session_validite_pw === null
 <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js"></script>
 <!-- platform -->
 <script type="text/javascript" src="plugins/platform/platform.js"></script>
+<!-- STORE.JS -->
+<script type="text/javascript" src="includes/libraries/store.js/dist/store.everything.min.js"></script>
 <?php
 if ($menuAdmin === true) {
     ?>

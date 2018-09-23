@@ -64,28 +64,13 @@ var requestRunning = false,
     selectedFolderId = '',
     itemClipboard,
     startedItemsListQuery = false,
-    itemStorageInformation = '';
+    itemStorageInformation = '',
+    applicationVars;
 
-
-//Evaluate number of items to display - depends on screen height
-if (parseInt($('#nb_items_to_display_once').val()) === false
-    || $('#nb_items_to_display_once').val() === ''
-    || $('#nb_items_to_display_once').val() === 'auto'
-) {
-    //adapt to the screen height
-    $('#nb_items_to_display_once')
-        .val(Math.max(Math.round(($(window).height()-450)/23),2));
-}
 
 //load items
 if (parseInt($('#query_next_start').val()) > 0) start = parseInt($('#query_next_start').val());
 else start = 0;
-
-// load list of items
-/*if ($('#form-item-hidden-last-folder-selected').val() !== '') {
-    selectedFolderId = $('#form-item-hidden-last-folder-selected').val();
-    ListerItems(selectedFolderId, '' , start);
-}*/
 
 // Build tree
 $('#jstree').jstree({
@@ -95,11 +80,10 @@ $('#jstree').jstree({
         'data' : {
             'url' : './sources/tree.php',
             'dataType' : 'json',
-            //'async' : true,
             'data' : function (node) {
                 return {
                     'id' : node.id.split('_')[1] ,
-                    'force_refresh' : localStorage.getItem('teampass-jstree-force-refresh')
+                    'force_refresh' : store.get('teampass-application').jstreeForceRefresh
                 };
             }
         },
@@ -114,7 +98,7 @@ $('#jstree').jstree({
 // On node select
 .bind('select_node.jstree', function (e, data) {
     selectedFolder = $('#jstree').jstree('get_selected', true)[0];
-    selectedFolderId = selectedFolder.id.split('_')[1]
+    selectedFolderId = selectedFolder.id.split('_')[1];
     console.info('SELECTED NODE ' + selectedFolderId);
     console.log(selectedFolder);
 
@@ -160,6 +144,30 @@ $(this).delay(500).queue(function() {
     $(this).dequeue();
 });
 
+
+$(this).delay(1000).queue(function() {
+//Evaluate number of items to display - depends on screen height
+applicationVars = teampassStorage('teampass-settings', 'get', ['nb_items_by_query']);
+if (applicationVars['nb_items_by_query'] === '' || applicationVars['nb_items_by_query'] === 'auto') {
+    //adapt to the screen height
+    teampassStorage(
+        'teampass-application',
+        'update',
+        {
+            'itemsShownByQuery' : Math.max(Math.round((screenHeight-450)/23),2)
+        }
+    );
+} else {
+    teampassStorage(
+        'teampass-application',
+        'update',
+        {
+            'itemsShownByQuery' : ''
+        }
+    );
+}
+$(this).dequeue();
+});
    
 
 // Ensure correct height of folders tree
@@ -176,13 +184,13 @@ $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
 $('.tp-action').click(function() {
     if ($(this).data('folder-action') === 'refresh') {
         // Force refresh
-        localStorage.setItem('teampass-jstree-force-refresh', 1);
+        store.set('tempass-application', { jstreeForceRefresh:1 });
         if (selectedFolderId !== '') {
             refreshTree(selectedFolderId, true);
         } else {
             refreshTree();
         }
-        localStorage.removeItem('teampass-jstree-force-refresh');
+        localStorage.removeItem('jstreeForceRefresh');
     } else if ($(this).data('folder-action') === 'expand') {
         $('#jstree').jstree('open_all');
     } else if ($(this).data('folder-action') === 'collapse') {
@@ -240,9 +248,7 @@ $('.tp-action').click(function() {
             getPrivilegesOnItem(selectedFolderId, 0)
         ).then(function() {
             // Now read 
-            itemStorageInformation = JSON.parse(localStorage.getItem("teampass-item-information"));
-            console.info('teampass-item-information:')
-            console.log(itemStorageInformation);
+            itemStorageInformation = JSON.parse(store.get("teampass-item-information"));
 
             if (itemStorageInformation.error !== '') {
                 alertify
@@ -260,7 +266,7 @@ $('.tp-action').click(function() {
                 // Clean select2 lists
                 $('.select2').val('').change();
                 // Do some form cleaning
-                $('#form-item-hidden-id, #request_lastItem, .clear-me-val').val('');
+                $('#request_lastItem, .clear-me-val').val('');
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
                 $('.form-item-control').val('');
@@ -303,8 +309,7 @@ $('.tp-action').click(function() {
             getPrivilegesOnItem(selectedFolderId, 0)
         ).then(function() {
             // Now read 
-            itemStorageInformation = JSON.parse(localStorage.getItem("teampass-item-information"));
-            console.info(itemStorageInformation);
+            itemStorageInformation = JSON.parse(store.get("teampass-item-information"));
 
             if (itemStorageInformation.error !== '') {
                 alertify
@@ -395,7 +400,7 @@ $('#item-button-password-showOptions').click(function() {
  */
 $('#form-item-folder').change(function() {
     if ($(this).val() !== null) {
-        var folders = JSON.parse(localStorage.getItem('teampass-folders'));
+        var folders = JSON.parse(store.get('teampass-folders'));
         $('#card-item-visibility').html(folders[$(this).val()].visibilityRoles);
         $('#card-item-minimum-complexity').html(folders[$(this).val()].complexity.text);
     }
@@ -425,7 +430,7 @@ $('#form-item-share-perform').click(function() {
         'sources/items.queries.php',
         {
             type    : 'send_email',
-            id      : $('#form-item-hidden-id').val(),
+            id      : teampassStorage('teampass-item-information', 'get', ['id']),
             receipt : $('#form-item-share-email').val(),
             cat     : 'share_this_item',
             key     : '<?php echo $_SESSION['key']; ?>'
@@ -466,7 +471,7 @@ $('#form-item-delete-perform').click(function() {
     userDidAChange = false;
 
     var data = {
-        'item_id'   : $('#form-item-hidden-id').val(),
+        'item_id'   : teampassStorage('teampass-item-information', 'get', ['id']),
         'folder_id' : selectedFolderId,
         'label' : $('#form-item-copy-new-label').val(),
     }
@@ -515,7 +520,7 @@ $('#form-item-share-perform').click(function() {
         'sources/items.queries.php',
         {
             type    : 'notify_user_on_item_change',
-            id      : $('#form-item-hidden-id').val(),
+            id      : teampassStorage('teampass-item-information', 'get', ['id']),
             value   : $('#form-item-anyoneCanModify').is(':checked') === true ? 1 : 0,
             key     : '<?php echo $_SESSION['key']; ?>'
         },
@@ -563,7 +568,7 @@ $('#form-item-copy-perform').click(function() {
     userDidAChange = false;
 
     var data = {
-        'item_id'   : $('#form-item-hidden-id').val(),
+        'item_id'   : teampassStorage('teampass-item-information', 'get', ['id']),
         'source_id' : selectedFolderId,
         'dest_id'   : $('#form-item-copy-destination').val(),
         'new_label' : $('#form-item-copy-new-label').val(),
@@ -630,7 +635,7 @@ $('#form-item-suggestion-perform').click(function() {
         'description'   : itemEditorSuggestion.getData(),
         'comment'       : $('#form-item-suggestion-comment').val(),
         'folder_id'     : selectedFolderId,
-        'item_id'       : $('#form-item-hidden-id').val(),
+        'item_id'       : teampassStorage('teampass-item-information', 'get', ['id']),
     }
 
     // Launch action
@@ -739,11 +744,11 @@ $('#form-folder-add-perform').click(function() {
                     ListerItems(data.newId, '', 0);
                 } else {
                     // Refresh tree
-                    localStorage.setItem('teampass-jstree-force-refresh', 1);
+                    store.set('tempass-application', { jstreeForceRefresh:1 });
                     refreshTree(selectedFolderId, true);
                     // Refresh list of items inside the folder
                     ListerItems(selectedFolderId, '', 0);
-                    localStorage.removeItem('teampass-jstree-force-refresh');
+                    localStorage.removeItem('jstreeForceRefresh');
                 }
                 // Back to list
                 closeItemDetailsCard();
@@ -916,7 +921,7 @@ function closeItemDetailsCard()
         // Do some form cleaning
         $('#items-list-card, #folders-tree-card').removeClass('hidden');
         $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
-        $('#form-item-hidden-id, #request_lastItem, .clear-me-val').val('');
+        $('#request_lastItem, .clear-me-val').val('');
         $('.item-details-card').find('.form-control').val('');
         $('.clear-me-html').html('');
         $('.form-item-control').val('');
@@ -1135,7 +1140,7 @@ var showPwdContinuous = function(){
         if ($("#pw_shown").val() === "0") {
             itemLog(
                 'at_password_shown',
-                $('#form-item-hidden-id').val(),
+                teampassStorage('teampass-item-information', 'get', ['id']),
                 $('#card-item-label').text()
             );
             $("#pw_shown").val('1');
@@ -1343,11 +1348,11 @@ var uploader_attachments = new plupload.Uploader({
             );
 
             // Get random number
-            localStorage.setItem('teampass-uploaded-file-id', CreateRandomString(9,'num_no_0'));
+            store.set('tempass-application', { uploadedFileId:CreateRandomString(9, 'num_no_0') });
 
             up.setOption('multipart_params', {
                 PHPSESSID       : '<?php echo $_SESSION['user_id']; ?>',
-                itemId          : localStorage.getItem('teampass-uploaded-file-id'),
+                itemId          : store.get('teampass-uploaded-file-id'),
                 type_upload     : 'item_attachments',
                 edit_item       : false,
                 user_token      : teampassStorage('teampass-application', 'get', ['attachmentToken']),
@@ -1588,7 +1593,7 @@ $('#form-item-button-save').click(function() {
                 'fields': fields,
                 'folder_is_personal': ($('#form-item-hidden-isPersonalFolder').val() === 1
                     && $('#form-item-hidden-psk').val() === 1) ? 1 : 0,
-                'id': parseInt($('#form-item-hidden-id').val()),
+                'id': teampassStorage('teampass-item-information', 'get', ['id']),
                 'label': $('#form-item-label').val(),
                 'login': $('#form-item-login').val(),
                 'pw': $('#form-item-password').val(),
@@ -1603,7 +1608,7 @@ $('#form-item-button-save').click(function() {
                     parseInt($('#form-item-deleteAfterShown').val()) : '',
                 'url': $('#form-item-url').val(),
                 'user_id' : parseInt('<?php echo $_SESSION['user_id']; ?>'),
-                'uploaded_file_id' : localStorage.getItem('teampass-uploaded-file-id'),
+                'uploaded_file_id' : store.get('teampass-application').uploadedFileId,
             };
 console.log('SAVING DATA');
 console.log(data);
@@ -1613,7 +1618,7 @@ console.log(data);
                 .dismissOthers();
 
             // CLear tempo var
-            localStorage.removeItem('teampass-uploaded-file-id');
+            store.remove('teampass-application').uploadedFileId;
                 
             //Send query
             $.post(
@@ -1744,9 +1749,8 @@ function searchItems(criteria)
         $('#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, .fields, #item_extra_info').html('');
         $('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
         $('#teampass_items_list').html('');
-        $('#form-item-hidden-id').val('');
 
-console.log(localStorage.getItem('teampass-application'))
+console.log(store.get('teampass-application'))
         // send query
         $.get(
             'sources/find.queries.php',
@@ -1889,10 +1893,12 @@ function refreshFoldersInfo(folders, action)
                         }
                     });
                     // Stare the data
-                    localStorage.setItem('teampass-folders', JSON.stringify(folders));
+                    store.set('tempass-application', { foldersList:folders });
                 } else if (action === 'update') {
+                    //store.update('tempass-application', { foldersList:folders });
+                    /*
                     // Only update for this folder
-                    var storage = JSON.parse(localStorage.getItem('teampass-folders'));
+                    var storage = JSON.parse(store.get('teampass-folders'));
 
                     // Find the index in Storage where this folder is
                     indexes = $.map(storage, function(obj, index) {
@@ -1907,12 +1913,8 @@ function refreshFoldersInfo(folders, action)
                         storage[indexes[0]]['complexity'] = data.result[folders].complexity;
                         storage[indexes[0]]['visibilityRoles'] = data.result[folders].visibilityRoles;
                     }
+                    */
                 }
-                
-                console.info('Memory folders:');
-                console.log(JSON.parse(localStorage.getItem('teampass-folders')));
-                console.info('Memory item-information:');
-                console.log(JSON.parse(localStorage.getItem('teampass-item-information')));
             } else {
                 alertify
                     .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
@@ -2012,7 +2014,7 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
     }
     requestRunning = true;
 
-    $('#request_lastItem, #form-item-hidden-id').val('');
+    $('#request_lastItem').val('');
 
     // Hide any info
     $('#info_teampass_items_list').addClass('hidden');
@@ -2052,6 +2054,11 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
             .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fa fa-cog fa-spin"></i>', 0)
             .dismissOthers();
 
+        // Get application variables
+        var vars = teampassStorage('teampass-application', 'get', ['queryUniqueLoad', 'itemsShownByQuery']);
+        console.log('SHOW VARS')
+        console.log(vars);
+
         //ajax query
         request = $.post('sources/items.queries.php',
             {
@@ -2059,9 +2066,9 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                 id                       : groupe_id,
                 restricted               : restricted,
                 start                    : start,
-                uniqueLoadData           : teampassStorage('teampass-application', 'get', ['queryUniqueLoad']),
+                uniqueLoadData           : vars.queryUniqueLoad,
                 key                      : '<?php echo $_SESSION['key']; ?>',
-                nb_items_to_display_once : $('#nb_items_to_display_once').val()
+                nb_items_to_display_once : vars.itemsShownByQuery
             },
             function(retData) {
                 if (retData == 'Hacking attempt...') {
@@ -2487,7 +2494,7 @@ function proceed_list_update(stop_proceeding)
     
     if ($('#query_next_start').val() !== 'end') {
         //Check if nb of items do display > to 0
-        if ($('#nb_items_to_display_once').val() > 0) {
+        if (teampassStorage('teampass-application', 'get', ['itemsShownByQuery']) > 0) {
             ListerItems(
                 teampassStorage('teampass-application', 'get', ['selectedFolder']),
                 '',
@@ -2733,9 +2740,6 @@ function Details(itemDefinition, actionType)
                     alertify
                         .success('<?php echo langHdl('success'); ?>', 1)
                         .dismissOthers();
-
-                    // Update hidden fields
-                    //$('#form-item-hidden-isForEdit').val(1);
                     
                     // Store scroll position
                     userScrollPosition = $(window).scrollTop();
@@ -2759,6 +2763,16 @@ function Details(itemDefinition, actionType)
                     
                     // Uncrypt the pwd
                     data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
+
+                    // Update hidden variables
+                    teampassStorage(
+                        'teampass-item-information',
+                        'update',
+                        {
+                            'id' : parseInt(data.id),
+                            'timestamp' : data.timestamp,
+                        }
+                    )
                     
                     // Prepare forms
                     $('#items-list-card, #folders-tree-card').addClass('hidden');
@@ -2783,7 +2797,6 @@ function Details(itemDefinition, actionType)
                     }
                     
                     // Prepare card
-                    $('#form-item-hidden-id').val(data.id);
                     $('#card-item-label, #form-item-title').html(data.label);
                     $('#form-item-label, #form-item-suggestion-label').val(data.label);
                     $('#card-item-description, #form-item-suggestion-description').html(data.description);
@@ -2799,9 +2812,9 @@ function Details(itemDefinition, actionType)
                     $('#form-item-url, #form-item-suggestion-url').val(data.url);
                     $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
                     $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
-                    $('#form-item-password').focus();
-                    $('#form-item-label').focus();
                     $('#form-item-folder').val(data.folder);
+                    
+                    $('#form-item-password, #form-item-label').focus();
 
                     // Editor for description field
                     ClassicEditor
@@ -3016,9 +3029,6 @@ function Details(itemDefinition, actionType)
                         .append('<span class="icon-badge mr-5"><span class="fa fa-bullseye infotip" title="<?php
                             echo langHdl('viewed_number');
                         ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
-
-                    // Show timestamp
-                    $('#form-item-hidden-timestamp').val(data.timestamp);
 
                     //Anyone can modify button
                     if (data.anyone_can_modify === '1') {console.log($('#form-item-anyoneCanModify'))
@@ -3267,7 +3277,7 @@ function showDetailsStep2(id, actionType)
                     "sources/items.queries.php",
                     {
                         type    : "load_item_history",
-                        item_id : $("#form-item-hidden-id").val(),
+                        item_id : teampassStorage('teampass-item-information', 'get', ['id']),
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
@@ -3361,7 +3371,7 @@ function prepareOneTimeView()
         "sources/items.queries.php",
         {
             type    : "generate_OTV_url",
-            id      : $("#form-item-hidden-id").val(),
+            id      : teampassStorage('teampass-item-information', 'get', ['id']),
             key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
@@ -3402,7 +3412,7 @@ function getPrivilegesOnItem(val, edit, context)
     context = context || "";    // make context optional
 
     // Clear memory
-    localStorage.setItem("teampass-item-information", '');
+    //localStorage.setItem("teampass-item-information", '');
 
     return $.post(
         "sources/items.queries.php",
@@ -3410,7 +3420,7 @@ function getPrivilegesOnItem(val, edit, context)
             type    : "get_complixity_level",
             groupe  : val,
             context : context,
-            item_id : $("#form-item-hidden-id").val()
+            item_id : teampassStorage('teampass-item-information', 'get', ['id'])
         },
         function(data) {
             //decrypt data
@@ -3456,18 +3466,17 @@ function getPrivilegesOnItem(val, edit, context)
                 });
             }
 
-            localStorage.setItem(
-                "teampass-item-information",
-                JSON.stringify(
-                    {
-                        'error' : data.error === undefined ? '' : data.error,
-                        'message' : data.message,
-                        'folderComplexity' : data.val === undefined ? '' : data.val,
-                        'folderIsPersonal' : data.personal === undefined ? '' : data.personal,
-                        'itemMinimumComplexity' : data.complexity === undefined ? '' : data.complexity,
-                        'itemVisibility' : data.visibility === undefined ? '' : data.visibility,
-                    }
-                )
+            teampassStorage(
+                'teampass-item-information',
+                'update',
+                {
+                    'error' : data.error === undefined ? '' : data.error,
+                    'message' : data.message,
+                    'folderComplexity' : data.val === undefined ? '' : parseInt(data.val),
+                    'folderIsPersonal' : data.personal === undefined ? '' : parseInt(data.personal),
+                    'itemMinimumComplexity' : data.complexity === undefined ? '' : data.complexity,
+                    'itemVisibility' : data.visibility === undefined ? '' : data.visibility,
+                }
             );
         }
     );

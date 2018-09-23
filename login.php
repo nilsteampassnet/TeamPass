@@ -414,6 +414,11 @@ function launchIdentify(isDuo, redirect, psk)
     // launch identification
     showAlertify('<span class="fa fa-cog fa-spin fa-2x"></span>', 0, 'top-center', 'notify');
 
+    // Clear localstorage
+    store.remove('teampass-application');
+    store.remove('teampass-item-information');
+    store.remove('teampass-folders');
+
     //create random string
     var randomstring = CreateRandomString(10);
 
@@ -423,7 +428,8 @@ function launchIdentify(isDuo, redirect, psk)
 
     // get some info
     var client_info = "";
-    $.getJSON('https://ipapi.co/json',
+    $.getJSON(
+        'https://ipapi.co/json',
         null,
         function (answered_data) { 
             if (answered_data.ip !== "") {

@@ -17,8 +17,12 @@ define('SKEY', '');
 define('AKEY', '');
 define('COST', '');
 
-@date_default_timezone_set($_SESSION['settings']['timezone']);
-@define('SECUREPATH', 'D:/wamp64/tmp/test');
+if (isset($_SESSION['settings']) === true) {
+    date_default_timezone_set($_SESSION['settings']['timezone']);
+}
+if (defined('SECUREPATH') === false) {
+    define('SECUREPATH', 'D:/wamp64/tmp/test');
+}
 if (file_exists("D:/wamp64/tmp/test/sk.php")) {
     include_once "D:/wamp64/tmp/test/sk.php";
 }

@@ -44,7 +44,6 @@ var userScrollPosition = 0;
 // On page load
 $(function() {
     // Init
-
     // Countdown
     countdown();
 
@@ -186,6 +185,13 @@ $(function() {
 
     // get list of last items
     if ($('#form_user_id').length > 0 && $('#form_user_id').val() !== '') {
+        $.when(
+            // Load teampass settings
+            loadSettings()
+        ).then(function() {
+            refreshListLastSeenItems();
+        });
+        /*
         // Load teampass settings
         loadSettings();
 
@@ -196,6 +202,7 @@ $(function() {
             },
             500
         );
+        */
         
     }
     //-- end
@@ -233,14 +240,6 @@ $(function() {
 
 function loadSettings()
 {
-    // Clear memory
-    localStorage.setItem('teampass-settings', '');
-
-    // Teampass application - only init if not exists
-    if (localStorage.getItem("teampass-application") === null) {
-        localStorage.setItem('teampass-application', JSON.stringify([]));
-    }
-
     return $.post(
         "sources/main.queries.php",
         {
@@ -262,9 +261,11 @@ function loadSettings()
                 return false;
             };
             
-            localStorage.setItem(
+            // Store settings in localstorage
+            teampassStorage(
                 'teampass-settings',
-                JSON.stringify(data)
+                'update',
+                data
             );
         }
     );
