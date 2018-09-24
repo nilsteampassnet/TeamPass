@@ -419,7 +419,7 @@ function decodeQueryReturn(data, key)
 /**
  * 
  */
-function teampassStorage(storageName, type, fieldNames)
+function teampassStorage1(storageName, type, fieldNames)
 {
     // Create if not existing
     if (localStorage.getItem(storageName)  === null) {

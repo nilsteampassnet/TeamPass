@@ -262,11 +262,20 @@ function loadSettings()
             };
             
             // Store settings in localstorage
-            teampassStorage(
+            store.update(
+                'teampassSettings',
+                {},
+                function(teampassSettings) {
+                    $.each(data, function(key, value) {
+                        teampassSettings[key] = value;
+                    });
+                }
+            );
+            /*teampassStorage(
                 'teampass-settings',
                 'update',
                 data
-            );
+            );*/
         }
     );
 }

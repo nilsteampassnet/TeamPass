@@ -98,8 +98,6 @@ echo '
 <input type="hidden" id="bloquer_creation_complexite" value="" />
 <input type="hidden" id="bloquer_modification_complexite" value="" />
 <input type="hidden" id="error_detected" value="" />
-<input type="hidden" id="query_next_start" value="0" />
-<input type="hidden" id="nb_items_to_display_once" value="', isset($SETTINGS['nb_items_by_query']) ? htmlspecialchars($SETTINGS['nb_items_by_query']) : 'auto', '" />
 <input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />
 <input type="hidden" id="request_ongoing" value="" />
 <input type="hidden" id="request_lastItem" value="" />
@@ -136,16 +134,7 @@ echo '
 echo '
 <input type="hidden" id="form-item-hidden-psk" value="',
     isset($_SESSION['user_settings']['session_psk']) &&
-    empty($_SESSION['user_settings']['session_psk']) === false ? 1 : 0, '" />
-<input type="hidden" id="form-item-hidden-isForEdit" value="" class="clear-me-val">
-<input type="hidden" id="form-item-hidden-isPersonalFolder" value="">
-<input type="hidden" id="form-item-hidden-hasCustomCategories" value="">
-<input type="hidden" id="form-item-hidden-hasAccessLevel" value="">
-<input type="hidden" id="form-item-hidden-id">
-<input type="hidden" id="form-item-hidden-timestamp">
-<input type="hidden" id="form-item-hidden-last-folder-selected" value="',
-    empty($cookie_jstree_select) === false ? $cookie_jstree_select : '', '">';
-//$superGlobal->get('user_language', 'SESSION')
+    empty($_SESSION['user_settings']['session_psk']) === false ? 1 : 0, '" />';
 ?>
 
     <!-- Content Header (Page header) -->

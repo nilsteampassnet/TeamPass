@@ -415,9 +415,9 @@ function launchIdentify(isDuo, redirect, psk)
     showAlertify('<span class="fa fa-cog fa-spin fa-2x"></span>', 0, 'top-center', 'notify');
 
     // Clear localstorage
-    store.remove('teampass-application');
-    store.remove('teampass-item-information');
-    store.remove('teampass-folders');
+    store.remove('teampassApplication');
+    store.remove('teampassSettings');
+    store.remove('teampassItem');
 
     //create random string
     var randomstring = CreateRandomString(10);

@@ -54,7 +54,6 @@ var requestRunning = false,
     query_in_progress = 0,
     screenHeight = $(window).height(),
     quick_icon_query_status = true,
-    start = 0,
     first_group = 1,
     folderSearchCriteria = $('#jstree_search').val(),
     itemEditor,
@@ -68,9 +67,6 @@ var requestRunning = false,
     applicationVars;
 
 
-//load items
-if (parseInt($('#query_next_start').val()) > 0) start = parseInt($('#query_next_start').val());
-else start = 0;
 
 // Build tree
 $('#jstree').jstree({
@@ -83,7 +79,7 @@ $('#jstree').jstree({
             'data' : function (node) {
                 return {
                     'id' : node.id.split('_')[1] ,
-                    'force_refresh' : store.get('teampass-application').jstreeForceRefresh
+                    'force_refresh' : store.get('teampassApplication') !== undefined ? store.get('teampassApplication').jstreeForceRefresh : 0
                 };
             }
         },
@@ -101,6 +97,14 @@ $('#jstree').jstree({
     selectedFolderId = selectedFolder.id.split('_')[1];
     console.info('SELECTED NODE ' + selectedFolderId);
     console.log(selectedFolder);
+
+    store.update(
+        'teampassApplication',
+        function (teampassApplication)
+        {
+            teampassApplication.selectedFolder = selectedFolderId;
+        }
+    )
 
     // Prepare list of items
     if (startedItemsListQuery === false) {
@@ -144,30 +148,6 @@ $(this).delay(500).queue(function() {
     $(this).dequeue();
 });
 
-
-$(this).delay(1000).queue(function() {
-//Evaluate number of items to display - depends on screen height
-applicationVars = teampassStorage('teampass-settings', 'get', ['nb_items_by_query']);
-if (applicationVars['nb_items_by_query'] === '' || applicationVars['nb_items_by_query'] === 'auto') {
-    //adapt to the screen height
-    teampassStorage(
-        'teampass-application',
-        'update',
-        {
-            'itemsShownByQuery' : Math.max(Math.round((screenHeight-450)/23),2)
-        }
-    );
-} else {
-    teampassStorage(
-        'teampass-application',
-        'update',
-        {
-            'itemsShownByQuery' : ''
-        }
-    );
-}
-$(this).dequeue();
-});
    
 
 // Ensure correct height of folders tree
@@ -184,13 +164,19 @@ $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
 $('.tp-action').click(function() {
     if ($(this).data('folder-action') === 'refresh') {
         // Force refresh
-        store.set('tempass-application', { jstreeForceRefresh:1 });
+        store.set('teampassApplication', { jstreeForceRefresh:1 });
         if (selectedFolderId !== '') {
             refreshTree(selectedFolderId, true);
         } else {
             refreshTree();
         }
-        localStorage.removeItem('jstreeForceRefresh');
+        store.update(
+            'teampassApplication',
+            function(teampassApplication)
+            {
+                teampassApplication.jstreeForceRefresh = 0;
+            }
+        );
     } else if ($(this).data('folder-action') === 'expand') {
         $('#jstree').jstree('open_all');
     } else if ($(this).data('folder-action') === 'collapse') {
@@ -248,7 +234,7 @@ $('.tp-action').click(function() {
             getPrivilegesOnItem(selectedFolderId, 0)
         ).then(function() {
             // Now read 
-            itemStorageInformation = JSON.parse(store.get("teampass-item-information"));
+            itemStorageInformation = store.get("teampassItem");
 
             if (itemStorageInformation.error !== '') {
                 alertify
@@ -308,16 +294,14 @@ $('.tp-action').click(function() {
         $.when(
             getPrivilegesOnItem(selectedFolderId, 0)
         ).then(function() {
-            // Now read 
-            itemStorageInformation = JSON.parse(store.get("teampass-item-information"));
-
-            if (itemStorageInformation.error !== '') {
+            // Now read
+            if (store.get('teampassItem').error !== '') {
                 alertify
-                    .error('<i class="fa fa-ban mr-2"></i>' + itemStorageInformation.message, 3)
+                    .error('<i class="fa fa-ban mr-2"></i>' + store.get('teampassItem').message, 3)
                     .dismissOthers();
             } else {
-                $('#card-item-visibility').html(itemStorageInformation.itemVisibility);
-                $('#card-item-minimum-complexity').html(itemStorageInformation.itemMinimumComplexity);
+                $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
+                $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
                 // Show edition form
                 $('.form-item, #form-item-attachments-zone')
                     .removeClass('hidden');
@@ -430,7 +414,8 @@ $('#form-item-share-perform').click(function() {
         'sources/items.queries.php',
         {
             type    : 'send_email',
-            id      : teampassStorage('teampass-item-information', 'get', ['id']),
+            //id      : teampassStorage('teampassItem', 'get', ['id']),
+            id      : store.get('teampassItem').id,
             receipt : $('#form-item-share-email').val(),
             cat     : 'share_this_item',
             key     : '<?php echo $_SESSION['key']; ?>'
@@ -471,7 +456,8 @@ $('#form-item-delete-perform').click(function() {
     userDidAChange = false;
 
     var data = {
-        'item_id'   : teampassStorage('teampass-item-information', 'get', ['id']),
+        //'item_id'   : teampassStorage('teampassItem', 'get', ['id']),
+        'item_id'   : store.get('teampassItem').id,
         'folder_id' : selectedFolderId,
         'label' : $('#form-item-copy-new-label').val(),
     }
@@ -520,7 +506,8 @@ $('#form-item-share-perform').click(function() {
         'sources/items.queries.php',
         {
             type    : 'notify_user_on_item_change',
-            id      : teampassStorage('teampass-item-information', 'get', ['id']),
+            //id      : teampassStorage('teampassItem', 'get', ['id']),
+            id      : store.get('teampassItem').id,
             value   : $('#form-item-anyoneCanModify').is(':checked') === true ? 1 : 0,
             key     : '<?php echo $_SESSION['key']; ?>'
         },
@@ -568,7 +555,8 @@ $('#form-item-copy-perform').click(function() {
     userDidAChange = false;
 
     var data = {
-        'item_id'   : teampassStorage('teampass-item-information', 'get', ['id']),
+        //'item_id'   : teampassStorage('teampassItem', 'get', ['id']),
+        'item_id'   : store.get('teampassItem').id,
         'source_id' : selectedFolderId,
         'dest_id'   : $('#form-item-copy-destination').val(),
         'new_label' : $('#form-item-copy-new-label').val(),
@@ -635,7 +623,8 @@ $('#form-item-suggestion-perform').click(function() {
         'description'   : itemEditorSuggestion.getData(),
         'comment'       : $('#form-item-suggestion-comment').val(),
         'folder_id'     : selectedFolderId,
-        'item_id'       : teampassStorage('teampass-item-information', 'get', ['id']),
+        //'item_id'       : teampassStorage('teampassItem', 'get', ['id']),
+        'item_id'       : store.get('teampassItem').id
     }
 
     // Launch action
@@ -744,11 +733,23 @@ $('#form-folder-add-perform').click(function() {
                     ListerItems(data.newId, '', 0);
                 } else {
                     // Refresh tree
-                    store.set('tempass-application', { jstreeForceRefresh:1 });
+                    store.update(
+                        'teampassApplication',
+                        function(teampassApplication)
+                        {
+                            teampassApplication.jstreeForceRefresh = 1;
+                        }
+                    );
                     refreshTree(selectedFolderId, true);
                     // Refresh list of items inside the folder
                     ListerItems(selectedFolderId, '', 0);
-                    localStorage.removeItem('jstreeForceRefresh');
+                    store.update(
+                        'teampassApplication',
+                        function(teampassApplication)
+                        {
+                            teampassApplication.jstreeForceRefresh = 0;
+                        }
+                    );
                 }
                 // Back to list
                 closeItemDetailsCard();
@@ -1140,7 +1141,8 @@ var showPwdContinuous = function(){
         if ($("#pw_shown").val() === "0") {
             itemLog(
                 'at_password_shown',
-                teampassStorage('teampass-item-information', 'get', ['id']),
+                //teampassStorage('teampassItem', 'get', ['id']),
+                store.get('teampassItem').id,
                 $('#card-item-label').text()
             );
             $("#pw_shown").val('1');
@@ -1348,14 +1350,15 @@ var uploader_attachments = new plupload.Uploader({
             );
 
             // Get random number
-            store.set('tempass-application', { uploadedFileId:CreateRandomString(9, 'num_no_0') });
+            store.set('teampassApplication', { uploadedFileId:CreateRandomString(9, 'num_no_0') });
 
             up.setOption('multipart_params', {
                 PHPSESSID       : '<?php echo $_SESSION['user_id']; ?>',
                 itemId          : store.get('teampass-uploaded-file-id'),
                 type_upload     : 'item_attachments',
                 edit_item       : false,
-                user_token      : teampassStorage('teampass-application', 'get', ['attachmentToken']),
+                //user_token      : teampassStorage('teampassApplication', 'get', ['attachmentToken']),
+                user_token      : store.get('teampass-applicataion').attachmentToken,
                 files_number    : $('#form-item-hidden-pickFilesNumber').val()
             });
         },
@@ -1403,13 +1406,19 @@ $("#form-item-upload-pickfiles").click(function(e) {
                 duration: 10
             },
             function(data) {
-                teampassStorage(
-                    'teampass-application',
+                store.update(
+                    'teampass-applicataion',
+                    {
+                        'attachmentToken' : data[0].token
+                    }
+                );
+                /*teampassStorage(
+                    'teampassApplication',
                     'update',
                     {
                         'attachmentToken' : data[0].token
                     }
-                )
+                )*/
                 uploader_attachments.start();
             },
             "json"
@@ -1593,7 +1602,8 @@ $('#form-item-button-save').click(function() {
                 'fields': fields,
                 'folder_is_personal': ($('#form-item-hidden-isPersonalFolder').val() === 1
                     && $('#form-item-hidden-psk').val() === 1) ? 1 : 0,
-                'id': teampassStorage('teampass-item-information', 'get', ['id']),
+                //'id': teampassStorage('teampassItem', 'get', ['id']),
+                'id'   : store.get('teampassItem').id,
                 'label': $('#form-item-label').val(),
                 'login': $('#form-item-login').val(),
                 'pw': $('#form-item-password').val(),
@@ -1608,7 +1618,7 @@ $('#form-item-button-save').click(function() {
                     parseInt($('#form-item-deleteAfterShown').val()) : '',
                 'url': $('#form-item-url').val(),
                 'user_id' : parseInt('<?php echo $_SESSION['user_id']; ?>'),
-                'uploaded_file_id' : store.get('teampass-application').uploadedFileId,
+                'uploaded_file_id' : store.get('teampassApplication').uploadedFileId,
             };
 console.log('SAVING DATA');
 console.log(data);
@@ -1618,7 +1628,13 @@ console.log(data);
                 .dismissOthers();
 
             // CLear tempo var
-            store.remove('teampass-application').uploadedFileId;
+            store.update(
+                'teampassApplication',
+                function(teampassApplication)
+                {
+                    teampassApplication.uploadedFileId = '';
+                }
+            );
                 
             //Send query
             $.post(
@@ -1733,11 +1749,11 @@ function searchItems(criteria)
 {
     if (criteria !== '') {
         // stop items loading (if on-going)
-        teampassStorage(
-            'teampass-application',
-            'update',
+        store.update(
+            'teampassApplication',
+            function(teampassApplication)
             {
-                'itemsListStop' : 1
+                teampassApplication.itemsListStop = 1;
             }
         );
 
@@ -1750,13 +1766,13 @@ function searchItems(criteria)
         $('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
         $('#teampass_items_list').html('');
 
-console.log(store.get('teampass-application'))
+console.log(store.get('teampassApplication'))
         // send query
         $.get(
             'sources/find.queries.php',
             {
                 type    : 'search_for_items',
-                limited : $('#limited-search').is(":checked") === true ? teampassStorage('teampass-application', 'get', ['selectedFolder']) : false,
+                limited : $('#limited-search').is(":checked") === true ? store.get('teampassApplication').selectedFolder : false,
                 search  : criteria,
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
@@ -1893,7 +1909,7 @@ function refreshFoldersInfo(folders, action)
                         }
                     });
                     // Stare the data
-                    store.set('tempass-application', { foldersList:folders });
+                    store.set('teampassApplication', { foldersList:folders });
                 } else if (action === 'update') {
                     //store.update('tempass-application', { foldersList:folders });
                     /*
@@ -1970,39 +1986,49 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 {
     var me = $(this);
     stop_listing_current_folder = stop_listing_current_folder || '0';
-
+console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
 
     // case where we should stop listing the items
-    if (teampassStorage('teampass-application', 'get', ['itemsListStop']) === 1) {
+    if (store.get('teampassApplication') !== undefined && store.get('teampassApplication') .itemsListStop === 1) {
         requestRunning = false;
-        teampassStorage(
-            'teampass-application',
-            'update',
-            {
-                'itemsListStop' : 0
+        store.update(
+            'teampassApplication',
+            {},
+            function(teampassApplication) {
+                teampassApplication.itemsListStop = 0;
             }
         );
     }
 
+    //Evaluate number of items to display - depends on screen height
+    //adapt to the screen height
+    store.update(
+        'teampassApplication',
+        {},
+        function(teampassApplication)
+        {
+            teampassApplication.itemsShownByQuery = Math.max(Math.round((screenHeight-450)/23),2);
+        }
+    );
+
     if (stop_listing_current_folder === 1) {
         me.data('requestRunning', false);
         // Store listing criteria
-        teampassStorage(
-            'teampass-application',
-            'update',
+        store.update(
+            'teampassApplication',
+            function (teampassApplication)
             {
-                'itemsListFolderId' : groupe_id,
-                'itemsListRestricted' : restricted,
-                'itemsListStart' : start,
-                'itemsListStop' : 0
+                teampassApplication.itemsListFolderId = groupe_id,
+                teampassApplication.itemsListRestricted = restricted,
+                teampassApplication.itemsListStart = start,
+                teampassApplication.itemsListStop = 0
             }
         );
     } else {
-        teampassStorage(
-            'teampass-application',
-            'update',
-            {
-                'itemsListStop' : 0
+        store.update(
+            'teampassApplication',
+            function(teampassApplication) {
+                teampassApplication.itemsListStop = 0
             }
         );
     }
@@ -2034,11 +2060,12 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         }
 
         //$('#hid_cat').val(groupe_id);
-        teampassStorage(
-            'teampass-application',
-            'update',
+        store.update(
+            'teampassApplication',
+            {},
+            function(teampassApplication)
             {
-                'selectedFolder' : groupe_id
+                teampassApplication.selectedFolder = groupe_id
             }
         );
 
@@ -2053,22 +2080,19 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
         alertify
             .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fa fa-cog fa-spin"></i>', 0)
             .dismissOthers();
-
-        // Get application variables
-        var vars = teampassStorage('teampass-application', 'get', ['queryUniqueLoad', 'itemsShownByQuery']);
-        console.log('SHOW VARS')
-        console.log(vars);
-
+            store.each(function(value, key) {
+                console.log(key, '==', value)
+            })
         //ajax query
         request = $.post('sources/items.queries.php',
             {
-                type                     : 'lister_items_groupe',
-                id                       : groupe_id,
+                type                     : 'do_items_list_in_folder',
+                id                       : store.get('teampassApplication').selectedFolder,
                 restricted               : restricted,
                 start                    : start,
-                uniqueLoadData           : vars.queryUniqueLoad,
+                uniqueLoadData           : store.get('teampassApplication').queryUniqueLoad,
                 key                      : '<?php echo $_SESSION['key']; ?>',
-                nb_items_to_display_once : vars.itemsShownByQuery
+                nb_items_to_display_once : store.get('teampassApplication').itemsShownByQuery
             },
             function(retData) {
                 if (retData == 'Hacking attempt...') {
@@ -2097,15 +2121,16 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     var initialQueryData = $.parseJSON(data.uniqueLoadData);
 
                     // Update hidden variables
-                    teampassStorage(
-                        'teampass-item-information',
-                        'update',
+                    store.update(
+                        'teampassItem',
+                        {},
+                        function (teampassItem)
                         {
-                            'IsPersonalFolder' : data.IsPersonalFolder,
-                            'hasAccessLevel' : data.hasAccessLevel,
-                            'hasCustomCategories' : data.categoriesStructure,
+                            teampassItem.IsPersonalFolder = data.IsPersonalFolder,
+                            teampassItem.hasAccessLevel = data.hasAccessLevel,
+                            teampassItem.hasCustomCategories = data.categoriesStructure
                         }
-                    )
+                    );
 
                     // display path of folders
                     if ((initialQueryData.path.length > 0)) {
@@ -2213,11 +2238,11 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     $('#items_folder_path').html('<i class="fa fa-folder-open-o"></i>&nbsp;'+rebuildPath(data.arborescence));
                 } else {
                     // Store query results
-                    teampassStorage(
-                        'teampass-application',
-                        'update',
+                    store.update(
+                        'teampassApplication',
+                        function(teampassApplication)
                         {
-                            'queryUniqueLoad' : data.uniqueLoadData
+                            teampassApplication.queryUniqueLoad = data.uniqueLoadData;
                         }
                     );
                     if ($('#items_loading_progress').length == 0) {
@@ -2268,9 +2293,21 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
 
                     if (data.list_to_be_continued === 'yes') {
                         //set next start for query
-                        $('#query_next_start').val(data.next_start);
+                        store.update(
+                            'teampassApplication',
+                            function (teampassApplication) {
+                                teampassApplication.itemsListStart = parseInt(data.next_start);
+                            }
+                        );
+                        //$('#query_next_start').val(data.next_start);
                     } else {
-                        $('#query_next_start').val(data.list_to_be_continued);
+                        store.update(
+                            'teampassApplication',
+                            function (teampassApplication) {
+                                teampassApplication.itemsListStart = data.list_to_be_continued;
+                            }
+                        );
+                        //$('#query_next_start').val(data.list_to_be_continued);
                         $('.card-item-category').addClass('hidden');
                     }
                     
@@ -2291,9 +2328,21 @@ function ListerItems(groupe_id, restricted, start, stop_listing_current_folder)
                     // Prepare next iteration if needed
                     if (data.list_to_be_continued === 'yes') {
                         //set next start for query
-                        $('#query_next_start').val(data.next_start);
+                        //$('#query_next_start').val(data.next_start);
+                        store.update(
+                            'teampassApplication',
+                            function (teampassApplication) {
+                                teampassApplication.itemsListStart = parseInt(data.next_start);
+                            }
+                        );
                     } else {
-                        $('#query_next_start').val(data.list_to_be_continued);
+                        store.update(
+                            'teampassApplication',
+                            function (teampassApplication) {
+                                teampassApplication.itemsListStart = data.list_to_be_continued;
+                            }
+                        );
+                        //$('#query_next_start').val(data.list_to_be_continued);
                         $('.card-item-category').addClass('hidden');
                     }
 
@@ -2442,7 +2491,7 @@ function rebuildPath(data)
             new_path_elem = ' class="pointer" onclick="ListerItems('+value['id']+', \'\', 0)"';
         }
 
-         new_path += '<li class="breadcrumb-item" id="path_elem_'+value['id']+'"'+new_path_elem+'>'+value['title']+'</li>';
+        new_path += '<li class="breadcrumb-item" id="path_elem_'+value['id']+'"'+new_path_elem+'>'+value['title']+'</li>';
     });
 
     return new_path;
@@ -2454,51 +2503,36 @@ function rebuildPath(data)
 function proceed_list_update(stop_proceeding)
 {
     stop_proceeding = stop_proceeding || '';
-
-    var itemsListCriteria = teampassStorage(
-            'teampass-application',
-            'get',
-            [
-                'itemsListFolderId',
-                'itemsListRestricted',
-                'itemsListStart',
-                'itemsListStop'
-            ]
-        );
         
     if (stop_proceeding === '1'
-        || (itemsListCriteria.length > -1
-        && itemsListCriteria.itemsListFolderId !== ''
-        && $('#query_next_start').val() !== 'end')
+        || (store.get('teampassApplication').itemsListFolderId !== ''
+        && store.get('teampassApplication').itemsListStart !== 'end')
     ) {
         // Clear storage
-        teampassStorage(
-            'teampass-application',
-            'update',
+        store.update(
+            'teampassApplication',
+            function(teampassApplication)
             {
-                'itemsListFolderId' : '',
-                'itemsListRestricted' : '',
-                'itemsListStart' : '',
-                'itemsListStop' : ''
+                teampassApplication.itemsListStop = 0;
             }
         );
         // Perform listing
         ListerItems(
-            itemsListCriteria.itemsListFolderId,
-            itemsListCriteria.itemsListRestricted,
-            itemsListCriteria.itemsListStart,
-            itemsListCriteria.itemsListStop
+            store.get('teampassApplication').itemsListFolderId,
+            store.get('teampassApplication').itemsListRestricted,
+            store.get('teampassApplication').itemsListStart,
+            store.get('teampassApplication').itemsListStop
         );
         return false;
     }
     
-    if ($('#query_next_start').val() !== 'end') {
+    if (store.get('teampassApplication').itemsListStart !== 'end') {
         //Check if nb of items do display > to 0
-        if (teampassStorage('teampass-application', 'get', ['itemsShownByQuery']) > 0) {
+        if (store.get('teampassApplication').itemsShownByQuery > 0) {
             ListerItems(
-                teampassStorage('teampass-application', 'get', ['selectedFolder']),
+                store.get('teampassApplication').selectedFolder,
                 '',
-                parseInt($('#query_next_start').val())
+                store.get('teampassApplication').itemsListStart
             );
         }
     } else {
@@ -2507,7 +2541,7 @@ function proceed_list_update(stop_proceeding)
         
         // Update silently the info about the folder
         refreshFoldersInfo(
-            teampassStorage('teampass-application', 'get', ['selectedFolder']),
+            store.get('teampassApplication').selectedFolder,
             'update'
         );
 
@@ -2765,14 +2799,22 @@ function Details(itemDefinition, actionType)
                     data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
 
                     // Update hidden variables
-                    teampassStorage(
-                        'teampass-item-information',
+                    store.update(
+                        'teampassItem',
+                        function (teampassItem)
+                        {
+                            teampassItem.id = parseInt(data.id),
+                            teampassItem.timestamp = data.timestamp
+                        }
+                    )
+                    /*teampassStorage(
+                        'teampassItem',
                         'update',
                         {
                             'id' : parseInt(data.id),
                             'timestamp' : data.timestamp,
                         }
-                    )
+                    )*/
                     
                     // Prepare forms
                     $('#items-list-card, #folders-tree-card').addClass('hidden');
@@ -3277,7 +3319,8 @@ function showDetailsStep2(id, actionType)
                     "sources/items.queries.php",
                     {
                         type    : "load_item_history",
-                        item_id : teampassStorage('teampass-item-information', 'get', ['id']),
+                        //item_id : teampassStorage('teampassItem', 'get', ['id']),
+                        item_id : store.get('teampassItem').id,
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
                     function(data) {
@@ -3371,7 +3414,8 @@ function prepareOneTimeView()
         "sources/items.queries.php",
         {
             type    : "generate_OTV_url",
-            id      : teampassStorage('teampass-item-information', 'get', ['id']),
+            //id      : teampassStorage('teampassItem', 'get', ['id']),
+            id      : store.get('teampassItem').id,
             key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
@@ -3412,7 +3456,7 @@ function getPrivilegesOnItem(val, edit, context)
     context = context || "";    // make context optional
 
     // Clear memory
-    //localStorage.setItem("teampass-item-information", '');
+    //localStorage.setItem("teampassItem", '');
 
     return $.post(
         "sources/items.queries.php",
@@ -3420,7 +3464,8 @@ function getPrivilegesOnItem(val, edit, context)
             type    : "get_complixity_level",
             groupe  : val,
             context : context,
-            item_id : teampassStorage('teampass-item-information', 'get', ['id'])
+            //item_id : teampassStorage('teampassItem', 'get', ['id'])
+            item_id : store.get('teampassItem').id
         },
         function(data) {
             //decrypt data
@@ -3466,8 +3511,21 @@ function getPrivilegesOnItem(val, edit, context)
                 });
             }
 
-            teampassStorage(
-                'teampass-item-information',
+            store.set(
+                'teampassItem',
+                function (teampassItem)
+                {
+                    teampassItem.error = data.error === undefined ? '' : data.error,
+                    teampassItem.message = data.message,
+                    teampassItem.folderComplexity = data.val === undefined ? '' : parseInt(data.val),
+                    teampassItem.folderIsPersonal = data.personal === undefined ? '' : parseInt(data.personal),
+                    teampassItem.itemMinimumComplexity = data.complexity === undefined ? '' : data.complexity,
+                    teampassItem.itemVisibility = data.visibility === undefined ? '' : data.visibility
+                }
+            );
+
+            /*teampassStorage(
+                'teampassItem',
                 'update',
                 {
                     'error' : data.error === undefined ? '' : data.error,
@@ -3477,7 +3535,7 @@ function getPrivilegesOnItem(val, edit, context)
                     'itemMinimumComplexity' : data.complexity === undefined ? '' : data.complexity,
                     'itemVisibility' : data.visibility === undefined ? '' : data.visibility,
                 }
-            );
+            );*/
         }
     );
 }

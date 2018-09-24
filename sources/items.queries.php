@@ -914,6 +914,7 @@ if (null !== $post_type) {
                     $restrictionActive = false;
                 }
                 print_r($dataItem);
+                echo $post_item_id.' - icic  ';
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
                     && ($dataItem['perso'] === '0'
                     || ($dataItem['perso'] === '1'
@@ -1628,6 +1629,7 @@ if (null !== $post_type) {
                         array(
                             'error' => true,
                             'message' => langHdl('error_not_allowed_to_edit_item'),
+                            'toto' => '1',
                         ),
                         'encode'
                     );
@@ -3026,7 +3028,7 @@ if (null !== $post_type) {
         * CASE
         * List items of a group
         */
-        case 'lister_items_groupe':
+        case 'do_items_list_in_folder':
             // Check KEY and rights
             if ($post_key !== $_SESSION['key']) {
                 $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.str_replace('"', '\"', langHdl('error_not_allowed_to')).'"}]';
