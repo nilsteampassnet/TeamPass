@@ -12,7 +12,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-require_once('sources/SecureHandler.php');
+require_once 'sources/SecureHandler.php';
 session_start();
 
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1 ||
@@ -39,10 +39,10 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], "manage_views")) {
     exit();
 }
 
-include $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
-include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+require $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+require $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 if (!isset($SETTINGS_EXT) || !isset($SETTINGS_EXT['version'])) {
-    require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 }
 header("Content-type: text/html; charset=utf-8");
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
@@ -63,6 +63,7 @@ echo '
             <input type="radio" id="radio64" name="radio" onclick="manage_div_display(\'tab6_4\'); loadTable(\'t_admin\');" /><label for="radio64">'.$LANG['admin'].'</label>
             <input type="radio" id="radio65" name="radio" onclick="manage_div_display(\'tab6_5\'); loadTable(\'t_items\');" /><label for="radio65">'.$LANG['items'].'</label>
             <input type="radio" id="radio66" name="radio" onclick="manage_div_display(\'tab6_6\'); loadTable(\'t_failed_auth\');" /><label for="radio66">'.$LANG['failed_logins'].'</label>
+            <input type="radio" id="radio67" name="radio" onclick="manage_div_display(\'tab6_7\');" /><label for="radio67">'.$LANG['users'].'</label>
         </div>
         <div id="tab6_0" style="display:none;margin-top:30px;">
             <div style="margin:10px auto 25px auto;min-height:250px;" id="t_connections_page">
@@ -143,6 +144,24 @@ echo '
                         <th style="width:10%;">'.$LANG['date'].'</th>
                         <th style="width:40%;">'.$LANG['label'].'</th>
                         <th style="width:20%;">'.$LANG['user'].'</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr><td></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="tab6_7" style="display:none;margin-top:30px;">
+            <div style="">
+            '.$LANG['user'].': <select id="users_table_selection"><option value="0">--'.$LANG['select'].'--</option></select>
+            </div>
+            <div style="margin:10px auto 25px auto;min-height:250px;" id="t_users_page">
+                <table id="t_users" cellspacing="0" cellpadding="5" width="100%">
+                    <thead><tr>
+                        <th style="width:10%;">'.$LANG['date'].'</th>
+                        <th style="width:40%;">'.$LANG['label'].'</th>
+                        <th style="width:20%;">'.$LANG['action'].'</th>
+                        <th style="width:10%;">'.$LANG['at_personnel'].'</th>
                     </tr></thead>
                     <tbody>
                         <tr><td></td></tr>

@@ -344,7 +344,7 @@ $(function() {
                         "sources/main.queries.php",
                         {
                             type       : "generate_a_password",
-                            length     : 12,
+                            size     : 12,
                             secure     : true,
                             symbols    : true,
                             capitalize : true,
@@ -858,8 +858,8 @@ function pwGenerate(elem)
         {
             type    : "generate_a_password",
             size    : Math.floor((8-5)*Math.random()) + 6,
-            num        : true,
-            maj        : true,
+            num     : true,
+            maj     : true,
             symb    : false,
             fixed_elem    : 1,
             elem    : elem,

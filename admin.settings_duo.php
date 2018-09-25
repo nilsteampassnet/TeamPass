@@ -409,7 +409,7 @@ function SaveKeys()
     $("#save_wait").show();
 
     var data = "{\"akey\":\""+sanitizeString($("#duo_akey").val())+"\", \"ikey\":\""+sanitizeString($("#duo_ikey").val())+"\", \"skey\":\""+sanitizeString($("#duo_skey").val())+"\", \"host\":\""+sanitizeString($("#duo_host").val())+"\"}";
-    console.log(data);
+
     $.post(
         "sources/admin.queries.php",
         {
@@ -555,7 +555,6 @@ $(function() {
 
                     return;
                 }
-                console.log(data);
                 if (data.error == "") {
                     $("#"+e.target.id).before("<i class=\"fa fa-check fa-lg mi-green new_check\" style=\"float:right;\"></i>");
                     $(".new_check").fadeOut(2000);

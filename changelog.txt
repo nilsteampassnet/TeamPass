@@ -1,4 +1,9 @@
 2.1.27
+23/
+ #2419 Cannot show password by using item menu bars entry
+ #2418 Generatinga  new password for a user fails with error
+ #2403 Cannot Login using LDAP user
+
 22/
  #2408 Password complexity not enforced
  #2326 link copy doesn't work corectly

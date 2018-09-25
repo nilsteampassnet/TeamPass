@@ -91,11 +91,10 @@ $csrfp_config = include $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/lib
     //FUNCTION mask/unmask passwords characters
     function ShowPassword(pw)
     {
-        console.log("ici");
         if ($("#selected_items").val() == "") return;
 
         if ($('#id_pw').html().indexOf("fa-asterisk") != -1) {
-            mini(
+            itemLog(
                 "at_password_shown",
                 $('#id_item').val(),
                 $('#hid_label').val()

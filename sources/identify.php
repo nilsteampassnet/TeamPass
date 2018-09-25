@@ -762,7 +762,11 @@ function identifyUser(
                 }
 
                 // Is user expired?
-                if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
+                $_UserExpiry = $adldap->user()->passwordExpiry($auth_username);
+                if ($debugLdap == 1) {
+                    fputs($dbgLdap, "expiry check of user $auth_username returned: $_UserExpiry\n\n");
+                }
+                if (is_array($_UserExpiry) === false && strstr($_UserExpiry, "not expire") === false) {
                     echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
                     exit();
                 }

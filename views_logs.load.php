@@ -27,6 +27,7 @@ var oTable3;
 var oTable4;
 var oTable5;
 var oTable6;
+var oTable7;
 
 /**
  * Manage display of divs
@@ -40,6 +41,7 @@ function manage_div_display(show_id){
     all_divs[4] = "tab6_4";
     all_divs[5] = "tab6_5";
     all_divs[6] = "tab6_6";
+    all_divs[7] = "tab6_7";
     for (i=0;i<all_divs.length;i++) {
         if (all_divs[i] == show_id) {
             $("#"+all_divs[i]).show();
@@ -52,8 +54,9 @@ function manage_div_display(show_id){
 /**
  * Loads the associated data table
  */
-function loadTable(table_id)
+function loadTable(table_id, extra)
 {
+    $('#users_table_selection').val($("#target option:first").val());
     if (table_id == "t_connections") {
         $("#type_log_displayed").val("connections_logs");
         oTable0 = $("#t_connections").dataTable({
@@ -173,15 +176,32 @@ function loadTable(table_id)
                 $("#t_items_page input").focus();
             }
         });
+    } else if (table_id == "t_users") {
+        $("#type_log_displayed").val("users_logs");
+        oTable7 = $("#t_users").dataTable({
+            "aaSorting": [[ 0, "desc" ]],
+            "sPaginationType": "full_numbers",
+            "bProcessing": true,
+            "bDestroy": true,
+            "bServerSide": true,
+            "sAjaxSource": "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable/datatable.logs.php?action=users&userid="+extra+"&token=<?php echo $_SESSION["key"]; ?>",
+            "bJQueryUI": true,
+            "oLanguage": {
+                "sUrl": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+            },
+            "fnInitComplete": function() {
+                $("#t_items_page input").focus();
+            }
+        });
     }
 }
 
 $(function() {
     $("#radio_log")
-    .buttonset()
-    .click(function(e) {
-        $("#div_log_purge").show();
-    });
+        .buttonset()
+        .click(function(e) {
+            $("#div_log_purge").show();
+        });
     $(".button").button();
     $("#log_jours").datepicker({
         regional: 'fr',
@@ -249,6 +269,7 @@ $(function() {
                     else if ($("#type_log_displayed").val() == "admin_logs") oTable4.api().ajax.reload();
                     else if ($("#type_log_displayed").val() == "items_logs") oTable5.api().ajax.reload();
                     else if ($("#type_log_displayed").val() == "failed_auth_logs") oTable6.api().ajax.reload();
+                    else if ($("#type_log_displayed").val() == "users_logs") oTable7.api().ajax.reload();
                 }
                 $("#purgeTo, #purgeFrom").val("");
             },
@@ -280,6 +301,25 @@ $(function() {
             $( "#from" ).datepicker( "option", "maxDate", maxDate );
         }
     });
+
+    // Get list of users
+    $.post(
+        "sources/users.queries.php",
+        {
+            type    : "get_list_of_users_for_sharing",
+            key     : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+
+            $('#users_table_selection').append(data.users_list_from);
+        }
+    );
+
+    // Launch table refresh on user change
+    $('#users_table_selection').on('change', function() {
+        loadTable('t_users', $(this).find(':selected').data('id'));
+    })
 });
 //]]>
 </script>
