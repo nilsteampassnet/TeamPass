@@ -91,25 +91,7 @@ foreach ($rows as $reccord) {
     }
 }
 
-// Hidden things
-echo '
-<input type="hidden" name="hid_cat" id="hid_cat" value="', $get_group !== null ? $get_group : '', '" />
-<input type="hidden" id="complexite_groupe" value="" />
-<input type="hidden" id="bloquer_creation_complexite" value="" />
-<input type="hidden" id="bloquer_modification_complexite" value="" />
-<input type="hidden" id="error_detected" value="" />
-<input type="hidden" id="user_is_read_only" value="', isset($_SESSION['user_read_only']) && $_SESSION['user_read_only'] == 1 ? '1' : '', '" />
-<input type="hidden" id="request_ongoing" value="" />
-<input type="hidden" id="request_lastItem" value="" />
-<input type="hidden" id="item_editable" value="" />
-<input type="hidden" id="timestamp_item_displayed" value="" />
-<input type="hidden" id="user_ongoing_action" value="" />
-<input type="hidden" id="input_list_roles" value="'.htmlentities($listRoles).'" />
-<input type="hidden" id="empty_clipboard" value="" />
-<input type="hidden" id="selected_folder_is_personal" value="" />
-<input type="hidden" id="personal_visible_groups_list" value="', isset($_SESSION['personal_visible_groups_list']) ? $_SESSION['personal_visible_groups_list'] : '', '" />
-<input type="hidden" id="create_item_without_password" value="', isset($SETTINGS['create_item_without_password']) ? $SETTINGS['create_item_without_password'] : '0', '" />';
-// Hidden objects for Item search
+/*// Hidden objects for Item search
 if ($get_group !== null && $get_id !== null) {
     echo '
     <input type="hidden" name="open_folder" id="open_folder" value="'.$get_group.'" />
@@ -124,17 +106,13 @@ if ($get_group !== null && $get_id !== null) {
 } else {
     echo '<input type="hidden" name="open_folder" id="open_folder" value="" />';
     echo '<input type="hidden" name="open_id" id="open_id" value="" />';
-    echo '<input type="hidden" name="folder_requests_psk" id="folder_requests_psk" value="" />';
     echo '<input type="hidden" name="open_item_by_get" id="open_item_by_get" value="" />';
 }
+*/
 // Is personal SK available
 echo '
-<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && $session_user_upgrade_needed == 1 ? '1' : '0', '" />';
+<input type="hidden" id="personal_upgrade_needed" value="', isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1 && $session_user_admin !== '1' && $session_user_upgrade_needed == 1 ? 1 : 0, '" />';
 
-echo '
-<input type="hidden" id="form-item-hidden-psk" value="',
-    isset($_SESSION['user_settings']['session_psk']) &&
-    empty($_SESSION['user_settings']['session_psk']) === false ? 1 : 0, '" />';
 ?>
 
     <!-- Content Header (Page header) -->

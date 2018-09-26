@@ -113,7 +113,7 @@ $(function() {
                 data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                 key     : '<?php echo $_SESSION['key']; ?>'
             },
-            function(data) {console.log(data)
+            function(data) {
                 data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
 
                 // Is there an error?
@@ -126,6 +126,12 @@ $(function() {
                         )
                         .dismissOthers();
                 } else {
+                    store.update(
+                        'teampassApplication',
+                        function (teampassApplication) {
+                            teampassApplication.personalSaltkeyIsSet = 1;
+                        }
+                    )
                     alertify
                         .success('<?php echo langHdl('alert_page_will_reload'); ?>', 1)
                         .dismissOthers();
@@ -191,19 +197,6 @@ $(function() {
         ).then(function() {
             refreshListLastSeenItems();
         });
-        /*
-        // Load teampass settings
-        loadSettings();
-
-        // launch query
-        setTimeout(
-            function() {
-                refreshListLastSeenItems();
-            },
-            500
-        );
-        */
-        
     }
     //-- end
 
@@ -271,11 +264,6 @@ function loadSettings()
                     });
                 }
             );
-            /*teampassStorage(
-                'teampass-settings',
-                'update',
-                data
-            );*/
         }
     );
 }

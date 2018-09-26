@@ -67,6 +67,39 @@ var requestRunning = false,
     applicationVars;
 
 
+// Manage memory
+if (store.get('teampassApplication') === 'undefined' || store.get('teampassApplication') === undefined) {
+    store.set(
+        'teampassApplication',
+        {
+            lastItemSeen : '',
+            selectedFolder : '',
+            itemsListStop : '',
+            itemsListStart : '',
+            selectedFolder : '',
+            itemsListFolderId : '',
+            itemsListRestricted : '',
+            itemsShownByQuery : '',
+            foldersList : [],
+            personalSaltkeyRequired : 0,
+            personalSaltkeyIsSet : 0,
+            userIsReadOnly : <?php echo isset($_SESSION['user_read_only']) === true && $_SESSION['user_read_only'] === 1 ? 1 : 0; ?>
+        }
+    );
+}
+if (store.get('teampassItem') === 'undefined' || store.get('teampassItem') === undefined) {
+    store.set(
+        'teampassItem',
+        {
+            IsPersonalFolder : '',
+            hasAccessLevel : '',
+            hasCustomCategories : '',
+            id : '',
+            timestamp : ''
+        }
+    );
+}
+
 
 // Build tree
 $('#jstree').jstree({
@@ -97,6 +130,10 @@ $('#jstree').jstree({
     selectedFolderId = selectedFolder.id.split('_')[1];
     console.info('SELECTED NODE ' + selectedFolderId);
     console.log(selectedFolder);
+
+    store.each(function(value, key) {
+        console.log(key, '==', value)
+    })
 
     store.update(
         'teampassApplication',
@@ -134,10 +171,19 @@ $('#jstree_search')
         $(this).val(folderSearchCriteria);
     });
 
-
+// Close on escape key
 $(document).keyup(function(e) {
     if (e.keyCode == 27) {
         closeItemDetailsCard();
+    }
+});
+
+// Edit on e key
+$(document).keyup(function(e) {
+    if (e.keyCode == 69) {
+        if ($('#form-item').hasClass('hidden') === false) {
+            showItemEditForm(store.get('teampassItem').id);
+        }
     }
 });
 
@@ -164,7 +210,12 @@ $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
 $('.tp-action').click(function() {
     if ($(this).data('folder-action') === 'refresh') {
         // Force refresh
-        store.set('teampassApplication', { jstreeForceRefresh:1 });
+        store.update(
+            'teampassApplication',
+            function (teampassApplication) {
+                teampassApplication.jstreeForceRefresh = 1;
+            }
+        );
         if (selectedFolderId !== '') {
             refreshTree(selectedFolderId, true);
         } else {
@@ -196,7 +247,7 @@ $('.tp-action').click(function() {
         // ---
     } else if ($(this).data('folder-action') === 'edit') {
         console.info('SHOW EDIT FOLDER');
-        // Show copy form
+        // Show edit form
         $('.form-item, .item-details-card, .form-item-action, #folders-tree-card').addClass('hidden');
         $('.form-folder-add').removeClass('hidden');
         // Prepare some data in the form
@@ -252,7 +303,7 @@ $('.tp-action').click(function() {
                 // Clean select2 lists
                 $('.select2').val('').change();
                 // Do some form cleaning
-                $('#request_lastItem, .clear-me-val').val('');
+                $('.clear-me-val').val('');
                 $('.item-details-card').find('.form-control').val('');
                 $('.clear-me-html').html('');
                 $('.form-item-control').val('');
@@ -289,47 +340,40 @@ $('.tp-action').click(function() {
         });
         // ---
     } else if ($(this).data('item-action') === 'edit') {
-        console.info('SHOW EDIT ITEM');
-        
-        $.when(
-            getPrivilegesOnItem(selectedFolderId, 0)
-        ).then(function() {
-            // Now read
-            if (store.get('teampassItem').error !== '') {
-                alertify
-                    .error('<i class="fa fa-ban mr-2"></i>' + store.get('teampassItem').message, 3)
-                    .dismissOthers();
-            } else {
-                $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
-                $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
-                // Show edition form
-                $('.form-item, #form-item-attachments-zone')
-                    .removeClass('hidden');
-                $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action')
-                    .addClass('hidden');
-                userDidAChange = false;
-                // Force update of simplepassmeter
-                $('#form-item-password').focus();
-                $('#form-item-label').focus();
-                // Set type of action
-                $('#form-item-button-save').data('action', 'update_item');
-                // ---
-            }
-        });
+        console.info('SHOW EDIT ITEM');        
+        showItemEditForm(selectedFolderId);
     } else if ($(this).data('item-action') === 'copy') {
         console.info('SHOW COPY ITEM');
-        // Show copy form
-        $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
-        $('.form-item-copy, .item-details-card-menu').removeClass('hidden');
-        // Prepare some data in the form
-        $('#form-item-copy-new-label').val($('#form-item-label').val());
-        $('#form-item-copy-destination').val($('#form-item-folder').val()).change();
+        if (store.get('teampassItem').user_can_modify === 1) {
+            // Show copy form
+            $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
+            $('.form-item-copy, .item-details-card-menu').removeClass('hidden');
+            // Prepare some data in the form
+            $('#form-item-copy-new-label').val($('#form-item-label').val());
+            $('#form-item-copy-destination').val($('#form-item-folder').val()).change();
+        } else {
+            alertify
+                .error(
+                    '<i class="fa fa-ban fa-lg mr-2"></i>' + store.get('teampassItem').message,
+                    5
+                )
+                .dismissOthers();
+        }
         // ---
     } else if ($(this).data('item-action') === 'delete') {
         console.info('SHOW DELETE ITEM');
-        // Show delete form
-        $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
-        $('.form-item-delete, .item-details-card-menu').removeClass('hidden');
+        if (store.get('teampassItem').user_can_modify === 1) {
+            // Show delete form
+            $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
+            $('.form-item-delete, .item-details-card-menu').removeClass('hidden');
+        } else {
+            alertify
+                .error(
+                    '<i class="fa fa-ban fa-lg mr-2"></i>' + store.get('teampassItem').message,
+                    5
+                )
+                .dismissOthers();
+        }
     } else if ($(this).data('item-action') === 'share') {
         console.info('SHOW SHARE ITEM');
         // Show share form
@@ -414,7 +458,6 @@ $('#form-item-share-perform').click(function() {
         'sources/items.queries.php',
         {
             type    : 'send_email',
-            //id      : teampassStorage('teampassItem', 'get', ['id']),
             id      : store.get('teampassItem').id,
             receipt : $('#form-item-share-email').val(),
             cat     : 'share_this_item',
@@ -456,7 +499,6 @@ $('#form-item-delete-perform').click(function() {
     userDidAChange = false;
 
     var data = {
-        //'item_id'   : teampassStorage('teampassItem', 'get', ['id']),
         'item_id'   : store.get('teampassItem').id,
         'folder_id' : selectedFolderId,
         'label' : $('#form-item-copy-new-label').val(),
@@ -506,7 +548,6 @@ $('#form-item-share-perform').click(function() {
         'sources/items.queries.php',
         {
             type    : 'notify_user_on_item_change',
-            //id      : teampassStorage('teampassItem', 'get', ['id']),
             id      : store.get('teampassItem').id,
             value   : $('#form-item-anyoneCanModify').is(':checked') === true ? 1 : 0,
             key     : '<?php echo $_SESSION['key']; ?>'
@@ -555,7 +596,6 @@ $('#form-item-copy-perform').click(function() {
     userDidAChange = false;
 
     var data = {
-        //'item_id'   : teampassStorage('teampassItem', 'get', ['id']),
         'item_id'   : store.get('teampassItem').id,
         'source_id' : selectedFolderId,
         'dest_id'   : $('#form-item-copy-destination').val(),
@@ -623,7 +663,6 @@ $('#form-item-suggestion-perform').click(function() {
         'description'   : itemEditorSuggestion.getData(),
         'comment'       : $('#form-item-suggestion-comment').val(),
         'folder_id'     : selectedFolderId,
-        //'item_id'       : teampassStorage('teampassItem', 'get', ['id']),
         'item_id'       : store.get('teampassItem').id
     }
 
@@ -922,7 +961,7 @@ function closeItemDetailsCard()
         // Do some form cleaning
         $('#items-list-card, #folders-tree-card').removeClass('hidden');
         $('.item-details-card, .form-item-action, .form-item, .form-folder-action').addClass('hidden');
-        $('#request_lastItem, .clear-me-val').val('');
+        $('.clear-me-val').val('');
         $('.item-details-card').find('.form-control').val('');
         $('.clear-me-html').html('');
         $('.form-item-control').val('');
@@ -1141,7 +1180,6 @@ var showPwdContinuous = function(){
         if ($("#pw_shown").val() === "0") {
             itemLog(
                 'at_password_shown',
-                //teampassStorage('teampassItem', 'get', ['id']),
                 store.get('teampassItem').id,
                 $('#card-item-label').text()
             );
@@ -1350,7 +1388,12 @@ var uploader_attachments = new plupload.Uploader({
             );
 
             // Get random number
-            store.set('teampassApplication', { uploadedFileId:CreateRandomString(9, 'num_no_0') });
+            store.update(
+                'teampassApplication',
+                function (teampassApplication) {
+                    teampassApplication.uploadedFileId = CreateRandomString(9, 'num_no_0');
+                }
+            );
 
             up.setOption('multipart_params', {
                 PHPSESSID       : '<?php echo $_SESSION['user_id']; ?>',
@@ -1530,8 +1573,8 @@ $('#form-item-button-save').click(function() {
                 .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_selected_folder'); ?>', 10)
                 .dismissOthers();
             return false;
-        } else if ($('#form-item-hidden-isPersonalFolder').val() === '1'
-            && $('#form-item-hidden-psk').val() !== 1
+        } else if (store.get('teampassApplication').personalSaltkeyRequired === 1
+            && store.get('teampassApplication').personalSaltkeyIsSet !== 1
         ) {
             // No folder selected
             alertify
@@ -1600,9 +1643,8 @@ $('#form-item-button-save').click(function() {
                 'folder': parseInt($('#form-item-folder').val()),
                 'email': $('#form-item-email').val(),
                 'fields': fields,
-                'folder_is_personal': ($('#form-item-hidden-isPersonalFolder').val() === 1
-                    && $('#form-item-hidden-psk').val() === 1) ? 1 : 0,
-                //'id': teampassStorage('teampassItem', 'get', ['id']),
+                'folder_is_personal': (store.get('teampassApplication').personalSaltkeyRequired === 1
+                    && store.get('teampassApplication').personalSaltkeyIsSet === 1) ? 1 : 0,
                 'id'   : store.get('teampassItem').id,
                 'label': $('#form-item-label').val(),
                 'login': $('#form-item-login').val(),
@@ -1651,7 +1693,7 @@ console.log(data);
                     } catch (e) {
                         // error
                         $("#div_loading").addClass("hidden");
-                        $("#request_ongoing").val("");
+                        requestRunning = false;
                         $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
                         $("#div_dialog_message").dialog("open");
 
@@ -1740,6 +1782,38 @@ $("#form-item-tags")
         }
     }
 );
+
+
+function showItemEditForm(selectedFolderId)
+{
+    console.info('SHOW EDIT ITEM ' + selectedFolderId);
+        
+        $.when(
+            getPrivilegesOnItem(selectedFolderId, 0)
+        ).then(function() {
+            // Now read
+            if (store.get('teampassItem').error !== '') {
+                alertify
+                    .error('<i class="fa fa-ban mr-2"></i>' + store.get('teampassItem').message, 3)
+                    .dismissOthers();
+            } else {
+                $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
+                $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
+                // Show edition form
+                $('.form-item, #form-item-attachments-zone')
+                    .removeClass('hidden');
+                $('.item-details-card, .form-item-copy, #form-item-password-options, .form-item-action')
+                    .addClass('hidden');
+                userDidAChange = false;
+                // Force update of simplepassmeter
+                $('#form-item-password').focus();
+                $('#form-item-label').focus();
+                // Set type of action
+                $('#form-item-button-save').data('action', 'update_item');
+                // ---
+            }
+        });
+}
 
 
 /**
@@ -1909,27 +1983,32 @@ function refreshFoldersInfo(folders, action)
                         }
                     });
                     // Stare the data
-                    store.set('teampassApplication', { foldersList:folders });
-                } else if (action === 'update') {
-                    //store.update('tempass-application', { foldersList:folders });
-                    /*
-                    // Only update for this folder
-                    var storage = JSON.parse(store.get('teampass-folders'));
-
-                    // Find the index in Storage where this folder is
-                    indexes = $.map(storage, function(obj, index) {
-                        if (parseInt(obj.id) === parseInt(folders)) {
-                            return index;
+                    store.update(
+                        'teampassApplication',
+                        function (teampassApplication)
+                        {
+                            teampassApplication.foldersList = folders;
                         }
-                    })
+                    );
+                } else if (action === 'update') {
+                    // Store the data
+                    var currentFoldersList = store.get('teampassApplication').foldersList;
+                    $.each(currentFoldersList, function(index, item) {
+                        if (item.id === parseInt(folders)) {
+                            currentFoldersList[index].categories = data.result[folders].categories;
+                            currentFoldersList[index].complexity = data.result[folders].complexity;
+                            currentFoldersList[index].visibilityRoles = data.result[folders].visibilityRoles;
 
-                    // Update it with the new values
-                    if (indexes[0] >= 0) {
-                        storage[indexes[0]]['categories'] = data.result[folders].categories;
-                        storage[indexes[0]]['complexity'] = data.result[folders].complexity;
-                        storage[indexes[0]]['visibilityRoles'] = data.result[folders].visibilityRoles;
-                    }
-                    */
+                            store.update(
+                                'teampassApplication',
+                                function (teampassApplication) {
+                                    foldersList = currentFoldersList;
+                                }
+                            );
+                            return true;
+                        }
+                    });
+
                 }
             } else {
                 alertify
@@ -1962,7 +2041,6 @@ function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
     }
 
     if (node_to_select !== '') {
-        $('#hid_cat').val(node_to_select);
         $('#jstree').jstree('deselect_all');
 
         $('#jstree')
@@ -1993,7 +2071,6 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
         requestRunning = false;
         store.update(
             'teampassApplication',
-            {},
             function(teampassApplication) {
                 teampassApplication.itemsListStop = 0;
             }
@@ -2004,7 +2081,6 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
     //adapt to the screen height
     store.update(
         'teampassApplication',
-        {},
         function(teampassApplication)
         {
             teampassApplication.itemsShownByQuery = Math.max(Math.round((screenHeight-450)/23),2);
@@ -2021,14 +2097,16 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                 teampassApplication.itemsListFolderId = groupe_id,
                 teampassApplication.itemsListRestricted = restricted,
                 teampassApplication.itemsListStart = start,
-                teampassApplication.itemsListStop = 0
+                teampassApplication.itemsListStop = 0,
+                teampassApplication.lastItemSeen = ''
             }
         );
     } else {
         store.update(
             'teampassApplication',
             function(teampassApplication) {
-                teampassApplication.itemsListStop = 0
+                teampassApplication.itemsListStop = 0,
+                teampassApplication.lastItemSeen = ''
             }
         );
     }
@@ -2039,8 +2117,6 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
         return false;
     }
     requestRunning = true;
-
-    $('#request_lastItem').val('');
 
     // Hide any info
     $('#info_teampass_items_list').addClass('hidden');
@@ -2059,10 +2135,8 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
             $('#teampass_items_list, #items_folder_path').html('');
         }
 
-        //$('#hid_cat').val(groupe_id);
         store.update(
             'teampassApplication',
-            {},
             function(teampassApplication)
             {
                 teampassApplication.selectedFolder = groupe_id
@@ -2080,9 +2154,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
         alertify
             .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fa fa-cog fa-spin"></i>', 0)
             .dismissOthers();
-            store.each(function(value, key) {
-                console.log(key, '==', value)
-            })
+            
         //ajax query
         request = $.post('sources/items.queries.php',
             {
@@ -2123,11 +2195,10 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                     // Update hidden variables
                     store.update(
                         'teampassItem',
-                        {},
                         function (teampassItem)
                         {
-                            teampassItem.IsPersonalFolder = data.IsPersonalFolder,
-                            teampassItem.hasAccessLevel = data.hasAccessLevel,
+                            teampassItem.IsPersonalFolder = parseInt(data.IsPersonalFolder),
+                            teampassItem.hasAccessLevel = parseInt(data.access_level),
                             teampassItem.hasCustomCategories = data.categoriesStructure
                         }
                     );
@@ -2150,7 +2221,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                     }*/
 
                     // warn about a required change of personal SK
-                    if ($('#personal_upgrade_needed').val() == '1' && data.folder_requests_psk === 1) {
+                    if ($('#personal_upgrade_needed').val() === 1 && data.folder_requests_psk === 1) {
                         $('#dialog_upgrade_personal_passwords').dialog('open');
                     }
 
@@ -2269,8 +2340,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
 
                     return false;
                 } else if (data.error === 'not_authorized' || data.access_level === '') {
-                    //warn user
-                    $('#hid_cat').val('');                    
+                    //warn user                   
                     $('#item_details_no_personal_saltkey').addClass('hidden');
 
                     // Show warning to user
@@ -2280,13 +2350,22 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                             '</div>')
                         .removeClass('hidden');
 
-                } else if (($('#user_is_read_only').val() == 1 && data.folder_requests_psk == 0) || data.access_level == 1) {
+                } else if ((store.get('teampassApplication').userIsReadObly === 1 && data.folder_requests_psk == 0)
+                    || data.access_level == 1
+                ) {
                     //readonly user
-                    $('#folder_requests_psk').val(data.saltkey_is_required);
                     $('#item_details_no_personal_saltkey, #item_details_nok').addClass('hidden');
                     $('#item_details_ok, #items_list').removeClass('hidden');
-
                     $('#more_items').remove();
+
+                    store.update(
+                        'teampassApplication',
+                        function (teampassApplication) {
+                            teampassApplication.bypassComplexityOnCreation = parseInt(data.bloquer_creation_complexite);
+                            teampassApplication.bypassComplexityOnEdition = parseInt(data.bloquer_modification_complexite);
+                            teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
+                        }
+                    );
 
                     // show items
                     sList(data.html_json);
@@ -2313,14 +2392,18 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                     
                     proceed_list_update(stop_listing_current_folder);
                 } else {
-                    $('#folder_requests_psk').val(data.saltkey_is_required);
                     //Display items
                     $('#item_details_no_personal_saltkey, #item_details_nok').addClass('hidden');
                     $('#item_details_ok, #items_list').removeClass('hidden');
 
-                    $('#complexite_groupe').val(data.folder_complexity);
-                    $('#bloquer_creation_complexite').val(data.bloquer_creation_complexite);
-                    $('#bloquer_modification_complexite').val(data.bloquer_modification_complexite);
+                    store.update(
+                        'teampassApplication',
+                        function (teampassApplication) {
+                            teampassApplication.bypassComplexityOnCreation = parseInt(data.bloquer_creation_complexite);
+                            teampassApplication.bypassComplexityOnEdition = parseInt(data.bloquer_modification_complexite);
+                            teampassApplication.personalSaltkeyRequired = parseInt(data.saltkey_is_required);
+                        }
+                    );
 
                     // show items
                     sList(data.html_json);
@@ -2371,12 +2454,12 @@ function sList(data)
 
         // Prepare item icon
         if (value.canMove === 1 && value.accessLevel === 0) {
-            item_grippy = '<i class="fa fa-ellipsis-v item_draggable grippy"></i>&nbsp;&nbsp;';
+            item_grippy = '<i class="fa fa-ellipsis-v mr-1"></i>';
         }
 
         // Prepare error message
         if (value.pw_status === 'encryption_error') {
-            pwd_error = '<i class="fa fa-warning fa-lg text-danger infotip" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>&nbsp;&nbsp;';
+            pwd_error = '<i class="fa fa-warning fa-lg text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>';
         }
 
         // Prepare anyone can modify icon
@@ -2423,9 +2506,9 @@ function sList(data)
         }
         
         $('#teampass_items_list').append(
-            '<tr class="row col-md-12 list-item-row" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
+            '<tr class="row col-md-12 list-item-row' + (item_grippy === '' ? '' : ' is-draggable') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
             (value.is_result_of_search === 0 ?
-                '<td class="col-md-1">' + item_grippy + '<i class="fa ' + value.perso + ' fa-sm ml-1"></i></td>' +
+                '<td class="col-md-1">' + item_grippy + '<!--<i class="fa ' + value.perso + ' fa-sm mr-1"></i>--></td>' +
                 '<td class="col-md-11 list-item-description" id="">' +
                 '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
                 value.label + value.desc + '</span>' +
@@ -2550,61 +2633,64 @@ function proceed_list_update(stop_proceeding)
             .dismissOthers();
 
 
-        
-
         // Prepare items dragable on folders
-        /*$('.item_draggable').draggable({
-            handle: '.grippy',
+        $('.is-draggable').draggable({
             cursor: 'move',
-            opacity: 0.4,
+            opacity: 0.7,
             appendTo: 'body',
             stop: function(event, ui) {
-                $(this).removeClass('ui-state-highlight');
+                $(this).removeClass('bg-warning');
             },
             start: function(event, ui) {
-                $(this).addClass('ui-state-highlight');
+                $(this).addClass('bg-warning');
             },
             helper: function(event) {
-                return $('<div class="ui-widget-header" id="drop_helper">'+'<?php echo langHdl('drag_drop_helper'); ?>'+'</div>');
+                return $('<div class="bg-gray p-2">'+'<?php echo langHdl('drag_drop_helper'); ?>'+'</div>');
             }
         });
         $('.folder').droppable({
-            hoverClass: 'ui-state-error',
+            hoverClass: 'bg-warning',
             tolerance: 'pointer',
             drop: function(event, ui) {
+                alertify
+                    .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+                    .dismissOthers();
+
+                // Hide helper
                 ui.draggable.addClass('hidden');
-                LoadingPage();
+                
                 //move item
                 $.post(
                     'sources/items.queries.php',
                     {
                         type      : 'move_item',
-                        item_id   : ui.draggable.attr('id'),
+                        item_id   : ui.draggable.data('item-id'),
                         folder_id : $(this).attr('id').substring(4),
                         key       : '<?php echo $_SESSION['key']; ?>'
                     },
                     function(data) {
-                        LoadingPage();
-                        // check if errors
-                        if (data[0].error !== '') {
-                            if (data[0].error === 'ERR_PSK_REQUIRED') {
-                                displayMessage('<?php echo langHdl('psk_required'); ?>');
-                            } else {
-                                displayMessage('<?php echo langHdl('error_not_allowed_to'); ?>');
-                            }
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                        
+                        if (data.error !== '') {
+                            alertify
+                                .error('<i class="fa fa-ban mr-2"></i>' + data.error, 3)
+                                .dismissOthers();
                             ui.draggable.removeClass('hidden');
                             return false;
                         }
+
                         //increment / decrement number of items in folders
-                        $('#itcount_'+data[0].from_folder).text(Math.floor($('#itcount_'+data[0].from_folder).text())-1);
-                        $('#itcount_'+data[0].to_folder).text(Math.floor($('#itcount_'+data[0].to_folder).text())+1);
-                        $('#id_label, #item_viewed_x_times, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to, #id_tags, #id_kbs').html('');
-                        displayMessage('<?php echo langHdl('alert_message_done'); ?>');
-                    },
-                    'json'
+                        $('#itcount_'+data.from_folder).text(Math.floor($('#itcount_'+data.from_folder).text())-1);
+                        $('#itcount_'+data.to_folder).text(Math.floor($('#itcount_'+data.to_folder).text())+1);
+
+                        alertify
+                            .success('<?php echo langHdl('success'); ?>', 1)
+                            .dismissOthers();
+                    }
                );
             }
-        });*/
+        });
 
         // refine users list to the related roles
         /*$.post(
@@ -2652,15 +2738,21 @@ function proceed_list_update(stop_proceeding)
  */
 function Details(itemDefinition, actionType)
 {
-    console.info('EXPECTED ACTION '+actionType)
-    $('#request_ongoing').val('');
+    console.info('EXPECTED ACTION '+actionType+' -- ')
+
+    store.each(function(value, key) {
+        console.log(key, '==', value)
+    })
+    
     // If a request is already launched, then kill new.
-    if ($('#request_ongoing').val() !== '') {
-        console.log($('#request_ongoing').val()+" -- "+(parseInt(Math.floor(Date.now() / 1000))-parseInt($('#request_ongoing').val())));
+    if (requestRunning === true) {console.log('ABORT')
         request.abort();
         return;
     }
-
+    
+    // Store status query running
+    requestRunning === true;
+    
     // Init
     var itemId          = parseInt($(itemDefinition).data('item-id')) || '';
     var itemTreeId      = parseInt($(itemDefinition).data('item-tree-id')) || '';
@@ -2672,17 +2764,10 @@ function Details(itemDefinition, actionType)
     var itemReload      = parseInt($(itemDefinition).data('item-reload')) || 0;
     userDidAChange      = false;
 
-    // Store status query running
-    $('#request_ongoing').val(Math.floor(Date.now() / 1000));
+    
 
     // Select tab#1
     $('#form-item-nav-pills li:first-child a').tab('show');
-
-    // If opening new item, reinit hidden fields
-    if (parseInt($('#request_lastItem').val()) !== itemId) {
-        $('#request_lastItem').val('');
-        $('#item_editable').val('');
-    }
 
     // Don't show details
     if (itemDisplay === 'no_display') {
@@ -2695,20 +2780,25 @@ function Details(itemDefinition, actionType)
             .show(); 
 
         // Clear ongoing request status
-        $('#request_ongoing').val('');
+        requestRunning = false;
 
         // Finished
         return false;
     }
 
-    // to keep?
-    if ($('#edit_restricted_to') !== undefined) {
-        $('#edit_restricted_to').val('');
+    // If opening new item, reinit hidden fields
+    if (store.get('teampassApplication').lastItemSeen !== itemId) {
+        store.update(
+            'teampassApplication',
+            function (teampassApplication) {
+                teampassApplication.lastItemSeen = parseInt(itemId);
+            }
+        );
     }
-
+    
     // Check if personal SK is needed and set
-    if (($('#folder_requests_psk').val() === '1'
-        && $('#personal_sk_set').val() === '0')
+    if ((store.get('teampassApplication').personalSaltkeyRequired === 1
+        && store.get('teampassApplication').personalSaltkeyIsSet !== 1)
         && itemSk === 1
     ) {
         $('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fa fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
@@ -2717,448 +2807,418 @@ function Details(itemDefinition, actionType)
         showPersonalSKDialog();
 
         // Clear ongoing request status
-        $('#request_ongoing').val('');
+        requestRunning = false;
 
         // Finished
         return false;
-    } else if ($('#folder_requests_psk').val() === '0' || ($('#folder_requests_psk').val() === '1' && $('#personal_sk_set').val() === '1')) {
-        // Double click
-        
-        if (parseInt($('#request_lastItem').val()) === itemId && itemReload !== 1) {
-            $('#request_ongoing').val('');            
-            alertify
-                    .message('<span class="fa fa-cog fa-spin fa-2x"></span>', 1)
-                    .dismissOthers();
+    } else if ((store.get('teampassApplication').personalSaltkeyRequired === 0 || store.get('teampassApplication').personalSaltkeyRequired === undefined)
+        || (store.get('teampassApplication').personalSaltkeyRequired === 1 && store.get('teampassApplication').personalSaltkeyIsSet === 1)
+    ) {
+        // Prepare data to be sent
+        var data = {
+            'id'                    : itemId,
+            'folder_id'             : itemTreeId,
+            'salt_key_required'     : itemSk,
+            'expired_item'          : itemExpired,
+            'restricted'            : itemRestricted,
+            'folder_access_level'   : store.get('teampassItem').hasAccessLevel,
+            'page'                  : 'items'
+        };
 
-            return;
-        } else {
-            $('#timestamp_item_displayed').val('');
-            var data = {
-                'id'                : itemId,
-                'folder_id'         : itemTreeId,
-                'salt_key_required' : itemSk,
-                'expired_item'      : itemExpired,
-                'restricted'        : itemRestricted,
-                'page'              : 'items'
-            };
+        console.log("SEND");
+        console.log(data);
 
-            console.log("SEND");
-            console.log(data);
-
-            //Send query
-            $.post(
-                'sources/items.queries.php',
-                {
-                    type : 'show_details_item',
-                    data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-                    key  : '<?php echo $_SESSION['key']; ?>'
-                },
-                function(data) {
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-                    console.log("RECEIVED");
-                    console.log(data);
-                    
-                    if (data.error !== '') {
-                        alertify
-                            .error('<i class="fa fa-ban mr-2"></i>' + data.error, 3)
-                            .dismissOthers();
-                        return false;
-                    } else if (data.user_can_modify === 0 && actionType === 'edit') {
-                        alertify
-                            .error('<i class="fa fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
-                            .dismissOthers();
-                        return false;
-                    }
-
+        //Send query
+        $.post(
+            'sources/items.queries.php',
+            {
+                type : 'show_details_item',
+                data : prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
+                key  : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log("RECEIVED");
+                console.log(data);
+                
+                if (data.error !== '') {
                     alertify
-                        .success('<?php echo langHdl('success'); ?>', 1)
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.error, 3)
                         .dismissOthers();
-                    
-                    // Store scroll position
-                    userScrollPosition = $(window).scrollTop();
+                    return false;
+                } else if (data.user_can_modify === 0 && actionType === 'edit') {
+                    alertify
+                        .error('<i class="fa fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
+                        .dismissOthers();
+                    return false;
+                }
 
-                    // Scroll to top
-                    $(window).scrollTop(0);
+                alertify
+                    .success('<?php echo langHdl('success'); ?>', 1)
+                    .dismissOthers();
+                
+                // Store scroll position
+                userScrollPosition = $(window).scrollTop();
 
-                    // SHould we show?
-                    if (data.show_detail_option === '1') {
-                        // SHow expiration alert
-                        $('#card-item-expired').removeClass('hidden');
-                    } else if (data.show_detail_option === '2') {
-                        // Don't show anything
-                        alertify.alert(
-                            '<?php echo langHdl('warning'); ?>',
-                            '<?php echo langHdl('not_allowed_to_see_pw'); ?>'
-                        );
+                // Scroll to top
+                $(window).scrollTop(0);
 
-                        return false;
+                // SHould we show?
+                if (data.show_detail_option === '1') {
+                    // SHow expiration alert
+                    $('#card-item-expired').removeClass('hidden');
+                } else if (data.show_detail_option === '2') {
+                    // Don't show anything
+                    alertify.alert(
+                        '<?php echo langHdl('warning'); ?>',
+                        '<?php echo langHdl('not_allowed_to_see_pw'); ?>'
+                    );
+
+                    return false;
+                }
+                
+                // Uncrypt the pwd
+                data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
+
+                // Update hidden variables
+                store.update(
+                    'teampassItem',
+                    function (teampassItem)
+                    {
+                        teampassItem.id = parseInt(data.id),
+                        teampassItem.timestamp = data.timestamp
+                        teampassItem.user_can_modify = data.user_can_modify;
+                        teampassItem.anyone_can_modify = data.anyone_can_modify;
+                        teampassItem.edit_item_salt_key = data.edit_item_salt_key;
                     }
-                    
-                    // Uncrypt the pwd
-                    data.pw = unCryptData(data.pw, '<?php echo $_SESSION['key']; ?>');
+                )
+                
+                // Prepare forms
+                $('#items-list-card, #folders-tree-card').addClass('hidden');
+                if (actionType === 'show') {
+                    $('.item-details-card, #item-details-card-categories').removeClass('hidden');
+                    $('.form-item').addClass('hidden');
+                    $('#form-item-suggestion-password').focus();
+                    // If Description empty then remove it
+                    if (data.description === '<p>&nbsp;</p>') {
+                        $('#card-item-description')
+                            .parents('.item-details-card')
+                            .addClass('hidden');
+                    } else {
+                        $('#card-item-description')
+                            .parents('.item-details-card')
+                            .removeClass('hidden');
+                    }
+                } else {
+                    $('.form-item').removeClass('hidden');
+                    $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                    $('#pwd-definition-size').val(data.pw.length);
+                }
+                
+                // Prepare card
+                $('#card-item-label, #form-item-title').html(data.label);
+                $('#form-item-label, #form-item-suggestion-label').val(data.label);
+                $('#card-item-description, #form-item-suggestion-description').html(data.description);
+                $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
+                $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
+                $('#form-item-password, #form-item-password-confirmation').val(data.pw);
+                $('#card-item-login').html(data.login);
+                $('#form-item-login, #form-item-suggestion-login').val(data.login);
+                
+                $('#card-item-email').text(data.email);
+                $('#form-item-email, #form-item-suggestion-email').val(data.email);
+                $('#card-item-url').html(data.url);
+                $('#form-item-url, #form-item-suggestion-url').val(data.url);
+                $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
+                $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
+                $('#form-item-folder').val(data.folder);
+                
+                $('#form-item-password, #form-item-label').focus();
 
-                    // Update hidden variables
-                    store.update(
-                        'teampassItem',
-                        function (teampassItem)
-                        {
-                            teampassItem.id = parseInt(data.id),
-                            teampassItem.timestamp = data.timestamp
+                // Editor for description field
+                ClassicEditor
+                    .create(
+                        document.querySelector('#form-item-description'), {
+                            toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
                         }
                     )
-                    /*teampassStorage(
-                        'teampassItem',
-                        'update',
-                        {
-                            'id' : parseInt(data.id),
-                            'timestamp' : data.timestamp,
-                        }
-                    )*/
-                    
-                    // Prepare forms
-                    $('#items-list-card, #folders-tree-card').addClass('hidden');
-                    if (actionType === 'show') {
-                        $('.item-details-card, #item-details-card-categories').removeClass('hidden');
-                        $('.form-item').addClass('hidden');
-                        $('#form-item-suggestion-password').focus();
-                        // If Description empty then remove it
-                        if (data.description === '<p>&nbsp;</p>') {
-                            $('#card-item-description')
-                                .parents('.item-details-card')
-                                .addClass('hidden');
-                        } else {
-                            $('#card-item-description')
-                                .parents('.item-details-card')
-                                .removeClass('hidden');
-                        }
-                    } else {
-                        $('.form-item').removeClass('hidden');
-                        $('.item-details-card, #item-details-card-categories').addClass('hidden');
-                        $('#pwd-definition-size').val(data.pw.length);
-                    }
-                    
-                    // Prepare card
-                    $('#card-item-label, #form-item-title').html(data.label);
-                    $('#form-item-label, #form-item-suggestion-label').val(data.label);
-                    $('#card-item-description, #form-item-suggestion-description').html(data.description);
-                    $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
-                    $('#hidden-item-pwd, #form-item-suggestion-password').val(data.pw);
-                    $('#form-item-password, #form-item-password-confirmation').val(data.pw);
-                    $('#card-item-login').html(data.login);
-                    $('#form-item-login, #form-item-suggestion-login').val(data.login);
-                    
-                    $('#card-item-email').text(data.email);
-                    $('#form-item-email, #form-item-suggestion-email').val(data.email);
-                    $('#card-item-url').html(data.url);
-                    $('#form-item-url, #form-item-suggestion-url').val(data.url);
-                    $('#form-item-restrictedToUsers').val(JSON.stringify(data.id_restricted_to));
-                    $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
-                    $('#form-item-folder').val(data.folder);
-                    
-                    $('#form-item-password, #form-item-label').focus();
-
-                    // Editor for description field
-                    ClassicEditor
-                        .create(
-                            document.querySelector('#form-item-description'), {
-                                toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
-                            }
-                        )
-                        .then( editor => {
-                            editor.setData(data.description);
-                            $('#form-item-description').val(editor.getData());
-                            itemEditor = editor;
-                        } )
-                        .catch( error => {
-                            console.log( error );
-                        });
-                    
-                    ClassicEditor
-                        .create(
-                            document.querySelector('#form-item-suggestion-description'), {
-                                toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
-                            }
-                        )
-                        .then( editor => {
-                            editor.setData(data.description);
-                            $('#form-item-suggestion-description').val(editor.getData());
-                            itemEditorSuggestion = editor;
-                        } )
-                        .catch( error => {
-                            console.log( error );
-                        });
-
-                    //prepare nice list of users / groups
-                    var html_users = '',
-                        html_groups = '',
-                        html_tags = '',
-                        html_kbs = '';                   
-
-                    $(data.tags).each(function(index, value){
-                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo langHdl('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\"'+value+'\")"><i class="fa fa-tag fa-sm"></i>&nbsp;<span class="item_tag">'+value+'</span></span>';
+                    .then( editor => {
+                        editor.setData(data.description);
+                        $('#form-item-description').val(editor.getData());
+                        itemEditor = editor;
+                    } )
+                    .catch( error => {
+                        console.log( error );
                     });
-                    if (html_tags === '') {
-                        $('#card-item-tags').html('<?php echo langHdl('none'); ?>');
-                    } else {
-                        $('#card-item-tags').html(html_tags);
-                    } 
-
-                    $(data.links_to_kbs).each(function(index, value){
-                        html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id='+value['id']+'"><i class="fa fa-map-pin fa-sm"></i>&nbsp;'+value['label']+'</a>';
-
+                
+                ClassicEditor
+                    .create(
+                        document.querySelector('#form-item-suggestion-description'), {
+                            toolbar: [ 'heading', 'bold', 'italic', 'bulletedList', 'numberedList', 'blockQuote', 'link' , 'undo', 'redo'  ]
+                        }
+                    )
+                    .then( editor => {
+                        editor.setData(data.description);
+                        $('#form-item-suggestion-description').val(editor.getData());
+                        itemEditorSuggestion = editor;
+                    } )
+                    .catch( error => {
+                        console.log( error );
                     });
-                    if (html_kbs === '') {
-                        $('#card-item-kbs').html('<?php echo langHdl('none'); ?>');
-                    } else {
-                        $('#card-item-kbs').html(html_kbs);
+
+                //prepare nice list of users / groups
+                var html_users = '',
+                    html_groups = '',
+                    html_tags = '',
+                    html_kbs = '';                   
+
+                $(data.tags).each(function(index, value){
+                    html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo langHdl('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\"'+value+'\")"><i class="fa fa-tag fa-sm"></i>&nbsp;<span class="item_tag">'+value+'</span></span>';
+                });
+                if (html_tags === '') {
+                    $('#card-item-tags').html('<?php echo langHdl('none'); ?>');
+                } else {
+                    $('#card-item-tags').html(html_tags);
+                } 
+
+                $(data.links_to_kbs).each(function(index, value){
+                    html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id='+value['id']+'"><i class="fa fa-map-pin fa-sm"></i>&nbsp;'+value['label']+'</a>';
+
+                });
+                if (html_kbs === '') {
+                    $('#card-item-kbs').html('<?php echo langHdl('none'); ?>');
+                } else {
+                    $('#card-item-kbs').html(html_kbs);
+                }
+
+
+                // Manage CATEGORIES / CUSTOM FIELDS
+                if (data.categories.length === 0) {
+                    $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
+                        .addClass('hidden');
+                    $('.no-item-fields').removeClass('hidden');
+                } else {
+                    // 
+                    if (data.template_id === '') {                                
+                        $('#list-group-item-main')
+                            .children('.list-group')
+                            .removeClass('hidden');
+                        $('#card-item-category').removeClass('hidden');
                     }
 
-
-                    // Manage CATEGORIES / CUSTOM FIELDS
-                    if (data.categories.length === 0) {
-                        $('.card-item-category, .card-item-field, .form-item-category, #item-details-card-categories')
-                            .addClass('hidden');
-                        $('.no-item-fields').removeClass('hidden');
-                    } else {
-                        // 
-                        if (data.template_id === '') {                                
-                            $('#list-group-item-main')
-                                .children('.list-group')
-                                .removeClass('hidden');
-                            $('#card-item-category').removeClass('hidden');
-                        }
-
-                        if (data.fields.length === 0) {
-                            if (actionType === 'show') {
-                                $('#item-details-card-categories').addClass('hidden');
-                                // Refresh last item seen
-                                refreshListLastSeenItems();
-                            } else {
-                                // Show the inputs for EDITION
-                                $(data.categories).each(function(index, category) {
-                                    $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
-                                });
-                            }
+                    if (data.fields.length === 0) {
+                        if (actionType === 'show') {
+                            $('#item-details-card-categories').addClass('hidden');
+                            // Refresh last item seen
+                            refreshListLastSeenItems();
                         } else {
-                            // Show expected categories
-                            $('.no-item-fields, .form-item-category').addClass('hidden');
-
-                            // In edition mode, show all fields in expected Categories
+                            // Show the inputs for EDITION
                             $(data.categories).each(function(index, category) {
                                 $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                             });
-
-                            // Now show expected fields and values
-                            $(data.fields).each(function(index, field) {
-                                // Show cateogry
-                                $('#card-item-category-' + field.parent_id).removeClass('hidden');
-                                // Show field
-                                if (field.masked === '1') {
-                                    // Item card
-                                    $('#card-item-field-' + field.id)
-                                        .removeClass('hidden')
-                                        .children(".card-item-field-value")
-                                        .html(
-                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                            '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + field.value + '">'
-                                        )
-                                    $('#card-item-field-' + field.id)
-                                        .children(".btn-copy-clipboard-clear")
-                                        .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
-                                } else {
-                                    // Show Field
-                                    $('#card-item-field-'+field.id)
-                                        .removeClass('hidden')
-                                        .children(".card-item-field-value")
-                                        .text(field.value);
-                                }
-                                // Item edit form
-                                $('#form-item-field-' + field.id)
-                                    .children(".form-item-field-custom")
-                                    .val(field.value);
-                            });
-
-                            // Manage template to show
-                            if (data.template_id !== '') {
-                                // Tick the box in edit mode
-                                $('#template_' + data.template_id).attr('checked', true);
-
-                                // Hide existing data as replaced by Category template                                
-                                $('#list-group-item-main')
-                                    .children('.list-group')
-                                    .addClass('hidden');
-
-                                // Move the template in place of item main  
-                                $('#card-item-category-' + data.template_id)
-                                    .addClass('fields-to-move')
-                                    .detach()
-                                    .appendTo('#list-group-item-main');
-                            }
                         }
-                    }
+                    } else {
+                        // Show expected categories
+                        $('.no-item-fields, .form-item-category').addClass('hidden');
 
-                    
-                    // Waiting
-                    $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
-
-                    // Manage clipboard button
-                    if (itemClipboard) itemClipboard.destroy();
-                    itemClipboard = new Clipboard('.btn-copy-clipboard-clear')
-                        .on('success', function(e) {
-                            showAlertify(
-                                '<?php echo langHdl('copy_to_clipboard'); ?>',
-                                1,
-                                'top-right',
-                                'message'
-                            );
-                            e.clearSelection();
+                        // In edition mode, show all fields in expected Categories
+                        $(data.categories).each(function(index, category) {
+                            $('#form-item-field, #form-item-category-' + category).removeClass('hidden');
                         });
 
-                    // Prepare clipboard - COPY LOGIN
-                    if (data.login !== '') {
-                        $('#card-item-login-btn').removeClass('hidden');
-                    } else {
-                        $('#card-item-login-btn').addClass('hidden');
-                    }
-
-                    // Prepare clipboard - COPY PASSWORD
-                    if (data.pw !== '') {
-                        new Clipboard('#card-item-pwd-button', {
-                            text: function() {
-                                return (data.pw);
+                        // Now show expected fields and values
+                        $(data.fields).each(function(index, field) {
+                            // Show cateogry
+                            $('#card-item-category-' + field.parent_id).removeClass('hidden');
+                            // Show field
+                            if (field.masked === '1') {
+                                // Item card
+                                $('#card-item-field-' + field.id)
+                                    .removeClass('hidden')
+                                    .children(".card-item-field-value")
+                                    .html(
+                                        '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
+                                        '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + field.value + '">'
+                                    )
+                                $('#card-item-field-' + field.id)
+                                    .children(".btn-copy-clipboard-clear")
+                                    .attr('data-clipboard-target', '#hidden-card-item-field-value-' + field.id);
+                            } else {
+                                // Show Field
+                                $('#card-item-field-'+field.id)
+                                    .removeClass('hidden')
+                                    .children(".card-item-field-value")
+                                    .text(field.value);
                             }
-                        })
-                        .on('success', function(e) {
-                            itemLog(
-                                'at_password_copied',
-                                e.trigger.dataset.clipboardId,
-                                $('#card-item-label').text()
-                            );
-
-                            showAlertify(
-                                '<?php echo langHdl('copy_to_clipboard'); ?>',
-                                1,
-                                'top-right',
-                                'message'
-                            );
-
-                            e.clearSelection();
+                            // Item edit form
+                            $('#form-item-field-' + field.id)
+                                .children(".form-item-field-custom")
+                                .val(field.value);
                         });
-                        $('#card-item-pwd-button').removeClass('hidden');
-                    } else {
-                        $('#card-item-pwd-button').addClass('hidden');
-                    }
 
-                    // Prepare clipboard - COPY EMAIL
-                    if (data.email !== '') {
-                        $('#card-item-email-btn').removeClass('hidden');
-                    } else {
-                        $('#card-item-email-btn').addClass('hidden');
-                    }
+                        // Manage template to show
+                        if (data.template_id !== '') {
+                            // Tick the box in edit mode
+                            $('#template_' + data.template_id).attr('checked', true);
 
-                    // Prepare auto_update info
-                    $('#card-item-misc').html('');
-                    if (data.auto_update_pwd_frequency !== '0') {
-                        $('#card-item-misc')
-                            .append('<span class="fa fa-shield infotip mr-4" title="<?php
-                                echo langHdl('auto_update_enabled');
-                            ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
-                    }
+                            // Hide existing data as replaced by Category template                                
+                            $('#list-group-item-main')
+                                .children('.list-group')
+                                .addClass('hidden');
 
-                    // Prepare counter
-                    $('#card-item-misc')
-                        .append('<span class="icon-badge mr-5"><span class="fa fa-bullseye infotip" title="<?php
-                            echo langHdl('viewed_number');
-                        ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
-
-                    //Anyone can modify button
-                    if (data.anyone_can_modify === '1') {console.log($('#form-item-anyoneCanModify'))
-                        $('#form-item-anyoneCanModify').iCheck('check');
-                    } else {
-                        $('#form-item-anyoneCanModify').iCheck('uncheck');
-                    }
-
-                    // Delete after X views
-                    if (data.to_be_deleted !== '') {
-                        if (data.to_be_deleted_type === '1') {
-                            $('#form-item-deleteAfterShown').val(data.to_be_deleted);
-                            $('#form-item-deleteAfterDate').val('');
-                        } else {
-                            $('#form-item-deleteAfterShown').val('');
-                            $('#form-item-deleteAfterDate').val(data.to_be_deleted);
+                            // Move the template in place of item main  
+                            $('#card-item-category-' + data.template_id)
+                                .addClass('fields-to-move')
+                                .detach()
+                                .appendTo('#list-group-item-main');
                         }
-                        // Show icon
-                        $('#card-item-misc')
-                            .append('<span class="icon-badge mr-6"><span class="fa fa-trash-o infotip" title="<?php
-                                echo langHdl('automatic_deletion_engaged');
-                            ?>"></span><span class="badge badge-danger icon-badge-text">' + data.to_be_deleted + '</span></span>');
                     }
-
-                    // Show Notification engaged
-                    if (data.notification_status === true) {
-                        $('#card-item-misc')
-                            .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-o infotip text-warning" title="<?php
-                                echo langHdl('notification_engaged');
-                            ?>"></span></span>');
-                    } else {
-                        $('#card-item-misc')
-                            .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-slash-o infotip text-warning" title="<?php
-                                echo langHdl('notification_not_engaged');
-                            ?>"></span></span>');
-                    }
-
-                    // reset password shown info
-                    $('#pw_shown').val('0');
-                    
-                    
-
-                    if (data.show_details == '1' && data.show_detail_option != '2') {
-                        
-                        // ---
-                        /*
-
-
-                        //set if user can edit
-                        if (data.restricted == '1' || data.user_can_modify == '1') {
-                            $('#item_editable').val(1);
-                        }
-                        
-                        //Manage double click
-*/
-                        // continue loading data
-                        showDetailsStep2(itemId, actionType);
-                    } else if (data.show_details === '1' && data.show_detail_option === '2') {
-                        $('#item_details_nok').addClass('hidden');
-                        $('#item_details_ok').addClass('hidden');
-                        $('#item_details_expired_full').show();
-                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
-                        $('#div_loading').addClass('hidden');
-                        $('item_editable').val(0);
-                    } else {
-                        //Dont show details
-                        $('item_editable').val(0);
-                        $('#item_details_nok').removeClass('hidden');
-                        $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo langHdl('author'); ?>: </b>' + data.author + '<br /><b><?php echo langHdl('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo langHdl('request_access_ot_item'); ?></a></u></div>');
-
-                        $('#reason_to_access').remove();
-                        $('#item_details_nok')
-                          .append('<input type="hidden" id="reason_to_access" value="'+data.id + ',' + data.id_user+'">');
-
-                        // Protect
-                        $('#item_details_ok').addClass('hidden');
-                        $('#item_details_expired').addClass('hidden');
-                        $('#item_details_expired_full').addClass('hidden');
-                        $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
-                        $('#div_loading').addClass('hidden');
-                    }
-                    $('#request_ongoing').val('');
                 }
-            );
-       }
 
-        //Store Item id shown
-        $('#request_lastItem').val(itemId);
+                
+                // Waiting
+                $('#card-item-attachments').html("<?php echo langHdl('please_wait'); ?>");
+
+                // Manage clipboard button
+                if (itemClipboard) itemClipboard.destroy();
+                itemClipboard = new Clipboard('.btn-copy-clipboard-clear')
+                    .on('success', function(e) {
+                        showAlertify(
+                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            1,
+                            'top-right',
+                            'message'
+                        );
+                        e.clearSelection();
+                    });
+
+                // Prepare clipboard - COPY LOGIN
+                if (data.login !== '') {
+                    $('#card-item-login-btn').removeClass('hidden');
+                } else {
+                    $('#card-item-login-btn').addClass('hidden');
+                }
+
+                // Prepare clipboard - COPY PASSWORD
+                if (data.pw !== '') {
+                    new Clipboard('#card-item-pwd-button', {
+                        text: function() {
+                            return (data.pw);
+                        }
+                    })
+                    .on('success', function(e) {
+                        itemLog(
+                            'at_password_copied',
+                            e.trigger.dataset.clipboardId,
+                            $('#card-item-label').text()
+                        );
+
+                        showAlertify(
+                            '<?php echo langHdl('copy_to_clipboard'); ?>',
+                            1,
+                            'top-right',
+                            'message'
+                        );
+
+                        e.clearSelection();
+                    });
+                    $('#card-item-pwd-button').removeClass('hidden');
+                } else {
+                    $('#card-item-pwd-button').addClass('hidden');
+                }
+
+                // Prepare clipboard - COPY EMAIL
+                if (data.email !== '') {
+                    $('#card-item-email-btn').removeClass('hidden');
+                } else {
+                    $('#card-item-email-btn').addClass('hidden');
+                }
+
+                // Prepare auto_update info
+                $('#card-item-misc').html('');
+                if (data.auto_update_pwd_frequency !== '0') {
+                    $('#card-item-misc')
+                        .append('<span class="fa fa-shield infotip mr-4" title="<?php
+                            echo langHdl('auto_update_enabled');
+                        ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
+                }
+
+                // Prepare counter
+                $('#card-item-misc')
+                    .append('<span class="icon-badge mr-5"><span class="fa fa-bullseye infotip" title="<?php
+                        echo langHdl('viewed_number');
+                    ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
+
+                //Anyone can modify button
+                if (data.anyone_can_modify === '1') {console.log($('#form-item-anyoneCanModify'))
+                    $('#form-item-anyoneCanModify').iCheck('check');
+                } else {
+                    $('#form-item-anyoneCanModify').iCheck('uncheck');
+                }
+
+                // Delete after X views
+                if (data.to_be_deleted !== '') {
+                    if (data.to_be_deleted_type === '1') {
+                        $('#form-item-deleteAfterShown').val(data.to_be_deleted);
+                        $('#form-item-deleteAfterDate').val('');
+                    } else {
+                        $('#form-item-deleteAfterShown').val('');
+                        $('#form-item-deleteAfterDate').val(data.to_be_deleted);
+                    }
+                    // Show icon
+                    $('#card-item-misc')
+                        .append('<span class="icon-badge mr-6"><span class="fa fa-trash-o infotip" title="<?php
+                            echo langHdl('automatic_deletion_engaged');
+                        ?>"></span><span class="badge badge-danger icon-badge-text">' + data.to_be_deleted + '</span></span>');
+                }
+
+                // Show Notification engaged
+                if (data.notification_status === true) {
+                    $('#card-item-misc')
+                        .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-o infotip text-warning" title="<?php
+                            echo langHdl('notification_engaged');
+                        ?>"></span></span>');
+                } else {
+                    $('#card-item-misc')
+                        .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-slash-o infotip text-warning" title="<?php
+                            echo langHdl('notification_not_engaged');
+                        ?>"></span></span>');
+                }
+
+                // reset password shown info
+                $('#pw_shown').val('0');
+                
+                
+
+                if (data.show_details == '1' && data.show_detail_option != '2') {
+                    // continue loading data
+                    showDetailsStep2(itemId, actionType);
+                } else if (data.show_details === '1' && data.show_detail_option === '2') {
+                    $('#item_details_nok').addClass('hidden');
+                    $('#item_details_ok').addClass('hidden');
+                    $('#item_details_expired_full').show();
+                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
+                    $('#div_loading').addClass('hidden');
+                } else {
+                    //Dont show details
+                    $('#item_details_nok').removeClass('hidden');
+                    $('#item_details_nok_restriction_list').html('<div style="margin:10px 0 0 20px;"><b><?php echo langHdl('author'); ?>: </b>' + data.author + '<br /><b><?php echo langHdl('restricted_to'); ?>: </b>' + data.restricted_to + '<br /><br /><u><a href="#" onclick="openReasonToAccess()"><?php echo langHdl('request_access_ot_item'); ?></a></u></div>');
+
+                    $('#reason_to_access').remove();
+                    $('#item_details_nok')
+                        .append('<input type="hidden" id="reason_to_access" value="'+data.id + ',' + data.id_user+'">');
+
+                    // Protect
+                    $('#item_details_ok').addClass('hidden');
+                    $('#item_details_expired').addClass('hidden');
+                    $('#item_details_expired_full').addClass('hidden');
+                    $('#menu_button_edit_item, #menu_button_del_item, #menu_button_copy_item, #menu_button_add_fav, #menu_button_del_fav, #menu_button_show_pw, #menu_button_copy_pw, #menu_button_copy_login, #menu_button_copy_link').attr('disabled','disabled');
+                    $('#div_loading').addClass('hidden');
+                }
+                requestRunning = false;
+            }
+        );
     }
 }
 
@@ -3319,7 +3379,6 @@ function showDetailsStep2(id, actionType)
                     "sources/items.queries.php",
                     {
                         type    : "load_item_history",
-                        //item_id : teampassStorage('teampassItem', 'get', ['id']),
                         item_id : store.get('teampassItem').id,
                         key     : "<?php echo $_SESSION['key']; ?>"
                     },
@@ -3414,7 +3473,6 @@ function prepareOneTimeView()
         "sources/items.queries.php",
         {
             type    : "generate_OTV_url",
-            //id      : teampassStorage('teampassItem', 'get', ['id']),
             id      : store.get('teampassItem').id,
             key     : "<?php echo $_SESSION['key']; ?>"
         },
@@ -3464,7 +3522,6 @@ function getPrivilegesOnItem(val, edit, context)
             type    : "get_complixity_level",
             groupe  : val,
             context : context,
-            //item_id : teampassStorage('teampassItem', 'get', ['id'])
             item_id : store.get('teampassItem').id
         },
         function(data) {
@@ -3511,31 +3568,19 @@ function getPrivilegesOnItem(val, edit, context)
                 });
             }
 
-            store.set(
+            store.update(
                 'teampassItem',
                 function (teampassItem)
                 {
                     teampassItem.error = data.error === undefined ? '' : data.error,
-                    teampassItem.message = data.message,
+                    teampassItem.message = data.message === undefined ? '' : data.message,
                     teampassItem.folderComplexity = data.val === undefined ? '' : parseInt(data.val),
                     teampassItem.folderIsPersonal = data.personal === undefined ? '' : parseInt(data.personal),
                     teampassItem.itemMinimumComplexity = data.complexity === undefined ? '' : data.complexity,
                     teampassItem.itemVisibility = data.visibility === undefined ? '' : data.visibility
                 }
             );
-
-            /*teampassStorage(
-                'teampassItem',
-                'update',
-                {
-                    'error' : data.error === undefined ? '' : data.error,
-                    'message' : data.message,
-                    'folderComplexity' : data.val === undefined ? '' : parseInt(data.val),
-                    'folderIsPersonal' : data.personal === undefined ? '' : parseInt(data.personal),
-                    'itemMinimumComplexity' : data.complexity === undefined ? '' : data.complexity,
-                    'itemVisibility' : data.visibility === undefined ? '' : data.visibility,
-                }
-            );*/
+            console.log(store.get('teampassItem'))
         }
     );
 }

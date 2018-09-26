@@ -1961,6 +1961,7 @@ if (null !== $post_type) {
             $post_expired_item = filter_var(htmlspecialchars_decode($dataReceived['expired_item']), FILTER_SANITIZE_STRING);
             $post_restricted = filter_var(htmlspecialchars_decode($dataReceived['restricted']), FILTER_SANITIZE_STRING);
             $post_page = filter_var(htmlspecialchars_decode($dataReceived['page']), FILTER_SANITIZE_STRING);
+            $post_folder_access_level = filter_var(htmlspecialchars_decode($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING);
 
             $arrData = array();
             // return ID
@@ -2160,6 +2161,18 @@ if (null !== $post_type) {
                 // Allow show details
                 $arrData['show_details'] = 1;
 
+                // Regarding user's roles, what type of modification is allowed?
+                /*$rows = DB::query(
+                    'SELECT r.type
+                    FROM '.prefixTable('roles_values').' AS r
+                    WHERE r.folder_id = %i AND r.role_id IN %ls',
+                    $dataItem['id_tree'],
+                    $_SESSION['groupes_visibles']
+                );
+                foreach ($rows as $record) {
+                    // TODO
+                }*/
+
                 // Display menu icon for deleting if user is allowed
                 if ($dataItem['id_user'] == $_SESSION['user_id']
                     || $_SESSION['is_admin'] === '1'
@@ -2168,6 +2181,7 @@ if (null !== $post_type) {
                     || in_array($dataItem['id_tree'], $_SESSION['list_folders_editable_by_role']) === true
                     || in_array($_SESSION['user_id'], $restrictedTo) === true
                     //|| count($restrictedTo) === 0
+                    || (int) $post_folder_access_level === 0
                 ) {
                     $arrData['user_can_modify'] = 1;
                     $user_is_allowed_to_modify = true;
@@ -3344,9 +3358,9 @@ if (null !== $post_type) {
                             $expired_item = 1;
                         }
                         // Init
-                        $html_json[$record['id']]['expired'] = $expired_item;
-                        $html_json[$record['id']]['item_id'] = $record['id'];
-                        $html_json[$record['id']]['tree_id'] = $record['tree_id'];
+                        $html_json[$record['id']]['expired'] = (int) $expired_item;
+                        $html_json[$record['id']]['item_id'] = (int) $record['id'];
+                        $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                         $html_json[$record['id']]['label'] = strip_tags($record['label']);
                         if (isset($SETTINGS['show_description']) === true && $SETTINGS['show_description'] === '1') {
                             $html_json[$record['id']]['desc'] = strip_tags((explode('<br>', $record['description'])[0]));
@@ -3382,7 +3396,7 @@ if (null !== $post_type) {
 
                         // Manage the restricted_to variable
                         if (null !== $post_restricted) {
-                            $restrictedTo = $post_restricted;
+                            $restrictedTo = (int) $post_restricted;
                         } else {
                             $restrictedTo = '';
                         }
@@ -3399,8 +3413,8 @@ if (null !== $post_type) {
                         // Can user modify it?
                         if (($record['anyone_can_modify'] === '1' && $_SESSION['user_read_only'] !== '1')
                             || $_SESSION['user_id'] === $record['log_user']
-                            || ($_SESSION['user_read_only'] === '1' && $folderIsPf === false)
-                            || (isset($SETTINGS['manager_edit']) && $SETTINGS['manager_edit'] === '1') // force draggable if user is manager
+                            || ($_SESSION['user_read_only'] === '1' && $folderIsPf === false) // force if readonly for his own items
+                            || (isset($SETTINGS['manager_edit']) && $SETTINGS['manager_edit'] === '1' && $_SESSION['user_manager'] === '1') // force draggable if user is manager
                         ) {
                             $canMove = true;
                         }
@@ -3427,6 +3441,7 @@ if (null !== $post_type) {
                                 $item_limited_access = true;
                             }
                         }
+                        $html_json[$record['id']]['debug'] = $user_is_included_in_role.' - '.$item_is_restricted_to_role.' - '.$is_user_in_restricted_list.' - '.$folder_is_personal.' - '.$record['anyone_can_modify'].' - '.$canMove.' - ';
 
                         // CASE where item is restricted to a role to which the user is not associated
                         if (isset($user_is_included_in_role) === true
@@ -3447,6 +3462,7 @@ if (null !== $post_type) {
                             $displayItem = false;
                             $need_sk = false;
                             $canMove = false;
+                            $html_json[$record['id']]['debug'] .= 'CASE1 - ';
                         // Case where item is in own personal folder
                         } elseif ((int) $folder_is_in_personal === 1
                             && (int) $record['perso'] === 1
@@ -3463,6 +3479,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['reload'] = '';
                             $html_json[$record['id']]['accessLevel'] = 0;
                             $html_json[$record['id']]['canMove'] = 1;
+                            $html_json[$record['id']]['debug'] .= 'CASE2 - ';
                         // CAse where item is restricted to a group of users included user
                         } elseif ((empty($record['restricted_to']) === false
                             || $list_folders_editable_by_role === true)
@@ -3477,6 +3494,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['open_edit'] = 1;
                             $html_json[$record['id']]['reload'] = '';
                             $html_json[$record['id']]['accessLevel'] = 0;
+                            $html_json[$record['id']]['debug'] .= 'CASE3 - ';
                             $html_json[$record['id']]['canMove'] = ($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1;
                         // CAse where item is restricted to a group of users not including user
                         } elseif ((int) $record['perso'] === 1
@@ -3509,6 +3527,7 @@ if (null !== $post_type) {
                                 $html_json[$record['id']]['reload'] = '';
                                 $html_json[$record['id']]['accessLevel'] = 3;
                                 $html_json[$record['id']]['canMove'] = 0;
+                                $html_json[$record['id']]['debug'] .= 'CASE4 - ';
                             } else {
                                 $html_json[$record['id']]['perso'] = 'fa-tag mi-yellow';
                                 // reinit in case of not personal group
@@ -3527,6 +3546,7 @@ if (null !== $post_type) {
                                 $html_json[$record['id']]['reload'] = '';
                                 $html_json[$record['id']]['accessLevel'] = 0;
                                 $html_json[$record['id']]['canMove'] = 0;
+                                $html_json[$record['id']]['debug'] .= 'CASE5 - ';
                             }
                         } else {
                             $html_json[$record['id']]['perso'] = 'fa-tag mi-green';
@@ -3543,6 +3563,7 @@ if (null !== $post_type) {
                             $html_json[$record['id']]['reload'] = '';
                             $html_json[$record['id']]['accessLevel'] = $item_limited_access === true ? 0 : $accessLevel;
                             $html_json[$record['id']]['canMove'] = $accessLevel === 0 ? (($_SESSION['user_read_only'] === '1' && $folderIsPf === false) ? 0 : 1) : $canMove;
+                            $html_json[$record['id']]['debug'] .= 'CASE6 - ';
                         }
 
                         /*
@@ -3582,7 +3603,7 @@ if (null !== $post_type) {
                         $html_json[$record['id']]['is_favourited'] = in_array($record['id'], $_SESSION['favourites']) === true ? 1 : 0;
 
                         // Build array with items
-                        array_push($itemsIDList, array($record['id'], $displayItem));
+                        array_push($itemsIDList, array('id' => (int) $record['id'], 'display' => $displayItem, 'edit' => $html_json[$record['id']]['open_edit']));
 
                         ++$i;
                     }
@@ -4208,7 +4229,13 @@ if (null !== $post_type) {
                 'at_moved : '.$dataSource['title'].' -> '.$dataDestination['title']
             );
 
-            echo '[{"from_folder":"'.$dataSource['id_tree'].'" , "to_folder":"'.$post_folder_id.'" , "error" : ""}]';
+            $returnValues = array(
+                'error' => '',
+                'message' => '',
+                'from_folder' => $dataSource['id_tree'],
+                'to_folder' => $post_folder_id,
+            );
+            echo prepareExchangedData($returnValues, 'encode');
             break;
 
         /*
