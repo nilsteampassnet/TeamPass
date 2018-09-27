@@ -1269,11 +1269,11 @@ $("#form-item-password").simplePassMeter({
     ]
 });
 $("#form-item-password").bind({
-    "score.simplePassMeter" : function(jQEvent, score) {
+    "score.simplePassMeter" : function(score) {
         $("#form-item-password-complex").val(score);
     }
 }).change({
-    "score.simplePassMeter" : function(jQEvent, score) {
+    "score.simplePassMeter" : function(score) {
         $("#form-item-password-complex").val(score);
     }
 });
@@ -1314,11 +1314,11 @@ $("#form-item-suggestion-password").simplePassMeter({
     ]
 });
 $("#form-item-suggestion-password").bind({
-    "score.simplePassMeter" : function(jQEvent, score) {
+    "score.simplePassMeter" : function(score) {
         $("#form-item-suggestion-password-complex").val(score);
     }
 }).change({
-    "score.simplePassMeter" : function(jQEvent, score) {
+    "score.simplePassMeter" : function(score) {
         $("#form-item-suggestion-password-complex").val(score);
     }
 });
@@ -3618,7 +3618,7 @@ $('#item-button-password-generate').click(function() {
                 alertify
                     .alert()
                     .setting({
-                        'label' : '<?php echo langHdl('ok'); ?>',
+                        'label' : '<?php echo langHdl('error'); ?>',
                         'message' : '<i class="fa fa-info-circle mr-2"></i>' + data.error_msg
                     })
                     .show(); 

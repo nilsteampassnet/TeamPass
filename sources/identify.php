@@ -1,18 +1,20 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Identify.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
 * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+*
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
 $debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
@@ -32,16 +34,16 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === true || $SETTINGS['cpassman_dir'] === ".") {
-    $SETTINGS['cpassman_dir'] = "..";
+if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === true || $SETTINGS['cpassman_dir'] === '.') {
+    $SETTINGS['cpassman_dir'] = '..';
 }
 
 // init
-$dbgDuo = "";
-$dbgLdap = "";
-$ldap_suffix = "";
-$result = "";
-$adldap = "";
+$dbgDuo = '';
+$dbgLdap = '';
+$ldap_suffix = '';
+$result = '';
+$adldap = '';
 
 // Prepare POST variables
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -51,54 +53,54 @@ $post_sig_response = filter_input(INPUT_POST, 'sig_response', FILTER_SANITIZE_ST
 $post_cardid = filter_input(INPUT_POST, 'cardid', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
-if ($post_type === "identify_duo_user") {
+if ($post_type === 'identify_duo_user') {
     //--------
     // DUO AUTHENTICATION
     //--------
     // This step creates the DUO request encrypted key
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once SECUREPATH."/sk.php";
+    require_once SECUREPATH.'/sk.php';
 
     // load library
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
 
     if ($debugDuo == 1) {
-        $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "w");
+        $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'w');
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig request : ".$post_login."\n".
+            'sig request : '.$post_login."\n".
             'resp : '.$sig_request."\n"
         );
     }
 
     // load csrfprotector
-    $csrfp_config = include_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+    $csrfp_config = require_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
-    // DUO Identification
-} elseif ($post_type === "identify_duo_user_check") {
+// DUO Identification
+} elseif ($post_type === 'identify_duo_user_check') {
     //--------
     // DUO AUTHENTICATION
     // this step is verifying the response received from the server
     //--------
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once SECUREPATH."/sk.php";
+    require_once SECUREPATH.'/sk.php';
 
     // load library
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
 
     if ($debugDuo == 1) {
-        $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "a");
+        $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'a');
         fputs(
             $dbgDuo,
             "\n\n-----\n\n".
-            "sig response : ".$post_sig_response."\n".
+            'sig response : '.$post_sig_response."\n".
             'resp : '.$resp."\n"
         );
     }
@@ -107,33 +109,25 @@ if ($post_type === "identify_duo_user") {
     if ($resp === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
-            include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             // connect to the server
-            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-            DB::$host         = DB_HOST;
-            DB::$user         = DB_USER;
-            DB::$password     = defuse_return_decrypted(DB_PASSWD);
-            DB::$dbName       = DB_NAME;
-            DB::$port         = DB_PORT;
-            DB::$encoding     = DB_ENCODING;
-            //DB::$errorHandler = true;
-
+            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
             $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
             $link->set_charset(DB_ENCODING);
-            
+
             // is user in Teampass?
             $data = DB::queryfirstrow(
-                "SELECT id
-                FROM ".prefixTable("users")."
-                WHERE login = %s",
+                'SELECT id
+                FROM '.prefixTable('users').'
+                WHERE login = %s',
                 $post_login
             );
 
             if (DB::count() === 0) {
                 // Get LDAP info for this user
                 $ldap_info_user = json_decode(connectLDAP($post_login, $post_pwd, $SETTINGS));
-                
+
                 if ($ldap_info_user->{'user_found'} === true && $ldap_info_user->{'auth_success'} === true) {
                     // load passwordLib library
                     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -153,7 +147,7 @@ if ($post_type === "identify_duo_user") {
                             'admin' => '0',
                             'gestionnaire' => '0',
                             'can_manage_all_users' => '0',
-                            'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
+                            'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
                             'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
                             'groupes_interdits' => '',
                             'groupes_visibles' => '',
@@ -165,15 +159,15 @@ if ($post_type === "identify_duo_user") {
                     );
                     $newUserId = DB::insertId();
                     // Create personnal folder
-                    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
+                    if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1') {
                         DB::insert(
-                            prefixTable("nested_tree"),
+                            prefixTable('nested_tree'),
                             array(
                                 'parent_id' => '0',
                                 'title' => $newUserId,
                                 'bloquer_creation' => '0',
                                 'bloquer_modification' => '0',
-                                'personal_folder' => '1'
+                                'personal_folder' => '1',
                             )
                         );
                     }
@@ -185,15 +179,15 @@ if ($post_type === "identify_duo_user") {
     } else {
         echo '[{"resp" : "'.$resp.'"}]';
     }
-} elseif ($post_type === "identify_user_with_agses") {
-//--------
-//-- AUTHENTICATION WITH AGSES
-//--------
+} elseif ($post_type === 'identify_user_with_agses') {
+    //--------
+    //-- AUTHENTICATION WITH AGSES
+    //--------
 
-    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $pass = defuse_return_decrypted($pass);
     DB::$host = $server;
     DB::$user = $user;
@@ -210,8 +204,8 @@ if ($post_type === "identify_duo_user") {
         // no card id is given
         // check if it is DB
         $row = DB::queryFirstRow(
-            "SELECT `agses-usercardid` FROM ".prefixTable("users")."
-            WHERE login = %s",
+            'SELECT `agses-usercardid` FROM '.prefixTable('users').'
+            WHERE login = %s',
             $post_login
         );
     } elseif (empty($post_cardid) === false && is_numeric($post_cardid)) {
@@ -220,36 +214,37 @@ if ($post_type === "identify_duo_user") {
         DB::update(
             prefixTable('users'),
             array(
-                'agses-usercardid' => $post_cardid
+                'agses-usercardid' => $post_cardid,
                 ),
-            "login = %s",
+            'login = %s',
             $post_login
         );
         $row['agses-usercardid'] = $post_cardid;
     } else {
         // error
         echo '[{"error" : "something_wrong" , "agses_message" : ""}]';
-        exit();
+
+        return false;
     }
 
     //-- get AGSES hosted information
     $ret_agses_url = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefixTable("misc")."
-        WHERE type = %s AND intitule = %s",
+        'SELECT valeur FROM '.prefixTable('misc').'
+        WHERE type = %s AND intitule = %s',
         'admin',
         'agses_hosted_url'
     );
 
     $ret_agses_id = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefixTable("misc")."
-        WHERE type = %s AND intitule = %s",
+        'SELECT valeur FROM '.prefixTable('misc').'
+        WHERE type = %s AND intitule = %s',
         'admin',
         'agses_hosted_id'
     );
 
     $ret_agses_apikey = DB::queryFirstRow(
-        "SELECT valeur FROM ".prefixTable("misc")."
-        WHERE type = %s AND intitule = %s",
+        'SELECT valeur FROM '.prefixTable('misc').'
+        WHERE type = %s AND intitule = %s',
         'admin',
         'agses_hosted_apikey'
     );
@@ -260,7 +255,7 @@ if ($post_type === "identify_duo_user") {
         && empty($ret_agses_id['valeur']) === false && empty($ret_agses_apikey['valeur']) === false
     ) {
         // check that card id is not empty or equal to 0
-        if ($row['agses-usercardid'] !== "0" && !empty($row['agses-usercardid'])) {
+        if ($row['agses-usercardid'] !== '0' && !empty($row['agses-usercardid'])) {
             include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/agses/axs/AXSILPortal_V1_Auth.php';
             $agses = new AXSILPortal_V1_Auth();
             $agses->setUrl($ret_agses_url['valeur']);
@@ -292,20 +287,20 @@ if ($post_type === "identify_duo_user") {
             echo '[{"error" : "something_wrong" , "agses_message" : "none" , "agses_status" : "no_user_card_id"}]'; // user not found but not displayed as this in the error message
         }
     }
-} elseif ($post_type === "identify_user") {
-//--------
-// NORMAL IDENTICATION STEP
-//--------
+} elseif ($post_type === 'identify_user') {
+    //--------
+    // NORMAL IDENTICATION STEP
+    //--------
 
     // increment counter of login attempts
-    if (empty($_SESSION["pwd_attempts"])) {
-        $_SESSION["pwd_attempts"] = 1;
+    if (empty($_SESSION['pwd_attempts'])) {
+        $_SESSION['pwd_attempts'] = 1;
     } else {
-        $_SESSION["pwd_attempts"]++;
+        ++$_SESSION['pwd_attempts'];
     }
 
     // manage brute force
-    if ($_SESSION["pwd_attempts"] <= 3) {
+    if ($_SESSION['pwd_attempts'] <= 3) {
         // identify the user through Teampass process
         identifyUser(
             $post_data,
@@ -313,8 +308,8 @@ if ($post_type === "identify_duo_user") {
             $debugDuo,
             $SETTINGS
         );
-    } elseif (isset($_SESSION["next_possible_pwd_attempts"]) && time() > $_SESSION["next_possible_pwd_attempts"] && $_SESSION["pwd_attempts"] > 3) {
-        $_SESSION["pwd_attempts"] = 1;
+    } elseif (isset($_SESSION['next_possible_pwd_attempts']) && time() > $_SESSION['next_possible_pwd_attempts'] && $_SESSION['pwd_attempts'] > 3) {
+        $_SESSION['pwd_attempts'] = 1;
         // identify the user through Teampass process
         identifyUser(
             $post_data,
@@ -323,11 +318,12 @@ if ($post_type === "identify_duo_user") {
             $SETTINGS
         );
     } else {
-        $_SESSION["next_possible_pwd_attempts"] = time() + 10;
+        $_SESSION['next_possible_pwd_attempts'] = time() + 10;
         echo '[{"error" : "bruteforce_wait"}]';
-        exit();
+
+        return false;
     }
-} elseif ($post_type === "store_data_in_cookie") {
+} elseif ($post_type === 'store_data_in_cookie') {
     //--------
     // STORE DATA IN COOKIE
     //--------
@@ -335,16 +331,17 @@ if ($post_type === "identify_duo_user") {
     // not used any more (only development purpose)
     if ($post_key !== $_SESSION['key']) {
         echo '[{"error" : "something_wrong"}]';
-        exit();
+
+        return false;
     }
     // store some connection data in cookie
     setcookie(
-        "TeamPassC",
+        'TeamPassC',
         $post_data,
         time() + 60 * 60,
         '/'
     );
-} elseif ($post_type === "get2FAMethods") {
+} elseif ($post_type === 'get2FAMethods') {
     //--------
     // STORE DATA IN COOKIE
     //--------
@@ -354,36 +351,35 @@ if ($post_type === "identify_duo_user") {
     if (isset($SETTINGS['agses_authentication_enabled']) === true && $SETTINGS['agses_authentication_enabled'] === '1') {
         $agses = 1;
         $fa_method = 'agses';
-        $nb++;
+        ++$nb;
     }
     if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_authentication'] === '1') {
         $google = 1;
         $fa_method = 'google';
-        $nb++;
+        ++$nb;
     }
     if (isset($SETTINGS['yubico_authentication']) === true && $SETTINGS['yubico_authentication'] === '1') {
         $yubico = 1;
         $fa_method = 'yubico';
-        $nb++;
+        ++$nb;
     }
     if (isset($SETTINGS['duo']) === true && $SETTINGS['duo'] === '1') {
         $duo = 1;
         $fa_method = 'duo';
-        $nb++;
+        ++$nb;
     }
     echo '[{"agses" : "'.$agses.'" , "google" : "'.$google.'" , "yubico" : "'.$yubico.'" , "duo" : "'.$duo.'" , "nb" : "'.$nb.'" , "method" : "'.$fa_method.'"}]';
-    exit();
+
+    return false;
 }
 
 /**
- * Complete authentication of user through Teampass
+ * Complete authentication of user through Teampass.
  *
  * @param [type] $sentData
  * @param [type] $debugLdap
  * @param [type] $debugDuo
  * @param [type] $SETTINGS
- *
- * @return void
  */
 function identifyUser(
     $sentData,
@@ -401,7 +397,7 @@ function identifyUser(
     }
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
-    header("Content-type: text/html; charset=utf-8");
+    header('Content-type: text/html; charset=utf-8');
     error_reporting(E_ERROR);
     include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -415,10 +411,10 @@ function identifyUser(
     $superGlobal = new protect\SuperGlobal\SuperGlobal();
 
     // Prepare GET variables
-    $session_user_language = $superGlobal->get("user_language", "SESSION");
+    $session_user_language = $superGlobal->get('user_language', 'SESSION');
 
     if ($debugDuo == 1) {
-        $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "a");
+        $dbgDuo = fopen($SETTINGS['path_to_files_folder'].'/duo.debug.txt', 'a');
 
         fputs(
             $dbgDuo,
@@ -428,6 +424,12 @@ function identifyUser(
 
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    DB::$host = DB_HOST;
+    DB::$user = DB_USER;
+    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$dbName = DB_NAME;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
     $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
@@ -440,7 +442,7 @@ function identifyUser(
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$session_user_language.'.php';
 
     // decrypt and retreive data in JSON format
-    $dataReceived = prepareExchangedData($sentData, "decode");
+    $dataReceived = prepareExchangedData($sentData, 'decode');
 
     // prepare variables
     if (isset($SETTINGS['enable_http_request_login']) === true
@@ -450,9 +452,9 @@ function identifyUser(
         && $SETTINGS['maintenance_mode'] === '1'
     ) {
         if (strpos($_SERVER['PHP_AUTH_USER'], '@') !== false) {
-            $username = explode("@", filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
+            $username = explode('@', filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[0];
         } elseif (strpos($_SERVER['PHP_AUTH_USER'], '\\') !== false) {
-            $username = explode("\\", filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
+            $username = explode('\\', filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING))[1];
         } else {
             $username = filter_var($_SERVER['PHP_AUTH_USER'], FILTER_SANITIZE_STRING);
         }
@@ -461,28 +463,37 @@ function identifyUser(
         $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
         $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
     }
-    
+
     // User's 2FA method
     $user_2fa_selection = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['user_2fa_selection']));
 
     // User's agses code
     $user_agses_code = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['agses_code']));
-    
+
     // Check 2FA
     if ((($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
         || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true))
         && $username !== 'admin'
     ) {
-        echo '[{"value" : "2fa_not_set", "user_admin":"',
-            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+        /*echo '[{"value" : "2fa_not_set", "user_admin":"',
+            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : '',
             '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-            "error" : "2fa_not_set"}]';
+            "error" : "2fa_not_set"}]';*/
+        echo json_encode(
+            array(
+                'value' => '2fa_not_set',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => '2fa_not_set',
+                'message' => langHdl('error_bad_credentials'),
+            )
+        );
 
-            return;
+        exit();
     }
 
     // Init
-    $logError = "";
     $userPasswordVerified = false;
     $ldapConnection = false;
 
@@ -496,7 +507,7 @@ function identifyUser(
     /* LDAP connection */
     if ($debugLdap == 1) {
         // create temp file
-        $dbgLdap = fopen($SETTINGS['path_to_files_folder']."/ldap.debug.txt", "w");
+        $dbgLdap = fopen($SETTINGS['path_to_files_folder'].'/ldap.debug.txt', 'w');
         fputs(
             $dbgLdap,
             "Get all LDAP params : \n".
@@ -518,15 +529,15 @@ function identifyUser(
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "LDAP status: ".$SETTINGS['ldap_mode']."\n"
+            'LDAP status: '.$SETTINGS['ldap_mode']."\n"
         );
     }
 
     // Check if user exists
     $data = DB::queryFirstRow(
-        "SELECT * FROM ".prefixTable("users")." WHERE login=%s_login",
+        'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
         array(
-            'login' => $username
+            'login' => $username,
         )
     );
     $counter = DB::count();
@@ -536,24 +547,24 @@ function identifyUser(
     // Prepare LDAP connection if set up
     if (isset($SETTINGS['ldap_mode'])
         && $SETTINGS['ldap_mode'] === '1'
-        && $username !== "admin"
+        && $username !== 'admin'
     ) {
         //Multiple Domain Names
         if (strpos(html_entity_decode($username), '\\') === true) {
-            $ldap_suffix = "@".substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
+            $ldap_suffix = '@'.substr(html_entity_decode($username), 0, strpos(html_entity_decode($username), '\\'));
             $username = substr(html_entity_decode($username), strpos(html_entity_decode($username), '\\') + 1);
         }
         if ($SETTINGS['ldap_type'] === 'posix-search') {
-            $ldapURIs = "";
-            foreach (explode(",", $SETTINGS['ldap_domain_controler']) as $domainControler) {
+            $ldapURIs = '';
+            foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
                 if ($SETTINGS['ldap_ssl'] == 1) {
-                    $ldapURIs .= "ldaps://".$domainControler.":".$SETTINGS['ldap_port']." ";
+                    $ldapURIs .= 'ldaps://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
                 } else {
-                    $ldapURIs .= "ldap://".$domainControler.":".$SETTINGS['ldap_port']." ";
+                    $ldapURIs .= 'ldap://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
                 }
             }
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "LDAP URIs : ".$ldapURIs."\n");
+                fputs($dbgLdap, 'LDAP URIs : '.$ldapURIs."\n");
             }
             $ldapconn = ldap_connect($ldapURIs);
 
@@ -561,7 +572,7 @@ function identifyUser(
                 ldap_start_tls($ldapconn);
             }
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "LDAP connection : ".($ldapconn ? "Connected" : "Failed")."\n");
+                fputs($dbgLdap, 'LDAP connection : '.($ldapconn ? 'Connected' : 'Failed')."\n");
             }
             ldap_set_option($ldapconn, LDAP_OPT_PROTOCOL_VERSION, 3);
             ldap_set_option($ldapconn, LDAP_OPT_REFERRALS, 0);
@@ -569,16 +580,16 @@ function identifyUser(
             // Is LDAP connection ready?
             if ($ldapconn !== false) {
                 // Should we bind the connection?
-                if ($SETTINGS['ldap_bind_dn'] !== "" && $SETTINGS['ldap_bind_passwd'] !== "") {
+                if ($SETTINGS['ldap_bind_dn'] !== '' && $SETTINGS['ldap_bind_passwd'] !== '') {
                     $ldapbind = ldap_bind($ldapconn, $SETTINGS['ldap_bind_dn'], $SETTINGS['ldap_bind_passwd']);
                     if ($debugLdap == 1) {
-                        fputs($dbgLdap, "LDAP bind : ".($ldapbind ? "Bound" : "Failed")."\n");
+                        fputs($dbgLdap, 'LDAP bind : '.($ldapbind ? 'Bound' : 'Failed')."\n");
                     }
                 } else {
                     $ldapbind = false;
                 }
-                if (($SETTINGS['ldap_bind_dn'] === "" && $SETTINGS['ldap_bind_passwd'] === "") || $ldapbind === true) {
-                    $filter = "(&(".$SETTINGS['ldap_user_attribute']."=".$username.")(objectClass=".$SETTINGS['ldap_object_class']."))";
+                if (($SETTINGS['ldap_bind_dn'] === '' && $SETTINGS['ldap_bind_passwd'] === '') || $ldapbind === true) {
+                    $filter = '(&('.$SETTINGS['ldap_user_attribute'].'='.$username.')(objectClass='.$SETTINGS['ldap_object_class'].'))';
                     $result = ldap_search(
                         $ldapconn,
                         $SETTINGS['ldap_search_base'],
@@ -592,7 +603,7 @@ function identifyUser(
                             'Results : '.print_r(ldap_get_entries($ldapconn, $result), true)."\n"
                         );
                     }
-                    
+
                     // Check if user was found in AD
                     if (ldap_count_entries($ldapconn, $result) > 0) {
                         // Get user's info and especially the DN
@@ -606,15 +617,25 @@ function identifyUser(
 
                         // Check shadowexpire attribute - if === 1 then user disabled
                         if (isset($result[0]['shadowexpire'][0]) === true && $result[0]['shadowexpire'][0] === '1') {
-                            echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
-                            return;
+                            //echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
+                            echo json_encode(
+                                array(
+                                    'value' => '',
+                                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                                    'initial_url' => @$_SESSION['initial_url'],
+                                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                                    'error' => 'user_not_exists',
+                                    'message' => langHdl('error_bad_credentials'),
+                                )
+                            );
+                            exit();
                         }
 
                         // Should we restrain the search in specified user groups
                         $GroupRestrictionEnabled = false;
                         if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
                             // New way to check User's group membership
-                            $filter_group = "memberUid=".$username;
+                            $filter_group = 'memberUid='.$username;
                             $result_group = ldap_search(
                                 $ldapconn,
                                 $SETTINGS['ldap_search_base'],
@@ -635,7 +656,7 @@ function identifyUser(
 
                                 if ($entries['count'] > 0) {
                                     // Now check if group fits
-                                    for ($i = 0; $i < $entries['count']; $i++) {
+                                    for ($i = 0; $i < $entries['count']; ++$i) {
                                         $parsr = ldap_explode_dn($entries[$i]['dn'], 0);
                                         if (str_replace(array('CN=', 'cn='), '', $parsr[0]) === $SETTINGS['ldap_usergroup']) {
                                             $GroupRestrictionEnabled = true;
@@ -674,9 +695,9 @@ function identifyUser(
                                     DB::update(
                                         prefixTable('users'),
                                         array(
-                                            'pw' => $data['pw']
+                                            'pw' => $data['pw'],
                                         ),
-                                        "id = %i",
+                                        'id = %i',
                                         $data['id']
                                     );
 
@@ -728,15 +749,15 @@ function identifyUser(
                 array(
                     'base_dn' => $SETTINGS['ldap_domain_dn'],
                     'account_suffix' => $ldap_suffix,
-                    'domain_controllers' => explode(",", $SETTINGS['ldap_domain_controler']),
+                    'domain_controllers' => explode(',', $SETTINGS['ldap_domain_controler']),
                     'ad_port' => $SETTINGS['ldap_port'],
                     'use_ssl' => $SETTINGS['ldap_ssl'],
-                    'use_tls' => $SETTINGS['ldap_tls']
+                    'use_tls' => $SETTINGS['ldap_tls'],
                 )
             );
 
             if ($debugLdap == 1) {
-                fputs($dbgLdap, "Create new adldap object : ".$adldap->getLastError()."\n\n\n"); //Debug
+                fputs($dbgLdap, 'Create new adldap object : '.$adldap->getLastError()."\n\n\n"); //Debug
             }
 
             // OpenLDAP expects an attribute=value pair
@@ -763,8 +784,18 @@ function identifyUser(
 
                 // Is user expired?
                 if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
-                    echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
-                    return;
+                    //echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
+                    echo json_encode(
+                        array(
+                            'value' => '',
+                            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                            'initial_url' => @$_SESSION['initial_url'],
+                            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                            'error' => 'user_not_exists',
+                            'message' => langHdl('error_bad_credentials'),
+                        )
+                    );
+                    exit();
                 }
 
                 // Update user's password
@@ -777,9 +808,9 @@ function identifyUser(
                         DB::update(
                             prefixTable('users'),
                             array(
-                                'pw' => $data['pw']
+                                'pw' => $data['pw'],
                             ),
-                            "id = %i",
+                            'id = %i',
                             $data['id']
                         );
 
@@ -793,8 +824,8 @@ function identifyUser(
             if ($debugLdap == 1) {
                 fputs(
                     $dbgLdap,
-                    "After authenticate : ".$adldap->getLastError()."\n\n\n".
-                    "ldap status : ".$ldapConnection."\n\n\n"
+                    'After authenticate : '.$adldap->getLastError()."\n\n\n".
+                    'ldap status : '.$ldapConnection."\n\n\n"
                 ); //Debug
             }
         }
@@ -804,14 +835,14 @@ function identifyUser(
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "USer exists: ".$counter."\n"
+            'USer exists: '.$counter."\n"
         );
     }
 
     // Check Yubico
     if (isset($SETTINGS['yubico_authentication'])
-        && $SETTINGS['yubico_authentication'] === "1"
-        && $data['admin'] !== "1"
+        && $SETTINGS['yubico_authentication'] === '1'
+        && $data['admin'] !== '1'
         && $user_2fa_selection === 'yubico'
     ) {
         $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
@@ -824,16 +855,26 @@ function identifyUser(
                 prefixTable('users'),
                 array(
                     'yubico_user_key' => $yubico_user_key,
-                    'yubico_user_id' => $yubico_user_id
+                    'yubico_user_id' => $yubico_user_id,
                 ),
-                "id=%i",
+                'id=%i',
                 $data['id']
             );
         } else {
             // Check existing yubico credentials
             if ($data['yubico_user_key'] === 'none' || $data['yubico_user_id'] === 'none') {
-                echo '[{"value" : "no_user_yubico_credentials"}]';
-                return;
+                //echo '[{"value" : "no_user_yubico_credentials"}]';
+                echo json_encode(
+                    array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                        'initial_url' => @$_SESSION['initial_url'],
+                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                        'error' => 'no_user_yubico_credentials',
+                        'message' => '',
+                    )
+                );
+                exit();
             } else {
                 $yubico_user_key = $data['yubico_user_key'];
                 $yubico_user_id = $data['yubico_user_id'];
@@ -846,13 +887,22 @@ function identifyUser(
         $auth = $yubi->verify($yubico_key);
         if (PEAR::isError($auth)) {
             $proceedIdentification = false;
-            echo '[{"value" : "bad_user_yubico_credentials"}]';
-            return;
+            //echo '[{"value" : "bad_user_yubico_credentials"}]';
+            echo json_encode(
+                array(
+                    'value' => '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'initial_url' => @$_SESSION['initial_url'],
+                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                    'error' => 'bad_user_yubico_credentials',
+                    'message' => langHdl('yubico_bad_code'),
+                )
+            );
+            exit();
         } else {
             $proceedIdentification = true;
         }
     }
-
 
     // Create new LDAP user if not existing in Teampass
     // Don't create it if option "only localy declared users" is enabled
@@ -866,7 +916,7 @@ function identifyUser(
             //Because we didn't use adLDAP, we need to set the user info from the ldap_get_entries result
             $user_info_from_ad = $result;
         } else {
-            $user_info_from_ad = $adldap->user()->info($auth_username, array("mail", "givenname", "sn"));
+            $user_info_from_ad = $adldap->user()->info($auth_username, array('mail', 'givenname', 'sn'));
         }
 
         DB::insert(
@@ -880,27 +930,27 @@ function identifyUser(
                 'admin' => '0',
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
-                'personal_folder' => $SETTINGS['enable_pf_feature'] === "1" ? '1' : '0',
+                'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
                 'fonction_id' => isset($SETTINGS['ldap_new_user_role']) === true ? $SETTINGS['ldap_new_user_role'] : '0',
                 'groupes_interdits' => '',
                 'groupes_visibles' => '',
                 'last_pw_change' => time(),
                 'user_language' => $SETTINGS['default_language'],
                 'encrypted_psk' => '',
-                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0
+                'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
             )
         );
         $newUserId = DB::insertId();
         // Create personnal folder
-        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === "1") {
+        if (isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] === '1') {
             DB::insert(
-                prefixTable("nested_tree"),
+                prefixTable('nested_tree'),
                 array(
                     'parent_id' => '0',
                     'title' => $newUserId,
                     'bloquer_creation' => '0',
                     'bloquer_modification' => '0',
-                    'personal_folder' => '1'
+                    'personal_folder' => '1',
                 )
             );
         }
@@ -910,69 +960,101 @@ function identifyUser(
 
     // Check if user exists (and has been created in case of new LDAP user)
     $data = DB::queryFirstRow(
-        "SELECT * FROM ".prefixTable("users")." WHERE login=%s_login",
+        'SELECT * FROM '.prefixTable('users').' WHERE login=%s_login',
         array(
-            'login' => $username
+            'login' => $username,
         )
     );
     $counter = DB::count();
     if ($counter === 0) {
-        logEvents('failed_auth', 'user_not_exists', "", stripslashes($username), stripslashes($username));
-        echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
-        return;
+        logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        //echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
+        echo json_encode(
+            array(
+                'value' => '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => 'user_not_exists',
+                'message' => langHdl('error_bad_credentials'),
+            )
+        );
+        exit();
     }
 
     // check GA code
     if (isset($SETTINGS['google_authentication']) === true
         && $SETTINGS['google_authentication'] === '1'
-        && $username !== "admin"
+        && $username !== 'admin'
         && $user_2fa_selection === 'google'
     ) {
         if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
             // load library
-            include_once $SETTINGS['cpassman_dir']."/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php";
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
 
             // create new instance
             $tfa = new Authentication\TwoFactorAuth\TwoFactorAuth($SETTINGS['ga_website_name']);
 
             // now check if it is the 1st time the user is using 2FA
-            if ($data['ga_temporary_code'] !== "none" && $data['ga_temporary_code'] !== "done") {
+            if ($data['ga_temporary_code'] !== 'none' && $data['ga_temporary_code'] !== 'done') {
                 if ($data['ga_temporary_code'] !== $dataReceived['GACode']) {
                     $proceedIdentification = false;
-                    $logError = "ga_temporary_code_wrong";
+                    $logError = array(
+                        'error' => 'ga_temporary_code_wrong',
+                        'message' => langHdl('ga_bad_code'),
+                    );
                 } else {
                     $proceedIdentification = false;
-                    $logError = "ga_temporary_code_correct";
+                    $logError = array(
+                        'error' => 'ga_temporary_code_correct',
+                        'message' => langHdl('ga_flash_qr_and_login'),
+                    );
 
                     // generate new QR
-                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri("Teampass - ".$username, $data['ga']);
+                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri('Teampass - '.$username, $data['ga']);
 
                     // clear temporary code from DB
                     DB::update(
                         prefixTable('users'),
                         array(
-                            'ga_temporary_code' => 'done'
+                            'ga_temporary_code' => 'done',
                         ),
-                        "id=%i",
+                        'id=%i',
                         $data['id']
                     );
-
-                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
-
-                    return;
                 }
+
+                //echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', /* @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : '', '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+                echo json_encode(
+                    array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                        'initial_url' => @$_SESSION['initial_url'],
+                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                        'error' => $logError['error'],
+                        'message' => $logError['message'],
+                    )
+                );
+
+                exit();
             } else {
                 // verify the user GA code
                 if ($tfa->verifyCode($data['ga'], $dataReceived['GACode'])) {
                     $proceedIdentification = true;
                 } else {
                     $proceedIdentification = false;
-                    $logError = "ga_code_wrong";
+                    $logError = array(
+                        'error' => 'ga_code_wrong',
+                        'message' => langHdl('ga_bad_code'),
+                    );
                 }
             }
         } else {
             $proceedIdentification = false;
-            $logError = "ga_code_wrong";
+            $logError = array(
+                'error' => 'ga_temporary_code_correct',
+                'message' => langHdl('ga_bad_code'),
+            );
         }
     } elseif ($counter > 0) {
         $proceedIdentification = true;
@@ -981,15 +1063,14 @@ function identifyUser(
     if ($debugDuo == 1) {
         fputs(
             $dbgDuo,
-            "Proceed with Ident: ".$proceedIdentification."\n"
+            'Proceed with Ident: '.$proceedIdentification."\n"
         );
     }
-
 
     // check AGSES code
     if (isset($SETTINGS['agses_authentication_enabled']) === true
         && $SETTINGS['agses_authentication_enabled'] === '1'
-        && $username !== "admin"
+        && $username !== 'admin'
         && $user_2fa_selection === 'agses'
         && empty($user_agses_code) === false
     ) {
@@ -1002,12 +1083,12 @@ function identifyUser(
         $agses->setApiKey($SETTINGS['agses_hosted_apikey']);
         $agses->create();
         //create random salt and store it into session
-        if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == "") {
+        if (!isset($_SESSION['hedgeId']) || $_SESSION['hedgeId'] == '') {
             $_SESSION['hedgeId'] = md5(time());
         }
 
         $responseCode = $user_agses_code;
-        if ($responseCode != "" && strlen($responseCode) >= 4) {
+        if ($responseCode != '' && strlen($responseCode) >= 4) {
             // Verify response code, store result in session
             $result = $agses->verifyResponse(
                 (string) $_SESSION['user_settings']['agses-usercardid'],
@@ -1016,62 +1097,97 @@ function identifyUser(
             );
 
             if ($result == 1) {
-                $return = "";
-                $logError = "";
+                $return = '';
                 $proceedIdentification = true;
                 $userPasswordVerified = false;
                 unset($_SESSION['hedgeId']);
                 unset($_SESSION['flickercode']);
             } else {
                 if ($result < -10) {
-                    $logError = "ERROR: ".$result;
+                    $logError = array(
+                        'error' => 'agses_error',
+                        'message' => 'ERROR: '.$result,
+                    );
                 } elseif ($result == -4) {
-                    $logError = "Wrong response code, no more tries left.";
+                    $logError = array(
+                        'error' => 'agses_error',
+                        'message' => 'Wrong response code, no more tries left.',
+                    );
                 } elseif ($result == -3) {
-                    $logError = "Wrong response code, try to reenter.";
+                    $logError = array(
+                        'error' => 'agses_error',
+                        'message' => 'Wrong response code, try to reenter.',
+                    );
                 } elseif ($result == -2) {
-                    $logError = "Timeout. The response code is not valid anymore.";
+                    $logError = array(
+                        'error' => 'agses_error',
+                        'message' => 'Timeout. The response code is not valid anymore.',
+                    );
                 } elseif ($result == -1) {
-                    $logError = "Security Error. Did you try to verify the response from a different computer?";
+                    $logError = array(
+                        'error' => 'agses_error',
+                        'message' => 'Security Error. Did you try to verify the response from a different computer?',
+                    );
                 } elseif ($result == 1) {
-                    $logError = "Authentication successful, response code correct.
-                          <br /><br />Authentification Method for SecureBrowser updated!";
-                    // Add necessary code here for accessing your Business Application
+                    $logError = array(
+                        'error' => 'agses_error',
+                        'message' => 'Authentication successful, response code correct.<br /><br />Authentification Method for SecureBrowser updated!',
+                    );
                 }
-                $return = "agses_error";
+                /*$return = 'agses_error';
                 echo '[{"value" : "'.$return.'", "user_admin":"',
-                isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+                isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : '',
                 '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-                "error" : "'.$logError.'"}]';
+                "error" : "'.$logError.'"}]';*/
+                echo json_encode(
+                    array(
+                        'value' => '',
+                        'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                        'initial_url' => @$_SESSION['initial_url'],
+                        'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                        'error' => $logError['error'],
+                        'message' => $logError['message'],
+                    )
+                );
 
-                return;
+                exit();
             }
         } else {
             // We have an error here
-            $return = "agses_error";
-            $logError = "No response code given";
-
-            echo '[{"value" : "'.$return.'", "user_admin":"',
-            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
+            /*echo '[{"value" : "", "user_admin":"',
+            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : '',
             '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-            "error" : "'.$logError.'"}]';
+            "error" : "'.$logError.'"}]';*/
+            echo json_encode(
+                array(
+                    'value' => '',
+                    'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                    'initial_url' => @$_SESSION['initial_url'],
+                    'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                    'error' => 'agses_error',
+                    'message' => 'No response code given',
+                )
+            );
 
-            return;
+            exit();
         }
     }
 
     // If admin user then check if folder install exists
     // if yes then refuse connection
-    if ($data['admin'] === "1" && is_dir("../install")) {
-        $return = "install_error";
-        $logError = "Install folder has to be removed!";
+    if ($data['admin'] === '1' && is_dir('../install')) {
+        echo json_encode(
+            array(
+                'value' => '',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => 'install_error',
+                'message' => 'Install folder has to be removed!',
+            )
+        );
 
-        echo '[{"value" : "'.$return.'", "user_admin":"',
-        isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "",
-        '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-        "error" : "'.$logError.'"}]';
-
-        return;
+        exit();
     }
 
     if ($proceedIdentification === true) {
@@ -1084,9 +1200,9 @@ function identifyUser(
             DB::update(
                 prefixTable('users'),
                 array(
-                    'pw' => $data['pw']
+                    'pw' => $data['pw'],
                 ),
-                "id=%i",
+                'id=%i',
                 $data['id']
             );
         }
@@ -1100,8 +1216,8 @@ function identifyUser(
                 logEvents(
                     'failed_auth',
                     'user_password_not_correct',
-                    "",
-                    "",
+                    '',
+                    '',
                     stripslashes($username)
                 );
             }
@@ -1113,7 +1229,7 @@ function identifyUser(
                 "User's password verified: ".$userPasswordVerified."\n"
             );
         }
-        
+
         // Can connect if
         // 1- no LDAP mode + user enabled + pw ok
         // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
@@ -1122,17 +1238,17 @@ function identifyUser(
         if ((isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '0'
             && $userPasswordVerified === true && $data['disabled'] === '0')
             || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin")
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== 'admin')
             || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '2'
-            && $ldapConnection === true && $data['disabled'] === '0' && $username !== "admin")
+            && $ldapConnection === true && $data['disabled'] === '0' && $username !== 'admin')
             || (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1'
-            && $username == "admin" && $userPasswordVerified === true && $data['disabled'] === '0')
+            && $username == 'admin' && $userPasswordVerified === true && $data['disabled'] === '0')
             || (isset($SETTINGS['ldap_and_local_authentication']) === true && $SETTINGS['ldap_and_local_authentication'] === '1'
             && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], array('1', '2')) === true
             && $userPasswordVerified === true && $data['disabled'] === '0')
         ) {
             $_SESSION['autoriser'] = true;
-            $_SESSION["pwd_attempts"] = 0;
+            $_SESSION['pwd_attempts'] = 0;
 
             // Generate a ramdom ID
             $key = GenerateCryptKey(50);
@@ -1147,8 +1263,8 @@ function identifyUser(
             // Check if any unsuccessfull login tries exist
             $arrAttempts = array();
             $rows = DB::query(
-                "SELECT date
-                FROM ".prefixTable("log_system")."
+                'SELECT date
+                FROM '.prefixTable('log_system')."
                 WHERE field_1 = %s
                 AND type = 'failed_auth'
                 AND label = 'user_password_not_correct'
@@ -1164,7 +1280,7 @@ function identifyUser(
                 foreach ($rows as $record) {
                     array_push(
                         $arrAttempts['attempts'],
-                        date($SETTINGS['date_format']." ".$SETTINGS['time_format'], $record['date'])
+                        date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], $record['date'])
                     );
                 }
             }
@@ -1197,7 +1313,7 @@ function identifyUser(
             $_SESSION['user_force_relog'] = $data['force-relog'];
             // get personal settings
             if (!isset($data['treeloadstrategy']) || empty($data['treeloadstrategy'])) {
-                $data['treeloadstrategy'] = "full";
+                $data['treeloadstrategy'] = 'full';
             }
             $_SESSION['user_settings']['treeloadstrategy'] = $data['treeloadstrategy'];
             $_SESSION['user_settings']['agses-usercardid'] = $data['agses-usercardid'];
@@ -1207,19 +1323,45 @@ function identifyUser(
             $_SESSION['user_settings']['session_duration'] = $dataReceived['duree_session'] * 60;
             $_SESSION['user_settings']['api-key'] = $data['user_api_key'];
 
-
             // manage session expiration
-            $_SESSION['fin_session'] = (integer) (time() + $_SESSION['user_settings']['session_duration']);
+            $_SESSION['fin_session'] = (int) (time() + $_SESSION['user_settings']['session_duration']);
+
+            /*
+            * CHECK PASSWORD VALIDITY
+            * Don't take into consideration if LDAP in use
+            */
+            if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
+                $_SESSION['validite_pw'] = true;
+                $_SESSION['last_pw_change'] = true;
+            } else {
+                if (isset($data['last_pw_change']) === true) {
+                    if ($SETTINGS['pw_life_duration'] === '0') {
+                        $_SESSION['numDaysBeforePwExpiration'] = 'infinite';
+                        $_SESSION['validite_pw'] = true;
+                    } else {
+                        $_SESSION['numDaysBeforePwExpiration'] = $SETTINGS['pw_life_duration'] - round(
+                            (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $_SESSION['last_pw_change']) / (24 * 60 * 60)
+                        );
+                        if ($_SESSION['numDaysBeforePwExpiration'] <= 0) {
+                            $_SESSION['validite_pw'] = false;
+                        } else {
+                            $_SESSION['validite_pw'] = true;
+                        }
+                    }
+                } else {
+                    $_SESSION['validite_pw'] = false;
+                }
+            }
 
             /* If this option is set user password MD5 is used as personal SALTKey */
             if (isset($SETTINGS['use_md5_password_as_salt']) &&
                 $SETTINGS['use_md5_password_as_salt'] == 1
             ) {
                 $_SESSION['user_settings']['clear_psk'] = md5($passwordClear);
-                $tmp = encrypt($_SESSION['user_settings']['clear_psk'], "");
+                $tmp = encrypt($_SESSION['user_settings']['clear_psk'], '');
                 if ($tmp !== false) {
                     setcookie(
-                        "TeamPass_PFSK_".md5($_SESSION['user_id']),
+                        'TeamPass_PFSK_'.md5($_SESSION['user_id']),
                         $tmp,
                         time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
@@ -1256,15 +1398,15 @@ function identifyUser(
             }
             // User's roles
             $_SESSION['fonction_id'] = $data['fonction_id'];
-            $_SESSION['user_roles'] = explode(";", $data['fonction_id']);
+            $_SESSION['user_roles'] = explode(';', $data['fonction_id']);
             // build array of roles
             $_SESSION['user_pw_complexity'] = 0;
             $_SESSION['arr_roles'] = array();
             foreach (array_filter(explode(';', $_SESSION['fonction_id'])) as $role) {
-                $resRoles = DB::queryFirstRow("SELECT title, complexity FROM ".prefixTable("roles_title")." WHERE id=%i", $role);
+                $resRoles = DB::queryFirstRow('SELECT title, complexity FROM '.prefixTable('roles_title').' WHERE id=%i', $role);
                 $_SESSION['arr_roles'][$role] = array(
                         'id' => $role,
-                        'title' => $resRoles['title']
+                        'title' => $resRoles['title'],
                 );
                 // get highest complexity
                 if ($_SESSION['user_pw_complexity'] < $resRoles['complexity']) {
@@ -1273,16 +1415,16 @@ function identifyUser(
             }
             // build complete array of roles
             $_SESSION['arr_roles_full'] = array();
-            $rows = DB::query("SELECT id, title FROM ".prefixTable("roles_title")." ORDER BY title ASC");
+            $rows = DB::query('SELECT id, title FROM '.prefixTable('roles_title').' ORDER BY title ASC');
             foreach ($rows as $record) {
                 $_SESSION['arr_roles_full'][$record['id']] = array(
                         'id' => $record['id'],
-                        'title' => $record['title']
+                        'title' => $record['title'],
                 );
             }
             // Set some settings
             $_SESSION['user']['find_cookie'] = false;
-            $SETTINGS['update_needed'] = "";
+            $SETTINGS['update_needed'] = '';
             // Update table
             DB::update(
                 prefixTable('users'),
@@ -1293,9 +1435,9 @@ function identifyUser(
                     'disabled' => 0,
                     'no_bad_attempts' => 0,
                     'session_end' => $_SESSION['fin_session'],
-                    'user_ip' =>  $dataReceived['client']
+                    'user_ip' => $dataReceived['client'],
                 ),
-                "id=%i",
+                'id=%i',
                 $data['id']
             );
 
@@ -1326,9 +1468,9 @@ function identifyUser(
                 }
                 $_SESSION['all_non_personal_folders'] = array();
                 $_SESSION['groupes_visibles'] = array();
-                $_SESSION['groupes_visibles_list'] = "";
+                $_SESSION['groupes_visibles_list'] = '';
                 $_SESSION['read_only_folders'] = array();
-                $_SESSION['list_folders_limited'] = "";
+                $_SESSION['list_folders_limited'] = '';
                 $_SESSION['list_folders_editable_by_role'] = array();
                 $_SESSION['list_restricted_folders_for_items'] = array();
                 $_SESSION['nb_folders'] = 1;
@@ -1337,14 +1479,14 @@ function identifyUser(
             // Get some more elements
             $_SESSION['screenHeight'] = $dataReceived['screenHeight'];
             // Get last seen items
-            $_SESSION['latest_items_tab'][] = "";
+            $_SESSION['latest_items_tab'][] = '';
             foreach ($_SESSION['latest_items'] as $item) {
                 if (!empty($item)) {
-                    $data = DB::queryFirstRow("SELECT id,label,id_tree FROM ".prefixTable("items")." WHERE id=%i", $item);
+                    $data = DB::queryFirstRow('SELECT id,label,id_tree FROM '.prefixTable('items').' WHERE id=%i', $item);
                     $_SESSION['latest_items_tab'][$item] = array(
                         'id' => $item,
                         'label' => $data['label'],
-                        'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$item
+                        'url' => 'index.php?page=items&amp;group='.$data['id_tree'].'&amp;id='.$item,
                     );
                 }
             }
@@ -1356,18 +1498,18 @@ function identifyUser(
                 && $_SESSION['user_admin'] != 1
             ) {
                 // get all Admin users
-                $receivers = "";
-                $rows = DB::query("SELECT email FROM ".prefixTable("users")." WHERE admin = %i and email != ''", 1);
+                $receivers = '';
+                $rows = DB::query('SELECT email FROM '.prefixTable('users')." WHERE admin = %i and email != ''", 1);
                 foreach ($rows as $record) {
                     if (empty($receivers)) {
                         $receivers = $record['email'];
                     } else {
-                        $receivers = ",".$record['email'];
+                        $receivers = ','.$record['email'];
                     }
                 }
                 // Add email to table
                 DB::insert(
-                    prefixTable("emails"),
+                    prefixTable('emails'),
                     array(
                         'timestamp' => time(),
                         'subject' => $LANG['email_subject_on_user_login'],
@@ -1375,23 +1517,26 @@ function identifyUser(
                             array(
                                 '#tp_user#',
                                 '#tp_date#',
-                                '#tp_time#'
+                                '#tp_time#',
                             ),
                             array(
-                                " ".$_SESSION['login']." (IP: ".getClientIpServer().")",
+                                ' '.$_SESSION['login'].' (IP: '.get_client_ip_server().')',
                                 date($SETTINGS['date_format'], $_SESSION['derniere_connexion']),
-                                date($SETTINGS['time_format'], $_SESSION['derniere_connexion'])
+                                date($SETTINGS['time_format'], $_SESSION['derniere_connexion']),
                             ),
                             $LANG['email_body_on_user_login']
                         ),
                         'receivers' => $receivers,
-                        'status' => "not_sent"
+                        'status' => 'not_sent',
                     )
                 );
             }
         } elseif ($data['disabled'] == 1) {
             // User and password is okay but account is locked
-            $return = "user_is_locked";
+            $logError = array(
+                'error' => 'user_is_locked',
+                'message' => langHdl('account_is_locked'),
+            );
         } else {
             // User exists in the DB but Password is false
             // check if user is locked
@@ -1413,25 +1558,44 @@ function identifyUser(
                 array(
                     'key_tempo' => $_SESSION['key'],
                     'disabled' => $userIsLocked,
-                    'no_bad_attempts' => $nbAttempts
+                    'no_bad_attempts' => $nbAttempts,
                 ),
-                "id=%i",
+                'id=%i',
                 $data['id']
             );
             // What return shoulb we do
             if ($userIsLocked == 1) {
-                $return = "user_is_locked";
+                $logError = array(
+                    'error' => 'user_is_locked',
+                    'message' => langHdl('account_is_locked'),
+                );
             } elseif ($SETTINGS['nb_bad_authentication'] === '0') {
-                $return = "false";
+                //$return = 'false';
+                $logError = array(
+                    'error' => 'user_not_exists',
+                    'message' => langHdl('error_bad_credentials'),
+                );
             } else {
-                $return = $nbAttempts;
+                //$return = $nbAttempts;
+                $logError = array(
+                    'error' => 'user_not_exists',
+                    'message' => langHdl('error_bad_credentials'),
+                );
             }
         }
     } else {
         if ($user_initial_creation_through_ldap === true) {
-            $return = "new_ldap_account_created";
+            $return = 'new_ldap_account_created';
+        /*$logError = array(
+            'error' => 'user_not_exists',
+            'message' => langHdl('error_bad_credentials'),
+        );*/
         } else {
-            $return = "false";
+            //$return = 'false';
+            $logError = array(
+                'error' => 'user_not_exists',
+                'message' => langHdl('error_bad_credentials'),
+            );
         }
     }
 
@@ -1439,18 +1603,47 @@ function identifyUser(
         fputs(
             $dbgDuo,
             "\n\n----\n".
-            "Identified : ".filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
+            'Identified : '.filter_var($return, FILTER_SANITIZE_STRING)."\n\n"
         );
     }
 
     // manage bruteforce
-    if ($_SESSION["pwd_attempts"] > 2) {
-        $_SESSION["next_possible_pwd_attempts"] = time() + 10;
+    if ($_SESSION['pwd_attempts'] > 2) {
+        $_SESSION['next_possible_pwd_attempts'] = time() + 10;
     }
 
-    echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
+    //echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
-    $_SESSION['initial_url'] = "";
+    // Ensure Complexity levels are translated
+    if (defined('TP_PW_COMPLEXITY') === false) {
+        define(
+            'TP_PW_COMPLEXITY',
+            array(
+            0 => array(0, langHdl('complex_level0')),
+            25 => array(25, langHdl('complex_level1')),
+            50 => array(50, langHdl('complex_level2')),
+            60 => array(60, langHdl('complex_level3')),
+            70 => array(70, langHdl('complex_level4')),
+            80 => array(80, langHdl('complex_level5')),
+            90 => array(90, langHdl('complex_level6')),
+            )
+        );
+    }
+
+    echo json_encode(
+        array(
+            'value' => $return,
+            'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+            'initial_url' => @$_SESSION['initial_url'],
+            'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+            'error' => $logError['error'],
+            'message' => $logError['message'],
+            'first_connection' => $_SESSION['validite_pw'] === false ? true : false,
+            'password_complexity' => TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1],
+        )
+    );
+
+    $_SESSION['initial_url'] = '';
     if ($SETTINGS['cpassman_dir'] === '..') {
         $SETTINGS['cpassman_dir'] = '.';
     }

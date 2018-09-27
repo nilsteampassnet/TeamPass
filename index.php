@@ -923,5 +923,7 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/profile.js.php';
     } elseif ($pageSel === 'favourites') {
         include_once $SETTINGS['cpassman_dir'].'/pages/favorites.js.php';
+    } else {
+        include_once $SETTINGS['cpassman_dir'].'/login.js.php';
     }
 }
