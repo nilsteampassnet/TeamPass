@@ -496,6 +496,7 @@ function identifyUser(
     // Init
     $userPasswordVerified = false;
     $ldapConnection = false;
+    $logError = array();
 
     if ($debugDuo == 1) {
         fputs(
@@ -617,7 +618,6 @@ function identifyUser(
 
                         // Check shadowexpire attribute - if === 1 then user disabled
                         if (isset($result[0]['shadowexpire'][0]) === true && $result[0]['shadowexpire'][0] === '1') {
-                            //echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
                             echo json_encode(
                                 array(
                                     'value' => '',
@@ -784,7 +784,6 @@ function identifyUser(
 
                 // Is user expired?
                 if (is_array($adldap->user()->passwordExpiry($auth_username)) === false) {
-                    //echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
                     echo json_encode(
                         array(
                             'value' => '',
@@ -968,14 +967,13 @@ function identifyUser(
     $counter = DB::count();
     if ($counter === 0) {
         logEvents('failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
-        //echo '[{"value" : "user_not_exists '.$username.'", "text":""}]';
         echo json_encode(
             array(
                 'value' => '',
                 'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
-                'error' => 'user_not_exists',
+                'error' => 'user_not_exists4',
                 'message' => langHdl('error_bad_credentials'),
             )
         );
@@ -1570,15 +1568,13 @@ function identifyUser(
                     'message' => langHdl('account_is_locked'),
                 );
             } elseif ($SETTINGS['nb_bad_authentication'] === '0') {
-                //$return = 'false';
                 $logError = array(
-                    'error' => 'user_not_exists',
+                    'error' => 'user_not_exists1',
                     'message' => langHdl('error_bad_credentials'),
                 );
             } else {
-                //$return = $nbAttempts;
                 $logError = array(
-                    'error' => 'user_not_exists',
+                    'error' => 'user_not_exists2',
                     'message' => langHdl('error_bad_credentials'),
                 );
             }
@@ -1586,14 +1582,9 @@ function identifyUser(
     } else {
         if ($user_initial_creation_through_ldap === true) {
             $return = 'new_ldap_account_created';
-        /*$logError = array(
-            'error' => 'user_not_exists',
-            'message' => langHdl('error_bad_credentials'),
-        );*/
         } else {
-            //$return = 'false';
             $logError = array(
-                'error' => 'user_not_exists',
+                'error' => 'user_not_exists3',
                 'message' => langHdl('error_bad_credentials'),
             );
         }
@@ -1611,8 +1602,6 @@ function identifyUser(
     if ($_SESSION['pwd_attempts'] > 2) {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
     }
-
-    //echo '[{"value" : "'.$return.'", "user_admin":"', isset($_SESSION['user_admin']) ? /** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'", "pwd_attempts" : "'./** @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION["pwd_attempts"]).'"}]';
 
     // Ensure Complexity levels are translated
     if (defined('TP_PW_COMPLEXITY') === false) {

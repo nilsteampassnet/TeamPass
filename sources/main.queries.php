@@ -288,26 +288,41 @@ function mainQuery()
             } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) == 'first_change'
             ) {
-                // update DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'pw' => $newPw,
-                        'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
-                        ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
+                // Check complexity level
+                if ((int) filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_STRING) >= TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1]) {
+                    // update DB
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'pw' => $newPw,
+                            'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
+                            ),
+                        'id = %i',
+                        $_SESSION['user_id']
+                    );
 
-                // update sessions
-                $_SESSION['last_pw'] = '';
-                $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
-                $_SESSION['validite_pw'] = true;
+                    // update sessions
+                    $_SESSION['last_pw'] = '';
+                    $_SESSION['last_pw_change'] = mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'));
+                    $_SESSION['validite_pw'] = true;
 
-                // update LOG
-                logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+                    // update LOG
+                    logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
-                echo '[ { "error" : "none" } ]';
+                    echo json_encode(
+                        array(
+                            'error' => 'none',
+                            'message' => '',
+                        )
+                    );
+                } else {
+                    echo json_encode(
+                        array(
+                            'error' => 'complexity_too_low',
+                            'message' => langHdl('error_complex_not_enought'),
+                        )
+                    );
+                }
                 break;
             } else {
                 // DEFAULT case

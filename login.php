@@ -228,11 +228,11 @@ echo '
     <!-- /.login-card-body -->
 
     <div class="card-body confirm-password-card-body hidden">
-        <p class="login-box-msg">'.langHdl('index_change_pw').'</p>
+        <h5 class="login-box-msg">'.langHdl('new_password_required').'</h5>
 
         <div class="alert alert-info">
-            <p><i class="icon fa fa-info"></i>'.langHdl('complex_asked').'</p>
-            <p><div id="confirm-password-level"></div></p>
+            <p class="text-center"><i class="icon fa fa-info"></i>'.langHdl('password_strength').'
+            <span id="confirm-password-level" class="ml-2 font-weight-bold"></span></p>
         </div>
 
         <div>
@@ -257,7 +257,7 @@ echo '
             </div>
             <div class="row mb-3">
                 <div class="col-12">
-                    <button id="but_identify_user" class="btn btn-primary btn-block">'.langHdl('confirm').'</button>
+                    <button id="but_confirm_new_password" class="btn btn-primary btn-block">'.langHdl('confirm').'</button>
                 </div>
                 <!-- /.col -->
             </div>

@@ -763,23 +763,17 @@ if (null !== $post_type) {
                 $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
                     && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
                 $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
-                $post_restricted_to = json_decode(
-                    filter_var(
-                        $dataReceived['restricted_to'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_restricted_to = filter_var_array(
+                    $dataReceived['restricted_to'],
+                    FILTER_SANITIZE_STRING
                 );
-                $post_restricted_to_roles = json_decode(
-                    filter_var(
-                        $dataReceived['restricted_to_roles'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_restricted_to_roles = filter_var_array(
+                    $dataReceived['restricted_to_roles'],
+                    FILTER_SANITIZE_STRING
                 );
-                $post_diffusion_list = json_decode(
-                    filter_var(
-                        $dataReceived['diffusion_list'],
-                        FILTER_SANITIZE_STRING
-                    )
+                $post_diffusion_list = filter_var_array(
+                    $dataReceived['diffusion_list'],
+                    FILTER_SANITIZE_STRING
                 );
                 $post_to_be_deleted_after_x_views = filter_var(
                     $dataReceived['to_be_deleted_after_x_views'],
@@ -913,8 +907,8 @@ if (null !== $post_type) {
                 if (empty($dataItem['restricted_to']) === true) {
                     $restrictionActive = false;
                 }
-                print_r($dataItem);
-                echo $post_item_id.' - icic  ';
+                //print_r($dataItem);
+                //echo $post_item_id.' - icic  ';
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
                     && ($dataItem['perso'] === '0'
                     || ($dataItem['perso'] === '1'
@@ -1038,7 +1032,7 @@ if (null !== $post_type) {
                     ) {
                         foreach ($post_fields as $field) {
                             if (empty($field['value']) === false) {
-                                echo $field['id'].' -- '.$field['value'];
+                                //echo $field['id'].' -- '.$field['value'];
                                 $dataTmpCat = DB::queryFirstRow(
                                     'SELECT c.title AS title, i.data AS data, i.data_iv AS data_iv,
                                     i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
@@ -1199,7 +1193,7 @@ if (null !== $post_type) {
                             }
                         }
                     }
-                    echo $post_to_be_deleted_after_x_views.' -- '.$post_to_be_deleted_after_date.' ; ';
+                    //echo $post_to_be_deleted_after_x_views.' -- '.$post_to_be_deleted_after_date.' ; ';
                     // Update automatic deletion - Only by the creator of the Item
                     if (isset($SETTINGS['enable_delete_after_consultation']) === true
                         && $SETTINGS['enable_delete_after_consultation'] === '1'
@@ -1211,7 +1205,7 @@ if (null !== $post_type) {
                             WHERE item_id = %i',
                             $post_item_id
                         );
-                        echo DB::count().' ; ';
+                        //echo DB::count().' ; ';
                         if (DB::count() === 0) {
                             // No automatic deletion for this item
                             if (empty($post_to_be_deleted_after_date) === false
@@ -3369,7 +3363,11 @@ if (null !== $post_type) {
                         }
 
                         // list of restricted users
-                        $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
+                        if ($record['restricted_to'] === '' || $record['restricted_to'] === null) {
+                            $is_user_in_restricted_list = -1;
+                        } else {
+                            $is_user_in_restricted_list = in_array($_SESSION['user_id'], explode(';', $record['restricted_to']));
+                        }
 
                         $itemPw = $itemLogin = '';
                         $displayItem = false;
@@ -3380,6 +3378,7 @@ if (null !== $post_type) {
                         // TODO: Element is restricted to a group. Check if element can be seen by user
                         // => récupérer un tableau contenant les roles associés à cet ID (a partir table restriction_to_roles)
                         $user_is_included_in_role = false;
+                        $restricted_to_roles = array();
                         $roles = DB::query(
                             'SELECT role_id FROM '.prefixTable('restriction_to_roles').' WHERE item_id=%i',
                             $record['id']
@@ -3387,6 +3386,8 @@ if (null !== $post_type) {
                         if (DB::count() > 0) {
                             $item_is_restricted_to_role = true;
                             foreach ($roles as $val) {
+                                $restricted_to_roles.push($val['role_id']);
+
                                 if (in_array($val['role_id'], $_SESSION['user_roles'])) {
                                     $user_is_included_in_role = true;
                                     break;
@@ -3395,11 +3396,13 @@ if (null !== $post_type) {
                         }
 
                         // Manage the restricted_to variable
-                        if (null !== $post_restricted) {
-                            $restrictedTo = (int) $post_restricted;
-                        } else {
-                            $restrictedTo = '';
-                        }
+                        $restrictedToFull = array(
+                            'users' => $record['restricted_to'] === '' ? array() : explode(';', $record['restricted_to']),
+                            'roles' => $restricted_to_roles,
+                        );
+                        $html_json[$record['id']]['restrictedToFull'] = $restrictedToFull;
+
+                        $restrictedTo = (int) $is_user_in_restricted_list;
 
                         if ($list_folders_editable_by_role === true) {
                             if (empty($restrictedTo)) {

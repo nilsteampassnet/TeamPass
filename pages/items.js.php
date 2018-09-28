@@ -1269,11 +1269,11 @@ $("#form-item-password").simplePassMeter({
     ]
 });
 $("#form-item-password").bind({
-    "score.simplePassMeter" : function(score) {
+    "score.simplePassMeter" : function(jQEvent, score) {
         $("#form-item-password-complex").val(score);
     }
 }).change({
-    "score.simplePassMeter" : function(score) {
+    "score.simplePassMeter" : function(jQEvent, score) {
         $("#form-item-password-complex").val(score);
     }
 });
@@ -1314,11 +1314,11 @@ $("#form-item-suggestion-password").simplePassMeter({
     ]
 });
 $("#form-item-suggestion-password").bind({
-    "score.simplePassMeter" : function(score) {
+    "score.simplePassMeter" : function(jQEvent, scorescore) {
         $("#form-item-suggestion-password-complex").val(score);
     }
 }).change({
-    "score.simplePassMeter" : function(score) {
+    "score.simplePassMeter" : function(jQEvent, scorescore) {
         $("#form-item-suggestion-password-complex").val(score);
     }
 });
@@ -1507,6 +1507,14 @@ $('#form-item-button-save').click(function() {
     ) {
         alertify
             .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_action_identified'); ?>', 10)
+            .dismissOthers();
+        return false;
+    }
+
+    // Don't save if no change
+    if (userDidAChange === false) {
+        alertify
+            .warning('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('no_change_performed'); ?>', 3)
             .dismissOthers();
         return false;
     }
@@ -2448,87 +2456,92 @@ function sList(data)
             icon_pwd = '',
             icon_favorite = '',
             item_flag = '',
-            item_grippy = '';
+            item_grippy = '',
+            visible_by_user = '';
 
         counter += 1;
 
-        // Prepare item icon
-        if (value.canMove === 1 && value.accessLevel === 0) {
-            item_grippy = '<i class="fa fa-ellipsis-v mr-1"></i>';
-        }
-
-        // Prepare error message
-        if (value.pw_status === 'encryption_error') {
-            pwd_error = '<i class="fa fa-warning fa-lg text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>';
-        }
-
-        // Prepare anyone can modify icon
-        if (value.anyone_can_modify === 1 || value.open_edit === 1) {
-            icon_all_can_modify = '<i class="fa fa-pencil fa-lg fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('item_menu_collab_enable'); ?>"></i>';
-        }
-        
-        // Prepare mini icons
-        if (value.copy_to_clipboard_small_icons === 1 && value.display_item === 1) {
-            // Login icon
-            if (value.login !== '') {
-                icon_login = '<i class="fa fa-user fa-lg fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"></i>';
-            }
-            // Pwd icon
-            if (value.pw !== '') {
-                icon_pwd = '<i class="fa fa-lock fa-lg fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"></i>';
+        // Check access restriction
+        // Restricted : -1 -> Access ; 0 -> no access ; 1 -> access (even if limited)
+        if (value.restricted !== 0) {
+            // Prepare item icon
+            if (value.canMove === 1 && value.accessLevel === 0) {
+                item_grippy = '<i class="fa fa-ellipsis-v mr-2 pointer"></i>';
             }
 
-            // Now check if pwd is empty. If it is then warn user
-            if (value.pw === '') {
-                pwd_error = '<i class="fa fa-exclamation-circle fa-lg text-warning infotip mr-2" title="<?php echo langHdl('password_is_empty'); ?>"></i>';
+            // Prepare error message
+            if (value.pw_status === 'encryption_error') {
+                pwd_error = '<i class="fa fa-warning fa-lg text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>';
             }
-        }
 
-        // Prepare Favorite icon
-        if (value.display_item === 1 && value.enable_favourites === 1) {
-            if (value.is_favourited === 1) {
-                icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="1" id="">' +
-                    '<i class="fa fa-star fa-lg text-warning"></i></span>';
-            } else {
-                icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="0">' +
-                    '<i class="fa fa-star-o fa-lg"></i></span>';
+            // Prepare anyone can modify icon
+            if (value.anyone_can_modify === 1 || value.open_edit === 1) {
+                icon_all_can_modify = '<i class="fa fa-pencil fa-lg fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('item_menu_collab_enable'); ?>"></i>';
             }
-        }
+            
+            // Prepare mini icons
+            if (value.copy_to_clipboard_small_icons === 1 && value.display_item === 1) {
+                // Login icon
+                if (value.login !== '') {
+                    icon_login = '<i class="fa fa-user fa-lg fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"></i>';
+                }
+                // Pwd icon
+                if (value.pw !== '') {
+                    icon_pwd = '<i class="fa fa-lock fa-lg fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"></i>';
+                }
 
-        // Prepare Description
-        if (value.desc !== '') {
-            value.desc = ' <span class="text-secondary small">- ' + value.desc + '</span>';
-        }
+                // Now check if pwd is empty. If it is then warn user
+                if (value.pw === '') {
+                    pwd_error = '<i class="fa fa-exclamation-circle fa-lg text-warning infotip mr-2" title="<?php echo langHdl('password_is_empty'); ?>"></i>';
+                }
+            }
 
-        // Prepare flag
-        if (value.expired === 1) {
-            item_flag = '<i class="fa fa-ban fa-sm"></i>&nbsp;';
+            // Prepare Favorite icon
+            if (value.display_item === 1 && value.enable_favourites === 1) {
+                if (value.is_favourited === 1) {
+                    icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="1" id="">' +
+                        '<i class="fa fa-star fa-lg text-warning"></i></span>';
+                } else {
+                    icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="0">' +
+                        '<i class="fa fa-star-o fa-lg"></i></span>';
+                }
+            }
+
+            // Prepare Description
+            if (value.desc !== '') {
+                value.desc = ' <span class="text-secondary small">- ' + value.desc + '</span>';
+            }
+
+            // Prepare flag
+            if (value.expired === 1) {
+                item_flag = '<i class="fa fa-ban fa-sm"></i>&nbsp;';
+            }
+            
+            $('#teampass_items_list').append(
+                '<tr class="row col-md-12 list-item-row' + (item_grippy === '' ? '' : ' is-draggable') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
+                (value.is_result_of_search === 0 ?
+                    //'<td class="col-md-1">' + item_grippy + '<!--<i class="fa ' + value.perso + ' fa-sm mr-1"></i>--></td>' +
+                    '<td class="col-md-12 list-item-description" id="">' + item_grippy + 
+                    '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
+                    '<span class="list-item-row-description">' + value.label + '</span>' + value.desc + '</span>' +
+                    '<div class="list-item-actions hidden text-right">' +
+                    '<span style="">' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite +
+                    '</span></div>' +
+                    '</td>'
+                    :
+                    '<td class="col-md-7 list-item-description" id="">' +
+                    '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
+                    value.label + value.desc + '</span>' +
+                    '</td>' +
+                    '<td class="col-md-5 list-item-folder"><span class="small">' + value.folder + '</span>' +
+                    '<div class="list-item-actions hidden text-right">' +
+                    '<span>' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite + '</span>' +
+                    '</div>' +
+                    '</td>'
+                )
+                + '</tr>'
+            );
         }
-        
-        $('#teampass_items_list').append(
-            '<tr class="row col-md-12 list-item-row' + (item_grippy === '' ? '' : ' is-draggable') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
-            (value.is_result_of_search === 0 ?
-                '<td class="col-md-1">' + item_grippy + '<!--<i class="fa ' + value.perso + ' fa-sm mr-1"></i>--></td>' +
-                '<td class="col-md-11 list-item-description" id="">' +
-                '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
-                value.label + value.desc + '</span>' +
-                '<div class="list-item-actions hidden text-right">' +
-                '<span style="">' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite +
-                '</span></div>' +
-                '</td>'
-                :
-                '<td class="col-md-7 list-item-description" id="">' +
-                '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
-                value.label + value.desc + '</span>' +
-                '</td>' +
-                '<td class="col-md-5 list-item-folder"><span class="small">' + value.folder + '</span>' +
-                '<div class="list-item-actions hidden text-right">' +
-                '<span>' + pwd_error + icon_all_can_modify + icon_login + icon_pwd + icon_favorite + '</span>' +
-                '</div>' +
-                '</td>'
-             )
-            + '</tr>'
-        );
     });
     
     // Sort entries
@@ -2636,7 +2649,8 @@ function proceed_list_update(stop_proceeding)
         // Prepare items dragable on folders
         $('.is-draggable').draggable({
             cursor: 'move',
-            opacity: 0.7,
+            cursorAt: { top: -5, left: -5 },
+            opacity: 0.8,
             appendTo: 'body',
             stop: function(event, ui) {
                 $(this).removeClass('bg-warning');
@@ -2645,7 +2659,9 @@ function proceed_list_update(stop_proceeding)
                 $(this).addClass('bg-warning');
             },
             helper: function(event) {
-                return $('<div class="bg-gray p-2">'+'<?php echo langHdl('drag_drop_helper'); ?>'+'</div>');
+                //return $('<div class="bg-gray p-2">'+'<?php echo langHdl('drag_drop_helper'); ?>'+'</div>');
+                console.log($(this))
+                return $('<div class="bg-gray p-2 font-weight-light">'+$(this).find('.list-item-row-description').text()+'</div>');
             }
         });
         $('.folder').droppable({
@@ -3334,11 +3350,9 @@ function showDetailsStep2(id, actionType)
             } else {
                 $('#card-item-restrictedto').html(html_restrictions);
             } 
-
+            console.log(preselect_list);
             // Now do the pre-selection            
-            $('#form-item-restrictedto')
-                .val(preselect_list);
-
+            $('#form-item-restrictedto').val(preselect_list);
             
 
             $('#edit_past_pwds').attr('title', (data.history_of_pwds));//htmlspecialchars_decode 

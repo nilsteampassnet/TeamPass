@@ -15,6 +15,9 @@
  */
 
 return array(
+    'no_change_performed' => 'No change was performed.',
+    'password_strength' => 'Password strength',
+    'new_password_required' => 'A new password is required',
     'limited_search' => 'Limited search',
     'security_level_not_reached_but_psk_correct' => 'Complexity level is not reached. You should change your current saltkey.',
     'please_wait_now_converting_passwords' => 'Please wait. Now converting passwords',

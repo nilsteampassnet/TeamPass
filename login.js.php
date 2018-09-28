@@ -191,11 +191,11 @@ $("#new-user-password")
         ]
     })
     .bind({
-        "score.simplePassMeter" : function(score) {
+        "score.simplePassMeter" : function(jQEvent, scorescore) {
             $("#new-user-password-complexity-level").val(score);
         }
     }).change({
-        "score.simplePassMeter" : function(score) {
+        "score.simplePassMeter" : function(jQEvent, scorescore) {
             $("#new-user-password-complexity-level").val(score);
         }
     });
@@ -206,39 +206,49 @@ $("#new-user-password")
  *
  * @return void
  */
-$('#but_identify_user').click(function() {
-    if ($('#new-user-password').val() != ''
-        && $('#new-user-password').val() == $('#new-user-password-confirm').val()
+$('#but_confirm_new_password').click(function() {
+    if ($('#new-user-password').val() !== ''
+        && $('#new-user-password').val() === $('#new-user-password-confirm').val()
     ) {
-        if (parseInt($('#pw_strength_value').val()) >= parseInt($('#user_pw_complexity').val())) {
-            var data = '{\'new_pw\':\''+sanitizeString($('#new_pw').val())+'\'}';
-            $.post(
-                'sources/main.queries.php',
-                {
-                    type                : 'change_pw',
-                    change_pw_origine   : 'first_change',
-                    complexity          : $('#user_pw_complexity').val(),
-                    key                 : ''.$_SESSION['key'].'',
-                    data                : prepareExchangedData(data, 'encode', ''.$_SESSION['key'].'>')
-                },
-                function(data) {
-                    if (data[0].error == 'complexity_level_not_reached') {
-                        $('#new_pw, #new_pw2').val('');
-                        $('#change_pwd_error').addClass('ui-state-error ui-corner-all').show().html('<span>'.$LANG['error_complex_not_enought'].'></span>');
-                    } else if (data[0].error == 'pwd_hash_not_correct') {
-                        $('#new_pw, #new_pw2').val('');
-                        $('#change_pwd_error').addClass('ui-state-error ui-corner-all').show().html('<span>'.$LANG['error_not_allowed_to'].'></span>');
-                    } else {
-                        location.reload(true);
-                    }
-                },
-                'json'
-            );
-        } else {
-            $('#change_pwd_error').addClass('ui-state-error ui-corner-all').show().html(''.addslashes($LANG['error_complex_not_enought']).'');
-        }
+        var data = '{"new_pw":"' + sanitizeString($('#new-user-password').val()) + '"}';
+        $.post(
+            'sources/main.queries.php',
+            {
+                type                : 'change_pw',
+                change_pw_origine   : 'first_change',
+                complexity          : $('#new-user-password-complexity-level').val(),
+                key                 : '<?php echo $_SESSION['key']; ?>',
+                data                : prepareExchangedData(data, 'encode', '<?php echo $_SESSION['key']; ?>')
+            },
+            function(data) {
+                data = JSON.parse(data);
+                if (data.error == 'complexity_too_low') {
+                    // Alert
+                    alertify.set('notifier','position', 'top-center');
+                    alertify
+                        .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 5)
+                        .dismissOthers(); 
+                    // Clear
+                    $('#new-user-password, #new-user-password-confirm').val('');
+                } else if (data.error == 'pwd_hash_not_correct') {
+                    // Alert
+                    alertify.set('notifier','position', 'top-center');
+                    alertify
+                        .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 5)
+                        .dismissOthers();
+                    // Clear
+                    $('#new-user-password, #new-user-password-confirm').val('');
+                } else {
+                    location.reload(true);
+                }
+            }
+        );
     } else {
-        $('#change_pwd_error').addClass('ui-state-error ui-corner-all').show().html(''.addslashes($LANG['index_pw_error_identical']).'');
+        // Alert
+        alertify.set('notifier','position', 'top-center');
+        alertify
+            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('index_pw_error_identical'); ?>', 5)
+            .dismissOthers(); 
     }
 });
 
@@ -384,23 +394,25 @@ function identifyUser(redirect, psk, data, randomstring)
                                 $('.login-card-body').addClass('hidden');
                                 $('#confirm-password-level').html(data.password_complexity);
 
-                                
+                                alertify
+                                    .message('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('done'); ?>', 1)
+                                    .dismissOthers(); 
 
                                 console.log('coucou')
                                 return false;
                             }
                             //redirection for admin is specific
-                            if (data.user_admin === "1") {
-                                window.location.href="index.php?page=admin";
-                            } else if (data.initial_url !== "") {
+                            if (data.user_admin === '1') {
+                                window.location.href='index.php?page=admin';
+                            } else if (data.initial_url !== '' && data.initial_url !== null) {
                                 window.location.href=data.initial_url;
                             } else {
-                                window.location.href = "index.php?page=items";
+                                window.location.href = 'index.php?page=items';
                             }
                         } else if (data.error !== '') {
                             alertify.set('notifier','position', 'top-center');
                             alertify
-                                .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.error, 5)
+                                .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 5)
                                 .dismissOthers(); 
                         } else {
                             showAlertify('<?php echo langHdl('error_bad_credentials'); ?>', 5, 'top-right');
