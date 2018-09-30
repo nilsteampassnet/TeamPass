@@ -327,7 +327,7 @@ if (null !== $post_newtitle) {
                             );
 
                             //Update CACHE table
-                            updateCacheTable('delete_value', $item['id']);
+                            updateCacheTable('delete_value', $SETTINGS, $item['id']);
                         }
                     }
                     //array for delete folder
@@ -431,7 +431,7 @@ if (null !== $post_newtitle) {
                                 }
 
                                 //Update CACHE table
-                                updateCacheTable('delete_value', $item['id']);
+                                updateCacheTable('delete_value', $SETTINGS, $item['id']);
                             }
 
                             //Actualize the variable
@@ -1442,7 +1442,7 @@ if (null !== $post_newtitle) {
 
             // reload cache table
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-            updateCacheTable('reload', '');
+            updateCacheTable('reload', $SETTINGS, '');
 
             $data = array(
                 'error' => false,

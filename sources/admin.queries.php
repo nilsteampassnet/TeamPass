@@ -290,7 +290,7 @@ switch ($post_type) {
         }
 
         //Update CACHE table
-        updateCacheTable("reload");
+        updateCacheTable("reload", $SETTINGS, '');
 
         //show some info
         echo '[{"result" : "db_clean_items","nb_items_deleted":"'.$nbItemsDeleted.'"}]';
@@ -565,7 +565,7 @@ switch ($post_type) {
     */
     case "admin_action_reload_cache_table":
         require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-        updateCacheTable("reload", "");
+        updateCacheTable("reload", $SETTINGS, '');
         echo '[{"result":"cache_reload"}]';
         break;
 

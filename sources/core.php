@@ -44,7 +44,7 @@ function redirect($url)
 
     if (!headers_sent()) {    //If headers not sent yet... then do php redirect
         header('Location: '.$antiXss->xss_clean($url));
-        exit();
+        return;
     }
 
     //If headers are sent... do java redirect... if java disabled, do html redirect.

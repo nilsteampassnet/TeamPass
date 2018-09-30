@@ -693,7 +693,7 @@ if (null !== $post_type) {
 
                 // Add item to CACHE table if new item has been created
                 if (isset($newID) === true) {
-                    updateCacheTable('add_value', $newID);
+                    updateCacheTable('add_value', $SETTINGS, $newID);
                 }
 
                 $arrData = array(
@@ -1361,7 +1361,7 @@ if (null !== $post_type) {
                         }
                     }
                     // Update CACHE table
-                    updateCacheTable('update_value', $post_item_id);
+                    updateCacheTable('update_value', $SETTINGS, $post_item_id);
 
                     // Log all modifications done
                     /*LABEL */
@@ -1940,7 +1940,7 @@ if (null !== $post_type) {
                 );
                 // reload cache table
                 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-                updateCacheTable('reload', '');
+                updateCacheTable('reload', $SETTINGS, '');
 
                 $returnValues = '[{"error" : ""} , {"status" : "ok"}, {"new_id" : "'.$newID.'"}]';
             } else {
@@ -2827,7 +2827,7 @@ if (null !== $post_type) {
                 $_SESSION['login']
             );
             // Update CACHE table
-            updateCacheTable('delete_value', $post_item_id);
+            updateCacheTable('delete_value', $SETTINGS, $post_item_id);
 
             echo prepareExchangedData(array('error' => ''), 'encode');
             break;
@@ -4413,7 +4413,7 @@ if (null !== $post_type) {
 
             // reload cache table
             require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-            updateCacheTable('reload', '');
+            updateCacheTable('reload', $SETTINGS, '');
 
             echo '[{"error":"" , "status":"ok"}]';
             break;
@@ -4489,7 +4489,7 @@ if (null !== $post_type) {
                     );
 
                     // Update CACHE table
-                    updateCacheTable('delete_value', $item_id);
+                    updateCacheTable('delete_value', $SETTINGS, $item_id);
                 }
             }
 

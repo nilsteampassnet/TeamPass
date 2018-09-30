@@ -962,7 +962,7 @@ function mainQuery()
                     // delete in LOGS table
                     DB::delete(prefixTable('log_items'), 'id_item = %i', $record['id']);
                     // delete from CACHE table
-                    updateCacheTable('delete_value', $record['id']);
+                    updateCacheTable('delete_value', $SETTINGS, $record['id']);
                 }
 
                 // remove from DB

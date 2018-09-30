@@ -94,29 +94,29 @@
     background-clip: padding-box;
     *border-right-width: 2px;
     *border-bottom-width: 2px;
-  
-    .ui-menu-item {
-      display: block;
-      margin-left: 3px;
-      padding: 3px 15px 0px 5px;
-      clear: both;
-      font-weight: normal;
-      line-height: 18px;
-      color: #555555;
-      white-space: nowrap;
-      cursor: pointer;
-  
-      &.ui-state-focus, &.ui-state-active {
-        color: #ffffff;
-        text-decoration: none;
-        background-color: #0088cc;
-        border-radius: 0px;
-        -webkit-border-radius: 0px;
-        -moz-border-radius: 0px;
-        background-image: none;
-      }
-    }
   }
+
+.ui-menu-item {
+    display: block;
+    margin-left: 3px;
+    padding: 3px 15px 0px 5px;
+    clear: both;
+    font-weight: normal;
+    line-height: 18px;
+    color: #555555;
+    white-space: nowrap;
+    cursor: pointer;
+}
+  
+.ui-state-focus, .ui-state-active {
+    color: #ffffff;
+    text-decoration: none;
+    background-color: #0088cc;
+    border-radius: 0px;
+    -webkit-border-radius: 0px;
+    -moz-border-radius: 0px;
+    background-image: none;
+}
 
 .icon-badge{
     position:relative;

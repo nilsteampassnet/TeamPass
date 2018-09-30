@@ -617,14 +617,6 @@ function identifyUserRights(
 
     //Connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    DB::$host = DB_HOST;
-    DB::$user = DB_USER;
-    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
-    DB::$dbName = DB_NAME;
-    DB::$port = DB_PORT;
-    DB::$encoding = DB_ENCODING;
-    //DB::$errorHandler = true;
-
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
@@ -638,7 +630,6 @@ function identifyUserRights(
         identAdmin(
             $idFonctions,
             $SETTINGS,
-            $link,
             $tree
         );
     } else {
@@ -647,7 +638,6 @@ function identifyUserRights(
             $groupesInterditsUser,
             $idFonctions,
             $SETTINGS,
-            $link,
             $tree
         );
     }
@@ -671,7 +661,7 @@ function identifyUserRights(
  * @param mysqli     $link        DB connection
  * @param NestedTree $tree        Tree of folders
  */
-function identAdmin($idFonctions, $SETTINGS, $link, $tree)
+function identAdmin($idFonctions, $SETTINGS, $tree)
 {
     $groupesVisibles = array();
     $_SESSION['personal_folders'] = array();
@@ -757,7 +747,6 @@ function identUser(
     $groupesInterditsUser,
     $idFonctions,
     $SETTINGS,
-    $link,
     $tree
 ) {
     // init
@@ -982,15 +971,12 @@ function identUser(
  *
  * @param string $action
  */
-function updateCacheTable($action, $ident = null)
+function updateCacheTable($action, $SETTINGS, $ident = null)
 {
-    global $server, $user, $pass, $database, $port, $encoding;
-    global $SETTINGS;
-
-    require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
     //Connect to DB
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
     DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
@@ -2101,7 +2087,7 @@ function encryptOrDecryptFile(
                 )
                     === false
                 ) {
-                    exit;
+                    return;
                 } else {
                     // Do a bck
                     copy(
@@ -2155,7 +2141,7 @@ function encryptOrDecryptFile(
                     $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework,
                     $SETTINGS['path_to_upload_folder'].'/'.$filename_to_rework.'.copy'
                 )) {
-                    exit;
+                    return;
                 } else {
                     // do a bck
                     copy(

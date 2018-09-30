@@ -1007,7 +1007,10 @@ function identifyUser(
                     );
 
                     // generate new QR
-                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri('Teampass - '.$username, $data['ga']);
+                    $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
+                        'Teampass - '.$username,
+                        $data['ga']
+                    );
 
                     // clear temporary code from DB
                     DB::update(
@@ -1020,10 +1023,9 @@ function identifyUser(
                     );
                 }
 
-                //echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', /* @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : '', '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
                 echo json_encode(
                     array(
-                        'value' => '',
+                        'value' => '<img src="'.$new_2fa_qr.'">',
                         'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
                         'initial_url' => @$_SESSION['initial_url'],
                         'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
