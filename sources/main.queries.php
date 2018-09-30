@@ -74,8 +74,7 @@ function mainQuery()
     header('Content-type: text/html; charset=utf-8');
     header('Cache-Control: no-cache, must-revalidate');
     error_reporting(E_ERROR);
-    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
-    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+    
     // Load config
     if (file_exists('../includes/config/tp.config.php')) {
         include '../includes/config/tp.config.php';
@@ -84,15 +83,27 @@ function mainQuery()
     } else {
         throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
     }
+
+    /*
+    * Define Timezone
+    **/
+    if (isset($SETTINGS['timezone']) === true) {
+        date_default_timezone_set($SETTINGS['timezone']);
+    } else {
+        date_default_timezone_set('UTC');
+    }
+
+    include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+
+
+    // Includes
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
+
     // connect to the server
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    /*DB::$host         = DB_HOST;
-    DB::$user         = DB_USER;
-    DB::$password     = defuse_return_decrypted(DB_PASSWD);
-    DB::$dbName       = DB_NAME;
-    DB::$port         = DB_PORT;
-    DB::$encoding     = DB_ENCODING;*/
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     // User's language loading

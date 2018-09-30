@@ -337,11 +337,11 @@ require_once '../../includes/config/settings.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 DB::$host         = DB_HOST;
 DB::$user         = DB_USER;
-DB::$password     = defuse_return_decrypted(DB_PASSWD);
+DB::$password     = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
 DB::$dbName       = DB_NAME;
 DB::$port         = DB_PORT;
 DB::$encoding     = DB_ENCODING;
-$link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 if (null !== ($post_type_upload)

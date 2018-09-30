@@ -15,6 +15,7 @@
  */
 
 return array(
+    '2fa_credential_not_correct' => '2FA credential is not correct',
     'no_change_performed' => 'No change was performed.',
     'password_strength' => 'Password strength',
     'new_password_required' => 'A new password is required',

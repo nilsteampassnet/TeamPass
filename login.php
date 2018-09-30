@@ -149,7 +149,7 @@ if (isset($SETTINGS['google_authentication']) === true && $SETTINGS['google_auth
             <input type="text" id="ga_code" class="form-control submit-button" placeholder="'.langHdl('ga_identification_code').'" />
         </div>
         <div class="col-1">
-            <span class="fa fa-envelope-o form-control-feedback hand infotip" title="'.langHdl('i_need_to_generate_new_ga_code').'" onclick="send_user_new_temporary_ga_code()"></span>
+            <span class="fa fa-envelope-o form-control-feedback pointer infotip" title="'.langHdl('i_need_to_generate_new_ga_code').'" onclick="send_user_new_temporary_ga_code()"></span>
           </div>
         </div>';
 }
@@ -265,8 +265,3 @@ echo '
   </div>
 </div>
 <!-- /.login-box -->';
-?>
-
-
-
-

@@ -71,7 +71,7 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 // Class loader
@@ -376,14 +376,16 @@ if (null !== $post_type) {
                             $passwd = cryption(
                                 $post_password,
                                 $_SESSION['user_settings']['session_psk'],
-                                'encrypt'
+                                'encrypt',
+                                $SETTINGS
                             );
                             $restictedTo = $_SESSION['user_id'];
                         } else {
                             $passwd = cryption(
                                 $post_password,
                                 '',
-                                'encrypt'
+                                'encrypt',
+                                $SETTINGS
                             );
                         }
                     } else {
@@ -446,7 +448,8 @@ if (null !== $post_type) {
                                     $encrypt = cryption(
                                         $field_data[1],
                                         '',
-                                        'encrypt'
+                                        'encrypt',
+                                        $SETTINGS
                                     );
                                     $enc_type = 'defuse';
                                 } else {
@@ -956,14 +959,16 @@ if (null !== $post_type) {
                             $passwd = cryption(
                                 $pw,
                                 $_SESSION['user_settings']['session_psk'],
-                                'encrypt'
+                                'encrypt',
+                                $SETTINGS
                             );
                             $restictedTo = $_SESSION['user_id'];
                         } else {
                             $passwd = cryption(
                                 $pw,
                                 '',
-                                'encrypt'
+                                'encrypt',
+                                $SETTINGS
                             );
                         }
 
@@ -1058,7 +1063,8 @@ if (null !== $post_type) {
                                         $encrypt = cryption(
                                             $field['value'],
                                             '',
-                                            'encrypt'
+                                            'encrypt',
+                                            $SETTINGS
                                         );
                                         $enc_type = 'defuse';
                                     } else {
@@ -1094,7 +1100,8 @@ if (null !== $post_type) {
                                         $oldVal = cryption(
                                             $dataTmpCat['data'],
                                             '',
-                                            'decrypt'
+                                            'decrypt',
+                                            $SETTINGS
                                         );
                                     } else {
                                         $oldVal['string'] = $dataTmpCat['data'];
@@ -1106,7 +1113,8 @@ if (null !== $post_type) {
                                             $encrypt = cryption(
                                                 $field['value'],
                                                 '',
-                                                'encrypt'
+                                                'encrypt',
+                                                $SETTINGS
                                             );
                                             $enc_type = 'defuse';
                                         } else {
@@ -1443,14 +1451,16 @@ if (null !== $post_type) {
                         $oldPwClear = cryption(
                             $oldPw,
                             $_SESSION['user_settings']['session_psk'],
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                     } else {
                         $oldPw = $data['pw'];
                         $oldPwClear = cryption(
                             $oldPw,
                             '',
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                     }
                     if ($sentPw !== $oldPwClear['string']) {
@@ -1516,13 +1526,15 @@ if (null !== $post_type) {
                         $encrypt = cryption(
                             $dataItem['pw'],
                             '',
-                            'encrypt'
+                            'encrypt',
+                            $SETTINGS
                         );
                     } else {
                         $encrypt = cryption(
                             $dataItem['pw'],
                             $_SESSION['user_settings']['session_psk'],
-                            'encrypt'
+                            'encrypt',
+                            $SETTINGS
                         );
                     }
 
@@ -1721,12 +1733,14 @@ if (null !== $post_type) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'decrypt'
+                        'decrypt',
+                        $SETTINGS
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
                         '',
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
 
                     // reaffect pw
@@ -1750,12 +1764,14 @@ if (null !== $post_type) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         '',
-                        'decrypt'
+                        'decrypt',
+                        $SETTINGS
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
 
                     // reaffect pw
@@ -1777,12 +1793,14 @@ if (null !== $post_type) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'decrypt'
+                        'decrypt',
+                        $SETTINGS
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
                         mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
 
                     // reaffect pw
@@ -1797,12 +1815,14 @@ if (null !== $post_type) {
                     $decrypt = cryption(
                         $originalRecord['pw'],
                         '',
-                        'decrypt'
+                        'decrypt',
+                        $SETTINGS
                     );
                     $encrypt = cryption(
                         $decrypt['string'],
                         '',
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
 
                     // reaffect pw
@@ -2100,14 +2120,16 @@ if (null !== $post_type) {
                 $pw = cryption(
                     $dataItem['pw'],
                     $_SESSION['user_settings']['session_psk'],
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
                 $arrData['edit_item_salt_key'] = 1;
             } else {
                 $pw = cryption(
                     $dataItem['pw'],
                     '',
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
                 $arrData['edit_item_salt_key'] = 0;
             }
@@ -2312,7 +2334,8 @@ if (null !== $post_type) {
                                 $fieldText = cryption(
                                     $row['data'],
                                     '',
-                                    'decrypt'
+                                    'decrypt',
+                                    $SETTINGS
                                 );
                                 $fieldText = $fieldText['string'];
                             } else {
@@ -2539,14 +2562,16 @@ if (null !== $post_type) {
                             $reason[1] = cryption(
                                 $reason[1],
                                 '',
-                                'decrypt'
+                                'decrypt',
+                                $SETTINGS
                             );
                         } else {
                             if (isset($_SESSION['user_settings']['session_psk']) === true) {
                                 $reason[1] = cryption(
                                     $reason[1],
                                     $_SESSION['user_settings']['session_psk'],
-                                    'decrypt'
+                                    'decrypt',
+                                    $SETTINGS
                                 );
                             } else {
                                 $reason[1] = '';
@@ -3386,7 +3411,7 @@ if (null !== $post_type) {
                         if (DB::count() > 0) {
                             $item_is_restricted_to_role = true;
                             foreach ($roles as $val) {
-                                $restricted_to_roles.push($val['role_id']);
+                                array_push($restricted_to_roles, $val['role_id']);
 
                                 if (in_array($val['role_id'], $_SESSION['user_roles'])) {
                                     $user_is_included_in_role = true;
@@ -3708,7 +3733,8 @@ if (null !== $post_type) {
                     $pw = cryption(
                         $dataItem['pw'],
                         $_SESSION['user_settings']['session_psk'],
-                        'decrypt'
+                        'decrypt',
+                        $SETTINGS
                     );
                 } else {
                     $pw = '';
@@ -4165,12 +4191,14 @@ if (null !== $post_type) {
                 $decrypt = cryption(
                     $dataSource['pw'],
                     '',
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
                     mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                    'encrypt'
+                    'encrypt',
+                    $SETTINGS
                 );
                 // update pw
                 DB::update(
@@ -4200,12 +4228,14 @@ if (null !== $post_type) {
                 $decrypt = cryption(
                     $dataSource['pw'],
                     mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
                 $encrypt = cryption(
                     $decrypt['string'],
                     '',
-                    'encrypt'
+                    'encrypt',
+                    $SETTINGS
                 );
 
                 // update item
@@ -4308,12 +4338,14 @@ if (null !== $post_type) {
                         $decrypt = cryption(
                             $dataSource['pw'],
                             '',
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                         $encrypt = cryption(
                             $decrypt['string'],
                             mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                            'encrypt'
+                            'encrypt',
+                            $SETTINGS
                         );
                         // update pw
                         DB::update(
@@ -4343,12 +4375,14 @@ if (null !== $post_type) {
                         $decrypt = cryption(
                             $dataSource['pw'],
                             mysqli_escape_string($link, stripslashes($_SESSION['user_settings']['session_psk'])),
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                         $encrypt = cryption(
                             $decrypt['string'],
                             '',
-                            'encrypt'
+                            'encrypt',
+                            $SETTINGS
                         );
 
                         // update item
@@ -5198,14 +5232,16 @@ if (null !== $post_type) {
                         $reason[1] = cryption(
                             $reason[1],
                             '',
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                     } else {
                         if (isset($_SESSION['user_settings']['session_psk']) === true) {
                             $reason[1] = cryption(
                                 $reason[1],
                                 $_SESSION['user_settings']['session_psk'],
-                                'decrypt'
+                                'decrypt',
+                                $SETTINGS
                             );
                         } else {
                             $reason[1] = '';
@@ -5292,7 +5328,7 @@ if (null !== $post_type) {
             if (empty($pwd)) {
                 $encrypt['string'] = '';
             } else {
-                $encrypt = cryption($pwd, '', 'encrypt');
+                $encrypt = cryption($pwd, '', 'encrypt', $SETTINGS);
             }
 
             // query
@@ -5463,14 +5499,16 @@ if (null !== $post_type) {
                     $pw = cryption(
                         $dataItem['pw'],
                         '',
-                        'decrypt'
+                        'decrypt',
+                        $SETTINGS
                     );
                 } else {
                     if (isset($_SESSION['user_settings']['session_psk']) === true) {
                         $pw = cryption(
                             $dataItem['pw'],
                             $_SESSION['user_settings']['session_psk'],
-                            'decrypt'
+                            'decrypt',
+                            $SETTINGS
                         );
                     } else {
                         $pw = '';

@@ -72,7 +72,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 //Load Tree

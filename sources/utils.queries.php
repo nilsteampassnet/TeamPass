@@ -55,7 +55,7 @@ require_once 'main.functions.php';
 
 //Connect to DB
 include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 // Prepare POST variables
@@ -131,13 +131,15 @@ if (null !== $post_type) {
                                     $pw = cryption(
                                         $record['pw'],
                                         mysqli_escape_string($link, stripslashes($post_salt_key)),
-                                        'decrypt'
+                                        'decrypt',
+                                        $SETTINGS
                                     );
                                 } else {
                                     $pw = cryption(
                                         $record['pw'],
                                         '',
-                                        'decrypt'
+                                        'decrypt',
+                                        $SETTINGS
                                     );
                                 }
 
@@ -269,7 +271,8 @@ if (null !== $post_type) {
                 $decrypt = cryption(
                     $data['pw'],
                     $post_old_psk,
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
                 if (empty($decrypt['err']) === true) {
                     $pw = $decrypt['string'];
@@ -285,7 +288,8 @@ if (null !== $post_type) {
                     $encrypt = cryption(
                         $pw,
                         $post_psk,
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
                     if (isUTF8($pw) === true) {
                         // store Password
@@ -338,7 +342,8 @@ if (null !== $post_type) {
                     $encrypt = cryption(
                         $pw,
                         $_SESSION['user_settings']['session_psk'],
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
 
                     // store Password
@@ -367,7 +372,8 @@ if (null !== $post_type) {
                     $encrypt = cryption(
                         $pw['string'],
                         $_SESSION['user_settings']['session_psk'],
-                        'encrypt'
+                        'encrypt',
+                        $SETTINGS
                     );
 
                     // store Password
@@ -424,7 +430,8 @@ if (null !== $post_type) {
             $encrypt = cryption(
                 $dataReceived['new_pwd'],
                 '',
-                'encrypt'
+                'encrypt',
+                $SETTINGS
             );
 
             // connect ot server with ssh

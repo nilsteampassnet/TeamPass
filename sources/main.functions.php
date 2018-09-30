@@ -379,13 +379,12 @@ function testHex2Bin($val)
  * @param string $message   what to de/crypt
  * @param string $ascii_key key to use
  * @param string $type      operation to perform
+ * @param array  $SETTINGS  Teampass settings
  *
  * @return array
  */
-function cryption($message, $ascii_key, $type) //defuse_crypto
+function cryption($message, $ascii_key, $type, $SETTINGS) //defuse_crypto
 {
-    global $SETTINGS;
-
     // load PhpEncryption library
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
         $path = '../includes/libraries/Encryption/Encryption/';
@@ -405,10 +404,10 @@ function cryption($message, $ascii_key, $type) //defuse_crypto
 
     // init
     $err = '';
-    if (empty($ascii_key)) {
+    if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
-
+    
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
@@ -524,10 +523,10 @@ function defuse_validate_personal_key($psk, $protected_key_encoded)
  *
  * @return string Decrypted string
  */
-function defuse_return_decrypted($value)
+function defuseReturnDecrypted($value, $SETTINGS)
 {
     if (substr($value, 0, 3) === 'def') {
-        $value = cryption($value, '', 'decrypt')['string'];
+        $value = cryption($value, '', 'decrypt', $SETTINGS)['string'];
     }
 
     return $value;
@@ -620,13 +619,13 @@ function identifyUserRights(
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     //Build tree
@@ -994,13 +993,13 @@ function updateCacheTable($action, $ident = null)
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     //Load Tree
@@ -1686,13 +1685,13 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
     require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     DB::insert(
@@ -1754,11 +1753,11 @@ function logItems(
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     // Insert log in DB
@@ -1906,13 +1905,13 @@ function handleConfigFile($action, $field = null, $value = null)
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
     //DB::$errorHandler = true;
 
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     if (!file_exists($tp_config_file) || $action == 'rebuild') {
@@ -2060,11 +2059,11 @@ function encryptOrDecryptFile(
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     // Get file info in DB
@@ -2740,7 +2739,7 @@ function performDBQuery($SETTINGS, $fields, $table)
     // include librairies & connect to DB
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     // Insert log in DB

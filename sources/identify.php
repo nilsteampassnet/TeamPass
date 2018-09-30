@@ -60,10 +60,10 @@ if ($post_type === 'identify_duo_user') {
     // This step creates the DUO request encrypted key
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once SECUREPATH.'/sk.php';
+    include_once SECUREPATH.'/sk.php';
 
     // load library
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $sig_request = Duo::signRequest(IKEY, SKEY, AKEY, $post_login);
 
     if ($debugDuo == 1) {
@@ -77,7 +77,7 @@ if ($post_type === 'identify_duo_user') {
     }
 
     // load csrfprotector
-    $csrfp_config = require_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
+    $csrfp_config = include_once $SETTINGS['cpassman_dir'].'/includes/libraries/csrfp/libs/csrfp.config.php';
 
     // return result
     echo '[{"sig_request" : "'.$sig_request.'" , "csrfp_token" : "'.$csrfp_config['CSRFP_TOKEN'].'" , "csrfp_key" : "'.filter_var($_COOKIE[$csrfp_config['CSRFP_TOKEN']], FILTER_SANITIZE_STRING).'"}]';
@@ -89,10 +89,10 @@ if ($post_type === 'identify_duo_user') {
     //--------
 
     include $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once SECUREPATH.'/sk.php';
+    include_once SECUREPATH.'/sk.php';
 
     // load library
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/DuoSecurity/Duo.php';
     $resp = Duo::verifyResponse(IKEY, SKEY, AKEY, $post_sig_response);
 
     if ($debugDuo == 1) {
@@ -109,11 +109,11 @@ if ($post_type === 'identify_duo_user') {
     if ($resp === $post_login) {
         // Check if this account exists in Teampass or only in LDAP
         if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1') {
-            require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-            require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+            include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+            include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
             // connect to the server
-            require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-            $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+            include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+            $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
             $link->set_charset(DB_ENCODING);
 
             // is user in Teampass?
@@ -184,20 +184,12 @@ if ($post_type === 'identify_duo_user') {
     //-- AUTHENTICATION WITH AGSES
     //--------
 
-    require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
-    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
+    include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     // connect to the server
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-    $pass = defuse_return_decrypted($pass);
-    DB::$host = $server;
-    DB::$user = $user;
-    DB::$password = $pass;
-    DB::$dbName = $database;
-    DB::$port = $port;
-    DB::$encoding = $encoding;
-    DB::$error_handler = true;
-    $link = mysqli_connect($server, $user, $pass, $database, $port);
-    $link->set_charset($encoding);
+    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
+    $link->set_charset(DB_ENCODING);
 
     // do checks
     if (null !== $post_cardid && empty($post_cardid) === true) {
@@ -319,7 +311,17 @@ if ($post_type === 'identify_duo_user') {
         );
     } else {
         $_SESSION['next_possible_pwd_attempts'] = time() + 10;
-        echo '[{"error" : "bruteforce_wait"}]';
+
+        echo json_encode(
+            array(
+                'value' => 'bruteforce_wait',
+                'user_admin' => isset($_SESSION['user_admin']) ? /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['user_admin']) : '',
+                'initial_url' => @$_SESSION['initial_url'],
+                'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
+                'error' => 'bruteforce_wait',
+                'message' => langHdl('error_bad_credentials_more_than_3_times'),
+            )
+        );
 
         return false;
     }
@@ -426,11 +428,11 @@ function identifyUser(
     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     DB::$host = DB_HOST;
     DB::$user = DB_USER;
-    DB::$password = defuse_return_decrypted(DB_PASSWD);
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
     DB::$dbName = DB_NAME;
     DB::$port = DB_PORT;
     DB::$encoding = DB_ENCODING;
-    $link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+    $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
     // load passwordLib library
@@ -475,10 +477,6 @@ function identifyUser(
         || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true))
         && $username !== 'admin'
     ) {
-        /*echo '[{"value" : "2fa_not_set", "user_admin":"',
-            isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : '',
-            '", "initial_url" : "'.@$_SESSION['initial_url'].'",
-            "error" : "2fa_not_set"}]';*/
         echo json_encode(
             array(
                 'value' => '2fa_not_set',
@@ -486,11 +484,11 @@ function identifyUser(
                 'initial_url' => @$_SESSION['initial_url'],
                 'pwd_attempts' => /* @scrutinizer ignore-type */ $antiXss->xss_clean($_SESSION['pwd_attempts']),
                 'error' => '2fa_not_set',
-                'message' => langHdl('error_bad_credentials'),
+                'message' => langHdl('2fa_credential_not_correct'),
             )
         );
 
-        exit();
+        return;
     }
 
     // Init
@@ -628,7 +626,7 @@ function identifyUser(
                                     'message' => langHdl('error_bad_credentials'),
                                 )
                             );
-                            exit();
+                            return;
                         }
 
                         // Should we restrain the search in specified user groups
@@ -794,7 +792,7 @@ function identifyUser(
                             'message' => langHdl('error_bad_credentials'),
                         )
                     );
-                    exit();
+                    return;
                 }
 
                 // Update user's password
@@ -873,7 +871,7 @@ function identifyUser(
                         'message' => '',
                     )
                 );
-                exit();
+                return;
             } else {
                 $yubico_user_key = $data['yubico_user_key'];
                 $yubico_user_id = $data['yubico_user_id'];
@@ -897,7 +895,7 @@ function identifyUser(
                     'message' => langHdl('yubico_bad_code'),
                 )
             );
-            exit();
+            return;
         } else {
             $proceedIdentification = true;
         }
@@ -977,7 +975,7 @@ function identifyUser(
                 'message' => langHdl('error_bad_credentials'),
             )
         );
-        exit();
+        return;
     }
 
     // check GA code
@@ -1034,7 +1032,7 @@ function identifyUser(
                     )
                 );
 
-                exit();
+                return;
             } else {
                 // verify the user GA code
                 if ($tfa->verifyCode($data['ga'], $dataReceived['GACode'])) {
@@ -1148,7 +1146,7 @@ function identifyUser(
                     )
                 );
 
-                exit();
+                return;
             }
         } else {
             // We have an error here
@@ -1167,7 +1165,7 @@ function identifyUser(
                 )
             );
 
-            exit();
+            return;
         }
     }
 
@@ -1185,7 +1183,7 @@ function identifyUser(
             )
         );
 
-        exit();
+        return;
     }
 
     if ($proceedIdentification === true) {
@@ -1518,7 +1516,7 @@ function identifyUser(
                                 '#tp_time#',
                             ),
                             array(
-                                ' '.$_SESSION['login'].' (IP: '.get_client_ip_server().')',
+                                ' '.$_SESSION['login'].' (IP: '.getClientIpServer().')',
                                 date($SETTINGS['date_format'], $_SESSION['derniere_connexion']),
                                 date($SETTINGS['time_format'], $_SESSION['derniere_connexion']),
                             ),
@@ -1541,7 +1539,7 @@ function identifyUser(
             $userIsLocked = 0;
             $nbAttempts = intval($data['no_bad_attempts'] + 1);
             if ($SETTINGS['nb_bad_authentication'] > 0
-                    && intval($SETTINGS['nb_bad_authentication']) < $nbAttempts
+                && intval($SETTINGS['nb_bad_authentication']) < $nbAttempts
             ) {
                 $userIsLocked = 1;
                 // log it

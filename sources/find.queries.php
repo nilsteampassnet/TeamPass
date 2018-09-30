@@ -57,7 +57,7 @@ if (isset($_SESSION['groupes_visibles']) === false
 
 //Connect to DB
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
-$link = mysqli_connect(DB_HOST, DB_USER, defuse_return_decrypted(DB_PASSWD), DB_NAME, DB_PORT);
+$link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
 //Columns name
@@ -540,13 +540,15 @@ if (isset($_GET['type']) === false) {
                 $pw = cryption(
                     $data_item['pw'],
                     $_SESSION['user_settings']['session_psk'],
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
             } else {
                 $pw = cryption(
                     $data_item['pw'],
                     '',
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
             }
 
