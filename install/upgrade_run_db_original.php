@@ -1214,8 +1214,8 @@ $cleanRes = mysqli_query(
 while ($cleanData = mysqli_fetch_array($cleanRes)) {
     mysqli_query(
         $db_link,
-        "UPDATE `".$pre."items`
-        SET description = '".strip_tags($cleanData['description'], $allowedTags).
+        "UPDATE `".$pre."items`".
+        "SET description = '".strip_tags($cleanData['description'], $allowedTags).
         "' WHERE id = ".$cleanData['id']
     );
 }

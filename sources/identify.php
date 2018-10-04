@@ -471,7 +471,7 @@ function identifyUser(
     // Check 2FA
     if ((($SETTINGS['yubico_authentication'] === '1' && empty($user_2fa_selection) === true)
         || ($SETTINGS['google_authentication'] === '1' && empty($user_2fa_selection) === true))
-        && $username !== 'admin'
+        && ($username !== 'admin' || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === 'admin'))
     ) {
         echo '[{"value" : "2fa_not_set", "user_admin":"',
             isset($_SESSION['user_admin']) ? $_SESSION['user_admin'] : "",
@@ -815,7 +815,7 @@ function identifyUser(
     // Check Yubico
     if (isset($SETTINGS['yubico_authentication'])
         && $SETTINGS['yubico_authentication'] === "1"
-        && $data['admin'] !== "1"
+        && ($data['admin'] !== "1" || ((int) $SETTINGS['admin_2fa_required'] === 1 && $data['admin'] === "1"))
         && $user_2fa_selection === 'yubico'
     ) {
         $yubico_key = htmlspecialchars_decode($dataReceived['yubico_key']);
@@ -929,7 +929,7 @@ function identifyUser(
     // check GA code
     if (isset($SETTINGS['google_authentication']) === true
         && $SETTINGS['google_authentication'] === '1'
-        && $username !== "admin"
+        && ($username !== "admin" || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === "admin"))
         && $user_2fa_selection === 'google'
     ) {
         if (isset($dataReceived['GACode']) && empty($dataReceived['GACode']) === false) {
@@ -993,7 +993,7 @@ function identifyUser(
     // check AGSES code
     if (isset($SETTINGS['agses_authentication_enabled']) === true
         && $SETTINGS['agses_authentication_enabled'] === '1'
-        && $username !== "admin"
+        && ($username !== "admin" || ((int) $SETTINGS['admin_2fa_required'] === 1 && $username === "admin"))
         && $user_2fa_selection === 'agses'
         && empty($user_agses_code) === false
     ) {

@@ -793,6 +793,15 @@ if (intval($tmp) === 0) {
     );
 }
 
+// add new admin setting "admin_2fa_required"
+$tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."misc` WHERE type = 'admin' AND intitule = 'admin_2fa_required'"));
+if (intval($tmp) === 0) {
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `".$pre."misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'admin_2fa_required', '1')"
+    );
+}
+
 
 // add new language "portuges_br"
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `".$pre."languages` WHERE name = 'portuguese_br'"));

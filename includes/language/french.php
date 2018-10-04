@@ -14,6 +14,8 @@
  */
 global $LANG;
 $LANG = array(
+    '2factors_expected_for_admin' => 'Authentification à 2 facteurs requise pour l\'Administrateur',
+    '2factors_expected_for_admin_tip' => 'Par défaut, l\'authentification à 2 facteurs est requise pour l\'Administrateur. Si non activée, alors cette option permet à l\'administrateur de se connecter sans avoir à utiliser un moyen d\'authenfication double.',
     'filter' => 'Filtre',
     'upload_empty_file' => 'Téléverser des fichiers vides',
     'upload_any_extension_file' => 'Téléverser tout type d\'extension de fichier',
