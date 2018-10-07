@@ -32,6 +32,9 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
         "order": [[1, "asc"]],
         "processing": true,
         "serverSide": true,
+        "responsive": true,
+        "select": false,
+        "stateSave": true,
         "ajax": {
             url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
             type: 'GET'
@@ -48,9 +51,6 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
             {"width": "15%"},
             {"width": "15%"}
         ],
-        "responsive": true,
-        "select": false,
-        "stateSave": true,
     });
 
     var detailRows = [];
@@ -104,7 +104,6 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
             'restricted' : $(item).data('restricted-to'),
             'page' : 'find'
         };
-        console.log(data)
 
         // Launch query
         $.post(

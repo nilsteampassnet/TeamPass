@@ -15,6 +15,22 @@
  */
 
 return array(
+    'no_selection_done' => 'No selection done',
+    'tick_confirmation_box' => 'Please tick the checkbox to confirm',
+    'caution' => 'Caution',
+    'next_list_to_be_deleted' => 'Next list will be deleted',
+    'delete_folders' => 'Delete Folders',
+    'submit' => 'Submit',
+    'label' => 'Label',
+    'parent' => 'Parent',
+    'password_minimal_complexity_target' => 'Minimal password complexity target',
+    'access_right_for_roles' => 'Access rights for Roles',
+    'password_life_duration' => 'Password life duration (in months)',
+    'create_without_password_minimal_complexity_target' => 'Allow new item creation without password minimal complexity target',
+    'edit_without_password_minimal_complexity_target' => 'Allow item edition without password minimal complexity target',
+    'add_new_folder' => 'Add a new folder',
+    'new' => 'New',
+    'id' => 'ID',
     '2fa_credential_not_correct' => '2FA credential is not correct',
     'no_change_performed' => 'No change was performed.',
     'password_strength' => 'Password strength',

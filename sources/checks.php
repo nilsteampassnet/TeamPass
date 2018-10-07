@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Checks.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 require_once 'SecureHandler.php';
 
 // Load config
@@ -29,7 +30,6 @@ if (file_exists('../includes/config/tp.config.php')) {
 }
 
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
-
 
 /*
 Handle CASES
@@ -55,7 +55,7 @@ switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
 }
 
 /**
- * Returns the page the user is visiting
+ * Returns the page the user is visiting.
  *
  * @return string The page name
  */
@@ -73,40 +73,39 @@ function curPage($SETTINGS)
         ),
         $result
     );
+
     return $result['page'];
 }
 
-
 /**
- * Checks if user is allowed to open the page
+ * Checks if user is allowed to open the page.
  *
- * @param integer $userId      User's ID
- * @param integer $userKey     User's temporary key
- * @param string  $pageVisited Page visited
- * @param array   $SETTINGS    Settings
+ * @param int    $userId      User's ID
+ * @param int    $userKey     User's temporary key
+ * @param string $pageVisited Page visited
+ * @param array  $SETTINGS    Settings
  *
- * @return boolean
+ * @return bool
  */
 function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 {
     // Definition
     $pagesRights = array(
         'user' => array(
-            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'profile'
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile',
         ),
         'manager' => array(
-            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
-            'manage_views', 'manage_users', 'profile'
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
         ),
         'human_resources' => array(
-            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
-            'manage_views', 'manage_users', 'profile'
+            'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
         ),
         'admin' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
             'manage_views', 'manage_users', 'manage_settings', 'manage_main',
-            'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special', 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users'
-        )
+            'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
+            'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
+        ),
     );
 
     // Load libraries
@@ -162,7 +161,7 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         return true;
     } elseif ($data['admin'] !== '1'
         && ($data['gestionnaire'] === '1' || $data['can_manage_all_users'] === '1')
-        && isInArray($pageVisited, $pagesRights['manager']) === true
+        && (isInArray($pageVisited, $pagesRights['manager']) === true || isInArray($pageVisited, $pagesRights['human_resources']) === true)
     ) {
         return true;
     } elseif ($data['admin'] === '1'
@@ -175,12 +174,12 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
 }
 
 /**
- * Permits to check if at least one input is in array
+ * Permits to check if at least one input is in array.
  *
  * @param array $pages Input
  * @param array $table Checked against this array
  *
- * @return boolean
+ * @return bool
  */
 function isInArray($pages, $table)
 {
@@ -189,5 +188,6 @@ function isInArray($pages, $table)
             return true;
         }
     }
+
     return false;
 }

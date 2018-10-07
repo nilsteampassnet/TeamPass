@@ -626,6 +626,7 @@ function identifyUser(
                                     'message' => langHdl('error_bad_credentials'),
                                 )
                             );
+
                             return;
                         }
 
@@ -792,6 +793,7 @@ function identifyUser(
                             'message' => langHdl('error_bad_credentials'),
                         )
                     );
+
                     return;
                 }
 
@@ -871,6 +873,7 @@ function identifyUser(
                         'message' => '',
                     )
                 );
+
                 return;
             } else {
                 $yubico_user_key = $data['yubico_user_key'];
@@ -895,6 +898,7 @@ function identifyUser(
                     'message' => langHdl('yubico_bad_code'),
                 )
             );
+
             return;
         } else {
             $proceedIdentification = true;
@@ -975,6 +979,7 @@ function identifyUser(
                 'message' => langHdl('error_bad_credentials'),
             )
         );
+
         return;
     }
 
@@ -1608,13 +1613,13 @@ function identifyUser(
         define(
             'TP_PW_COMPLEXITY',
             array(
-            0 => array(0, langHdl('complex_level0')),
-            25 => array(25, langHdl('complex_level1')),
-            50 => array(50, langHdl('complex_level2')),
-            60 => array(60, langHdl('complex_level3')),
-            70 => array(70, langHdl('complex_level4')),
-            80 => array(80, langHdl('complex_level5')),
-            90 => array(90, langHdl('complex_level6')),
+                0 => array(0, langHdl('complex_level0'), '<i class="fa fa-bolt text-danger"></i>'),
+                25 => array(25, langHdl('complex_level1'), '<i class="fa fa-thermometer-0 text-danger"></i>'),
+                50 => array(50, langHdl('complex_level2'), '<i class="fa fa-thermometer-1 text-warning"></i>'),
+                60 => array(60, langHdl('complex_level3'), '<i class="fa fa-thermometer-2 text-warning"></i>'),
+                70 => array(70, langHdl('complex_level4'), '<i class="fa fa-thermometer-3 text-success"></i>'),
+                80 => array(80, langHdl('complex_level5'), '<i class="fa fa-thermometer-4 text-success"></i>'),
+                90 => array(90, langHdl('complex_level6'), '<i class="fa fa-diamond text-success"></i>'),
             )
         );
     }

@@ -103,12 +103,12 @@ $post_pw = filter_input(INPUT_POST, 'pw', FILTER_SANITIZE_STRING);
 $session_user_language = $superGlobal->get('user_language', 'SESSION');
 $session_user_id = $superGlobal->get('user_id', 'SESSION');
 $session_user_flag = $superGlobal->get('user_language_flag', 'SESSION');
-$session_user_admin = $superGlobal->get('user_admin', 'SESSION');
-$session_user_human_resources = $superGlobal->get('user_can_manage_all_users', 'SESSION');
+$session_user_admin = (int) $superGlobal->get('user_admin', 'SESSION');
+$session_user_human_resources = (int) $superGlobal->get('user_can_manage_all_users', 'SESSION');
 $session_user_avatar_thumb = $superGlobal->get('user_avatar_thumb', 'SESSION');
 $session_name = $superGlobal->get('name', 'SESSION');
 $session_lastname = $superGlobal->get('lastname', 'SESSION');
-$session_user_manager = $superGlobal->get('user_manager', 'SESSION');
+$session_user_manager = (int) $superGlobal->get('user_manager', 'SESSION');
 $session_user_read_only = $superGlobal->get('user_read_only', 'SESSION');
 $session_is_admin = $superGlobal->get('is_admin', 'SESSION');
 $session_login = $superGlobal->get('login', 'SESSION');
@@ -345,7 +345,7 @@ if (($session_validite_pw === null
                             <i class="fa fa-clock-o fa-fw"></i>&nbsp;<?php echo langHdl('index_add_one_hour'); ?></a>
                         <div class="dropdown-divider"></div>
                         <?php
-                        echo ($session_user_admin === '1' && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
+                        echo ($session_user_admin === 1 && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
                         <a class="dropdown-item user-menu" href="#" data-name="set_psk">
                             <i class="fa fa-key fa-fw"></i>&nbsp;'.langHdl('home_personal_saltkey_button').'
                         </a>' : '', '
@@ -409,7 +409,7 @@ if (($session_validite_pw === null
                     </li>
                     -->
                     <?php
-                    if ($session_user_admin === '0' || TP_ADMIN_FULL_RIGHT === false) {
+                    if ($session_user_admin === 0 || TP_ADMIN_FULL_RIGHT === false) {
                         // ITEMS & SEARCH
                         echo '
                     <li class="nav-item">
@@ -433,8 +433,8 @@ if (($session_validite_pw === null
     // Favourites menu
     if (isset($SETTINGS['enable_favourites'])
         && $SETTINGS['enable_favourites'] === '1'
-        && ($session_user_admin === '0'
-        || ($session_user_admin === '1'
+        && ($session_user_admin === 0
+        || ($session_user_admin === 1
         && TP_ADMIN_FULL_RIGHT === false))
     ) {
         echo '
@@ -464,7 +464,7 @@ if (($session_validite_pw === null
 
     // SUGGESTION menu
     if (isset($SETTINGS['enable_suggestion']) && $SETTINGS['enable_suggestion'] === '1'
-                        && ($session_user_admin === '1' || $session_user_manager === '1')
+                        && ($session_user_admin === 1 || $session_user_manager === 1)
                     ) {
         echo '
                     <li class="nav-item">
@@ -478,114 +478,114 @@ if (($session_validite_pw === null
     }
 
     // Admin menu
-    if ($session_user_admin === '1') {
+    if ($session_user_admin === 1) {
         echo '
-                        <li class="nav-item">
-                            <a href="#" data-name="admin" class="nav-link', $pageSel === 'admin' ? ' active' : '' ,'">
-                            <i class="nav-icon fa fa-info"></i>
+                    <li class="nav-item">
+                        <a href="#" data-name="admin" class="nav-link', $pageSel === 'admin' ? ' active' : '' ,'">
+                        <i class="nav-icon fa fa-info"></i>
+                        <p>
+                            '.langHdl('admin_main').'
+                        </p>
+                        </a>
+                    </li>
+                    <li class="nav-item has-treeview', $menuAdmin === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fa fa-wrench"></i>
                             <p>
-                                '.langHdl('admin_main').'
+                                '.langHdl('admin_settings').'
+                                <i class="fa fa-angle-left right"></i>
                             </p>
-                            </a>
-                        </li>
-                        <li class="nav-item has-treeview', $menuAdmin === true ? ' menu-open' : '', '">
-                            <a href="#" class="nav-link">
-                                <i class="nav-icon fa fa-wrench"></i>
-                                <p>
-                                    '.langHdl('admin_settings').'
-                                    <i class="fa fa-angle-left right"></i>
-                                </p>
-                            </a>
-                            <ul class="nav-item nav-treeview">
-                                <li class="nav-item">
-                                    <a href="#" data-name="2fa" class="nav-link', $pageSel === ' 2fa' ? ' active' : '' ,'">
-                                        <i class="fa fa-qrcode nav-icon"></i>
-                                        <p>'.langHdl('authentication').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="api" class="nav-link', $pageSel === ' api' ? ' active' : '' ,'">
-                                        <i class="fa fa-cube nav-icon"></i>
-                                        <p>'.langHdl('api').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="backups" class="nav-link', $pageSel === ' backups' ? ' active' : '' ,'">
-                                        <i class="fa fa-database nav-icon"></i>
-                                        <p>'.langHdl('backups').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="emails" class="nav-link', $pageSel === 'emails' ? ' active' : '' ,'">
-                                        <i class="fa fa-envelope nav-icon"></i>
-                                        <p>'.langHdl('emails').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="fields" class="nav-link', $pageSel === 'fields' ? ' active' : '' ,'">
-                                        <i class="fa fa-paint-brush nav-icon"></i>
-                                        <p>'.langHdl('fields').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="ldap" class="nav-link', $pageSel === 'ldap' ? ' active' : '' ,'">
-                                        <i class="fa fa-handshake-o nav-icon"></i>
-                                        <p>'.langHdl('ldap').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
-                                        <i class="fa fa-check-square-o nav-icon"></i>
-                                        <p>'.langHdl('options').'</p>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="#" data-name="statistics" class="nav-link', $pageSel === 'statistics' ? ' active' : '' ,'">
-                                        <i class="fa fa-area-chart nav-icon"></i>
-                                        <p>'.langHdl('statistics').'</p>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>';
+                        </a>
+                        <ul class="nav-item nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" data-name="2fa" class="nav-link', $pageSel === ' 2fa' ? ' active' : '' ,'">
+                                    <i class="fa fa-qrcode nav-icon"></i>
+                                    <p>'.langHdl('authentication').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="api" class="nav-link', $pageSel === ' api' ? ' active' : '' ,'">
+                                    <i class="fa fa-cube nav-icon"></i>
+                                    <p>'.langHdl('api').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="backups" class="nav-link', $pageSel === ' backups' ? ' active' : '' ,'">
+                                    <i class="fa fa-database nav-icon"></i>
+                                    <p>'.langHdl('backups').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="emails" class="nav-link', $pageSel === 'emails' ? ' active' : '' ,'">
+                                    <i class="fa fa-envelope nav-icon"></i>
+                                    <p>'.langHdl('emails').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="fields" class="nav-link', $pageSel === 'fields' ? ' active' : '' ,'">
+                                    <i class="fa fa-paint-brush nav-icon"></i>
+                                    <p>'.langHdl('fields').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="ldap" class="nav-link', $pageSel === 'ldap' ? ' active' : '' ,'">
+                                    <i class="fa fa-handshake-o nav-icon"></i>
+                                    <p>'.langHdl('ldap').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
+                                    <i class="fa fa-check-square-o nav-icon"></i>
+                                    <p>'.langHdl('options').'</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="statistics" class="nav-link', $pageSel === 'statistics' ? ' active' : '' ,'">
+                                    <i class="fa fa-area-chart nav-icon"></i>
+                                    <p>'.langHdl('statistics').'</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>';
+    }
 
-        if ($session_user_admin === '1'
-            || $session_user_manager === '1'
-            || $session_user_human_resources === '1'
-        ) {
-            echo '
-                        <li class="nav-item">
-                            <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '' ,'"">
-                            <i class="nav-icon fa fa-folder-open"></i>
-                            <p>
-                                '.langHdl('folders').'
-                            </p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" data-name="roles" class="nav-link', $pageSel === 'roles' ? ' active' : '' ,'"">
-                            <i class="nav-icon fa fa-graduation-cap"></i>
-                            <p>
-                                '.langHdl('roles').'
-                            </p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" data-name="users" class="nav-link', $pageSel === 'users' ? ' active' : '' ,'"">
-                            <i class="nav-icon fa fa-users"></i>
-                            <p>
-                                '.langHdl('users').'
-                            </p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" data-name="utilities" class="nav-link', $pageSel === 'utilities' ? ' active' : '' ,'"">
-                            <i class="nav-icon fa fa-cubes"></i>
-                            <p>
-                                '.langHdl('admin_views').'
-                            </p>
-                            </a>
-                        </li>';
-        }
+    if ($session_user_admin === 1
+        || $session_user_manager === 1
+        || $session_user_human_resources === 1
+    ) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '' ,'"">
+                        <i class="nav-icon fa fa-folder-open"></i>
+                        <p>
+                            '.langHdl('folders').'
+                        </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-name="roles" class="nav-link', $pageSel === 'roles' ? ' active' : '' ,'"">
+                        <i class="nav-icon fa fa-graduation-cap"></i>
+                        <p>
+                            '.langHdl('roles').'
+                        </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-name="users" class="nav-link', $pageSel === 'users' ? ' active' : '' ,'"">
+                        <i class="nav-icon fa fa-users"></i>
+                        <p>
+                            '.langHdl('users').'
+                        </p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" data-name="utilities" class="nav-link', $pageSel === 'utilities' ? ' active' : '' ,'"">
+                        <i class="nav-icon fa fa-cubes"></i>
+                        <p>
+                            '.langHdl('admin_views').'
+                        </p>
+                        </a>
+                    </li>';
     } ?>
                 </ul>
             </nav>
@@ -682,8 +682,8 @@ if (($session_validite_pw === null
         include $session_initial_url;
     } elseif ($_GET['page'] == 'items') {
         // SHow page with Items
-        if (($session_user_admin !== '1')
-            || ($session_user_admin === '1'
+        if (($session_user_admin !== 1)
+            || ($session_user_admin === 1
             && TP_ADMIN_FULL_RIGHT === false)
         ) {
             include $SETTINGS['cpassman_dir'].'/pages/items.php';
@@ -693,9 +693,9 @@ if (($session_validite_pw === null
         }
     } elseif (in_array($_GET['page'], array_keys($mngPages)) === true) {
         // Define if user is allowed to see management pages
-        if ($session_user_admin === '1') {
+        if ($session_user_admin === 1) {
             include $SETTINGS['cpassman_dir'].'./pages/'.$mngPages[$_GET['page']];
-        } elseif ($session_user_manager === '1' || $session_user_human_resources == '1') {
+        } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
             if (($_GET['page'] !== 'manage_main' && $_GET['page'] !== 'manage_settings')) {
                 include $SETTINGS['cpassman_dir'].'./pages/'.$mngPages[$_GET['page']];
             } else {
@@ -872,7 +872,7 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
-    } elseif ($pageSel === 'search') {
+    } elseif ($pageSel === 'search' || $pageSel === 'folders') {
         ?>
 <!-- DataTables -->
 <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -887,6 +887,9 @@ if ($menuAdmin === true) {
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->
 <script src="./plugins/fastclick/fastclick.js"></script>
+<!-- ICHECK -->
+<link rel="stylesheet" href="./plugins/iCheck/all.css">
+<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
     } elseif ($pageSel === 'profile') {
         ?>
@@ -927,6 +930,8 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/profile.js.php';
     } elseif ($pageSel === 'favourites') {
         include_once $SETTINGS['cpassman_dir'].'/pages/favorites.js.php';
+    } elseif ($pageSel === 'folders') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/folders.js.php';
     } else {
         include_once $SETTINGS['cpassman_dir'].'/login.js.php';
     }

@@ -51,7 +51,7 @@ require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_lan
 require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
-require_once 'main.functions.php';
+require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
 // Connect to mysql server
@@ -79,13 +79,13 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-        0 => array(0, langHdl('complex_level0')),
-        25 => array(25, langHdl('complex_level1')),
-        50 => array(50, langHdl('complex_level2')),
-        60 => array(60, langHdl('complex_level3')),
-        70 => array(70, langHdl('complex_level4')),
-        80 => array(80, langHdl('complex_level5')),
-        90 => array(90, langHdl('complex_level6')),
+            0 => array(0, langHdl('complex_level0'), '<i class="fa fa-bolt text-danger"></i>'),
+            25 => array(25, langHdl('complex_level1'), '<i class="fa fa-thermometer-0 text-danger"></i>'),
+            50 => array(50, langHdl('complex_level2'), '<i class="fa fa-thermometer-1 text-warning"></i>'),
+            60 => array(60, langHdl('complex_level3'), '<i class="fa fa-thermometer-2 text-warning"></i>'),
+            70 => array(70, langHdl('complex_level4'), '<i class="fa fa-thermometer-3 text-success"></i>'),
+            80 => array(80, langHdl('complex_level5'), '<i class="fa fa-thermometer-4 text-success"></i>'),
+            90 => array(90, langHdl('complex_level6'), '<i class="fa fa-diamond text-success"></i>'),
         )
     );
 }
@@ -191,7 +191,7 @@ if (null !== $post_newtitle) {
             array(
                 'valeur' => $post_changer_complexite,
             ),
-            'type=%s AND  intitule = %i',
+            'type=%s AND intitule = %i',
             'complex',
             $id[1]
         );
@@ -382,7 +382,7 @@ if (null !== $post_newtitle) {
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $folderForDel = array();
 
-            foreach (explode(';', $dataReceived['foldersList']) as $folderId) {
+            foreach (explode(';', $dataReceived['folders-list']) as $folderId) {
                 if (!in_array($folderId, $folderForDel)) {
                     $foldersDeleted = '';
                     // Get through each subfolder
@@ -482,25 +482,39 @@ if (null !== $post_newtitle) {
             $dataReceived = prepareExchangedData($post_data, 'decode');
 
             // prepare variables
-            $post_title = filter_var(htmlspecialchars_decode($dataReceived['label']), FILTER_SANITIZE_STRING);
+            $post_title = filter_var(
+                htmlspecialchars_decode($dataReceived['label']),
+                FILTER_SANITIZE_STRING
+            );
             $post_parent_id = filter_var(
-                htmlspecialchars_decode($dataReceived['parent_id'], ENT_QUOTES),
+                htmlspecialchars_decode($dataReceived['parent'], ENT_QUOTES),
                 FILTER_SANITIZE_NUMBER_INT
             );
             $post_complexicity = filter_var(
-                htmlspecialchars_decode($dataReceived['complexicity'], ENT_QUOTES),
+                htmlspecialchars_decode($dataReceived['complexity'], ENT_QUOTES),
                 FILTER_SANITIZE_NUMBER_INT
+            );
+            $post_duration = filter_var(
+                htmlspecialchars_decode($dataReceived['duration'], ENT_QUOTES),
+                FILTER_SANITIZE_NUMBER_INT
+            );
+            $post_create_auth_without = filter_var(
+                htmlspecialchars_decode($dataReceived['create-without']),
+                FILTER_SANITIZE_STRING
+            );
+            $post_edit_auth_without = filter_var(
+                htmlspecialchars_decode($dataReceived['edit-without']),
+                FILTER_SANITIZE_STRING
             );
 
             // Init
             $error = false;
             $newId = $access_level_by_role = $errorMessage = '';
-            $renewalPeriod = 0;
 
             if ($post_parent_id === '0') {
                 if (isset($dataReceived['access_level']) === true) {
                     $access_level_by_role = filter_var(
-                        htmlspecialchars_decode($dataReceived['access_level']),
+                        htmlspecialchars_decode($dataReceived['access-right']),
                         FILTER_SANITIZE_STRING
                     );
                 } else {
@@ -612,9 +626,9 @@ if (null !== $post_newtitle) {
                         'parent_id' => $post_parent_id,
                         'title' => $post_title,
                         'personal_folder' => $isPersonal,
-                        'renewal_period' => $renewalPeriod,
-                        'bloquer_creation' => isset($dataReceived['block_creation']) === true && $dataReceived['block_creation'] === '1' ? '1' : $parentBloquerCreation,
-                        'bloquer_modification' => isset($dataReceived['block_modif']) === true && $dataReceived['block_modif'] === '1' ? '1' : $parentBloquerModification,
+                        'renewal_period' => $post_duration,
+                        'bloquer_creation' => isset($post_create_auth_without) === true && $post_create_auth_without === '1' ? '1' : $parentBloquerCreation,
+                        'bloquer_modification' => isset($post_edit_auth_without) === true && $post_edit_auth_without === '1' ? '1' : $parentBloquerModification,
                     )
                 );
                 $newId = DB::insertId();
@@ -988,15 +1002,7 @@ if (null !== $post_newtitle) {
             break;
 
         // CASE where to authorize an ITEM creation without respecting the complexity
-        case 'modif_droit_autorisation_sans_complexite':
-            /* do checks */
-            require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders', $SETTINGS)) {
-                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $SETTINGS['cpassman_dir'].'/error.php';
-                exit();
-            }
-
+        case 'create_without_strength_check':
             // Check KEY
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 // error
@@ -1015,15 +1021,7 @@ if (null !== $post_newtitle) {
             break;
 
         // CASE where to authorize an ITEM modification without respecting the complexity
-        case 'modif_droit_modification_sans_complexite':
-            /* do checks */
-            require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-            if (!checkUser($_SESSION['user_id'], $_SESSION['key'], 'manage_folders', $SETTINGS)) {
-                $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
-                include $SETTINGS['cpassman_dir'].'/error.php';
-                exit();
-            }
-
+        case 'edit_without_strength_check':
             // Check KEY
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
                 // error
@@ -1450,6 +1448,109 @@ if (null !== $post_newtitle) {
 
             // send data
             echo prepareExchangedData($data, 'encode');
+
+            break;
+
+        //CASE where refreshing table
+        case 'refresh_list':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $data = array(
+                'error' => false,
+                'message' => '',
+            );
+
+            // send data
+            echo prepareExchangedData($data, 'encode');
+
+            break;
+
+        //CASE where refreshing table
+        case 'save_folder_change':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // prepare variables
+            $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
+            $post_field = filter_var(htmlspecialchars_decode($dataReceived['field']), FILTER_SANITIZE_STRING);
+            $post_new_value = filter_var(htmlspecialchars_decode($dataReceived['value']), FILTER_SANITIZE_STRING);
+
+            if ($post_field !== 'complexity') {
+                DB::update(
+                    prefixTable('nested_tree'),
+                    array(
+                        $post_field => $post_new_value,
+                    ),
+                    'id = %i',
+                    $post_folder_id
+                );
+                $return = '';
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $post_new_value,
+                    ),
+                    'type = %s AND intitule = %i',
+                    'complex',
+                    $post_folder_id
+                );
+                $return = array(
+                    'html' => TP_PW_COMPLEXITY[$post_new_value][2],
+                    'tip' => TP_PW_COMPLEXITY[$post_new_value][1],
+                    'value' => TP_PW_COMPLEXITY[$post_new_value][0],
+                );
+            }
+
+            $return = array(
+                'error' => false,
+                'message' => '',
+                'return' => $return,
+            );
+
+            // send data
+            //echo prepareExchangedData($return, 'encode');
+            echo json_encode($return);
 
             break;
     }
