@@ -229,6 +229,7 @@ if (array_key_exists($pageSel, $mngPages) === true) {
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="plugins/font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="plugins/fontawesome5/css/all.css">
     <!-- IonIcons -->
     <link rel="stylesheet" href="includes/css/ionicons.min.css">
     <!-- Theme style -->
@@ -302,7 +303,7 @@ if (($session_validite_pw === null
         <!-- Left navbar links -->
         <ul class="navbar-nav">
             <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa fa-bars"></i></a>
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
             </li>
             <!--
             <li class="nav-item d-none d-sm-inline-block">
@@ -321,7 +322,7 @@ if (($session_validite_pw === null
             <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
             <div class="input-group-append">
             <button class="btn btn-navbar" type="submit">
-                <i class="fa fa-search"></i>
+                <i class="fas fa-search"></i>
             </button>
             </div>
         </div>
@@ -340,28 +341,28 @@ if (($session_validite_pw === null
                     </a>
 
                     <div class="dropdown-menu dropdown-menu-right">
-                        <span class="dropdown-item"><i class="fa fa-hourglass-end fa-fw"></i>&nbsp;<?php echo langHdl('index_expiration_in'); ?> <span id="countdown"></span></span>
+                        <span class="dropdown-item"><i class="fas fa-hourglass-end fa-fw mr-2"></i><?php echo langHdl('index_expiration_in'); ?> <span id="countdown"></span></span>
                         <a class="dropdown-item user-menu" href="#" data-name="increase_session">
-                            <i class="fa fa-clock-o fa-fw"></i>&nbsp;<?php echo langHdl('index_add_one_hour'); ?></a>
+                            <i class="fas fa-clock-o fa-fw mr-2"></i><?php echo langHdl('index_add_one_hour'); ?></a>
                         <div class="dropdown-divider"></div>
                         <?php
                         echo ($session_user_admin === 1 && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
                         <a class="dropdown-item user-menu" href="#" data-name="set_psk">
-                            <i class="fa fa-key fa-fw"></i>&nbsp;'.langHdl('home_personal_saltkey_button').'
+                            <i class="fas fa-key fa-fw mr-2"></i>'.langHdl('home_personal_saltkey_button').'
                         </a>' : '', '
                         <a class="dropdown-item user-menu" href="#" data-name="profile">
-                            <i class="fa fa-user fa-fw"></i>&nbsp;'.langHdl('my_profile').'
+                            <i class="fas fa-user-circle fa-fw mr-2"></i>'.langHdl('my_profile').'
                         </a>
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item user-menu" href="#" data-name="logout">
-                            <i class="fa fa-sign-out fa-fw"></i>&nbsp;'.langHdl('disconnect').'
+                            <i class="fas fa-sign-out-alt fa-fw mr-2"></i>'.langHdl('disconnect').'
                         </a>'; ?>
                     </div>
                 </div>
             </li>
             <li class="nav-item">
                 <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i
-                    class="fa fa-th-large"></i></a>
+                    class="fas fa-th-large"></i></a>
             </li>
         </ul>
     </nav>
@@ -395,13 +396,13 @@ if (($session_validite_pw === null
                         <ul class="nav nav-treeview">
                         <li class="nav-item">
                             <a href="#" class="nav-link active">
-                            <i class="fa fa-circle-o nav-icon"></i>
+                            <i class="fas fa-circle-o nav-icon"></i>
                             <p>Active Page</p>
                             </a>
                         </li>
                         <li class="nav-item">
                             <a href="#" class="nav-link">
-                            <i class="fa fa-circle-o nav-icon"></i>
+                            <i class="fas fa-circle-o nav-icon"></i>
                             <p>Inactive Page</p>
                             </a>
                         </li>
@@ -493,55 +494,55 @@ if (($session_validite_pw === null
                             <i class="nav-icon fa fa-wrench"></i>
                             <p>
                                 '.langHdl('admin_settings').'
-                                <i class="fa fa-angle-left right"></i>
+                                <i class="fas fa-angle-left right"></i>
                             </p>
                         </a>
                         <ul class="nav-item nav-treeview">
                             <li class="nav-item">
                                 <a href="#" data-name="2fa" class="nav-link', $pageSel === ' 2fa' ? ' active' : '' ,'">
-                                    <i class="fa fa-qrcode nav-icon"></i>
+                                    <i class="fas fa-qrcode nav-icon"></i>
                                     <p>'.langHdl('authentication').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="api" class="nav-link', $pageSel === ' api' ? ' active' : '' ,'">
-                                    <i class="fa fa-cube nav-icon"></i>
+                                    <i class="fas fa-cube nav-icon"></i>
                                     <p>'.langHdl('api').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="backups" class="nav-link', $pageSel === ' backups' ? ' active' : '' ,'">
-                                    <i class="fa fa-database nav-icon"></i>
+                                    <i class="fas fa-database nav-icon"></i>
                                     <p>'.langHdl('backups').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="emails" class="nav-link', $pageSel === 'emails' ? ' active' : '' ,'">
-                                    <i class="fa fa-envelope nav-icon"></i>
+                                    <i class="fas fa-envelope nav-icon"></i>
                                     <p>'.langHdl('emails').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="fields" class="nav-link', $pageSel === 'fields' ? ' active' : '' ,'">
-                                    <i class="fa fa-paint-brush nav-icon"></i>
+                                    <i class="fas fa-paint-brush nav-icon"></i>
                                     <p>'.langHdl('fields').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="ldap" class="nav-link', $pageSel === 'ldap' ? ' active' : '' ,'">
-                                    <i class="fa fa-handshake-o nav-icon"></i>
+                                    <i class="fas fa-handshake-o nav-icon"></i>
                                     <p>'.langHdl('ldap').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
-                                    <i class="fa fa-check-square-o nav-icon"></i>
+                                    <i class="fas fa-check-square-o nav-icon"></i>
                                     <p>'.langHdl('options').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="statistics" class="nav-link', $pageSel === 'statistics' ? ' active' : '' ,'">
-                                    <i class="fa fa-area-chart nav-icon"></i>
+                                    <i class="fas fa-area-chart nav-icon"></i>
                                     <p>'.langHdl('statistics').'</p>
                                 </a>
                             </li>
@@ -594,13 +595,13 @@ if (($session_validite_pw === null
         <!-- /.sidebar -->
         <div class="footer" style="margin-top:-30px; color:white;">
             <div class="ml-3" id="sidebar-footer">
-                <i class="fa fa-clock-o mr-2 infotip text-info" title="<?php echo langHdl('server_time').' '.
+                <i class="fas fa-clock-o mr-2 infotip text-info" title="<?php echo langHdl('server_time').' '.
                     @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']).' - '.
                     @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']); ?>"></i>
-                <i class="fa fa-users mr-2 infotip text-info" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
-                <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="text-info"><i class="fa fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
-                <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fa fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
-                <i class="fa fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
+                <i class="fas fa-users mr-2 infotip text-info" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
+                <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
+                <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fas fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
+                <i class="fas fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
             </div>
         </div>
     </aside>
@@ -612,7 +613,7 @@ if (($session_validite_pw === null
         <div class="card card-danger m-2 hidden" id="dialog-request-psk">
             <div class="card-header">
                 <h3 class="card-title">
-                <i class="fa fa-key mr-2"></i>
+                <i class="fas fa-key mr-2"></i>
                 <?php echo langHdl('home_personal_saltkey_label'); ?>
                 </h3>
             </div>
@@ -623,7 +624,7 @@ if (($session_validite_pw === null
                         <?php
                         echo isset($SETTINGS['personal_saltkey_security_level']) === true
                             && empty($SETTINGS['personal_saltkey_security_level']) === false ?
-                        '<div class="text-info text-center"><i class="fa fa-info mr-3"></i>'.
+                        '<div class="text-info text-center"><i class="fas fa-info mr-3"></i>'.
                         langHdl('complex_asked').' : <b>'.
                         TP_PW_COMPLEXITY[$SETTINGS['personal_saltkey_security_level']][1].
                         '</b></div>'
@@ -653,7 +654,7 @@ if (($session_validite_pw === null
         <div class="card card-danger m-2 hidden" id="dialog-bug-report">
             <div class="card-header">
                 <h3 class="card-title">
-                <i class="fa fa-bug mr-2"></i>
+                <i class="fas fa-bug mr-2"></i>
                 <?php echo langHdl('defect_report'); ?>
                 </h3>
             </div>
@@ -872,7 +873,7 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
-    } elseif ($pageSel === 'search' || $pageSel === 'folders') {
+    } elseif ($pageSel === 'search' || $pageSel === 'folders' || $pageSel === 'users' || $pageSel === 'roles') {
         ?>
 <!-- DataTables -->
 <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -881,8 +882,9 @@ if ($menuAdmin === true) {
 <script type="text/javascript" src="./plugins/datatables/js/dataTables.bootstrap4.min.js"></script>
 <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
 <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
-<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
-<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
+<script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js"></script>
+<!--<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>-->
 <!-- SlimScroll -->
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->
@@ -932,6 +934,10 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/favorites.js.php';
     } elseif ($pageSel === 'folders') {
         include_once $SETTINGS['cpassman_dir'].'/pages/folders.js.php';
+    } elseif ($pageSel === 'users') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/users.js.php';
+    } elseif ($pageSel === 'roles') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/roles.js.php';
     } else {
         include_once $SETTINGS['cpassman_dir'].'/login.js.php';
     }

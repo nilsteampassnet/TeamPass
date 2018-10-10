@@ -43,38 +43,6 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 
 <script type='text/javascript'>
-/**
- * Refreshes the table with list of folders
- *
- * @return void
- */
-function refreshTable()
-{
-    // Launch action
-    $.post(
-        'sources/folders.queries.php',
-        {
-            type    : 'refresh_list',
-            key     : '<?php echo $_SESSION['key']; ?>'
-        },
-        function(data) {//decrypt data
-            data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
-
-            if (data.error !== true) {
-                $.each(data)
-            } else {
-                // ERROR
-                alertify
-                    .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
-                        0
-                    )
-                    .dismissOthers();
-            }
-        }
-    );
-}
-
 //<![CDATA[
     
 /*
@@ -113,6 +81,7 @@ var oTable = $("#table-folders").dataTable({
     "paging": false,
     "searching": true,
     "order": [[1, "asc"]],
+    "info": false,
     "processing": false,
     "serverSide": true,
     "responsive": true,
@@ -120,7 +89,7 @@ var oTable = $("#table-folders").dataTable({
     "stateSave": true,
     "autoWidth": true,
     "ajax": {
-        url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/datatable.folders.php",
+        url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/folders.datatable.php",
         /*data: function(d) {
             d.letter = _alphabetSearch
         }*/
@@ -196,16 +165,16 @@ alphabet.on( 'click', 'span', function () {
 
 // Manage collapse/expend
 $(document).on('click', '.icon-collapse', function() {
-    if ($(this).hasClass('fa-minus-square-o') === true) {
+    if ($(this).hasClass('fa-folder-minus') === true) {
         $(this)
-            .removeClass('fa-minus-square-o')
-            .addClass('fa-plus-square-o text-primary');
+            .removeClass('fa-folder-minus')
+            .addClass('fa-folder-plus text-primary');
 
         $('.p' + $(this).data('id')).addClass('hidden');
     } else {
         $(this)
-            .removeClass('fa-plus-square-o text-primary')
-            .addClass('fa-minus-square-o');
+            .removeClass('fa-folder-plus  text-primary')
+            .addClass('fa-folder-minus');
             $('.p' + $(this).data('id')).removeClass('hidden');
     }
 });
@@ -491,21 +460,19 @@ $('.btn').click(function() {
             .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
             .dismissOthers();
 
-
         // Save
         $.post(
             'sources/folders.queries.php',
             {
-                type :  'delete_multiple_folders1',
+                type :  'delete_multiple_folders',
                 data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                 key  :  '<?php echo $_SESSION['key']; ?>'
             },
             function(data) {
                 //decrypt data
                 data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-                console.info(data);
 
-                if (data.newId === '') {
+                if (data.error === true) {
                     alertify
                         .error(
                             '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
@@ -541,280 +508,6 @@ $('.btn').click(function() {
     }
 });
 
-/*
-$(document).on('click', '.icon-edit', function() {
-    var tr = $(this).closest('tr');
-    var row = oTable.row(tr);
-    var itemId = $(this).data('id');
-    
-    // Change eye icon
-    $(this)
-        .removeClass('fa-eye')
-        .addClass('fa-eye-slash text-warning');
-
-    // Add loader
-    $(this)
-        .after('<i class="fa fa-refresh fa-spin fa-fw" id="search-loader"></i>');
-
-    // Get content of item
-    row.child(showFolderInfo(tr, itemId), 'new-row').show();
-
-});
-
-
-function showFolderInfo (tr, item) {
-    // prepare data
-    var data = {
-        'folder_id' : item,
-    };
-
-    // Launch query
-    $.post(
-        'sources/folders.queries.php',
-        {
-            type :  'folder_details',
-            data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
-            key  :  '<?php echo $_SESSION['key']; ?>'
-        },
-        function(data) {
-            //decrypt data
-            data = prepareExchangedData(data, 'decode', '<?php echo $_SESSION['key']; ?>');
-            console.info(data);
-            var return_html = '';
-            if (data.show_detail_option !== 0 || data.show_details === 0) {
-                //item expired
-                return_html = '<?php echo langHdl('not_allowed_to_see_pw_is_expired'); ?>';
-            } else if (data.show_details === '0') {
-                //Admin cannot see Item
-                return_html = '<?php echo langHdl('not_allowed_to_see_pw'); ?>';
-            } else {
-                return_html = '<td colspan="7"><div class="alert bg-gray disabled">' +
-                    '<h5  id="pwd-label_'+data.id+'">'+data.label+'</h5><dl>' +
-                    '<dt><?php echo langHdl('description'); ?></dt><dd>'+data.description+'</dd>' +
-                    '<dt><?php echo langHdl('pw'); ?></dt><dd>' +
-                    '<div id="pwd-show_'+data.id+'" class="unhide_masked_data" style="height: 20px;"></div>'+
-                    '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + unsanitizeString(data.pw) + '">' +
-                    '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0"></dd>' +
-                    '<dt><?php echo langHdl('index_login'); ?></dt><dd>'+data.login+'</dd>' +
-                    '<dt><?php echo langHdl('url'); ?></dt><dd>'+data.url+'</dd>' +
-                    '</dl></div></td>';
-            }
-            $(tr).next('tr').html(return_html);
-            $('.unhide_masked_data').css('cursor', 'pointer');
-
-            // show password during longpress
-            $('.unhide_masked_data').mousedown(function(event) {
-                mouseStillDown = true;
-                showPwdContinuous($(this).attr('id'));
-            }).mouseup(function(event) {
-                mouseStillDown = false;
-            }).mouseleave(function(event) {
-                mouseStillDown = false;
-            });
-
-            $('#search-loader').remove();
-
-            $('.infotip').tooltip();
-        }
-    );
-    return data;
-}
-*/
-
-$("#div_add_group").dialog({
-    bgiframe: true,
-    modal: true,
-    autoOpen: false,
-    width: 450,
-    height: 460,
-    title: "<?php echo $LANG['add_new_group']; ?>",
-    open: function(event, ui) {
-        $("#new_folder_wait").hide();
-
-        //empty dialogbox
-        $("#div_add_group input, #div_add_group select, #new_rep_roles").val("");
-        $("#add_node_renewal_period").val("0");
-        $("#folder_block_modif, #folder_block_creation").val("0");
-        $("#parent_id").val("na");
-    },
-    buttons: {
-        "<?php echo $LANG['save_button']; ?>": function() {
-            //Check if renewal_period is an integer
-            if (isInteger(document.getElementById("add_node_renewal_period").value) === false) {
-                document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_renawal_period_not_integer']; ?>";
-                $("#addgroup_show_error").show();
-            } else if (document.getElementById("new_rep_complexite").value == "") {
-                document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_group_complex']; ?>";
-                $("#addgroup_show_error").show();
-            } else if (document.getElementById("parent_id").value == "" || isNaN(document.getElementById("parent_id").value)) {
-                document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_no_selected_folder']; ?>";
-                $("#addgroup_show_error").show();
-            } else {
-                if (document.getElementById("ajouter_groupe_titre").value != "" && document.getElementById("parent_id").value != "na") {
-                    $("#new_folder_wait").show();
-                    $("#addgroup_show_error").hide();
-                    //prepare data
-                    var data = {
-                        "title":$('#ajouter_groupe_titre').val().replace(/"/g,'&quot;') ,
-                        "complexity": $('#new_rep_complexite').val().replace(/"/g,'&quot;'),
-                        "parent_id": $('#parent_id').val().replace(/"/g,'&quot;') ,
-                        "renewal_period": $('#add_node_renewal_period').val().replace(/"/g,'&quot;') ,
-                        "block_creation": $("#folder_block_creation").val() ,
-                        "block_modif": $("#folder_block_modif").val(),
-                        "access_level": $("#new_rep_roles").val()
-                    };
-
-                    //send query
-                    $.post(
-                        "sources/folders.queries.php",
-                        {
-                            type    : "add_folder",
-                            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key     : "<?php echo $_SESSION['key']; ?>"
-                        },
-                        function(data) {
-                            //Check errors
-                            if (data[0].error == "error_group_exist") {
-                                $("#div_add_group").dialog("open");
-                                $("#addgroup_show_error").html("<?php echo $LANG['error_group_exist']; ?>");
-                                $("#addgroup_show_error").show();
-                            } else if (data[0].error == "error_html_codes") {
-                                $("#div_add_group").dialog("open");
-                                $("#addgroup_show_error").html("<?php echo $LANG['error_html_codes']; ?>");
-                                $("#addgroup_show_error").show();
-                            } else if (data[0].error == "error_title_only_with_numbers") {
-                                $("#div_add_group").dialog("open");
-                                $("#addgroup_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name']; ?>");
-                                $("#addgroup_show_error").show();
-                            } else if (data[0].error == "error_pwd_compexity_not_reached") {
-                                $("#div_add_group").dialog("open");
-                                $("#addgroup_show_error").html(data[0].msg);
-                                $("#addgroup_show_error").show();
-                            } else {
-                                oTable.api().ajax.reload();
-                                $("#parent_id, #edit_parent_id")
-                                    .empty()
-                                    .append(data[0].droplist);
-                                $("#div_add_group").dialog("close");
-                            }
-                            $("#new_folder_wait").hide();
-                        },
-                        "json"
-                    );
-                } else {
-                    document.getElementById("addgroup_show_error").innerHTML = "<?php echo $LANG['error_fields_2']; ?>";
-                    $("#addgroup_show_error").show();
-                }
-            }
-        },
-        "<?php echo $LANG['cancel_button']; ?>": function() {
-            $("#addgroup_show_error").html("").hide();
-            $(this).dialog("close");
-        }
-    }
-});
-
-$("#div_edit_folder").dialog({
-    bgiframe: true,
-    modal: true,
-    autoOpen: false,
-    width: 450,
-    height: 460,
-    title: "<?php echo $LANG['at_category']; ?>",
-    open: function(event, ui) {
-        var id = $("#folder_id_to_edit").val();
-        $("#edit_folder_wait").hide();
-        
-        //update dialogbox with data
-        $("#edit_folder_title").val($("#title_"+id).text());
-        $("#edit_folder_renewal_period").val($("#renewal_"+id).text());
-        $("#edit_folder_complexite").val($("#renewal_id_"+id).val());
-        $("#edit_parent_id option[value='"+$("#parent_id_"+id).val()+"']").prop('selected', true);
-        $("#edit_folder_block_creation").val($("#block_creation_"+id).val());
-        $("#edit_folder_block_modif").val($("#block_modif_"+id).val());
-    },
-    buttons: {
-        "<?php echo $LANG['delete']; ?>": function() {
-            if (confirm("<?php echo $LANG['confirm_delete_group']; ?>")) {
-                //send query
-                $.post(
-                    "sources/folders.queries.php",
-                    {
-                        type    : "delete_folder",
-                        id      : $("#folder_id_to_edit").val(),
-                        key     : "<?php echo $_SESSION['key']; ?>"
-                    },
-                    function(data) {
-                        oTable.api().ajax.reload();
-                        $("#div_edit_folder").dialog("close");
-                    }
-                );
-            }
-
-            //Close
-            $("#div_edit_folder").dialog("close");
-        },
-        "<?php echo $LANG['save_button']; ?>": function() {
-            if ($('#edit_folder_complexite').val() == "") {
-                    $("#edit_folder_show_error").html("<?php echo $LANG['error_group_complex']; ?>").show();
-                    return;
-            }if ($('#edit_folder_title').val() == "") {
-                    $("#edit_folder_show_error").html("<?php echo $LANG['error_group_label']; ?>").show();
-                    return;
-            }if ($('#edit_parent_id').val() == "na") {
-                    $("#edit_folder_show_error").html("<?php echo $LANG['error_no_selected_folder']; ?>").show();
-                    return;
-            }
-            $("#edit_folder_wait").show();
-            //prepare data
-            var data = '{"id":"'+$("#folder_id_to_edit").val()+'", "title":"'+$('#edit_folder_title').val().replace(/"/g,'&quot;') + '", "complexity":"'+$('#edit_folder_complexite').val().replace(/"/g,'&quot;')+'", '+
-            '"parent_id":"'+$('#edit_parent_id').val().replace(/"/g,'&quot;')+'", "renewal_period":"'+$('#edit_folder_renewal_period').val().replace(/"/g,'&quot;')+'" , "block_creation":"'+$("#edit_folder_block_creation").val()+'" , "block_modif":"'+$("#edit_folder_block_modif").val()+'"}';
-
-            //send query
-            $.post(
-                "sources/folders.queries.php",
-                {
-                    type    : "update_folder",
-                    data      : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-                    key        : "<?php echo $_SESSION['key']; ?>"
-                },
-                function(data) {
-                    //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
-
-                    $("#edit_folder_wait").hide();
-                    //Check errors
-                    if (data.error === "error_title_only_with_numbers") {
-                        $("#edit_folder_show_error").html("<?php echo $LANG['error_only_numbers_in_folder_name']; ?>").show();
-                    } else if (data.error === "error_group_exist") {
-                        $("#edit_folder_show_error").html("<?php echo $LANG['error_group_exist']; ?>").show();
-                    } else if (data.error === "error_html_codes") {
-                        $("#edit_folder_show_error").html("<?php echo $LANG['error_html_codes']; ?>").show();
-                    } else if (data.error === "error_folder_complexity_lower_than_top_folder") {
-                        $("#edit_folder_show_error").html(data.error_msg).show();
-                    } else {
-                        $("#folder_id_to_edit").val("");    //clear id
-                        oTable.api().ajax.reload();
-                        $("#parent_id, #edit_parent_id")
-                            .find('option')
-                            .remove()
-                            .end()
-                            .append(data.droplist);
-                        $("#div_edit_folder").dialog("close");
-                    }
-                }
-            );
-        },
-        "<?php echo $LANG['cancel_button']; ?>": function() {
-            //clear id
-            $("#folder_id_to_edit").val("");
-            $("#edit_folder_show_error").html("");
-
-            //Close
-            $("#div_edit_folder").dialog("close");
-        }
-    }
-});
 
 $(document).on('click', '.cb_selected_folder', function() {
     // Show selection of folders
@@ -891,125 +584,8 @@ $('#delete-confirm')
     });
 
 
-// manage the click on toggle icons
-/*$(document).on({
-    click: function (event) {
-        if ($(this).attr('tp1') === undefined) {
-            // case of folder selection
-            var selected_cb = $(this);
-            var elem = $(this).attr("id").split("-");
-            if ($(this).prop("checked") === true) {
-                $("#row_"+elem[1]).css({"font-weight":"bold"});
-                $("#title_"+elem[1]).css({"background-color":"#E9FF00"});
-            } else {
-                $("#row_"+elem[1]).css({"font-weight":""});
-                $("#title_"+elem[1]).css({"background-color":"#FFF"});
-            }
-
-            // send change to be stored
-            $.post(
-                "sources/folders.queries.php",
-                {
-                    type    : "select_sub_folders",
-                    id      : elem[1],
-                    key     : "<?php echo $_SESSION['key']; ?>"
-                },
-                function(data) {
-                    $("#div_loading").hide();
-                    // check/uncheck checkbox
-                    if (data[0].subfolders !== "") {
-                        var tmp = data[0].subfolders.split(";");
-                        for (var i = tmp.length - 1; i >= 0; i--) {
-                            if (selected_cb.prop("checked") === true) {
-                                $("#cb_selected-" + tmp[i]).prop("checked", true).prop("disabled", true);
-                                $("#row_" + tmp[i]).css({"font-weight":"bold"});
-                                $("#title_" + tmp[i]).css({"background-color":"#E9FF00"});
-                            } else {
-                                $("#cb_selected-" + tmp[i]).prop("checked", false).prop("disabled", false);
-                                $("#row_" + tmp[i]).css({"font-weight":""});
-                                $("#title_" + tmp[i]).css({"background-color":"#FFF"});
-                            }
-                        }
-                    }
-                },
-                "json"
-            );
-        } else {
-            var tmp = $(this).attr('tp').split('-');    //[0]>ID ; [1]>action  ; [2]>NewValue
-
-            // send change to be stored
-            $.post(
-                "sources/folders.queries.php",
-                {
-                    type    : tmp[1],
-                    value   : tmp[2],
-                    id      : tmp[0],
-                    key        : "<?php echo $_SESSION['key']; ?>"
-                },
-                function(data) {
-                    $("#div_loading").hide();
-                    // refresh table content
-                    oTable.api().ajax.reload();
-                }
-            );
-        }
-    }
-},
-".fa-toggle-off, .fa-toggle-on, .cb_selected_folder"
-);*/
-
-//
-$( "#click_delete_multiple_folders" ).click(function() {
-    var list_i = "";
-    $(".cb_selected_folder:checked").each(function() {
-        var elem = $(this).attr("id").split("-");
-        if (list_i == "") list_i = elem[1];
-        else list_i = list_i+';'+elem[1];
-    });
-    if (list_i != "" && $("#action_on_going").val() == "" && confirm("<?php echo addslashes($LANG['confirm_deletion']); ?>")) {
-        $("#div_loading").show();
-        $("#action_on_going").val("multiple_folders");
-        var data = '{"foldersList":"'+list_i+'"}';
-        //send query
-        $.post(
-            "sources/folders.queries.php",
-            {
-                type    : "delete_multiple_folders",
-                data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-                key     : "<?php echo $_SESSION['key']; ?>"
-            },
-            function(data) {
-                oTable.api().ajax.reload();
-                $("#action_on_going").val("");
-                $("#div_loading").hide();
-            },
-            "json"
-        );
-    }
-});
-
-$("#click_refresh_folders_list").click(function() {
-    oTable.api().ajax.reload();
-});
-
-$("#parent_id").change(function() {
-    if ($(this).val() === "0") {
-        $("#span_new_rep_roles").show();
-    } else {
-        $("#span_new_rep_roles").hide();
-    }
-})
 
 
-/**
- *
- * @access public
- * @return void
- **/
-function open_edit_folder_dialog(id)
-{
-    $("#folder_id_to_edit").val(id);console.log(">"+id);
-    $("#div_edit_folder").dialog("open");
-}
+
 //]]>
 </script>

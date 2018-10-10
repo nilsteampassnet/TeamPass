@@ -148,3 +148,19 @@
 .row-selected {
     background-color: #026fcc;
 }
+
+.btn-group {  
+    white-space: nowrap;              
+}
+.btn-group .btn {  
+    float: none;
+    display: inline-block;
+}
+ .btn + .dropdown-toggle { 
+    margin-left: -4px;
+}
+
+.dataTables_wrapper { 
+    overflow-x: visible; 
+    overflow-y: visible; 
+}

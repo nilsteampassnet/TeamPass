@@ -256,7 +256,7 @@ $('#but_confirm_new_password').click(function() {
  * 
  */
 function launchIdentify(isDuo, redirect, psk)
-{ 
+{
     if (redirect == undefined) {
         redirect = ""; //Check if redirection
     }
@@ -308,14 +308,23 @@ function launchIdentify(isDuo, redirect, psk)
 
     // get some info
     var client_info = "";
-    $.getJSON(
-        'https://ipapi.co/json',
-        null,
-        function (answered_data) { 
-            if (answered_data.ip !== "") {
-                client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
+
+    $.when(
+        $.getJSON(
+            'https://ipapi.co/json',
+            null,
+            function (answered_data) {
+                if (answered_data.ip !== "") {
+                    client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
+                }
             }
-            
+        )
+        .fail(function() {
+            console.log('could not reach ipapi.co');
+        })
+        .always(function() {
+            console.log('Continue');
+
             // Get 2fa
             $.post(
                 "sources/identify.php",
@@ -360,8 +369,10 @@ function launchIdentify(isDuo, redirect, psk)
                 },
                 "json"
             );
-        }
-    );
+        })
+    ).then(function() {
+        
+    });
 }
 
 //Identify user

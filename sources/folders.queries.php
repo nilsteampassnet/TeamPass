@@ -371,24 +371,51 @@ if (null !== $post_newtitle) {
 
         // CASE where DELETING multiple groups
         case 'delete_multiple_folders':
-            // Check KEY and rights
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key'] || $_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(array('error' => 'ERR_KEY_NOT_CORRECT'), 'encode');
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // prepare variables
+            $post_folders = filter_var_array(
+                $dataReceived['folders-list'],
+                FILTER_SANITIZE_STRING
+            );
+
             //decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), 'decode');
-            $error = '';
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $folderForDel = array();
 
-            foreach (explode(';', $dataReceived['folders-list']) as $folderId) {
-                if (!in_array($folderId, $folderForDel)) {
+            foreach ($post_folders as $folderId) {
+                // Exclude a folder with id alreay in the list
+                if (in_array($folderId, $folderForDel) === false) {
                     $foldersDeleted = '';
                     // Get through each subfolder
                     $folders = $tree->getDescendants($folderId, true);
                     foreach ($folders as $folder) {
-                        if (($folder->parent_id > 0 || $folder->parent_id == 0) && $folder->title != $_SESSION['user_id']) {
+                        if (($folder->parent_id > 0 || $folder->parent_id == 0)
+                            && $folder->title != $_SESSION['user_id']
+                        ) {
                             //Store the deleted folder (recycled bin)
                             DB::insert(
                                 prefixTable('misc'),
@@ -451,7 +478,13 @@ if (null !== $post_newtitle) {
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
 
-            echo '[ { "error" : "'.$error.'" } ]';
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
 
             break;
 
@@ -1511,9 +1544,9 @@ if (null !== $post_newtitle) {
             $dataReceived = prepareExchangedData($post_data, 'decode');
 
             // prepare variables
-            $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
-            $post_field = filter_var(htmlspecialchars_decode($dataReceived['field']), FILTER_SANITIZE_STRING);
-            $post_new_value = filter_var(htmlspecialchars_decode($dataReceived['value']), FILTER_SANITIZE_STRING);
+            $post_folder_id = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_STRING);
+            $post_new_value = filter_var($dataReceived['value'], FILTER_SANITIZE_STRING);
 
             if ($post_field !== 'complexity') {
                 DB::update(

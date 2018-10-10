@@ -104,7 +104,7 @@ foreach ($tst as $t) {
     <div class="row mb-2">
         <div class="col-sm-6">
         <h1 class="m-0 text-dark">
-        <i class="fa fa-folder-open-o mr-2"></i><?php echo langHdl('folders'); ?>
+        <i class="fa fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
         </h1>
         </div><!-- /.col -->
     </div><!-- /.row -->
@@ -240,8 +240,8 @@ foreach ($tst as $t) {
                             <th><?php echo langHdl('group_parent'); ?></th>
                             <th><i class="fa fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
                             <th><i class="fa fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
-                            <th><i class="fa fa-pencil fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
-                            <th><i class="fa fa-pencil-square-o fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                            <th><i class="fa fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
+                            <th><i class="fa fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
                         </tr>
                         </thead>
                         <tbody>

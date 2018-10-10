@@ -407,7 +407,7 @@ function cryption($message, $ascii_key, $type, $SETTINGS) //defuse_crypto
     if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
-    
+
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
@@ -663,26 +663,8 @@ function identifyUserRights(
  */
 function identAdmin($idFonctions, $SETTINGS, $tree)
 {
-    // SUperGlobal
-    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
-    $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
-    // Init
     $groupesVisibles = array();
-
-    $superGlobal->set('personal_folders', 'SESSION', array());
-    $superGlobal->set('groupes_visibles', 'SESSION', array());
-    $superGlobal->set('groupes_interdits', 'SESSION', array());
-    $superGlobal->set('personal_visible_groups', 'SESSION', array());
-    $superGlobal->set('read_only_folders', 'SESSION', array());
-    $superGlobal->set('list_restricted_folders_for_items', 'SESSION', array());
-    $superGlobal->set('list_folders_editable_by_role', 'SESSION', array());
-    $superGlobal->set('list_folders_limited', 'SESSION', array());
-    $superGlobal->set('no_access_folders', 'SESSION', array());
-    $superGlobal->set('groupes_visibles_list', 'SESSION', array());
-    $superGlobal->set('all_non_personal_folders', 'SESSION', array());
-    $superGlobal->set('forbiden_pfs', 'SESSION', array());
-    /*$_SESSION['personal_folders'] = array();
+    $_SESSION['personal_folders'] = array();
     $_SESSION['groupes_visibles'] = array();
     $_SESSION['groupes_interdits'] = array();
     $_SESSION['personal_visible_groups'] = array();
@@ -691,20 +673,17 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $_SESSION['list_folders_editable_by_role'] = array();
     $_SESSION['list_folders_limited'] = array();
     $_SESSION['no_access_folders'] = array();
-    $_SESSION['groupes_visibles_list'] = '';*/
+    $_SESSION['groupes_visibles_list'] = '';
 
     // Get list of Folders
     $rows = DB::query('SELECT id FROM '.prefixTable('nested_tree').' WHERE personal_folder = %i', 0);
     foreach ($rows as $record) {
-        array_push(
-            $superGlobal->get('groupes_visibles', 'SESSION'),
-            $record['id']
-        );
+        array_push($groupesVisibles, $record['id']);
     }
-    $_SESSION['all_non_personal_folders'] = $superGlobal->get('groupes_visibles', 'SESSION');
-
+    $_SESSION['groupes_visibles'] = $groupesVisibles;
+    $_SESSION['all_non_personal_folders'] = $groupesVisibles;
     // Exclude all PF
-    //$_SESSION['forbiden_pfs'] = array();
+    $_SESSION['forbiden_pfs'] = array();
     $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
     $where->add('personal_folder=%i', 1);
     if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1) {
@@ -714,19 +693,19 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     // Get ID of personal folder
     $persfld = DB::queryfirstrow(
         'SELECT id FROM '.prefixTable('nested_tree').' WHERE title = %s',
-        $superGlobal->get('user_id', 'SESSION')
+        $_SESSION['user_id']
     );
     if (empty($persfld['id']) === false) {
         if (in_array($persfld['id'], $_SESSION['groupes_visibles']) === false) {
-            array_push($superGlobal->get('groupes_visibles', 'SESSION'), $persfld['id']);
-            array_push($superGlobal->get('personal_visible_groups', 'SESSION'), $persfld['id']);
+            array_push($_SESSION['groupes_visibles'], $persfld['id']);
+            array_push($_SESSION['personal_visible_groups'], $persfld['id']);
             // get all descendants
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $tree->rebuild();
             $tst = $tree->getDescendants($persfld['id']);
             foreach ($tst as $t) {
-                array_push($superGlobal->get('groupes_visibles', 'SESSION'), $t->id);
-                array_push($superGlobal->get('personal_visible_groups', 'SESSION'), $t->id);
+                array_push($_SESSION['groupes_visibles'], $t->id);
+                array_push($_SESSION['personal_visible_groups'], $t->id);
             }
         }
     }
@@ -742,19 +721,15 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
             array_push($tmp, $record['id']);
         }
     }
-    /*$_SESSION['fonction_id'] = implode(';', $tmp);
+    $_SESSION['fonction_id'] = implode(';', $tmp);
+
     $_SESSION['groupes_visibles_list'] = implode(',', $_SESSION['groupes_visibles']);
-    $_SESSION['is_admin'] = $isAdmin;*/
-    $superGlobal->set('fonction_id', 'SESSION', implode(';', $tmp));
-    $superGlobal->set('groupes_visibles_list', 'SESSION', implode(',', $_SESSION['groupes_visibles']));
-    $superGlobal->set('is_admin', 'SESSION', $isAdmin);
+    $_SESSION['is_admin'] = 1;
     // Check if admin has created Folders and Roles
     DB::query('SELECT * FROM '.prefixTable('nested_tree').'');
-    //$_SESSION['nb_folders'] = DB::count();
-    $superGlobal->set('nb_folders', 'SESSION', DB::count());
+    $_SESSION['nb_folders'] = DB::count();
     DB::query('SELECT * FROM '.prefixTable('roles_title'));
-    //$_SESSION['nb_roles'] = DB::count();
-    $superGlobal->set('nb_roles', 'SESSION', DB::count());
+    $_SESSION['nb_roles'] = DB::count();
 }
 
 /**

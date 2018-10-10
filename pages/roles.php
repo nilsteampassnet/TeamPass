@@ -45,59 +45,58 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 
 ?>
 
-    <!-- Content Header (Page header) -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0 text-dark"><?php echo langHdl('api'); ?></h1>
-          </div><!-- /.col -->
-        </div><!-- /.row -->
-      </div><!-- /.container-fluid -->
-    </div>
-    <!-- /.content-header -->
-    
+<!-- Content Header (Page header) -->
+<div class="content-header">
+    <div class="container-fluid">
+    <div class="row mb-2">
+        <div class="col-sm-6">
+        <h1 class="m-0 text-dark">
+        <i class="fa fa-graduation-cap mr-2"></i><?php echo langHdl('roles'); ?>
+        </h1>
+        </div><!-- /.col -->
+    </div><!-- /.row -->
+    </div><!-- /.container-fluid -->
+</div>
+<!-- /.content-header -->
 
-    <!-- Main content -->
-    <div class="content">
-      <div class="container-fluid">
-        <div class="row">
-          <div class="col-lg-6">
+<section class="content">
+    <div class="row">
+        <div class="col-12">
             <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
+                <div class="card-header align-middle">
+                    <h3 class="card-title">
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="new">
+                            <i class="fa fa-plus mr-2"></i><?php echo langHdl('new'); ?>
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="delete">
+                            <i class="fa fa-trash mr-2"></i><?php echo langHdl('delete'); ?>
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="refresh">
+                            <i class="fa fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?>
+                        </button>
+                    </h3>
+                </div>
 
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
+                <!-- /.card-header -->
+                <div class="card-body form" id="folders-list">
+                    <table id="table-folders" class="table table-bordered table-striped" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th></th>
+                            <th><?php echo langHdl('group'); ?></th>
+                            <th><?php echo langHdl('group_parent'); ?></th>
+                            <th><i class="fa fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
+                            <th><i class="fa fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
+                            <th><i class="fa fa-pencil fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
+                            <th><i class="fa fa-pencil-square-o fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                        </tr>
+                        </thead>
+                        <tbody>
 
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-
-            <div class="card card-primary card-outline">
-              <div class="card-body">
-                <h5 class="card-title">Card title</h5>
-
-                <p class="card-text">
-                  Some quick example text to build on the card title and make up the bulk of the cards
-                  content.
-                </p>
-                <a href="#" class="card-link">Card link</a>
-                <a href="#" class="card-link">Another link</a>
-              </div>
-            </div><!-- /.card -->
-          </div>
-          <!-- /.col-md-6 -->
         </div>
-        <!-- /.row -->
-      </div><!-- /.container-fluid -->
     </div>
-    <!-- /.content -->
-
-
-
-
-
+</section>

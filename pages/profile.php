@@ -199,7 +199,7 @@ $userSeenPasswordsNumber = DB::count();
                             <div class="active tab-pane" id="tab_information">
                                 <ul class="list-group list-group-unbordered mb-3">
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-child fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_seen'); ?></b>
+                                        <b><i class="fas fa-child fa-fw fa-lg mr-2"></i><?php echo langHdl('index_last_seen'); ?></b>
                                         <a class="float-right">
                                         <?php
                                         if (isset($SETTINGS['date_format']) === true) {
@@ -240,19 +240,19 @@ $userSeenPasswordsNumber = DB::count();
                                         }
                                         echo '
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-calendar fa-fw fa-lg mr-2"></i>'.langHdl('index_last_pw_change').'</b>
+                                        <b><i class="fas fa-calendar-alt fa-fw fa-lg mr-2"></i>'.langHdl('index_last_pw_change').'</b>
                                         <a class="float-right">'.$last_pw_change.' '.$numDaysBeforePwExpiration.'</a>
                                     </li>';
                                     }
                                     ?>
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-cloud-upload fa-fw fa-lg mr-2"></i><?php echo langHdl('upload_feature'); ?></b>
+                                        <b><i class="fas fa-cloud-upload-alt fa-fw fa-lg mr-2"></i><?php echo langHdl('upload_feature'); ?></b>
                                         <a class="float-right">
                                             <span id="profile-plupload-runtime" class="text-danger" data-enabled="0"><?php echo langHdl('error_upload_runtime_not_found'); ?></span>
                                         </a>
                                     </li>
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-code-fork fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
+                                        <b><i class="fas fa-code-fork fa-fw fa-lg mr-2"></i><?php echo langHdl('tree_load_strategy'); ?></b>
                                         <a class="float-right">
                                             <span id="profile-plupload-runtime"><?php echo $_SESSION['user_settings']['treeloadstrategy']; ?></span>
                                         </a>
@@ -261,7 +261,7 @@ $userSeenPasswordsNumber = DB::count();
                                     if (isset($SETTINGS['api']) === true && $SETTINGS['api'] === '1') {
                                         echo '
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-paper-plane fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_api_key').'</b>
+                                        <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_api_key').'</b>
                                         <a class="float-right" id="profile-user-api-token">',
                                         isset($_SESSION['user_settings']['api-key']) === true ? $_SESSION['user_settings']['api-key'] : '', '</a>
                                     </li>';
@@ -271,7 +271,7 @@ $userSeenPasswordsNumber = DB::count();
                                     ) {
                                         echo '
                                     <li class="list-group-item">
-                                        <b><i class="fa fa-id-card-o fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_agses_card_id').'</b>
+                                        <b><i class="fas fa-id-card-o fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_agses_card_id').'</b>
                                         <a class="float-right">',
                                         isset($_SESSION['user_settings']['agses-usercardid']) ? $_SESSION['user_settings']['agses-usercardid'] : '', '</a>
                                     </li>';
@@ -293,11 +293,11 @@ $userSeenPasswordsNumber = DB::count();
                                         :
                                         ''
                                         ,'">
-                                        <i class="fa fa-history fa-fw fa-lg"></i>&nbsp;
+                                        <i class="fas fa-history fa-fw fa-lg"></i>&nbsp;
                                         '.$LANG['login_attempts'].':
                                         <div style="margin:1px 0 0 36px;">';
                                     foreach ($_SESSION['unsuccessfull_login_attempts']['attempts'] as $entry) {
-                                        echo '<span class="fa fa-caret-right"></span>&nbsp;'.$entry.'<br/>';
+                                        echo '<span class="fas fa-caret-right"></span>&nbsp;'.$entry.'<br/>';
                                     }
                                     echo '
                                         </div>
@@ -433,7 +433,7 @@ $userSeenPasswordsNumber = DB::count();
                                 </h3>
                                 <div class="callout callout-info">
                                     <h6>
-                                    <i class="fa fa-info mr-2"></i>
+                                    <i class="fas fa-info mr-2"></i>
                                     <?php echo langHdl('complex_asked').' : <b>'.TP_PW_COMPLEXITY[$SETTINGS['personal_saltkey_security_level']][1].'</b>'; ?>
                                     </h6>
                                 </div>

@@ -15,6 +15,8 @@
  */
 
 return array(
+    'roles' => 'Roles',
+    'user_definition' => 'User definition',
     'no_selection_done' => 'No selection done',
     'tick_confirmation_box' => 'Please tick the checkbox to confirm',
     'caution' => 'Caution',
