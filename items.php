@@ -634,7 +634,7 @@ echo '
     <div id="item_edit_tabs">
         <ul>
             <li><a href="#tabs-1">'.$LANG['definition'].'</a></li>
-            <li><a href="#tabs-2">'.$LANG['index_password'].' &amp; '.$LANG['visibility'].'</a></li>
+            <li><a href="#tabs-2">'.$LANG['index_password'].'</a></li>
             <li><a href="#tabs-3">'.$LANG['files_&_images'].'</a></li>
             ', isset($SETTINGS['item_extra_fields']) && $SETTINGS['item_extra_fields'] == 1 ?
             '<li id="form_edit_tab_fields"><a href="#tabs-4">'.$LANG['more'].'</a></li>' : '', '
