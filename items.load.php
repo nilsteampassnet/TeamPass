@@ -715,7 +715,7 @@ function AjouterItem()
 
     //Complete url format
     var url = $("#url").val();
-    if (url.indexOf('://') === -1) {
+    if (url.indexOf('://') === -1 && url !== '') {
         url = "https://"+url;
     }
 

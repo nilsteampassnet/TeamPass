@@ -2614,6 +2614,7 @@ function restGet()
                 $json['status'] = 'OK';
             } elseif ($GLOBALS['request'][1] == "item") {
                 $array_items = explode(';', $GLOBALS['request'][2]);
+                $user_id = API_USER_ID;
 
                 // get user info
                 if (isset($GLOBALS['request'][3]) && !empty($GLOBALS['request'][3])) {
@@ -2621,9 +2622,7 @@ function restGet()
                         "SELECT `id` FROM ".$pre."users WHERE login = %s",
                         $GLOBALS['request'][3]
                     );
-                    if (DB::count() == 0) {
-                        $user_id = API_USER_ID;
-                    } else {
+                    if (DB::count() > 0) {
                         $user_id = $userData['id'];
                     }
                 }

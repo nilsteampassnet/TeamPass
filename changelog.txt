@@ -1,5 +1,7 @@
 2.1.27
 24/
+ #2436 Undefined variable: user_id in api/functions.php
+ #2432 Empty item URL automatically fills with 'https://'
  #2426 Teampass Admin account can log in without 2 factor code, others users cant
  #2416 Backslash in user's password
 
