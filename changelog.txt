@@ -1,6 +1,7 @@
 2.1.27
 24/
  #2426 Teampass Admin account can log in without 2 factor code, others users cant
+ #2416 Backslash in user's password
 
 23/
  #2419 Cannot show password by using item menu bars entry

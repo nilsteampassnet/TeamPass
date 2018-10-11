@@ -248,7 +248,7 @@ $(function() {
                     });
 
                     //prepare data
-                    var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
+                    /*var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
                         '"name":"'+sanitizeString($('#new_name').val())+'", '+
                         '"lastname":"'+sanitizeString($('#new_lastname').val())+'", '+
                         '"pw":"'+sanitizeString($('#new_pwd').val())+'", '+
@@ -262,13 +262,31 @@ $(function() {
                         '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'", '+
                         '"groups":"' + groups + '", '+
                         '"allowed_flds":"' + authFld + '", '+
-                        '"forbidden_flds":"' + forbidFld + '"}';
+                        '"forbidden_flds":"' + forbidFld + '"}';*/
+
+                    var data = {
+                        login                   : $('#new_login').val(),
+                        name                    : $('#new_name').val(),
+                        lastname                : $('#new_lastname').val(),
+                        pw                      : $('#new_pwd').val(),
+                        email                   : $('#new_email').val(),
+                        admin                   : $('#new_admin').prop('checked'),
+                        manager                 : $('#new_manager').prop('checked'),
+                        read_only               : $('#new_read_only').prop('checked'),
+                        personal_folder         : $('#new_personal_folder').prop('checked'),
+                        new_folder_role_domain  : $('#new_folder_role_domain').prop('checked'),
+                        domain                  : $('#new_domain').val(),
+                        isAdministratedByRole   : $('#new_is_admin_by').val(),
+                        groups                  : groups,
+                        allowed_flds            : authFld,
+                        forbidden_flds          : forbidFld,
+                    };
 
                     $.post(
                         "sources/users.queries.php",
                         {
                             type    :"add_new_user",
-                            data     : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                            data     : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key    : "<?php echo $_SESSION['key']; ?>"
                         },
                         function(data) {
@@ -371,13 +389,18 @@ $(function() {
                     $("#change_user_pw_error").html("<?php echo $LANG['error_must_enter_all_fields']; ?>").show(1).delay(1000).fadeOut(1000);
                 } else if ($("#change_user_pw_newpw").val() === $("#change_user_pw_newpw_confirm").val()) {
                 // check if egual
-                    var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key']; ?>\"}";
+                    //var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key']; ?>\"}";
+                    var data = {
+                        new_pw  : $("#new_pw").val(),
+                        user_id : $("#change_user_pw_id").val(),
+                    };
                     $.post(
                         "sources/main.queries.php",
                         {
-                            type    : "change_pw",
-                            change_pw_origine    : "admin_change",
-                            data    : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>")
+                            type                : "change_pw",
+                            change_pw_origine   : "admin_change",
+                            data                : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                            key                 : "<?php echo $_SESSION['key']; ?>",
                         },
                         function(data) {
                             if (data[0].error == "none") {
@@ -857,13 +880,13 @@ function pwGenerate(elem)
         "sources/main.queries.php",
         {
             type    : "generate_a_password",
-            size    : Math.floor((8-5)*Math.random()) + 6,
-            num     : true,
-            maj     : true,
-            symb    : false,
-            fixed_elem    : 1,
+            size    : 12,
             elem    : elem,
-            force    : false
+            force    : false,
+            secure     : true,
+            symbols    : true,
+            capitalize : true,
+            numerals   : true
         },
         function(data) {
             data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");

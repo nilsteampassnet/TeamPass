@@ -228,29 +228,40 @@ $htmlHeaders .= '
                     type : "get2FAMethods"
                 },
                 function(fa_methods) {
-                    var data = "";
+                    var data = {
+                        login               : $("#login").val(),
+                        pw                  : $("#pw").val(),
+                        duree_session       : $("#duree_session").val(),
+                        screenHeight        : $("body").innerHeight(),
+                        randomstring        : randomstring,
+                        TimezoneOffset      : TimezoneOffset,
+                        client              : client_info,
+                        user_2fa_selection  : user2FaMethod,
+                        login_sanitized     : sanitizeString($("#login").val()),
+                        pw_sanitized        : sanitizeString($("#pw").val()),
+                    };
+
                     if (user2FaMethod === "" && fa_methods[0].nb === "1") {
                         user2FaMethod = fa_methods[0].method;
                     }
 
                     // Google 2FA
                     if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
-                        data = \', "agses_code":"\' + $("#agses_code").val() + \'"\';
+                        data["agses_code"] = $("#agses_code").val();
                     }
             
                     // Google 2FA
                     if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
-                        data = \', "GACode":"\' + $("#ga_code").val() + \'"\';
+                        data["GACode"] = $("#ga_code").val();
                     }
                     
                     // Yubico
                     if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
-                        data = \', "yubico_key":"\' + $("#yubiko_key").val()+ \'"\'+
-                            \', "yubico_user_id":"\' + ($("#yubico_user_id").val()) + \'"\'+
-                            \', "yubico_user_key":"\' + ($("#yubico_user_key").val()) + \'"\';
+                        data["yubico_key"] = $("#yubiko_key").val();
+                        data["yubico_yubico_user_idkey"] = $("#yubico_user_id").val();
+                        data["yubico_user_key"] = $("#yubico_user_key").val();
                     }
-
-                    data = \'{"login":"\'+sanitizeString($("#login").val())+\'" , "pw":"\'+sanitizeString($("#pw").val())+\'" , "duree_session":"\'+$("#duree_session").val()+\'" , "screenHeight":"\'+$("body").innerHeight()+\'" , "randomstring":"\'+randomstring+\'" , "TimezoneOffset":"\'+TimezoneOffset+\'"\'+data+\' , "client":"\'+client_info+\'" , "user_2fa_selection":"\'+user2FaMethod+\'"}\';
+                    
 
                     // Handle if DUOSecurity is enabled
                     if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
@@ -284,7 +295,7 @@ $htmlHeaders .= '
                         "sources/identify.php",
                         {
                             type : "identify_user",
-                            data : prepareExchangedData(data, "encode", "'.$_SESSION["key"].'")
+                            data : prepareExchangedData(JSON.stringify(data), "encode", "'.$_SESSION["key"].'")
                         },
                         function(data) {
                             if (data[0].value === randomstring) {
@@ -614,7 +625,11 @@ $htmlHeaders .= '
     {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
             if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
-                var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
+                //var data = "{\"new_pw\":\""+sanitizeString($("#new_pw").val())+"\"}";
+                var data = {
+                    new_pw  : $("#new_pw").val(),
+                };
+
                 $.post(
                     "sources/main.queries.php",
                     {
@@ -622,7 +637,7 @@ $htmlHeaders .= '
                         change_pw_origine   : "first_change",
                         complexity          : $("#user_pw_complexity").val(),
                         key                 : "'.$_SESSION['key'].'",
-                        data                : prepareExchangedData(data, "encode", "'.$_SESSION['key'].'>")
+                        data                : prepareExchangedData(JSON.stringify(data), "encode", "'.$_SESSION['key'].'>")
                     },
                     function(data) {
                         if (data[0].error == "complexity_level_not_reached") {

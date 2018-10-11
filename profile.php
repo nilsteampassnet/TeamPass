@@ -464,14 +464,17 @@ $(function() {
         if ($("#new_pw").val() != "" && $("#new_pw").val() == $("#new_pw2").val()) {
             if (parseInt($("#pw_strength_value").val()) >= parseInt($("#user_pw_complexity").val())) {
                 $("#password_change_wait").show();
-                var data = '{"new_pw":"'+sanitizeString($("#new_pw").val())+'"}';
+                //var data = '{"new_pw":"'+sanitizeString($("#new_pw").val())+'"}';
+                var data = {
+                    new_pw  : $("#new_pw").val(),
+                };
                 $.post(
                     "sources/main.queries.php",
                     {
                         type                : "change_pw",
                         change_pw_origine   : "user_change",
                         complexity          : $("#pw_strength_value").val(),
-                        data                : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>")
+                        data                : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>")
                     },
                     function(data) {
                         if (data[0].error == "already_used") {

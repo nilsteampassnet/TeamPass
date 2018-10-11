@@ -102,7 +102,8 @@ function mainQuery()
             $pwdlib = new PasswordLib\PasswordLib();
 
             // Prepare variables
-            $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));
+            //$newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));
+            $newPw = $pwdlib->createPasswordHash($dataReceived['new_pw']);
 
             // User has decided to change is PW
             if (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
@@ -189,7 +190,8 @@ function mainQuery()
                 $_SESSION['validite_pw'] = true;
 
                 // BEfore updating, check that the pwd is correct
-                if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                //if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                if ($pwdlib->verifyPasswordHash($dataReceived['new_pw'], $newPw) === true) {
                     // update DB
                     DB::update(
                         prefix_table("users"),
@@ -230,7 +232,8 @@ function mainQuery()
                 }
 
                 // BEfore updating, check that the pwd is correct
-                if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                //if ($pwdlib->verifyPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']), $newPw) === true) {
+                if ($pwdlib->verifyPasswordHash($dataReceived['new_pw'], $newPw) === true) {
                     // adapt
                     if (filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === "user_change") {
                         $dataReceived['user_id'] = $_SESSION['user_id'];

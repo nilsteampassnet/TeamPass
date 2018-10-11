@@ -93,14 +93,18 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
             );
 
             // Prepare variables
-            $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
-            $email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
-            $lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
-            $name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
-            $pw = filter_var(htmlspecialchars_decode($dataReceived['pw']), FILTER_SANITIZE_STRING);
+            $login = filter_var(($dataReceived['login']), FILTER_SANITIZE_STRING);
+            $email = filter_var(($dataReceived['email']), FILTER_SANITIZE_STRING);
+            $lastname = filter_var(($dataReceived['lastname']), FILTER_SANITIZE_STRING);
+            $name = filter_var(($dataReceived['name']), FILTER_SANITIZE_STRING);
+            if (array_key_exists('pw', $dataReceived)) {
+                $pw = filter_var(($dataReceived['pw']), FILTER_SANITIZE_STRING);
+            } else {
+                $pw = '';
+            }
 
             // Empty user
-            if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == "") {
+            if (mysqli_escape_string($link, ($login)) == "") {
                 echo '[ { "error" : "'.addslashes($LANG['error_empty_data']).'" } ]';
                 break;
             }

@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$debugLdap = 0; //Can be used in order to debug LDAP authentication
+$debugLdap = 1; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
 
 require_once 'SecureHandler.php';
@@ -458,10 +458,12 @@ function identifyUser(
         }
         $passwordClear = $_SERVER['PHP_AUTH_PW'];
     } else {
-        $passwordClear = htmlspecialchars_decode($dataReceived['pw']);
-        $username = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login']));
+        $passwordClear = $dataReceived['pw'];
+        $username = $dataReceived['login'];
+        
+        $usernameSanitized = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login_sanitized']));
     }
-    
+
     // User's 2FA method
     $user_2fa_selection = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['user_2fa_selection']));
 
@@ -530,6 +532,31 @@ function identifyUser(
         )
     );
     $counter = DB::count();
+
+    // 2.1.27.24 - in case of login encoding error
+    if ($counter === 0) {
+        // Test 
+        $data = DB::queryFirstRow(
+            "SELECT * FROM ".prefix_table("users")." WHERE login=%s_login",
+            array(
+                'login' => $usernameSanitized
+            )
+        );
+        $counter = DB::count();
+        if ($counter === 1) {
+            // Adapt in DB
+            DB::update(
+                prefix_table('users'),
+                array(
+                    'login' => $username
+                ),
+                "id=%i",
+                $data['id']
+            );
+            $data['login'] = $username;
+        }
+    }
+
     $user_initial_creation_through_ldap = false;
     $proceedIdentification = false;
 
@@ -674,7 +701,8 @@ function identifyUser(
                                     DB::update(
                                         prefix_table('users'),
                                         array(
-                                            'pw' => $data['pw']
+                                            'pw' => $data['pw'],
+                                            'login' => $data['login']
                                         ),
                                         "id = %i",
                                         $data['id']
@@ -781,7 +809,8 @@ function identifyUser(
                         DB::update(
                             prefix_table('users'),
                             array(
-                                'pw' => $data['pw']
+                                'pw' => $data['pw'],
+                                'login' => $data['login']
                             ),
                             "id = %i",
                             $data['id']
@@ -1100,14 +1129,30 @@ function identifyUser(
             if ($pwdlib->verifyPasswordHash($passwordClear, $data['pw']) === true) {
                 $userPasswordVerified = true;
             } else {
-                $userPasswordVerified = false;
-                logEvents(
-                    'failed_auth',
-                    'user_password_not_correct',
-                    "",
-                    "",
-                    stripslashes($username)
-                );
+                // 2.1.27.24 - manage passwords
+                $passwordClearSanitized = htmlspecialchars_decode($dataReceived['pw_sanitized']);
+
+                if ($pwdlib->verifyPasswordHash($passwordClearSanitized, $data['pw']) === true) {
+                    // then the auth is correct but needs to be adapted in DB since change of encoding
+                    $data['pw'] = $pwdlib->createPasswordHash($passwordClear);
+                    DB::update(
+                        prefix_table('users'),
+                        array(
+                            'pw' => $data['pw']
+                        ),
+                        "id=%i",
+                        $data['id']
+                    );
+                } else {
+                    $userPasswordVerified = false;
+                    logEvents(
+                        'failed_auth',
+                        'user_password_not_correct',
+                        "",
+                        "",
+                        stripslashes($username)
+                    );
+                }
             }
         }
 
