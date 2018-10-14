@@ -613,8 +613,8 @@ function identifyUser(
                         // Should we restrain the search in specified user groups
                         $GroupRestrictionEnabled = false;
                         if (isset($SETTINGS['ldap_usergroup']) === true && empty($SETTINGS['ldap_usergroup']) === false) {
-                            // New way to check User's group membership
-                            $filter_group = "memberUid=".$username;
+                            // New way to check User's group membership & also allow RFC2307bis group membership
+                            $filter_group = "(|(memberUid=".$username.")(member=".$user_dn."))";
                             $result_group = ldap_search(
                                 $ldapconn,
                                 $SETTINGS['ldap_search_base'],
