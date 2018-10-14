@@ -2072,7 +2072,9 @@ switch ($post_type) {
                     );
                     if (isset($dataReceived[0]['ldap_usergroup'])) {
                         $GroupRestrictionEnabled = false;
-                        $filter_group = "memberUid=".$dataReceived[0]['username'];
+
+                        $user_dn = ldap_get_entries($ldapconn, $result)[0]['dn'];
+                        $filter_group = "(|(memberUid=".$dataReceived[0]['username'].")(member=".$user_dn."))";
                         $result_group = ldap_search(
                             $ldapconn,
                             $dataReceived[0]['ldap_search_base'],
