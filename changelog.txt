@@ -7,7 +7,7 @@
 
 23/
  #2419 Cannot show password by using item menu bars entry
- #2418 Generatinga  new password for a user fails with error
+ #2418 Generating a new password for a user fails with error
  #2403 Cannot Login using LDAP user
 
 22/

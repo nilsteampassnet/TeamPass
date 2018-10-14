@@ -460,8 +460,12 @@ function identifyUser(
     } else {
         $passwordClear = $dataReceived['pw'];
         $username = $dataReceived['login'];
-        
+    }
+
+    if (isset($dataReceived['login_sanitized']) === true && empty($dataReceived['login_sanitized']) === false) {
         $usernameSanitized = $antiXss->xss_clean(htmlspecialchars_decode($dataReceived['login_sanitized']));
+    } else {
+        $usernameSanitized = '';
     }
 
     // User's 2FA method

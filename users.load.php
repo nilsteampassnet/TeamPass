@@ -389,9 +389,8 @@ $(function() {
                     $("#change_user_pw_error").html("<?php echo $LANG['error_must_enter_all_fields']; ?>").show(1).delay(1000).fadeOut(1000);
                 } else if ($("#change_user_pw_newpw").val() === $("#change_user_pw_newpw_confirm").val()) {
                 // check if egual
-                    //var data = "{\"new_pw\":\""+sanitizeString($("#change_user_pw_newpw").val())+"\" , \"user_id\":\""+$("#change_user_pw_id").val()+"\" , \"key\":\"<?php echo $_SESSION['key']; ?>\"}";
                     var data = {
-                        new_pw  : $("#new_pw").val(),
+                        new_pw  : $("#change_user_pw_newpw").val(),
                         user_id : $("#change_user_pw_id").val(),
                     };
                     $.post(
@@ -399,7 +398,7 @@ $(function() {
                         {
                             type                : "change_pw",
                             change_pw_origine   : "admin_change",
-                            data                : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
+                            data                : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
                             key                 : "<?php echo $_SESSION['key']; ?>",
                         },
                         function(data) {
@@ -409,7 +408,7 @@ $(function() {
                                 $("#change_user_pw").dialog("close");
                             } else if (data[0].error == "key_not_conform") {
                                 $("#change_user_pw_error").html("PROTECTION KEY NOT CONFORM!! Try to relog.");
-                            } else if (data[0].error == "pwd_hash_not_correct") {
+                            } else if (data[0].error == "pwd_hash_not_correct" || data[0].error == "not_admin_or_manager") {
                                 $("#change_user_pw_error").addClass("ui-state-error ui-corner-all").show().html("<span><?php echo $LANG['error_not_allowed_to']; ?></span>");
                             } else {
                                 $("#change_user_pw_error").html("Something occurs ... no data to work with!");
