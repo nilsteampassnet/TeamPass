@@ -162,119 +162,84 @@ if (DB::count() > 0) {
 }
 
 foreach ($rows as $record) {
-    // Get list of allowed functions
-    $listAlloFcts = '';
-    if ($record['admin'] != 1) {
-        if (count($rolesList) > 0) {
-            foreach ($rolesList as $fonction) {
-                if (in_array($fonction['id'], explode(';', $record['fonction_id']))) {
-                    $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($fonction['title'], FILTER_SANITIZE_STRING))).'<br />';
-                }
-            }
-            $listAlloFcts_position = true;
-        }
-        if (empty($listAlloFcts)) {
-            $listAlloFcts = '<i class="fa fa-exclamation mi-red tip" title="'.@htmlspecialchars($LANG['user_alarm_no_function'], ENT_QUOTES, 'UTF-8').'"></i>';
-            $listAlloFcts_position = false;
-        }
-    }
-    // Get list of allowed groups
-    $listAlloGrps = '';
-    if ($record['admin'] != 1) {
-        if (count($treeDesc) > 0) {
-            foreach ($treeDesc as $t) {
-                if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
-                    $ident = '';
-                    if (in_array($t->id, explode(';', $record['groupes_visibles']))) {
-                        $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
-                    }
-                    $prev_level = $t->nlevel;
-                }
-            }
-        }
-    }
-    // Get list of forbidden groups
-    $listForbGrps = '';
-    if ($record['admin'] != 1) {
-        if (count($treeDesc) > 0) {
-            foreach ($treeDesc as $t) {
-                $ident = '';
-                if (in_array($t->id, explode(';', $record['groupes_interdits']))) {
-                    $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
-                }
-                $prev_level = $t->nlevel;
-            }
-        }
-    }
-
     //Show user only if can be administrated by the adapted Roles manager
-    if ($_SESSION['is_admin'] ||
+    if ((int) $_SESSION['is_admin'] === 1 ||
         ($record['isAdministratedByRole'] > 0 &&
         in_array($record['isAdministratedByRole'], $_SESSION['user_roles'])) ||
-        ($_SESSION['user_can_manage_all_users'] && $record['admin'] != 1)
+        ((int) $_SESSION['user_can_manage_all_users'] === 1 && (int) $record['admin'] !== 1 && (int) $record['id'] !== (int) $_SESSION['user_id'])
     ) {
         $showUserFolders = true;
     } else {
         $showUserFolders = false;
     }
 
-    // Build list of available users
-    if ($record['admin'] != 1 && $record['disabled'] != 1) {
-        $listAvailableUsers .= '<option value="'.$record['id'].'">'.$record['login'].'</option>';
-    }
-
     // Display Grid
     if ($showUserFolders === true) {
-        $sOutput .= '[';
-
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\"></span>';
-
-        //col1
-        /*if ($record['disabled'] == 1) {
-            $sOutput .= '"<span class=\"fa fa-user-times infotip text-warning\" title=\"'.$LANG['account_is_locked'].'\"></span>&nbsp;';
-        } else {
-            $sOutput .= '"';
-        }
-        if ($record['id'] != API_USER_ID && $record['id'] != OTV_USER_ID) {
-            $sOutput .= '<span class=\"fa fa-external-link tip\" style=\"cursor:pointer;\" onclick=\"user_edit(\''.$record['id'].'\')\" title=\"'.$LANG['edit'].' ['.$record['id'].']'.'\"></span>';
-        }*/
-
-        // pwd change
-        /*$sOutput .= '&nbsp;<span class=\"fa fa-key tip\" style=\"cursor:pointer;\" onclick=\"mdp_user(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['change_password'], '"\\/').'\"></span>';
-
-        // user logs
-        $sOutput .= '&nbsp;<span class=\"fa fa-newspaper-o tip\" onclick=\"user_action_log_items(\''.$record['id'].'\')\" style=\"cursor:pointer;\" title=\"'.addcslashes($LANG['see_logs'], '"\\/').'\"></span>';
-
-        // user flashcode sending
-        if (empty($record['ga'])) {
-            $sOutput .= '&nbsp;<span class=\"fa fa-qrcode mi-yellow tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['user_ga_code'], '"\\/').'\"></span>';
-        } else {
-            $sOutput .= '&nbsp;<span class=\"fa fa-qrcode mi-green tip\" style=\"cursor:pointer;\" onclick=\"user_action_ga_code(\''.$record['id'].'\')\" title=\"'.addcslashes($LANG['user_ga_code'], '"\\/').'\"></span>';
+        // Build list of available users
+        if ((int) $record['admin'] !== 1 && (int) $record['disabled'] !== 1) {
+            $listAvailableUsers .= '<option value="'.$record['id'].'">'.$record['login'].'</option>';
         }
 
-        if ($record['admin'] !== '1') {
-            $sOutput .= '&nbsp;<span class=\"fa fa-sitemap tip\" style=\"cursor:pointer;\" onclick=\"user_folders_rights(\''.$record['id'].'\')\" title=\"'.$LANG['user_folders_rights'].' ['.$record['id'].']'.'\"></span>';
-        }*/
-
-        $sOutput .= '",';
+        // Get list of allowed functions
+        $listAlloFcts = '';
+        if ((int) $record['admin'] !== 1) {
+            if (count($rolesList) > 0) {
+                foreach ($rolesList as $fonction) {
+                    if (in_array($fonction['id'], explode(';', $record['fonction_id']))) {
+                        $listAlloFcts .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($fonction['title'], FILTER_SANITIZE_STRING))).'<br />';
+                    }
+                }
+                $listAlloFcts_position = true;
+            }
+            if (empty($listAlloFcts)) {
+                $listAlloFcts = '<i class="fa fa-exclamation mi-red tip" title="'.@htmlspecialchars($LANG['user_alarm_no_function'], ENT_QUOTES, 'UTF-8').'"></i>';
+                $listAlloFcts_position = false;
+            }
+        }
+        // Get list of allowed groups
+        $listAlloGrps = '';
+        if ((int) $record['admin'] !== 1) {
+            if (count($treeDesc) > 0) {
+                foreach ($treeDesc as $t) {
+                    if (@!in_array($t->id, $_SESSION['groupes_interdits']) && in_array($t->id, $_SESSION['groupes_visibles'])) {
+                        $ident = '';
+                        if (in_array($t->id, explode(';', $record['groupes_visibles']))) {
+                            $listAlloGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
+                        }
+                        $prev_level = $t->nlevel;
+                    }
+                }
+            }
+        }
+        // Get list of forbidden groups
+        $listForbGrps = '';
+        if ((int) $record['admin'] !== 1) {
+            if (count($treeDesc) > 0) {
+                foreach ($treeDesc as $t) {
+                    $ident = '';
+                    if (in_array($t->id, explode(';', $record['groupes_interdits']))) {
+                        $listForbGrps .= '<i class="fa fa-angle-right"></i>&nbsp;'.addslashes(mysqli_real_escape_string($link, filter_var($ident.$t->title, FILTER_SANITIZE_STRING))).'<br />';
+                    }
+                    $prev_level = $t->nlevel;
+                }
+            }
+        }
+        $sOutput .= '["<span data-id=\"'.$record['id'].'\"></span>", ';
 
         //col2
-
         $sOutput .= '"'.
-            (((int) $record['disabled'] === 1) ? '<i class=\"fas fa-user-times infotip text-warning mr-2\" title=\"'.$LANG['account_is_locked'].'\"></i>'
+            (((int) $record['disabled'] === 1) ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.langHdl('account_is_locked').'\"></i>'
             : '').
-            '<span data-id=\"'.$record['id'].'\" data-field=\"login\" class=\"edit-text pointer\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>" , ';
+            '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>" , ';
 
         //col3
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" class=\"edit-text pointer\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['name'])).'</span>"';
-        $sOutput .= ',';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"name\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['name'])).'</span>", ';
 
         //col4
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" class=\"edit-text pointer\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'</span>"';
-        $sOutput .= ',';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"lastname\" data-html=\"true\">'.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'</span>", ';
 
         //col5 - MANAGED BY
-        $txt = '<span id=\"managedby-'.$record['id'].'\" data-id=\"'.$record['id'].'\" data-field=\"isAdministratedByRole\" class=\"edit-select pointer\" data-html=\"true\">';
+        $txt = '<span id=\"managedby-'.$record['id'].'\" data-id=\"'.$record['id'].'\" data-field=\"isAdministratedByRole\" data-html=\"true\">';
         $rows2 = DB::query(
             'SELECT title
             FROM '.prefixTable('roles_title')."
@@ -288,72 +253,41 @@ foreach ($rows as $record) {
         } else {
             $txt .= langHdl('god');
         }
-        $sOutput .= '"'.$txt.'</span>"';
-        $sOutput .= ',';
+        $sOutput .= '"'.$txt.'</span>", ';
 
         //col6
-        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"fonction_id\" class=\"edit-select pointer\" data-html=\"true\">'.addslashes($listAlloFcts).'</span>"';
-        $sOutput .= ',';
+        $sOutput .= '"<span data-id=\"'.$record['id'].'\" data-field=\"fonction_id\" data-html=\"true\">'.addslashes($listAlloFcts).'</span>", ';
 
-        //col9
-        if ($_SESSION['user_can_manage_all_users'] === '1' || $_SESSION['is_admin'] === '1') {
-            if ($record['admin'] === '1') {
-                $sOutput .= '"<i class=\"fa fa-toggle-on text-info\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-0\"></i>"';
-            } else {
-                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-admin-1\"></i>"';
-            }
+        // Get the user maximum privilege
+        if ((int) $record['admin'] === 1) {
+            $sOutput .= '"<i class=\"fa fa-user-cog infotip\" title=\"'.langHdl('god').'\"></i>", ';
+        } elseif ((int) $record['can_manage_all_users'] === 1) {
+            $sOutput .= '"<i class=\"fa fa-user-graduate infotip\" title=\"'.langHdl('human_resources').'\"></i>", ';
+        } elseif ((int) $record['gestionnaire'] === 1) {
+            $sOutput .= '"<i class=\"fa fa-user-tie infotip\" title=\"'.langHdl('gestionnaire').'\"></i>", ';
+        } elseif ((int) $record['read_only'] === 1) {
+            $sOutput .= '"<i class=\"fa fa-book-reader infotip\" title=\"'.langHdl('read_only_account').'\"></i>", ';
         } else {
-            $sOutput .= '""';
+            $sOutput .= '"<i class=\"fa fa-user infotip\" title=\"'.langHdl('user').'\"></i>", ';
         }
-        $sOutput .= ',';
-
-        //col10
-        if ($record['gestionnaire'] === '1') {
-            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\" style=\"cursor:pointer;\"  tp=\"'.$record['id'].'-gestionnaire-0\"></i>"';
-        } else {
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-gestionnaire-1\"></i>"';
-        }
-        $sOutput .= ',';
-
-        //col11
-        if ($record['read_only'] === '1') {
-            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-0\"></i>"';
-        } else {
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-read_only-1\"></i>"';
-        }
-        $sOutput .= ',';
-
-        //col11
-        if ($_SESSION['is_admin'] === '1' || $_SESSION['user_can_manage_all_users'] == 1) {
-            if ($record['can_manage_all_users'] === '1') {
-                $sOutput .= '"<i class=\"fa fa-toggle-on text-info\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_manage_all_users-0\"></i>"';
-            } else {
-                $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_manage_all_users-1\"></i>"';
-            }
-        } else {
-            $sOutput .= '""';
-        }
-        $sOutput .= ',';
-
         //col12
-        if ($record['can_create_root_folder'] === '1') {
-            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-0\"></i>"';
+        if ((int) $record['can_create_root_folder'] === 1) {
+            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\"></i>", ';
         } else {
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-can_create_root_folder-1\"></i>"';
+            $sOutput .= '"<i class=\"fa fa-toggle-off\"></i>", ';
         }
-        $sOutput .= ',';
 
         //col13
-        if ($record['personal_folder'] === '1') {
-            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-0\"></i>"';
+        if ((int) $record['personal_folder'] === 1) {
+            $sOutput .= '"<i class=\"fa fa-toggle-on text-info\"></i>"';
         } else {
-            $sOutput .= '"<i class=\"fa fa-toggle-off\" style=\"cursor:pointer;\" tp=\"'.$record['id'].'-personal_folder-1\"></i>"';
+            $sOutput .= '"<i class=\"fa fa-toggle-off\"></i>"';
         }
 
         //Finish the line
         $sOutput .= '],';
 
-        ++$iFilteredTotal;
+        //++$iFilteredTotal;
         ++$iTotal;
     }
 }

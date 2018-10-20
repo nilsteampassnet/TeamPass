@@ -38,7 +38,7 @@ if (file_exists('../includes/config/tp.config.php')) {
     throw new Exception("Error file '/includes/config/tp.config.php' not exists", 1);
 }
 
-/* do checks */
+// DO CHECKS
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
@@ -47,14 +47,14 @@ if (isset($post_type) && ($post_type === 'ga_generate_qr'
 ) {
     // continue
     mainQuery();
-} elseif (isset($_SESSION['user_id'])
+} elseif (isset($_SESSION['user_id']) === true
     && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
 ) {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
     exit();
 } elseif ((isset($_SESSION['user_id']) === true
-    && isset($_SESSION['key']))
+    && isset($_SESSION['key'])) === true
     || (isset($post_type) === true && $post_type === 'change_user_language'
     && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
@@ -74,7 +74,7 @@ function mainQuery()
     header('Content-type: text/html; charset=utf-8');
     header('Cache-Control: no-cache, must-revalidate');
     error_reporting(E_ERROR);
-    
+
     // Load config
     if (file_exists('../includes/config/tp.config.php')) {
         include '../includes/config/tp.config.php';
@@ -96,7 +96,6 @@ function mainQuery()
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
     include_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 
-
     // Includes
     include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -108,12 +107,18 @@ function mainQuery()
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
+
+    // Prepare post variables
+    $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
+    $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+    $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+
     // Manage type of action asked
-    switch (filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
+    switch ($post_type) {
         case 'change_pw':
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
-                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                $post_data,
                 'decode'
             );
 
@@ -344,46 +349,71 @@ function mainQuery()
          * This will generate the QR Google Authenticator
          */
         case 'ga_generate_qr':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_demand_origin = filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_STRING);
+            $post_send_mail = filter_var($dataReceived['send_mail'], FILTER_SANITIZE_STRING);
+            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+            $post_pwd = filter_var($dataReceived['pwd'], FILTER_SANITIZE_STRING);
+
             // is this allowed by setting
-            if ((isset($SETTINGS['ga_reset_by_user']) === false || $SETTINGS['ga_reset_by_user'] !== '1')
-                && (null === filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING)
-                || filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING) !== 'users_management_list')
+            if ((isset($SETTINGS['ga_reset_by_user']) === false || (int) $SETTINGS['ga_reset_by_user'] !== 1)
+                && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
             ) {
                 // User cannot ask for a new code
-                echo '[{"error" : "not_allowed"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
             $ldap_user_never_auth = false;
 
             // Check if user exists
-            if (null === filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
-                || empty(filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)) === true
-            ) {
-                // decrypt and retreive data in JSON format
-                $dataReceived = prepareExchangedData(
-                    filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
-                    'decode'
-                );
-                // Prepare variables
-                $login = htmlspecialchars_decode($dataReceived['login']);
-                $pwd = htmlspecialchars_decode($dataReceived['pwd']);
-
+            if (null === $post_id || empty($post_id) === true) {
                 // Get data about user
                 $data = DB::queryfirstrow(
                     'SELECT id, email, pw
                     FROM '.prefixTable('users').'
                     WHERE login = %s',
-                    $login
+                    $post_login
                 );
             } else {
                 $data = DB::queryfirstrow(
                     'SELECT id, login, email, pw
                     FROM '.prefixTable('users').'
                     WHERE id = %i',
-                    filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                    $post_id
                 );
-                $login = $data['login'];
-                $pwd = $data['pw'];
+                $post_login = $data['login'];
+                $post_pwd = $data['pw'];
             }
             // Get number of returned users
             $counter = DB::count();
@@ -394,8 +424,10 @@ function mainQuery()
             $pwdlib = new PasswordLib\PasswordLib();
 
             // If LDAP enabled and counter = 0 then perhaps new user to add
-            if (isset($SETTINGS['ldap_mode']) === true && $SETTINGS['ldap_mode'] === '1' && $counter === 0) {
-                $ldap_info_user = json_decode(connectLDAP($login, $pwd, $SETTINGS));
+            if (isset($SETTINGS['ldap_mode']) === true && (int) $SETTINGS['ldap_mode'] === 1 && $counter === 0) {
+                $ldap_info_user = json_decode(
+                    connectLDAP($login, $pwd, $SETTINGS)
+                );
                 if ($ldap_info_user->{'user_found'} === true) {
                     $data['email'] = $ldap_info_user->{'email'};
                     $counter = 1;
@@ -407,18 +439,36 @@ function mainQuery()
             if ($counter === 0) {
                 // Not a registered user !
                 logEvents('failed_auth', 'user_not_exists', '', stripslashes($login), stripslashes($login));
-                echo '[{"error" : "no_user"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('no_user'),
+                    ),
+                    'encode'
+                );
             } elseif (isset($pwd) === true
                 && isset($data['pw']) === true
                 && $pwdlib->verifyPasswordHash($pwd, $data['pw']) === false
-                && filter_input(INPUT_POST, 'demand_origin', FILTER_SANITIZE_STRING) !== 'users_management_list'
+                && $post_demand_origin !== 'users_management_list'
             ) {
                 // checked the given password
                 logEvents('failed_auth', 'user_password_not_correct', '', stripslashes($login), stripslashes($login));
-                echo '[{"error" : "no_user"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('no_user'),
+                    ),
+                    'encode'
+                );
             } else {
-                if (empty($data['email'])) {
-                    echo '[{"error" : "no_email"}]';
+                if (empty($data['email']) === true) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('no_email'),
+                        ),
+                        'encode'
+                    );
                 } else {
                     // generate new GA user code
                     include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Authentication/TwoFactorAuth/TwoFactorAuth.php';
@@ -460,6 +510,16 @@ function mainQuery()
                                 'isAdministratedByRole' => (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false) ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0,
                                 'ga' => $gaSecretKey,
                                 'ga_temporary_code' => $gaTemporaryCode,
+                                'avatar_thumb' => '',
+                                'avatar' => '',
+                                'psk' => '',
+                                'favourites' => '',
+                                'session_end' => '',
+                                'last_pw' => '',
+                                'latest_items' => '',
+                                'last_pw_change' => '',
+                                'key_tempo' => '',
+                                'derniers' => '',
                             )
                         );
                         $newUserId = DB::insertId();
@@ -495,7 +555,19 @@ function mainQuery()
                     }
 
                     // send back
-                    echo '[{ "error" : "0" , "email" : "'.$data['email'].'" , "msg" : "'.str_replace('#email#', '<b>'.obfuscate_email($data['email']).'</b>', addslashes($LANG['admin_email_result_ok'])).'"}]';
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                            'email' => $data['email'],
+                            'email_result' => str_replace(
+                                '#email#',
+                                '<b>'.obfuscate_email($data['email']).'</b>',
+                                addslashes($LANG['admin_email_result_ok'])
+                            ),
+                        ),
+                        'encode'
+                    );
                 }
             }
             break;
@@ -1108,7 +1180,9 @@ function mainQuery()
                 $generator->setRandomGenerator(new PasswordGenerator\RandomGenerator\Php7RandomGenerator());
             }
 
-            $generator->setLength((int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT));
+            // Manage size
+            $size = (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT);
+            $generator->setLength(($size <= 0) ? 10 : $size);
 
             if (null !== filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'secure_pwd', FILTER_SANITIZE_STRING) === 'true'

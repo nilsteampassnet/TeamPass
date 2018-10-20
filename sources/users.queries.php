@@ -84,6 +84,7 @@ $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
 $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+$password_do_not_change = 'do_not_change';
 
 if (null !== $post_type) {
     switch ($post_type) {
@@ -116,28 +117,70 @@ if (null !== $post_type) {
             $dataReceived = prepareExchangedData($post_data, 'decode');
 
             // Prepare variables
-            $login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
-            $email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
-            $lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
-            $name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
-            $pw = filter_var(htmlspecialchars_decode($dataReceived['pw']), FILTER_SANITIZE_STRING);
+            $login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+            $email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
+            $password = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
+            $lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
+            $name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
+            $is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
+            $is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
+            $is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
+            $is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT) || 0;
+            $has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
+            $new_folder_role_domain = filter_var($dataReceived['new_folder_role_domain'], FILTER_SANITIZE_NUMBER_INT);
+            $domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_STRING);
+            $is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_STRING);
+            $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
+            $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
+            $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
 
             // Empty user
-            if (mysqli_escape_string($link, htmlspecialchars_decode($login)) == '') {
-                echo '[ { "error" : "'.langHdl('error_empty_data').'" } ]';
+            if (empty($login) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_empty_data'),
+                    ),
+                    'encode'
+                );
                 break;
             }
             // Check if user already exists
             $data = DB::query(
-                'SELECT id, fonction_id, groupes_interdits, groupes_visibles FROM '.prefixTable('users').'
+                'SELECT id, fonction_id, groupes_interdits, groupes_visibles
+                FROM '.prefixTable('users').'
                 WHERE login = %s',
-                mysqli_escape_string($link, stripslashes($login))
+                $login
             );
 
-            if (DB::count() == 0) {
+            if (DB::count() === 0) {
                 // check if admin role is set. If yes then check if originator is allowed
                 if ($dataReceived['admin'] === 'true' && $_SESSION['user_admin'] !== '1') {
-                    echo '[ { "error" : "'.langHdl('error_not_allowed_to').'" } ]';
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_empty_data'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                // load passwordLib library
+                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                $pwdlib->register();
+                $pwdlib = new PasswordLib\PasswordLib();
+
+                // Prepare variables
+                $hashedPassword = $pwdlib->createPasswordHash($password);
+                if ($pwdlib->verifyPasswordHash($password, $hashedPassword) === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('pwd_hash_not_correct'),
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 
@@ -148,23 +191,24 @@ if (null !== $post_type) {
                         'login' => $login,
                         'name' => $name,
                         'lastname' => $lastname,
-                        'pw' => bCrypt(stringUtf8Decode($pw), COST),
+                        'pw' => $hashedPassword,
                         'email' => $email,
-                        'admin' => $dataReceived['admin'] == 'true' ? '1' : '0',
-                        'gestionnaire' => $dataReceived['manager'] == 'true' ? '1' : '0',
-                        'read_only' => $dataReceived['read_only'] == 'true' ? '1' : '0',
-                        'personal_folder' => $dataReceived['personal_folder'] == 'true' ? '1' : '0',
+                        'admin' => empty($is_admin) === true ? 0 : $is_admin,
+                        'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
+                        'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
+                        'read_only' => empty($is_read_only) === true ? 0 : $is_read_only,
+                        'personal_folder' => empty($has_personal_folder) === true ? 0 : $has_personal_folder,
                         'user_language' => $SETTINGS['default_language'],
-                        'fonction_id' => $dataReceived['groups'],
-                        'groupes_interdits' => $dataReceived['forbidden_flds'],
-                        'groupes_visibles' => $dataReceived['allowed_flds'],
-                        'isAdministratedByRole' => $dataReceived['isAdministratedByRole'] === 'null' ? '0' : $dataReceived['isAdministratedByRole'],
+                        'fonction_id' => implode(';', $groups),
+                        'groupes_interdits' => implode(';', $forbidden_flds),
+                        'groupes_visibles' => implode(';', $allowed_flds),
+                        'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
                         )
                 );
                 $new_user_id = DB::insertId();
                 // Create personnal folder
-                if ($dataReceived['personal_folder'] === 'true') {
+                if ($has_personal_folder === 1) {
                     DB::insert(
                         prefixTable('nested_tree'),
                         array(
@@ -178,13 +222,13 @@ if (null !== $post_type) {
                     $tree->rebuild();
                 }
                 // Create folder and role for domain
-                if ($dataReceived['new_folder_role_domain'] == 'true') {
+                if ($new_folder_role_domain === 1) {
                     // create folder
                     DB::insert(
                         prefixTable('nested_tree'),
                         array(
                             'parent_id' => 0,
-                            'title' => mysqli_escape_string($link, stripslashes($dataReceived['domain'])),
+                            'title' => $domain,
                             'personal_folder' => 0,
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
@@ -205,7 +249,7 @@ if (null !== $post_type) {
                     DB::insert(
                         prefixTable('roles_title'),
                         array(
-                            'title' => mysqli_escape_string($link, stripslashes(($dataReceived['domain']))),
+                            'title' => $domain,
                             )
                     );
                     $new_role_id = DB::insertId();
@@ -248,7 +292,7 @@ if (null !== $post_type) {
                 // Send email to new user
                 sendEmail(
                     langHdl('email_subject_new_user'),
-                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(' '.addslashes($login), addslashes($pw), $SETTINGS['email_server_url']), langHdl('email_new_user_mail')),
+                    str_replace(array('#tp_login#', '#tp_pw#', '#tp_link#'), array(' '.addslashes($login), addslashes($password), $SETTINGS['email_server_url']), langHdl('email_new_user_mail')),
                     $dataReceived['email'],
                     $SETTINGS
                 );
@@ -261,9 +305,21 @@ if (null !== $post_type) {
                     $new_user_id
                 );
 
-                echo '[ { "error" : "no" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => 'no',
+                        'message' => '',
+                    ),
+                    'encode'
+                );
             } else {
-                echo '[ { "error" : "'.langHdl('error_user_exists').'" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_user_exists'),
+                    ),
+                    'encode'
+                );
             }
             break;
 
@@ -272,13 +328,31 @@ if (null !== $post_type) {
          */
         case 'delete_user':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo '[ { "error" : "key_not_conform" } ]';
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            // Prepare post variables
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
@@ -292,63 +366,63 @@ if (null !== $post_type) {
                 || (in_array($data_user['isAdministratedByRole'], $_SESSION['user_roles']))
                 || ($_SESSION['user_can_manage_all_users'] === '1' && $data_user['admin'] !== '1')
             ) {
-                if (filter_input(INPUT_POST, 'action', FILTER_SANITIZE_STRING) == 'delete') {
-                    // delete user in database
-                    DB::delete(
-                        prefixTable('users'),
-                        'id = %i',
-                        $post_id
-                    );
-                    // delete personal folder and subfolders
-                    $data = DB::queryfirstrow(
-                        'SELECT id FROM '.prefixTable('nested_tree').'
-                        WHERE title = %s AND personal_folder = %i',
-                        $post_id,
-                        '1'
-                    );
-                    // Get through each subfolder
-                    if (!empty($data['id'])) {
-                        $folders = $tree->getDescendants($data['id'], true);
-                        foreach ($folders as $folder) {
-                            // delete folder
-                            DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
-                            // delete items & logs
-                            $items = DB::query(
-                                'SELECT id FROM '.prefixTable('items').'
-                                WHERE id_tree=%i AND perso = %i',
-                                $folder->id,
-                                '1'
-                            );
-                            foreach ($items as $item) {
-                                // Delete item
-                                DB::delete(prefixTable('items'), 'id = %i', $item['id']);
-                                // log
-                                DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
-                            }
+                // delete user in database
+                DB::delete(
+                    prefixTable('users'),
+                    'id = %i',
+                    $post_id
+                );
+                // delete personal folder and subfolders
+                $data = DB::queryfirstrow(
+                    'SELECT id FROM '.prefixTable('nested_tree').'
+                    WHERE title = %s AND personal_folder = %i',
+                    $post_id,
+                    '1'
+                );
+                // Get through each subfolder
+                if (!empty($data['id'])) {
+                    $folders = $tree->getDescendants($data['id'], true);
+                    foreach ($folders as $folder) {
+                        // delete folder
+                        DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
+                        // delete items & logs
+                        $items = DB::query(
+                            'SELECT id FROM '.prefixTable('items').'
+                            WHERE id_tree=%i AND perso = %i',
+                            $folder->id,
+                            '1'
+                        );
+                        foreach ($items as $item) {
+                            // Delete item
+                            DB::delete(prefixTable('items'), 'id = %i', $item['id']);
+                            // log
+                            DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
                         }
-                        // rebuild tree
-                        $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-                        $tree->rebuild();
                     }
-                    // update LOG
-                    logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
-                } else {
-                    // lock user in database
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'disabled' => 1,
-                            'key_tempo' => '',
-                            ),
-                        'id=%i',
-                        $post_id
-                    );
-                    // update LOG
-                    logEvents('user_mngt', 'at_user_locked', $_SESSION['user_id'], $_SESSION['login'], $post_id);
+                    // rebuild tree
+                    $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                    $tree->rebuild();
                 }
-                echo '[ { "error" : "no" } ]';
+                // update LOG
+                logEvents('user_mngt', 'at_user_deleted', $_SESSION['user_id'], $_SESSION['login'], $post_id);
+
+                //Send back
+                echo prepareExchangedData(
+                    array(
+                        'error' => 'no',
+                        'message' => '',
+                    ),
+                    'encode'
+                );
             } else {
-                echo '[ { "error" : "'.langHdl('error_not_allowed_to').'" } ]';
+                //Send back
+                echo prepareExchangedData(
+                    array(
+                        'error' => 'no',
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
             }
             break;
 
@@ -1040,7 +1114,7 @@ if (null !== $post_type) {
                             $functionsList,
                             array(
                                 'title' => $record['title'],
-                                'value' => $record['id'],
+                                'id' => $record['id'],
                                 'selected' => $selected,
                             )
                         );
@@ -1060,7 +1134,7 @@ if (null !== $post_type) {
                     $managedBy,
                     array(
                         'title' => langHdl('administrators_only'),
-                        'value' => 0,
+                        'id' => 0,
                     )
                 );
                 foreach ($rolesList as $fonction) {
@@ -1083,7 +1157,7 @@ if (null !== $post_type) {
                             $managedBy,
                             array(
                                 'title' => langHdl('managers_of').' '.$fonction['title'],
-                                'value' => $fonction['id'],
+                                'id' => $fonction['id'],
                                 'selected' => $selected,
                             )
                         );
@@ -1168,7 +1242,7 @@ if (null !== $post_type) {
                     $arrData['info'] = langHdl('user_info_active').'<br /><input type="checkbox" value="lock" class="chk">&nbsp;'.langHdl('user_info_lock_question');
                 }
 
-                $arrData['error'] = 'no';
+                $arrData['error'] = false;
                 $arrData['login'] = $rowUser['login'];
                 $arrData['name'] = htmlspecialchars_decode($rowUser['name'], ENT_QUOTES);
                 $arrData['lastname'] = htmlspecialchars_decode($rowUser['lastname'], ENT_QUOTES);
@@ -1176,24 +1250,33 @@ if (null !== $post_type) {
                 $arrData['function'] = $functionsList;
                 $arrData['managedby'] = $managedBy;
                 $arrData['foldersForbid'] = $forbiddenFolders;
-                $arrData['foldersAllow'] = $allowedFolders; //print_r($arrMngBy);
-                $arrData['share_function'] = json_encode($arrFunction, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-                $arrData['share_managedby'] = json_encode($arrMngBy, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-                $arrData['share_forbidden'] = json_encode($arrFldForbidden, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-                $arrData['share_allowed'] = json_encode($arrFldAllowed, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-                $arrData['gestionnaire'] = $rowUser['gestionnaire'];
-                $arrData['read_only'] = $rowUser['read_only'];
-                $arrData['can_create_root_folder'] = $rowUser['can_create_root_folder'];
-                $arrData['personal_folder'] = $rowUser['personal_folder'];
-                $arrData['can_manage_all_users'] = $rowUser['can_manage_all_users'];
-                $arrData['admin'] = $rowUser['admin'];
+                $arrData['foldersAllow'] = $allowedFolders;
+                $arrData['share_function'] = $arrFunction;
+                $arrData['share_managedby'] = $arrMngBy;
+                $arrData['share_forbidden'] = $arrFldForbidden;
+                $arrData['share_allowed'] = $arrFldAllowed;
+                $arrData['disabled'] = (int) $rowUser['disabled'];
+                $arrData['gestionnaire'] = (int) $rowUser['gestionnaire'];
+                $arrData['read_only'] = (int) $rowUser['read_only'];
+                $arrData['can_create_root_folder'] = (int) $rowUser['can_create_root_folder'];
+                $arrData['personal_folder'] = (int) $rowUser['personal_folder'];
+                $arrData['can_manage_all_users'] = (int) $rowUser['can_manage_all_users'];
+                $arrData['admin'] = (int) $rowUser['admin'];
+                $arrData['password'] = $password_do_not_change;
 
-                $return_values = json_encode($arrData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                echo prepareExchangedData(
+                    $arrData,
+                    'encode'
+                );
             } else {
-                $arrData['error'] = 'not_allowed';
-                $return_values = json_encode($arrData, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
             }
-            echo $return_values;
 
             break;
 
@@ -1225,13 +1308,59 @@ if (null !== $post_type) {
             // decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData($post_data, 'decode');
 
+            // Prepare variables
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_STRING);
+            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_STRING);
+            $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
+            $post_password = filter_var($dataReceived['pw'], FILTER_SANITIZE_STRING);
+            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_STRING);
+            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_STRING);
+            $post_is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT);
+            $post_has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
+            $post_new_folder_role_domain = filter_var($dataReceived['new_folder_role_domain'], FILTER_SANITIZE_NUMBER_INT);
+            $post_domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_STRING);
+            $post_is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_STRING);
+            $post_groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
+            $post_allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
+            $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
+            $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_disabled = filter_var($dataReceived['form-user-disabled'], FILTER_SANITIZE_NUMBER_INT);
+
             // Init post variables
-            $account_status_action = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-            $post_login = filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_STRING);
-            $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_STRING);
-            $post_lastname = filter_var(htmlspecialchars_decode($dataReceived['lastname']), FILTER_SANITIZE_STRING);
-            $post_name = filter_var(htmlspecialchars_decode($dataReceived['name']), FILTER_SANITIZE_STRING);
+            $post_action_to_perform = filter_var(htmlspecialchars_decode($dataReceived['action_on_user']), FILTER_SANITIZE_STRING);
+
+            // Build array of update
+            $changeArray = array(
+                'login' => $post_login,
+                'name' => $post_name,
+                'lastname' => $post_lastname,
+                'email' => $post_email,
+                'disabled' => empty($post_user_disabled) === true ? 0 : $post_user_disabled,
+                'admin' => empty($post_is_admin) === true ? 0 : $post_is_admin,
+                'can_manage_all_users' => empty($post_is_hr) === true ? 0 : $post_is_hr,
+                'gestionnaire' => empty($post_is_manager) === true ? 0 : $post_is_manager,
+                'read_only' => empty($post_is_read_only) === true ? 0 : $post_is_read_only,
+                'personal_folder' => empty($post_has_personal_folder) === true ? 0 : $post_has_personal_folder,
+                'user_language' => $SETTINGS['default_language'],
+                'fonction_id' => implode(';', $post_groups),
+                'groupes_interdits' => implode(';', $post_forbidden_flds),
+                'groupes_visibles' => implode(';', $post_allowed_flds),
+                'isAdministratedByRole' => $post_is_administrated_by,
+                'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
+            );
+
+            if ($post_password !== $password_do_not_change) {
+                // load passwordLib library
+                $pwdlib = new SplClassLoader('PasswordLib', '../includes/libraries');
+                $pwdlib->register();
+                $pwdlib = new PasswordLib\PasswordLib();
+
+                $changeArray['pw'] = $pwdlib->createPasswordHash($post_password);
+                $changeArray['key_tempo'] = '';
+            }
 
             // Empty user
             if (empty($post_login) === true) {
@@ -1259,7 +1388,7 @@ if (null !== $post_type) {
             ) {
                 // delete account
                 // delete user in database
-                if ($account_status_action === 'delete') {
+                if ($post_action_to_perform === 'delete') {
                     DB::delete(
                         prefixTable('users'),
                         'id = %i',
@@ -1307,29 +1436,16 @@ if (null !== $post_type) {
                     );
 
                     // manage account status
-                    $accountDisabled = 0;
-                    if ($account_status_action == 'unlock') {
-                        $accountDisabled = 0;
-                        $logDisabledText = 'at_user_unlocked';
-                    } elseif ($account_status_action == 'lock') {
-                        $accountDisabled = 1;
+                    if ($post_user_disabled === 1) {
                         $logDisabledText = 'at_user_locked';
+                    } else {
+                        $logDisabledText = 'at_user_unlocked';
                     }
 
                     // update user
                     DB::update(
                         prefixTable('users'),
-                        array(
-                            'login' => $post_login,
-                            'name' => $post_name,
-                            'lastname' => $post_lastname,
-                            'email' => $post_email,
-                            'disabled' => $accountDisabled,
-                            'isAdministratedByRole' => $dataReceived['managedby'],
-                            'groupes_interdits' => empty($dataReceived['forbidFld']) ? '0' : rtrim($dataReceived['forbidFld'], ';'),
-                            'groupes_visibles' => empty($dataReceived['allowFld']) ? '0' : rtrim($dataReceived['allowFld'], ';'),
-                            'fonction_id' => empty($dataReceived['functions']) ? '0' : rtrim($dataReceived['functions'], ';'),
-                            ),
+                        $changeArray,
                         'id = %i',
                         $post_id
                     );
@@ -1346,14 +1462,26 @@ if (null !== $post_type) {
                         logEvents('user_mngt', 'at_user_email_changed:'.$oldData['email'], intval($_SESSION['user_id']), $_SESSION['login'], $post_id);
                     }
 
-                    if ($oldData['disabled'] != $accountDisabled) {
+                    if ((int) $oldData['disabled'] !== (int) $post_user_disabled) {
                         // update LOG
                         logEvents('user_mngt', $logDisabledText, $_SESSION['user_id'], $_SESSION['login'], $post_id);
                     }
                 }
-                echo '[ { "error" : "no" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                    ),
+                    'encode'
+                );
             } else {
-                echo '[ { "error" : "'.langHdl('error_not_allowed_to').'" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
             }
             break;
 

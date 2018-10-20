@@ -236,6 +236,7 @@ if (array_key_exists($pageSel, $mngPages) === true) {
     <link rel="stylesheet" href="includes/css/adminlte.css">
     <link rel="stylesheet" href="plugins/nprogress/nprogress.css" type="text/css" />
     <link rel="stylesheet" href="plugins/select2/select2.min.css" type="text/css" />
+    <link rel="stylesheet" href="plugins/select2/select2-bootstrap.min.css" type="text/css" />
     <!-- Theme style -->
     <link rel="stylesheet" href="includes/css/teampass.css">
     <!-- Google Font: Source Sans Pro -->
@@ -600,7 +601,7 @@ if (($session_validite_pw === null
                     @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']); ?>"></i>
                 <i class="fas fa-users mr-2 infotip text-info" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
                 <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
-                <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fas fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
+                <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fab fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
                 <i class="fas fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
             </div>
         </div>

@@ -466,35 +466,36 @@ function getGASynchronization()
         $("#ajax_loader_connexion").show();
         $("#connection_error").hide();
         $("#div_ga_url").hide();
-        data = '{"login":"'+sanitizeString($("#login").val())+'" ,'+
-                '"pw":"'+sanitizeString($("#pw").val())+'"}';
-        //send query
+        
+        data = {
+            'login'     : $("#login").val(),
+            'pw'        : $("#pw").val(),
+            'send_mail' : 1
+        }
         $.post(
-            "sources/main.queries.php",
+            'sources/main.queries.php',
             {
-                type : "ga_generate_qr",
-                data : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-                send_email : "1"
+                type    : 'ga_generate_qr',
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : "<?php echo $_SESSION['key']; ?>"
             },
             function(data) {
-                if (data[0].error === "0") {
-                    $("#div_ga_url").show();
-                } else if (data[0].error === "not_allowed") {
-                    $("#connection_error").html("<?php echo langHdl('2FA_new_code_by_user_not_allowed'); ?>").show();
-                    $("#div_ga_url").hide();
-                } else if (data[0].error === "no_user") {
-                    $("#connection_error").html("<?php echo langHdl('error_bad_credentials'); ?>").show();
-                    $("#div_ga_url").hide();
-                } else if (data[0].error === "no_email") {
-                    $("#connection_error").html("<?php echo langHdl('error_no_email'); ?>").show();
-                    $("#div_ga_url").hide();
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    alertify
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                        .dismissOthers();
                 } else {
-                    $("#connection_error").html("<?php echo langHdl('index_bas_pw'); ?>").show();
-                    $("#div_ga_url").hide();
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('share_sent_ok'); ?>', 1)
+                        .dismissOthers();
+                    //$("#div_ga_url").show(); -> TODO
                 }
-                $("#ajax_loader_connexion").hide();
-            },
-            "json"
+            }
         );
     } else {
         $("#connection_error").html("<?php echo langHdl('ga_enter_credentials'); ?>").show();
@@ -510,34 +511,35 @@ function send_user_new_temporary_ga_code() {
     $("#div_loading").show();
     $("#connection_error").html("").hide();
 
-    data = '{"login":"'+sanitizeString($("#login").val())+'" ,'+
-                '"pwd":"'+sanitizeString($("#pw").val())+'"}';
-
+    data = {
+        'login'     : $("#login").val(),
+        'pw'        : $("#pw").val(),
+        'send_mail' : 1
+    }
     $.post(
-        "sources/main.queries.php",
+        'sources/main.queries.php',
         {
-            type : "ga_generate_qr",
-            data : prepareExchangedData(data, "encode", "<?php echo $_SESSION['key']; ?>"),
-            send_email : "1"
+            type    : 'ga_generate_qr',
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
-            if (data[0].error === "0") {
-                $("#div_dialog_message").html(data[0].msg).dialog("open");
-            } else if (data[0].error === "no_user") {
-                $("#connection_error").html("<?php echo langHdl('error_bad_credentials'); ?>")
-                    .show().delay(3000).fadeOut(500);
-            } else if (data[0].error === "not_allowed") {
-                $("#connection_error").html("<?php echo langHdl('setting_disabled_by_admin'); ?>")
-                    .show().delay(3000).fadeOut(500);
-            } else if (data[0].error === "no_email") {
-                $("#connection_error").html("<?php echo langHdl('error_no_email'); ?>").show();
-                $("#div_ga_url").hide();
-            } else {
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
 
+            if (data.error !== false) {
+                // Show error
+                alertify
+                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                    .dismissOthers();
+            } else {
+                // Inform user
+                alertify
+                    .success('<?php echo langHdl('share_sent_ok'); ?>', 1)
+                    .dismissOthers();
+                //$("#div_ga_url").show(); -> TODO
             }
-            $("#div_loading").hide();
-        },
-        "json"
+        }
     );
 }
 

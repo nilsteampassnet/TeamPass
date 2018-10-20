@@ -264,6 +264,23 @@ function loadSettings()
                     });
                 }
             );
+
+            // Store some User info
+            store.update(
+                'teampassUser',
+                {},
+                function(teampassSettings) {
+                    teampassSettings['user_admin'] = <?php echo (int) $_SESSION['user_admin']; ?>;
+                    teampassSettings['user_id'] = <?php echo (int) $_SESSION['user_id']; ?>;
+                    teampassSettings['user_manager'] = <?php echo (int) $_SESSION['user_manager']; ?>;
+                    teampassSettings['user_can_manage_all_users'] = <?php echo (int) $_SESSION['user_can_manage_all_users']; ?>;
+                    teampassSettings['user_read_only'] = <?php echo (int) $_SESSION['user_read_only']; ?>;
+                    teampassSettings['key'] = '<?php echo $_SESSION['key']; ?>';
+                    teampassSettings['login'] = "<?php echo $_SESSION['login']; ?>";
+                    teampassSettings['lastname'] = "<?php echo $_SESSION['lastname']; ?>";
+                    teampassSettings['name'] = "<?php echo $_SESSION['name']; ?>";
+                }
+            );
         }
     );
 }

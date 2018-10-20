@@ -136,12 +136,9 @@ foreach ($treeDesc as $t) {
                             <th><?php echo langHdl('lastname'); ?></th>
                             <th><?php echo langHdl('managed_by'); ?></th>
                             <th><?php echo langHdl('functions'); ?></th>
-                            <th><i class="fas fa-user-cog fa-lg fa-fw infotip" title="<?php echo langHdl('god'); ?>"></i></th>
-                            <th><i class="fas fa-user-tie fa-lg fa-fw infotip" title="<?php echo langHdl('gestionnaire'); ?>"></i></th>
-                            <th><i class="fas fa-blind fa-lg fa-fw infotip" title="<?php echo langHdl('read_only_account'); ?>"></i></th>
-                            <th><i class="fas fa-user-friends fa-lg fa-fw infotip" title="<?php echo langHdl('can_manage_all_users'); ?>"></i></th>
+                            <th><i class="fas fa-theater-masks fa-lg fa-fw infotip" title="<?php echo langHdl('privileges'); ?>"></i></th>
                             <th><i class="fas fa-code-branch fa-lg fa-fw infotip" title="<?php echo langHdl('can_create_root_folder'); ?>"></i></th>
-                            <th><i class="fas fa-low-vision fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
+                            <th><i class="fas fa-hand-holding-heart fa-lg fa-fw infotip" title="<?php echo langHdl('enable_personal_folder'); ?>"></i></th>
                         </tr>
                         </thead>
                         <tbody>
@@ -153,71 +150,157 @@ foreach ($treeDesc as $t) {
         </div>
     </div>
 
-    <div class="row hidden" id="row-form">
+    <!-- USER FORM -->
+    <div class="row hidden extra-form" id="row-form">
         <div class="col-12">
             <div class="card card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title"><?php echo langHdl('user_definition'); ?></h3>
-                    </div>
-                    
-                    <!-- /.card-header -->
-                    <!-- form start -->
-                    <form role="form">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="form-login"><?php echo langHdl('login'); ?></label>
-                                        <input type="text" class="form-control clear-me" id="form-login">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="form-name"><?php echo langHdl('name'); ?></label>
-                                        <input type="text" class="form-control clear-me" id="form-name">
-                                    </div>
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo langHdl('user_definition'); ?></h3>
+                </div>
+                
+                <!-- /.card-header -->
+                <!-- form start -->
+                <form role="form" id="form-user">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="form-name"><?php echo langHdl('name'); ?></label>
+                                    <input type="text" class="form-control clear-me required build-login track-change" id="form-name">
                                 </div>
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="form-email"><?php echo langHdl('email'); ?></label>
-                                        <input type="email" class="form-control clear-me" id="form-email">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="form-lastname"><?php echo langHdl('lastname'); ?></label>
-                                        <input type="text" class="form-control clear-me" id="form-lastname">
-                                    </div>
+                                <div class="form-group">
+                                    <label for="form-lastname"><?php echo langHdl('lastname'); ?></label>
+                                    <input type="text" class="form-control clear-me required build-login track-change" id="form-lastname">
+                                </div>
+                                <div class="form-group">
+                                    <label for="form-login"><?php echo langHdl('login'); ?></label>
+                                    <input type="text" class="form-control clear-me required build-login track-change" id="form-login">
+                                    <input type="hidden" id="form-login-conform" value="0">
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label for="form-roles"><?php echo langHdl('roles'); ?></label>
-                                <select id="form-roles" class="form-control form-item-control select2 no-root" style="width:100%;" multiple="multiple">
-                                    <?php echo $optionsRoles; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="form-managedby"><?php echo langHdl('managed_by'); ?></label>
-                                <select id="form-managedby" class="form-control form-item-control select2 no-root" style="width:100%;">
-                                    <?php echo $optionsManagedBy; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="form-auth"><?php echo langHdl('authorized_groups'); ?></label>
-                                <select id="form-auth" class="form-control form-item-control select2 no-root" style="width:100%;" multiple="multiple">
-                                    <?php echo $foldersList; ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="form-forbid"><?php echo langHdl('forbidden_groups'); ?></label>
-                                <select id="form-forbid" class="form-control form-item-control select2 no-root" style="width:100%;" multiple="multiple">
-                                    <?php echo $foldersList; ?>
-                                </select>
+                            <div class="col-lg-6">
+                                <div class="form-group">
+                                    <label for="form-email"><?php echo langHdl('email'); ?></label>
+                                    <input type="email" class="form-control clear-me required track-change" id="form-email">
+                                </div>
+                                <div class="form-group">
+                                    <label for="form-password"><?php echo langHdl('password'); ?></label>
+                                    <div class="input-group mb-0">
+                                        <input type="password" class="form-control clear-me required infotip track-change" id="form-password">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text p-1"><div id="form-password-strength"></div></span>
+                                            <button class="btn btn-outline-secondary btn-no-click infotip" id="button-password-generate" title="<?php echo langHdl('pw_generate'); ?>"><i class="fas fa-random"></i></button>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="form-password-complex" value="0">
+                                </div>
+                                <div class="form-group">
+                                    <label for="form-confirm"><?php echo langHdl('confirm'); ?></label>
+                                    <input type="password" class="form-control clear-me required" id="form-confirm">
+                                </div>
                             </div>
                         </div>
-                        <!-- /.card-body -->
-                    </form>
-                        
-                    <div class="card-footer">
-                        <button type="button" class="btn btn-primary" data-action="submit"><?php echo langHdl('submit'); ?></button>
-                        <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                        <div class="form-group">
+                            <label for="form-login" class="mr-2"><?php echo langHdl('privileges'); ?></label>
+                            <input type="radio" class="form-check-input form-control flat-blue only-admin track-change" name="privilege" id="privilege-admin">
+                            <label class="form-check-label mr-2 pointer" for="privilege-admin"><?php echo langHdl('administrator'); ?></label>
+                            <input type="radio" class="form-check-input form-control flat-blue only-admin track-change" name="privilege" id="privilege-hr">
+                            <label class="form-check-label mr-2 pointer" for="privilege-hr"><?php echo langHdl('super_manager'); ?></label>
+                            <input type="radio" class="form-check-input form-control flat-blue only-admin track-change" name="privilege" id="privilege-manager">
+                            <label class="form-check-label mr-2 pointer" for="privilege-manager"><?php echo langHdl('manager'); ?></label>
+                            <input type="radio" class="form-check-input form-control flat-blue track-change" name="privilege" id="privilege-user">
+                            <label class="form-check-label mr-2 pointer" for="privilege-user"><?php echo langHdl('user'); ?></label>
+                            <input type="radio" class="form-check-input form-control flat-blue track-change" name="privilege" id="privilege-ro">
+                            <label class="form-check-label mr-2 pointer" for="privilege-ro"><?php echo langHdl('read_only'); ?></label>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-roles"><?php echo langHdl('roles'); ?></label>
+                            <select id="form-roles" class="form-control form-item-control select2 no-root required track-change" style="width:100%;" multiple="multiple">
+                                <?php echo $optionsRoles; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-managedby"><?php echo langHdl('managed_by'); ?></label>
+                            <select id="form-managedby" class="form-control form-item-control select2 no-root required track-change" style="width:100%;">
+                                <?php echo $optionsManagedBy; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-auth"><?php echo langHdl('authorized_groups'); ?></label>
+                            <select id="form-auth" class="form-control form-item-control select2 no-root track-change" style="width:100%;" multiple="multiple">
+                                <?php echo $foldersList; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-forbid"><?php echo langHdl('forbidden_groups'); ?></label>
+                            <select id="form-forbid" class="form-control form-item-control select2 no-root track-change" style="width:100%;" multiple="multiple">
+                                <?php echo $foldersList; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="form-forbid"><?php echo langHdl('special'); ?></label>
+                        </div>
+                        <div class="form-group">
+                            <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-root-folder">
+                            <label class="form-check-label mr-2" for="form-create-root-folder"><?php echo langHdl('can_create_root_folder'); ?></label>
+                        </div>
+                        <div class="form-group">
+                            <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-personal-folder">
+                            <label class="form-check-label mr-2" for="form-create-personal-folder"><?php echo langHdl('enable_personal_folder_for_this_user'); ?></label>
+                        </div>
+                        <div class="form-group" id="group-create-special-folder">
+                            <input type="checkbox" class="form-check-input form-control flat-blu track-changee" id="create-special-folder">
+                            <label class="form-check-label mr-2" for="create-special-folder"><?php echo langHdl('auto_create_folder_role'); ?></label>
+                            <input type="text" class="form-control clear-me" id="form-special-folder" disabled="true" placeholder="<?php echo langHdl('label'); ?>">
+                        </div>
+                        <div class="form-group" id="group-form-user-disabled">
+                            <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-user-disabled">
+                            <label class="form-check-label mr-2" for="form-user-disabled"><?php echo langHdl('user_is_disabled'); ?></label>
+
+                            <div class="alert alert-warning mt-2 hidden" id="group-delete-user">
+                                <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-delete-user-confirm">
+                                <label class="form-check-label mr-2" for="form-delete-user-confirm"><?php echo langHdl('delete_user'); ?></label>
+                            </div>
+                        </div>
                     </div>
+                    <!-- /.card-body -->
+                </form>
+                    
+                <div class="card-footer">
+                    <button type="button" class="btn btn-primary tp-action" data-action="submit"><?php echo langHdl('submit'); ?></button>
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- USER LOGS -->
+    <div class="row hidden extra-form" id="row-logs">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header">
+                    <h3 class="card-title"><?php echo langHdl('logs'); ?></h3>
+                </div>
+                
+                <!-- /.card-header -->
+                <!-- table start -->
+                <div class="card-body form table-responsive" id="user-logs">
+                    <table id="table-logs" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th><?php echo langHdl('date'); ?></th>
+                            <th><?php echo langHdl('label'); ?></th>
+                            <th><?php echo langHdl('activity'); ?></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+                    
+                <div class="card-footer">
+                    <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
                 </div>
             </div>
         </div>
