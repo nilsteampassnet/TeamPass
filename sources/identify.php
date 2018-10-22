@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$debugLdap = 1; //Can be used in order to debug LDAP authentication
+$debugLdap = 0; //Can be used in order to debug LDAP authentication
 $debugDuo = 0; //Can be used in order to debug DUO authentication
 
 require_once 'SecureHandler.php';

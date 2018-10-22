@@ -3,7 +3,7 @@
  *
  * @package       (api)functions.php
  * @author        Nils Laumaillé <nils@teampass.net>
- * @version       2.1.4
+ * @version       2.1.5
  * @copyright     2009-2018 Nils Laumaillé
  * @license       GNU GPL-3.0
  * @link          https://www.teampass.net
@@ -13,7 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-$api_version = "2.1.4";
+$api_version = "2.1.5";
 $_SESSION['CPM'] = 1;
 require_once "../includes/config/include.php";
 require_once "../sources/main.functions.php";
@@ -425,13 +425,55 @@ function restGet()
                 $tree->register();
                 $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
 
-                // get ids
-                if (strpos($GLOBALS['request'][2], ";") > 0) {
-                    $condition = "id_tree IN %ls";
-                    $condition_value = explode(';', $GLOBALS['request'][2]);
+                // Now get user's rights based upon the API key
+                // If API key corresponds to a User then restrict items to what the user is allowed to
+                // If API key corresponds to a master key then show all
+                $response = DB::query(
+                    "SELECT fonction_id
+                    FROM ".prefix_table("users")."
+                    WHERE user_api_key = %s",
+                    $GLOBALS['apikey']
+                );
+                if (count($response) !== 0) {
+                    // User API key so limit what to show
+                    foreach ($response as $data) {
+                        $role_str = $data['fonction_id'];
+                    }
+                    $folder_arr = array();
+                    $roles = explode(";", $role_str);
+                    foreach ($roles as $role) {
+                        $response = DB::query(
+                            "SELECT folder_id
+                            FROM ".prefix_table("roles_values")."
+                            WHERE role_id = %i",
+                            $role
+                        );
+                        foreach ($response as $data) {
+                            $folder_id = $data['folder_id'];
+                            if (!array_key_exists($folder_id, $folder_arr)) {
+                                array_push($folder_arr, $folder_id);
+                            }
+                        }
+                    }
+                    $folder_str = array_filter($folder_arr);
+    
+                    // get ids
+                    if (is_array($folder_str)) {
+                        $condition = "id_tree IN %ls";
+                        $condition_value = $folder_str;
+                    } else {
+                        $condition = "id_tree = %s";
+                        $condition_value = $folder_str;
+                    }
                 } else {
-                    $condition = "id_tree = %s";
-                    $condition_value = $GLOBALS['request'][2];
+                    // Not a User KEY so show all
+                    if (strpos($GLOBALS['request'][2], ";") > 0) {
+                        $condition = "id_tree IN %ls";
+                        $condition_value = explode(';', $GLOBALS['request'][2]);
+                    } else {
+                        $condition = "id_tree = %s";
+                        $condition_value = $GLOBALS['request'][2];
+                    }
                 }
 
                 // get items in this folder
