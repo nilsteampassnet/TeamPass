@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @package       spanish.php
- * @author        Nils Laumaillé <nils@teampass.net>
+ * @file          spanish.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
+ * @licensing     GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,37 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'filter' => 'Filter',
-    'upload_empty_file' => 'Upload empty file',
-    'upload_any_extension_file' => 'Upload any extension file',
-    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
-    'log_in' => 'Log In',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
-    'create_item_based_upon_template' => 'Use of template for Item',
-    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
-    'main_template' => 'Use as template',
-    'is_mandatory' => 'Is mandatory',
-    'error_field_is_mandatory' => 'At least one mandatory field is empty',
-    'position_in_list' => 'Position in list',
-    'visible_by' => 'Visible by',
-    'restrict_visibility_to' => 'Restrict visibility to',
-    'every_roles' => 'Every roles',
-    'masked_textarea' => 'Masked textarea',
-    'masked_text' => 'Masked text',
-    'textarea' => 'Textarea',
-    'data_is_textarea' => 'Data is Textarea',
-    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
-    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
-    'yubico_user_id' => 'Client ID',
-    'yubico_user_key' => 'Secret KEY',
-    'yubico_bad_code' => 'Wrong Yubico information',
-    'show_yubico_info_form' => 'Show Yubico user information form',
-    'press_your_yubico_key' => 'Press your Yubico key',
-    'human_resources' => 'Super manager',
-    'login_attempts' => 'Login attempts since last successful connection',
-    'settings_secure_display_image' => 'Enable secure image display',
-    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+$LANG = array (
     'user_ga_code' => 'Enviar el código de GoogleAuthenticator por correo al usuario',
     'send_ga_code' => 'Google Authenticator para el usuario',
     'error_no_email' => '¡Este usuario no tiene dirección de correo electrónico configurada!',
@@ -59,7 +29,7 @@ $LANG = array(
     'admin_ga_website_name' => 'Nombre mostrado en Google Authenticator para Teampass',
     'admin_ga_website_name_tip' => 'Este nombre se utiliza para la cuenta de código de identificación en Google Authenticator.',
     'admin_action_pw_prefix_correct' => 'Corregir los prefijos de contraseñas.',
-    'admin_action_pw_prefix_correct_tip' => 'Antes de ejecutar este script, POR FAVOR haga una copia de seguridad de la base de datos. Este script ejecutará una modificación del prefijo de las contraseñas. Se debería utilizar únicamente si nota que las contraseñas se muestran con un prefijo extraño.',
+    'admin_action_pw_prefix_correct_tip' => 'Antes de ejecutar esta tarea, por favor realice una copia de seguridad de la base de datos. Este script ejecutará una modificación del prefijo de las contraseñas. Se debería utilizar únicamente si nota que las contraseñas se muestran con un prefijo extraño.',
     'items_changed' => 'ha sido cambiado.',
     'ga_not_yet_synchronized' => 'Identifícate con Google Authenticator.',
     'ga_scan_url' => 'Por favor, escanee este código con su aplicación móvil Google Autheticator. Copie de ella el código de identificación.',
@@ -273,7 +243,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Cambiar la clave salt principal usada para el cifrado',
     'admin_action_change_salt_key_tip' => 'Antes de cambiar la clave salt, active el modo mantenimiento y realice una copia de seguridad completa tanto de la base de datos como de los adjuntos de la carpeta de archivos cargados.',
     'block_admin_info' => 'Información de Administradores',
-    'admin_new1' => '&lt;i&gt;&lt;u&gt;14FEB2012:&lt;/i&gt;&lt;/u&gt;&lt;br /&gt;El perfil Administrador ya no tiene permisos para ver elementos. Este perfil solamente es ahora solo una cuenta Administrativa.&lt;br /&gt;Ver &lt;a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'&gt;TeamPass.net&lt;/a&gt; para saber cómo gestionar este cambio.',
+    'admin_new1' => '&lt;i&gt;&lt;u&gt;14FEB2012:&lt;/i&gt;&lt;/u&gt;&lt;br /&gt;El perfil Administrador ya no tiene permisos para ver elementos. Este perfil solamente es ahora solo una cuenta Administrativa.&lt;br /&gt;Ver &lt;a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'&gt;TeamPass.net&lt;/a&gt; para saber cómo gestionar este cambio.',
     'nb_items_by_query' => 'Numero de elementos a obtener en cada consulta',
     'nb_items_by_query_tip' => '&lt;span style=\'font-size:11px;max-width:300px;\'&gt;Cuantos más elementos, más tiempo tardará en mostrar la lista.&lt;br /&gt;Seleccione \'auto\' para dejar a la herramienta que adapte este valor dependiendo del tamaño de la pantalla del usuario.&lt;br /&gt;Seleccione \'max\' para forzar que se muestre la lista completa de una sola vez.&lt;br /&gt;Escriba un número que corresponderá a la cantidad de elementos que se van a obtener en cada consulta.&lt;/span&gt;',
     'error_no_selected_folder' => 'Es necesario que seleccione una carpeta',
@@ -937,7 +907,7 @@ $LANG = array(
     'failed_logins' => 'Inicios de sesión fallidos',
     'admin_2factor_authentication_tab' => 'Opciones 2FA',
     'error_only_numbers_in_folder_name' => 'La nombre de carpeta no puede contener solo números. Por favor, escribe un nombre de carpeta que incluya letras.',
-    'folder_will_be_moved_below' => 'La carpeta <b><span id=\\\'move_folder_title\\\'></span></b> se moverá debajo de la carpeta:',
+    'folder_will_be_moved_below' => 'La carpeta <b><span id=\'move_folder_title\'></span></b> se moverá debajo de la carpeta:',
     'error_upload_runtime_not_found' => 'Función de carga: No se encuentra el tiempo de ejecución',
     'runtime_upload' => 'Función de carga: Tiempo de ejecución',
     'encrypted_data' => 'Los datos están ecriptados en la base de datos',
@@ -1116,9 +1086,38 @@ $LANG = array(
     'settings_ldap_and_local_authentication_tip' => 'Habilite esta opción para permitir que los usuarios se autentiquen en la biblioteca LDAP o en la lista local de usuarios de Teampass.',
     'user_profile_api_key' => ' Su clave API ',
     'report_a_bug' => 'Notificar un problema',
-    'enable_http_request_login' => 'Automatic login using http header credentials',
-    'duration_login_attempt' => 'Seconds till auto login:',
-    'newly_created_user_role' => 'Newly created user has role',
-    'at_user_updated' => 'User #user_login# was updated',
+    'enable_http_request_login' => 'Inicio de sesión automático con credenciales de encabezado HTTP',
+    'duration_login_attempt' => 'Segundos hasta el auto-login:',
+    'newly_created_user_role' => 'El usuario recién creado tiene un rol',
+    'at_user_updated' => 'Usuario #user_login# fue actualizado',
+    'human_resources' => 'Super administrador',
+    'login_attempts' => 'Intentos de inicio de sesión desde la última conexión exitosa',
+    'settings_secure_display_image' => 'Habilite la visualización segura de imágenes',
+    'settings_secure_display_image_tip' => 'La visualización segura de imágenes permite leer la imagen a través de PHP cuando el usuario visualiza una imagen adjunta a un elemento. Pro: el archivo adjunto se almacena fuera de la carpeta del sitio y no es accesible por un pirata informático. Contra: es un poco más lento que la vista previa directamente desde una url.',
+    'provide_yubico_identifiers' => 'Proporcione sus identificadores Yubico',
+    'admin_yubico_authentication_setting' => 'Habilite su identificador Yubico',
+    'yubico_user_id' => 'Identificación del cliente',
+    'yubico_user_key' => 'LLAVE secreta',
+    'yubico_bad_code' => 'Información incorrecta de Yubico',
+    'show_yubico_info_form' => 'Mostrar el formulario de información de usuario de Yubico',
+    'press_your_yubico_key' => 'Presione su tecla Yubico',
+    'position_in_list' => 'Posición en la lista',
+    'visible_by' => 'Visible por',
+    'restrict_visibility_to' => 'Restrinja la visibilidad a',
+    'every_roles' => 'Todos los roles',
+    'masked_text' => 'Texto enmascarado',
+    'textarea' => 'Area de texto',
+    'error_field_is_mandatory' => 'Al menos un campo obligatorio está vacío',
+    'is_mandatory' => 'Es obligatorio',
+    'main_template' => 'Usar como plantilla',
+    'create_item_based_upon_template_tip' => 'Cuando está habilitada, esta característica permite al autor seleccionar una plantilla hecha de campos personalizados. Tenga en cuenta que esta característica requiere que los campos personalizados también estén habilitados.',
+    'create_item_based_upon_template' => 'Uso de la plantilla para el elemen',
+    'log_in' => 'Iniciar sesión',
+    'filter' => 'Filter',
+    'upload_empty_file' => 'Upload empty file',
+    'upload_any_extension_file' => 'Upload any extension file',
+    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
+    '2factors_expected_for_admin' => 'Administrator requires 2FA to get logged',
+    '2factors_expected_for_admin_tip' => 'By default, an Administrator has to use a 2FA method to get logged. If not enabled, Administrator will not require it to get logged even if 2FA is enabled for any other user. Make sure you test another account with 2 factor auth before enabling for admin as you could lock yourself out of the system permanently.',
     '' => ''
 );

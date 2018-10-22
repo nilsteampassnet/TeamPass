@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @package       french.php
- * @author        Nils Laumaillé <nils@teampass.net>
+ * @file          french.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
+ * @licensing     GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,44 +13,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    '2factors_expected_for_admin' => 'Authentification à 2 facteurs requise pour l\'Administrateur',
-    '2factors_expected_for_admin_tip' => 'Par défaut, l\'authentification à 2 facteurs est requise pour l\'Administrateur. Si non activée, alors cette option permet à l\'administrateur de se connecter sans avoir à utiliser un moyen d\'authenfication double.',
-    'filter' => 'Filtre',
-    'upload_empty_file' => 'Téléverser des fichiers vides',
-    'upload_any_extension_file' => 'Téléverser tout type d\'extension de fichier',
-    'upload_any_extension_file_tip' => 'Quand activé, cette option permet aux utilisateurs d\'attacher tout type de fichier aux objets.',
-    'log_in' => 'Connexion',
-    '2fa_authentication_selector' => 'Sélectionner une méthode d\'authentification double',
-    'create_item_based_upon_template' => 'Activer le Modèle par Objet',
-    'create_item_based_upon_template_tip' => 'Quand activée, cette fonction permet à l\'auteur de choisir un modèle réalisé à partir des Champs Spéciaux. A noter que cela ne fonctionnera que si l\'option Champs Spéciaux est activée.',
-    'main_template' => 'Utiliser comme Modèle',
-    'is_mandatory' => 'Est obligatoire',
-    'error_field_is_mandatory' => 'Au moins un champ spécial est obligatoire.',
-    'position_in_list' => 'Position',
-    'visible_by' => 'Visible par',
-    'restrict_visibility_to' => 'Uniquement visible par',
-    'every_roles' => 'Tous les rôles',
-    'masked_textarea' => 'Zone de texte masquée',
-    'masked_text' => 'Texte masqué',
-    'textarea' => 'Zone de texte',
-    'provide_yubico_identifiers' => 'Merci de fournir vos identifiants Yubico',
-    'admin_yubico_authentication_setting' => 'Activer la double identification avec Yubico',
-    'yubico_user_id' => 'ID client',
-    'yubico_user_key' => 'CLE secrète',
-    'yubico_bad_code' => 'Mauvaises informations Yubico',
-    'show_yubico_info_form' => 'Montrer le formulaire de saisi Yubico',
-    'Press your Yubico key' => 'Presser la clé Yubico',
-    'human_resources' => 'Super gestionnaire',
-    'login_attempts' => 'Tentatives échouées de connexion depuis la dernière connexion réussie',
-    'settings_secure_display_image' => 'Activer la sécurisation de prévisualisation des images',
-    'settings_secure_display_image_tip' => 'Sécuriser la prévisualisation des images permet de réaliser la lecture de l\'image via le moteur de PHP quand un utilisateur demande un affichage d\'une image. Avantage: permet de sauvegarder les pièces jointes hors du domaine dans un répertoire serveur inaccessible. Inconvéniant : l\'affichage de l\'image est légèrement ralentie.',
+$LANG = array (
     'user_ga_code' => 'Envoyer le code Google Authenticator à l\'utilisateur par email',
     'send_ga_code' => 'Google Authenticator pour l\'utilisateur',
     'error_no_email' => 'Cet utilisateur n\'a pas de courriel de défini !',
     'error_no_user' => 'Aucun utilisateur trouvé !',
     'email_ga_subject' => 'Votre code Google Authenticator pour Teampass',
-    'email_ga_text' => 'Bonjour,<br><br>Cet email a été généré depuis votre gestionnaire de mots de passe Teampass.<br><br>Votre administrateur vous demande d\'utiliser une double authentification pour vous connecter à Teampass.<br>Lors de votre première connexion à Teampass, merci de bien vouloir recopier le code suivant dans le champ "Code d\'identification" : <br><br>----------------------<br>#2FACode#<br>----------------------<br><br>Vous aurez ensuite la possibilité de paramètrer votre application Google Authenticator pour obtenir vos codes temporaire d\'identification.<br /><br />Salutations',
+    'email_ga_text' => 'Bonjour,<br><br>Cet email a été généré depuis votre gestionnaire de mots de passe Teampass.<br><br>Votre administrateur vous demande d\'utiliser une double authentification pour vous connecter à Teampass.<br>Lors de votre première connexion à Teampass, merci de bien vouloir recopier le code suivant dans le champ "Code d\'identification" : <br><br>----------------------<br>#2FACode#<br>----------------------<br><br>Vous aurez ensuite la possibilité de paramétrer votre application Google Authenticator pour obtenir vos codes temporaires d\'identification.<br /><br />Salutations',
     'settings_attachments_encryption' => 'Activer le chiffrement des fichiers joints aux Éléments',
     'settings_attachments_encryption_tip' => 'CETTE OPTION PEUT CORROMPRE LES FICHIERS JOINTS EXISTANTS. Merci de lire la suite avec attention. Si activée, cette option chiffrera les fichiers joints aux Éléments sur le serveur. L\'algorithme de chiffrement utilise le sel défini pour Teampass. Cela requiert également un peu de ressource supplémentaire de la part du serveur. ATTENTION : en cas de changement de stratégie, il est nécessaire de faire tourner le script permettant d\'adapter les fichiers joints existants. Pour cela, voir l\'onglet "Actions spécifiques".',
     'admin_action_attachments_cryption' => 'Déchiffrer ou chiffrer les fichiers joints aux Éléments',
@@ -275,7 +244,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Changer la clé de salage principale',
     'admin_action_change_salt_key_tip' => 'Avant de changer votre clé de salage principale, merci de vous assurer d\'avoir réalisé une sauvegarde complète de la base de données, et de mettre TeamPass en mode maintenance',
     'block_admin_info' => 'Infos Administrateur',
-    'admin_new1' => '<i><u>14FÉV2012 :</i></u><br>Le profil Administrateur n\'est plus autorisé à voir les éléments. Ce profil est maintenant uniquement un profil technique.<br />Voir<a href=\\" * @package       /how-to-handle-changes-on-administrator-profile\\" target=\\"_blank\\">TeamPass.net</a> pour voir comment prendre en compte ce changement.',
+    'admin_new1' => '<i><u>14FÉV2012 :</i></u><br>Le profil Administrateur n\'est plus autorisé à voir les éléments. Ce profil est maintenant uniquement un profil technique.<br />Voir<a href=\\"http://www.teampass.net/how-to-handle-changes-on-administrator-profile\\" target=\\"_blank\\">TeamPass.net</a> pour voir comment prendre en compte ce changement.',
     'nb_items_by_query' => 'Nombre d\'éléments à afficher par requête',
     'nb_items_by_query_tip' => '<span style="font-size:11px;max-width:300px;">Plus d\'éléments signifie plus de temps pour les afficher.<br>Sélectionner \'auto\' pour laisser l\'outil choisir le nombre d\'éléments à afficher en fonction de la taille de l\'écran.<br>Sélectionner \'max\' pour forcer l\'affichage de la liste complète en une seule fois.<br>Sélectionner un nombre fixe d\'éléments à afficher à chaque nouvelle requête.</span>',
     'error_no_selected_folder' => 'Vous devez sélectionner un répertoire',
@@ -1122,5 +1091,34 @@ $LANG = array(
     'duration_login_attempt' => 'Nombre de secondes avant authentification automatique',
     'newly_created_user_role' => 'Rôle de l\'utilisateur créé',
     'at_user_updated' => 'Utilisateur #user_login# a été mis à jour',
+    'human_resources' => 'Super gestionnaire',
+    'login_attempts' => 'Tentatives échouées de connexion depuis la dernière connexion réussie',
+    'settings_secure_display_image' => 'Activer la sécurisation de prévisualisation des images',
+    'settings_secure_display_image_tip' => 'Sécuriser la prévisualisation des images permet de réaliser la lecture de l\\\'image via le moteur de PHP quand un utilisateur demande un affichage d\\\'une image. Avantage: permet de sauvegarder les pièces jointes hors du domaine dans un répertoire serveur inaccessible. Inconvéniant : l\\\'affichage de l\\\'image est légèrement ralentie.',
+    'provide_yubico_identifiers' => 'Merci de fournir vos identifiants Yubico',
+    'admin_yubico_authentication_setting' => 'Activer la double identification avec Yubico',
+    'yubico_user_id' => 'ID client',
+    'yubico_user_key' => 'CLE secrète',
+    'yubico_bad_code' => 'Mauvaises informations Yubico',
+    'show_yubico_info_form' => 'Montrer le formulaire de saisi Yubico',
+    'press_your_yubico_key' => 'Presser la clé Yubico',
+    'position_in_list' => 'Position',
+    'visible_by' => 'Visible par',
+    'restrict_visibility_to' => 'Uniquement visible par',
+    'every_roles' => 'Tous les rôles',
+    'masked_text' => 'Texte masqué',
+    'textarea' => 'Zone de texte',
+    'error_field_is_mandatory' => 'Au moins un champ spécial est obligatoire.',
+    'is_mandatory' => 'Est obligatoire',
+    'main_template' => 'Utiliser comme Modèle',
+    'create_item_based_upon_template_tip' => 'Quand activée, cette fonction permet à l\'auteur de choisir un modèle réalisé à partir des Champs Spéciaux. A noter que cela ne fonctionnera que si l\'option Champs Spéciaux est activée.',
+    'create_item_based_upon_template' => 'Activer le Modèle par Objet',
+    'log_in' => 'Connexion',
+    'filter' => 'Filtre',
+    'upload_empty_file' => 'Téléverser des fichiers vides',
+    'upload_any_extension_file' => 'Téléverser tout type d\'extension de fichier',
+    'upload_any_extension_file_tip' => 'Quand activé, cette option permet aux utilisateurs d\'attacher tout type de fichier aux objets.',
+    '2factors_expected_for_admin' => 'Authentification à 2 facteurs requise pour l\\\'Administrateur',
+    '2factors_expected_for_admin_tip' => 'Par défaut, l\\\'authentification à 2 facteurs est requise pour l\\\'Administrateur. Si non activée, alors cette option permet à l\\\'administrateur de se connecter sans avoir à utiliser un moyen d\\\'authentification double.',
     '' => ''
 );

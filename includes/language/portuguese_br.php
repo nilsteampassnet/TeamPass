@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @package       portuguese_br.php
- * @author        Nils Laumaillé <nils@teampass.net>
+ * @file          portuguese_br.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
+ * @licensing     GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,37 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'filter' => 'Filter',
-    'upload_empty_file' => 'Upload empty file',
-    'upload_any_extension_file' => 'Upload any extension file',
-    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
-    'log_in' => 'Log In',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
-    'create_item_based_upon_template' => 'Use of template for Item',
-    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
-    'main_template' => 'Use as template',
-    'is_mandatory' => 'Is mandatory',
-    'error_field_is_mandatory' => 'At least one mandatory field is empty',
-    'position_in_list' => 'Position in list',
-    'visible_by' => 'Visible by',
-    'restrict_visibility_to' => 'Restrict visibility to',
-    'every_roles' => 'Every roles',
-    'masked_textarea' => 'Masked textarea',
-    'masked_text' => 'Masked text',
-    'textarea' => 'Textarea',
-    'data_is_textarea' => 'Data is Textarea',
-    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
-    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
-    'yubico_user_id' => 'Client ID',
-    'yubico_user_key' => 'Secret KEY',
-    'yubico_bad_code' => 'Wrong Yubico information',
-    'press_your_yubico_key' => 'Press your Yubico key',
-    'show_yubico_info_form' => 'Show Yubico user information form',
-    'human_resources' => 'Super manager',
-    'login_attempts' => 'Login attempts since last successful connection',
-    'settings_secure_display_image' => 'Enable secure image display',
-    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+$LANG = array (
     'user_ga_code' => 'Enviar ao usuário o Código do Google Authenticator por e-mail',
     'send_ga_code' => 'Google Authenticator para usuário',
     'error_no_email' => 'Este usuário não tem e-mail definido!',
@@ -274,7 +244,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Alterar a SALT Key principal',
     'admin_action_change_salt_key_tip' => 'Antes de alterar a SALT key, por favor, certifique-se de fazer um backup completo do banco de dados, e colocar a ferramenta em manutenção para evitar que usuários estejam logados.',
     'block_admin_info' => 'Informações do Administrador',
-    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Perfil de administrador não mais é permitido para ver os itens. Este perfil está agora a apenas uma conta administrativa.<br />Veja a pagina <a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net </a> para entender essa mudança.',
+    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Perfil de administrador não mais é permitido para ver os itens. Este perfil está agora a apenas uma conta administrativa.<br />Veja a pagina <a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net </a> para entender essa mudança.',
     'nb_items_by_query' => 'Número de ítens por pesquisa ',
     'nb_items_by_query_tip' => '<span style=\'font-size:11px;max-width:300px;\'>Mais itens significa mais tempo para exibir a lista.<br />Defina para \'auto\' para deixar a ferramenta  adaptar este número, dependendo do tamanho da tela do usuário.<br />Defina para \'max\' para forçar a exibição da lista completa<br /> Defina um numero para obter a cada consulta.</span> ',
     'error_no_selected_folder' => 'Você precisa selecionar uma Pasta',
@@ -938,7 +908,7 @@ $LANG = array(
     'failed_logins' => 'Falhas de Logins',
     'admin_2factor_authentication_tab' => 'Opção de 2FA',
     'error_only_numbers_in_folder_name' => 'O rotulo da pasta não pode ser apenas um número. Por favor de a sua pasta um nome que inclua letras',
-    'folder_will_be_moved_below' => 'A pasta  <b><span id=\\\'move_folder_title\\\'></span></b>será movida para a pasta abaixo:',
+    'folder_will_be_moved_below' => 'A pasta  <b><span id=\'move_folder_title\'></span></b>será movida para a pasta abaixo:',
     'error_upload_runtime_not_found' => 'Recurso de upload: Tempo de execução não encontrado',
     'runtime_upload' => 'Recurso de upload: Tempo de execução',
     'encrypted_data' => 'Dados encriptados no banco de dados.',
@@ -1115,11 +1085,40 @@ $LANG = array(
     'error_no_reason_of_access' => 'Por favor, forneça as razões para acessar este item.',
     'settings_ldap_and_local_authentication' => 'Usuários locais e do LDAP',
     'settings_ldap_and_local_authentication_tip' => 'Habilite esta opção para permitir a autenticação tanto dos usuários LDAP quanto dos usuários locais do Teampass.',
-    'user_profile_api_key' => 'Your API key',
-    'report_a_bug' => 'Report a bug',
-    'enable_http_request_login' => 'Automatic login using http header credentials',
-    'duration_login_attempt' => 'Seconds till auto login:',
-    'newly_created_user_role' => 'Newly created user has role',
-    'at_user_updated' => 'User #user_login# was updated',
+    'user_profile_api_key' => 'Sua API key',
+    'report_a_bug' => 'Reportar um erro',
+    'enable_http_request_login' => 'Login automático utilizando credenciais HTTP HEADER',
+    'duration_login_attempt' => 'Segundos até o auto login:',
+    'newly_created_user_role' => 'Regras do usuário recém criado',
+    'at_user_updated' => 'O usuário #user_login# foi atualizado',
+    'human_resources' => 'Super gerenciador',
+    'login_attempts' => 'Tentativas de login desde a última autenticação com sucesso',
+    'settings_secure_display_image' => 'Habilitar a visualização segura de imagens',
+    'settings_secure_display_image_tip' => 'A visualização segura de imagens permite acessá-las através do PHP no momento que o usuário ver uma imagem anexada ao item. Prós: o anexo é armazenado fora da pasta e não poderá ser acessado por um Hacker. Contras: o acesso à imagem é um pouco mais lento.',
+    'provide_yubico_identifiers' => 'Por favor forneça as credenciais Yubico',
+    'admin_yubico_authentication_setting' => 'Habilitar a autenticação Yubico',
+    'yubico_user_id' => 'Yubico Client ID',
+    'yubico_user_key' => 'Yubico secret key',
+    'yubico_bad_code' => 'Informações erradas',
+    'show_yubico_info_form' => 'Mostrar as informações de usuário do Yubico',
+    'press_your_yubico_key' => 'Pressione o botão do Yubico',
+    'position_in_list' => 'Posição na lista',
+    'visible_by' => 'Visível por',
+    'restrict_visibility_to' => 'Restringir a visualização para',
+    'every_roles' => 'Todas as regras',
+    'masked_text' => 'Texto disfarçado',
+    'textarea' => 'Área de texto',
+    'error_field_is_mandatory' => 'Pelo menos um campo obrigatório está vazio',
+    'is_mandatory' => 'É obrigatório',
+    'main_template' => 'Utilize como modelo',
+    'create_item_based_upon_template_tip' => 'Quando habilitado, esta funcionalidade permite o autor selecionar um modelo composto de campos customizados. Lembre que esta funcionalidade requer que a funcionalidade Campos Customizados esteja habilitada também.',
+    'create_item_based_upon_template' => 'Crie o item utilizando o modelo',
+    'log_in' => 'Entrar',
+    'filter' => 'Filtro',
+    'upload_empty_file' => 'Carregar arquivo vazio',
+    'upload_any_extension_file' => 'Carregar arquivo com qualquer extensão',
+    'upload_any_extension_file_tip' => 'Quando habilitada, esta opção permitirá usuários carregar quaisquer tipo de arquivos.',
+    '2factors_expected_for_admin' => 'Administrator requires 2FA to get logged',
+    '2factors_expected_for_admin_tip' => 'By default, an Administrator has to use a 2FA method to get logged. If not enabled, Administrator will not require it to get logged even if 2FA is enabled for any other user. Make sure you test another account with 2 factor auth before enabling for admin as you could lock yourself out of the system permanently.',
     '' => ''
 );

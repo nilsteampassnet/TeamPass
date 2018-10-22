@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @package       hungarian.php
- * @author        Nils Laumaillé <nils@teampass.net>
+ * @file          hungarian.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
+ * @licensing     GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,37 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'filter' => 'Filter',
-    'upload_empty_file' => 'Upload empty file',
-    'upload_any_extension_file' => 'Upload any extension file',
-    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
-    'log_in' => 'Log In',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
-    'create_item_based_upon_template' => 'Use of template for Item',
-    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
-    'main_template' => 'Use as template',
-    'is_mandatory' => 'Is mandatory',
-    'error_field_is_mandatory' => 'At least one mandatory field is empty',
-    'position_in_list' => 'Position in list',
-    'visible_by' => 'Visible by',
-    'restrict_visibility_to' => 'Restrict visibility to',
-    'every_roles' => 'Every roles',
-    'masked_textarea' => 'Masked textarea',
-    'masked_text' => 'Masked text',
-    'textarea' => 'Textarea',
-    'data_is_textarea' => 'Data is Textarea',
-    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
-    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
-    'yubico_user_id' => 'Client ID',
-    'yubico_user_key' => 'Secret KEY',
-    'yubico_bad_code' => 'Wrong Yubico information',
-    'show_yubico_info_form' => 'Show Yubico user information form',
-    'press_your_yubico_key' => 'Press your Yubico key',
-    'human_resources' => 'Super manager',
-    'login_attempts' => 'Login attempts since last successful connection',
-    'settings_secure_display_image' => 'Enable secure image display',
-    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+$LANG = array (
     'user_ga_code' => 'Google Hitelesítő küldése a felhasználónak email-ben.',
     'send_ga_code' => 'Google Hitelesítés a felhasználó számára.',
     'error_no_email' => 'Ennek a felhasználónak nincs email beállítva!',
@@ -274,7 +244,7 @@ $LANG = array(
     'admin_action_change_salt_key' => 'Fő SALT kulcs megváltoztatása',
     'admin_action_change_salt_key_tip' => 'Mielőtt megváltoztatja a SALT kulcsot, kérjük bizonyosodjon meg arról, hogy van mentése a teljes adatbázisról, és állítsa át a rendszer karbantartási üzemmódba, hogy más felhasználók ne léphessenek be.',
     'block_admin_info' => 'Adminisztrátori információ',
-    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Az adminisztrátor profil többé nem látja a tételeket. Ez a profil már csak adminisztratív célra használható<br />A <a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net oldalon</a> további információkat talál. ',
+    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Az adminisztrátor profil többé nem látja a tételeket. Ez a profil már csak adminisztratív célra használható<br />A <a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net oldalon</a> további információkat talál. ',
     'nb_items_by_query' => 'Az egy menetben lekérdezett tételek száma',
     'nb_items_by_query_tip' => '<span style=\'font-size:11px;max-width:300px;\'>Több tétel esetén azok megjelenítése is több időt vesz igénybe.<br />Az \'auto\' használatával a program automatikusan állítja be a lekérdezés paramétereit, a képernyő mérete alapján.<br />A \'max\' beállítással egyszerre az összes tétel megjelenítésre kerül.<br />Érték megadásával beállítható az egy menetben lekérdezett tételek száma.</span>',
     'error_no_selected_folder' => 'Ki kell választani egy mappát',
@@ -1120,5 +1090,34 @@ $LANG = array(
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
     'at_user_updated' => 'User #user_login# was updated',
+    'human_resources' => 'Super manager',
+    'login_attempts' => 'Login attempts since last successful connection',
+    'settings_secure_display_image' => 'Enable secure image display',
+    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
+    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
+    'yubico_user_id' => 'Client ID',
+    'yubico_user_key' => 'Secret KEY',
+    'yubico_bad_code' => 'Wrong Yubico information',
+    'show_yubico_info_form' => 'Show Yubico user information form',
+    'press_your_yubico_key' => 'Press your Yubico key',
+    'position_in_list' => 'Position in list',
+    'visible_by' => 'Visible by',
+    'restrict_visibility_to' => 'Restrict visibility to',
+    'every_roles' => 'Every roles',
+    'masked_text' => 'Masked text',
+    'textarea' => 'Textarea',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
+    'is_mandatory' => 'Is mandatory',
+    'main_template' => 'Use as template',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'log_in' => 'Log In',
+    'filter' => 'Filter',
+    'upload_empty_file' => 'Upload empty file',
+    'upload_any_extension_file' => 'Upload any extension file',
+    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
+    '2factors_expected_for_admin' => 'Administrator requires 2FA to get logged',
+    '2factors_expected_for_admin_tip' => 'By default, an Administrator has to use a 2FA method to get logged. If not enabled, Administrator will not require it to get logged even if 2FA is enabled for any other user. Make sure you test another account with 2 factor auth before enabling for admin as you could lock yourself out of the system permanently.',
     '' => ''
 );

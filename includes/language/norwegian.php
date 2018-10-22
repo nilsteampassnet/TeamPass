@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @package       norwegian.php
- * @author        Nils Laumaillé <nils@teampass.net>
+ * @file          norwegian.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
+ * @licensing     GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,37 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'filter' => 'Filter',
-    'upload_empty_file' => 'Upload empty file',
-    'upload_any_extension_file' => 'Upload any extension file',
-    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
-    'log_in' => 'Log In',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
-    'create_item_based_upon_template' => 'Use of template for Item',
-    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
-    'main_template' => 'Use as template',
-    'is_mandatory' => 'Is mandatory',
-    'error_field_is_mandatory' => 'At least one mandatory field is empty',
-    'position_in_list' => 'Position in list',
-    'visible_by' => 'Visible by',
-    'restrict_visibility_to' => 'Restrict visibility to',
-    'every_roles' => 'Every roles',
-    'masked_textarea' => 'Masked textarea',
-    'masked_text' => 'Masked text',
-    'textarea' => 'Textarea',
-    'data_is_textarea' => 'Data is Textarea',
-    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
-    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
-    'yubico_user_id' => 'Client ID',
-    'yubico_user_key' => 'Secret KEY',
-    'yubico_bad_code' => 'Wrong Yubico information',
-    'press_your_yubico_key' => 'Press your Yubico key',
-    'show_yubico_info_form' => 'Show Yubico user information form',
-    'human_resources' => 'Super manager',
-    'login_attempts' => 'Login attempts since last successful connection',
-    'settings_secure_display_image' => 'Enable secure image display',
-    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+$LANG = array (
     'user_ga_code' => 'Send GoogleAuthenticator til brukeren på epost',
     'send_ga_code' => 'Goggle Authenticator for brukeren',
     'error_no_email' => 'Denne brukeren har ikke definert epost',
@@ -270,7 +240,7 @@ $LANG = array(
     'no_previous_pw' => 'No previous password',
     'request_access_ot_item' => 'Request access to modify',
     'email_request_access_subject' => 'You have a request to enable access to your password item',
-    'email_request_access_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>User #tp_user# has requested access to password item \\\'#tp_item#\\\'.<br><br>The request comes with the next justification:<br><i>\\\'#tp_reason#\\\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
+    'email_request_access_mail' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>User #tp_user# has requested access to password item \'#tp_item#\'.<br><br>The request comes with the next justification:<br><i>\'#tp_reason#\'</i><br><br>Please review this request  and confirm that you will authorize access.<br><br>Greetings.',
     'admin_action_change_salt_key' => 'Change the main salt key used for encryption',
     'admin_action_change_salt_key_tip' => 'Before changing the salt key, please enable maintenance mode and perform a full backup of both the database and attachments in the upload folder.',
     'block_admin_info' => 'Administrator\'s Info',
@@ -938,7 +908,7 @@ $LANG = array(
     'failed_logins' => 'Failed Logins',
     'admin_2factor_authentication_tab' => '2FA Options',
     'error_only_numbers_in_folder_name' => 'Folder label can not be just a number. Please give your folder a name which includes letters.',
-    'folder_will_be_moved_below' => 'The folder <b><span id=\\\'move_folder_title\\\'></span></b> will be moved below folder:',
+    'folder_will_be_moved_below' => 'The folder <b><span id=\'move_folder_title\'></span></b> will be moved below folder:',
     'error_upload_runtime_not_found' => 'Upload feature: No runtime found.',
     'runtime_upload' => 'Upload feature: runtime',
     'encrypted_data' => 'Data is encrypted in database',
@@ -992,7 +962,7 @@ $LANG = array(
     'suggest_password_change' => 'Suggest a password change',
     'suggest_password_change_intro' => 'Make your change proposals using the next fields.',
     'suggestion_done' => 'Suggestion has been stored.',
-    'suggest_change_password_blank' => 'Leave this field empty if you DON\\\'T want to suggest a password change',
+    'suggest_change_password_blank' => 'Leave this field empty if you DON\'T want to suggest a password change',
     'item_id' => 'Item ID',
     'approve' => 'Approve',
     'reject' => 'Reject',
@@ -1121,5 +1091,34 @@ $LANG = array(
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
     'at_user_updated' => 'User #user_login# was updated',
+    'human_resources' => 'Super manager',
+    'login_attempts' => 'Login attempts since last successful connection',
+    'settings_secure_display_image' => 'Enable secure image display',
+    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
+    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
+    'yubico_user_id' => 'Client ID',
+    'yubico_user_key' => 'Secret KEY',
+    'yubico_bad_code' => 'Wrong Yubico information',
+    'show_yubico_info_form' => 'Show Yubico user information form',
+    'press_your_yubico_key' => 'Press your Yubico key',
+    'position_in_list' => 'Position in list',
+    'visible_by' => 'Visible by',
+    'restrict_visibility_to' => 'Restrict visibility to',
+    'every_roles' => 'Every roles',
+    'masked_text' => 'Masked text',
+    'textarea' => 'Textarea',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
+    'is_mandatory' => 'Is mandatory',
+    'main_template' => 'Use as template',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'log_in' => 'Log In',
+    'filter' => 'Filter',
+    'upload_empty_file' => 'Upload empty file',
+    'upload_any_extension_file' => 'Upload any extension file',
+    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
+    '2factors_expected_for_admin' => 'Administrator requires 2FA to get logged',
+    '2factors_expected_for_admin_tip' => 'By default, an Administrator has to use a 2FA method to get logged. If not enabled, Administrator will not require it to get logged even if 2FA is enabled for any other user. Make sure you test another account with 2 factor auth before enabling for admin as you could lock yourself out of the system permanently.',
     '' => ''
 );

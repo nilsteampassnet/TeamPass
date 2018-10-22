@@ -1,11 +1,11 @@
 <?php
 /**
  *
- * @package       polish.php
- * @author        Nils Laumaillé <nils@teampass.net>
+ * @file          polish.php
+ * @author        Nils Laumaillé
  * @version       2.1.27
  * @copyright     2009 - 2018 Nils Laumaillé
- * @license       GNU GPL-3.0
+ * @licensing     GNU GPL-3.0
  * @link          https://www.teampass.net
  *
  * This library is distributed in the hope that it will be useful,
@@ -13,37 +13,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 global $LANG;
-$LANG = array(
-    'filter' => 'Filter',
-    'upload_empty_file' => 'Upload empty file',
-    'upload_any_extension_file' => 'Upload any extension file',
-    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
-    'log_in' => 'Log In',
-    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
-    'create_item_based_upon_template' => 'Use of template for Item',
-    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
-    'main_template' => 'Use as template',
-    'is_mandatory' => 'Is mandatory',
-    'error_field_is_mandatory' => 'At least one mandatory field is empty',
-    'position_in_list' => 'Position in list',
-    'visible_by' => 'Visible by',
-    'restrict_visibility_to' => 'Restrict visibility to',
-    'every_roles' => 'Every roles',
-    'masked_textarea' => 'Masked textarea',
-    'masked_text' => 'Masked text',
-    'textarea' => 'Textarea',
-    'data_is_textarea' => 'Data is Textarea',
-    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
-    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
-    'yubico_user_id' => 'Client ID',
-    'yubico_user_key' => 'Secret KEY',
-    'yubico_bad_code' => 'Wrong Yubico information',
-    'show_yubico_info_form' => 'Show Yubico user information form',
-    'press_your_yubico_key' => 'Press your Yubico key',
-    'human_resources' => 'Super manager',
-    'login_attempts' => 'Login attempts since last successful connection',
-    'settings_secure_display_image' => 'Enable secure image display',
-    'settings_secure_display_image_tip' => 'Secure image display permits to read the image through PHP when a user previews an image attached to an item. Pro: the attachment is stored outside the site folder and is not accessible by a hacker. Con: it is slightly slower than previewing directly from an url.',
+$LANG = array (
     'user_ga_code' => 'Wyślij emaila z Google Authenticator do użytkownika',
     'send_ga_code' => 'Ustaw i wyślij emaila z kodem Google Authenticator',
     'error_no_email' => 'Ten użytkownik nie ma ustawionego adresu e-mail',
@@ -270,11 +240,11 @@ $LANG = array(
     'no_previous_pw' => 'Brak obecnego hasła',
     'request_access_ot_item' => 'Uzyskaj dostęp autora',
     'email_request_access_subject' => '[TeamPass] Zarządzaj dostępu do elementu',
-    'email_request_access_mail' => 'Witaj #tp_item_author#,<br><br>Użytkownik #tp_user# prosi o dostęp do hasła \'#tp_item#\'.<br><br>Żądanie przychodzi z następującym uzasadnieniem:<br><i>\\\'#tp_reason#\\\'</i><br><br>Zapoznaj się z tą prośbą i potwierdź, że autoryzujesz dostęp.<br><br>Pozdrawiam. ',
+    'email_request_access_mail' => 'Witaj #tp_item_author#,<br><br>Użytkownik #tp_user# prosi o dostęp do hasła \'#tp_item#\'.<br><br>Żądanie przychodzi z następującym uzasadnieniem:<br><i>\'#tp_reason#\'</i><br><br>Zapoznaj się z tą prośbą i potwierdź, że autoryzujesz dostęp.<br><br>Pozdrawiam. ',
     'admin_action_change_salt_key' => 'Zmień główny klucz SALTKey',
     'admin_action_change_salt_key_tip' => 'Przed zmianą klucza SALTKey, najlepiej wykonać pełną kopię zapasową bazy danych, oraz uaktywnić tryb konserwacji Teampass w celu zablokowania logowania się użytkowników.',
     'block_admin_info' => 'Informacje Administratora',
-    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Profil Administratora nie ma możliwości przeglądania pozycji. Profil ten jest tylko do administracji.<br />Sprawdź stronę<a href=\' * @package       /how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net</a> jeśli potrzebujesz w jakiś sposób to zmienić.',
+    'admin_new1' => '<i><u>14FEB2012:</i></u><br>Profil Administratora nie ma możliwości przeglądania pozycji. Profil ten jest tylko do administracji.<br />Sprawdź stronę<a href=\'http://www.teampass.net/how-to-handle-changes-on-administrator-profile\' target=\'_blank\'>TeamPass.net</a> jeśli potrzebujesz w jakiś sposób to zmienić.',
     'nb_items_by_query' => 'Liczba elementów na pobranie przy każdej iteracji zapytania',
     'nb_items_by_query_tip' => '<span style=\'font-size:11px;max-width:300px;\'>Więcej pozycji znaczy więcej czasu aby wyświetlić listę.<br />Ustaw \'auto\' aby pozwolić na automatyczne dostosowanie liczby pozycji w zależności od wielkości ekranu użytkownika.<br />Ustaw \'max\' aby wymusić pełną listę za jednym razem.<br />Ustaw liczbę pozycji pobieranych przy każdej iteracji.</span> ',
     'error_no_selected_folder' => 'Musisz wybrać folder',
@@ -938,7 +908,7 @@ $LANG = array(
     'failed_logins' => 'Nieudane logowania',
     'admin_2factor_authentication_tab' => 'Opcje 2FA',
     'error_only_numbers_in_folder_name' => 'Opis folderu nie może być numerem. Proszę użyj nazwy zawierającej litery.',
-    'folder_will_be_moved_below' => 'Folder <b><span id=\\\'move_folder_title\\\'></span></b> będzie przesunięty poniżej folderu:',
+    'folder_will_be_moved_below' => 'Folder <b><span id=\'move_folder_title\'></span></b> będzie przesunięty poniżej folderu:',
     'error_upload_runtime_not_found' => 'Opcja uaktualnienia: Nie znaleziono wykonania.',
     'runtime_upload' => 'Opcja uaktualnienia: Wykonanie.',
     'encrypted_data' => 'Dane są zaszyfrowane w bazie danych.',
@@ -1115,11 +1085,40 @@ $LANG = array(
     'error_no_reason_of_access' => 'Podaj powód aby uzyskać dostęp do tego elementu.',
     'settings_ldap_and_local_authentication' => 'Użytkownicy lokalni oraz LDAP',
     'settings_ldap_and_local_authentication_tip' => 'Włącz tę opcję, aby zezwolić na uwierzytelnianie użytkowników w LDAP lub na lokalnej liście użytkowników Teampass.',
-    'user_profile_api_key' => 'Your API key',
-    'report_a_bug' => 'Report a bug',
-    'enable_http_request_login' => 'Automatic login using http header credentials',
-    'duration_login_attempt' => 'Seconds till auto login:',
-    'newly_created_user_role' => 'Newly created user has role',
-    'at_user_updated' => 'User #user_login# was updated',
+    'user_profile_api_key' => 'Twój klucz API',
+    'report_a_bug' => 'Raportuj błąd',
+    'enable_http_request_login' => 'Automatyczne logowanie przez dane uwierzytelniające nagłówka http',
+    'duration_login_attempt' => 'Sekund do automatycznego logowania',
+    'newly_created_user_role' => 'Nowo utworzeni użytkownicy posiadają rolę',
+    'at_user_updated' => 'Dane użytkownika #user_login# zostały zaktualizowane',
+    'human_resources' => 'Manager użytkowników',
+    'login_attempts' => 'Prób logowania od ostatniego zalogowania się',
+    'settings_secure_display_image' => 'Włącz obrazek zabezpieczający',
+    'settings_secure_display_image_tip' => 'Obrazek zabezpieczający pozwala odczytać obraz wykorzystując PHP kiedy użytkownik podejrzy obraz dołączony do elementu. Zalety: załącznik jest przechowywany poza witryną i nie jest dostępny dla hakera. Wady: jest nieco wolniejszy niż podgląd bezpośrednio z adresu URL.',
+    'provide_yubico_identifiers' => 'Please provide your Yubico identifiers',
+    'admin_yubico_authentication_setting' => 'Enable Yubico authentication',
+    'yubico_user_id' => 'Client ID',
+    'yubico_user_key' => 'Secret KEY',
+    'yubico_bad_code' => 'Wrong Yubico information',
+    'show_yubico_info_form' => 'Show Yubico user information form',
+    'press_your_yubico_key' => 'Press your Yubico key',
+    'position_in_list' => 'Position in list',
+    'visible_by' => 'Visible by',
+    'restrict_visibility_to' => 'Restrict visibility to',
+    'every_roles' => 'Every roles',
+    'masked_text' => 'Masked text',
+    'textarea' => 'Textarea',
+    'error_field_is_mandatory' => 'At least one mandatory field is empty',
+    'is_mandatory' => 'Is mandatory',
+    'main_template' => 'Use as template',
+    'create_item_based_upon_template_tip' => 'When enabled, this feature permits the author to select a template made of Custom Fields. Notice that this feature requires Custom Fields to be enabled too.',
+    'create_item_based_upon_template' => 'Use of template for Item',
+    'log_in' => 'Log In',
+    'filter' => 'Filter',
+    'upload_empty_file' => 'Upload empty file',
+    'upload_any_extension_file' => 'Upload any extension file',
+    'upload_any_extension_file_tip' => 'When enabled, this option will allow users to upload any kind of files.',
+    '2factors_expected_for_admin' => 'Administrator requires 2FA to get logged',
+    '2factors_expected_for_admin_tip' => 'By default, an Administrator has to use a 2FA method to get logged. If not enabled, Administrator will not require it to get logged even if 2FA is enabled for any other user. Make sure you test another account with 2 factor auth before enabling for admin as you could lock yourself out of the system permanently.',
     '' => ''
 );
