@@ -22,6 +22,13 @@ RUN echo && \
   echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/docker-vars.ini && \
 echo
 
+# Fix API URL, BUG: API not working in container. #2100
+# Search last } and insert configuration rows before
+RUN sed -i '/^}/i \
+        location /api/ {\
+                try_files $uri $uri/ /api/index.php?$args;\
+        }' /etc/nginx/sites-enabled/default.conf
+
 COPY teampass-docker-start.sh /teampass-docker-start.sh
 
 # Configure nginx-php-fpm image to pull our code.
