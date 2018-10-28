@@ -1045,6 +1045,20 @@ mysqli_query(
 );
 
 
+// alter table USERS
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."users` CHANGE `avatar` `avatar` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL, CHANGE `avatar_thumb` `avatar_thumb` VARCHAR(255) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL;"
+);
+
+
+// alter table NESTED_TREE
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."nested_tree` CHANGE `nleft` `nleft` INT(11) NULL DEFAULT NULL, CHANGE `nright` `nright` INT(11) NULL DEFAULT NULL, CHANGE `nlevel` `nlevel` INT(11) NULL DEFAULT NULL;"
+);"
+
+
 
 // add new field for items_change
 mysqli_query(

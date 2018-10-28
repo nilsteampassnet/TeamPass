@@ -1,9 +1,12 @@
 2.1.27
 24/
+ #2452 Fix API URL
+ #2438 Add new user fails due to missing default for not null fields
  #2436 Undefined variable: user_id in api/functions.php
  #2432 Empty item URL automatically fills with 'https://'
  #2426 New option to force admin user to get connect using 2 factor code
  #2416 Backslash in user's password
+ #2401 New LDAP account has full access when they log in for the first time
 
 23/
  #2419 Cannot show password by using item menu bars entry

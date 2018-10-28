@@ -732,7 +732,6 @@ function identifyUserRights(
                 }
             }
         }
-        
         // Clean arrays
         $listAllowedFolders = array_unique($listAllowedFolders);
         $groupesVisiblesUser = explode(';', trimElement($groupesVisiblesUser, ";"));
@@ -801,20 +800,25 @@ function identifyUserRights(
                 $_SESSION['user_id'],
                 1
             );
+            
             if (empty($persoFld['id']) === false) {
                 if (in_array($persoFld['id'], $listAllowedFolders) === false) {
                     array_push($_SESSION['personal_folders'], $persoFld['id']);
                     array_push($listAllowedFolders, $persoFld['id']);
                     array_push($_SESSION['personal_visible_groups'], $persoFld['id']);
+                    
                     // get all descendants
-                    $ids = $tree->getDescendants($persoFld['id'], true, false);
+                    $ids = $tree->getDescendants($persoFld['id'], false, false);
                     foreach ($ids as $ident) {
-                        array_push($listAllowedFolders, $ident->id);
-                        array_push($_SESSION['personal_visible_groups'], $ident->id);
-                        array_push($_SESSION['personal_folders'], $ident->id);
+                        if ($ident->personal_folder === 1) {
+                            array_push($listAllowedFolders, $ident->id);
+                            array_push($_SESSION['personal_visible_groups'], $ident->id);
+                            array_push($_SESSION['personal_folders'], $ident->id);
+                        }
                     }
                 }
             }
+
             // get list of readonly folders when pf is disabled.
             $_SESSION['personal_folders'] = array_unique($_SESSION['personal_folders']);
             // rule - if one folder is set as W or N in one of the Role, then User has access as W

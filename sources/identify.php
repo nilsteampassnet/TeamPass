@@ -175,6 +175,12 @@ if ($post_type === "identify_duo_user") {
                                 'personal_folder' => '1'
                             )
                         );
+                        
+                        // Rebuild tree
+                        $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+                        $tree->register();
+                        $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+                        $tree->rebuild();
                     }
                 }
             }
@@ -413,7 +419,7 @@ function identifyUser(
         $dbgDuo = fopen($SETTINGS['path_to_files_folder']."/duo.debug.txt", "a");
 
         fputs(
-            $dbgDuo,
+            /** @scrutinizer ignore-type */ $dbgDuo,
             "Content of data sent '".filter_var($sentData, FILTER_SANITIZE_STRING)."'\n"
         );
     }
@@ -798,7 +804,9 @@ function identifyUser(
                 if ($debugLdap == 1) {
                     fputs($dbgLdap, "expiry check of user $auth_username returned: $_UserExpiry\n\n");
                 }
-                if (is_array($_UserExpiry) === false && strstr($_UserExpiry, "not expire") === false) {
+                if (is_array($_UserExpiry) === false
+                    && strstr($_UserExpiry, "not expire") === false
+                ) {
                     echo '[{"value" : "user_not_exists '.$auth_username.'", "text":""}]';
                     exit();
                 }
@@ -940,6 +948,12 @@ function identifyUser(
                     'personal_folder' => '1'
                 )
             );
+            
+            // Rebuild tree
+            $tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+            $tree->register();
+            $tree = new Tree\NestedTree\NestedTree(prefix_table("nested_tree"), 'id', 'parent_id', 'title');
+            $tree->rebuild();
         }
         $proceedIdentification = true;
         $user_initial_creation_through_ldap = true;
@@ -994,7 +1008,7 @@ function identifyUser(
                         $data['id']
                     );
 
-                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', /** @scrutinizer ignore-type */ isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
+                    echo '[{"value" : "<img src=\"'.$new_2fa_qr.'\">", "user_admin":"', isset($_SESSION['user_admin']) ? $antiXss->xss_clean($_SESSION['user_admin']) : "", '", "initial_url" : "'.@$_SESSION['initial_url'].'", "error" : "'.$logError.'"}]';
 
                     exit();
                 }
@@ -1265,15 +1279,16 @@ function identifyUser(
             $_SESSION['fin_session'] = (integer) (time() + $_SESSION['user_settings']['session_duration']);
 
             /* If this option is set user password MD5 is used as personal SALTKey */
-            if (isset($SETTINGS['use_md5_password_as_salt']) &&
-                $SETTINGS['use_md5_password_as_salt'] == 1
+            if (isset($SETTINGS['use_md5_password_as_salt'])
+                && $SETTINGS['use_md5_password_as_salt'] == 1
             ) {
                 $_SESSION['user_settings']['clear_psk'] = md5($passwordClear);
-                $tmp = encrypt($_SESSION['user_settings']['clear_psk'], "");
-                if ($tmp !== false) {
+                //$tmp = encrypt($_SESSION['user_settings']['clear_psk'], "");
+                $encryptedPSK = cryption($passwordClear, '', 'encrypt');
+                if (empty($encryptedPSK['string']) === false) {
                     setcookie(
                         "TeamPass_PFSK_".md5($_SESSION['user_id']),
-                        $tmp,
+                        $encryptedPSK['string'],
                         time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
                         '/'
                     );
@@ -1360,39 +1375,20 @@ function identifyUser(
             }
 
             // Get user's rights
-            if ($user_initial_creation_through_ldap === false) {
-                identifyUserRights(
-                    $data['groupes_visibles'],
-                    $_SESSION['groupes_interdits'],
-                    $data['admin'],
-                    $data['fonction_id'],
-                    $server,
-                    $user,
-                    $pass,
-                    $database,
-                    $port,
-                    $encoding,
-                    $SETTINGS
-                );
-            } else {
-                // is new LDAP user. Show only his personal folder
-                if ($SETTINGS['enable_pf_feature'] === '1') {
-                    $_SESSION['personal_visible_groups'] = array($data['id']);
-                    $_SESSION['personal_folders'] = array($data['id']);
-                } else {
-                    $_SESSION['personal_visible_groups'] = array();
-                    $_SESSION['personal_folders'] = array();
-                }
-                $_SESSION['all_non_personal_folders'] = array();
-                $_SESSION['groupes_visibles'] = array();
-                $_SESSION['groupes_visibles_list'] = "";
-                $_SESSION['read_only_folders'] = array();
-                $_SESSION['list_folders_limited'] = "";
-                $_SESSION['list_folders_editable_by_role'] = array();
-                $_SESSION['list_restricted_folders_for_items'] = array();
-                $_SESSION['nb_folders'] = 1;
-                $_SESSION['nb_roles'] = 0;
-            }
+            identifyUserRights(
+                $data['groupes_visibles'],
+                $_SESSION['groupes_interdits'],
+                $data['admin'],
+                $data['fonction_id'],
+                $server,
+                $user,
+                $pass,
+                $database,
+                $port,
+                $encoding,
+                $SETTINGS
+            );
+
             // Get some more elements
             $_SESSION['screenHeight'] = $dataReceived['screenHeight'];
             // Get last seen items

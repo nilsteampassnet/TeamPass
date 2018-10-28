@@ -419,6 +419,7 @@ if (isset($_SESSION['user_id']) === true && empty($_SESSION['user_id']) === fals
             $SETTINGS
         );
 
+
         // user type
         if (isset($LANG) === true) {
             if ($_SESSION['user_admin'] === '1') {

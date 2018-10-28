@@ -314,6 +314,8 @@ function recursiveTree($nodeId)
     $session_list_folders_limited = $superGlobal->get("list_folders_limited", "SESSION");
     $session_read_only_folders = $superGlobal->get("read_only_folders", "SESSION");
 
+
+
     // Be sure that user can only see folders he/she is allowed to
     if (in_array($completTree[$nodeId]->id, $session_forbiden_pfs) === false
         || in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true
@@ -367,6 +369,9 @@ function recursiveTree($nodeId)
                 $text = $title = "";
             }
         }
+
+        //echo " >> ".$nodeId." ; ".$displayThisNode." ;; ";
+        //print_r($session_groupes_visibles);
 
         if ($displayThisNode === true) {
             // get info about current folder

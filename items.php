@@ -41,14 +41,13 @@ require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/SuperGlobal/SuperGlobal.php';
 $superGlobal = new protect\SuperGlobal\SuperGlobal();
-
+            
 // Prepare GET variables
 $get_group = $superGlobal->get("group", "GET");
 $get_id = $superGlobal->get("id", "GET");
 
 // Prepare SESSION variables
 $session_user_admin = $superGlobal->get("user_admin", "SESSION");
-
 
 if ($session_user_admin === '1'
     && (isset($SETTINGS_EXT['admin_full_right']) === true && $SETTINGS_EXT['admin_full_right'] === true)
@@ -83,6 +82,7 @@ foreach ($rows as $reccord) {
         $listRoles .= ';'.$reccord['id'].'#'.$reccord['title'];
     }
 }
+
 
 // Hidden things
 echo '
