@@ -42,11 +42,13 @@ if (file_exists('../includes/config/tp.config.php')) {
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
 $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-if (isset($post_type) && ($post_type === 'ga_generate_qr'
-    || $post_type === 'send_pw_by_email' || $post_type === 'generate_new_password')
+if (isset($post_type) === true
+    && ($post_type === 'ga_generate_qr'
+    || $post_type === 'send_pw_by_email'
+    || $post_type === 'generate_new_password')
 ) {
     // continue
-    mainQuery();
+    mainQuery($SETTINGS);
 } elseif (isset($_SESSION['user_id']) === true
     && checkUser($_SESSION['user_id'], $_SESSION['key'], 'home', $SETTINGS) === false
 ) {
@@ -59,7 +61,7 @@ if (isset($post_type) && ($post_type === 'ga_generate_qr'
     && null !== filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES))
 ) {
     // continue
-    mainQuery();
+    mainQuery($SETTINGS);
 } else {
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
     include $SETTINGS['cpassman_dir'].'/error.php';
@@ -69,7 +71,7 @@ if (isset($post_type) && ($post_type === 'ga_generate_qr'
 /**
  * Undocumented function.
  */
-function mainQuery()
+function mainQuery($SETTINGS)
 {
     header('Content-type: text/html; charset=utf-8');
     header('Cache-Control: no-cache, must-revalidate');
@@ -100,10 +102,16 @@ function mainQuery()
     include_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     include_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
-    // connect to the server
-    include_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
+    // Connect to mysql server
+    require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
+    DB::$user = DB_USER;
+    DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+    DB::$dbName = DB_NAME;
+    DB::$host = DB_HOST;
+    DB::$port = DB_PORT;
+    DB::$encoding = DB_ENCODING;
 
     // User's language loading
     include_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
@@ -536,7 +544,11 @@ function mainQuery()
                                 )
                             );
                         }
+                        $data['id'] = $newUserId;
                     }
+
+                    // Log event
+                    logEvents('user_connection', 'at_2fa_google_code_send_by_email', $data['id'], stripslashes($login), stripslashes($login));
 
                     // send mail?
                     if (null !== filter_input(INPUT_POST, 'send_email', FILTER_SANITIZE_STRING)

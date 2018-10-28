@@ -15,6 +15,8 @@
  */
 
 return array(
+    'at_2fa_google_code_send_by_email' => 'Google Authenticator temporary code send to user',
+    'logs_for_user' => 'Logs for user',
     'please_confirm' => 'Please confirm',
     'please_confirm_user_deletion' => 'Please confirm user\'s deletion',
     'user_is_disabled' => 'User is disabled',
@@ -180,6 +182,7 @@ return array(
     'index_change_pw' => 'Change password',
     'menu_title_new_personal_saltkey' => 'Change personal salt key',
     'personal_saltkey_lost' => 'Reset personal salt key',
+    'at_modification' => 'Edited',
     '---' => '---',
     'upload_empty_file' => 'Upload empty file',
     'upload_any_extension_file' => 'Upload any extension file',
@@ -527,7 +530,6 @@ return array(
     'at_import' => 'Import',
     'at_label' => 'Label',
     'at_login' => 'Login',
-    'at_modification' => 'Modification',
     'at_moved' => 'Moved',
     'at_personnel' => 'Personal',
     'at_pw' => 'Password changed',

@@ -279,7 +279,7 @@ foreach ($treeDesc as $t) {
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">
-                    <h3 class="card-title"><?php echo langHdl('logs'); ?></h3>
+                    <h3 class="card-title"><?php echo langHdl('logs_for_user'); ?> <span id="row-logs-title"></span></h3>
                 </div>
                 
                 <!-- /.card-header -->
@@ -289,8 +289,8 @@ foreach ($treeDesc as $t) {
                         <thead>
                         <tr>
                             <th><?php echo langHdl('date'); ?></th>
-                            <th><?php echo langHdl('label'); ?></th>
                             <th><?php echo langHdl('activity'); ?></th>
+                            <th><?php echo langHdl('label'); ?></th>
                         </tr>
                         </thead>
                         <tbody>

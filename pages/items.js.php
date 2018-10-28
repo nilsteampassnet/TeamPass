@@ -82,8 +82,7 @@ if (store.get('teampassApplication') === 'undefined' || store.get('teampassAppli
             itemsShownByQuery : '',
             foldersList : [],
             personalSaltkeyRequired : 0,
-            personalSaltkeyIsSet : 0,
-            userIsReadOnly : <?php echo isset($_SESSION['user_read_only']) === true && $_SESSION['user_read_only'] === 1 ? 1 : 0; ?>
+            personalSaltkeyIsSet : 0
         }
     );
 }

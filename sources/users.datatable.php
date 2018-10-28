@@ -48,6 +48,12 @@ require_once 'main.functions.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db.class.php';
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
+DB::$user = DB_USER;
+DB::$password = defuseReturnDecrypted(DB_PASSWD, $SETTINGS);
+DB::$dbName = DB_NAME;
+DB::$host = DB_HOST;
+DB::$port = DB_PORT;
+DB::$encoding = DB_ENCODING;
 
 // Class loader
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
@@ -224,7 +230,7 @@ foreach ($rows as $record) {
                 }
             }
         }
-        $sOutput .= '["<span data-id=\"'.$record['id'].'\"></span>", ';
+        $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.addslashes(str_replace("'", '&lsquo;', $record['name'])).' '.addslashes(str_replace("'", '&lsquo;', $record['lastname'])).'\"></span>", ';
 
         //col2
         $sOutput .= '"'.

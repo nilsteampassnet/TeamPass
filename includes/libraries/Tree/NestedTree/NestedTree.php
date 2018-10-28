@@ -1,7 +1,8 @@
 <?php
+
 namespace Tree\NestedTree;
 
-/**
+/*
  * @package       NestedTree.class.php
  * @author        Nils Laumaillé <nils@teampass.net>
  * @version       2.1.27
@@ -14,7 +15,6 @@ namespace Tree\NestedTree;
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  */
 
-//session_start();
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
@@ -22,43 +22,43 @@ if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
 class NestedTree
 {
     /**
-     * Constructor. Set the database table name and necessary field names
+     * Constructor. Set the database table name and necessary field names.
      *
      * @param string $table       Name of the tree database table
      * @param string $idField     Name of the primary key ID field
      * @param string $parentField Name of the parent ID field
-     * @param string $sortField   Name of the field to sort data.
+     * @param string $sortField   name of the field to sort data
      */
-
     public function __construct($table, $idField, $parentField, $sortField)
     {
         $this->table = $table;
 
         $this->fields = array(
-            'id'     => $idField,
+            'id' => $idField,
             'parent' => $parentField,
-            'sort'   => $sortField
+            'sort' => $sortField,
         );
     }
 
     /**
      * A utility function to return an array of the fields
-     * that need to be selected in SQL select queries
+     * that need to be selected in SQL select queries.
      *
      * @return array An indexed array of fields to select
      */
     public function getFields()
     {
         return array($this->fields['id'], $this->fields['parent'], $this->fields['sort'],
-                        'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation');
+                        'nleft', 'nright', 'nlevel', 'personal_folder', 'renewal_period', 'bloquer_modification', 'bloquer_creation', );
     }
 
     /**
-     * Fetch the node data for the node identified by $folder_id
+     * Fetch the node data for the node identified by $folder_id.
      *
-     * @param  int    $folder_id The ID of the node to fetch
+     * @param int $folder_id The ID of the node to fetch
+     *
      * @return object An object containing the node's
-     *                          data, or null if node not found
+     *                data, or null if node not found
      */
     public function getNode($folder_id)
     {
@@ -84,12 +84,13 @@ class NestedTree
      * entire tree. Optionally, only return child data instead of all descendant
      * data.
      *
-     * @param int $folder_id The ID of the node to fetch descendant data for.
-     *                                  Specify an invalid ID (e.g. 0) to retrieve all data.
-     * @param bool $includeSelf Whether or not to include the passed node in the
-     *                                  the results. This has no meaning if fetching entire tree.
+     * @param int  $folder_id    The ID of the node to fetch descendant data for.
+     *                           Specify an invalid ID (e.g. 0) to retrieve all data.
+     * @param bool $includeSelf  Whether or not to include the passed node in the
+     *                           the results. This has no meaning if fetching entire tree.
      * @param bool $childrenOnly True if only returning children data. False if
-     *                                  returning all descendant data
+     *                           returning all descendant data
+     *
      * @return array The descendants of the passed now
      */
     public function getDescendants($folder_id = 0, $includeSelf = false, $childrenOnly = false, $unique_id_list = false)
@@ -174,9 +175,10 @@ class NestedTree
      * Fetch the children of a node, or if no node is specified, fetch the
      * top level items.
      *
-     * @param int  $id          The ID of the node to fetch child data for.
-     * @param bool $includeSelf Whether or not to include the passed node in the
-     *                                  the results.
+     * @param int  $id          the ID of the node to fetch child data for
+     * @param bool $includeSelf whether or not to include the passed node in the
+     *                          the results
+     *
      * @return array The children of the passed node
      */
     public function getChildren($folder_id = 0, $includeSelf = false)
@@ -187,11 +189,12 @@ class NestedTree
     /**
      * Fetch the path to a node. If an invalid node is passed, an empty array is returned.
      * If a top level node is passed, an array containing on that node is included (if
-     * 'includeSelf' is set to true, otherwise an empty array)
+     * 'includeSelf' is set to true, otherwise an empty array).
      *
-     * @param int  $folder_id          The ID of the node to fetch child data for.
-     * @param bool $includeSelf Whether or not to include the passed node in the
-     *                                  the results.
+     * @param int  $folder_id   the ID of the node to fetch child data for
+     * @param bool $includeSelf whether or not to include the passed node in the
+     *                          the results
+     *
      * @return array An array of each node to passed node
      */
     public function getPath($folder_id = 0, $includeSelf = false)
@@ -235,8 +238,9 @@ class NestedTree
      * Check if one node descends from another node. If either node is not
      * found, then false is returned.
      *
-     * @param  int  $descendant_id The node that potentially descends
-     * @param  int  $ancestor_id   The node that is potentially descended from
+     * @param int $descendant_id The node that potentially descends
+     * @param int $ancestor_id   The node that is potentially descended from
+     *
      * @return bool True if $descendant_id descends from $ancestor_id, false otherwise
      */
     public function isDescendantOf($descendant_id, $ancestor_id)
@@ -273,8 +277,9 @@ class NestedTree
      * Check if one node is a child of another node. If either node is not
      * found, then false is returned.
      *
-     * @param  int  $child_id  The node that is possibly a child
-     * @param  int  $parent_id The node that is possibly a parent
+     * @param int $child_id  The node that is possibly a child
+     * @param int $parent_id The node that is possibly a parent
+     *
      * @return bool True if $child_id is a child of $parent_id, false otherwise
      */
     public function isChildOf($child_id, $parent_id)
@@ -299,10 +304,11 @@ class NestedTree
     }
 
     /**
-     * Find the number of descendants a node has
+     * Find the number of descendants a node has.
      *
-     * @param  int $folder_id The ID of the node to search for. Pass 0 to count all nodes in the tree.
-     * @return int The number of descendants the node has, or -1 if the node isn't found.
+     * @param int $folder_id The ID of the node to search for. Pass 0 to count all nodes in the tree.
+     *
+     * @return int the number of descendants the node has, or -1 if the node isn't found
      */
     public function numDescendants($folder_id)
     {
@@ -324,10 +330,11 @@ class NestedTree
     }
 
     /**
-     * Find the number of children a node has
+     * Find the number of children a node has.
      *
-     * @param  int $folder_id The ID of the node to search for. Pass 0 to count the first level items
-     * @return int The number of descendants the node has, or -1 if the node isn't found.
+     * @param int $folder_id The ID of the node to search for. Pass 0 to count the first level items
+     *
+     * @return int the number of descendants the node has, or -1 if the node isn't found
      */
     public function numChildren($folder_id)
     {
@@ -347,7 +354,7 @@ class NestedTree
     }
 
     /**
-     * Fetch the tree data, nesting within each node references to the node's children
+     * Fetch the tree data, nesting within each node references to the node's children.
      *
      * @return array The tree with the node's child data
      */
@@ -367,7 +374,7 @@ class NestedTree
         $result = mysqli_query($link, $query);
 
         // create a root node to hold child data about first level items
-        $root = new \stdClass;
+        $root = new \stdClass();
         $root->$idField = 0;
         $root->children = array();
 
@@ -390,7 +397,7 @@ class NestedTree
     }
 
     /**
-     * Rebuilds the tree data and saves it to the database
+     * Rebuilds the tree data and saves it to the database.
      */
     public function rebuild()
     {
@@ -437,12 +444,12 @@ class NestedTree
      * in subrequests are held over to when control is returned so the nright
      * can be assigned.
      *
-     * @param   array   &$arr       A reference to the data array, since we need to
-     *                              be able to update the data in it
-     * @param int     $folder_id    The ID of the current node to process
-     * @param int     $fld_level    The nlevel to assign to the current node
-     * @param int     $n_tally      A reference to the running tally for the n-value
-     * @param integer $n
+     * @param array &$arr      A reference to the data array, since we need to
+     *                         be able to update the data in it
+     * @param int   $folder_id The ID of the current node to process
+     * @param int   $fld_level The nlevel to assign to the current node
+     * @param int   $n_tally   A reference to the running tally for the n-value
+     * @param int   $n
      */
     public function generateTreeData(&$arr, $folder_id, $fld_level, &$n_tally)
     {
@@ -462,7 +469,8 @@ class NestedTree
      * parent, siblings and children. If the node isn't valid, fetch the first
      * level of nodes from the tree.
      *
-     * @param  int   $folder_id The ID of the node to fetch child data for.
+     * @param int $folder_id the ID of the node to fetch child data for
+     *
      * @return array An array of each node in the family
      */
     public function getImmediateFamily($folder_id)
