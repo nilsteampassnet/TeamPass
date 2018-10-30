@@ -247,65 +247,68 @@ $(function() {
                         forbidFld += $(this).val() + ";";
                     });
 
-                    //prepare data
-                    /*var data = '{"login":"'+sanitizeString($('#new_login').val())+'", '+
-                        '"name":"'+sanitizeString($('#new_name').val())+'", '+
-                        '"lastname":"'+sanitizeString($('#new_lastname').val())+'", '+
-                        '"pw":"'+sanitizeString($('#new_pwd').val())+'", '+
-                        '"email":"'+$("#new_email").val()+'", '+
-                        '"admin":"'+$("#new_admin").prop("checked")+'", '+
-                        '"manager":"'+$("#new_manager").prop("checked")+'", '+
-                        '"read_only":"'+$("#new_read_only").prop("checked")+'", '+
-                        '"personal_folder":"'+$("#new_personal_folder").prop("checked")+'", '+
-                        '"new_folder_role_domain":"'+$("#new_folder_role_domain").prop("checked")+'", '+
-                        '"domain":"'+$('#new_domain').val()+'", '+
-                        '"isAdministratedByRole":"'+$("#new_is_admin_by").val()+'", '+
-                        '"groups":"' + groups + '", '+
-                        '"allowed_flds":"' + authFld + '", '+
-                        '"forbidden_flds":"' + forbidFld + '"}';*/
-
-                    var data = {
-                        login                   : $('#new_login').val(),
-                        name                    : $('#new_name').val(),
-                        lastname                : $('#new_lastname').val(),
-                        pw                      : $('#new_pwd').val(),
-                        email                   : $('#new_email').val(),
-                        admin                   : $('#new_admin').prop('checked'),
-                        manager                 : $('#new_manager').prop('checked'),
-                        read_only               : $('#new_read_only').prop('checked'),
-                        personal_folder         : $('#new_personal_folder').prop('checked'),
-                        new_folder_role_domain  : $('#new_folder_role_domain').prop('checked'),
-                        domain                  : $('#new_domain').val(),
-                        isAdministratedByRole   : $('#new_is_admin_by').val(),
-                        groups                  : groups,
-                        allowed_flds            : authFld,
-                        forbidden_flds          : forbidFld,
-                    };
-
                     $.post(
-                        "sources/users.queries.php",
+                        "sources/main.queries.php",
                         {
-                            type    :"add_new_user",
-                            data     : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-                            key    : "<?php echo $_SESSION['key']; ?>"
+                            type        : "generate_a_password",
+                            size        : 12,
+                            secure      : false,
+                            symbols     : false,
+                            capitalize  : true,
+                            numerals    : true,
+                            lowercase   : true
                         },
                         function(data) {
-                            $("#add_new_user_info").hide().html("");
-                            if (data[0].error === "no") {
-                                // clear form fields
-                                $("#new_name, #new_lastname, #new_login, #new_pwd, #new_is_admin_by, #new_email, #new_domain").val("");
-                                $("#new_admin, #new_manager, #new_read_only, #new_personal_folder").prop("checked", false);
-
-                                // refresh table content
-                                tableUsers.api().ajax.reload();
-
-                                $("#add_new_user").dialog("close");
+                            data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                            if (data.error == "true") {
+                                $("#add_new_user_error").html(data.error_msg).show(1).delay(1000).fadeOut(1000);
                             } else {
-                                $("#add_new_user_error").html(data[0].error).show(1).delay(1000).fadeOut(1000);
+                                //prepare data
+                                var data = {
+                                    login                   : $('#new_login').val(),
+                                    name                    : $('#new_name').val(),
+                                    lastname                : $('#new_lastname').val(),
+                                    pw                      : data.key[0],
+                                    email                   : $('#new_email').val(),
+                                    admin                   : $('#new_admin').prop('checked'),
+                                    manager                 : $('#new_manager').prop('checked'),
+                                    read_only               : $('#new_read_only').prop('checked'),
+                                    personal_folder         : $('#new_personal_folder').prop('checked'),
+                                    new_folder_role_domain  : $('#new_folder_role_domain').prop('checked'),
+                                    domain                  : $('#new_domain').val(),
+                                    isAdministratedByRole   : $('#new_is_admin_by').val(),
+                                    groups                  : groups,
+                                    allowed_flds            : authFld,
+                                    forbidden_flds          : forbidFld,
+                                };
+
+                                $.post(
+                                    "sources/users.queries.php",
+                                    {
+                                        type    :"add_new_user",
+                                        data     : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                                        key    : "<?php echo $_SESSION['key']; ?>"
+                                    },
+                                    function(data) {
+                                        $("#add_new_user_info").hide().html("");
+                                        if (data[0].error === "no") {
+                                            // clear form fields
+                                            $("#new_name, #new_lastname, #new_login, #new_pwd, #new_is_admin_by, #new_email, #new_domain").val("");
+                                            $("#new_admin, #new_manager, #new_read_only, #new_personal_folder").prop("checked", false);
+
+                                            // refresh table content
+                                            tableUsers.api().ajax.reload();
+
+                                            $("#add_new_user").dialog("close");
+                                        } else {
+                                            $("#add_new_user_error").html(data[0].error).show(1).delay(1000).fadeOut(1000);
+                                        }
+                                    },
+                                    "json"
+                                );
                             }
-                        },
-                        "json"
-                   )
+                        }
+                   );
                 }
             },
             "<?php echo $LANG['cancel_button']; ?>": function() {

@@ -197,7 +197,11 @@ $htmlHeaders .= '
                 return false;
             }
         } else {
-
+            if ($("#ga_code").val() !== "" || $("#yubiko_key").val() !== "") {
+                user2FaMethod = true;
+            } else {
+                return false;
+            }
         }
         
         // launch identification

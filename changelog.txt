@@ -1,4 +1,8 @@
 2.1.27
+26/
+ #2453 account creation... password sent in email is "undefined"
+ #2455 Unable to login after upgrade from 2.1.27.23 => 2.1.27.25
+
 25/
  #2454 Update from 2.1.27.23 to 2.1.27.24 doesn't work
 
