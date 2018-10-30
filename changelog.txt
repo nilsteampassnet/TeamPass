@@ -1,4 +1,7 @@
 2.1.27
+25/
+ #2454 Update from 2.1.27.23 to 2.1.27.24 doesn't work
+
 24/
  #2452 Fix API URL
  #2438 Add new user fails due to missing default for not null fields

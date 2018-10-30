@@ -1056,7 +1056,7 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."nested_tree` CHANGE `nleft` `nleft` INT(11) NULL DEFAULT NULL, CHANGE `nright` `nright` INT(11) NULL DEFAULT NULL, CHANGE `nlevel` `nlevel` INT(11) NULL DEFAULT NULL;"
-);"
+);
 
 
 
