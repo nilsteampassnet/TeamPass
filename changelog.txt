@@ -1,6 +1,7 @@
 2.1.27
 27/
- #2457 Postpone treatment to get user location (ipapi.co usage)
+ #2456 Postpone treatment to get user location (ipapi.co usage)
+ #2431 Correct item creation/edit tab label
 
 26/
  #2453 account creation... password sent in email is "undefined"

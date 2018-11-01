@@ -1657,6 +1657,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                         WHERE id = %i",
                         $_SESSION['user_id']
                     );
+
                     if (empty($record['user_ip_lastdate']) === true
                         || (time() - $record['user_ip_lastdate']) > $SETTINGS_EXT['one_day_seconds']
                     ) {
@@ -1694,6 +1695,14 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 } else {
 
                 }
+
+                echo prepareExchangedData(
+                    array(
+                        'refresh' => '',
+                        'error' => ''
+                    ),
+                    "encode"
+                );
     
                 break;
     }
