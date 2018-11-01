@@ -24,10 +24,10 @@ echo
 
 # Fix API URL, BUG: API not working in container. #2100
 # Search last } and insert configuration rows before
-RUN sed -i '/^}/i \
+RUN sed -i "/^}/i \
   location /api/ {\
           try_files $uri $uri/ /api/index.php?$args;\
-  }' /etc/nginx/sites-enabled/default.conf
+  }" /etc/nginx/sites-enabled/default.conf
 
 COPY teampass-docker-start.sh /teampass-docker-start.sh
 
