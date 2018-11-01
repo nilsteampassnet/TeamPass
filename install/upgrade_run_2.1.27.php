@@ -1059,6 +1059,12 @@ mysqli_query(
 );
 
 
+// alter table NESTED_TREE
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `".$pre."users` ADD `user_ip_lastdate` VARCHAR(50) NULL DEFAULT NULL AFTER `user_ip`;"
+);
+
 
 // add new field for items_change
 mysqli_query(

@@ -215,72 +215,61 @@ $htmlHeaders .= '
         var d = new Date();
         var TimezoneOffset = d.getTimezoneOffset()*60;
 
-        // get some info
-        var client_info = "";
-        $.getJSON("https://ipapi.co/json", function() {
-            // nothing to do
-        })
-        .always(function(answered_data) {
-            if (answered_data.ip !== "") {
-                client_info = answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone;
-            }
+        // Get 2fa
+        $.post(
+            "sources/identify.php",
+            {
+                type : "get2FAMethods"
+            },
+            function(fa_methods) {
+                var data = {
+                    login               : $("#login").val(),
+                    pw                  : $("#pw").val(),
+                    duree_session       : $("#duree_session").val(),
+                    screenHeight        : $("body").innerHeight(),
+                    randomstring        : randomstring,
+                    TimezoneOffset      : TimezoneOffset,
+                    client              : "",
+                    user_2fa_selection  : user2FaMethod,
+                    login_sanitized     : sanitizeString($("#login").val()),
+                    pw_sanitized        : sanitizeString($("#pw").val()),
+                };
 
-            // Get 2fa
-            $.post(
-                "sources/identify.php",
-                {
-                    type : "get2FAMethods"
-                },
-                function(fa_methods) {
-                    var data = {
-                        login               : $("#login").val(),
-                        pw                  : $("#pw").val(),
-                        duree_session       : $("#duree_session").val(),
-                        screenHeight        : $("body").innerHeight(),
-                        randomstring        : randomstring,
-                        TimezoneOffset      : TimezoneOffset,
-                        client              : client_info,
-                        user_2fa_selection  : user2FaMethod,
-                        login_sanitized     : sanitizeString($("#login").val()),
-                        pw_sanitized        : sanitizeString($("#pw").val()),
-                    };
+                if (user2FaMethod === "" && fa_methods[0].nb === "1") {
+                    user2FaMethod = fa_methods[0].method;
+                }
 
-                    if (user2FaMethod === "" && fa_methods[0].nb === "1") {
-                        user2FaMethod = fa_methods[0].method;
-                    }
+                // Google 2FA
+                if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
+                    data["agses_code"] = $("#agses_code").val();
+                }
+        
+                // Google 2FA
+                if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
+                    data["GACode"] = $("#ga_code").val();
+                }
+                
+                // Yubico
+                if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
+                    data["yubico_key"] = $("#yubiko_key").val();
+                    data["yubico_yubico_user_idkey"] = $("#yubico_user_id").val();
+                    data["yubico_user_key"] = $("#yubico_user_key").val();
+                }
+                
 
-                    // Google 2FA
-                    if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
-                        data["agses_code"] = $("#agses_code").val();
-                    }
-            
-                    // Google 2FA
-                    if (user2FaMethod === "google" && $("#ga_code").val() !== undefined) {
-                        data["GACode"] = $("#ga_code").val();
-                    }
-                    
-                    // Yubico
-                    if (user2FaMethod === "yubico" && $("#yubiko_key").val() !== undefined) {
-                        data["yubico_key"] = $("#yubiko_key").val();
-                        data["yubico_yubico_user_idkey"] = $("#yubico_user_id").val();
-                        data["yubico_user_key"] = $("#yubico_user_key").val();
-                    }
-                    
-
+                // Handle if DUOSecurity is enabled
+                if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
+                    startAgsesAuth();
+                } else if (user2FaMethod !== "duo") {// || $("#login").val() === "admin"
+                    identifyUser(redirect, psk, data, randomstring);
+                } else {
                     // Handle if DUOSecurity is enabled
-                    if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
-                        startAgsesAuth();
-                    } else if (user2FaMethod !== "duo") {// || $("#login").val() === "admin"
-                        identifyUser(redirect, psk, data, randomstring);
-                    } else {
-                        // Handle if DUOSecurity is enabled
-                        $("#duo_data").val(window.btoa(data));
-                        loadDuoDialog();
-                    }
-                },
-                "json"
-            );
-        });
+                    $("#duo_data").val(window.btoa(data));
+                    loadDuoDialog();
+                }
+            },
+            "json"
+        );
     }
 
     //Identify user

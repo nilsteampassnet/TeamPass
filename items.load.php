@@ -4477,6 +4477,45 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
         }
     });
 
+    
+    //Simulate a CRON activity (only 5 secs after page loading)
+    setTimeout(
+        function() {
+            $.post(
+                "sources/users.queries.php",
+                {
+                    type    : "save_user_location",
+                    step    : "refresh",
+                    key     : "<?php echo $_SESSION['key']; ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $_SESSION['key']; ?>");
+                    if (data.refresh === true) {
+                        // Get user location
+                        var client_info = "";
+                        $.getJSON("https://ipapi.co/json", function() {
+                            // nothing to do
+                        })
+                        .always(function(answered_data) {
+                            if (answered_data.ip !== "") {
+                                $.post(
+                                    "sources/users.queries.php",
+                                    {
+                                        type        : "save_user_location",
+                                        step        : "perform",
+                                        location    : answered_data.country+"-"+answered_data.city+"-"+answered_data.timezone,
+                                        key         : "<?php echo $_SESSION['key']; ?>"
+                                    }
+                                );
+                            }
+                        });
+                    }
+                }
+            );
+        },
+        5000
+    );
+
     //Simulate a CRON activity (only 8 secs after page loading)
     setTimeout(
         function() {

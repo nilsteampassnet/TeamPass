@@ -657,6 +657,7 @@ global \$SETTINGS;
                             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
                             `encrypted_psk` text NULL,
                             `user_ip` varchar(400) NOT null DEFAULT 'none',
+                            `user_ip_lastdate` varchar(50) NOT null DEFAULT NULL,
                             `user_api_key` varchar(500) NOT null DEFAULT 'none',
                             `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
                             `yubico_user_id` varchar(100) NOT null DEFAULT 'none',

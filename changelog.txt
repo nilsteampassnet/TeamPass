@@ -1,4 +1,7 @@
 2.1.27
+27/
+ #2457 Postpone treatment to get user location (ipapi.co usage)
+
 26/
  #2453 account creation... password sent in email is "undefined"
  #2455 Unable to login after upgrade from 2.1.27.23 => 2.1.27.25
