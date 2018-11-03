@@ -235,9 +235,8 @@ $htmlHeaders .= '
                     pw_sanitized        : sanitizeString($("#pw").val()),
                 };
 
-                if (user2FaMethod === "" && fa_methods[0].nb === "1") {
-                    user2FaMethod = fa_methods[0].method;
-                }
+                user2FaMethod = fa_methods[0].method;
+                data.user_2fa_selection = user2FaMethod;
 
                 // Google 2FA
                 if (user2FaMethod === "agses" && $("#agses_code").val() !== undefined) {
@@ -256,7 +255,6 @@ $htmlHeaders .= '
                     data["yubico_user_key"] = $("#yubico_user_key").val();
                 }
                 
-
                 // Handle if DUOSecurity is enabled
                 if (user2FaMethod === "agses" && $("#agses_code").val() === "") {
                     startAgsesAuth();

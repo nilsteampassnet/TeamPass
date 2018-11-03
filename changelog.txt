@@ -1,4 +1,7 @@
 2.1.27
+28/
+ #2461 Install procedure failing
+
 27/
  #2456 Postpone treatment to get user location (ipapi.co usage)
  #2431 Correct item creation/edit tab label
