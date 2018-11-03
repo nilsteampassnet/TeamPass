@@ -1232,7 +1232,7 @@ while ($row_field = mysqli_fetch_assoc($result)) {
 */
 $tp_config_file = "../includes/config/tp.config.php";
 if (file_exists($tp_config_file)) {
-    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))))) {
+    if (!copy($tp_config_file, $tp_config_file.'.'.date("Y_m_d", mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')).'.'.time()))) {
         echo '[{"error" : "includes/config/tp.config.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch.", "result":"", "index" : "'.$post_index.'", "multiple" : "'.$post_multiple.'"}]';
         return false;
     } else {

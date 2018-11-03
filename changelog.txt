@@ -1,6 +1,7 @@
 2.1.27
 28/
  #2461 Install procedure failing
+ #2457 Endless DB upgrade loop when upgrading
 
 27/
  #2456 Postpone treatment to get user location (ipapi.co usage)
