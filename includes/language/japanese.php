@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'Email Google Authentication to user',
     'send_ga_code' => 'Set and email Google Authentication code',
     'error_no_email' => 'ユーザーにメールアドレスが設定されていません。',

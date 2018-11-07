@@ -434,6 +434,22 @@ if ($res === false) {
 }
 
 
+// alter table NESTED_TREE
+$res = addColumnIfNotExist(
+    $pre."users",
+    "user_ip_lastdate",
+    "VARCHAR(50) NULL DEFAULT NULL"
+);
+if ($res === true) {
+    // Change name of field
+    mysqli_query($db_link, "ALTER TABLE `".$pre."users` ADD `user_ip_lastdate` VARCHAR(50) NULL DEFAULT NULL AFTER `user_ip`");
+} elseif ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"An error appears when adding user_ip_lastdate to table users! '.mysqli_error($db_link).'!"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+
 // alter table CACHE to add an index
 mysqli_query(
     $db_link,
@@ -1056,13 +1072,6 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `".$pre."nested_tree` CHANGE `nleft` `nleft` INT(11) NULL DEFAULT NULL, CHANGE `nright` `nright` INT(11) NULL DEFAULT NULL, CHANGE `nlevel` `nlevel` INT(11) NULL DEFAULT NULL;"
-);
-
-
-// alter table NESTED_TREE
-mysqli_query(
-    $db_link,
-    "ALTER TABLE `".$pre."users` ADD `user_ip_lastdate` VARCHAR(50) NULL DEFAULT NULL AFTER `user_ip`;"
 );
 
 

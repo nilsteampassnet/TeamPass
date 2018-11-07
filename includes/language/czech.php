@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'Zaslat uživateli Google Authenticator emailem',
     'send_ga_code' => 'Google Authenticator pro uživatele',
     'error_no_email' => 'Tento uživatel nemá nastavenou emailovou adresu!',

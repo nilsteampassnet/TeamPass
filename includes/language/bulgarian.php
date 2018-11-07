@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'Изптати Google Authentication на потребителя по имейл',
     'send_ga_code' => 'Задаване и изпращане по имейл на Google Authentication код',
     'error_no_email' => 'Този потребител няма зададен имейл адрес!',

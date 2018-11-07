@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'Отправить приложение Google Authenticator на email пользователю',
     'send_ga_code' => 'Код Google Authenticator для пользователя',
     'error_no_email' => 'У пользователя не задан email!',

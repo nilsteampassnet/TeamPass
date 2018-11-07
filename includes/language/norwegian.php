@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'Send GoogleAuthenticator til brukeren på epost',
     'send_ga_code' => 'Goggle Authenticator for brukeren',
     'error_no_email' => 'Denne brukeren har ikke definert epost',

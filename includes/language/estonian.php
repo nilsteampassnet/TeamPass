@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'Saada GoogleAuthenticator kasutajale e-mailiga',
     'send_ga_code' => 'Google Authenticator kasutajale',
     'error_no_email' => 'Kasutajal puudub e-posti aadress!',

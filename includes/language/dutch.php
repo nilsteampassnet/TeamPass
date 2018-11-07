@@ -14,6 +14,7 @@
  */
 global $LANG;
 $LANG = array (
+    '2fa_authentication_selector' => 'Select a 2 factor authenticator method',
     'user_ga_code' => 'E-mail Google Authenticatie naar gebruiker',
     'send_ga_code' => 'Stel Google Authenticatie in en stuur e-mail',
     'error_no_email' => 'Gebruiker heeft geen e-mailadres ingesteld',
