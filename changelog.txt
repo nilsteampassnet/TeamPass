@@ -1,4 +1,7 @@
 2.1.27
+29/
+  #2467, #2465 Cant login with normal user with hacking attempt message
+
 28/
  #2461 Install procedure failing
  #2457 Endless DB upgrade loop when upgrading

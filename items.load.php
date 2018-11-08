@@ -4482,7 +4482,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
     setTimeout(
         function() {
             $.post(
-                "sources/users.queries.php",
+                "sources/main.queries.php",
                 {
                     type    : "save_user_location",
                     step    : "refresh",
@@ -4499,7 +4499,7 @@ if ($SETTINGS['upload_imageresize_options'] == 1) {
                         .always(function(answered_data) {
                             if (answered_data.ip !== "") {
                                 $.post(
-                                    "sources/users.queries.php",
+                                    "sources/main.queries.php",
                                     {
                                         type        : "save_user_location",
                                         step        : "perform",
