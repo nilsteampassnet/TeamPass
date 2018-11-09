@@ -16,7 +16,7 @@
  *
  * @see      http://www.teampass.net
  */
-$var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk"></i>';
+$var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
 ?>
 
@@ -35,6 +35,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
         "responsive": true,
         "select": false,
         "stateSave": true,
+        "autoWidth": true,
         "ajax": {
             url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/find.queries.php",
             type: 'GET'
@@ -51,6 +52,15 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
             {"width": "15%"},
             {"width": "15%"}
         ],
+        "drawCallback": function() {
+            // Tooltips
+            $('.infotip').tooltip();
+
+            //iCheck for checkbox and radio inputs
+            $('#search-results-items input[type="checkbox"]').iCheck({
+                checkboxClass: 'icheckbox_flat-blue'
+            });
+        }
     });
 
     var detailRows = [];
@@ -81,7 +91,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
 
             // Add loader
             $(this)
-                .after('<i class="fa fa-refresh fa-spin fa-fw" id="search-loader"></i>');
+                .after('<i class="fas fa-refresh fa-spin fa-fw" id="search-spinner"></i>');
 
             // Get content of item
             row.child(showItemInfo(itemGlobal, tr, item), 'new-row').show();
@@ -125,19 +135,48 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                     //Admin cannot see Item
                     return_html = '<?php echo langHdl('not_allowed_to_see_pw'); ?>';
                 } else {
-                    return_html = '<td colspan="7"><div class="alert bg-gray disabled">' +
-                        '<h5  id="pwd-label_'+data.id+'">'+data.label+'</h5><dl>' +
-                        '<dt><?php echo langHdl('description'); ?></dt><dd>'+data.description+'</dd>' +
-                        '<dt><?php echo langHdl('pw'); ?></dt><dd>' +
-                        '<div id="pwd-show_'+data.id+'" class="unhide_masked_data" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></div>'+
-                        '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + unsanitizeString(data.pw) + '">' +
-                        '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0"></dd>' +
-                        '<dt><?php echo langHdl('index_login'); ?></dt><dd>'+data.login+'</dd>' +
-                        '<dt><?php echo langHdl('url'); ?></dt><dd>'+data.url+'</dd>' +
-                        '</dl></div></td>';
+                    return_html = '<td colspan="7">' +
+                    '<div class="card card-info">' +
+                        '<div class="card-header">' +
+                            '<h5>' + data.label + '</h5>' +
+                        '</div>' +
+                        '<div class="card-body">' +
+                            '<div class="form-group">' + data.description + '</div>' +
+                            '<div class="form-group">' +
+                            '<label class="form-group-label"><?php echo langHdl('pw'); ?></label>' +
+                            '<span id="pwd-show_'+data.id+'" class="unhide_masked_data ml-2" style="height: 20px;"><?php echo $var['hidden_asterisk']; ?></span>'+
+                            '<input id="pwd-hidden_'+data.id+'" type="hidden" value="' + unsanitizeString(data.pw) + '">' +
+                            '<input type="hidden" id="pwd-is-shown_'+data.id+'" value="0">' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                            '<label class="form-group-label"><?php echo langHdl('index_login'); ?></label>' +
+                            '<span class="ml-2">' + data.login + '</span>' +
+                            '</div>' +
+                            '<div class="form-group">' +
+                            '<label class="form-group-label"><?php echo langHdl('url'); ?></label>' +
+                            '<span class="ml-2">' + data.url + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="card-footer">' +
+                            '<button type="button" class="btn btn-default float-right" id="cancel"><?php echo langHdl('cancel'); ?></button>' +
+                        '</div>' +
+                    '</div>' +
+                    '</td>';
                 }
                 $(tr).next('tr').html(return_html);
-                $('.unhide_masked_data').css('cursor', 'pointer');
+                $('.unhide_masked_data').addClass('pointer');
+
+                // On click on CANCEL
+                $('#cancel').on('click', function() {
+                    // Change eye icon
+                    var eyeIcon = $('.item-detail').closest('i.fa-eye-slash');
+                    eyeIcon
+                        .removeClass('fa-eye-slash text-warning')
+                        .addClass('fa-eye');
+
+                    // Remove card
+                    $('.new-row').remove();
+                })
 
                 // show password during longpress
                 $('.unhide_masked_data').mousedown(function(event) {
@@ -149,7 +188,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                     mouseStillDown = false;
                 });
 
-                $('#search-loader').remove();
+                $('#search-spinner').remove();
 
                 $('.infotip').tooltip();
             }
@@ -197,7 +236,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
     var selectedItems = '',
         selectedAction = '',
         listOfFolders = '';
-    $("#search-results-items tbody").on( 'change', '.mass_op_cb', function () {
+    $("#search-results-items tbody").on('ifToggled', '.mass_op_cb', function () {
         // Check if at least one CB is checked
         if ($("#search-results-items input[type=checkbox]:checked").length > 0) {
             // Show selection menu
@@ -206,8 +245,8 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                     .addClass('menuset')
                     .html(
                         '<?php echo langHdl('actions'); ?>' +
-                        '<i class="fa fa-share ml-2 pointer infotip mass-operation" title="<?php echo langHdl('move_items'); ?>" data-action="move"></i>' +
-                        '<i class="fa fa-trash ml-2 pointer infotip mass-operation" title="<?php echo langHdl('delete_items'); ?>" data-action="delete"></i>'
+                        '<i class="fas fa-share ml-2 pointer infotip mass-operation" title="<?php echo langHdl('move_items'); ?>" data-action="move"></i>' +
+                        '<i class="fas fa-trash ml-2 pointer infotip mass-operation" title="<?php echo langHdl('delete_items'); ?>" data-action="delete"></i>'
                     );
 
                 // Prepare tooltips
@@ -263,7 +302,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                                 $('#dialog-mass-operation-html').html(
                                     '<?php echo langHdl('you_decided_to_move_items'); ?>: ' +
                                     '<div><ul>' + sel_items_txt + '</ul></div>' + htmlFolders +
-                                    '<div class="mt-3 alert alert-info"><i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_item_move'); ?></div>'
+                                    '<div class="mt-3 alert alert-info"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_item_move'); ?></div>'
                                 );
                             },
                             'json'
@@ -273,7 +312,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                         $('#dialog-mass-operation-html').html(
                             '<?php echo langHdl('you_decided_to_delete_items'); ?>: ' +
                             '<div><ul>' + sel_items_txt + '</ul></div>' +
-                            '<div class="mt-3 alert alert-danger"><i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_deletion'); ?></div>'
+                            '<div class="mt-3 alert alert-danger"><i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('confirm_deletion'); ?></div>'
                         );
                     }
                 });
@@ -292,18 +331,16 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
 
     // Perform action expected by user
     $('#dialog-mass-operation-button').click(function() {
-        console.log(selectedItems);
-
         if (selectedItems === "") {
             alertify
-                .warning('<i class="fa fa-ban mr-2"></i><?php echo langHdl('none_selected_text'); ?>', 3000)
+                .warning('<i class="fas fa-ban mr-2"></i><?php echo langHdl('none_selected_text'); ?>', 3000)
                 .dismissOthers();
             return false;
         }
 
         // Show to user
         alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
             .dismissOthers();
         
         if (selectedAction === 'delete') {
@@ -319,7 +356,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                     //check if format error
                     if (data[0].error !== '') {
                         alertify
-                            .error('<i class="fa fa-warning fa-lg mr-2"></i>' + data[0].error, 3)
+                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data[0].error, 3)
                             .dismissOthers();
                         return false;
                     } else if (data[0].status === 'ok') {
@@ -353,7 +390,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                     //check if format error
                     if (data[0].error !== '') {
                         alertify
-                            .error('<i class="fa fa-warning fa-lg mr-2"></i>' + data[1].error_text, 3)
+                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data[1].error_text, 3)
                             .dismissOthers();
                         return false;
                     } else if (data[0].status === 'ok') {
@@ -438,7 +475,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
             } else if ($("#div_mass_op").data('action') === "delete") {
                 html = '<?php echo langHdl('you_decided_to_delete_items'); ?>: ' +
                 '<div><ul>' + sel_items_txt + '</ul></div>' +
-                '<div style="padding:10px;" class="ui-corner-all ui-state-error"><span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo langHdl('confirm_deletion'); ?></div>';
+                '<div style="padding:10px;" class="ui-corner-all ui-state-error"><span class="fas fa-warning fa-lg"></span>&nbsp;<?php echo langHdl('confirm_deletion'); ?></div>';
 
                 $("#div_mass_html").html(html);
             }
@@ -448,7 +485,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
             "<?php echo langHdl('ok'); ?>": function() {
                 $("#div_mass_op_msg")
                     .addClass("ui-state-highlight")
-                    .html('<span class="fa fa-cog fa-spin fa-lg"></span>&nbsp;<?php echo langHdl('please_wait'); ?>')
+                    .html('<span class="fas fa-cog fa-spin fa-lg"></span>&nbsp;<?php echo langHdl('please_wait'); ?>')
                     .show();
 
                 var sel_items = '';
@@ -461,7 +498,7 @@ $var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-as
                 if (sel_items === "") {
                     $("#div_mass_op_msg")
                         .addClass("ui-state-error")
-                        .html('<span class="fa fa-warning fa-lg"></span>&nbsp;<?php echo langHdl('must_select_items'); ?>')
+                        .html('<span class="fas fa-warning fa-lg"></span>&nbsp;<?php echo langHdl('must_select_items'); ?>')
                         .show().delay(2000).fadeOut(1000);
                     return false;
                 }

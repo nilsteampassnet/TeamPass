@@ -239,6 +239,7 @@ function generateNewUserApiKey(target, silent) {
                     function(data){
                         $("#" + target).text(newApiKey);
                         if (silent === false) {
+                            $('#profile-tabs a[href="#tab_information"]').tab('show');
                             alertify
                                 .success('<?php echo langHdl('success'); ?>', 3)
                                 .dismissOthers();

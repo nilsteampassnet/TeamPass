@@ -40,7 +40,7 @@ if (!checkUser($_SESSION['user_id'], $_SESSION['key'], curPage($SETTINGS), $SETT
     exit();
 }
 
-$var['hidden_asterisk'] = '<i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk mr-2"></i><i class="fa fa-asterisk"></i>';
+$var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk mr-2"></i><i class="fas fa-asterisk"></i>';
 
 ?>
 
@@ -288,7 +288,7 @@ $('.tp-action').click(function() {
 
             if (itemStorageInformation.error !== '') {
                 alertify
-                    .error('<i class="fa fa-ban mr-2"></i>' + itemStorageInformation.message, 3)
+                    .error('<i class="fas fa-ban mr-2"></i>' + itemStorageInformation.message, 3)
                     .dismissOthers();
             } else {
                 $('#card-item-visibility').html(itemStorageInformation.itemVisibility);
@@ -353,7 +353,7 @@ $('.tp-action').click(function() {
         } else {
             alertify
                 .error(
-                    '<i class="fa fa-ban fa-lg mr-2"></i>' + store.get('teampassItem').message,
+                    '<i class="fas fa-ban fa-lg mr-2"></i>' + store.get('teampassItem').message,
                     5
                 )
                 .dismissOthers();
@@ -368,7 +368,7 @@ $('.tp-action').click(function() {
         } else {
             alertify
                 .error(
-                    '<i class="fa fa-ban fa-lg mr-2"></i>' + store.get('teampassItem').message,
+                    '<i class="fas fa-ban fa-lg mr-2"></i>' + store.get('teampassItem').message,
                     5
                 )
                 .dismissOthers();
@@ -449,7 +449,7 @@ $('#form-item-share-perform').click(function() {
 
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     // Launch action
@@ -474,7 +474,7 @@ $('#form-item-share-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data[0].message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data[0].message,
                         0
                     )
                     .dismissOthers();
@@ -491,7 +491,7 @@ $('#form-item-share-perform').click(function() {
 $('#form-item-delete-perform').click(function() {
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
     
     // Force user did a change to false
@@ -528,7 +528,7 @@ $('#form-item-delete-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
                         0
                     )
                     .dismissOthers();
@@ -563,7 +563,7 @@ $('#form-item-share-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data[0].message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data[0].message,
                         0
                     )
                     .dismissOthers();
@@ -581,14 +581,14 @@ $('#form-item-copy-perform').click(function() {
     // Do check
     if ($('#form-item-copy-new-label').val() === '') {
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>', 0)
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>', 0)
             .dismissOthers();
         return false;
     }
 
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     // Force user did a change to false
@@ -614,7 +614,7 @@ $('#form-item-copy-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data[1].error_text,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data[1].error_text,
                         0
                     )
                     .dismissOthers();
@@ -647,7 +647,7 @@ $('#form-item-suggestion-perform').click(function() {
 
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     // Force user did a change to false
@@ -681,7 +681,7 @@ $('#form-item-suggestion-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
                         0
                     )
                     .dismissOthers();
@@ -717,7 +717,7 @@ $('#form-folder-add-perform').click(function() {
         $('#form-folder-add-label').addClass('is-invalid');
         alertify
             .error(
-                '<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_only_numbers_in_folder_name'); ?>',
+                '<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_only_numbers_in_folder_name'); ?>',
                 5,
                 'top-right'
             )
@@ -728,7 +728,7 @@ $('#form-folder-add-perform').click(function() {
 
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     // Force user did a change to false
@@ -757,7 +757,7 @@ $('#form-folder-add-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
                         0
                     )
                     .dismissOthers();
@@ -811,19 +811,19 @@ $('#form-folder-delete-perform').click(function() {
     // Do check
     if ($('#form-folder-confirm-delete').is(':checked') === false) {
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('please_confirm'); ?>', 0)
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('please_confirm'); ?>', 0)
             .dismissOthers();
         return false;
     } else if ($('#form-folder-delete-selection option:selected').text() === '<?php echo $_SESSION['login']; ?>') {
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_not_allowed_to'); ?>', 0)
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_not_allowed_to'); ?>', 0)
             .dismissOthers();
         return false;
     }
 
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     var data = {
@@ -846,7 +846,7 @@ $('#form-folder-delete-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
                         0
                     )
                     .dismissOthers();
@@ -876,19 +876,19 @@ $('#form-folder-copy-perform').click(function() {
     // Do check
     if ($("#form-folder-copy-source").val() === "" || $("#form-folder-copy-destination").val() === "") {
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_must_enter_all_fields'); ?>', 0)
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_must_enter_all_fields'); ?>', 0)
             .dismissOthers();
         return false;
     } else if ($("#form-folder-copy-source").val() === $("#form-folder-copy-destination").val()) {
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_source_and_destination_are_equal'); ?>', 0)
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_source_and_destination_are_equal'); ?>', 0)
             .dismissOthers();
         return false;
     }
 
     // Show cog
     alertify
-        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
 
     var data = {
@@ -912,7 +912,7 @@ $('#form-folder-copy-perform').click(function() {
                 // ERROR
                 alertify
                     .error(
-                        '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                        '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' + data.message,
                         0
                     )
                     .dismissOthers();
@@ -1016,7 +1016,7 @@ function showItemDetailsCard()
 $(document)
     .on('click', '.list-item-clicktoshow', function() {
         showAlertify(
-            '<span class="fa fa-cog fa-spin fa-2x"></span>',
+            '<span class="fas fa-cog fa-spin fa-2x"></span>',
             0,
             'bottom-right',
             'message'
@@ -1027,7 +1027,7 @@ $(document)
     })
     .on('click', '.list-item-clicktoedit', function() {
         showAlertify(
-            '<span class="fa fa-cog fa-spin fa-2x"></span>',
+            '<span class="fas fa-cog fa-spin fa-2x"></span>',
             0,
             'bottom-right',
             'message'
@@ -1107,15 +1107,14 @@ $(document)
                     key     : '<?php echo $_SESSION['key']; ?>'
                 },
                 function(ret) {
-                    
                     //change quick icon
-                    if ($(this).data('item-favourited') === 0) {
+                    if (elem.data('item-favourited') === 0) {
                         $(elem)
-                            .html('<i class="fa fa-sm fa-star-o text-warning"></i>')
+                            .html('<i class="far fa-star-o fa-lg text-warning"></i>')
                             .data('data-favourited', 1);
                     } else {
                         $(elem)
-                            .html('<i class="fa fa-sm fa-star"></i>')
+                            .html('<i class="fas fa-star fa-lg"></i>')
                             .data('data-favourited', 0);
                     }
 
@@ -1415,12 +1414,12 @@ var uploader_attachments = new plupload.Uploader({
 
 // Uploader options
 uploader_attachments.bind('UploadProgress', function(up, file) {
-    $('#upload-file_' + file.id).html('<i class="fa fa-file fa-sm mr-2"></i>' + file.name + ' - ' + file.percent + '%');
+    $('#upload-file_' + file.id).html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' - ' + file.percent + '%');
 });
 uploader_attachments.bind('Error', function(up, err) {
     alertify
         .error(
-            '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' +
+            '<i class="fas fa-warning fa-lg mr-2"></i>Message: ' +
             err.message + (err.file ? ', File: ' + err.file.name : ''),
             0
         )
@@ -1430,7 +1429,7 @@ uploader_attachments.bind('Error', function(up, err) {
 });
 uploader_attachments.bind('FilesAdded', function(up, file) {
     $('#upload-file_' + file.id + '')
-        .html('<i class="fa fa-file fa-sm mr-2"></i>' + file.name + ' <?php echo langHdl('uploaded'); ?>');
+        .html('<i class="fas fa-file fa-sm mr-2"></i>' + file.name + ' <?php echo langHdl('uploaded'); ?>');
 });
 
 $("#form-item-upload-pickfiles").click(function(e) {
@@ -1469,7 +1468,7 @@ $("#form-item-upload-pickfiles").click(function(e) {
     } else {
         alertify
             .warning(
-                '<i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('no_file_to_upload'); ?>',
+                '<i class="fas fa-warning fa-lg mr-2"></i><?php echo langHdl('no_file_to_upload'); ?>',
                 2
             )
             .dismissOthers();
@@ -1505,7 +1504,7 @@ $('#form-item-button-save').click(function() {
         || $('#form-item-button-save').data('action') === undefined
     ) {
         alertify
-            .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_action_identified'); ?>', 10)
+            .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_action_identified'); ?>', 10)
             .dismissOthers();
         return false;
     }
@@ -1513,7 +1512,7 @@ $('#form-item-button-save').click(function() {
     // Don't save if no change
     if (userDidAChange === false) {
         alertify
-            .warning('<i class="fa fa-info fa-lg mr-3"></i><?php echo langHdl('no_change_performed'); ?>', 3)
+            .warning('<i class="fas fa-info fa-lg mr-3"></i><?php echo langHdl('no_change_performed'); ?>', 3)
             .dismissOthers();
         return false;
     }
@@ -1561,7 +1560,7 @@ $('#form-item-button-save').click(function() {
         if ($('#form-item-label').val() === '') {
             // Label is empty
             alertify
-                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_label'); ?>', 10)
+                .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_label'); ?>', 10)
                 .dismissOthers();
             return false;
         } else if ($('#form-item-tags').val() !== ''
@@ -1569,7 +1568,7 @@ $('#form-item-button-save').click(function() {
         ) {
             // Tags not wel formated
             alertify
-                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_tags'); ?>', 10)
+                .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_tags'); ?>', 10)
                 .dismissOthers();
             return false;
         } else if ($('#form-item-folder option:selected').val() === ''
@@ -1577,7 +1576,7 @@ $('#form-item-button-save').click(function() {
         ) {
             // No folder selected
             alertify
-                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_selected_folder'); ?>', 10)
+                .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_no_selected_folder'); ?>', 10)
                 .dismissOthers();
             return false;
         } else if (store.get('teampassApplication').personalSaltkeyRequired === 1
@@ -1585,7 +1584,7 @@ $('#form-item-button-save').click(function() {
         ) {
             // No folder selected
             alertify
-                .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_personal_saltkey_is_not_set'); ?>', 10)
+                .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_personal_saltkey_is_not_set'); ?>', 10)
                 .dismissOthers();
             return false;
         } else {
@@ -1636,7 +1635,7 @@ $('#form-item-button-save').click(function() {
             });
             if (errorExit === true) {
                 alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>', 5)
+                    .error('<i class="fas fa-ban fa-lg mr-3"></i><?php echo langHdl('error_field_is_mandatory'); ?>', 5)
                     .dismissOthers();
                 return false;
             }
@@ -1673,7 +1672,7 @@ console.log('SAVING DATA');
 console.log(data);
             // Inform user
             alertify
-                .message('<?php echo langHdl('opening_folder'); ?><i class="fa fa-cog fa-spin ml-2"></i>', 0)
+                .message('<?php echo langHdl('opening_folder'); ?><i class="fas fa-cog fa-spin ml-2"></i>', 0)
                 .dismissOthers();
 
             // CLear tempo var
@@ -1705,7 +1704,7 @@ console.log(data);
                         $("#div_dialog_message").dialog("open");
 
                         alertify
-                            .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
+                            .error('<i class="fas fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
                             .dismissOthers();
                         return false;
                     }
@@ -1713,7 +1712,7 @@ console.log('RETURNED DATA');
 console.log(data)
                     if (data.error === true) {
                         alertify
-                            .error('<i class="fa fa-warning fa-lg mr-2"></i>' + data.message, 0)
+                            .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.message, 0)
                             .dismissOthers();
                         return false;
                     } else {
@@ -1801,7 +1800,7 @@ function showItemEditForm(selectedFolderId)
             // Now read
             if (store.get('teampassItem').error !== '') {
                 alertify
-                    .error('<i class="fa fa-ban mr-2"></i>' + store.get('teampassItem').message, 3)
+                    .error('<i class="fas fa-ban mr-2"></i>' + store.get('teampassItem').message, 3)
                     .dismissOthers();
             } else {
                 $('#card-item-visibility').html(store.get('teampassItem').itemVisibility);
@@ -1941,7 +1940,7 @@ function refreshVisibleFolders()
                 $('#form-item-copy-destination option[value="0"]').remove();
             } else {
                 alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
+                    .error('<i class="fas fa-ban fa-lg mr-3"></i>' + data.message, 0)
                     .dismissOthers();
                 return false;
             }
@@ -2019,7 +2018,7 @@ function refreshFoldersInfo(folders, action)
                 }
             } else {
                 alertify
-                    .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
+                    .error('<i class="fas fa-ban fa-lg mr-3"></i>' + data.message, 0)
                     .dismissOthers();
                 return false;
             }
@@ -2159,7 +2158,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
 
         // Inform user
         alertify
-            .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fa fa-cog fa-spin"></i>', 0)
+            .message('<?php echo langHdl('opening_folder'); ?>&nbsp;<i class="fas fa-cog fa-spin"></i>', 0)
             .dismissOthers();
             
         //ajax query
@@ -2190,7 +2189,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                 // manage not allowed
                 if (data.error == 'not_allowed') {
                     alertify
-                        .error('<i class="fa fa-warning fa-lg mr-2"></i>' + data.error_text, 0)
+                        .error('<i class="fas fa-warning fa-lg mr-2"></i>' + data.error_text, 0)
                         .dismissOthers();
                    return false;
                 }
@@ -2278,7 +2277,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                                         alertify.alert()
                                             .setting({
                                                 'label' : '<?php echo langHdl('ok'); ?>',
-                                                'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
+                                                'message' : '<i class="fas fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
                                             })
                                             .show(); 
                                         return false;
@@ -2313,7 +2312,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                         e.clearSelection();
                     });
                 } else if (data.error === 'not_authorized') {
-                    $('#items_folder_path').html('<i class="fa fa-folder-open-o"></i>&nbsp;'+rebuildPath(data.arborescence));
+                    $('#items_folder_path').html('<i class="fas fa-folder-open-o"></i>&nbsp;'+rebuildPath(data.arborescence));
                 } else {
                     // Store query results
                     store.update(
@@ -2334,7 +2333,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                     // Show warning to user
                     $('#info_teampass_items_list')
                         .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
-                            '<i class="fa fa-info-circle mr-2"></i><?php echo langHdl('no_item_to_display'); ?></b>' +
+                            '<i class="fas fa-info-circle mr-2"></i><?php echo langHdl('no_item_to_display'); ?></b>' +
                             '</div>')
                         .removeClass('hidden');
                 }
@@ -2342,7 +2341,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                 if (data.error === 'is_pf_but_no_saltkey') {
                     //warn user about his saltkey
                     alertify
-                        .warning('<i class="fa fa-warning mr-2"></i><?php echo langHdl('home_personal_saltkey_label'); ?>')
+                        .warning('<i class="fas fa-warning mr-2"></i><?php echo langHdl('home_personal_saltkey_label'); ?>')
                         .dismissOthers();
 
                     return false;
@@ -2353,7 +2352,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                     // Show warning to user
                     $('#info_teampass_items_list')
                         .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
-                            '<i class="fa fa-warning mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?></b>' +
+                            '<i class="fas fa-warning mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?></b>' +
                             '</div>')
                         .removeClass('hidden');
 
@@ -2465,33 +2464,33 @@ function sList(data)
         if (value.restricted !== 0) {
             // Prepare item icon
             if (value.canMove === 1 && value.accessLevel === 0) {
-                item_grippy = '<i class="fa fa-ellipsis-v mr-2 pointer"></i>';
+                item_grippy = '<i class="fas fa-ellipsis-v mr-2 pointer"></i>';
             }
 
             // Prepare error message
             if (value.pw_status === 'encryption_error') {
-                pwd_error = '<i class="fa fa-warning fa-lg text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>';
+                pwd_error = '<i class="fas fa-warning fa-lg text-danger infotip mr-1" title="<?php echo langHdl('pw_encryption_error'); ?>"></i>';
             }
 
             // Prepare anyone can modify icon
             if (value.anyone_can_modify === 1 || value.open_edit === 1) {
-                icon_all_can_modify = '<i class="fa fa-pencil fa-lg fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('item_menu_collab_enable'); ?>"></i>';
+                icon_all_can_modify = '<i class="fas fa-pen fa-lg fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo langHdl('item_menu_collab_enable'); ?>"></i>';
             }
             
             // Prepare mini icons
             if (value.copy_to_clipboard_small_icons === 1 && value.display_item === 1) {
                 // Login icon
                 if (value.login !== '') {
-                    icon_login = '<i class="fa fa-user fa-lg fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"></i>';
+                    icon_login = '<i class="fas fa-user fa-lg fa-clickable fa-clickable-login pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_login'); ?>" data-clipboard-text="' + sanitizeString(value.login) + '"></i>';
                 }
                 // Pwd icon
                 if (value.pw !== '') {
-                    icon_pwd = '<i class="fa fa-lock fa-lg fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"></i>';
+                    icon_pwd = '<i class="fas fa-lock fa-lg fa-clickable fa-clickable-password pointer infotip mr-2" title="<?php echo langHdl('item_menu_copy_pw'); ?>" data-item-id="' + value.item_id + '" data-item-label="' + value.label + '"></i>';
                 }
 
                 // Now check if pwd is empty. If it is then warn user
                 if (value.pw === '') {
-                    pwd_error = '<i class="fa fa-exclamation-circle fa-lg text-warning infotip mr-2" title="<?php echo langHdl('password_is_empty'); ?>"></i>';
+                    pwd_error = '<i class="fas fa-exclamation-circle fa-lg text-warning infotip mr-2" title="<?php echo langHdl('password_is_empty'); ?>"></i>';
                 }
             }
 
@@ -2499,10 +2498,10 @@ function sList(data)
             if (value.display_item === 1 && value.enable_favourites === 1) {
                 if (value.is_favourited === 1) {
                     icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="1" id="">' +
-                        '<i class="fa fa-star fa-lg text-warning"></i></span>';
+                        '<i class="fas fa-star fa-lg text-warning"></i></span>';
                 } else {
                     icon_favorite = '<span title="Manage Favorite" class="pointer infotip item-favourite" data-item-id="' + value.item_id + '" data-item-favourited="0">' +
-                        '<i class="fa fa-star-o fa-lg"></i></span>';
+                        '<i class="far fa-star fa-lg"></i></span>';
                 }
             }
 
@@ -2513,13 +2512,12 @@ function sList(data)
 
             // Prepare flag
             if (value.expired === 1) {
-                item_flag = '<i class="fa fa-ban fa-sm"></i>&nbsp;';
+                item_flag = '<i class="fas fa-ban fa-sm"></i>&nbsp;';
             }
             
             $('#teampass_items_list').append(
                 '<tr class="row col-md-12 list-item-row' + (item_grippy === '' ? '' : ' is-draggable') +'" id="list-item-row_'+value.item_id+'" data-item-edition="' + value.open_edit + '" data-item-id="'+value.item_id+'" data-item-sk="'+value.sk+'" data-item-expired="'+value.expired+'" data-item-restricted="'+value.restricted+'" data-item-display="'+value.display+'" data-item-open-edit="'+value.open_edit+'" data-item-reload="'+value.reload+'" data-item-tree-id="'+value.tree_id+'" data-is-search-result="'+value.is_result_of_search+'">' +
                 (value.is_result_of_search === 0 ?
-                    //'<td class="col-md-1">' + item_grippy + '<!--<i class="fa ' + value.perso + ' fa-sm mr-1"></i>--></td>' +
                     '<td class="col-md-12 list-item-description" id="">' + item_grippy + 
                     '<span class="list-item-clicktoshow pointer" data-item-id="' + value.item_id + '">' +
                     '<span class="list-item-row-description">' + value.label + '</span>' + value.desc + '</span>' +
@@ -2668,7 +2666,7 @@ function proceed_list_update(stop_proceeding)
             tolerance: 'pointer',
             drop: function(event, ui) {
                 alertify
-                    .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+                    .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
                     .dismissOthers();
 
                 // Hide helper
@@ -2689,7 +2687,7 @@ function proceed_list_update(stop_proceeding)
                         
                         if (data.error !== '') {
                             alertify
-                                .error('<i class="fa fa-ban mr-2"></i>' + data.error, 3)
+                                .error('<i class="fas fa-ban mr-2"></i>' + data.error, 3)
                                 .dismissOthers();
                             ui.draggable.removeClass('hidden');
                             return false;
@@ -2790,7 +2788,7 @@ function Details(itemDefinition, actionType)
         alertify.alert()
             .setting({
                 'label' : '<?php echo langHdl('ok'); ?>',
-                'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
+                'message' : '<i class="fas fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
             })
             .show(); 
 
@@ -2816,7 +2814,7 @@ function Details(itemDefinition, actionType)
         && store.get('teampassApplication').personalSaltkeyIsSet !== 1)
         && itemSk === 1
     ) {
-        $('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fa fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
+        $('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fas fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
         $('#div_set_personal_saltkey').dialog('open');
 
         showPersonalSKDialog();
@@ -2859,12 +2857,12 @@ function Details(itemDefinition, actionType)
                 
                 if (data.error !== '') {
                     alertify
-                        .error('<i class="fa fa-ban mr-2"></i>' + data.error, 3)
+                        .error('<i class="fas fa-ban mr-2"></i>' + data.error, 3)
                         .dismissOthers();
                     return false;
                 } else if (data.user_can_modify === 0 && actionType === 'edit') {
                     alertify
-                        .error('<i class="fa fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
+                        .error('<i class="fas fa-ban mr-2"></i><?php echo langHdl('not_allowed_to_see_pw'); ?>', 3)
                         .dismissOthers();
                     return false;
                 }
@@ -2989,7 +2987,7 @@ function Details(itemDefinition, actionType)
                     html_kbs = '';                   
 
                 $(data.tags).each(function(index, value){
-                    html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo langHdl('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\"'+value+'\")"><i class="fa fa-tag fa-sm"></i>&nbsp;<span class="item_tag">'+value+'</span></span>';
+                    html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo langHdl('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\"'+value+'\")"><i class="fas fa-tag fa-sm"></i>&nbsp;<span class="item_tag">'+value+'</span></span>';
                 });
                 if (html_tags === '') {
                     $('#card-item-tags').html('<?php echo langHdl('none'); ?>');
@@ -2998,7 +2996,7 @@ function Details(itemDefinition, actionType)
                 } 
 
                 $(data.links_to_kbs).each(function(index, value){
-                    html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id='+value['id']+'"><i class="fa fa-map-pin fa-sm"></i>&nbsp;'+value['label']+'</a>';
+                    html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id='+value['id']+'"><i class="fas fa-map-pin fa-sm"></i>&nbsp;'+value['label']+'</a>';
 
                 });
                 if (html_kbs === '') {
@@ -3154,14 +3152,14 @@ function Details(itemDefinition, actionType)
                 $('#card-item-misc').html('');
                 if (data.auto_update_pwd_frequency !== '0') {
                     $('#card-item-misc')
-                        .append('<span class="fa fa-shield infotip mr-4" title="<?php
+                        .append('<span class="fas fa-shield infotip mr-4" title="<?php
                             echo langHdl('auto_update_enabled');
                         ?>&nbsp;' + data.auto_update_pwd_frequency + '"></span>');
                 }
 
                 // Prepare counter
                 $('#card-item-misc')
-                    .append('<span class="icon-badge mr-5"><span class="fa fa-bullseye infotip" title="<?php
+                    .append('<span class="icon-badge mr-5"><span class="fas fa-bullseye infotip" title="<?php
                         echo langHdl('viewed_number');
                     ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
 
@@ -3183,7 +3181,7 @@ function Details(itemDefinition, actionType)
                     }
                     // Show icon
                     $('#card-item-misc')
-                        .append('<span class="icon-badge mr-6"><span class="fa fa-trash-o infotip" title="<?php
+                        .append('<span class="icon-badge mr-6"><span class="fas fa-trash-o infotip" title="<?php
                             echo langHdl('automatic_deletion_engaged');
                         ?>"></span><span class="badge badge-danger icon-badge-text">' + data.to_be_deleted + '</span></span>');
                 }
@@ -3191,12 +3189,12 @@ function Details(itemDefinition, actionType)
                 // Show Notification engaged
                 if (data.notification_status === true) {
                     $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-o infotip text-warning" title="<?php
+                        .append('<span class="ml-4 icon-badge"><span class="fas fa-bell-o infotip text-warning" title="<?php
                             echo langHdl('notification_engaged');
                         ?>"></span></span>');
                 } else {
                     $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge"><span class="fa fa-bell-slash-o infotip text-warning" title="<?php
+                        .append('<span class="ml-4 icon-badge"><span class="fas fa-bell-slash-o infotip text-warning" title="<?php
                             echo langHdl('notification_not_engaged');
                         ?>"></span></span>');
                 }
@@ -3269,9 +3267,9 @@ function showDetailsStep2(id, actionType)
                     counter = 1;
                 $.each(data.attachments, function(i, value) {
                     if (value.is_image === 1) {
-                        html += '<div class=""><i class="fa ' + value.icon + ' mr-2" /></i><a class="" href="#' + value.id + '" title="' + value.filename + '">' + value.filename + '</a></div>';
+                        html += '<div class=""><i class="fas ' + value.icon + ' mr-2" /></i><a class="" href="#' + value.id + '" title="' + value.filename + '">' + value.filename + '</a></div>';
                     } else {
-                        html += '<div class=""><i class="fa ' + value.icon + ' mr-2" /></i><a class="" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '">' + value.filename + '</a></div>';
+                        html += '<div class=""><i class="fas ' + value.icon + ' mr-2" /></i><a class="" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $_SESSION['key']; ?>&key_tmp=' + value.key + '&fileid=' + value.id + '">' + value.filename + '</a></div>';
                     }
                     
                     if (counter === 1) {
@@ -3279,9 +3277,9 @@ function showDetailsStep2(id, actionType)
                     }
 
                     htmlFull += '<div class="col-6"><div class="info-box bg-secondary-gradient">' +                            
-                        '<span class="info-box-icon bg-info"><i class="fa fa-' + value.icon + '"></i></span>' +
+                        '<span class="info-box-icon bg-info"><i class="fas fa-' + value.icon + '"></i></span>' +
                         '<div class="info-box-content"><span class="info-box-text">' + value.filename + '</span>' +
-                        '<span class="info-box-text"><i class="fa fa-trash pointer"></i></span></div>' +
+                        '<span class="info-box-text"><i class="fas fa-trash pointer"></i></span></div>' +
                         '</div></div>';
 
                     
@@ -3319,7 +3317,7 @@ function showDetailsStep2(id, actionType)
                     preselect_list.push(value.id);
                     
                     // Prepare list for CARD
-                    html_restrictions += '<span class="badge badge-info mr-2 mb-1"><i class="fa fa-user fa-sm mr-1"></i>' + value.name + '</span>';
+                    html_restrictions += '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-user fa-sm mr-1"></i>' + value.name + '</span>';
                 }
             });
             if (data.setting_restricted_to_roles === 1) {
@@ -3337,7 +3335,7 @@ function showDetailsStep2(id, actionType)
                         preselect_list.push('role_' + value.id);
                         // Prepare list for CARD
                         html_restrictions += 
-                        '<span class="badge badge-info mr-2 mb-1"><i class="fa fa-group fa-sm mr-1"></i>' + value.title + '</span>';
+                        '<span class="badge badge-info mr-2 mb-1"><i class="fas fa-group fa-sm mr-1"></i>' + value.title + '</span>';
                     }
                 });
                 /// Add a group label for Groups
@@ -3380,7 +3378,7 @@ function showDetailsStep2(id, actionType)
 
             // set indicator if item has change proposal
             if (parseInt(data.has_change_proposal) > 0) {
-                $('#item_extra_info').prepend('<i class="fa fa-lightbulb-o fa-sm mi-yellow tip" title="<?php echo langHdl('item_has_change_proposal'); ?>"></i>&nbsp;');
+                $('#item_extra_info').prepend('<i class="fas fa-lightbulb-o fa-sm mi-yellow tip" title="<?php echo langHdl('item_has_change_proposal'); ?>"></i>&nbsp;');
             }
 
 
@@ -3404,7 +3402,7 @@ function showDetailsStep2(id, actionType)
                             alertify.alert()
                                 .setting({
                                     'label' : '<?php echo langHdl('ok'); ?>',
-                                    'message' : '<i class="fa fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
+                                    'message' : '<i class="fas fa-info-circle text-error"></i>&nbsp;<?php echo langHdl('no_item_to_display'); ?>'
                                 })
                                 .show(); 
                             return false;
@@ -3632,7 +3630,7 @@ $('#item-button-password-generate').click(function() {
                     .alert()
                     .setting({
                         'label' : '<?php echo langHdl('error'); ?>',
-                        'message' : '<i class="fa fa-info-circle mr-2"></i>' + data.error_msg
+                        'message' : '<i class="fas fa-info-circle mr-2"></i>' + data.error_msg
                     })
                     .show(); 
                 return false;

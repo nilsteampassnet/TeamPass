@@ -172,25 +172,25 @@ $userSeenPasswordsNumber = DB::count();
             <div class="col-md-9">
                 <div class="card">
                     <div class="card-header p-2">
-                        <ul class="nav nav-pills">
-                        <li class="nav-item"><a class="nav-link active" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a></li>
-                        <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab">Timeline</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
-                            <?php echo langHdl('actions'); ?> <span class="caret"></span>
-                            </a>
-                            <div class="dropdown-menu">
-                                <?php
-                                if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
-                                    echo '
-                                <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">'.langHdl('index_change_pw').'</a>';
-                                }
-                                ?>
-                                <a class="dropdown-item" tabindex="-1" href="#tab_change_psk" data-toggle="tab"><?php echo langHdl('menu_title_new_personal_saltkey'); ?></a>
-                                <a class="dropdown-item" tabindex="-1" href="#tab_reset_psk" data-toggle="tab"><?php echo langHdl('personal_saltkey_lost'); ?></a>
-                            </div>
-                        </li>
+                        <ul class="nav nav-pills" id="profile-tabs">
+                            <li class="nav-item"><a class="nav-link active" href="#tab_information" data-toggle="tab"><?php echo langHdl('information'); ?></a></li>
+                            <li class="nav-item"><a class="nav-link" href="#timeline" data-toggle="tab">Timeline</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#tab_settings" data-toggle="tab"><?php echo langHdl('settings'); ?></a></li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#">
+                                <?php echo langHdl('actions'); ?> <span class="caret"></span>
+                                </a>
+                                <div class="dropdown-menu">
+                                    <?php
+                                    if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
+                                        echo '
+                                    <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">'.langHdl('index_change_pw').'</a>';
+                                    }
+                                    ?>
+                                    <a class="dropdown-item" tabindex="-1" href="#tab_change_psk" data-toggle="tab"><?php echo langHdl('menu_title_new_personal_saltkey'); ?></a>
+                                    <a class="dropdown-item" tabindex="-1" href="#tab_reset_psk" data-toggle="tab"><?php echo langHdl('personal_saltkey_lost'); ?></a>
+                                </div>
+                            </li>
                         </ul>
                     </div><!-- /.card-header -->
                     <div class="card-body">
@@ -258,7 +258,7 @@ $userSeenPasswordsNumber = DB::count();
                                         </a>
                                     </li>
                                     <?php
-                                    if (isset($SETTINGS['api']) === true && $SETTINGS['api'] === '1') {
+                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
                                         echo '
                                     <li class="list-group-item">
                                         <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>'.langHdl('user_profile_api_key').'</b>

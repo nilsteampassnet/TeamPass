@@ -50,7 +50,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     <div class="container-fluid">
     <div class="row mb-2">
         <div class="col-sm-6">
-        <h1 class="m-0 text-dark"><?php echo langHdl('favorites'); ?></h1>
+        <h1 class="m-0 text-dark"><i class="fas fa-star mr-2"></i><?php echo langHdl('favorites'); ?></h1>
         </div><!-- /.col -->
     </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -68,7 +68,7 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                 <div class="card-body p-0<?php echo (empty($_SESSION['favourites']) === false) ? '' : ' hidden'; ?>" id="favorites">
                     <table class="table table-condensed">
                         <tr>
-                            <th style="width: 85px"></th>
+                            <th style="width: 100px"></th>
                             <th style="min-width:15%;"><?php echo langHdl('label'); ?></th>
                             <th style="min-width:50%;"><?php echo langHdl('description'); ?></th>
                             <th style="min-width:20%;"><?php echo langHdl('group'); ?></th>
@@ -87,8 +87,8 @@ require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
                                     ?>
                         <tr>
                             <td>
-                                <i class="fa fa-external-link pointer mr-2 fav-open" data-tree-id="<?php echo $data['id_tree']; ?>" data-item-id="<?php echo $data['id']; ?>"></i>
-                                <i class="fa fa-trash pointer text-danger mr-2 fav-trash" data-item-id="<?php echo $data['id']; ?>"></i>
+                                <i class="fas fa-external-link-alt pointer mr-2 fav-open" data-tree-id="<?php echo $data['id_tree']; ?>" data-item-id="<?php echo $data['id']; ?>"></i>
+                                <i class="fas fa-trash pointer text-danger mr-2 fav-trash" data-item-id="<?php echo $data['id']; ?>"></i>
                             </td>
                             <td><?php echo $data['label']; ?></td>
                             <td><?php echo $data['description']; ?></td>

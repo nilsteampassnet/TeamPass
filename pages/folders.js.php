@@ -117,6 +117,11 @@ var oTable = $("#table-folders").dataTable({
         } else {
             $(document).find('.cb_selected_folder').removeClass('hidden');
         }
+
+        //iCheck for checkbox and radio inputs
+        $('#table-folders input[type="checkbox"]').iCheck({
+            checkboxClass: 'icheckbox_flat-blue'
+        });
     },
     "createdRow": function( row, data, dataIndex ) {
         var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
@@ -508,7 +513,98 @@ $('.btn').click(function() {
     }
 });
 
+/**
+ * 
+ */
+var operationOngoin = false;
+$(document).on('ifChecked', '.cb_selected_folder', function() {
+    if (operationOngoin === false) {
+        operationOngoin = true;
+        
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
 
+        // Show selection of folders
+        var selected_cb = $(this),
+            id = $(this).data('id');
+
+        // Show selected
+        $(this).closest('tr').css("background-color", "#c2e6fc");
+
+        // Now get subfolders
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'select_sub_folders',
+                id      : id,
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                // check/uncheck checkbox
+                if (data.subfolders !== '') {
+                    $.each(JSON.parse(data.subfolders), function(i, value) {
+                        $('#checkbox-' + value).iCheck('check');
+                        $('#checkbox-' + value).closest('tr').css("background-color", "#c2e6fc");
+                    });
+                }
+                operationOngoin = false;
+
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        );
+    }
+});
+
+/**
+ * 
+ */
+$(document).on('ifUnchecked', '.cb_selected_folder', function() {
+    if (operationOngoin === false) {
+        operationOngoin = true;
+        
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        // Show selection of folders
+        var selected_cb = $(this),
+            id = $(this).data('id');
+
+        $(this).closest('tr').css("background-color", "");
+
+        // Now get subfolders
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'select_sub_folders',
+                id      : id,
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                // check/uncheck checkbox
+                if (data.subfolders !== '') {
+                    $.each(JSON.parse(data.subfolders), function(i, value) {
+                        $('#checkbox-' + value).iCheck('uncheck');
+                        $('#checkbox-' + value).closest('tr').css("background-color", "");
+                    });
+                }
+                operationOngoin = false;
+
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        );
+    }
+});
+/*
 $(document).on('click', '.cb_selected_folder', function() {
     // Show selection of folders
     var selected_cb = $(this),
@@ -553,7 +649,7 @@ $(document).on('click', '.cb_selected_folder', function() {
         'json'
     );
 })
-
+*/
 
 // Toogle icon
 $(document).on('click', '.toggle', function() {

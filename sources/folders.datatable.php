@@ -117,7 +117,7 @@ foreach ($treeDesc as $t) {
         // get $t->parent_id
         $data = DB::queryFirstRow('SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i', $t->parent_id);
         if ($t->nlevel == 1) {
-            $data['title'] = $LANG['root'];
+            $data['title'] = langHdl('root');
         }
 
         // get rights on this folder

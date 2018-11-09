@@ -1975,7 +1975,10 @@ if (null !== $post_type) {
             $post_expired_item = filter_var(htmlspecialchars_decode($dataReceived['expired_item']), FILTER_SANITIZE_STRING);
             $post_restricted = filter_var(htmlspecialchars_decode($dataReceived['restricted']), FILTER_SANITIZE_STRING);
             $post_page = filter_var(htmlspecialchars_decode($dataReceived['page']), FILTER_SANITIZE_STRING);
-            $post_folder_access_level = filter_var(htmlspecialchars_decode($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING);
+            $post_folder_access_level = isset($dataReceived['folder_access_level']) === true ?
+                filter_var(htmlspecialchars_decode($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING)
+                :
+                '';
 
             $arrData = array();
             // return ID

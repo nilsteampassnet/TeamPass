@@ -267,12 +267,12 @@ function buildNodeTree(
 
                 if (in_array($node->id, $session_groupes_visibles)) {
                     if (in_array($node->id, $session_read_only_folders)) {
-                        $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='fas fa-eye'></i>&nbsp;".$text;
                         $title = langHdl('read_only_account');
                         $restricted = 1;
                         $folderClass = 'folder_not_droppable';
                     } elseif ($_SESSION['user_read_only'] === true && !in_array($node->id, $session_personal_visible_groups)) {
-                        $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='fas fa-eye'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.$itemsNb.'</span>';
                     // display tree counters
@@ -283,13 +283,13 @@ function buildNodeTree(
                 } elseif (in_array($node->id, $listFoldersLimitedKeys)) {
                     $restricted = '1';
                     if ($_SESSION['user_read_only'] === true) {
-                        $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='fas fa-eye'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($session_list_folders_limited[$node->id]).'</span>';
                 } elseif (in_array($node->id, $listRestrictedFoldersForItemsKeys)) {
                     $restricted = '1';
                     if ($_SESSION['user_read_only'] === true) {
-                        $text = "<i class='fa fa-eye'></i>&nbsp;".$text;
+                        $text = "<i class='fas fa-eye'></i>&nbsp;".$text;
                     }
                     $text .= ' (<span class=\'items_count\' id=\'itcount_'.$node->id.'\'>'.count($session_list_restricted_folders_for_items[$node->id]).'</span>';
                 } else {
@@ -466,14 +466,14 @@ function recursiveTree(
 
             if (in_array($completTree[$nodeId]->id, $session_groupes_visibles) === true) {
                 if (in_array($completTree[$nodeId]->id, $session_read_only_folders) === true) {
-                    $text = "<i class='fa fa-eye mr-1'></i>".$text;
+                    $text = "<i class='fas fa-eye mr-1'></i>".$text;
                     $title = langHdl('read_only_account');
                     $restricted = 1;
                     $folderClass = 'folder_not_droppable';
                 } elseif ($session_user_read_only === true
                     && in_array($completTree[$nodeId]->id, $_SESSION['personal_visible_groups']) === false
                 ) {
-                    $text = "<i class='fa fa-eye mr-1'></i>".$text;
+                    $text = "<i class='fas fa-eye mr-1'></i>".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.$itemsNb.'</span>';
                 // display tree counters
@@ -486,13 +486,13 @@ function recursiveTree(
             } elseif (in_array($completTree[$nodeId]->id, $listFoldersLimitedKeys) === true) {
                 $restricted = '1';
                 if ($session_user_read_only === true) {
-                    $text = "<i class='fa fa-eye mr-1'></i>".$text;
+                    $text = "<i class='fas fa-eye mr-1'></i>".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.count($session_list_folders_limited[$completTree[$nodeId]->id]).'</span>)';
             } elseif (in_array($completTree[$nodeId]->id, $listRestrictedFoldersForItemsKeys) === true) {
                 $restricted = '1';
                 if ($_SESSION['user_read_only'] === true) {
-                    $text = "<i class='fa fa-eye mr-1'></i>".$text;
+                    $text = "<i class='fas fa-eye mr-1'></i>".$text;
                 }
                 $text .= ' (<span class=\'items_count\' id=\'itcount_'.$completTree[$nodeId]->id.'\'>'.count($_SESSION['list_restricted_folders_for_items'][$completTree[$nodeId]->id]).'</span>)';
             } else {

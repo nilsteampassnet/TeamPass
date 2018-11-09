@@ -174,7 +174,7 @@ var oTable = $('#table-users').DataTable({
                    //'<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="pwd"><i class="fas fa-key mr-2"></i><?php echo langHdl('change_password'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
-                   '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="folders"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></li>' +
+                   '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></li>' +
                    //'<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="delete"><i class="fas fa-trash mr-2"></i><?php echo langHdl('delete'); ?></li>' +
                    '</ul>'
                    '</span>';
@@ -238,7 +238,8 @@ $('#form-email').change(function() {
             domain      : domain
         },
         function(data) {
-            data = $.parseJSON(data);console.log(data)
+            data = $.parseJSON(data);
+            console.log(data);
             $("#new_folder_role_domain").attr("disabled", "disabled");
             if (data.folder === 'not_exists' && data.role === 'not_exists' && domain !== '') {
                 $('#create-special-folder').iCheck('enable');
@@ -256,40 +257,50 @@ $('#form-email').change(function() {
  */
 $('.build-login').change(function() {
     // Build login only if it is empty
-    if ($("#form-login").val() !== '') {
-        return false;
+    if ($("#form-login").val() === '') {
+        //return false;
     }
     // Build login
     if ($(this).attr('id') !== 'form-login') {
         $("#form-login").val(
-            $("#form-name").val().toLowerCase().replace(/ /g,"")+"."+$("#form-lastname").val().toLowerCase().replace(/ /g,"")
+            $("#form-name")
+                .val()
+                .toLowerCase()
+                .replace(/ /g,"")+"."+$("#form-lastname").val().toLowerCase().replace(/ /g,"")
         );
     }
 
     // Check if login exists
     $.post(
-        "sources/users.queries.php",
+        'sources/users.queries.php',
         {
-            type    : "is_login_available",
-            login   : $("#form-login").val(),
-            key     : "<?php echo $_SESSION['key']; ?>"
+            type    : 'is_login_available',
+            login   : $('#form-login').val(),
+            key     : '<?php echo $_SESSION['key']; ?>'
         },
         function(data) {
-            if (data[0].error === "") {
-                if (data[0].exists === "0") {
-                    $("#form-login")
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
+            if (data.error !== false) {
+                // Show error
+                alertify
+                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                    .dismissOthers();
+            } else {
+                // Show result
+                if (data.login_exists === 0) {
+                    $('#form-login')
                         .removeClass('is-invalid')
                         .addClass('is-valid');
                     $('#form-login-conform').val(true);
                 } else {
-                    $("#form-login")
+                    $('#form-login')
                         .removeClass('is-valid')
                         .addClass('is-invalid');
                     $('#form-login-conform').val(false);
                 }
             }
-        },
-        "json"
+        }
     );
 })
 
@@ -558,7 +569,7 @@ $(document).on('click', '.tp-action', function() {
                 });
             }
         });
-console.log(arrayQuery);
+
         if (arrayQuery.length > 0) {
             // Now save
             // get lists
@@ -697,7 +708,7 @@ console.log(arrayQuery);
     }  else if ($(this).data('action') === 'cancel') {
         $('.clear-me').val('');
         $('.select2').val('').change();
-        $('.extra-form').addClass('hidden');
+        $('.extra-form, #row-folders').addClass('hidden');
         $('#row-list').removeClass('hidden');
 
         // Prepare checks
@@ -748,7 +759,7 @@ console.log(arrayQuery);
         );
 
     } else if ($(this).data('action') === 'logs') {
-        $('#row-list').addClass('hidden');
+        $('#row-list, #row-folders').addClass('hidden');
         $('#row-logs').removeClass('hidden');
         $('#row-logs-title').text(
             $(this).data('fullname')
@@ -800,8 +811,51 @@ console.log(arrayQuery);
         });
 
         
-    } else if ($(this).data('action') === 'folders') {
+    } else if ($(this).data('action') === 'access-rights') {
+        $('#row-list, #row-logs').addClass('hidden');
+        $('#row-folders').removeClass('hidden');
+        $('#row-folders-title').text(
+            $(this).data('fullname')
+        )
+        var userID = $(this).data('id');
 
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        $('#row-folders-results').html('');
+
+        // Send query
+        $.post(
+            'sources/users.queries.php',
+            {
+                type    : 'user_folders_rights',
+                user_id : userID,
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    alertify
+                        .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                        .dismissOthers();
+                } else {
+                    // Show table
+                    $('#row-folders-results').html(data.html);
+
+                    // Prepare tooltips
+                    $('.infotip').tooltip();
+                    // Inform user
+                    alertify
+                        .success('<?php echo langHdl('done'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
 
     } else if ($(this).data('action') === 'refresh') {
         $('.form').addClass('hidden');

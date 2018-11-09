@@ -1490,12 +1490,31 @@ if (null !== $post_type) {
          */
         case 'user_edit_login':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo '[ { "error" : "key_not_conform" } ]';
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            $post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
             $data_user = DB::queryfirstrow(
@@ -1527,21 +1546,39 @@ if (null !== $post_type) {
          */
         case 'is_login_available':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo '[ { "error" : "key_not_conform" } ]';
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
             DB::queryfirstrow(
                 'SELECT * FROM '.prefixTable('users').'
                 WHERE login = %s',
-                mysqli_escape_string(
-                    $link,
-                    htmlspecialchars_decode(filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING))
-                )
+                filter_input(INPUT_POST, 'login', FILTER_SANITIZE_STRING)
             );
 
-            echo '[ { "error" : "" , "exists" : "'.DB::count().'"} ]';
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'login_exists' => DB::count(),
+                ),
+                'encode'
+            );
 
             break;
 
@@ -1550,10 +1587,32 @@ if (null !== $post_type) {
          */
         case 'user_folders_rights':
             // Check KEY
-            if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== filter_var($_SESSION['key'], FILTER_SANITIZE_STRING)) {
-                echo prepareExchangedData(array('error' => 'not_allowed', 'error_text' => langHdl('error_not_allowed_to')), 'encode');
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
+
+            // decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+
             $arrData = array();
 
             //Build tree
@@ -1566,17 +1625,13 @@ if (null !== $post_type) {
                 'SELECT login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb
                 FROM '.prefixTable('users').'
                 WHERE id = %i',
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT)
+                $post_id
             );
 
             // get rights
             $functionsList = '';
             $arrFolders = [];
-            $html = '<div style="padding:5px; margin-bottom:10px; height:40px;" class="ui-state-focus ui-corner-all">';
-            if (!empty($rowUser['avatar_thumb'])) {
-                $html .= '<div style="float:left; margin-right:30px;"><img src="includes/avatars/'.$rowUser['avatar_thumb'].'"></div>';
-            }
-            $html .= '<div style="float:left;font-size:20px; margin-top:8px; text-align:center;">'.$rowUser['name'].' '.$rowUser['lastname'].' ['.$rowUser['login'].']</div></div><table>';
+            $html = '';
 
             $arrData['functions'] = array_filter(explode(';', $rowUser['fonction_id']));
             $arrData['allowed_folders'] = array_filter(explode(';', $rowUser['groupes_visibles']));
@@ -1624,71 +1679,31 @@ if (null !== $post_type) {
                             // manage indentation
                             $ident = '';
                             for ($y = 1; $y < $row['nlevel']; ++$y) {
-                                $ident .= '<i class="fa fa-sm fa-caret-right"></i>&nbsp;';
+                                $ident .= '<i class="fas fa-long-arrow-alt-right mr-2"></i>';
                             }
 
                             // manage right icon
                             if ($fld['type'] == 'W') {
-                                $color = '#008000';
-                                $allowed = 'W';
-                                $title = langHdl('write');
-                                $label = '
-                                <span class="fa-stack" title="'.langHdl('write').'" style="color:#008000;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-indent fa-stack-1x"></i>
-                                </span>
-                                <span class="fa-stack" title="'.langHdl('write').'" style="color:#008000;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-edit fa-stack-1x"></i>
-                                </span>
-                                <span class="fa-stack" title="'.langHdl('write').'" style="color:#008000;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-eraser fa-stack-1x"></i>
-                                </span>';
+                                $label = '<i class="fas fa-indent infotip text-success mr-2" title="'.langHdl('write').'"></i>'.
+                                '<i class="fas fa-edit infotip text-success mr-2" title="'.langHdl('edit').'"></i>'.
+                                '<i class="fas fa-eraser infotip text-success" title="'.langHdl('delete').'"></i>';
                             } elseif ($fld['type'] == 'ND') {
-                                $color = '#4E45F7';
-                                $allowed = 'ND';
-                                $title = langHdl('no_delete');
-                                $label = '
-                                <span class="fa-stack" title="'.langHdl('no_delete').'" style="color:#4E45F7;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-indent fa-stack-1x"></i>
-                                </span>
-                                <span class="fa-stack" title="'.langHdl('no_delete').'" style="color:#4E45F7;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-edit fa-stack-1x"></i>
-                                </span>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
+                                '<i class="fas fa-edit infotip text-success mr-2" title="'.langHdl('edit').'"></i>'.
+                                '<i class="fas fa-edit infotip text-danger" title="'.langHdl('no_delete').'"></i>';
                             } elseif ($fld['type'] == 'NE') {
-                                $color = '#4E45F7';
-                                $allowed = 'NE';
-                                $title = langHdl('no_edit');
-                                $label = '
-                                <span class="fa-stack" title="'.langHdl('no_edit').'" style="color:#4E45F7;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-indent fa-stack-1x"></i>
-                                </span>
-                                <span class="fa-stack" title="'.langHdl('no_edit').'" style="color:#4E45F7;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-eraser fa-stack-1x"></i>
-                                </span>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
+                                '<i class="fas fa-edit infotip text-danger mr-2" title="'.langHdl('no_edit').'"></i>'.
+                                '<i class="fas fa-edit infotip text-success" title="'.langHdl('delete').'"></i>';
                             } elseif ($fld['type'] == 'NDNE') {
-                                $color = '#4E45F7';
-                                $allowed = 'NDNE';
-                                $title = langHdl('no_edit_no_delete');
-                                $label = '
-                                <span class="fa-stack" title="'.langHdl('no_edit_no_delete').'" style="color:#4E45F7;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-indent fa-stack-1x"></i>
-                                </span>';
+                                $label = '<i class="fas fa-indent infotip text-warning mr-2" title="'.langHdl('write').'"></i>'.
+                                '<i class="fas fa-edit infotip text-danger mr-2" title="'.langHdl('no_edit').'"></i>'.
+                                '<i class="fas fa-edit infotip text-danger" title="'.langHdl('no_delete').'"></i>';
                             } else {
                                 $color = '#FEBC11';
                                 $allowed = 'R';
                                 $title = langHdl('read');
-                                $label = '
-                                <span class="fa-stack" title="'.langHdl('read').'" style="color:#ff9000;">
-                                    <i class="fa fa-square-o fa-stack-2x"></i>
-                                    <i class="fa fa-eye fa-stack-1x"></i>
-                                </span>';
+                                $label = '<i class="fas fa-eye infotip text-info mr-2" title="'.langHdl('read').'"></i>';
                             }
 
                             $html .= '<tr><td>'.$ident.$row['title'].'</td><td>'.$label.'</td></tr>';
@@ -1697,20 +1712,21 @@ if (null !== $post_type) {
                     }
                 }
 
-                $html .= '</table>';
+                $html_full = '<table id="table-folders" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%"><tbody>'.
+                   $html.'</tbody></table>';
+            } else {
+                $html_full = '';
             }
 
-            $html .= '<div style="margin-top:15px; padding:3px;" class="ui-widget-content ui-state-default ui-corner-all"><span class="fa fa-info"></span>&nbsp;'.langHdl('folders_not_visible_are_not_displayed').'</div>';
-
-            $return_values = prepareExchangedData(
+            echo prepareExchangedData(
                 array(
-                    'html' => $html,
-                    'error' => '',
+                    'html' => $html_full,
+                    'error' => false,
                     'login' => $rowUser['login'],
+                    'message' => '',
                 ),
                 'encode'
             );
-            echo $return_values;
             break;
 
         /*

@@ -238,10 +238,10 @@ foreach ($tst as $t) {
                             <th></th>
                             <th><?php echo langHdl('group'); ?></th>
                             <th><?php echo langHdl('group_parent'); ?></th>
-                            <th><i class="fa fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
-                            <th><i class="fa fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
-                            <th><i class="fa fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
-                            <th><i class="fa fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                            <th><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
+                            <th><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
+                            <th><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
+                            <th><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
                         </tr>
                         </thead>
                         <tbody>

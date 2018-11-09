@@ -17,7 +17,7 @@ define('SKEY', '');
 define('AKEY', '');
 define('COST', '');
 
-if (isset($_SESSION['settings']) === true) {
+if (isset($_SESSION['settings']['timezone']) === true) {
     date_default_timezone_set($_SESSION['settings']['timezone']);
 }
 if (defined('SECUREPATH') === false) {

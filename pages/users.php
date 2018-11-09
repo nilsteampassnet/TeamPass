@@ -305,4 +305,25 @@ foreach ($treeDesc as $t) {
             </div>
         </div>
     </div>
+
+<!-- USER VISIBLE FOLDERS -->
+<div class="row hidden extra-form" id="row-folders">
+    <div class="col-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><?php echo langHdl('access_rights_for_user'); ?> <span id="row-folders-title"></span></h3>
+            </div>
+            
+            <!-- /.card-header -->
+            <!-- table start -->
+            <div class="card-body" id="row-folders-results">
+                
+            </div>
+                
+            <div class="card-footer">
+                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
 </section>

@@ -1087,20 +1087,22 @@ if (null !== $post_newtitle) {
             }
 
             // get sub folders
-            $subfolders = '';
+            $subfolders = array();
             $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // Get through each subfolder
             $folders = $tree->getDescendants($post_id, false);
             foreach ($folders as $folder) {
-                if ($subfolders === '') {
-                    $subfolders = $folder->id;
-                } else {
-                    $subfolders .= ';'.$folder->id;
-                }
+                array_push($subfolders, (int) $folder->id);
             }
 
-            echo '[ { "error" : "" , "subfolders" : "'.$subfolders.'" } ]';
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'subfolders' => json_encode($subfolders),
+                ),
+                'encode'
+            );
 
             break;
 
@@ -1582,7 +1584,6 @@ if (null !== $post_newtitle) {
             );
 
             // send data
-            //echo prepareExchangedData($return, 'encode');
             echo json_encode($return);
 
             break;
