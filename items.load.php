@@ -2751,7 +2751,9 @@ function refreshTree(node_to_select, do_refresh, refresh_visible_folders)
         });
     }
 
-    if (refresh_visible_folders === 1) {
+    if (refresh_visible_folders === 1
+        && ($('#div_formulaire_edition_item').is(':visible') === false || $('#div_formulaire_saisi').is(':visible') === false)
+    ) {
         $(this).delay(500).queue(function() {
             refreshVisibleFolders();
             $(this).dequeue();

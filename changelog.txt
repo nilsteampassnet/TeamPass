@@ -1,6 +1,9 @@
 2.1.27
+30/
+ #2458 Items folder automatically changes to the personal one
+
 29/
-  #2467, #2465 Cant login with normal user with hacking attempt message
+ #2467, #2465 Cant login with normal user with hacking attempt message
 
 28/
  #2461 Install procedure failing
