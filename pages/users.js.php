@@ -68,8 +68,8 @@ $.fn.dataTable.ext.search.push( function ( settings, searchData ) {
 var userDidAChange = false;
 
 store.each(function(value, key) {
-        console.log(key, '==', value)
-    })
+    console.log(key, '==', value)
+})
 
 // Prepare tooltips
 $('.infotip').tooltip();

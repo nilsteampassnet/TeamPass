@@ -96,15 +96,18 @@ function checkUser($userId, $userKey, $pageVisited, $SETTINGS)
         ),
         'manager' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
         ),
         'human_resources' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
         ),
         'admin' => array(
             'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
             'manage_views', 'manage_users', 'manage_settings', 'manage_main',
             'admin', '2fa', 'profile', '2fa', 'api', 'backups', 'emails', 'ldap', 'special',
             'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
+            'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs',
         ),
     );
 

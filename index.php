@@ -205,6 +205,13 @@ if (array_key_exists($pageSel, $mngPages) === true) {
     $menuAdmin = false;
 }
 
+// Some template adjust
+if (array_key_exists($pageSel, $utilitiesPages) === true) {
+    $menuUtilities = true;
+} else {
+    $menuUtilities = false;
+}
+
 ?>
 <!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
 
@@ -228,6 +235,7 @@ if (array_key_exists($pageSel, $mngPages) === true) {
     </script>
 
     <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="plugins/font-awesome/css/font-awesome.min.css">
     <link rel="stylesheet" href="plugins/fontawesome5/css/all.css">
     <!-- IonIcons -->
     <link rel="stylesheet" href="includes/css/ionicons.min.css">
@@ -382,33 +390,6 @@ if (($session_validite_pw === null
             <!-- Sidebar Menu -->
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                    <!-- Add icons to the links using the .nav-icon class
-                        with font-awesome or any other icon font library -->
-                    <!--
-                        <li class="nav-item has-treeview menu-open">
-                        <a href="#" class="nav-link active">
-                        <i class="nav-icon fa fa-dashboard"></i>
-                        <p>
-                            Starter Pages
-                            <i class="right fa fa-angle-left"></i>
-                        </p>
-                        </a>
-                        <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link active">
-                            <i class="fas fa-circle-o nav-icon"></i>
-                            <p>Active Page</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="#" class="nav-link">
-                            <i class="fas fa-circle-o nav-icon"></i>
-                            <p>Inactive Page</p>
-                            </a>
-                        </li>
-                        </ul>
-                    </li>
-                    -->
                     <?php
                     if ($session_user_admin === 0 || TP_ADMIN_FULL_RIGHT === false) {
                         // ITEMS & SEARCH
@@ -423,7 +404,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item">
                         <a href="#" data-name="search" class="nav-link', $pageSel === 'search' ? ' active' : '' ,'"">
-                        <i class="nav-icon fa fa-binoculars"></i>
+                        <i class="nav-icon fa fa-search"></i>
                         <p>
                             '.langHdl('find').'
                         </p>
@@ -483,7 +464,7 @@ if (($session_validite_pw === null
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="admin" class="nav-link', $pageSel === 'admin' ? ' active' : '' ,'">
-                        <i class="nav-icon fa fa-info"></i>
+                        <i class="nav-icon fas fa-info"></i>
                         <p>
                             '.langHdl('admin_main').'
                         </p>
@@ -491,7 +472,7 @@ if (($session_validite_pw === null
                     </li>
                     <li class="nav-item has-treeview', $menuAdmin === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
-                            <i class="nav-icon fa fa-wrench"></i>
+                            <i class="nav-icon fas fa-wrench"></i>
                             <p>
                                 '.langHdl('admin_settings').'
                                 <i class="fas fa-angle-left right"></i>
@@ -556,7 +537,7 @@ if (($session_validite_pw === null
     ) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '' ,'"">
+                        <a href="#" data-name="folders" class="nav-link', $pageSel === 'folders' ? ' active' : '' ,'">
                         <i class="nav-icon fa fa-folder-open"></i>
                         <p>
                             '.langHdl('folders').'
@@ -564,7 +545,7 @@ if (($session_validite_pw === null
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" data-name="roles" class="nav-link', $pageSel === 'roles' ? ' active' : '' ,'"">
+                        <a href="#" data-name="roles" class="nav-link', $pageSel === 'roles' ? ' active' : '' ,'">
                         <i class="nav-icon fa fa-graduation-cap"></i>
                         <p>
                             '.langHdl('roles').'
@@ -572,20 +553,47 @@ if (($session_validite_pw === null
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" data-name="users" class="nav-link', $pageSel === 'users' ? ' active' : '' ,'"">
+                        <a href="#" data-name="users" class="nav-link', $pageSel === 'users' ? ' active' : '' ,'">
                         <i class="nav-icon fa fa-users"></i>
                         <p>
                             '.langHdl('users').'
                         </p>
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a href="#" data-name="utilities" class="nav-link', $pageSel === 'utilities' ? ' active' : '' ,'"">
+                    <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link">
                         <i class="nav-icon fa fa-cubes"></i>
                         <p>
                             '.langHdl('admin_views').'
+                            <i class="fas fa-angle-left right"></i>
                         </p>
                         </a>
+                        <ul class="nav nav-treeview">
+                          <li class="nav-item">
+                            <a href="#" data-name="utilities.renewal" class="nav-link', $pageSel === 'renewal' ? ' active' : '' ,'">
+                              <i class="far fa-calendar-alt nav-icon"></i>
+                              <p>'.langHdl('renewal').'</p>
+                            </a>
+                          </li>
+                          <li class="nav-item">
+                            <a href="#" data-name="utilities.deletion" class="nav-link', $pageSel === 'deletion' ? ' active' : '' ,'">
+                              <i class="fas fa-trash-alt nav-icon"></i>
+                              <p>'.langHdl('deletion').'</p>
+                            </a>
+                          </li>
+                          <li class="nav-item">
+                            <a href="#" data-name="utilities.logs" class="nav-link', $pageSel === 'logs' ? ' active' : '' ,'">
+                              <i class="fas fa-history nav-icon"></i>
+                              <p>'.langHdl('logs').'</p>
+                            </a>
+                          </li>
+                          <li class="nav-item">
+                            <a href="#" data-name="utilities.database" class="nav-link', $pageSel === 'database' ? ' active' : '' ,'">
+                              <i class="fas fa-database nav-icon"></i>
+                              <p>'.langHdl('database').'</p>
+                            </a>
+                          </li>
+                        </ul>
                     </li>';
     } ?>
                 </ul>
@@ -595,10 +603,10 @@ if (($session_validite_pw === null
         <!-- /.sidebar -->
         <div class="footer" style="margin-top:-30px; color:white;">
             <div class="ml-3" id="sidebar-footer">
-                <i class="fas fa-clock-o mr-2 infotip text-info" title="<?php echo langHdl('server_time').' '.
+                <i class="fas fa-clock-o mr-2 infotip text-info pointer" title="<?php echo langHdl('server_time').' '.
                     @date($SETTINGS['date_format'], (string) $_SERVER['REQUEST_TIME']).' - '.
                     @date($SETTINGS['time_format'], (string) $_SERVER['REQUEST_TIME']); ?>"></i>
-                <i class="fas fa-users mr-2 infotip text-info" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
+                <i class="fas fa-users mr-2 infotip text-info pointer" title="<?php echo $session_nb_users_online.' '.langHdl('users_online'); ?>"></i>
                 <a href="https://teampass.readthedocs.io/en/latest/" target="_blank" class="text-info"><i class="fas fa-book mr-2 infotip" title="<?php echo langHdl('documentation_canal'); ?> ReadTheDocs"></i></a>
                 <a href="https://www.reddit.com/r/TeamPass/" target="_blank" class="text-info"><i class="fab fa-reddit-alien mr-2 infotip" title="<?php echo langHdl('admin_help'); ?>"></i></a>
                 <i class="fas fa-bug infotip pointer text-info" title="<?php echo langHdl('bugs_page'); ?>" onclick="generateBugReport()"></i>
@@ -873,7 +881,8 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" href="./plugins/iCheck/all.css">
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
-    } elseif ($pageSel === 'search' || $pageSel === 'folders' || $pageSel === 'users' || $pageSel === 'roles') {
+    } elseif ($pageSel === 'search' || $pageSel === 'folders' || $pageSel === 'users' || $pageSel === 'roles'
+    || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs') {
         ?>
 <!-- DataTables -->
 <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -938,6 +947,10 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/users.js.php';
     } elseif ($pageSel === 'roles') {
         include_once $SETTINGS['cpassman_dir'].'/pages/roles.js.php';
+    } elseif ($pageSel === 'utilities.deletion') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/utilities.deletion.js.php';
+    } elseif ($pageSel === 'utilities.logs') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/utilities.logs.js.php';
     } else {
         include_once $SETTINGS['cpassman_dir'].'/login.js.php';
     }

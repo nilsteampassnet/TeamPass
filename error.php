@@ -91,15 +91,14 @@ if (null !== filter_input(INPUT_POST, 'session', FILTER_SANITIZE_STRING)
     } ?>
 <!-- Main content -->
 <section class="content">
-      <div class="error-page">
+      <div class="error-page" style="width:100%;">
         <h2 class="headline text-danger">500</h2>
 
         <div class="error-content">
           <h3><i class="fa fa-warning text-danger"></i> Oops! <?php echo $errorCode; ?>.</h3>
 
           <p>
-            We could not find the page you were looking for.
-            Meanwhile, you may <a href="index.php">return to home</a>.
+            For security reason, you have been disconnected. Click to <a href="index.php">log in</a>.
           </p>
 
         </div>

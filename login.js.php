@@ -19,6 +19,7 @@
 if (!isset($_SESSION['CPM']) || $_SESSION['CPM'] != 1) {
     die('Hacking attempt...');
 }
+
 ?>
 <script type="text/javascript">
 // On page load
@@ -143,13 +144,13 @@ if (twoFaMethods > 1) {
 
 $('.submit-button').keypress(function(event){
     if (event.keyCode === 10 || event.keyCode === 13) {
-        launchIdentify('', '<?php echo $nextUrl; ?>', '');
+        launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
         event.preventDefault();
     }
 });
 
 $('#yubiko_key').change(function(event) {
-    launchIdentify('', '<?php echo $nextUrl; ?>', '');
+    launchIdentify('', '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
     event.preventDefault();
 });
 

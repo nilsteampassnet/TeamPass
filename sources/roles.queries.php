@@ -183,7 +183,6 @@ if (null !== $post_type) {
 
             // Loop on selection
             foreach ($post_selectedFolders as $folderId) {
-                echo $folderId;
                 // delete
                 DB::delete(
                     prefixTable('roles_values'),

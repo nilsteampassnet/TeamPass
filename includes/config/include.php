@@ -38,10 +38,10 @@ define('DEFUSE_ENCRYPTION', true);
 
 // Management Pages
 $mngPages = array(
-    'manage_users' => 'users.php',
-    'manage_folders' => 'folders.php',
-    'manage_roles' => 'roles.php',
-    'manage_views' => 'views.php',
+    /*'users' => 'users.php',
+    'folders' => 'folders.php',
+    'roles' => 'roles.php',
+    'utilities' => 'utilities.php',*/
     'admin' => 'admin.php',
     'options' => 'options.php',
     'statistics' => 'statistics.php',
@@ -53,4 +53,12 @@ $mngPages = array(
     'api' => 'api.php',
     'fields' => 'fields.php',
     'defect' => 'defect.php',
+);
+
+// Utilities Pages
+$utilitiesPages = array(
+    'renewal' => 'utilities.renewal.php',
+    'deletion' => 'utilities.deletion.php',
+    'logs' => 'utilities.logs.php',
+    'database' => 'utilities.database.php',
 );
