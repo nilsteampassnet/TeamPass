@@ -570,25 +570,25 @@ if (($session_validite_pw === null
                         </a>
                         <ul class="nav nav-treeview">
                           <li class="nav-item">
-                            <a href="#" data-name="utilities.renewal" class="nav-link', $pageSel === 'renewal' ? ' active' : '' ,'">
+                            <a href="#" data-name="utilities.renewal" class="nav-link', $pageSel === 'utilities.renewal' ? ' active' : '' ,'">
                               <i class="far fa-calendar-alt nav-icon"></i>
                               <p>'.langHdl('renewal').'</p>
                             </a>
                           </li>
                           <li class="nav-item">
-                            <a href="#" data-name="utilities.deletion" class="nav-link', $pageSel === 'deletion' ? ' active' : '' ,'">
+                            <a href="#" data-name="utilities.deletion" class="nav-link', $pageSel === 'utilities.deletion' ? ' active' : '' ,'">
                               <i class="fas fa-trash-alt nav-icon"></i>
                               <p>'.langHdl('deletion').'</p>
                             </a>
                           </li>
                           <li class="nav-item">
-                            <a href="#" data-name="utilities.logs" class="nav-link', $pageSel === 'logs' ? ' active' : '' ,'">
+                            <a href="#" data-name="utilities.logs" class="nav-link', $pageSel === 'utilities.logs' ? ' active' : '' ,'">
                               <i class="fas fa-history nav-icon"></i>
                               <p>'.langHdl('logs').'</p>
                             </a>
                           </li>
                           <li class="nav-item">
-                            <a href="#" data-name="utilities.database" class="nav-link', $pageSel === 'database' ? ' active' : '' ,'">
+                            <a href="#" data-name="utilities.database" class="nav-link', $pageSel === 'utilities.database' ? ' active' : '' ,'">
                               <i class="fas fa-database nav-icon"></i>
                               <p>'.langHdl('database').'</p>
                             </a>
@@ -882,7 +882,7 @@ if ($menuAdmin === true) {
 <script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
     <?php
     } elseif ($pageSel === 'search' || $pageSel === 'folders' || $pageSel === 'users' || $pageSel === 'roles'
-    || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs') {
+    || $pageSel === 'utilities.deletion' || $pageSel === 'utilities.logs' || $pageSel === 'utilities.database') {
         ?>
 <!-- DataTables -->
 <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css">
@@ -892,8 +892,13 @@ if ($menuAdmin === true) {
 <link rel="stylesheet" src="./plugins/datatables/extensions/Responsive-2.2.2/css/responsive.bootstrap4.min.css">
 <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/dataTables.responsive.min.js"></script>
 <script type="text/javascript" src="./plugins/datatables/extensions/Responsive-2.2.2/js/responsive.bootstrap4.min.js"></script>
-<!--<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
-<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>-->
+<script type="text/javascript" src="./plugins/datatables/plugins/select.js"></script>
+<link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css">
+<script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js"></script>
+<!-- daterange picker -->
+<link rel="stylesheet" href="./plugins/daterangepicker/daterangepicker-bs3.css">
+<script src="./plugins/moment/moment.min.js"></script>
+<script src="./plugins/daterangepicker/daterangepicker.js"></script>
 <!-- SlimScroll -->
 <script src="./plugins/slimScroll/jquery.slimscroll.min.js"></script>
 <!-- FastClick -->
@@ -951,6 +956,8 @@ if (isset($_SESSION['CPM']) === true
         include_once $SETTINGS['cpassman_dir'].'/pages/utilities.deletion.js.php';
     } elseif ($pageSel === 'utilities.logs') {
         include_once $SETTINGS['cpassman_dir'].'/pages/utilities.logs.js.php';
+    } elseif ($pageSel === 'utilities.database') {
+        include_once $SETTINGS['cpassman_dir'].'/pages/utilities.database.js.php';
     } else {
         include_once $SETTINGS['cpassman_dir'].'/login.js.php';
     }

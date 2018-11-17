@@ -172,10 +172,11 @@ $link->set_charset(DB_ENCODING);
                         <h3 id="role-detail-header"></h3>
                     </div>                   
 
-                    <div class="table-responsive" id="role-details">
-                        &nbsp;
+                    <div class="card-body">
+                        <div class="table-responsive" id="role-details">
+                            &nbsp;
+                        </div>
                     </div>
-
                 </div>
             </div>
             <!-- /.col -->

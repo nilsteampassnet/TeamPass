@@ -284,8 +284,8 @@ foreach ($treeDesc as $t) {
                 
                 <!-- /.card-header -->
                 <!-- table start -->
-                <div class="card-body form table-responsive" id="user-logs">
-                    <table id="table-logs" class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">
+                <div class="card-body form" id="user-logs">
+                    <table id="table-logs" class="table table-striped" style="width:100%">
                         <thead>
                         <tr>
                             <th><?php echo langHdl('date'); ?></th>

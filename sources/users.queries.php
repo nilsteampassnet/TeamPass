@@ -966,7 +966,7 @@ if (null !== $post_type) {
                 'SELECT admin, isAdministratedByRole, gestionnaire
                 FROM '.prefixTable('users').'
                 WHERE id = %i',
-                $post_id
+                $post_user_id
             );
 
             // Is this user allowed to do this?

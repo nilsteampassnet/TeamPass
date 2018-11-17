@@ -57,8 +57,8 @@ $mngPages = array(
 
 // Utilities Pages
 $utilitiesPages = array(
-    'renewal' => 'utilities.renewal.php',
-    'deletion' => 'utilities.deletion.php',
-    'logs' => 'utilities.logs.php',
-    'database' => 'utilities.database.php',
+    'utilities.renewal' => 'utilities.renewal.php',
+    'utilities.deletion' => 'utilities.deletion.php',
+    'utilities.logs' => 'utilities.logs.php',
+    'utilities.database' => 'utilities.database.php',
 );

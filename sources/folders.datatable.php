@@ -57,13 +57,13 @@ if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            0 => array(0, langHdl('complex_level0'), '<i class="fa fa-bolt text-danger"></i>'),
-            25 => array(25, langHdl('complex_level1'), '<i class="fa fa-thermometer-0 text-danger"></i>'),
-            50 => array(50, langHdl('complex_level2'), '<i class="fa fa-thermometer-1 text-warning"></i>'),
-            60 => array(60, langHdl('complex_level3'), '<i class="fa fa-thermometer-2 text-warning"></i>'),
-            70 => array(70, langHdl('complex_level4'), '<i class="fa fa-thermometer-3 text-success"></i>'),
-            80 => array(80, langHdl('complex_level5'), '<i class="fa fa-thermometer-4 text-success"></i>'),
-            90 => array(90, langHdl('complex_level6'), '<i class="fa fa-diamond text-success"></i>'),
+            0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
+            25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
         )
     );
 }
@@ -192,7 +192,7 @@ foreach ($treeDesc as $t) {
 
             //col4
             if (isset(TP_PW_COMPLEXITY[$node_data['valeur']][1]) === true) {
-                $sOutput .= '"<span data-id=\"'.$t->id.'\" id=\"c'.$t->id.'\" class=\"infotip edit-select field-complex pointer\" title=\"'.TP_PW_COMPLEXITY[$node_data['valeur']][1].'\"  data-value=\"'.TP_PW_COMPLEXITY[$node_data['valeur']][0].'\">'.addslashes(TP_PW_COMPLEXITY[$node_data['valeur']][2]).'</span>"';
+                $sOutput .= '"<span data-id=\"'.$t->id.'\" id=\"c'.$t->id.'\" class=\"infotip edit-select field-complex pointer\" title=\"'.TP_PW_COMPLEXITY[$node_data['valeur']][1].'\"  data-value=\"'.TP_PW_COMPLEXITY[$node_data['valeur']][0].'\"><i class=\"'.addslashes(TP_PW_COMPLEXITY[$node_data['valeur']][2]).'\"></i></span>"';
             } else {
                 $sOutput .= '""';
             }

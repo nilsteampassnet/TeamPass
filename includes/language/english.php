@@ -15,6 +15,11 @@
  */
 
 return array(
+    'apply' => 'Apply',
+    'from' => 'From',
+    'please_confirm_by_clicking_checkbox' => 'Please confirm by clicking the checkbox',
+    'date_range' => 'Date range',
+    'purge' => 'Purge',
     'user_password_not_correct' => 'Wrong user password',
     'ip' => 'IP',
     'belong_of_deleted_folder' => 'Belong to deleted folder',

@@ -31,7 +31,7 @@ if (file_exists('../includes/config/tp.config.php')) {
 // Do checks
 require_once $SETTINGS['cpassman_dir'].'/includes/config/include.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/checks.php';
-if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === false) {
+if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'roles', $SETTINGS) === false) {
     // Not allowed page
     $_SESSION['error']['code'] = ERR_NOT_ALLOWED;
     include $SETTINGS['cpassman_dir'].'/error.php';
@@ -47,10 +47,9 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 require_once $SETTINGS['cpassman_dir'].'/includes/config/settings.php';
 header('Content-type: text/html; charset=utf-8');
-header('Cache-Control: no-cache, must-revalidate');
+require_once $SETTINGS['cpassman_dir'].'/includes/language/'.$_SESSION['user_language'].'.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
 require_once $SETTINGS['cpassman_dir'].'/sources/SplClassLoader.php';
 
@@ -59,35 +58,158 @@ require_once $SETTINGS['cpassman_dir'].'/includes/libraries/Database/Meekrodb/db
 $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
 $link->set_charset(DB_ENCODING);
 
-// Build tree
-$tree = new SplClassLoader('Tree\NestedTree', $SETTINGS['cpassman_dir'].'/includes/libraries');
+//Load Tree
+$tree = new SplClassLoader('Tree\NestedTree', '../includes/libraries');
 $tree->register();
 $tree = new Tree\NestedTree\NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-// Prepare POST variables
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING);
+// Prepare post variables
 $post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING);
-$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
-$post_newtitle = filter_input(INPUT_POST, 'newtitle', FILTER_SANITIZE_STRING);
-$post_renewal_period = filter_input(INPUT_POST, 'renewal_period', FILTER_SANITIZE_STRING);
-$post_newparent_id = filter_input(INPUT_POST, 'newparent_id', FILTER_SANITIZE_STRING);
-$post_changer_complexite = filter_input(INPUT_POST, 'changer_complexite', FILTER_SANITIZE_STRING);
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
 // Ensure Complexity levels are translated
 if (defined('TP_PW_COMPLEXITY') === false) {
     define(
         'TP_PW_COMPLEXITY',
         array(
-            0 => array(0, langHdl('complex_level0'), '<i class="fa fa-bolt text-danger"></i>'),
-            25 => array(25, langHdl('complex_level1'), '<i class="fa fa-thermometer-0 text-danger"></i>'),
-            50 => array(50, langHdl('complex_level2'), '<i class="fa fa-thermometer-1 text-warning"></i>'),
-            60 => array(60, langHdl('complex_level3'), '<i class="fa fa-thermometer-2 text-warning"></i>'),
-            70 => array(70, langHdl('complex_level4'), '<i class="fa fa-thermometer-3 text-success"></i>'),
-            80 => array(80, langHdl('complex_level5'), '<i class="fa fa-thermometer-4 text-success"></i>'),
-            90 => array(90, langHdl('complex_level6'), '<i class="fa fa-diamond text-success"></i>'),
+            0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
+                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
         )
     );
+}
+
+if (null !== $post_type) {
+    switch ($post_type) {
+        /*
+         * BUILD liste of folders
+         */
+        case 'build_matrix':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $arrData = array();
+
+            $arrData['user_is_admin'] = (int) $_SESSION['is_admin'];
+            $arrData['user_can_create_root_folder'] = (int) $_SESSION['can_create_root_folder'];
+
+            $treeDesc = $tree->getDescendants();
+
+            foreach ($treeDesc as $t) {
+                if (in_array($t->id, $_SESSION['groupes_visibles']) === true
+                    && in_array($t->id, $_SESSION['personal_visible_groups']) === false
+                    && $t->personal_folder == 0
+                ) {
+                    // get $t->parent_id
+                    $data = DB::queryFirstRow('SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i', $t->parent_id);
+                    if ($t->nlevel == 1) {
+                        $data['title'] = langHdl('root');
+                    }
+
+                    // get rights on this folder
+                    $arrayRights = array();
+                    $rows = DB::query('SELECT fonction_id  FROM '.prefixTable('rights').' WHERE authorized=%i AND tree_id = %i', 1, $t->id);
+                    foreach ($rows as $record) {
+                        array_push($arrayRights, $record['fonction_id']);
+                    }
+
+                    $arbo = $tree->getPath($t->id, false);
+                    $arrayPath = array();
+                    $arrayParents = array();
+                    foreach ($arbo as $elem) {
+                        array_push($arrayPath, $elem->title);
+                        array_push($parentClass, $elem->id);
+                    }
+
+                    // Get some elements from DB concerning this node
+                    $node_data = DB::queryFirstRow(
+                        'SELECT m.valeur AS valeur, n.renewal_period AS renewal_period,
+                        n.bloquer_creation AS bloquer_creation, n.bloquer_modification AS bloquer_modification
+                        FROM '.prefixTable('misc').' AS m,
+                        '.prefixTable('nested_tree').' AS n
+                        WHERE m.type=%s AND m.intitule = n.id AND m.intitule = %i',
+                        'complex',
+                        $t->id
+                    );
+
+                    // get number of items in folder
+                    $data_items = DB::query(
+                        'SELECT id
+                        FROM '.prefixTable('items').'
+                        WHERE id_tree = %i',
+                        $t->id
+                    );
+
+                    // Preapre array of columns
+                    $arrayColumns = array();
+
+                    $arrayColumns['id'] = $t->id;
+                    $arrayColumns['numOfChildren'] = $tree->numDescendants($t->id);
+                    $arrayColumns['level'] = $t->nlevel;
+                    $arrayColumns['title'] = $t->title;
+                    $arrayColumns['nb_items'] = DB::count();
+
+                    if (isset(TP_PW_COMPLEXITY[$node_data['valeur']][1]) === true) {
+                        $arrayColumns['folder_complexity'] = array(
+                            'text' => TP_PW_COMPLEXITY[$node_data['valeur']][1],
+                            'value' => TP_PW_COMPLEXITY[$node_data['valeur']][0],
+                            'class' => TP_PW_COMPLEXITY[$node_data['valeur']][2],
+                        );
+                    } else {
+                        $arrayColumns['folder_complexity'] = '';
+                    }
+
+                    $arrayColumns['renewal_period'] = $node_data['renewal_period'];
+
+                    //col7
+                    $data7 = DB::queryFirstRow(
+                        'SELECT bloquer_creation,bloquer_modification
+                        FROM '.prefixTable('nested_tree').'
+                        WHERE id = %i',
+                        intval($t->id)
+                    );
+                    $arrayColumns['add_is_blocked'] = (int) $data7['bloquer_creation'];
+                    $arrayColumns['edit_is_blocked'] = (int) $data7['bloquer_modification'];
+
+                    array_push($arrData, $arrayColumns);
+                }
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'data' => $arrData,
+                ),
+                'encode'
+            );
+
+            break;
+    }
 }
 
 // CASE where title is changed

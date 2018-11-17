@@ -44,27 +44,110 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 <script type='text/javascript'>
 //<![CDATA[
-    
+
+buildTable();
+
+function buildTable()
+{
+    // Clear
+    $('#table-folders > tbody').html('');
+
+    // Show spinner
+    alertify
+        .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+        .dismissOthers();
+
+    // Build matrix
+    $.post(
+        'sources/folders.queries.php',
+        {
+            type    : 'build_matrix',
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+            console.log(data);
+            if (data.error !== false) {
+                // Show error
+                alertify
+                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                    .dismissOthers();
+            } else {
+                // Build html
+                var newHtml = '',
+                    ident = '',
+                    path = '';
+                $(data.matrix).each(function(i, value) {
+                    // Access
+                    access = '';
+                    if (value.access === 'W') {
+                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                            '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
+                            '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+                    } else if (value.access === 'ND') {
+                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                            '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
+                            '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
+                    } else if (value.access === 'NE') {
+                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                            '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
+                            '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
+                    } else if (value.access === 'NDNE') {
+                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
+                            '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
+                            '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_anot_llowed'); ?>"></i>';
+                    } else if (value.access === 'R') {
+                        access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
+                    } else {
+                        access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo langHdl('no_access'); ?>"></i>';
+                    }
+
+                    // Build path
+                    path = '';
+                    $(value.path).each(function(j, valuePath) {
+                        if (path === '') {
+                            path = valuePath;
+                        } else {
+                            path += ' / ' + valuePath;
+                        }
+                    });
+
+                    // Finalize
+                    newHtml += '<tr>' +
+                        '<td width="35px"><input type="checkbox" id="cb-' + value.id + '" data-id="' + value.id + '" class="folder-select"></td>' +
+                        '<td class="pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + value.title + '</td>' +
+                        '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + path + '</td>' +
+                        '<td class="pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
+                        '</tr>'
+                });
+
+                // Show result
+                $('#role-details').html(
+                    '<table id="table-role-details" class="table table-hover table-striped" style="width:100%"><tbody>' +
+                    newHtml +
+                    '</tbody></table>'
+                );
+
+                //iCheck for checkbox and radio inputs
+                $('#role-details input[type="checkbox"]').iCheck({
+                    checkboxClass: 'icheckbox_flat-blue'
+                });
+
+                $('.infotip').tooltip();
+
+                // Inform user
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        }
+    );
+}
+
+
+//************************************************************** */
+
 /*
-$.extend($.expr[":"], {
-    "containsIN": function(elem, i, match, array) {
-        return (elem.textContent || elem.innerText || "").toLowerCase().indexOf((match[3] || "").toLowerCase()) >= 0;
-    }
-});
-
-// prepare Alphabet
-var _alphabetSearch = '';
-$.fn.dataTable.ext.search.push( function ( settings, searchData ) {
-    if ( ! _alphabetSearch ) {
-        return true;
-    }
-    if ( searchData[0].charAt(0) === _alphabetSearch ) {
-        return true;
-    }
-    return false;
-} );
-*/
-
 $('.infotip').tooltip();
 
 $('.select2').select2({
@@ -76,42 +159,51 @@ $('input[type="checkbox"].flat-red').iCheck({
     checkboxClass: 'icheckbox_flat-red',
 });
 
+var calcDataTableHeight = function() {
+  return $(window).height() * 55 / 100;
+};
+
 //Launch the datatables pluggin
-var oTable = $("#table-folders").dataTable({
-    "paging": false,
-    "searching": true,
-    "order": [[1, "asc"]],
-    "info": false,
-    "processing": false,
-    "serverSide": true,
-    "responsive": true,
-    "select": false,
-    "stateSave": true,
-    "autoWidth": true,
-    "ajax": {
-        url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/folders.datatable.php",
-        /*data: function(d) {
-            d.letter = _alphabetSearch
-        }*/
+var oTable = $('#table-folders').dataTable({
+    'paging': false,
+    //'searching': true,
+    //'order': [[1, 'asc']],
+    'info':             false,
+    'processing':       false,
+    'serverSide':       true,
+    'responsive':       true,
+    'select':           false,
+    'stateSave':        true,
+    'autoWidth':        true,
+    'scrollY':          calcDataTableHeight(),
+    'deferRender':      true,
+    'scrollCollapse' :  true,
+    'ajax': {
+        url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/folders.datatable.php',
     },
-    "language": {
-        "url": "<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt"
+    'language': {
+        'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $_SESSION['user_language']; ?>.txt'
     },
-    "columns": [
-        {"width": "80px"},
-        {className: "dt-body-left"},
-        {className: "dt-body-left"},
-        {"width": "70px", className: "dt-body-center"},
-        {"width": "70px", className: "dt-body-center"},
-        {"width": "70px", className: "dt-body-center"},
-        {"width": "90px", className: "dt-body-center"}
+    'columns': [
+        {'width': '90px'},
+        {className: 'dt-body-left'},
+        {className: 'dt-body-left'},
+        {'width': '70px', className: 'dt-body-center'},
+        {'width': '70px', className: 'dt-body-center'},
+        {'width': '70px', className: 'dt-body-center'},
+        {'width': '90px', className: 'dt-body-center'}
     ],
-    "drawCallback": function() {
+    'preDrawCallback': function() {
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+    },
+    'drawCallback': function() {
         // Tooltips
         $('.infotip').tooltip();
 
         // Hide checkbox if search filtering
-        var searchCriteria = $("body").find("[aria-controls='table-folders']");
+        var searchCriteria = $('body').find('[aria-controls="table-folders"]');
         if (searchCriteria.val() !== '' ) {
             $(document).find('.cb_selected_folder').addClass('hidden');
         } else {
@@ -122,51 +214,17 @@ var oTable = $("#table-folders").dataTable({
         $('#table-folders input[type="checkbox"]').iCheck({
             checkboxClass: 'icheckbox_flat-blue'
         });
+
+        alertify
+            .message('<?php echo langHdl('done'); ?>', 1)
+            .dismissOthers();
     },
-    "createdRow": function( row, data, dataIndex ) {
+    'createdRow': function( row, data, dataIndex ) {
         var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
         $(row).addClass(newClasses);
     }
 });
 
-oTable
-    .on('preXhr.dt', function () {
-        alertify
-            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
-            .dismissOthers();
-    } )
-    .on('draw.dt', function () {
-        alertify
-            .success('<?php echo langHdl('done'); ?>', 1)
-            .dismissOthers();
-    } );
-
-
-/*
-// manage the Alphabet
-var alphabet = $('<div class="alphabet"/>').append( 'Search: ' );
-$('<span class="clear active"/>')
-    .data( 'letter', '' )
-    .html( 'None' )
-    .appendTo( alphabet );
-for ( var i=0 ; i<26 ; i++ ) {
-    var letter = String.fromCharCode( 65 + i );
-
-    $('<span/>')
-        .data( 'letter', letter )
-        .html( letter )
-        .appendTo( alphabet );
-}
-alphabet.insertBefore( "#folders-alphabet" );
-alphabet.on( 'click', 'span', function () {
-    alphabet.find( '.active' ).removeClass( 'active' );
-    $(this).addClass( 'active' );
-
-    _alphabetSearch = $(this).data('letter');
-
-    oTable.api().ajax.reload();
-} );
-*/
 
 // Manage collapse/expend
 $(document).on('click', '.icon-collapse', function() {
@@ -193,11 +251,7 @@ var currentText = '',
 $(document).on('click', '.edit-text', function() {
     var field = '';
     currentText = $(this).text();
-    item = $(this);    
-    
-    $(this)
-        .addClass('hidden')
-        .after('<input type="text" class="form-control form-item-control remove-me save-me" value="' + currentText + '">');
+    item = $(this); 
     
     if ($(this).hasClass('field-renewal')) {
         initialColumnWidth = $('#table-folders thead th')[4].style.width;
@@ -205,9 +259,14 @@ $(document).on('click', '.edit-text', function() {
         field = 'renewal_period';
     } else if ($(this).hasClass('field-title')) {
         field = 'title';
-        initialColumnWidth = $('#table-folders thead th')[2].style.width;
+        initialColumnWidth = $('#table-folders thead th')[1].style.width;
+    } else {
+        return false;
     }
 
+    $(this)
+        .addClass('hidden')
+        .after('<input type="text" class="form-control form-item-control remove-me save-me" value="' + currentText + '">');
 
     $('.save-me')
         .focus()
@@ -225,6 +284,13 @@ $(document).on('click', '.edit-select', function() {
     
     // Hide existing
     $(this).addClass('hidden');
+    if ($(this).hasClass('field-complex')) {
+        initialColumnWidth = $('#table-folders thead th')[3].style.width;
+        $('#table-folders thead th')[3].style.width = '200px';
+        field = 'complexity';
+    } else {
+        return false;
+    }
 
     // Show select
     $("#select-complexity")
@@ -233,14 +299,6 @@ $(document).on('click', '.edit-select', function() {
     $('#select-complexity option[value="' + $(this).data('value') + '"]').prop('selected', true);
     console.log($(this).data('value'))
     
-    if ($(this).hasClass('field-complex')) {
-        initialColumnWidth = $('#table-folders thead th')[3].style.width;
-        $('#table-folders thead th')[3].style.width = '200px';
-        field = 'complexity';
-    } else if ($(this).hasClass('field-title')) {
-        field = 'title';
-        initialColumnWidth = $('#table-folders thead th')[2].style.width;
-    }
 
 
     $('.save-me')
@@ -287,7 +345,7 @@ function saveChange(item, currentText, change, field)
             'field'     : field,
             'value'     : change.val()
         };
-        
+        console.log(data);
         // Save
         $.post(
             'sources/folders.queries.php',
@@ -296,7 +354,7 @@ function saveChange(item, currentText, change, field)
                 data :  prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $_SESSION['key']; ?>'),
                 key  :  '<?php echo $_SESSION['key']; ?>'
             },
-            function(data) {
+            function(data) {console.log(data);
                 if (field === 'renewal_period' || field === 'title') {
                     change.remove();
                     $('.tmp-loader').remove();
@@ -311,7 +369,7 @@ function saveChange(item, currentText, change, field)
                     
                     // Show change
                     item
-                        .html(data.return.html)
+                        .html('<i class="' + data.return.html + '"></i>')
                         .attr('data-original-title', data.return.tip)
                         .attr('data-value', data.return.value)
                         .removeClass('hidden');
@@ -513,9 +571,7 @@ $('.btn').click(function() {
     }
 });
 
-/**
- * 
- */
+
 var operationOngoin = false;
 $(document).on('ifChecked', '.cb_selected_folder', function() {
     if (operationOngoin === false) {
@@ -560,9 +616,7 @@ $(document).on('ifChecked', '.cb_selected_folder', function() {
     }
 });
 
-/**
- * 
- */
+
 $(document).on('ifUnchecked', '.cb_selected_folder', function() {
     if (operationOngoin === false) {
         operationOngoin = true;
@@ -604,52 +658,6 @@ $(document).on('ifUnchecked', '.cb_selected_folder', function() {
         );
     }
 });
-/*
-$(document).on('click', '.cb_selected_folder', function() {
-    // Show selection of folders
-    var selected_cb = $(this),
-        id = $(this).data('id');
-    if ($(this).prop('checked') === true) {
-        $('#folder-' +id)
-            .css({'font-weight':'bold'})
-            .css({'background-color':'#E9FF00'});
-    } else {
-        $('#folder-' + id)
-            .css({'font-weight':''})
-            .css({'background-color':'#FFF'});
-    }
-
-    // Now get subfolders
-    $.post(
-        'sources/folders.queries.php',
-        {
-            type    : 'select_sub_folders',
-            id      : id,
-            key     : '<?php echo $_SESSION['key']; ?>'
-        },
-        function(data) {
-            // check/uncheck checkbox
-            if (data[0].subfolders !== '') {
-                var tmp = data[0].subfolders.split(';');
-                for (var i = tmp.length - 1; i >= 0; i--) {
-                    if (selected_cb.prop('checked') === true) {
-                        $('#checkbox-' + tmp[i]).prop('checked', true).prop('disabled', true);
-                        $('#folder-' +tmp[i])
-                            .css({'font-weight':'bold'})
-                            .css({'background-color':'#E9FF00'});
-                    } else {
-                        $('#checkbox-' + tmp[i]).prop('checked', false).prop('disabled', false);
-                        $('#folder-' + tmp[i])
-                            .css({'font-weight':''})
-                            .css({'background-color':'#FFF'});
-                    }
-                }
-            }
-        },
-        'json'
-    );
-})
-*/
 
 // Toogle icon
 $(document).on('click', '.toggle', function() {
@@ -679,7 +687,7 @@ $('#delete-confirm')
         $('#delete-submit').addClass('disabled');
     });
 
-
+*/
 
 
 

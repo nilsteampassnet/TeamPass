@@ -171,11 +171,9 @@ var oTable = $('#table-users').DataTable({
                    '</button>' +
                    '<ul class="dropdown-menu" role="menu">' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fas fa-pen mr-2"></i><?php echo langHdl('edit'); ?></li>' +
-                   //'<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="pwd"><i class="fas fa-key mr-2"></i><?php echo langHdl('change_password'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fas fa-newspaper mr-2"></i><?php echo langHdl('see_logs'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fas fa-qrcode mr-2"></i><?php echo langHdl('user_ga_code'); ?></li>' +
                    '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="access-rights"><i class="fas fa-sitemap mr-2"></i><?php echo langHdl('user_folders_rights'); ?></li>' +
-                   //'<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="delete"><i class="fas fa-trash mr-2"></i><?php echo langHdl('delete'); ?></li>' +
                    '</ul>'
                    '</span>';
             }
