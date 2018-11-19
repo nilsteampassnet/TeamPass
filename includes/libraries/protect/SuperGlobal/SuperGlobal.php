@@ -32,7 +32,7 @@ class SuperGlobal
      * Sets a variable
      *
      * @param  string $key   Key to use
-     * @param  string $value Value to put
+     * @param  string|array $value Value to put
      * @param  string $type  Type of super global
      * @return void
      */

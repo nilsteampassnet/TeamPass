@@ -169,3 +169,10 @@
 .needs-validation ~ span > .select2-dropdown{
   border-color:red !important;
 }
+
+
+.card-header > .card-tools-left {
+    position: absolute;
+    left: 1rem;
+    top: .5rem;
+  }

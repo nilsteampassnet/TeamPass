@@ -231,17 +231,17 @@ foreach ($tst as $t) {
                     <h3 class="card-title" id="folders-alphabet"></h3>
                 </div>-->
                 <!-- /.card-header -->
-                <div class="card-body form" id="folders-list">
-                    <table id="table-folders" class="table table-responsive table-striped" style="width:100%">
+                <div class="card-body form table-responsive" id="folders-list">
+                    <table id="table-folders" class="table table-hover table-striped" style="width:100%">
                         <thead>
                         <tr>
-                            <th></th>
+                            <th width="80px"></th>
                             <th><?php echo langHdl('group'); ?></th>
                             <th><?php echo langHdl('group_parent'); ?></th>
-                            <th><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
-                            <th><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
-                            <th><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
-                            <th><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
+                            <th width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
                         </tr>
                         </thead>
                         <tbody>

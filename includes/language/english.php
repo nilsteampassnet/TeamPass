@@ -34,6 +34,7 @@ return array(
     'recycled_bin' => 'Recycled bin',
     'database' => 'Database',
     'renewal' => 'Renewal',
+    'renewal_delay' => 'Renewal delay',
     'please_confirm_deletion' => 'Please confirm deletion',
     'caution' => 'Caution',
     'role_not_exist' => 'This role doesn\'t exist!',

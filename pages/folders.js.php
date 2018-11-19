@@ -47,6 +47,29 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 buildTable();
 
+// Prepare buttons
+var deletionList = [];
+$('.tp-action').click(function() {
+    if ($(this).data('action') === 'new') {
+
+    } else if ($(this).data('action') === 'delete') {
+
+    } else if ($(this).data('action') === 'refresh') {
+        $('.form').addClass('hidden');
+        $('#folders-list')
+            .removeClass('hidden');
+        
+        // Build matrix
+        buildTable();
+    }
+});
+
+
+/**
+ * Undocumented function
+ *
+ * @return void
+ */
 function buildTable()
 {
     // Clear
@@ -76,64 +99,116 @@ function buildTable()
                 // Build html
                 var newHtml = '',
                     ident = '',
-                    path = '';
-                $(data.matrix).each(function(i, value) {
-                    // Access
-                    access = '';
-                    if (value.access === 'W') {
-                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                            '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
-                            '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
-                    } else if (value.access === 'ND') {
-                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                            '<i class="fas fa-pen mr-2 text-success infotip" title="<?php echo langHdl('edit_allowed'); ?>"></i>' +
-                            '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_not_allowed'); ?>"></i>';
-                    } else if (value.access === 'NE') {
-                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                            '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                            '<i class="fas fa-eraser mr-2 text-success infotip" title="<?php echo langHdl('delete_allowed'); ?>"></i>';
-                    } else if (value.access === 'NDNE') {
-                        access = '<i class="fas fa-indent mr-2 text-success infotip" title="<?php echo langHdl('add_allowed'); ?>"></i>' +
-                            '<i class="fas fa-pen mr-2 text-danger infotip" title="<?php echo langHdl('edit_not_allowed'); ?>"></i>' +
-                            '<i class="fas fa-eraser mr-2 text-danger infotip" title="<?php echo langHdl('delete_anot_llowed'); ?>"></i>';
-                    } else if (value.access === 'R') {
-                        access = '<i class="fas fa-book-reader mr-2 text-warning infotip" title="<?php echo langHdl('read_only'); ?>"></i>';
-                    } else {
-                        access = '<i class="fas fa-ban mr-2 text-danger infotip" title="<?php echo langHdl('no_access'); ?>"></i>';
-                    }
+                    path = '',
+                    columns = '',
+                    rowCounter = 0,
+                    path = '',
+                    foldersSelect = '';
 
-                    // Build path
+                $(data.matrix).each(function(i, value) {
+                    // Row
+                    columns += '<tr><td>';
+
+                    // Column 1
+                    if ((value.parentId === 0
+                        && (data.userIsAdmin === 1 || data.userCanCreateRootFolder === 1))
+                        || value.parentId !== 0
+                    ) {
+                        columns += '<input type="checkbox" class="checkbox-folder" id="cb-' + value.id + '" data-id="' + value.id + '">';
+
+                        if (value.numOfChildren > 0) {
+                            columns += '<i class="fas fa-folder-minus infotip ml-2 pointer icon-collapse" data-id="' + value.id + '" title="<?php echo langHdl('collapse'); ?>"></i>';
+                        }
+                    }
+                    columns += '</td>';
+
+                    // Column 2
+                    columns += '<td class="modify pointer">' +
+                        '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip" data-html="true" title="<?php echo langHdl('id'); ?>: ' + value.id + '<br><?php echo langHdl('level'); ?>: ' + value.level + '<br><?php echo langHdl('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
+
+
+                    // Column 3
                     path = '';
-                    $(value.path).each(function(j, valuePath) {
+                    $(value.path).each(function(i, folder) {
                         if (path === '') {
-                            path = valuePath;
+                            path = folder;
                         } else {
-                            path += ' / ' + valuePath;
+                            path += '<i class="fas fa-angle-right fa-sm ml-1 mr-1"></i>' + folder;
                         }
                     });
+                    columns += '<td class="modify pointer" data-parentId="' + value.parentId + '">' +
+                        '<small class="text-muted">' + path + '</small></td>';
 
-                    // Finalize
-                    newHtml += '<tr>' +
-                        '<td width="35px"><input type="checkbox" id="cb-' + value.id + '" data-id="' + value.id + '" class="folder-select"></td>' +
-                        '<td class="pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + value.title + '</td>' +
-                        '<td class="font-italic pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + path + '</td>' +
-                        '<td class="pointer modify" data-id="' + value.id + '" data-access="' + value.access + '">' + access + '</td>' +
-                        '</tr>'
+
+                    // Column 4
+                    columns += '<td class="modify pointer">';
+                    if (value.folderComplexity.value !== undefined) {
+                        columns += '<i class="' + value.folderComplexity.class + ' infotip" data-complexity="' + value.folderComplexity.value + '" title="' + value.folderComplexity.text + '"></i>';
+                    }
+                    columns += '</td>';
+
+
+                    // Column 5
+                    columns += '<td class="modify pointer">' + value.renewalPeriod + '</td>';
+
+
+                    // Column 6
+                    columns += '<td class="modify pointer" data-value="' + value.add_is_blocked + '">';
+                    if (value.add_is_blocked === 1) {
+                        columns += '<i class="fa fa-toggle-on text-info"></i>';
+                    } else {
+                        columns += '<i class="fa fa-toggle-off"></i>';
+                    }
+                    columns += '</td>';
+                    
+
+                    // Column 7
+                    columns += '<td class="modify pointer" data-value="' + value.edit_is_blocked + '">';
+                    if (value.edit_is_blocked === 1) {
+                        columns += '<i class="fa fa-toggle-on text-info"></i>';
+                    } else {
+                        columns += '<i class="fa fa-toggle-off"></i>';
+                    }
+                    columns += '</td></tr>';
+                    
+
+                    // Folder Select
+                    foldersSelect += '<option value="' + value.id + '">' + value.title + '</option>';
+
+                    rowCounter++;
                 });
 
                 // Show result
-                $('#role-details').html(
-                    '<table id="table-role-details" class="table table-hover table-striped" style="width:100%"><tbody>' +
-                    newHtml +
-                    '</tbody></table>'
-                );
+                $('#table-folders > tbody').html(columns);
 
                 //iCheck for checkbox and radio inputs
-                $('#role-details input[type="checkbox"]').iCheck({
+                $('#table-folders input[type="checkbox"]').iCheck({
                     checkboxClass: 'icheckbox_flat-blue'
                 });
 
                 $('.infotip').tooltip();
+
+                // store list of folders
+                store.update(
+                    'teampassApplication',
+                    function (teampassApplication)
+                    {
+                        teampassApplication.foldersSelect = foldersSelect;
+                    }
+                );
+
+                // store list of Complexity
+                complexity = '';
+                $(data.fullComplexity).each(function(i, option) {
+                    complexity += '<option value="' + option[0] + '">' + option[1] + '</option>';
+                });
+                store.update(
+                    'teampassApplication',
+                    function (teampassApplication)
+                    {
+                        teampassApplication.complexityOptions = complexity;
+                    }
+                );
 
                 // Inform user
                 alertify
@@ -143,6 +218,175 @@ function buildTable()
         }
     );
 }
+
+/**
+ * Check / Uncheck children folders
+ */
+var operationOngoin = false;
+$(document).on('ifChecked', '.checkbox-folder', function() {
+    if (operationOngoin === false) {
+        operationOngoin = true;
+        
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        // Show selection of folders
+        var selected_cb = $(this),
+            id = $(this).data('id');
+
+        // Now get subfolders
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'select_sub_folders',
+                id      : id,
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                // check/uncheck checkbox
+                if (data.subfolders !== '') {
+                    $.each(JSON.parse(data.subfolders), function(i, value) {
+                        $('#cb-' + value).iCheck('check');
+                    });
+                }
+                operationOngoin = false;
+
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        );
+    }
+});
+
+$(document).on('ifUnchecked', '.checkbox-folder', function() {
+    if (operationOngoin === false) {
+        operationOngoin = true;
+        
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+            
+        // Show selection of folders
+        var selected_cb = $(this),
+            id = $(this).data('id');
+
+        // Now get subfolders
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'select_sub_folders',
+                id      : id,
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                // check/uncheck checkbox
+                if (data.subfolders !== '') {
+                    $.each(JSON.parse(data.subfolders), function(i, value) {
+                        $('#cb-' + value).iCheck('uncheck');
+                    });
+                }
+                operationOngoin = false;
+
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+            }
+        );
+    }
+});
+
+
+/**
+ * Handle the form for folder edit
+ */
+var currentFolderEdited = '';
+$(document).on('click', '.modify', function() {
+    // Manage edition of rights card
+    if (currentFolderEdited !== '' && currentFolderEdited !== $(this).data('id')) {
+        $('.temp-row').remove();
+    } else if (currentFolderEdited === $(this).data('id')) {
+        return false;
+    }
+
+    // Init
+    var currentRow = $(this).closest('tr'),
+        folderTitle = $(currentRow).find("td:eq(1)").text(),
+        folderParent = $(currentRow).find("td:eq(2)").data('parentId'),
+        folderComplexity = $(currentRow).find("td:eq(3)").data('value'),
+        folderRenewal = $(currentRow).find("td:eq(4)").text(),
+        folderAddRestriction = $(currentRow).find("td:eq(5)").data('value'),
+        folderEditRestriction = $(currentRow).find("td:eq(6)").data('value');
+    currentFolderEdited = $(this).data('id');
+
+
+    // Now show
+    $(currentRow).after(
+        '<tr class="temp-row"><td colspan="' + $(currentRow).children('td').length + '">' +
+        '<div class="card card-warning card-outline form">' +
+        '<div class="card-body">' +
+        '<div class="form-group ml-2">' +
+        '<label for="folder-edit-title"><?php echo langHdl('label'); ?></label>' +
+        '<input type="text" class="form-control clear-me" id="folder-edit-title" value="' + folderTitle + '">' +
+        '</div>' +
+        '<div class="form-group ml-2">' +
+        '<label for="folder-edit-parent"><?php echo langHdl('parent'); ?></label><br>' +
+        '<select id="folder-edit-parent" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').foldersSelect + '</select>' +
+        '</div>' +
+        '<div class="form-group ml-2">' +
+        '<label for="folder-edit-complexity"><?php echo langHdl('complexity'); ?></label><br>' +
+        '<select id="folder-edit-complexity" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').complexityOptions + '</select>' +
+        '</div>' +
+        '<div class="form-group ml-2">' +
+        '<label for="folder-edit-renewal"><?php echo langHdl('renewal_delay'); ?></label>' +
+        '<input type="text" class="form-control clear-me" id="folder-edit-renewal" value="' + folderRenewal + '">' +
+        '</div>' +
+        '<div class="form-group ml-2" id="folder-rights-tuned">' +
+        '<div class="form-check">' +
+        '<input type="checkbox" class="form-check-input form-control" id="folder-edit-add-restriction">' +
+        '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo langHdl('auth_creation_without_complexity'); ?></label>' +
+        '</div>' +
+        '<div class="form-check">' +
+        '<input type="checkbox" class="form-check-input form-control" id="folder-edit-edit-restriction">' +
+        '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo langHdl('auth_modification_without_complexity'); ?></label>' +
+        '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="card-footer">' +
+        '<button type="button" class="btn btn-warning tp-action" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo langHdl('submit'); ?></button>' +
+        '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+        '</div>' +
+        '</div>' +
+        '</td></tr>'
+    );
+
+    // Prepare iCheck format for checkboxes
+    $('input[type="checkbox"].form-check-input, input[type="radio"].form-radio-input').iCheck({
+        radioClass      : 'iradio_flat-orange',
+        checkboxClass   : 'icheckbox_flat-orange',
+    });
+
+    // Manage status of the checkboxes
+    if (folderAddRestriction === 0) {
+        $('#folder-edit-add-restriction').iCheck('uncheck');
+    } else {
+        $('#folder-edit-add-restriction').iCheck('check');
+    }
+    if (folderEditRestriction === 0) {
+        $('#folder-edit-edit-restriction').iCheck('uncheck');
+    } else {
+        $('#folder-edit-edit-restriction').iCheck('check');
+    }
+
+    $('#folder-edit-parent').val(folderParent);
+    $('#folder-edit-parent').select2();
+
+});
 
 
 //************************************************************** */

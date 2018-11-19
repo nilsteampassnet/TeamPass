@@ -852,7 +852,7 @@ if (($session_validite_pw === null
 <!-- platform -->
 <script type="text/javascript" src="plugins/platform/platform.js"></script>
 <!-- STORE.JS -->
-<script type="text/javascript" src="includes/libraries/store.js/dist/store.everything.min.js"></script>
+<script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js"></script>
 <!-- radiobuttons -->
 <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css" type="text/css" />
 <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js"></script>

@@ -270,15 +270,15 @@ function loadSettings()
                 'teampassUser',
                 {},
                 function(teampassSettings) {
-                    teampassSettings['user_admin'] = <?php echo (int) $_SESSION['user_admin']; ?>;
-                    teampassSettings['user_id'] = <?php echo (int) $_SESSION['user_id']; ?>;
-                    teampassSettings['user_manager'] = <?php echo (int) $_SESSION['user_manager']; ?>;
-                    teampassSettings['user_can_manage_all_users'] = <?php echo (int) $_SESSION['user_can_manage_all_users']; ?>;
-                    teampassSettings['user_read_only'] = <?php echo (int) $_SESSION['user_read_only']; ?>;
-                    teampassSettings['key'] = '<?php echo $_SESSION['key']; ?>';
-                    teampassSettings['login'] = "<?php echo $_SESSION['login']; ?>";
-                    teampassSettings['lastname'] = "<?php echo $_SESSION['lastname']; ?>";
-                    teampassSettings['name'] = "<?php echo $_SESSION['name']; ?>";
+                    teampassSettings['user_admin'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_admin'] : 0; ?>;
+                    teampassSettings['user_id'] = <?php echo isset($_SESSION['user_id']) === true ? (int) $_SESSION['user_id'] : 0; ?>;
+                    teampassSettings['user_manager'] = <?php echo isset($_SESSION['user_manager']) === true ? (int) $_SESSION['user_manager'] : 0; ?>;
+                    teampassSettings['user_can_manage_all_users'] = <?php echo isset($_SESSION['user_can_manage_all_users']) === true ? (int) $_SESSION['user_can_manage_all_users'] : 0; ?>;
+                    teampassSettings['user_read_only'] = <?php echo isset($_SESSION['user_admin']) === true ? (int) $_SESSION['user_read_only'] : 1; ?>;
+                    teampassSettings['key'] = '<?php echo isset($_SESSION['key']) === true ? $_SESSION['key'] : 0; ?>';
+                    teampassSettings['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
+                    teampassSettings['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
+                    teampassSettings['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
                 }
             );
         }

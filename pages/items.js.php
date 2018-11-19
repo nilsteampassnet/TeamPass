@@ -380,6 +380,7 @@ $('.tp-action').click(function() {
         $('.form-item-share, .item-details-card-menu').removeClass('hidden');
     } else if ($(this).data('item-action') === 'notify') {
         console.info('SHOW NOTIFY ITEM');
+        $('#form-item-notify-checkbox').iCheck('uncheck');
         // Show notify form
         $('.form-item, .item-details-card, .form-item-action').addClass('hidden');
         $('.form-item-notify, .item-details-card-menu').removeClass('hidden');
@@ -434,20 +435,20 @@ $('#form-item-folder').change(function() {
     
 });
 
-
-
 /**
- * SHARE - validate the email
+ * NOTIFY - Perform save
  */
-$('#form-item-share-perform').click(function() {
-    var form = $('#form-item-share');
+$('#form-item-notify-perform').click(function() {
+    var form = $('#form-item-notify');
 
-    if (form[0].checkValidity() === false) {
-        form.addClass('was-validated');
-        return false;
-    }
+    alertify
+        .message(
+            '<i class="fas fa-warning fa-lg mr-2"></i>Not yet implemented.',
+            5
+        )
+        .dismissOthers();
 
-    // Show cog
+    /*// Show cog
     alertify
         .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
         .dismissOthers();
@@ -481,6 +482,63 @@ $('#form-item-share-perform').click(function() {
             }
         },
         'json'
+    );*/
+});
+
+
+
+/**
+ * SHARE - validate the email
+ */
+$('#form-item-share-perform').click(function() {
+    var form = $('#form-item-share');
+
+    if (form[0].checkValidity() === false) {
+        form.addClass('was-validated');
+        return false;
+    }
+
+    // Show cog
+    alertify
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+        .dismissOthers();
+
+    // Prepare data
+    var data = {
+        'id'        : store.get('teampassItem').id,
+        'receipt'   : $('#form-item-share-email').val(),
+        'cat'       : 'share_this_item',
+    }
+
+    // Launch action
+    $.post(
+        'sources/items.queries.php',
+        {
+            type    : 'send_email',
+            data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key     : '<?php echo $_SESSION['key']; ?>'
+        },
+        function(data) {
+            data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+
+            if (data.error !== false) {
+                // Show error
+                alertify
+                    .error('<i class="fa fa-ban mr-2"></i>' + data.message, 3)
+                    .dismissOthers();
+            } else {
+                $('.form-item, .item-details-card, .form-item-action').removeClass('hidden');
+                $('.form-item-share, .item-details-card-menu').addClass('hidden');
+
+                // Inform user
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 1)
+                    .dismissOthers();
+
+                // Clear
+                $('#form-item-share-email').val('');
+            }
+        }
     );
 });
 
@@ -3159,7 +3217,7 @@ function Details(itemDefinition, actionType)
 
                 // Prepare counter
                 $('#card-item-misc')
-                    .append('<span class="icon-badge mr-5"><span class="fas fa-bullseye infotip" title="<?php
+                    .append('<span class="icon-badge mr-5"><span class="far fa-eye infotip" title="<?php
                         echo langHdl('viewed_number');
                     ?>"></span><span class="badge badge-info icon-badge-text icon-badge-far">' + data.viewed_no + '</span></span>');
 
@@ -3181,7 +3239,7 @@ function Details(itemDefinition, actionType)
                     }
                     // Show icon
                     $('#card-item-misc')
-                        .append('<span class="icon-badge mr-6"><span class="fas fa-trash-o infotip" title="<?php
+                        .append('<span class="icon-badge mr-6"><span class="far fa-trash-alt infotip" title="<?php
                             echo langHdl('automatic_deletion_engaged');
                         ?>"></span><span class="badge badge-danger icon-badge-text">' + data.to_be_deleted + '</span></span>');
                 }
@@ -3189,12 +3247,12 @@ function Details(itemDefinition, actionType)
                 // Show Notification engaged
                 if (data.notification_status === true) {
                     $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge"><span class="fas fa-bell-o infotip text-warning" title="<?php
+                        .append('<span class="ml-4 icon-badge"><span class="far fa-bell infotip text-warning" title="<?php
                             echo langHdl('notification_engaged');
                         ?>"></span></span>');
                 } else {
                     $('#card-item-misc')
-                        .append('<span class="ml-4 icon-badge"><span class="fas fa-bell-slash-o infotip text-warning" title="<?php
+                        .append('<span class="ml-4 icon-badge"><span class="far fa-bell-slash infotip text-warning" title="<?php
                             echo langHdl('notification_not_engaged');
                         ?>"></span></span>');
                 }

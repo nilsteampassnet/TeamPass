@@ -59,12 +59,12 @@ if (defined('TP_PW_COMPLEXITY') === false) {
         'TP_PW_COMPLEXITY',
         array(
             0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
-                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
-                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
-                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
-                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
-                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
-                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+            50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+            60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+            70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+            80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+            90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
         )
     );
 }
@@ -2381,6 +2381,7 @@ if (null !== $post_type) {
                 $arrData['fields'] = $fieldsTmp;
                 $arrData['categories'] = $arrCatList;
                 $arrData['template_id'] = $template_id;
+                $arrData['to_be_deleted'] = '';
 
                 // Manage user restriction
                 if (null !== $post_restricted) {
@@ -2391,8 +2392,15 @@ if (null !== $post_type) {
                 // Decrement the number before being deleted
                 if (isset($SETTINGS['enable_delete_after_consultation']) && $SETTINGS['enable_delete_after_consultation'] === '1') {
                     // Is the Item to be deleted?
-                    $dataDelete = DB::queryfirstrow('SELECT * FROM '.prefixTable('automatic_del').' WHERE item_id=%i', $post_id);
-                    $arrData['to_be_deleted'] = $dataDelete['del_value'];
+                    $dataDelete = DB::queryfirstrow(
+                        'SELECT * 
+                        FROM '.prefixTable('automatic_del').'
+                        WHERE item_id = %i',
+                        $post_id
+                    );
+                    if (DB::count() > 0) {
+                        $arrData['to_be_deleted'] = $dataDelete['del_value'];
+                    }
                     $arrData['to_be_deleted_type'] = $dataDelete['del_type'];
 
                     // Now delete if required
@@ -4505,73 +4513,107 @@ if (null !== $post_type) {
            * Send email
         */
         case 'send_email':
+            // Check KEY
             if ($post_key !== $_SESSION['key']) {
-                echo '[{"error" : "something_wrong"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
-            } else {
+            } elseif ($_SESSION['user_read_only'] === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+             // decrypt and retrieve data in JSON format
+             $dataReceived = prepareExchangedData($post_data, 'decode');
+
+            // Prepare variables
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_receipt = filter_var($dataReceived['receipt'], FILTER_SANITIZE_STRING);
+            $post_cat = filter_var($dataReceived['cat'], FILTER_SANITIZE_STRING);
+
+            // get links url
+            if (empty($SETTINGS['email_server_url']) === true) {
+                $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
+            }
+            if ($post_cat === 'request_access_to_author') {
+                // Content
                 if (empty(filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING)) === false) {
                     $content = explode(',', filter_input(INPUT_POST, 'content', FILTER_SANITIZE_STRING));
                 }
-                // get links url
-                if (empty($SETTINGS['email_server_url'])) {
-                    $SETTINGS['email_server_url'] = $SETTINGS['cpassman_url'];
-                }
-                if ($post_cat === 'request_access_to_author') {
-                    $dataAuthor = DB::queryfirstrow('SELECT email,login FROM '.prefixTable('users').' WHERE id= '.$content[1]);
-                    $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM '.prefixTable('items').' WHERE id= '.$content[0]);
+                // Variables
+                $dataAuthor = DB::queryfirstrow('SELECT email,login FROM '.prefixTable('users').' WHERE id= '.$content[1]);
+                $dataItem = DB::queryfirstrow('SELECT label, id_tree FROM '.prefixTable('items').' WHERE id= '.$content[0]);
 
-                    // Get path
-                    $path = prepareEmaiItemPath(
-                        $dataItem['id_tree'],
-                        $dataItem['label'],
-                        $SETTINGS
-                    );
+                // Get path
+                $path = prepareEmaiItemPath(
+                    $dataItem['id_tree'],
+                    $dataItem['label'],
+                    $SETTINGS
+                );
 
-                    $ret = json_decode(
-                        sendEmail(
-                            langHdl('email_request_access_subject'),
-                            str_replace(
-                                array('#tp_item_author#', '#tp_user#', '#tp_item#'),
-                                array(' '.addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
-                                langHdl('email_request_access_mail')
-                            ),
-                            $dataAuthor['email'],
-                            $SETTINGS
+                $ret = json_decode(
+                    sendEmail(
+                        langHdl('email_request_access_subject'),
+                        str_replace(
+                            array('#tp_item_author#', '#tp_user#', '#tp_item#'),
+                            array(' '.addslashes($dataAuthor['login']), addslashes($_SESSION['login']), $path),
+                            langHdl('email_request_access_mail')
                         ),
-                        true
-                    );
-                } elseif ($post_cat === 'share_this_item') {
-                    $dataItem = DB::queryfirstrow(
-                        'SELECT label,id_tree
-                        FROM '.prefixTable('items').'
-                        WHERE id= %i',
-                        $post_id
-                    );
-
-                    // Get path
-                    $path = prepareEmaiItemPath(
-                        $dataItem['id_tree'],
-                        $dataItem['label'],
+                        $dataAuthor['email'],
                         $SETTINGS
-                    );
+                    ),
+                    true
+                );
+            } elseif ($post_cat === 'share_this_item') {
+                $dataItem = DB::queryfirstrow(
+                    'SELECT label,id_tree
+                    FROM '.prefixTable('items').'
+                    WHERE id= %i',
+                    $post_id
+                );
 
-                    // send email
-                    $ret = json_decode(
-                        sendEmail(
-                            langHdl('email_share_item_subject'),
-                            str_replace(
-                                array('#tp_link#', '#tp_user#', '#tp_item#'),
-                                array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($path)),
-                                langHdl('email_share_item_mail')
-                            ),
-                            $post_receipt,
-                            $SETTINGS
+                // Get path
+                $path = prepareEmaiItemPath(
+                    $dataItem['id_tree'],
+                    $dataItem['label'],
+                    $SETTINGS
+                );
+
+                // send email
+                $ret = json_decode(
+                    sendEmail(
+                        langHdl('email_share_item_subject'),
+                        str_replace(
+                            array('#tp_link#', '#tp_user#', '#tp_item#'),
+                            array($SETTINGS['email_server_url'].'/index.php?page=items&group='.$dataItem['id_tree'].'&id='.$post_id, addslashes($_SESSION['login']), addslashes($path)),
+                            langHdl('email_share_item_mail')
                         ),
-                        true
-                    );
-                }
-                echo '[{"error":"'.$ret['error'].'" , "message":"'.$ret['message'].'"}]';
+                        $post_receipt,
+                        $SETTINGS
+                    ),
+                    true
+                );
             }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => $ret['error'],
+                    'message' => $ret['message'],
+                ),
+                'encode'
+            );
+
             break;
 
         /*
@@ -5159,10 +5201,10 @@ if (null !== $post_type) {
                     'complex',
                     $folder
                 );
-                if (DB::count() > 0) {
+                if (DB::count() > 0 && empty($data['valeur']) === false) {
                     $valTemp = array(
                         'value' => $data['valeur'],
-                        'text' => $complexity = TP_PW_COMPLEXITY[$data['valeur']][1],
+                        'text' => TP_PW_COMPLEXITY[$data['valeur']][1],
                     );
                 }
                 $arr_data[$folder]['complexity'] = $valTemp;

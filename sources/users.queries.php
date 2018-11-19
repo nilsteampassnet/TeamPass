@@ -55,7 +55,7 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === 
     } else {
         // Do special check to allow user to change attributes of his profile
         if (empty($filtered_newvalue) === true
-            || checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile') === false
+            || checkUser($_SESSION['user_id'], $_SESSION['key'], 'profile', $SETTINGS) === false
         ) {
             $_SESSION['error']['code'] = ERR_NOT_ALLOWED; //not allowed page
             include $SETTINGS['cpassman_dir'].'/error.php';

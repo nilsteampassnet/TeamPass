@@ -120,7 +120,7 @@ echo '
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-2">
-                    <h1 class="m-0 text-dark"><?php echo langHdl('items'); ?></h1>
+                    <h1 class="m-0 text-dark"><i class="fas fa-key mr-2"></i><?php echo langHdl('items'); ?></h1>
                 </div><!-- /.col -->
                 <div class="col-sm-10">
                     <ol class="breadcrumb float-sm-right" id="form-folder-path"></ol>
@@ -140,7 +140,19 @@ echo '
 
                 <div class="card text-center">
                     <div class="card-header">
+                        <div class="card-tools-left">
+                            <button type="button" class="btn btn-gray but-back-to-list">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                        </div>
+
                         <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
+                        
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-tool btn-sm but-back-to-list">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
                         <div>
@@ -156,15 +168,7 @@ echo '
 
                 <div class="card">
                     <div class="card-header d-flex">
-                        <span class="mr-3 align-middle">
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-gray but-back-to-list">
-                                    <i class="fas fa-arrow-left"></i>
-                                </button>
-                            </div>
-                        </span>
-
-                        <ul class="nav nav-pills ml-auto mr-3" id="form-item-nav-pills">
+                        <ul class="nav nav-pills" id="form-item-nav-pills">
                             <li class="nav-item"><a class="nav-link active" href="#tab_1" data-toggle="tab"><?php echo langHdl('main'); ?></a></li>
                             <li class="nav-item"><a class="nav-link" href="#tab_2" data-toggle="tab"><?php echo langHdl('details'); ?></a></li>
                             <li class="nav-item"><a class="nav-link" href="#tab_3" data-toggle="tab"><?php echo langHdl('attachments'); ?></a></li>
@@ -173,12 +177,6 @@ echo '
                             <li class="nav-item"><a class="nav-link" href="#tab_4" data-toggle="tab">'.langHdl('fields').'</a></li>' : '';
                             ?>
                         </ul>
-                        
-                        <div class="card-tools">
-                            <button type="button" class="btn btn-tool btn-sm but-back-to-list">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
                     </div><!-- /.card-header -->
                     <div class="card-body">
                         <form id="form-item" class="needs-validation" novalidate onsubmit="return false;">
@@ -285,13 +283,13 @@ echo '
                                 <!-- ANYONE CAN MODIFY -->
                                 <?php
                                 if (isset($SETTINGS['anyone_can_modify']) === true
-                                    && $SETTINGS['anyone_can_modify'] === '1'
+                                    && (int) $SETTINGS['anyone_can_modify'] === 1
                                 ) {
                                     ?>
                                 <div class="form-check mb-3">
                                     <input type="checkbox" class="form-check-input form-item-control flat-blue track-change" id="form-item-anyoneCanModify"<?php
                                     echo isset($SETTINGS['anyone_can_modify_bydefault']) === true
-                                        && $SETTINGS['anyone_can_modify_bydefault'] === '1' ? ' checked' : ''; ?>>
+                                        && (int) $SETTINGS['anyone_can_modify_bydefault'] === 1 ? ' checked' : ''; ?>>
                                     <label class="form-check-label ml-3" for="form-item-anyoneCanModify"><?php echo langHdl('anyone_can_modify'); ?></label>
                                 </div>
                                     <?php
@@ -300,7 +298,7 @@ echo '
                                 <!-- DELETE AFTER CONSULTATION -->
                                 <?php
                                 if (isset($SETTINGS['enable_delete_after_consultation']) === true
-                                    && $SETTINGS['enable_delete_after_consultation'] === '1'
+                                    && (int) $SETTINGS['enable_delete_after_consultation'] === 1
                                 ) {
                                     ?>
                                 <div class="callout callout-primary mb-3">
@@ -471,19 +469,19 @@ echo '
                         <span class="mr-3 align-middle">
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-gray but-back-to-list">
-                                    <i class="fas fa-arrow-left"></i>
+                                    <i class="fas fa-arrow-left"></i>&nbsp;
                                 </button>
-                                <button type="button" class="btn btn-gray dropdown-toggle" data-toggle="dropdown">
+                                <button type="button" class="btn btn-gray dropdown-toggle" data-toggle="dropdown" role="group">
                                     <i class="fas fa-bars"></i>
                                     <span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu">
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="new"><i class="fas fa-plus mr-2"></i><?php echo langHdl('new_item'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="edit"><i class="fas fa-pencil mr-2"></i><?php echo langHdl('item_menu_edi_elem'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="delete"><i class="fas fa-trash mr-2"></i><?php echo langHdl('item_menu_del_elem'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="copy"><i class="fas fa-copy mr-2"></i><?php echo langHdl('item_menu_copy_elem'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="share"><i class="fas fa-share-alt mr-2"></i><?php echo langHdl('share_item'); ?></a>
-                                    <a class="dropdown-item tp-action" href="#" data-item-action="notify"><i class="fas fa-bullhorn mr-2"></i><?php echo langHdl('notification'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="new"><i class="far fa-plus-square mr-2"></i><?php echo langHdl('new_item'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="edit"><i class="far fa-edit mr-2"></i><?php echo langHdl('item_menu_edi_elem'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="delete"><i class="far fa-trash-alt mr-2"></i><?php echo langHdl('item_menu_del_elem'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="copy"><i class="far fa-copy mr-2"></i><?php echo langHdl('item_menu_copy_elem'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="share"><i class="far fa-share-square mr-2"></i><?php echo langHdl('share_item'); ?></a>
+                                    <a class="dropdown-item tp-action" href="#" data-item-action="notify"><i class="far fa-bell mr-2"></i><?php echo langHdl('notification'); ?></a>
                                     <?php
                                     if (isset($SETTINGS['enable_email_notification_on_item_shown']) === true
                                         && $SETTINGS['enable_email_notification_on_item_shown'] === '1'
@@ -526,7 +524,7 @@ echo '
                             <li class="list-group-item">
                                 <b><?php echo langHdl('pw'); ?></b>
                                 <button type="button" class="float-right btn btn-outline-info btn-sm btn-copy-clipboard" id="card-item-pwd-button">
-                                    <i class="fas fa-copy"></i>
+                                    <i class="far fa-copy"></i>
                                 </button>
                                 <span id="card-item-pwd" class="float-right unhide_masked_data pointer mr-2"></span>
                                 <input id="hidden-item-pwd" type="hidden">
@@ -536,14 +534,14 @@ echo '
                             <li class="list-group-item">
                                 <b><?php echo langHdl('index_login'); ?></b>
                                 <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-login" id="card-item-login-btn">
-                                    <i class="fas fa-copy"></i>
+                                    <i class="far fa-copy"></i>
                                 </button>
                                 <span id="card-item-login" class="float-right"></span>
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo langHdl('email'); ?></b>
                                 <button type="button" class="float-right btn btn-outline-info btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="#card-item-email" id="card-item-email-btn">
-                                    <i class="fas fa-copy"></i>
+                                    <i class="far fa-copy"></i>
                                 </button>
                                 <span id="card-item-email" class="float-right ml-1"></span>
                             </li>
@@ -891,11 +889,11 @@ echo '
                             <p><?php echo langHdl('notification_message'); ?></p>
                         </div>
                         <div class="form-group">
-                        <input type="checkbox" class="flat-blue" id="form-item-notify-status"><label for="form-item-notify-status" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
+                        <input type="checkbox" class="flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo langHdl('notify_on_change'); ?></label>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-primary"><?php echo langHdl('perform'); ?></button>
+                        <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo langHdl('perform'); ?></button>
                         <button type="submit" class="btn btn-default float-right but-back-to-item"><?php echo langHdl('cancel'); ?></button>
                     </div>
                 </div>
@@ -1001,7 +999,7 @@ echo '
                     <div class="card-header">
                         <div class="row justify-content-end">
                             <div class="col-6">
-                                <h3 class="card-title"><i class="fas fa-folder mr-2"></i><?php echo langHdl('folders'); ?>
+                                <h3 class="card-title"><i class="far fa-folder-open mr-2"></i><?php echo langHdl('folders'); ?>
                             </div>
                             <div class="col-6">
                                 <div class="btn-group float-right">
@@ -1014,10 +1012,10 @@ echo '
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="expand"><i class="fas fa-expand mr-2"></i><?php echo langHdl('expand'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="collapse"><i class="fas fa-compress mr-2"></i><?php echo langHdl('collapse'); ?></a>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="add"><i class="fas fa-plus mr-2"></i><?php echo langHdl('add'); ?></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="edit"><i class="fas fa-pencil mr-2"></i><?php echo langHdl('edit'); ?></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="copy"><i class="fas fa-copy mr-2"></i><?php echo langHdl('copy'); ?></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="delete"><i class="fas fa-trash mr-2"></i><?php echo langHdl('delete'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="add"><i class="far fa-plus-square mr-2"></i><?php echo langHdl('add'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="edit"><i class="far fa-edit mr-2"></i><?php echo langHdl('edit'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="copy"><i class="far fa-copy mr-2"></i><?php echo langHdl('copy'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="delete"><i class="far fa-trash-alt mr-2"></i><?php echo langHdl('delete'); ?></a>
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="">
                                             <div class="input-group input-group-sm">

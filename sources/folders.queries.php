@@ -142,7 +142,7 @@ if (null !== $post_type) {
                     $arrayParents = array();
                     foreach ($arbo as $elem) {
                         array_push($arrayPath, $elem->title);
-                        array_push($parentClass, $elem->id);
+                        array_push($arrayParents, $elem->id);
                     }
 
                     // Get some elements from DB concerning this node
