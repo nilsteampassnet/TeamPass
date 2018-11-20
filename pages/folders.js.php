@@ -47,21 +47,179 @@ if (checkUser($_SESSION['user_id'], $_SESSION['key'], 'folders', $SETTINGS) === 
 
 buildTable();
 
+// Prepare iCheck format for checkboxes
+$('input[type="checkbox"].form-check-input').iCheck({
+    checkboxClass   : 'icheckbox_flat-blue',
+});
+
+$('input[type="checkbox"].form-check-red-input').iCheck({
+    checkboxClass   : 'icheckbox_flat-red',
+});
+
 // Prepare buttons
 var deletionList = [];
 $('.tp-action').click(function() {
     if ($(this).data('action') === 'new') {
+        //--- NEW FOLDER FORM
+        // Prepare form
+        $('.form-check-input').iCheck('uncheck');
+        $('.clear-me').val('');
+        $('#new-parent').val('na').change();
+        $('#new-minimal-complexity').val(0).change();
+
+        // Show
+        $('.form').addClass('hidden');
+        $('#folder-new').removeClass('hidden');
+        $('#folders-list').addClass('hidden');
+
+    } else if ($(this).data('action') === 'new-submit') {
+        //--- SAVE NEW FOLDER
+        // Prepare data
+        var data = {
+            'title'             : $('#new-title').val(),
+            'parentId'          : $('#new-parent').val(),
+            'complexity'        : $('#new-complexity').val(),
+            'accessRight'       : $('#new-access-right').val(),
+            'renewalPeriod'     : $('#new-renewal').val(),
+            'addRestriction'    : $('#new-add-restriction').prop("checked") === true ? 1 : 0,
+            'editRestriction'   : $('#new-edit-restriction').prop("checked") === true ? 1 : 0,
+        }
+        console.log(data)
+        // Launch action
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'add_folder',
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+                console.log(data)
+                if (data.error === true) {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                            0
+                        )
+                        .dismissOthers();
+                } else {
+                    buildTable();
+
+                    $('.form').addClass('hidden');
+                    $('#folders-list').removeClass('hidden');
+                }
+            }
+        );
+        
+    } else if ($(this).data('action') === 'cancel') {
+        //--- NEW FORM CANCEL
+        $('.form').addClass('hidden');
+        $('#folders-list').removeClass('hidden');
 
     } else if ($(this).data('action') === 'delete') {
+        //--- DELETE FORM SHOW
+        if ($('#table-folders input[type=checkbox]:checked').length === 0) {
+            alertify
+                .message(
+                    '<i class="fa fa-warning fa-lg mr-2"></i><?php echo langHdl('you_need_to_select_at_least_one_folder'); ?>',
+                    5
+                )
+                .dismissOthers();
+            return false;
+        }
+
+        // Prepare
+        $('#delete-confirm').iCheck('uncheck');
+
+        // Build list
+        var selectedFolders = '<ul>';
+        $("input:checkbox[class=checkbox-folder]:checked").each(function(){
+            selectedFolders += '<li>' + $('#folder-' + $(this).data('id')).text() + '</li>';
+        });
+        $('#delete-list').html(selectedFolders + '</ul>');
+
+
+        // Show
+        $('.form').addClass('hidden');
+        $('#folder-delete').removeClass('hidden');
+        $('#folders-list').addClass('hidden');
+
+    } else if ($(this).data('action') === 'delete-submit') {console.log('ici')
+        //--- DELETE FOLDERS
+        // Show spinner
+        alertify
+            .message('<i class="fa fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+
+        // Get list of selected folders
+        var selectedFolders = [];
+        $("input:checkbox[class=checkbox-folder]:checked").each(function(){
+            selectedFolders.push($(this).data('id'));
+        });
+
+        // Prepare data
+        var data = {
+            'selectedFolders'   : selectedFolders,
+        }
+
+        console.log(data)
+        
+        // Launch action
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'delete_folders',
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {//decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+                if (data.error === true) {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                            0
+                        )
+                        .dismissOthers();
+                } else {
+                    // refresh
+                    buildTable();
+
+                    // Show list
+                    $('.form').addClass('hidden');
+                    $('#folders-list').removeClass('hidden');
+
+                    // OK
+                    alertify
+                        .success('<?php echo langHdl('done'); ?>', 1)
+                        .dismissOthers();
+                }
+            }
+        );
 
     } else if ($(this).data('action') === 'refresh') {
+        //--- REFRESH FOLDERS LIST
         $('.form').addClass('hidden');
-        $('#folders-list')
-            .removeClass('hidden');
+        $('#folders-list').removeClass('hidden');
         
         // Build matrix
         buildTable();
     }
+});
+
+/**
+ * Handle delete button status
+ */
+$(document).on('ifChecked', '#delete-confirm', function() {
+    $('#delete-submit').removeClass('disabled');
+});
+$(document).on('ifUnchecked', '#delete-confirm', function() {
+    $('#delete-submit').addClass('disabled');
 });
 
 
@@ -107,7 +265,7 @@ function buildTable()
 
                 $(data.matrix).each(function(i, value) {
                     // Row
-                    columns += '<tr><td>';
+                    columns += '<tr data-id="' + value.id + '"><td>';
 
                     // Column 1
                     if ((value.parentId === 0
@@ -123,7 +281,7 @@ function buildTable()
                     columns += '</td>';
 
                     // Column 2
-                    columns += '<td class="modify pointer">' +
+                    columns += '<td class="modify pointer" min-width="200px">' +
                         '<span id="folder-' + value.id + '" data-id="' + value.id + '" class="infotip" data-html="true" title="<?php echo langHdl('id'); ?>: ' + value.id + '<br><?php echo langHdl('level'); ?>: ' + value.level + '<br><?php echo langHdl('nb_items'); ?>: ' + value.nbItems + '">' + value.title + '</span></td>';
 
 
@@ -136,24 +294,26 @@ function buildTable()
                             path += '<i class="fas fa-angle-right fa-sm ml-1 mr-1"></i>' + folder;
                         }
                     });
-                    columns += '<td class="modify pointer" data-parentId="' + value.parentId + '">' +
+                    columns += '<td class="modify pointer" min-width="200px" data-value="' + value.parentId + '">' +
                         '<small class="text-muted">' + path + '</small></td>';
 
 
                     // Column 4
-                    columns += '<td class="modify pointer">';
+                    columns += '<td class="modify pointer text-center">';
                     if (value.folderComplexity.value !== undefined) {
-                        columns += '<i class="' + value.folderComplexity.class + ' infotip" data-complexity="' + value.folderComplexity.value + '" title="' + value.folderComplexity.text + '"></i>';
+                        columns += '<i class="' + value.folderComplexity.class + ' infotip" data-value="' + value.folderComplexity.value + '" title="' + value.folderComplexity.text + '"></i>';
+                    } else {
+                        columns += '<i class="fas fa-exclamation-triangle text-danger infotip" data-value="" title="<?php echo langHdl('no_value_defined_please_fix'); ?>"></i>';
                     }
                     columns += '</td>';
 
 
                     // Column 5
-                    columns += '<td class="modify pointer">' + value.renewalPeriod + '</td>';
+                    columns += '<td class="modify pointer text-center">' + value.renewalPeriod + '</td>';
 
 
                     // Column 6
-                    columns += '<td class="modify pointer" data-value="' + value.add_is_blocked + '">';
+                    columns += '<td class="modify pointer text-center" data-value="' + value.add_is_blocked + '">';
                     if (value.add_is_blocked === 1) {
                         columns += '<i class="fa fa-toggle-on text-info"></i>';
                     } else {
@@ -163,7 +323,7 @@ function buildTable()
                     
 
                     // Column 7
-                    columns += '<td class="modify pointer" data-value="' + value.edit_is_blocked + '">';
+                    columns += '<td class="modify pointer text-center" data-value="' + value.edit_is_blocked + '">';
                     if (value.edit_is_blocked === 1) {
                         columns += '<i class="fa fa-toggle-on text-info"></i>';
                     } else {
@@ -200,8 +360,9 @@ function buildTable()
                 // store list of Complexity
                 complexity = '';
                 $(data.fullComplexity).each(function(i, option) {
-                    complexity += '<option value="' + option[0] + '">' + option[1] + '</option>';
+                    complexity += '<option value="' + option.value + '">' + option.text + '</option>';
                 });
+
                 store.update(
                     'teampassApplication',
                     function (teampassApplication)
@@ -246,6 +407,7 @@ $(document).on('ifChecked', '.checkbox-folder', function() {
             },
             function(data) {
                 data = prepareExchangedData(data , 'decode', '<?php echo $_SESSION['key']; ?>');
+                console.log(data)
                 // check/uncheck checkbox
                 if (data.subfolders !== '') {
                     $.each(JSON.parse(data.subfolders), function(i, value) {
@@ -306,9 +468,11 @@ $(document).on('ifUnchecked', '.checkbox-folder', function() {
  * Handle the form for folder edit
  */
 var currentFolderEdited = '';
-$(document).on('click', '.modify', function() {
+$('#table-folders').on('click', '.modify', function() {
     // Manage edition of rights card
-    if (currentFolderEdited !== '' && currentFolderEdited !== $(this).data('id')) {
+    if ((currentFolderEdited !== '' && currentFolderEdited !== $(this).data('id'))
+        || $('.temp-row').length > 0
+     ) {
         $('.temp-row').remove();
     } else if (currentFolderEdited === $(this).data('id')) {
         return false;
@@ -317,12 +481,12 @@ $(document).on('click', '.modify', function() {
     // Init
     var currentRow = $(this).closest('tr'),
         folderTitle = $(currentRow).find("td:eq(1)").text(),
-        folderParent = $(currentRow).find("td:eq(2)").data('parentId'),
-        folderComplexity = $(currentRow).find("td:eq(3)").data('value'),
+        folderParent = $(currentRow).find("td:eq(2)").data('value'),
+        folderComplexity = $(currentRow).find("td:eq(3) > i").data('value'),
         folderRenewal = $(currentRow).find("td:eq(4)").text(),
         folderAddRestriction = $(currentRow).find("td:eq(5)").data('value'),
         folderEditRestriction = $(currentRow).find("td:eq(6)").data('value');
-    currentFolderEdited = $(this).data('id');
+    currentFolderEdited = currentRow.data('id');
 
 
     // Now show
@@ -339,7 +503,7 @@ $(document).on('click', '.modify', function() {
         '<select id="folder-edit-parent" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').foldersSelect + '</select>' +
         '</div>' +
         '<div class="form-group ml-2">' +
-        '<label for="folder-edit-complexity"><?php echo langHdl('complexity'); ?></label><br>' +
+        '<label for="folder-edit-complexity"><?php echo langHdl('password_minimal_complexity_target'); ?></label><br>' +
         '<select id="folder-edit-complexity" class="form-control form-item-control select2 clear-me">' + store.get('teampassApplication').complexityOptions + '</select>' +
         '</div>' +
         '<div class="form-group ml-2">' +
@@ -349,17 +513,17 @@ $(document).on('click', '.modify', function() {
         '<div class="form-group ml-2" id="folder-rights-tuned">' +
         '<div class="form-check">' +
         '<input type="checkbox" class="form-check-input form-control" id="folder-edit-add-restriction">' +
-        '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo langHdl('auth_creation_without_complexity'); ?></label>' +
+        '<label class="form-check-label pointer ml-2" for="folder-edit-add-restriction"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>' +
         '</div>' +
         '<div class="form-check">' +
         '<input type="checkbox" class="form-check-input form-control" id="folder-edit-edit-restriction">' +
-        '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo langHdl('auth_modification_without_complexity'); ?></label>' +
+        '<label class="form-check-label pointer ml-2" for="folder-edit-edit-restriction"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>' +
         '</div>' +
         '</div>' +
         '</div>' +
         '<div class="card-footer">' +
-        '<button type="button" class="btn btn-warning tp-action" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo langHdl('submit'); ?></button>' +
-        '<button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
+        '<button type="button" class="btn btn-warning tp-action-edit" data-action="submit" data-id="' + currentFolderEdited + '"><?php echo langHdl('submit'); ?></button>' +
+        '<button type="button" class="btn btn-default float-right tp-action-edit" data-action="cancel"><?php echo langHdl('cancel'); ?></button>' +
         '</div>' +
         '</div>' +
         '</td></tr>'
@@ -369,6 +533,10 @@ $(document).on('click', '.modify', function() {
     $('input[type="checkbox"].form-check-input, input[type="radio"].form-radio-input').iCheck({
         radioClass      : 'iradio_flat-orange',
         checkboxClass   : 'icheckbox_flat-orange',
+    });
+
+    $('.select2').select2({
+        language: '<?php echo $_SESSION['user_language_code']; ?>'
     });
 
     // Manage status of the checkboxes
@@ -382,12 +550,80 @@ $(document).on('click', '.modify', function() {
     } else {
         $('#folder-edit-edit-restriction').iCheck('check');
     }
+    
+    // Prepare select2
+    $('#folder-edit-parent').val(folderParent).change();
+    $('#folder-edit-complexity').val(folderComplexity).change();
 
-    $('#folder-edit-parent').val(folderParent);
-    $('#folder-edit-parent').select2();
-
+    currentFolderEdited = '';
 });
 
+
+$(document).on('click', '.tp-action-edit', function() {
+    if ($(this).data('action') === 'cancel') {
+        $('.temp-row').remove();
+    } else if ($(this).data('action') === 'submit') {
+        // STORE CHANGES
+        var currentFolderId = $(this).data('id');
+
+        // Prepare data
+        var data = {
+            'id'                : currentFolderId,
+            'title'             : $('#folder-edit-title').val(),
+            'parentId'          : $('#folder-edit-parent').val(),
+            'complexity'        : $('#folder-edit-complexity').val(),
+            'renewalPeriod'     : $('#folder-edit-renewal').val(),
+            'addRestriction'    : $('#folder-edit-add-restriction').prop("checked") === true ? 1 : 0,
+            'editRestriction'   : $('#folder-edit-edit-restriction').prop("checked") === true ? 1 : 0,
+        }
+        console.log(data)
+        // Launch action
+        $.post(
+            'sources/folders.queries.php',
+            {
+                type    : 'update_folder',
+                data    : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+                key     : '<?php echo $_SESSION['key']; ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $_SESSION['key']; ?>');
+
+                if (data.error === true) {
+                    // ERROR
+                    alertify
+                        .error(
+                            '<i class="fa fa-warning fa-lg mr-2"></i>Message: ' + data.message,
+                            0
+                        )
+                        .dismissOthers();
+                } else {
+                    buildTable();
+                    /* TODO
+                    if (data.info_parent_changed === 0) {
+                        // Update
+                        var row = $('tr[data-id="' + currentFolderId + '"]');
+                        console.log(row)
+
+                        $(row).find()
+
+                    } else {
+                        buildTable();
+                    }*/
+                }
+            }
+        );
+    }
+});
+
+// Close on escape key
+$(document).keyup(function(e) {
+    if (e.keyCode === 27) {
+        if ($('.temp-row').length > 0) {
+            $('.temp-row').remove();
+        }
+    }
+});
 
 //************************************************************** */
 

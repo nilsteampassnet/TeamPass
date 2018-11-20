@@ -15,6 +15,8 @@
  */
 
 return array(
+    'you_need_to_select_at_least_one_folder' => 'You need to select at least a folder',
+    'no_value_defined_please_fix' => 'No value defined! Please fix.',
     'apply' => 'Apply',
     'from' => 'From',
     'please_confirm_by_clicking_checkbox' => 'Please confirm by clicking the checkbox',

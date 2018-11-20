@@ -90,7 +90,7 @@ foreach ($tst as $t) {
         $droplist .= '<option value="'.$t->id.'">'.addslashes($t->title);
         $text = '';
         foreach ($tree->getPath($t->id, false) as $fld) {
-            $text .= empty($text) === true ? ' ['.$fld->title : ' > '.$fld->title;
+            $text .= empty($text) === true ? '     ['.$fld->title : ' > '.$fld->title;
         }
         $droplist .= (empty($text) === true ? '' : $text.'</i>]').'</option>';
     }
@@ -130,7 +130,7 @@ foreach ($tst as $t) {
                     </h3>
                 </div>
 
-                <div class="card-body form hidden" id="folders-new">
+                <div class="card-body form hidden" id="folder-new">
                     <div class="card card-primary">
                         <div class="card-header">
                             <h3 class="card-title"><?php echo langHdl('add_new_folder'); ?></h3>
@@ -140,8 +140,8 @@ foreach ($tst as $t) {
                         <form role="form">
                             <div class="card-body">
                                 <div class="form-group">
-                                    <label for="new-label"><?php echo langHdl('label'); ?></label>
-                                    <input type="text" class="form-control clear-me" id="new-label">
+                                    <label for="new-title"><?php echo langHdl('label'); ?></label>
+                                    <input type="text" class="form-control clear-me" id="new-title">
                                 </div>
                                 <div class="form-group">
                                     <label for="new-parent"><?php echo langHdl('parent'); ?></label>
@@ -150,8 +150,8 @@ foreach ($tst as $t) {
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="new-minimal-complexity"><?php echo langHdl('password_minimal_complexity_target'); ?></label>
-                                    <select id="new-minimal-complexity" class="form-control form-item-control select2 no-root" style="width:100%;">
+                                    <label for="new-complexity"><?php echo langHdl('password_minimal_complexity_target'); ?></label>
+                                    <select id="new-complexity" class="form-control form-item-control select2 no-root" style="width:100%;">
                                         <?php echo $complexitySelect; ?>
                                     </select>
                                 </div>
@@ -164,35 +164,29 @@ foreach ($tst as $t) {
                                     </select>
                                 </div>
                                 <div class="form-group">
-                                    <label for="new-duration"><?php echo langHdl('password_life_duration'); ?></label>
-                                    <input type="number" class="form-control reset-me" id="new-duration" value="0" min="0" data-bind="value:replyNumber">
+                                    <label for="new-renewal"><?php echo langHdl('renewal_delay'); ?></label>
+                                    <input type="number" class="form-control clear-me" id="new-renewal" value="0" min="0" data-bind="value:replyNumber">
                                 </div>
                                 <div class="form-group">
-                                    <label for="new-create-without"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>
-                                    <select id="new-create-without" class="form-control form-item-control select2 no-root" style="width:100%;">
-                                        <option value="0"><?php echo langHdl('no'); ?></option>
-                                        <option value="1"><?php echo langHdl('yes'); ?></option>
-                                    </select>
+                                    <input type="checkbox" class="form-check-input form-control" id="new-add-restriction">
+                                    <label for="new-add-restriction" class="ml-2"><?php echo langHdl('create_without_password_minimal_complexity_target'); ?></label>
                                 </div>
                                 <div class="form-group">
-                                    <label for="new-edit-without"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
-                                    <select id="new-edit-without" class="form-control form-item-control select2 no-root" style="width:100%;">
-                                        <option value="0"><?php echo langHdl('no'); ?></option>
-                                        <option value="1"><?php echo langHdl('yes'); ?></option>
-                                    </select>
+                                    <input type="checkbox" class="form-check-input form-control" id="new-edit-restriction">
+                                    <label for="new-edit-restriction" class="ml-2"><?php echo langHdl('edit_without_password_minimal_complexity_target'); ?></label>
                                 </div>
                             </div>
                             <!-- /.card-body -->
                             
                             <div class="card-footer">
-                                <button type="button" class="btn btn-primary" data-action="new-submit"><?php echo langHdl('submit'); ?></button>
-                                <button type="button" class="btn btn-default float-right" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                                <button type="button" class="btn btn-primary tp-action" data-action="new-submit"><?php echo langHdl('submit'); ?></button>
+                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <div class="card-body form hidden" id="folders-delete">
+                <div class="card-body form hidden" id="folder-delete">
                     <div class="card card-warning">
                         <div class="card-header">
                             <h3 class="card-title"><?php echo langHdl('delete_folders'); ?></h3>
@@ -208,10 +202,10 @@ foreach ($tst as $t) {
                             </div>
 
                             <div class="card-body">
-                                <div class="alert alert-info">
+                                <div class="alert alert-danger">
                                     <h5><i class="icon fa fa-warning mr-2"></i><?php echo langHdl('caution'); ?></h5>
                                     <div class="form-check mb-3">
-                                        <input type="checkbox" class="form-check-input form-item-control flat-red required" id="delete-confirm">
+                                        <input type="checkbox" class="form-check-red-input form-item-control flat-red required" id="delete-confirm">
                                         <label class="form-check-label ml-3" for="delete-confirm"><?php echo langHdl('folder_delete_confirm'); ?></label>
                                     </div>
                                 </div>
@@ -219,8 +213,8 @@ foreach ($tst as $t) {
                             <!-- /.card-body -->
                             
                             <div class="card-footer">
-                                <button type="button" class="btn btn-warning disabled" data-action="delete-submit" id="delete-submit"><?php echo langHdl('confirm'); ?></button>
-                                <button type="button" class="btn btn-default float-right" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
+                                <button type="button" class="btn btn-danger disabled tp-action" data-action="delete-submit" id="delete-submit"><?php echo langHdl('confirm'); ?></button>
+                                <button type="button" class="btn btn-default float-right tp-action" data-action="cancel"><?php echo langHdl('cancel'); ?></button>
                             </div>
                         </form>
                     </div>
@@ -231,17 +225,17 @@ foreach ($tst as $t) {
                     <h3 class="card-title" id="folders-alphabet"></h3>
                 </div>-->
                 <!-- /.card-header -->
-                <div class="card-body form table-responsive" id="folders-list">
+                <div class="card-body form table-responsive1" id="folders-list">
                     <table id="table-folders" class="table table-hover table-striped" style="width:100%">
                         <thead>
                         <tr>
-                            <th width="80px"></th>
-                            <th><?php echo langHdl('group'); ?></th>
-                            <th><?php echo langHdl('group_parent'); ?></th>
-                            <th width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
-                            <th width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
-                            <th width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
-                            <th width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
+                            <th scope="col" width="80px"></th>
+                            <th scope="col" min-width="200px"><?php echo langHdl('group'); ?></th>
+                            <th scope="col" min-width="200px"><?php echo langHdl('group_parent'); ?></th>
+                            <th scope="col" width="50px"><i class="fas fa-gavel fa-lg infotip" title="<?php echo langHdl('password_strength'); ?>"></i></th>
+                            <th scope="col" width="50px"><i class="fas fa-recycle fa-lg infotip" title="<?php echo langHdl('group_pw_duration').' '.langHdl('group_pw_duration_tip'); ?>"></i></th>
+                            <th scope="col" width="50px"><i class="fas fa-pen fa-lg infotip" title="<?php echo langHdl('auth_creation_without_complexity'); ?>"></i></th>
+                            <th scope="col" width="50px"><i class="fas fa-edit fa-lg infotip" title="<?php echo langHdl('auth_modification_without_complexity'); ?>"></i></th>
                         </tr>
                         </thead>
                         <tbody>
