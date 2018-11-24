@@ -618,7 +618,7 @@ if (($session_validite_pw === null
     <div class="content-wrapper">
 
         <!-- PERSONAL SALTKEY -->
-        <div class="card card-danger m-2 hidden" id="dialog-request-psk">
+        <div class="card card-warning m-2 hidden" id="dialog-request-psk">
             <div class="card-header">
                 <h3 class="card-title">
                 <i class="fas fa-key mr-2"></i>
@@ -651,7 +651,7 @@ if (($session_validite_pw === null
                 </div>
             </div>
             <div class="card-footer">
-                <button class="btn btn-info" id="button_save_user_psk"><?php echo langHdl('ok'); ?></button>
+                <button class="btn btn-default" id="button_save_user_psk"><?php echo langHdl('submit'); ?></button>
                 <button class="btn btn-default float-right close-element"><?php echo langHdl('cancel'); ?></button>
             </div>
         </div>
@@ -911,6 +911,9 @@ if ($menuAdmin === true) {
         ?>
 <!-- PLUPLOAD -->
 <script type="text/javascript" src="includes/libraries/Plupload/plupload.full.min.js"></script>
+<!-- ICHECK -->
+<link rel="stylesheet" href="./plugins/iCheck/all.css">
+<script type="text/javascript" src="./plugins/iCheck/icheck.min.js"></script>
         <?php
     }
 ?>

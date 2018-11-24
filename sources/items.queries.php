@@ -910,21 +910,21 @@ if (null !== $post_type) {
                 if (empty($dataItem['restricted_to']) === true) {
                     $restrictionActive = false;
                 }
-                //print_r($dataItem);
+
                 //echo $post_item_id.' - icic  ';
                 if ((in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
-                    && ($dataItem['perso'] === '0'
-                    || ($dataItem['perso'] === '1'
-                    && $post_user_id === $_SESSION['user_id']))
+                    && ((int) $dataItem['perso'] === 0
+                    || ((int) $dataItem['perso'] === 1
+                    && (int) $_SESSION['user_id'] === (int) $dataItem['id_user']))
                     && $restrictionActive === false
                     )
                     ||
                     (
                         isset($SETTINGS['anyone_can_modify']) === true
-                        && $SETTINGS['anyone_can_modify'] === '1'
-                        && $dataItem['anyone_can_modify'] === '1'
+                        && (int) $SETTINGS['anyone_can_modify'] === 1
+                        && (int) $dataItem['anyone_can_modify'] === 1
                         && (in_array($dataItem['id_tree'], $_SESSION['groupes_visibles']) === true
-                        || $_SESSION['is_admin'] === '1')
+                        || (int) $_SESSION['is_admin'] === 1)
                         && $restrictionActive === false
                     )
                     ||
@@ -951,8 +951,9 @@ if (null !== $post_type) {
                         && $_SESSION['user_settings']['create_item_without_password'] !== '1')
                         || empty($pw) === false
                     ) {
-                        if ($post_salt_key_set === 1
-                            && isset($post_salt_key_set) === true
+                        if ($post_folder_is_personal === 1
+                            && empty($_SESSION['user_settings']['session_psk']) === false
+                            && isset($_SESSION['user_settings']['session_psk']) === true
                             && in_array($post_folder_id, $_SESSION['personal_folders']) === true
                         ) {
                             $sentPw = $pw;
@@ -1628,7 +1629,8 @@ if (null !== $post_type) {
                         //'restriction_to' => $dataReceived['restricted_to'].$dataReceived['restricted_to_roles'],
                         'list_of_restricted' => $listOfRestricted,
                         'tags' => $return_tags,*/
-                        'error' => '',
+                        'error' => false,
+                        'message' => '',
                         );
                 } else {
                     echo prepareExchangedData(
@@ -1643,7 +1645,10 @@ if (null !== $post_type) {
                 }
             } else {
                 // an error appears on JSON format
-                $arrData = array('error' => 'ERR_JSON_FORMAT');
+                $arrData = array(
+                    'error' => true,
+                    'message' => 'ERR_JSON_FORMAT',
+                );
             }
             // return data
             echo prepareExchangedData($arrData, 'encode');
@@ -1957,26 +1962,34 @@ if (null !== $post_type) {
         */
         case 'show_details_item':
             // Check KEY and rights
-            $_SESSION['user_settings']['show_step2'] = false;
             if ($post_key !== $_SESSION['key']) {
-                $returnValues = '[{"error" : "not_allowed"}, {"error_text" : "'.langHdl('error_not_allowed_to').'"}]';
-                echo prepareExchangedData($returnValues, 'encode');
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
+            // Step #1
+            $_SESSION['user_settings']['show_step2'] = false;
+
             // Decrypt and retreive data in JSON format
-            $dataReceived = prepareExchangedData($post_data, 'decode'); //print_r($dataReceived);
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+
             // Init post variables
-            $post_id = filter_var(htmlspecialchars_decode($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
-            $post_folder_id = filter_var(htmlspecialchars_decode($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
-            $post_salt_key_required = filter_var(htmlspecialchars_decode($dataReceived['salt_key_required']), FILTER_SANITIZE_STRING);
+            $post_id = filter_var(($dataReceived['id']), FILTER_SANITIZE_NUMBER_INT);
+            $post_folder_id = filter_var(($dataReceived['folder_id']), FILTER_SANITIZE_NUMBER_INT);
+            $post_salt_key_required = filter_var(($dataReceived['salt_key_required']), FILTER_SANITIZE_STRING);
             $post_salt_key_set = isset($_SESSION['user_settings']['session_psk']) === true
                 && empty($_SESSION['user_settings']['session_psk']) === false ? '1' : '0';
-            $post_expired_item = filter_var(htmlspecialchars_decode($dataReceived['expired_item']), FILTER_SANITIZE_STRING);
-            $post_restricted = filter_var(htmlspecialchars_decode($dataReceived['restricted']), FILTER_SANITIZE_STRING);
-            $post_page = filter_var(htmlspecialchars_decode($dataReceived['page']), FILTER_SANITIZE_STRING);
+            $post_expired_item = filter_var(($dataReceived['expired_item']), FILTER_SANITIZE_STRING);
+            $post_restricted = filter_var(($dataReceived['restricted']), FILTER_SANITIZE_STRING);
+            $post_page = filter_var(($dataReceived['page']), FILTER_SANITIZE_STRING);
             $post_folder_access_level = isset($dataReceived['folder_access_level']) === true ?
-                filter_var(htmlspecialchars_decode($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING)
+                filter_var(($dataReceived['folder_access_level']), FILTER_SANITIZE_STRING)
                 :
                 '';
 
@@ -2116,9 +2129,9 @@ if (null !== $post_type) {
 
             // Uncrypt PW
             if (null !== $post_salt_key_required
-                && $post_salt_key_required === '1'
-                && null !== $post_salt_key_set
-                && $post_salt_key_set === '1'
+                && $post_salt_key_required === 1
+                && isset($_SESSION['user_settings']['session_psk']) === true
+                && empty($_SESSION['user_settings']['session_psk']) === false
             ) {
                 $pw = cryption(
                     $dataItem['pw'],
@@ -3737,7 +3750,8 @@ if (null !== $post_type) {
                 $pw = cryption(
                     $dataItem['pw'],
                     '',
-                    'decrypt'
+                    'decrypt',
+                    $SETTINGS
                 );
             } else {
                 if (isset($_SESSION['user_settings']['session_psk']) === true) {

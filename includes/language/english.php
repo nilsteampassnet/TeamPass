@@ -15,6 +15,16 @@
  */
 
 return array(
+    'confirm_delete_all_personal_items' => 'I want all my personal items being deleted after reseting my personal saltkey. If not, only the passwords will be reseted.',
+    'reseting_personal_saltkey_purpose' => 'Reseting your personal saltkey should only be done when you have lost it. This operation consists in cleaning all your personal items by removing them or reseting their passwords, and loading your new personal saltkey in the database.',
+    'changing_pw_purpose' => 'This operation permits you to define a new account password. It will be active for next login.',
+    'changing_psk_purpose' => 'This operation permits you to define a new personal saltkey. It is done in 2 steps, first the new personal saltkey is stored in database; second your personal items passwords will be re-encrypted with your new personal saltkey. This second operation may take some time depending on the number of items you have.',
+    'complexity_level_not_reached' => 'Complexity level is not reached',
+    'expected_complexity_level' => 'Expected complexity level',
+    'your_attention_is_required' => 'Your attention is required',
+    'favorite' => 'Favorite',
+    'unfavorite' => 'Unfavorite',
+    'psk_never_set_by_user' => 'Personal Salt Key has never been defined',
     'you_need_to_select_at_least_one_folder' => 'You need to select at least a folder',
     'no_value_defined_please_fix' => 'No value defined! Please fix.',
     'apply' => 'Apply',

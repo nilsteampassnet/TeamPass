@@ -383,7 +383,7 @@ function testHex2Bin($val)
  *
  * @return array
  */
-function cryption($message, $ascii_key, $type, $SETTINGS) //defuse_crypto
+function cryption($message, $ascii_key, $type, $SETTINGS, $extra = '') //defuse_crypto
 {
     // load PhpEncryption library
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -407,7 +407,13 @@ function cryption($message, $ascii_key, $type, $SETTINGS) //defuse_crypto
     if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
-
+    if ($extra === 1) {
+        //echo $ascii_key;
+        if (substr($ascii_key, 0, 8) === 'def10000') {
+            $ascii_key = substr($ascii_key, 8);
+        }
+        //echo " --- ".$ascii_key;
+    }
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 

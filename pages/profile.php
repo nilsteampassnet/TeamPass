@@ -107,7 +107,7 @@ $userSeenPasswordsNumber = DB::count();
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark">
-                    <?php echo langHdl('profile'); ?>
+                    <i class="fas fa-user-circle mr-2"></i><?php echo langHdl('profile'); ?>
                 </h1>
             </div>
             <!-- /.col -->
@@ -133,7 +133,7 @@ $userSeenPasswordsNumber = DB::count();
                             <img class="profile-user-img img-fluid img-circle" src="<?php echo $avatar; ?>" alt="User profile picture" id="profile-user-avatar">
                         </div>
 
-                        <h3 class="profile-username text-center">
+                        <h3 id="profile-username" class="text-center">
                             <?php
                             if (isset($_SESSION['name']) === true && empty($_SESSION['name']) === false) {
                                 echo $_SESSION['name'].' '.$_SESSION['lastname'];
@@ -311,6 +311,20 @@ $userSeenPasswordsNumber = DB::count();
                             <div class="tab-pane" id="tab_settings">
                                 <form class="needs-validation" novalidate onsubmit="return false;">
                                     <div class="form-group">
+                                        <label for="profile-name" class="col-sm-2 control-label"><?php echo langHdl('name'); ?></label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" id="profile-user-name" placeholder="" value="<?php echo $_SESSION['name']; ?>">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="profile-lastname" class="col-sm-2 control-label"><?php echo langHdl('lastname'); ?></label>
+                                        <div class="col-sm-10">
+                                            <input type="text" class="form-control" id="profile-user-lastname" placeholder="" value="<?php echo $_SESSION['lastname']; ?>">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="profile-email" class="col-sm-2 control-label"><?php echo langHdl('email'); ?></label>
                                         <div class="col-sm-10">
                                             <input type="email" class="form-control" id="profile-user-email" placeholder="name@domain.com" value="<?php echo $_SESSION['user_email']; ?>">
@@ -402,6 +416,11 @@ $userSeenPasswordsNumber = DB::count();
                             <!-- CHANGE PW -->
                             <div class="tab-pane" id="tab_change_pw">
                                 <h3 class="card-title mb-3"><?php echo langHdl('index_change_pw'); ?></h3>
+                                <div class="card card-info card-outline">
+                                    <div class="card-body">
+                                        <?php echo langHdl('changing_pw_purpose'); ?>
+                                    </div>
+                                </div>
                                 <form class="needs-validation" novalidate onsubmit="return false;">
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
@@ -420,7 +439,7 @@ $userSeenPasswordsNumber = DB::count();
                                         <input type="password" class="form-control"  id="profile-password-confirm">
                                     </div>
                                     <div class="form-group">
-                                        <button type="button" class="btn btn-info" id="profile-save-password-change"><?php echo langHdl('save'); ?></button>
+                                        <button type="button" class="btn btn-info" id="profile-save-password-change"><?php echo langHdl('perform'); ?></button>
                                     </div>
                                 </form>
                             </div>
@@ -431,6 +450,11 @@ $userSeenPasswordsNumber = DB::count();
                                 <h3 class="card-title mb-3">
                                     <?php echo langHdl('menu_title_new_personal_saltkey'); ?>
                                 </h3>
+                                <div class="card card-info card-outline">
+                                    <div class="card-body">
+                                        <?php echo langHdl('changing_psk_purpose'); ?>
+                                    </div>
+                                </div>
                                 <div class="callout callout-info">
                                     <h6>
                                     <i class="fas fa-info mr-2"></i>
@@ -444,12 +468,12 @@ $userSeenPasswordsNumber = DB::count();
                                         </div>
                                         <input type="password" class="form-control"  id="profile-current-saltkey">
                                     </div>
-                                    <div class="input-group mb-3">
+                                    <!--<div class="input-group mb-3">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><?php echo langHdl('current_saltkey_confirm'); ?></span>
                                         </div>
                                         <input type="password" class="form-control"  id="profile-current-saltkey-confirm">
-                                    </div>
+                                    </div>-->
                                     <div class="input-group mb-3">
                                         <div class="input-group-prepend">
                                             <span class="input-group-text"><?php echo langHdl('new_saltkey'); ?></span>
@@ -483,7 +507,39 @@ $userSeenPasswordsNumber = DB::count();
                                                         
                             <!-- RESET PSK -->
                             <div class="tab-pane" id="tab_reset_psk">
-                                coucou2
+                                <h3 class="card-title mb-3"><?php echo langHdl('personal_saltkey_lost'); ?></h3>
+                                <div class="card card-warning card-outline">
+                                    <div class="card-body">
+                                        <?php echo langHdl('reseting_personal_saltkey_purpose'); ?>
+                                    </div>
+                                </div>
+                                <form class="needs-validation" novalidate onsubmit="return false;">
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('new_saltkey'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control" id="profile-reset-psk">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text" id="profile-reset-psk-strength"></span>
+                                            <input type="hidden" id="profile-reset-psk-complex" />
+                                        </div>
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo langHdl('new_saltkey_confirm'); ?></span>
+                                        </div>
+                                        <input type="password" class="form-control"  id="profile-reset-psk-confirm">
+                                    </div>
+                                    <div class="input-group mb-3">
+                                        <input type="checkbox" class="form-check-input form-item-control" id="profile-reset-psk-delete-items">
+                                        <label class="form-check-label ml-2" for="profile-reset-psk-delete-items">
+                                            <?php echo langHdl('confirm_delete_all_personal_items'); ?>
+                                        </label>
+                                    </div>
+                                    <div class="form-group">
+                                        <button type="button" class="btn btn-warning" id="button-profile-reset-psk"><?php echo langHdl('perform'); ?></button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
                     </div>

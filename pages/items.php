@@ -1078,7 +1078,7 @@ echo '
                 <!-- /.card-header -->
                 <div class="card-body p-1">
                     <div class="table-responsive">
-                        <table class="table table-hover table-striped" id="table_teampass_items_list">
+                        <table class="table table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
                             <tbody id="teampass_items_list"></tbody>
                         </table>
                         <!-- /.table -->

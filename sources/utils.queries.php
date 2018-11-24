@@ -255,13 +255,25 @@ if (null !== $post_type) {
 
                 // do a check on old PSK
                 if (empty($post_psk) === true || empty($post_old_psk) === true) {
-                    echo '[{"error" : "No personnal saltkey provided"}]';
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('error_personal_saltkey_is_not_set'),
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 
+                // Prepare the PSK
+                $user_key_encoded = defuse_validate_personal_key(
+                    $post_old_psk,
+                    $_SESSION['user_settings']['encrypted_oldpsk']
+                );
+
                 // get data about pw
-                $data = DB::queryfirstrow(
-                    'SELECT id, pw, pw_iv, encryption_type
+                $dataItem = DB::queryfirstrow(
+                    'SELECT id, pw
                     FROM '.prefixTable('items').'
                     WHERE id = %i',
                     $post_current_id
@@ -269,8 +281,8 @@ if (null !== $post_type) {
 
                 // decrypt with Defuse (assuming default)
                 $decrypt = cryption(
-                    $data['pw'],
-                    $post_old_psk,
+                    $dataItem['pw'],
+                    $user_key_encoded,
                     'decrypt',
                     $SETTINGS
                 );
@@ -287,7 +299,7 @@ if (null !== $post_type) {
                 ) {
                     $encrypt = cryption(
                         $pw,
-                        $post_psk,
+                        $session_psk,
                         'encrypt',
                         $SETTINGS
                     );
@@ -300,7 +312,7 @@ if (null !== $post_type) {
                                 'pw_iv' => '',
                                 ),
                             'id = %i',
-                            $data['id']
+                            $dataItem['id']
                         );
                     }
                 }

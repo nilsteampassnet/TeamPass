@@ -55,6 +55,11 @@ $('#profile-button-api_token').click(function() {
 });
 
 
+//iCheck for checkbox and radio inputs
+$('#tab_reset_psk input[type="checkbox"]').iCheck({
+    checkboxClass: 'icheckbox_flat-blue'
+})
+
 
 // AVATAR IMPORT
 var uploader_photo = new plupload.Uploader({
@@ -147,6 +152,8 @@ uploader_photo.init();
 // Save user settings
 $('#profile-user-save-settings').click(function() {
     var data = {
+        'name':             $('#profile-user-name').val(),
+        'lastname':         $('#profile-user-lastname').val(),
         'email':            $('#profile-user-email').val(),
         'timezone':         $('#profile-user-timezone').val(),
         'language':         $('#profile-user-language').val().toLowerCase(),
@@ -191,8 +198,9 @@ $('#profile-user-save-settings').click(function() {
                     .error('<i class="fa fa-ban fa-lg mr-3"></i>' + data.message, 0)
                     .dismissOthers();
             } else {
+                $('#profile-username').html($('#profile-user-name').val() + ' ' + $('#profile-user-lastname').val())
                 alertify
-                    .success('<?php echo langHdl('donne'); ?>', 3)
+                    .success('<?php echo langHdl('done'); ?>', 3)
                     .dismissOthers();
             }
 
@@ -316,7 +324,7 @@ $('#profile-save-password-change').click(function() {
 
     var data = {
         'password'      : $('#profile-password').val(),
-        'complexicity'  : $('#profile-password-complex').val(),
+        'complexity'  : $('#profile-password-complex').val(),
     };
 
     //Send query
@@ -325,8 +333,79 @@ $('#profile-save-password-change').click(function() {
         {
             type                : "change_pw",
             change_pw_origine   : "user_change",
-            data    :           prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
-            key     :           "<?php echo $_SESSION['key']; ?>"
+            data                : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key                 : "<?php echo $_SESSION['key']; ?>"
+        },
+        function(data) {
+            //decrypt data
+            try {
+                data = prepareExchangedData(data , "decode", "<?php echo $_SESSION['key']; ?>");
+            } catch (e) {
+                // error
+                $("#div_loading").addClass("hidden");
+                $("#request_ongoing").val("");
+                $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />"+data);
+                $("#div_dialog_message").dialog("open");
+
+                alertify
+                    .error('<i class="fa fa-ban fa-lg mr-3"></i>An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data, 0)
+                    .dismissOthers();
+                return false;
+            }
+            console.log(data)
+
+            if (data.error === true) {
+                $('#profile-password').focus();
+                alertify.dismissAll();
+                alertify
+                    .alert(
+                        '<?php echo langHdl('your_attention_is_required'); ?>',
+                        data.message
+                    );
+            } else {
+                $('#profile-password, #profile-password-confirm').val('');
+                alertify
+                    .success('<?php echo langHdl('done'); ?>', 3)
+                    .dismissOthers();
+            }
+
+        }
+    );
+});
+
+
+/**
+ * 
+ */
+$('#button-profile-reset-psk').click(function() {
+    // Check if passwords are the same
+    if ($('#profile-reset-psk').val() !== $('#profile-reset-psk-confirm').val()
+        || $('#profile-reset-psk').val() === ''
+        || $('#profile-reset-psk-confirm').val() === ''
+    ) {
+        alertify
+            .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('bad_psk_confirmation'); ?>', 5)
+            .dismissOthers();
+        return false;
+    }
+    // Inform user
+    alertify
+        .message('<i class="fa fa-cog fa-spin"></i>', 0)
+        .dismissOthers();
+
+    var data = {
+        'psk'           : $('#profile-reset-psk').val(),
+        'complexity'    : $('#profile-reset-psk-strength').val(),
+        'delete_items'  : $('#profile-reset-psk-delete-items').prop('checked'),
+    };
+
+    //Send query
+    $.post(
+        "sources/main.queries.php",
+        {
+            type                : "reset_personal_saltkey",
+            data                : prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $_SESSION['key']; ?>"),
+            key                 : "<?php echo $_SESSION['key']; ?>"
         },
         function(data) {
             //decrypt data
@@ -419,14 +498,6 @@ $('#profile-save-saltkey-change').click(function() {
         return false;
     }
 
-    // Check if current saltkeys are the same
-    if ($('#profile-current-saltkey').val() !== $('#profile-current-saltkey-confirm').val()) {
-        alertify
-            .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('bad_current_saltkey_confirmation'); ?>', 5)
-            .dismissOthers();
-        return false;
-    }
-
     // Current psk is set
     if ($('#profile-current-saltkey').val() === '') {
         alertify
@@ -446,8 +517,8 @@ $('#profile-save-saltkey-change').click(function() {
     }
 
     // Check if minimum security level is reched
-    if (JSON.parse(localStorage.getItem('teampass-settings')).personal_saltkey_security_level !== undefined) {
-        var level = JSON.parse(localStorage.getItem('teampass-settings')).personal_saltkey_security_level;
+    if (store.get('teampassSettings').personal_saltkey_security_level !== undefined) {
+        var level = store.get('teampassSettings').personal_saltkey_security_level;
         if (parseInt($("#profile-saltkey-complex").val()) < parseInt(level)) {
             alertify
                 .error('<i class="fa fa-ban mr-3"></i><?php echo langHdl('error_complex_not_enought'); ?>', 5)

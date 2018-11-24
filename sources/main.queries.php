@@ -121,9 +121,37 @@ function mainQuery($SETTINGS)
     $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
     $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
 
+    // Ensure Complexity levels are translated
+    if (defined('TP_PW_COMPLEXITY') === false) {
+        define(
+            'TP_PW_COMPLEXITY',
+            array(
+                0 => array(0, langHdl('complex_level0'), 'fas fa-bolt text-danger'),
+                25 => array(25, langHdl('complex_level1'), 'fas fa-thermometer-empty text-danger'),
+                50 => array(50, langHdl('complex_level2'), 'fas fa-thermometer-quarter text-warning'),
+                60 => array(60, langHdl('complex_level3'), 'fas fa-thermometer-half text-warning'),
+                70 => array(70, langHdl('complex_level4'), 'fas fa-thermometer-three-quarters text-success'),
+                80 => array(80, langHdl('complex_level5'), 'fas fa-thermometer-full text-success'),
+                90 => array(90, langHdl('complex_level6'), 'far fa-gem text-success'),
+            )
+        );
+    }
+
     // Manage type of action asked
     switch ($post_type) {
         case 'change_pw':
+            // Check KEY
+            if ($post_key !== $_SESSION['key']) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
                 $post_data,
@@ -136,13 +164,18 @@ function mainQuery($SETTINGS)
             $pwdlib = new PasswordLib\PasswordLib();
 
             // Prepare variables
-            $newPw = $pwdlib->createPasswordHash(htmlspecialchars_decode($dataReceived['new_pw']));
+            $newPw = $pwdlib->createPasswordHash(
+                filter_var($dataReceived['new_pw'], FILTER_SANITIZE_STRING)
+            );
 
             // User has decided to change is PW
             if (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === 'user_change'
                 && $_SESSION['user_admin'] !== '1'
             ) {
+                // Get sent complexity level
+                $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+
                 // check if expected security level is reached
                 $data_roles = DB::queryfirstrow(
                     'SELECT fonction_id
@@ -153,17 +186,15 @@ function mainQuery($SETTINGS)
 
                 // check if badly written
                 $data_roles['fonction_id'] = array_filter(explode(',', str_replace(';', ',', $data_roles['fonction_id'])));
-                $data_roles['fonction_id'] = implode(';', $data_roles['fonction_id']);
-                if ($data_roles['fonction_id'][0] === '') {
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'fonction_id' => $data_roles['fonction_id'],
-                            ),
-                        'id = %i',
-                        $_SESSION['user_id']
-                    );
-                }
+                $data_roles['fonction_id'] = implode(',', $data_roles['fonction_id']);
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'fonction_id' => $data_roles['fonction_id'],
+                        ),
+                    'id = %i',
+                    $_SESSION['user_id']
+                );
 
                 $data = DB::query(
                     'SELECT complexity
@@ -171,8 +202,15 @@ function mainQuery($SETTINGS)
                     WHERE id IN ('.$data_roles['fonction_id'].')
                     ORDER BY complexity DESC'
                 );
-                if (intval(filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_NUMBER_INT)) < intval($data[0]['complexity'])) {
-                    echo '[ { "error" : "complexity_level_not_reached" } ]';
+                if (intval($post_complexicity) < intval($data[0]['complexity'])) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('complexity_level_not_reached').'.<br>'.
+                                langHdl('expected_complexity_level').': <b>'.TP_PW_COMPLEXITY[$data[0]['complexity']][1].'</b>',
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 
@@ -195,7 +233,13 @@ function mainQuery($SETTINGS)
 
                 // check if new pw is different that old ones
                 if (in_array($newPw, $lastPw)) {
-                    echo '[ { "error" : "already_used" } ]';
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('already_used'),
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 
@@ -237,18 +281,34 @@ function mainQuery($SETTINGS)
                     );
                     // update LOG
                     logEvents('user_mngt', 'at_user_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
-                    echo '[ { "error" : "none" } ]';
-                } else {
-                    echo '[ { "error" : "pwd_hash_not_correct" } ]';
-                }
-                break;
 
-            // ADMIN has decided to change the USER's PW
+                    // Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                        ),
+                        'encode'
+                    );
+                    break;
+                } else {
+                    // Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('pwd_hash_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                // ADMIN has decided to change the USER's PW
             } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && ((filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === 'admin_change'
                     || filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) === 'user_change'
-                    ) && ($_SESSION['user_admin'] === '1' || $_SESSION['user_manager'] === '1'
-                    || $_SESSION['user_can_manage_all_users'] === '1')
+                    ) && ((int) $_SESSION['user_admin'] === 1 || (int) $_SESSION['user_manager'] === 1
+                    || (int) $_SESSION['user_can_manage_all_users'] === 1)
                 )
             ) {
                 // check if user is admin / Manager
@@ -258,8 +318,14 @@ function mainQuery($SETTINGS)
                     WHERE id = %i',
                     $_SESSION['user_id']
                 );
-                if ($userInfo['admin'] != 1 && $userInfo['gestionnaire'] != 1) {
-                    echo '[ { "error" : "not_admin_or_manager" } ]';
+                if ((int) $userInfo['admin'] !== 1 && (int) $userInfo['gestionnaire'] !== 1) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('not_admin_or_manager'),
+                        ),
+                        'encode'
+                    );
                     break;
                 }
 
@@ -291,7 +357,9 @@ function mainQuery($SETTINGS)
                             WHERE id = %i',
                             $dataReceived['user_id']
                         );
-                        if (!empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) && $SETTINGS['enable_email_notification_on_user_pw_change'] == 1) {
+                        if (empty($row['email']) && isset($SETTINGS['enable_email_notification_on_user_pw_change']) === false
+                            && (int) $SETTINGS['enable_email_notification_on_user_pw_change'] === 1
+                        ) {
                             sendEmail(
                                 $LANG['forgot_pw_email_subject'],
                                 $LANG['forgot_pw_email_body'].' '.htmlspecialchars_decode($dataReceived['new_pw']),
@@ -302,18 +370,36 @@ function mainQuery($SETTINGS)
                         }
                     }
 
-                    echo '[ { "error" : "none" } ]';
+                    // Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                        ),
+                        'encode'
+                    );
+                    break;
                 } else {
-                    echo '[ { "error" : "pwd_hash_not_correct" } ]';
+                    // Send back
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => langHdl('pwd_hash_not_correct'),
+                        ),
+                        'encode'
+                    );
+                    break;
                 }
-                break;
 
-            // ADMIN first login
+                // ADMIN first login
             } elseif (null !== filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING)
                 && filter_input(INPUT_POST, 'change_pw_origine', FILTER_SANITIZE_STRING) == 'first_change'
             ) {
+                // Get sent complexity level
+                $post_complexicity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+
                 // Check complexity level
-                if ((int) filter_input(INPUT_POST, 'complexity', FILTER_SANITIZE_STRING) >= TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1]) {
+                if ($post_complexicity >= TP_PW_COMPLEXITY[$_SESSION['user_pw_complexity']][1]) {
                     // update DB
                     DB::update(
                         prefixTable('users'),
@@ -333,26 +419,35 @@ function mainQuery($SETTINGS)
                     // update LOG
                     logEvents('user_mngt', 'at_user_initial_pwd_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
-                    echo json_encode(
+                    echo prepareExchangedData(
                         array(
-                            'error' => 'none',
+                            'error' => false,
                             'message' => '',
-                        )
+                        ),
+                        'encode'
                     );
                 } else {
-                    echo json_encode(
+                    echo prepareExchangedData(
                         array(
-                            'error' => 'complexity_too_low',
+                            'error' => true,
                             'message' => langHdl('error_complex_not_enought'),
-                        )
+                        ),
+                        'encode'
                     );
                 }
                 break;
             } else {
                 // DEFAULT case
-                echo '[ { "error" : "nothing_to_do" } ]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => '',
+                    ),
+                    'encode'
+                );
             }
             break;
+
         /*
          * This will generate the QR Google Authenticator
          */
@@ -363,15 +458,6 @@ function mainQuery($SETTINGS)
                     array(
                         'error' => true,
                         'message' => langHdl('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($_SESSION['user_read_only'] === true) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => langHdl('error_not_allowed_to'),
                     ),
                     'encode'
                 );
@@ -789,7 +875,9 @@ function mainQuery($SETTINGS)
                 $_SESSION['user_settings']['clear_psk'] = $filter_psk;
 
                 // check if encrypted_psk is in database. If not, add it
-                if (!isset($_SESSION['user_settings']['encrypted_psk']) || (isset($_SESSION['user_settings']['encrypted_psk']) && empty($_SESSION['user_settings']['encrypted_psk']))) {
+                if (isset($_SESSION['user_settings']['encrypted_psk']) === false
+                    || (isset($_SESSION['user_settings']['encrypted_psk']) == true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
+                ) {
                     // Check if security level is reach (if enabled)
                     if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
                         // Did we received the pass score
@@ -900,6 +988,26 @@ function mainQuery($SETTINGS)
             $list = '';
             $number = 0;
 
+            // Get key from user
+            $userInfo = DB::queryfirstrow(
+                'SELECT encrypted_psk
+                FROM '.prefixTable('users').'
+                WHERE id = %i',
+                $_SESSION['user_id']
+            );
+
+            // If never set then exit
+            if (empty($userInfo['encrypted_psk']) === true) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('psk_never_set_by_user'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             //decrypt and retreive data in JSON format
             $dataReceived = prepareExchangedData(
                 filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
@@ -922,10 +1030,10 @@ function mainQuery($SETTINGS)
                 break;
             }
 
-            /*// check old psk
+            // check old psk
             $user_key_encoded = defuse_validate_personal_key(
                 $post_old_psk,
-                $_SESSION['user_settings']['encrypted_psk']
+                $userInfo['encrypted_psk']
             );
             if (strpos($user_key_encoded, 'Error ') !== false) {
                 echo prepareExchangedData(
@@ -938,10 +1046,8 @@ function mainQuery($SETTINGS)
                 break;
             } else {
                 // Store PSK
-                $_SESSION['user_settings']['encrypted_oldpsk'] = $user_key_encoded;
-            }*/
-            // Store PSK
-            $_SESSION['user_settings']['encrypted_oldpsk'] = defuse_generate_personal_key($post_old_psk);
+                $_SESSION['user_settings']['encrypted_oldpsk'] = $userInfo['encrypted_psk'];
+            }
 
             // Check if security level is reach (if enabled)
             if (isset($SETTINGS['personal_saltkey_security_level']) === true) {
@@ -973,13 +1079,8 @@ function mainQuery($SETTINGS)
                 $_SESSION['user_id']
             );
 
-            /*
-            $user_key_encoded = defuse_validate_personal_key(
-                $post_psk,
-                $_SESSION['user_settings']['encrypted_psk']
-            );
-            $_SESSION['user_settings']['session_psk'] = $user_key_encoded;
-            */
+            // Log event
+            logEvents('user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
 
             // Change encryption
             // Build list of items to be re-encrypted
@@ -1024,42 +1125,89 @@ function mainQuery($SETTINGS)
          * Reset the personal saltkey
          */
         case 'reset_personal_saltkey':
+            // Allowed?
             if (filter_input(INPUT_POST, 'key', FILTER_SANITIZE_STRING) !== $_SESSION['key']) {
-                echo '[{"error" : "something_wrong"}]';
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => langHdl('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 
-            if (!empty($_SESSION['user_id'])) {
-                // delete all previous items of this user
-                $rows = DB::query(
-                    'SELECT i.id as id
-                    FROM '.prefixTable('items').' as i
-                    INNER JOIN '.prefixTable('log_items').' as l ON (i.id=l.id_item)
-                    WHERE i.perso = %i AND l.id_user= %i AND l.action = %s',
-                    '1',
-                    $_SESSION['user_id'],
-                    'at_creation'
-                );
-                foreach ($rows as $record) {
-                    // delete in ITEMS table
-                    DB::delete(prefixTable('items'), 'id = %i', $record['id']);
-                    // delete in LOGS table
-                    DB::delete(prefixTable('log_items'), 'id_item = %i', $record['id']);
-                    // delete from CACHE table
-                    updateCacheTable('delete_value', $SETTINGS, $record['id']);
+            //decrypt and retreive data in JSON format
+            $dataReceived = prepareExchangedData(
+                filter_input(INPUT_POST, 'data', FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+                'decode'
+            );
+
+            if (count($dataReceived) > 0) {
+                // Prepare variables
+                $post_psk = filter_var($dataReceived['psk'], FILTER_SANITIZE_STRING);
+                $post_complexity = filter_var($dataReceived['complexity'], FILTER_SANITIZE_NUMBER_INT);
+                $post_delete_items = filter_var($dataReceived['delete_items'], FILTER_SANITIZE_NUMBER_INT);
+
+                if (empty($_SESSION['user_id']) === false) {
+                    // delete all previous items of this user
+                    $rows = DB::query(
+                        'SELECT i.id as id
+                        FROM '.prefixTable('items').' as i
+                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id=l.id_item)
+                        WHERE i.perso = %i AND l.id_user= %i AND l.action = %s',
+                        '1',
+                        $_SESSION['user_id'],
+                        'at_creation'
+                    );
+                    foreach ($rows as $record) {
+                        if ($post_delete_items === 1) {
+                            // delete in ITEMS table
+                            DB::delete(prefixTable('items'), 'id = %i', $record['id']);
+                            // delete in LOGS table
+                            DB::delete(prefixTable('log_items'), 'id_item = %i', $record['id']);
+                            // delete from CACHE table
+                            updateCacheTable('delete_value', $SETTINGS, $record['id']);
+                        } else {
+                            // Delete password
+                            DB::update(
+                                prefixTable('items'),
+                                array(
+                                    'pw' => '',
+                                    ),
+                                'id = %i',
+                                $record['id']
+                            );
+                        }
+                    }
+
+                    // generate the new encrypted psk based upon clear psk
+                    $_SESSION['user_settings']['session_psk'] = defuse_generate_personal_key($post_psk);
+
+                    // store it in DB
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'encrypted_psk' => $_SESSION['user_settings']['session_psk'],
+                            ),
+                        'id = %i',
+                        $_SESSION['user_id']
+                    );
+
+                    // Log event
+                    logEvents('user_mngt', 'at_user_psk_changed', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
+
+                    // change salt
+                    setcookie(
+                        'TeamPass_PFSK_'.md5($_SESSION['user_id']),
+                        $_SESSION['user_settings']['session_psk'],
+                        time() + 60 * 60 * 24 * $SETTINGS['personal_saltkey_cookie_duration'],
+                        '/'
+                    );
+
+                    // Log event
+                    logEvents('user_mngt', 'at_user_psk_reseted', $_SESSION['user_id'], $_SESSION['login'], $_SESSION['user_id']);
                 }
-
-                // remove from DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'encrypted_psk' => '',
-                        ),
-                    'id = %i',
-                    $_SESSION['user_id']
-                );
-
-                $_SESSION['user_settings']['session_psk'] = '';
             }
             break;
         /*

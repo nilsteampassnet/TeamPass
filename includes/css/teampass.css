@@ -46,14 +46,16 @@
   text-overflow: ellipsis;
 }
 
+.list-item-description {
+    position: relative;
+}
+
 .list-item-actions {
     position: absolute;
-    float: right;
-    width:100px;
+    top: 8px;
+    right: 0px;
     background-color:#ECECEC;
-    height: 100%;
-    top: 0px;
-    padding: 17px 2px 0 0;
+    color:#c4c4c4;
 }
 
 .simplePassMeter {
@@ -66,7 +68,7 @@
     width: 25%;
   }
 
-  .ui-autocomplete {
+.ui-autocomplete {
     position: absolute;
     top: 100%;
     left: 0;

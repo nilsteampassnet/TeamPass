@@ -91,6 +91,8 @@ $(function() {
 
     $('.close-element').click(function() {
         $(this).closest('.card').addClass('hidden');
+
+        $('.content-header, .content').removeClass('hidden');
     });
 
     /**
@@ -123,8 +125,7 @@ $(function() {
                         .alert(
                             '<?php echo langHdl('warning'); ?>',
                             data.message
-                        )
-                        .dismissOthers();
+                        );
                 } else {
                     store.update(
                         'teampassApplication',
@@ -315,7 +316,12 @@ function showPersonalSKDialog()
 {
     $('#dialog-request-psk').removeClass('hidden');
 
+    // Hide other
+    $('.content-header, .content').addClass('hidden');
+
     $('#user_personal_saltkey').focus();
+
+    alertify.dismissAll();
 }
 
 /**
