@@ -876,7 +876,7 @@ function mainQuery($SETTINGS)
 
                 // check if encrypted_psk is in database. If not, add it
                 if (isset($_SESSION['user_settings']['encrypted_psk']) === false
-                    || (isset($_SESSION['user_settings']['encrypted_psk']) == true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
+                    || (isset($_SESSION['user_settings']['encrypted_psk']) === true && empty($_SESSION['user_settings']['encrypted_psk']) === true)
                 ) {
                     // Check if security level is reach (if enabled)
                     if (isset($SETTINGS['personal_saltkey_security_level']) === true) {

@@ -38,6 +38,10 @@ if (!isset($SETTINGS['cpassman_dir']) || empty($SETTINGS['cpassman_dir']) === tr
     $SETTINGS['cpassman_dir'] = '..';
 }
 
+// Load AntiXSS
+include_once $SETTINGS['cpassman_dir'].'/includes/libraries/protect/AntiXSS/AntiXSS.php';
+$antiXss = new protect\AntiXSS\AntiXSS();
+
 // init
 $dbgDuo = '';
 $dbgLdap = '';

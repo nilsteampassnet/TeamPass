@@ -434,7 +434,7 @@ echo '
                                     ) {
                                         echo '
                                             <div class="form-check">
-                                                <input type="checkbox" class="form-check-input form-check-input-template" data-category-id="'.$category['id'].'" id="template_'.$category['id'].'">
+                                                <input type="checkbox" class="form-check-input form-check-input-template flat-blue form-item-control" data-category-id="'.$category['id'].'" data-change-ongoing="0" data-field-name="template" id="template_'.$category['id'].'">
                                                 <label class="form-check-label ml-3" for="template_'.$category['id'].'">'.langHdl('main_template').'</label>
                                             </div>';
                                     }
@@ -1008,7 +1008,7 @@ echo '
                                         <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu">
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="refresh"><i class="fas fa-refresh mr-2"></i><?php echo langHdl('refresh'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="refresh"><i class="fas fa-sync-alt mr-2"></i><?php echo langHdl('refresh'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="expand"><i class="fas fa-expand mr-2"></i><?php echo langHdl('expand'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="collapse"><i class="fas fa-compress mr-2"></i><?php echo langHdl('collapse'); ?></a>
                                         <div class="dropdown-divider"></div>
@@ -1016,6 +1016,10 @@ echo '
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="edit"><i class="far fa-edit mr-2"></i><?php echo langHdl('edit'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="copy"><i class="far fa-copy mr-2"></i><?php echo langHdl('copy'); ?></a>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="delete"><i class="far fa-trash-alt mr-2"></i><?php echo langHdl('delete'); ?></a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="import"><i class="fas fa-file-import mr-2"></i><?php echo langHdl('import'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="export"><i class="fas fa-file-export mr-2"></i><?php echo langHdl('export'); ?></a>
+                                        <a class="dropdown-item tp-action" href="#" data-folder-action="offline"><i class="fas fa-plug mr-2"></i><?php echo langHdl('offline'); ?></a>
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item tp-action" href="#" data-folder-action="">
                                             <div class="input-group input-group-sm">

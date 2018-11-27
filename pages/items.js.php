@@ -64,7 +64,8 @@ var requestRunning = false,
     itemClipboard,
     startedItemsListQuery = false,
     itemStorageInformation = '',
-    applicationVars;
+    applicationVars,
+    initialPageLoad = true;
 
 
 // Manage memory
@@ -100,48 +101,6 @@ if (store.get('teampassItem') === 'undefined' || store.get('teampassItem') === u
 }
 
 
-// Is this a short url
-var queryDict = {},
-    showItemOnPageLoad = false,
-    itemIdToShow = '';
-location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
-if (queryDict['group'] !== undefined && queryDict['group'] !== ''
-    && queryDict['id'] !== undefined && queryDict['id'] !== ''
-) {
-    // Store the folder to open
-    store.set(
-        'teampassApplication',
-        {
-            selectedFolder : queryDict['group'],
-        }
-    );
-
-    showItemOnPageLoad = false;
-    itemIdToShow = queryDict['id'];
-}
-
-// Preload list of items
-if (store.get('teampassApplication') !== undefined && store.get('teampassApplication').selectedFolder !== undefined) {
-    startedItemsListQuery = true;    
-
-    $.when(
-        // Load tree
-        ListerItems(store.get('teampassApplication').selectedFolder, '', 0)
-    ).then(function() {
-        // Loop to find the tr
-        console.log('COUCOUCOUOUCOUC')
-        console.log($('#table_teampass_items_list'))
-        $('#table_teampass_items_list').find('tr').each(function(){console.log('>> '+$(this).attr('id'))
-            if ($(this).attr('id') === 'list-item-row_' + itemIdToShow) {
-                Details($(this), 'show');
-                return false;
-            }
-        });
-    });
-    
-}
-
-
 // Build tree
 $('#jstree').jstree({
     'core' : {
@@ -167,27 +126,37 @@ $('#jstree').jstree({
 })
 // On node select
 .bind('select_node.jstree', function (e, data) {
-    selectedFolder = $('#jstree').jstree('get_selected', true)[0];
-    selectedFolderId = selectedFolder.id.split('_')[1];
-    console.info('SELECTED NODE ' + selectedFolderId);
-    console.log(selectedFolder);
+    if (initialPageLoad === true
+        || store.get('teampassApplication') === undefined
+        || store.get('teampassApplication').selectedFolder === undefined
+        | store.get('teampassApplication').selectedFolder === ''
+    ) {
+        console.log('JSTREE BIND')
+        selectedFolder = $('#jstree').jstree('get_selected', true)[0];
+        selectedFolderId = selectedFolder.id.split('_')[1];
+        console.info('SELECTED NODE ' + selectedFolderId);
+        console.log(selectedFolder);
 
-    store.each(function(value, key) {
-        console.log(key, '==', value)
-    })
+        store.each(function(value, key) {
+            console.log(key, '==', value)
+        })
 
-    store.update(
-        'teampassApplication',
-        function (teampassApplication)
-        {
-            teampassApplication.selectedFolder = selectedFolderId;
+        store.update(
+            'teampassApplication',
+            function (teampassApplication)
+            {
+                teampassApplication.selectedFolder = selectedFolderId;
+            }
+        )
+    
+
+        // Prepare list of items
+        if (startedItemsListQuery === false) {
+            startedItemsListQuery = true;
+            ListerItems(selectedFolderId, '', 0);
         }
-    )
 
-    // Prepare list of items
-    if (startedItemsListQuery === false) {
-        startedItemsListQuery = true;
-        ListerItems(selectedFolderId, '', 0);
+        initialPageLoad = false;
     }
 })
 // Search in tree
@@ -211,6 +180,80 @@ $('#jstree_search')
     .blur(function() {
         $(this).val(folderSearchCriteria);
     });
+
+
+
+store.each(function(value, key) {
+        console.log(key, '==', value)
+    })
+
+
+// Is this a short url
+var queryDict = {},
+    showItemOnPageLoad = false,
+    itemIdToShow = '';
+location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
+
+if (queryDict['group'] !== undefined && queryDict['group'] !== ''
+    && queryDict['id'] !== undefined && queryDict['id'] !== ''
+) {
+    // Store the folder to open
+    store.set(
+        'teampassApplication',
+        {
+            selectedFolder : queryDict['group'],
+        }
+    );
+
+    showItemOnPageLoad = true;
+    itemIdToShow = queryDict['id'];
+
+    $('.item-details-card').removeClass('hidden');
+    $('#folders-tree-card, #items-list-card').addClass('hidden');
+    
+    Details(itemIdToShow, 'show', true);
+
+    // refresh selection in jstree
+    $('#jstree').jstree('deselect_all');
+    $('#jstree').jstree('select_node', '#li_'+itemIdToShow);
+} else {
+    /*// On page load, refresh list of items
+    selectedFolder = $('#jstree').jstree('get_selected', true)[0];
+    console.log(selectedFolder);
+    selectedFolderId = selectedFolder.id.split('_')[1];
+    console.info('SELECTED NODE ' + selectedFolderId);
+    console.log(selectedFolder);
+
+    
+
+    store.update(
+        'teampassApplication',
+        function (teampassApplication)
+        {
+            teampassApplication.selectedFolder = selectedFolderId;
+        }
+    )
+    
+
+    // Prepare list of items
+    if (startedItemsListQuery === false) {
+        startedItemsListQuery = true;
+        ListerItems(selectedFolderId, '', 0);
+    }*/
+}
+
+// Preload list of items
+if (store.get('teampassApplication') !== undefined
+    && store.get('teampassApplication').selectedFolder !== undefined
+    && store.get('teampassApplication').selectedFolder !== ''
+) {
+    startedItemsListQuery = true; 
+
+    ListerItems(store.get('teampassApplication').selectedFolder, '', 0);
+
+}
+
+
 
 // Close on escape key
 $(document).keyup(function(e) {
@@ -320,6 +363,9 @@ $('.tp-action').click(function() {
         $('#form-folder-delete-selection').val(selectedFolder.parent.split('_')[1]).change();
     } else if ($(this).data('item-action') === 'new') {
         console.info('SHOW NEW ITEM');
+
+        // Remove validated class
+        $('#form-item').removeClass('was-validated');
         
         // Get some info
         $.when(
@@ -333,6 +379,24 @@ $('.tp-action').click(function() {
                     .error('<i class="fas fa-ban mr-2"></i>' + itemStorageInformation.message, 3)
                     .dismissOthers();
             } else {
+                // Check if personal SK is needed and set
+                if (store.get('teampassApplication').personalSaltkeyRequired === 1
+                    && store.get('teampassUser').personalSaltkeyIsSet !== 1
+                    && itemStorageInformation.folderIsPersonal === 1
+                ) {
+                    /*$('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fas fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
+                    $('#div_set_personal_saltkey').dialog('open');*/
+
+                    showPersonalSKDialog();
+
+                    // Clear ongoing request status
+                    requestRunning = false;
+
+                    // Finished
+                    return false;
+                }
+
+                // Show Visibility and minimum complexity
                 $('#card-item-visibility').html(itemStorageInformation.itemVisibility);
                 $('#card-item-minimum-complexity').html(itemStorageInformation.itemMinimumComplexity);
                 
@@ -374,16 +438,19 @@ $('.tp-action').click(function() {
                 // Preselect
                 $('#pwd-definition-size').val(12);
                 // Set type of action
-                console.log('> '+$('#form-item-button-save').data('action'));
                 $('#form-item-button-save').data('action', 'new_item');
-                console.log('>> '+$('#form-item-button-save').data('action'));
                 // Update variable
                 userDidAChange = false;
             }
         });
         // ---
     } else if ($(this).data('item-action') === 'edit') {
-        console.info('SHOW EDIT ITEM');        
+        console.info('SHOW EDIT ITEM');      
+
+        // Remove validated class
+        $('#form-item').removeClass('was-validated');
+
+        // Now manage edtion
         showItemEditForm(selectedFolderId);
     } else if ($(this).data('item-action') === 'copy') {
         console.info('SHOW COPY ITEM');
@@ -1161,8 +1228,16 @@ $(document)
 
 $(document)
     .on('change', '.form-check-input-template', function() {
-        $('.form-check-input-template').not(this).prop('checked', false);  
+        $('.form-check-input-template').not(this).prop('checked', false);
+        userDidAChange = true;
+        console.log('> '+userDidAChange)
     });
+
+$('.form-check-input-template').on('ifChecked', function() {
+    $('.form-check-input-template').not(this).iCheck('uncheck');
+    userDidAChange = true;
+    $('.form-check-input-template').data('change-ongoing', true);
+});
 
 /**
  * Manage change of color
@@ -1623,6 +1698,8 @@ $('#form-item-button-save').click(function() {
     
     // Loop on all changed fields
     $('.form-item-control').each(function(i, obj) {
+        console.log($(this).data('field-name'))
+        console.log($(this))
         if ($(this).data('change-ongoing') === true) {
             //Complete url format
             if ($(this).data('field-name') === 'url') {
@@ -1643,6 +1720,8 @@ $('#form-item-button-save').click(function() {
             });
         }
     });
+
+
 
     if (arrayQuery.length > 0) {
         var reg = new RegExp("[.|,|;|:|!|=|+|-|*|/|#|\"|'|&]");
@@ -1671,7 +1750,7 @@ $('#form-item-button-save').click(function() {
                 .dismissOthers();
             return false;
         } else if (store.get('teampassApplication').personalSaltkeyRequired === 1
-            && store.get('teampassApplication').personalSaltkeyIsSet !== 1
+            && store.get('teampassUser').personalSaltkeyIsSet !== 1
         ) {
             // No folder selected
             alertify
@@ -1719,7 +1798,10 @@ $('#form-item-button-save').click(function() {
                     'value' : $(this).val(),
                 });
                 // Mandatory?
-                if ($(this).data('field-mandatory') === 1 && $(this).val() === '' && $(this).is(':visible') === true) {
+                if ($(this).data('field-mandatory') === 1
+                    && $(this).val() === ''
+                    && $(this).hasClass('hidden') === false
+                ) {
                     errorExit = true;
                     return false;
                 }
@@ -1741,7 +1823,7 @@ $('#form-item-button-save').click(function() {
                 'email': $('#form-item-email').val(),
                 'fields': fields,
                 'folder_is_personal': (store.get('teampassApplication').personalSaltkeyRequired === 1
-                    && store.get('teampassApplication').personalSaltkeyIsSet === 1) ? 1 : 0,
+                    && store.get('teampassUser').personalSaltkeyIsSet === 1) ? 1 : 0,
                 'id'   : store.get('teampassItem').id,
                 'label': $('#form-item-label').val(),
                 'login': $('#form-item-login').val(),
@@ -2253,7 +2335,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
             .dismissOthers();
             
         //ajax query
-        request = $.post('sources/items.queries.php',
+        var request = $.post('sources/items.queries.php',
             {
                 type                     : 'do_items_list_in_folder',
                 id                       : store.get('teampassApplication').selectedFolder,
@@ -2264,6 +2346,7 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                 nb_items_to_display_once : store.get('teampassApplication').itemsShownByQuery
             },
             function(retData) {
+
                 if (retData == 'Hacking attempt...') {
                     alert('Hacking attempt...');
                     return false;
@@ -2422,7 +2505,10 @@ console.log('LIST OF ITEMS FOR FOLDER '+groupe_id)
                     }
                 }
                 //-----
-                if (data.array_items.length === 0 && $('#teampass_items_list').html() === '') {
+                if (data.array_items !== undefined
+                    && data.array_items.length === 0
+                    && $('#teampass_items_list').html() === ''
+                ) {
                     // Show warning to user
                     $('#info_teampass_items_list')
                         .html('<div class="alert alert-primary text-center col col-lg-10" role="alert">' +
@@ -2838,32 +2924,44 @@ function proceed_list_update(stop_proceeding)
 /**
 *
  */
-function Details(itemDefinition, actionType)
+function Details(itemDefinition, actionType, hotlink = false)
 {
     console.info('EXPECTED ACTION '+actionType+' -- ')
 
     store.each(function(value, key) {
         console.log(key, '==', value)
     })
-    
+    console.log("Request is running: "+requestRunning)
     // If a request is already launched, then kill new.
-    if (requestRunning === true) {console.log('ABORT')
-        request.abort();
-        return;
-    }
+    /*if (requestRunning === true) {
+        console.log('ABORT')
+        //request.abort();
+        return false;
+    }*/
     
     // Store status query running
-    requestRunning === true;
+    requestRunning = true;
     
     // Init
-    var itemId          = parseInt($(itemDefinition).data('item-id')) || '';
-    var itemTreeId      = parseInt($(itemDefinition).data('item-tree-id')) || '';
-    var itemSk          = parseInt($(itemDefinition).data('item-sk')) || 0;
-    var itemExpired     = parseInt($(itemDefinition).data('item-expired')) || '';
-    var itemRestricted  = parseInt($(itemDefinition).data('item-restricted-id')) || '';
-    var itemDisplay     = parseInt($(itemDefinition).data('item-display')) || 0;
-    var itemOpenEdit    = parseInt($(itemDefinition).data('item-open-edit')) || 0;
-    var itemReload      = parseInt($(itemDefinition).data('item-reload')) || 0;
+    if (hotlink === false) {
+        var itemId          = parseInt($(itemDefinition).data('item-id')) || '';
+        var itemTreeId      = parseInt($(itemDefinition).data('item-tree-id')) || '';
+        var itemSk          = parseInt($(itemDefinition).data('item-sk')) || 0;
+        var itemExpired     = parseInt($(itemDefinition).data('item-expired')) || '';
+        var itemRestricted  = parseInt($(itemDefinition).data('item-restricted-id')) || '';
+        var itemDisplay     = parseInt($(itemDefinition).data('item-display')) || 0;
+        var itemOpenEdit    = parseInt($(itemDefinition).data('item-open-edit')) || 0;
+        var itemReload      = parseInt($(itemDefinition).data('item-reload')) || 0;
+    } else {
+        var itemId          = itemDefinition || '';
+        var itemTreeId      = store.get('teampassApplication').selectedFolder || '';
+        var itemSk          = 0;
+        var itemExpired     = '';
+        var itemRestricted  = '';
+        var itemDisplay     = 1;
+        var itemOpenEdit    = 0;
+        var itemReload      = 0;
+    }
     userDidAChange      = false;
 
     
@@ -2900,7 +2998,7 @@ function Details(itemDefinition, actionType)
     
     // Check if personal SK is needed and set
     if ((store.get('teampassApplication').personalSaltkeyRequired === 1
-        && store.get('teampassApplication').personalSaltkeyIsSet !== 1)
+        && store.get('teampassUser').personalSaltkeyIsSet !== 1)
         && itemSk === 1
     ) {
         $('#set_personal_saltkey_warning').html('<div style="font-size:16px;"><span class="fas fa-warning fa-lg"></span>&nbsp;</span><?php echo langHdl('alert_message_personal_sk_missing'); ?></div>').show(1).delay(2500).fadeOut(1000);
@@ -2914,7 +3012,7 @@ function Details(itemDefinition, actionType)
         // Finished
         return false;
     } else if ((store.get('teampassApplication').personalSaltkeyRequired === 0 || store.get('teampassApplication').personalSaltkeyRequired === undefined)
-        || (store.get('teampassApplication').personalSaltkeyRequired === 1 && store.get('teampassApplication').personalSaltkeyIsSet === 1)
+        || (store.get('teampassApplication').personalSaltkeyRequired === 1 && store.get('teampassUser').personalSaltkeyIsSet === 1)
     ) {
         // Prepare data to be sent
         var data = {
@@ -3040,7 +3138,8 @@ function Details(itemDefinition, actionType)
                 $('#form-item-restrictedToRoles').val(JSON.stringify(data.id_restricted_to_roles));
                 $('#form-item-folder').val(data.folder);
                 
-                $('#form-item-password, #form-item-label').focus();
+                $('#form-item-password').focus();
+                $('#form-item-label').focus();
 
                 // Editor for description field
                 ClassicEditor
@@ -3182,7 +3281,7 @@ function Details(itemDefinition, actionType)
                             $('#template_' + data.template_id).attr('checked', true);
 
                             // Hide existing data as replaced by Category template                                
-                            $('#list-group-item-main')
+                            $('#list-group-item-main, #item-details-card-categories')
                                 .children('.list-group')
                                 .addClass('hidden');
 
@@ -3201,7 +3300,12 @@ function Details(itemDefinition, actionType)
 
                 // Manage clipboard button
                 if (itemClipboard) itemClipboard.destroy();
-                itemClipboard = new Clipboard('.btn-copy-clipboard-clear')
+                itemClipboard = new Clipboard('.btn-copy-clipboard-clear', {
+                        text: function(e) {
+                            //console.log($(e).data('clipboard-target'))
+                            return ($($(e).data('clipboard-target')).val());
+                        }
+                    })
                     .on('success', function(e) {
                         showAlertify(
                             '<?php echo langHdl('copy_to_clipboard'); ?>',

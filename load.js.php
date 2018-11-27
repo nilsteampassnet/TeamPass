@@ -128,9 +128,9 @@ $(function() {
                         );
                 } else {
                     store.update(
-                        'teampassApplication',
-                        function (teampassApplication) {
-                            teampassApplication.personalSaltkeyIsSet = 1;
+                        'teampassUser',
+                        function (teampassUser) {
+                            teampassUser.personalSaltkeyIsSet = 1;
                         }
                     )
                     alertify
@@ -280,6 +280,7 @@ function loadSettings()
                     teampassSettings['login'] = "<?php echo isset($_SESSION['login']) === true ? $_SESSION['login'] : 0; ?>";
                     teampassSettings['lastname'] = "<?php echo isset($_SESSION['lastname']) === true ? $_SESSION['lastname'] : 0; ?>";
                     teampassSettings['name'] = "<?php echo isset($_SESSION['name']) === true ? $_SESSION['name'] : 0; ?>";
+                    teampassSettings['personalSaltkeyIsSet'] = "<?php echo isset($_SESSION['user_settings']['encrypted_psk']) === true ? 1 : 0; ?>";
                 }
             );
         }

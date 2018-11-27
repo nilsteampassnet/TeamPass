@@ -182,7 +182,7 @@ $userSeenPasswordsNumber = DB::count();
                                 </a>
                                 <div class="dropdown-menu">
                                     <?php
-                                    if (!isset($SETTINGS['duo']) || $SETTINGS['duo'] == 0) {
+                                    if (isset($SETTINGS['duo']) ===false || (int) $SETTINGS['duo'] === 0) {
                                         echo '
                                     <a class="dropdown-item" tabindex="-1" href="#tab_change_pw" data-toggle="tab">'.langHdl('index_change_pw').'</a>';
                                     }
@@ -267,7 +267,7 @@ $userSeenPasswordsNumber = DB::count();
                                     </li>';
                                     }
                                     if (isset($SETTINGS['agses_authentication_enabled']) === true
-                                        && $SETTINGS['agses_authentication_enabled'] == 1
+                                        && (int) $SETTINGS['agses_authentication_enabled'] === 1
                                     ) {
                                         echo '
                                     <li class="list-group-item">

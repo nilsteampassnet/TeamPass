@@ -338,10 +338,11 @@ if (($session_validite_pw === null
         -->
 
         <!-- Right navbar links -->
+            
+        
         <ul class="navbar-nav ml-auto">
             <!-- Messages Dropdown Menu -->
             <li class="nav-item dropdown">
-
                 <div class="dropdown show">
                     <a class="btn btn-primary dropdown-toggle" href="#" data-toggle="dropdown">
                         <?php
@@ -349,9 +350,8 @@ if (($session_validite_pw === null
                     </a>
 
                     <div class="dropdown-menu dropdown-menu-right">
-                        <span class="dropdown-item"><i class="fas fa-hourglass-end fa-fw mr-2"></i><?php echo langHdl('index_expiration_in'); ?> <span id="countdown"></span></span>
                         <a class="dropdown-item user-menu" href="#" data-name="increase_session">
-                            <i class="fas fa-clock-o fa-fw mr-2"></i><?php echo langHdl('index_add_one_hour'); ?></a>
+                            <i class="far fa-clock fa-fw mr-2"></i><?php echo langHdl('index_add_one_hour'); ?></a>
                         <div class="dropdown-divider"></div>
                         <?php
                         echo ($session_user_admin === 1 && TP_ADMIN_FULL_RIGHT === true) ? '' : isset($SETTINGS['enable_pf_feature']) === true && $SETTINGS['enable_pf_feature'] == 1 ? '
@@ -367,6 +367,9 @@ if (($session_validite_pw === null
                         </a>'; ?>
                     </div>
                 </div>
+            </li>
+            <li>
+                <span class="align-middle infotip ml-2 text-info" title="<?php echo langHdl('index_expiration_in'); ?>" id="countdown"></span>
             </li>
             <li class="nav-item">
                 <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i

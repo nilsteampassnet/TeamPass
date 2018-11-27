@@ -322,7 +322,7 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
     // load crypt
     $crypt = new PHP_Crypt($key, PHP_Crypt::CIPHER_AES_128, PHP_Crypt::MODE_CBC);
 
-    if ($type == 'encrypt') {
+    if ($type === 'encrypt') {
         // generate IV and encrypt
         $init_vect = $crypt->createIV();
         $encrypt = $crypt->encrypt($string);
@@ -332,7 +332,7 @@ function cryption_phpCrypt($string, $key, $init_vect, $type)
             'iv' => bin2hex($init_vect),
             'error' => empty($encrypt) ? 'ERR_ENCRYPTION_NOT_CORRECT' : '',
         );
-    } elseif ($type == 'decrypt') {
+    } elseif ($type === 'decrypt') {
         // case if IV is empty
         if (empty($init_vect)) {
             return array(
@@ -383,7 +383,7 @@ function testHex2Bin($val)
  *
  * @return array
  */
-function cryption($message, $ascii_key, $type, $SETTINGS, $extra = '') //defuse_crypto
+function cryption($message, $ascii_key, $type, $SETTINGS)
 {
     // load PhpEncryption library
     if (isset($SETTINGS['cpassman_dir']) === false || empty($SETTINGS['cpassman_dir']) === true) {
@@ -407,13 +407,7 @@ function cryption($message, $ascii_key, $type, $SETTINGS, $extra = '') //defuse_
     if (empty($ascii_key) === true) {
         $ascii_key = file_get_contents(SECUREPATH.'/teampass-seckey.txt');
     }
-    if ($extra === 1) {
-        //echo $ascii_key;
-        if (substr($ascii_key, 0, 8) === 'def10000') {
-            $ascii_key = substr($ascii_key, 8);
-        }
-        //echo " --- ".$ascii_key;
-    }
+    
     // convert KEY
     $key = \Defuse\Crypto\Key::loadFromAsciiSafeString($ascii_key);
 
@@ -555,10 +549,10 @@ function trimElement($chaine, $element)
             $chaine = implode(';', $chaine);
         }
         $chaine = trim($chaine);
-        if (substr($chaine, 0, 1) == $element) {
+        if (substr($chaine, 0, 1) === $element) {
             $chaine = substr($chaine, 1);
         }
-        if (substr($chaine, strlen($chaine) - 1, 1) == $element) {
+        if (substr($chaine, strlen($chaine) - 1, 1) === $element) {
             $chaine = substr($chaine, 0, strlen($chaine) - 1);
         }
     }
@@ -582,7 +576,7 @@ function cleanString($string, $special = false)
         $tabSpecialChar[] = chr($i);
     }
     array_push($tabSpecialChar, '<br />');
-    if ($special == '1') {
+    if ((int) $special === 1) {
         $tabSpecialChar = array_merge($tabSpecialChar, array('</li>', '<ul>', '<ol>'));
     }
 
@@ -692,7 +686,9 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $_SESSION['forbiden_pfs'] = array();
     $where = new WhereClause('and'); // create a WHERE statement of pieces joined by ANDs
     $where->add('personal_folder=%i', 1);
-    if (isset($SETTINGS['enable_pf_feature']) && $SETTINGS['enable_pf_feature'] == 1) {
+    if (isset($SETTINGS['enable_pf_feature']) === true
+        && (int) $SETTINGS['enable_pf_feature'] === 1
+    ) {
         $where->add('title=%s', $_SESSION['user_id']);
         $where->negateLast();
     }
@@ -794,7 +790,9 @@ function identUser(
                         array_push($listAllowedFolders, $record['folder_id']);
                     }
                     // Check if this group is allowed to modify any pw in allowed folders
-                    if ($tmp['allow_pw_change'] == 1 && in_array($record['folder_id'], $listFoldersEditableByRole) === false) {
+                    if ((int) $tmp['allow_pw_change'] === 1
+                        && in_array($record['folder_id'], $listFoldersEditableByRole) === false
+                    ) {
                         array_push($listFoldersEditableByRole, $record['folder_id']);
                     }
                 }
@@ -931,7 +929,7 @@ function identUser(
                     $fonctionsAssociees,
                     array('W', 'ND', 'NE', 'NDNE')
                 );
-                if (DB::count() == 0 && !in_array($folderId, $groupesVisiblesUser)) {
+                if (DB::count() === 0 && in_array($folderId, $groupesVisiblesUser) === false) {
                     array_push($listReadOnlyFolders, $folderId);
                 }
             }
@@ -1031,7 +1029,9 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
                 $folder = '';
                 $arbo = $tree->getPath($record['id_tree'], true);
                 foreach ($arbo as $elem) {
-                    if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+                    if ((int) $elem->title === $_SESSION['user_id']
+                        && (int) $elem->nlevel === 1
+                    ) {
                         $elem->title = $_SESSION['login'];
                     }
                     if (empty($folder)) {
@@ -1082,7 +1082,7 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
         $folder = '';
         $arbo = $tree->getPath($data['id_tree'], true);
         foreach ($arbo as $elem) {
-            if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+            if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
                 $elem->title = $_SESSION['login'];
             }
             if (empty($folder)) {
@@ -1133,7 +1133,7 @@ function updateCacheTable($action, $SETTINGS, $ident = null)
         $folder = '';
         $arbo = $tree->getPath($data['id_tree'], true);
         foreach ($arbo as $elem) {
-            if ($elem->title == $_SESSION['user_id'] && $elem->nlevel == 1) {
+            if ((int) $elem->title === $_SESSION['user_id'] && (int) $elem->nlevel === 1) {
                 $elem->title = $_SESSION['login'];
             }
             if (empty($folder)) {
@@ -1329,7 +1329,7 @@ function sendEmail(
             || $SETTINGS['email_security'] === 'ssl' ? true : false;
         $mail->isSmtp(); // send via SMTP
         $mail->Host = $SETTINGS['email_smtp_server']; // SMTP servers
-        $mail->SMTPAuth = $SETTINGS['email_smtp_auth'] == '1' ? true : false; // turn on SMTP authentication
+        $mail->SMTPAuth = (int) $SETTINGS['email_smtp_auth'] === 1 ? true : false; // turn on SMTP authentication
         $mail->Username = $SETTINGS['email_auth_username']; // SMTP username
         $mail->Password = $SETTINGS['email_auth_pwd']; // SMTP password
         $mail->From = $SETTINGS['email_from'];
@@ -1417,7 +1417,7 @@ function generateKey()
 function dateToStamp($date, $SETTINGS)
 {
     $date = date_parse_from_format($SETTINGS['date_format'], $date);
-    if ($date['warning_count'] == 0 && $date['error_count'] == 0) {
+    if ((int) $date['warning_count'] === 0 && (int) $date['error_count'] === 0) {
         return mktime(23, 59, 59, $date['month'], $date['day'], $date['year']);
     } else {
         return '';
@@ -1698,8 +1698,8 @@ function logEvents($type, $label, $who, $login = null, $field_1 = null)
     );
 
     // If SYSLOG
-    if (isset($SETTINGS['syslog_enable']) && $SETTINGS['syslog_enable'] == 1) {
-        if ($type == 'user_mngt') {
+    if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
+        if ($type === 'user_mngt') {
             send_syslog(
                 'action='.str_replace('at_', '', $label).' attribute=user user='.$who.' userid="'.$login.'" change="'.$field_1.'" ',
                 $SETTINGS['syslog_host'],
@@ -1906,7 +1906,7 @@ function handleConfigFile($action, $field = null, $value = null)
     $link = mysqli_connect(DB_HOST, DB_USER, defuseReturnDecrypted(DB_PASSWD, $SETTINGS), DB_NAME, DB_PORT);
     $link->set_charset(DB_ENCODING);
 
-    if (!file_exists($tp_config_file) || $action == 'rebuild') {
+    if (file_exists($tp_config_file) === false || $action === 'rebuild') {
         // perform a copy
         if (file_exists($tp_config_file)) {
             if (!copy($tp_config_file, $tp_config_file.'.'.date('Y_m_d_His', time()))) {
@@ -1928,7 +1928,7 @@ function handleConfigFile($action, $field = null, $value = null)
         }
         array_push($data, ");\n");
         $data = array_unique($data);
-    } elseif ($action == 'update' && empty($field) === false) {
+    } elseif ($action === 'update' && empty($field) === false) {
         $data = file($tp_config_file);
         $inc = 0;
         $bFound = false;
@@ -1988,7 +1988,7 @@ function loadSettings()
             )
         );
         foreach ($rows as $record) {
-            if ($record['type'] == 'admin') {
+            if ($record['type'] === 'admin') {
                 $SETTINGS[$record['intitule']] = $record['valeur'];
             } else {
                 $settings[$record['intitule']] = $record['valeur'];
@@ -2409,7 +2409,7 @@ function chmodRecursive($dir, $dirPermissions, $filePermissions)
     $pointer_dir = opendir($dir);
     $res = true;
     while ($file = readdir($pointer_dir)) {
-        if (($file == '.') || ($file == '..')) {
+        if (($file === '.') || ($file === '..')) {
             continue;
         }
 
@@ -2547,7 +2547,7 @@ function connectLDAP($username, $password, $SETTINGS)
     if ($SETTINGS['ldap_type'] === 'posix-search') {
         $ldapURIs = '';
         foreach (explode(',', $SETTINGS['ldap_domain_controler']) as $domainControler) {
-            if ($SETTINGS['ldap_ssl'] == 1) {
+            if ((int) $SETTINGS['ldap_ssl'] === 1) {
                 $ldapURIs .= 'ldaps://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
             } else {
                 $ldapURIs .= 'ldap://'.$domainControler.':'.$SETTINGS['ldap_port'].' ';
