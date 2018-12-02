@@ -485,12 +485,12 @@ if (($session_validite_pw === null
                             <li class="nav-item">
                                 <a href="#" data-name="2fa" class="nav-link', $pageSel === ' 2fa' ? ' active' : '' ,'">
                                     <i class="fas fa-qrcode nav-icon"></i>
-                                    <p>'.langHdl('authentication').'</p>
+                                    <p>'.langHdl('mfa_short').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="api" class="nav-link', $pageSel === ' api' ? ' active' : '' ,'">
-                                    <i class="fas fa-cube nav-icon"></i>
+                                    <i class="fas fa-cubes nav-icon"></i>
                                     <p>'.langHdl('api').'</p>
                                 </a>
                             </li>
@@ -508,19 +508,19 @@ if (($session_validite_pw === null
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="fields" class="nav-link', $pageSel === 'fields' ? ' active' : '' ,'">
-                                    <i class="fas fa-paint-brush nav-icon"></i>
+                                    <i class="fas fa-keyboard nav-icon"></i>
                                     <p>'.langHdl('fields').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="ldap" class="nav-link', $pageSel === 'ldap' ? ' active' : '' ,'">
-                                    <i class="fas fa-handshake-o nav-icon"></i>
+                                    <i class="fas fa-id-card nav-icon"></i>
                                     <p>'.langHdl('ldap').'</p>
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a href="#" data-name="options" class="nav-link', $pageSel === 'options' ? ' active' : '' ,'">
-                                    <i class="fas fa-check-square-o nav-icon"></i>
+                                    <i class="fas fa-check-double nav-icon"></i>
                                     <p>'.langHdl('options').'</p>
                                 </a>
                             </li>
@@ -944,6 +944,11 @@ if (isset($_SESSION['CPM']) === true
 
     if ($menuAdmin === true) {
         include_once $SETTINGS['cpassman_dir'].'/pages/admin.js.php';
+        if ($pageSel === '2fa') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/2fa.js.php';
+        } elseif ($pageSel === 'api') {
+            include_once $SETTINGS['cpassman_dir'].'/pages/api.js.php';
+        }
     } elseif ($pageSel === 'items') {
         include_once $SETTINGS['cpassman_dir'].'/pages/items.js.php';
     } elseif ($pageSel === 'search') {

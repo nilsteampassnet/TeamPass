@@ -1,20 +1,21 @@
 <?php
 /**
- * Teampass - a collaborative passwords manager
+ * Teampass - a collaborative passwords manager.
  *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * @category  Teampass
- * @package   Admin.js.php
+ *
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2018 Nils Laumaillé
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
+ *
  * @version   GIT: <git_id>
- * @link      http://www.teampass.net
+ *
+ * @see      http://www.teampass.net
  */
-
 ?>
 
 
@@ -85,8 +86,11 @@ if ($('#allow_print_input').val() === '0') {
 
 /**
  */
-function updateSetting(field, value = '')
-{
+$(document).on('change', '.form-control-sm', function() {
+    var field = $(this).attr('id'),
+        value = $(this).val();
+
+    console.log('> '+field+' -- '+value)
     if (field === '') return false;
 
     // prevent launch of similar query in case of doubleclick
@@ -135,9 +139,10 @@ function updateSetting(field, value = '')
                     'success'
                 );
             }
+            requestRunning = false;
         }
     );
-}
+});
 
 
 
