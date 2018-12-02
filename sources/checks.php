@@ -94,9 +94,11 @@ function curPage()
 
 /**
  * Checks if user is allowed to open the page
- * @param  integer $userId      User's ID
- * @param  integer $userKey     User's temporary key
- * @param  String $pageVisited  Page visited
+ *
+ * @param integer $userId      User's ID
+ * @param integer $userKey     User's temporary key
+ * @param String  $pageVisited Page visited
+ *
  * @return Boolean              False/True
  */
 function checkUser($userId, $userKey, $pageVisited)

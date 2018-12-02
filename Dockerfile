@@ -6,7 +6,7 @@ ENV VOL ${VOL}
 VOLUME ${VOL}
 
 # Configure nginx-php-fpm image to use this dir.
-ENV WEBROOT ${VOL}/www
+ENV WEBROOT ${VOL}
 
 RUN apk add --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing gnu-libiconv
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php

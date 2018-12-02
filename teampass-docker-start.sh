@@ -1,16 +1,16 @@
 #!/bin/sh
-if [ ! -d ${VOL}/www/.git ];
+if [ ! -d ${VOL}/.git ];
 then
 	echo "Initial setup..."
-	git clone $REPO_URL ${VOL}/www
+	git clone $REPO_URL ${VOL}
 	mkdir ${VOL}/sk
 	chown -Rf nginx:nginx ${VOL}
 fi
 
-if [ -f ${VOL}/www/includes/config/settings.php ] ;
+if [ -f ${VOL}/includes/config/settings.php ] ;
 then
 	echo "Teampass is ready."
-	rm -rf ${VOL}/www/install
+	rm -rf ${VOL}/install
 else
 	echo "Teampass is not configured yet. Open it in a web browser to run the install process."
 	echo "Use ${VOL}/sk for the absolute path of your saltkey."

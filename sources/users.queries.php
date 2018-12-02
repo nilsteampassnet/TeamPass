@@ -990,7 +990,7 @@ if (null !== filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING)) {
                 foreach ($rows as $record) {
                     if ($_SESSION['is_admin'] === '1'
                         || (($_SESSION['user_manager'] === '1' || $_SESSION['user_can_manage_all_users'] === "1")
-                        && (in_array($record['id'], $my_functions) || $record['creator_id'] == $_SESSION['user_id']))
+                        && (in_array($record['id'], $my_functions) || in_array($record['id'], $users_functions) || $record['creator_id'] == $_SESSION['user_id']))
                     ) {
                         if (in_array($record['id'], $users_functions)) {
                             $tmp = ' selected="selected"';
